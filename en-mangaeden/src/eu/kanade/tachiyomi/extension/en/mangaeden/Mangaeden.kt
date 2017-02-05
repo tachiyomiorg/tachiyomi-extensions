@@ -13,8 +13,6 @@ import java.util.*
 
 class Mangaeden : ParsedHttpSource() {
 
-    override val id: Long = 12
-
     override val name = "Mangaeden"
 
     override val baseUrl = "http://www.mangaeden.com"
