@@ -63,7 +63,7 @@ class Mangaeden : ParsedHttpSource() {
         return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = "table#mangaList > tbody > tr"
+    override fun searchMangaSelector() = "table#mangaList > tbody > tr:has(td:gt(1))"
 
     override fun searchMangaFromElement(element: Element) = SManga.create().apply {
         element.select("td > a").first().let {
