@@ -144,25 +144,25 @@ class Mangaeden : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
             TextField("Autore", "author"),
             TextField("Artista", "artist"),
-            Types(types),
-            StatusList(statuses),
+            Types(types()),
+            StatusList(statuses()),
             OrderBy(),
-            GenreList(genres)
+            GenreList(genres())
     )
 
-    private val types = listOf(
+    private fun types() = listOf(
             NamedId("Japanese Manga", 0),
             NamedId("Korean Manhwa", 1),
             NamedId("Chinese Manhua", 2),
             NamedId("Comic", 3),
             NamedId("Doujinshi", 4)
     )
-    private val statuses = listOf(
+    private fun statuses() = listOf(
             NamedId("In corso", 1),
             NamedId("Completato", 2),
             NamedId("Sospeso", 0)
     )
-    private val genres = listOf(
+    private fun genres() = listOf(
             Genre("Avventura", "4e70ea8cc092255ef70073d3"),
             Genre("Azione", "4e70ea8cc092255ef70073c3"),
             Genre("Bara", "4e70ea90c092255ef70074b7"),
