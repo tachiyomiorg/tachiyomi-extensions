@@ -13,7 +13,7 @@ import java.util.*
 
 class Mangaeden : ParsedHttpSource() {
 
-    override val name = "Mangaeden"
+    override val name = "Manga Eden"
 
     override val baseUrl = "http://www.mangaeden.com"
 
@@ -82,7 +82,8 @@ class Mangaeden : ParsedHttpSource() {
         genre = infos.select("a[href^=/it/it-directory/?categoriesInc]").map { it.text() }.joinToString()
         description = document.select("h2#mangaDescription").text()
         status = parseStatus(infos.select("h4:containsOwn(Stato)").first()?.nextSibling().toString())
-        thumbnail_url = infos.select("div.mangaImage2 > img").first()?.attr("src").let { "http:$it" }
+        val img = infos.select("div.mangaImage2 > img").first()?.attr("src")
+        if (!img.isNullOrBlank()) thumbnail_url = img.let { "http:$it" }
     }
 
     private fun parseStatus(status: String) = when {
@@ -144,9 +145,9 @@ class Mangaeden : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
             TextField("Autore", "author"),
             TextField("Artista", "artist"),
+            OrderBy(),
             Types(types()),
             StatusList(statuses()),
-            OrderBy(),
             GenreList(genres())
     )
 
@@ -157,11 +158,13 @@ class Mangaeden : ParsedHttpSource() {
             NamedId("Comic", 3),
             NamedId("Doujinshi", 4)
     )
+
     private fun statuses() = listOf(
             NamedId("In corso", 1),
             NamedId("Completato", 2),
             NamedId("Sospeso", 0)
     )
+
     private fun genres() = listOf(
             Genre("Avventura", "4e70ea8cc092255ef70073d3"),
             Genre("Azione", "4e70ea8cc092255ef70073c3"),
