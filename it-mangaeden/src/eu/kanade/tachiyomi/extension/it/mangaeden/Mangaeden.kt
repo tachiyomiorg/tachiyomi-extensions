@@ -41,16 +41,16 @@ class Mangaeden : ParsedHttpSource() {
         val url = HttpUrl.parse("$baseUrl/it/it-directory/").newBuilder().addQueryParameter("title", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
-                is Statuses -> {
-                    val id = filter.values[filter.state].id
-                    if (id != -1) url.addQueryParameter("status", id.toString())
-                }
-                is Types -> {
-                    val id = filter.values[filter.state].id
-                    if (id != -1) url.addQueryParameter("type", id.toString())
-                }
+                is StatusList -> filter.state
+                        .filter { it.state }
+                        .map { it.id.toString() }
+                        .forEach { url.addQueryParameter("status", it) }
+                is Types -> filter.state
+                        .filter { it.state }
+                        .map { it.id.toString() }
+                        .forEach { url.addQueryParameter("type", it) }
                 is GenreList -> filter.state
-                        .filter { !it.isIgnored() }
+                        .filterNot { it.isIgnored() }
                         .forEach { genre -> url.addQueryParameter(if (genre.isIncluded()) "categoriesInc" else "categoriesExcl", genre.id) }
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is OrderBy -> filter.state?.let {
@@ -131,38 +131,33 @@ class Mangaeden : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http$it" }
 
-    private class NamedId(val name: String, val id: Int) {
-        override fun toString(): String = name
-    }
-
+    private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
     private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)
-    private class Statuses(statuses: Array<NamedId>) : Filter.Select<NamedId>("Stato", statuses)
-    private class Types(types: Array<NamedId>) : Filter.Select<NamedId>("Tipo", types)
     private class OrderBy : Filter.Sort("Ordina per", arrayOf("Titolo manga", "Visite", "Capitoli", "Ultimo capitolo"),
             Filter.Sort.Selection(1, false))
 
+    private class StatusList(statuses: List<NamedId>) : Filter.Group<NamedId>("Stato", statuses)
+    private class Types(types: List<NamedId>) : Filter.Group<NamedId>("Tipo", types)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Generi", genres)
 
     override fun getFilterList() = FilterList(
             TextField("Autore", "author"),
             TextField("Artista", "artist"),
             Types(types),
-            Statuses(statuses),
+            StatusList(statuses),
             OrderBy(),
             GenreList(genres)
     )
 
-    private val types = arrayOf(
-            NamedId("Tutti", -1),
+    private val types = listOf(
             NamedId("Japanese Manga", 0),
             NamedId("Korean Manhwa", 1),
             NamedId("Chinese Manhua", 2),
             NamedId("Comic", 3),
             NamedId("Doujinshi", 4)
     )
-    private val statuses = arrayOf(
-            NamedId("Tutti", -1),
+    private val statuses = listOf(
             NamedId("In corso", 1),
             NamedId("Completato", 2),
             NamedId("Sospeso", 0)
