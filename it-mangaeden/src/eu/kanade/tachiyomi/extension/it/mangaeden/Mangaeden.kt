@@ -29,7 +29,7 @@ class Mangaeden : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/it/it-directory/?order=1&page=$page", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/it/it-directory/?page=$page", headers)
 
     override fun popularMangaSelector() = searchMangaSelector()
 
@@ -66,7 +66,7 @@ class Mangaeden : ParsedHttpSource() {
     override fun searchMangaSelector() = "table#mangaList > tbody > tr:has(td:gt(1))"
 
     override fun searchMangaFromElement(element: Element) = SManga.create().apply {
-        element.select("td > a").first().let {
+        element.select("td > a").first()?.let {
             setUrlWithoutDomain(it.attr("href"))
             title = it.text()
         }
@@ -77,12 +77,12 @@ class Mangaeden : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val infos = document.select("div.rightbox")
 
-        author = infos.select("a[href^=/it/it-directory/?author]").first().text()
-        artist = infos.select("a[href^=/it/it-directory/?artist]").first().text()
+        author = infos.select("a[href^=/it/it-directory/?author]").first()?.text()
+        artist = infos.select("a[href^=/it/it-directory/?artist]").first()?.text()
         genre = infos.select("a[href^=/it/it-directory/?categoriesInc]").map { it.text() }.joinToString()
         description = document.select("h2#mangaDescription").text()
-        status = parseStatus(infos.select("h4:containsOwn(Stato)").first().nextSibling().toString())
-        thumbnail_url = "http:${infos.select("div.mangaImage2 > img").first().attr("src")}"
+        status = parseStatus(infos.select("h4:containsOwn(Stato)").first()?.nextSibling().toString())
+        thumbnail_url = infos.select("div.mangaImage2 > img").first()?.attr("src").let { "http:$it" }
     }
 
     private fun parseStatus(status: String) = when {
@@ -96,16 +96,32 @@ class Mangaeden : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         val a = element.select("a[href^=/it/it-manga/]").first()
 
-        setUrlWithoutDomain(a.attr("href"))
-        name = a.select("b").first().text()
-        date_upload = element.select("td.chapterDate").first().text().let { parseChapterDate(it.trim()) }
+        setUrlWithoutDomain(a?.attr("href").orEmpty())
+        name = a?.select("b")?.first()?.text().orEmpty()
+        date_upload = element.select("td.chapterDate").first()?.text()?.let { parseChapterDate(it.trim()) } ?: 0L
     }
 
-    private fun parseChapterDate(date: String): Long = try {
-        SimpleDateFormat("d MMM yyyy", Locale.ITALIAN).parse(date).time
-    } catch (e: ParseException) {
-        0L
-    }
+    private fun parseChapterDate(date: String): Long =
+            if ("Oggi" in date) {
+                Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            } else if ("Ieri" in date) {
+                Calendar.getInstance().apply {
+                    add(Calendar.DATE, -1)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            } else try {
+                SimpleDateFormat("d MMM yyyy", Locale.ITALIAN).parse(date).time
+            } catch (e: ParseException) {
+                0L
+            }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("option[value^=/it/it-manga/]").forEach {
@@ -113,7 +129,7 @@ class Mangaeden : ParsedHttpSource() {
         }
     }
 
-    override fun imageUrlParse(document: Document): String = "http:${document.select("a#nextA.next > img").first().attr("src")}"
+    override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http$it" }
 
     private class NamedId(val name: String, val id: Int) {
         override fun toString(): String = name
