@@ -13,7 +13,7 @@ import java.util.*
 
 class Perveden : ParsedHttpSource() {
 
-    override val name = "Perveden"
+    override val name = "PervEden"
 
     override val baseUrl = "http://www.perveden.com"
 
@@ -49,6 +49,9 @@ class Perveden : ParsedHttpSource() {
                         .filter { it.state }
                         .map { it.id.toString() }
                         .forEach { url.addQueryParameter("type", it) }
+                is GenreList -> filter.state
+                        .filterNot { it.isIgnored() }
+                        .forEach { genre -> url.addQueryParameter(if (genre.isIncluded()) "categoriesInc" else "categoriesExcl", genre.id) }
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is OrderBy -> filter.state?.let {
                     val sortId = it.index
@@ -79,7 +82,8 @@ class Perveden : ParsedHttpSource() {
         genre = infos.select("a[href^=/it/it-directory/?categoriesInc]").map { it.text() }.joinToString()
         description = document.select("h2#mangaDescription").text()
         status = parseStatus(infos.select("h4:containsOwn(Stato)").first()?.nextSibling().toString())
-        thumbnail_url = infos.select("div.mangaImage2 > img").first()?.attr("src").let { "http:$it" }
+        val img = infos.select("div.mangaImage2 > img").first()?.attr("src")
+        if (!img.isNullOrBlank()) thumbnail_url = img.let { "http:$it" }
     }
 
     private fun parseStatus(status: String) = when {
@@ -129,19 +133,21 @@ class Perveden : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http$it" }
 
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
+    private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class OrderBy : Filter.Sort("Ordina per", arrayOf("Titolo manga", "Visite", "Capitoli", "Ultimo capitolo"),
             Filter.Sort.Selection(1, false))
 
     private class StatusList(statuses: List<NamedId>) : Filter.Group<NamedId>("Stato", statuses)
     private class Types(types: List<NamedId>) : Filter.Group<NamedId>("Tipo", types)
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Generi", genres)
 
     override fun getFilterList() = FilterList(
             TextField("Autore", "author"),
             TextField("Artista", "artist"),
+            OrderBy(),
             Types(types()),
-            StatusList(statuses()),
-            OrderBy()
+            StatusList(statuses())
     )
 
     private fun types() = listOf(

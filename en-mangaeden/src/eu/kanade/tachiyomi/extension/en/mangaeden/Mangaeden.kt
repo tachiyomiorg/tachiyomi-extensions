@@ -13,7 +13,7 @@ import java.util.*
 
 class Mangaeden : ParsedHttpSource() {
 
-    override val name = "Mangaeden"
+    override val name = "Manga Eden"
 
     override val baseUrl = "http://www.mangaeden.com"
 
@@ -82,7 +82,8 @@ class Mangaeden : ParsedHttpSource() {
         genre = infos.select("a[href^=/en/en-directory/?categoriesInc]").map { it.text() }.joinToString()
         description = document.select("h2#mangaDescription").text()
         status = parseStatus(infos.select("h4:containsOwn(Status)").first()?.nextSibling().toString())
-        thumbnail_url = infos.select("div.mangaImage2 > img").first()?.attr("src").let { "http:$it" }
+        val img = infos.select("div.mangaImage2 > img").first()?.attr("src")
+        if (!img.isNullOrBlank()) thumbnail_url = img.let { "http:$it" }
     }
 
     private fun parseStatus(status: String) = when {
@@ -144,9 +145,9 @@ class Mangaeden : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
+            OrderBy(),
             Types(types()),
             StatusList(statuses()),
-            OrderBy(),
             GenreList(genres())
     )
 
