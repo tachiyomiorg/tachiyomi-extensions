@@ -119,7 +119,7 @@ class Mangaeden : ParsedHttpSource() {
                     set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
             } else try {
-                SimpleDateFormat("d MMM yyyy", Locale.ITALIAN).parse(date).time
+                SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
             } catch (e: ParseException) {
                 0L
             }

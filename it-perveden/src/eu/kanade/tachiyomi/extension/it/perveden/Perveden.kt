@@ -49,9 +49,6 @@ class Perveden : ParsedHttpSource() {
                         .filter { it.state }
                         .map { it.id.toString() }
                         .forEach { url.addQueryParameter("type", it) }
-                is GenreList -> filter.state
-                        .filterNot { it.isIgnored() }
-                        .forEach { genre -> url.addQueryParameter(if (genre.isIncluded()) "categoriesInc" else "categoriesExcl", genre.id) }
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is OrderBy -> filter.state?.let {
                     val sortId = it.index
@@ -133,14 +130,12 @@ class Perveden : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http$it" }
 
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
-    private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class OrderBy : Filter.Sort("Ordina per", arrayOf("Titolo manga", "Visite", "Capitoli", "Ultimo capitolo"),
             Filter.Sort.Selection(1, false))
 
     private class StatusList(statuses: List<NamedId>) : Filter.Group<NamedId>("Stato", statuses)
     private class Types(types: List<NamedId>) : Filter.Group<NamedId>("Tipo", types)
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Generi", genres)
 
     override fun getFilterList() = FilterList(
             TextField("Autore", "author"),
