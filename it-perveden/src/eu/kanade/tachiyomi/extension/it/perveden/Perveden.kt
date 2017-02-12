@@ -131,7 +131,7 @@ class Perveden : ParsedHttpSource() {
         }
     }
 
-    override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http$it" }
+    override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http:$it" }
 
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)
