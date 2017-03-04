@@ -1,3 +1,6 @@
+[![Travis](https://img.shields.io/travis/inorichi/tachiyomi-extensions.svg)](https://travis-ci.org/inorichi/tachiyomi-extensions)
+[![fdroid dev](https://img.shields.io/badge/stable-wiki-blue.svg)](//github.com/inorichi/tachiyomi/wiki/FDroid-for-dev-versions)
+
 This repository contains the available extension catalogues for the Tachiyomi app.
 
 [Download links to be added]
