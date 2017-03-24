@@ -31,7 +31,7 @@ class Academyvn : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("http://truyen.academyvn.com/manga/all?filter_type=latest-chapter&page=$page", headers)
+        return GET("$baseUrl/manga/all?filter_type=latest-chapter&page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
