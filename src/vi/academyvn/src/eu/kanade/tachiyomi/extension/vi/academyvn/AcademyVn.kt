@@ -12,8 +12,6 @@ import java.util.*
 
 class Academyvn : ParsedHttpSource() {
 
-    override val id: Long = 11
-
     override val name = "Academy VN"
 
     override val baseUrl = "http://truyen.academyvn.com"
@@ -55,15 +53,11 @@ class Academyvn : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/searchs?").newBuilder().addQueryParameter("keyword", query)
-        var genreIndex = 1
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Type -> url.addQueryParameter("type", if (filter.state == 0) "-1" else type.indexOf(filter.state.toString()).toString())
-                is Author -> url.addQueryParameter("author", "-1")
-                is GenreList -> filter.state.forEach {
-                    genre ->
-                    if (genre.state != 0) url.addQueryParameter("genres[]", genreIndex.toString())
-                    genreIndex++
+                is GenreList -> filter.state.forEachIndexed { index, genre ->
+                    if (genre.state != 0) url.addQueryParameter("genres[]", (index + 1).toString())
                 }
                 is Status -> url.addQueryParameter("status", if (filter.state == 0) "-1" else status.indexOf(filter.state.toString()).toString())
             }
@@ -115,17 +109,17 @@ class Academyvn : ParsedHttpSource() {
         if (dateWords.size == 3) {
             val timeAgo = Integer.parseInt(dateWords[0])
             val dates: Calendar = Calendar.getInstance()
-            if (dateWords[1].contains("minutes") || dateWords[1].contains("minute")) {
+            if (dateWords[1].contains("minute")) {
                 dates.add(Calendar.MINUTE, -timeAgo)
-            } else if (dateWords[1].contains("hours") || dateWords[1].contains("hour")) {
+            } else if (dateWords[1].contains("hour")) {
                 dates.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            } else if (dateWords[1].contains("days") || dateWords[1].contains("day")) {
+            } else if (dateWords[1].contains("day")) {
                 dates.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("weeks") || dateWords[1].contains("week")) {
+            } else if (dateWords[1].contains("week")) {
                 dates.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("months") || dateWords[1].contains("month")) {
+            } else if (dateWords[1].contains("month")) {
                 dates.add(Calendar.MONTH, -timeAgo)
-            } else if (dateWords[1].contains("years") || dateWords[1].contains("year")) {
+            } else if (dateWords[1].contains("year")) {
                 dates.add(Calendar.YEAR, -timeAgo)
             }
             return dates.timeInMillis
@@ -149,11 +143,10 @@ class Academyvn : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     var type = arrayOf("Khác", "Manga", "Manhwa", "Manhua", "Tất cả")
-    var status = arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành")
+    var status = arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành", "Tất cả")
 
     private class Type : Filter.Select<String>("Type", arrayOf("Khác", "Manga", "Manhwa", "Manhua", "Tất cả"))
-    private class Status : Filter.Select<String>("Status", arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành"))
-    private class Author : Filter.Text("Tác giả")
+    private class Status : Filter.Select<String>("Status", arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành", "Tất cả"))
     private class Genre(name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Thể loại", genres)
 
@@ -163,8 +156,6 @@ class Academyvn : ParsedHttpSource() {
             GenreList(getGenreList())
     )
 
-    // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
-    // on http://kissmanga.com/AdvanceSearch
     private fun getGenreList() = listOf(
             Genre("Action"),
             Genre("Adult"),
