@@ -15,11 +15,11 @@ import java.util.*
  */
 
 class MangaPark : ParsedHttpSource() {
-    override val lang: String = "en"
+    override val lang = "en"
 
     override val supportsLatest = true
     override val name = "MangaPark"
-    override val baseUrl = "http://mangapark.me" //TODO Can we do HTTPS?
+    override val baseUrl = "https://mangapark.me"
 
     private val directorySelector = ".item"
     private val directoryUrl = "/genre"
@@ -29,7 +29,7 @@ class MangaPark : ParsedHttpSource() {
 
     override fun popularMangaSelector() = directorySelector
 
-    fun mangaFromElement(element: Element) = SManga.create().apply {
+    private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
         url = coverElement.attr("href")
 
@@ -48,7 +48,7 @@ class MangaPark : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = ".paging > li:last-child > a"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl?views")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views")
 
     override fun latestUpdatesSelector() = directorySelector
 
@@ -61,6 +61,7 @@ class MangaPark : ParsedHttpSource() {
             if(it is UriFilter)
                 it.addToUri(uri)
         }
+        uri.appendQueryParameter("page", page.toString())
         return GET(uri.toString())
     }
 
@@ -98,7 +99,7 @@ class MangaPark : ParsedHttpSource() {
         description = document.getElementsByClass("summary").text().trim()
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl?latest")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?latest")
 
     //TODO MangaPark has "versioning" or something
     //TODO Currently we just use the version that is expanded by default
@@ -137,7 +138,7 @@ class MangaPark : ParsedHttpSource() {
             YearFilter()
     )
 
-    class SearchTypeFilter(name: String, val uriParam: String):
+    private class SearchTypeFilter(name: String, val uriParam: String):
             Filter.Select<String>(name, stateMap), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter(uriParam, stateMap[state])
@@ -148,15 +149,15 @@ class MangaPark : ParsedHttpSource() {
         }
     }
 
-    class AuthorArtistText : Filter.Text("Author/Artist"), UriFilter {
+    private class AuthorArtistText : Filter.Text("Author/Artist"), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter("autart", state)
         }
     }
 
-    class GenreFilter(val uriParam: String, displayName: String): Filter.TriState(displayName)
+    private class GenreFilter(val uriParam: String, displayName: String): Filter.TriState(displayName)
 
-    class GenreGroup : Filter.Group<GenreFilter>("Genres", listOf(
+    private class GenreGroup : Filter.Group<GenreFilter>("Genres", listOf(
             GenreFilter("4-koma", "4 koma"),
             GenreFilter("action", "Action"),
             GenreFilter("adult", "Adult"),
@@ -206,12 +207,12 @@ class MangaPark : ParsedHttpSource() {
         }
     }
 
-    class GenreInclusionFilter : UriSelectFilter("Genre inclusion", "genres-mode", arrayOf(
+    private class GenreInclusionFilter : UriSelectFilter("Genre inclusion", "genres-mode", arrayOf(
             Pair("and", "And mode"),
             Pair("or", "Or mode")
     ))
 
-    class ChapterCountFilter : UriSelectFilter("Chapter count", "chapters", arrayOf(
+    private class ChapterCountFilter : UriSelectFilter("Chapter count", "chapters", arrayOf(
             Pair("any", "Any"),
             Pair("1", "1 +"),
             Pair("5", "5 +"),
@@ -225,13 +226,13 @@ class MangaPark : ParsedHttpSource() {
             Pair("200", "200 +")
     ))
 
-    class StatusFilter : UriSelectFilter("Status", "status", arrayOf(
+    private class StatusFilter : UriSelectFilter("Status", "status", arrayOf(
             Pair("any", "Any"),
             Pair("completed", "Completed"),
             Pair("ongoing", "Ongoing")
     ))
 
-    class RatingFilter : UriSelectFilter("Rating", "rating", arrayOf(
+    private class RatingFilter : UriSelectFilter("Rating", "rating", arrayOf(
             Pair("any", "Any"),
             Pair("5", "5 stars"),
             Pair("4", "4 stars"),
@@ -241,7 +242,7 @@ class MangaPark : ParsedHttpSource() {
             Pair("0", "0 stars")
     ))
 
-    class TypeFilter : UriSelectFilter("Type", "types", arrayOf(
+    private class TypeFilter : UriSelectFilter("Type", "types", arrayOf(
             Pair("any", "Any"),
             Pair("manga", "Japanese Manga"),
             Pair("manhwa", "Korean Manhwa"),
@@ -249,7 +250,7 @@ class MangaPark : ParsedHttpSource() {
             Pair("unknown", "Unknown")
     ))
 
-    class YearFilter : UriSelectFilter("Release year", "years",
+    private class YearFilter : UriSelectFilter("Release year", "years",
             arrayOf(Pair("any", "Any"),
                     //Get all years between today and 1946
                     *(Calendar.getInstance().get(Calendar.YEAR) downTo 1946).map {
@@ -258,7 +259,7 @@ class MangaPark : ParsedHttpSource() {
             )
     )
 
-    class SortFilter : UriSelectFilter("Sort", "orderby", arrayOf(
+    private class SortFilter : UriSelectFilter("Sort", "orderby", arrayOf(
             Pair("a-z", "A-Z"),
             Pair("views", "Views"),
             Pair("rating", "Rating"),
@@ -272,7 +273,7 @@ class MangaPark : ParsedHttpSource() {
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
     //vals: <name, display>
-    open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                val firstIsUnspecified: Boolean = true,
                                defaultValue: Int = 0):
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
@@ -285,7 +286,7 @@ class MangaPark : ParsedHttpSource() {
     /**
      * Represents a filter that is able to modify a URI.
      */
-    interface UriFilter {
+    private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
     }
 }
