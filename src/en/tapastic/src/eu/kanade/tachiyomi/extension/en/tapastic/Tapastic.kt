@@ -90,37 +90,42 @@ class Tapastic : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/comics?pageNumber=$page&browse=FRESH")
 
     override fun chapterListParse(response: Response)
-        //Chapters are stored in JavaScript as JSON!
-        = response.asJsoup().getElementsByTag("script").filter {
-            it.data().trim().startsWith("var _data")
-        }.flatMap {
-            val text = it.data()
-            val episodeVar = text.indexOf("episodeList")
-            if(episodeVar == -1)
-                return@flatMap emptyList<SChapter>()
+            //Chapters are stored in JavaScript as JSON!
+            = response.asJsoup().getElementsByTag("script").filter {
+        it.data().trim().startsWith("var _data")
+    }.flatMap {
+        val text = it.data()
+        val episodeVar = text.indexOf("episodeList")
+        if(episodeVar == -1)
+            return@flatMap emptyList<SChapter>()
 
-            val episodeLeftBracket = text.indexOf('[', startIndex = episodeVar)
-            if(episodeLeftBracket == -1)
-                return@flatMap emptyList<SChapter>()
-            val episodeRightBracket = text.indexOf(']', startIndex = episodeLeftBracket)
-            if(episodeRightBracket == -1)
-                return@flatMap emptyList<SChapter>()
+        val episodeLeftBracket = text.indexOf('[', startIndex = episodeVar)
+        if(episodeLeftBracket == -1)
+            return@flatMap emptyList<SChapter>()
 
-            val episodeListText = text.substring(episodeLeftBracket .. episodeRightBracket)
+        val endOfLine = text.indexOf('\n', startIndex = episodeLeftBracket)
+        if(endOfLine == -1)
+            return@flatMap emptyList<SChapter>()
 
-            jsonParser.parse(episodeListText).array.map {
-                val json = it.asJsonObject
-                SChapter.create().apply {
-                    url = "/episode/${json["id"].string}"
+        val episodeRightBracket = text.lastIndexOf(']', startIndex = endOfLine)
+        if(episodeRightBracket == -1)
+            return@flatMap emptyList<SChapter>()
 
-                    name = json["title"].string
+        val episodeListText = text.substring(episodeLeftBracket .. episodeRightBracket)
 
-                    date_upload = json["publishDate"].long
+        jsonParser.parse(episodeListText).array.map {
+            val json = it.asJsonObject
+            SChapter.create().apply {
+                url = "/episode/${json["id"].string}"
 
-                    chapter_number = json["scene"].float
-                }
+                name = json["title"].string
+
+                date_upload = json["publishDate"].long
+
+                chapter_number = json["scene"].float
             }
         }
+    }
 
     override fun chapterListSelector(): String {
         throw UnsupportedOperationException("This method should not be called!")
