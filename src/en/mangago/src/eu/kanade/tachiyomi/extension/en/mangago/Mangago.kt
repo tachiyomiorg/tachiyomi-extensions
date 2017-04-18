@@ -222,9 +222,9 @@ class Mangago : ParsedHttpSource() {
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0):
+                                       val defaultValue: Int = 0):
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter, DefaultingFilter {
-        override fun isStateDefault() = state == 0
+        override fun isStateDefault() = state == defaultValue
 
         override fun addToUri(uri: Uri.Builder) {
             if(state != 0 || !firstIsUnspecified)
