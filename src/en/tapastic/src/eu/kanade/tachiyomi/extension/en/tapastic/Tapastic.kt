@@ -52,8 +52,13 @@ class Tapastic : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //If any filters are changed, use browser, otherwise, use text search
-        val uri = if(filters.any { it is DefaultingFilter && !it.isStateDefault() }) {
+        //If there is any search text, use text search, otherwise use filter search
+        val uri = if(query.isNotBlank()) {
+            Uri.parse("$baseUrl/search")
+                    .buildUpon()
+                    .appendQueryParameter("t", "COMICS")
+                    .appendQueryParameter("q", query)
+        } else {
             val uri = Uri.parse("$baseUrl/comics").buildUpon()
             //Append uri filters
             filters.forEach {
@@ -61,11 +66,6 @@ class Tapastic : ParsedHttpSource() {
                     it.addToUri(uri)
             }
             uri
-        } else {
-            Uri.parse("$baseUrl/search")
-                    .buildUpon()
-                    .appendQueryParameter("t", "COMICS")
-                    .appendQueryParameter("q", query)
         }
         //Append page number
         uri.appendQueryParameter("pageNumber", page.toString())
@@ -115,16 +115,19 @@ class Tapastic : ParsedHttpSource() {
 
         jsonParser.parse(episodeListText).array.map {
             val json = it.asJsonObject
-            SChapter.create().apply {
-                url = "/episode/${json["id"].string}"
+            //Ensure that the chapter is published (tapastic allows scheduling chapters)
+            if(json["orgScene"].int != 0)
+                SChapter.create().apply {
+                    url = "/episode/${json["id"].string}"
 
-                name = json["title"].string
+                    name = json["title"].string
 
-                date_upload = json["publishDate"].long
+                    date_upload = json["publishDate"].long
 
-                chapter_number = json["scene"].float
-            }
-        }
+                    chapter_number = json["scene"].float
+                }
+            else null
+        }.filterNotNull().sortedByDescending(SChapter::chapter_number)
     }
 
     override fun chapterListSelector(): String {
@@ -147,7 +150,7 @@ class Tapastic : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
             //Tapastic does not support genre filtering and text search at the same time
-            Filter.Header("NOTE: Options here ignore text search!"),
+            Filter.Header("NOTE: Ignored if using text search!"),
             Filter.Separator(),
             FilterFilter(),
             GenreFilter(),
@@ -196,9 +199,7 @@ class Tapastic : ParsedHttpSource() {
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
                                        val defaultValue: Int = 0):
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter, DefaultingFilter {
-        override fun isStateDefault() = state == defaultValue
-
+            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if(state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
@@ -210,15 +211,5 @@ class Tapastic : ParsedHttpSource() {
      */
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
-    }
-
-    /**
-     * A filter that has a default state
-     */
-    private interface DefaultingFilter {
-        /**
-         * Whether or not this filter is in it's default state
-         */
-        fun isStateDefault(): Boolean
     }
 }

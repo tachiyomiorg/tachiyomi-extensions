@@ -60,8 +60,14 @@ class Mangago : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //If any filters are changed, use genre search, otherwise, use text search
-        val url = if(filters.any { it is DefaultingFilter && !it.isStateDefault() }) {
+        //If text search is active use text search, otherwise use genre search
+        val url = if(query.isNotBlank()) {
+            Uri.parse("$baseUrl/r/l_search/")
+                    .buildUpon()
+                    .appendQueryParameter("name", query)
+                    .appendQueryParameter("page", page.toString())
+                    .toString()
+        } else {
             val uri = Uri.parse("$baseUrl/genre/").buildUpon()
             val genres = filters.flatMap {
                 (it as? GenreGroup)?.stateList ?: emptyList()
@@ -84,12 +90,6 @@ class Mangago : ParsedHttpSource() {
                     it.addToUri(uri)
             }
             uri.toString()
-        } else {
-            Uri.parse("$baseUrl/r/l_search/")
-                    .buildUpon()
-                    .appendQueryParameter("name", query)
-                    .appendQueryParameter("page", page.toString())
-                    .toString()
         }
         return GET(url)
     }
@@ -147,7 +147,7 @@ class Mangago : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
             //Mangago does not support genre filtering and text search at the same time
-            Filter.Header("NOTE: Filters will ignore text search!"),
+            Filter.Header("NOTE: Ignored if using text search!"),
             Filter.Separator(),
             Filter.Header("Status"),
             StatusFilter("Completed", "f"),
@@ -194,16 +194,12 @@ class Mangago : ParsedHttpSource() {
             GenreFilter("Shotacon")
     ))
 
-    private class GenreFilter(name: String): Filter.TriState(name), DefaultingFilter {
-        override fun isStateDefault() = isIgnored()
-    }
+    private class GenreFilter(name: String): Filter.TriState(name)
 
-    private class StatusFilter(name: String, val uriParam: String): Filter.CheckBox(name, true), DefaultingFilter, UriFilter {
+    private class StatusFilter(name: String, val uriParam: String): Filter.CheckBox(name, true), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter(uriParam, if(state) "1" else "0")
         }
-
-        override fun isStateDefault() = state
     }
 
     private class SortFilter: UriSelectFilter("Sort", "sortby", arrayOf(
@@ -223,9 +219,7 @@ class Mangago : ParsedHttpSource() {
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
                                        val defaultValue: Int = 0):
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter, DefaultingFilter {
-        override fun isStateDefault() = state == defaultValue
-
+            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if(state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
@@ -235,16 +229,12 @@ class Mangago : ParsedHttpSource() {
     /**
      * Uri filter group
      */
-    private open class UriFilterGroup<V>(name: String, val stateList: List<V>): Filter.Group<V>(name, stateList), UriFilter, DefaultingFilter {
+    private open class UriFilterGroup<V>(name: String, val stateList: List<V>): Filter.Group<V>(name, stateList), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             stateList.forEach {
                 if(it is UriFilter)
                     it.addToUri(uri)
             }
-        }
-
-        override fun isStateDefault() = stateList.all {
-            it !is DefaultingFilter || it.isStateDefault()
         }
     }
 
@@ -253,15 +243,5 @@ class Mangago : ParsedHttpSource() {
      */
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
-    }
-
-    /**
-     * A filter that has a default state
-     */
-    private interface DefaultingFilter {
-        /**
-         * Whether or not this filter is in it's default state
-         */
-        fun isStateDefault(): Boolean
     }
 }
