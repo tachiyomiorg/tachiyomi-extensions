@@ -62,10 +62,8 @@ fun NHentaiMetadata.copyTo(manga: SManga) {
 
 private fun buildTagsDescription(metadata: NHentaiMetadata)
         = StringBuilder("Tags:\n").apply {
-    //BiConsumer only available in Java 8, don't bother calling forEach directly on 'tags'
-    metadata.tags.entries.forEach<Map.Entry<String, MutableList<Tag>>> {
-        val namespace = it.key
-        val tags = it.value
+    //BiConsumer only available in Java 8, we have to use destructuring here
+    metadata.tags.forEach { (namespace, tags) ->
         if (tags.isNotEmpty()) {
             val joinedTags = tags.joinToString(separator = " ", transform = { "<${it.name}>" })
             this += "▪ $namespace: $joinedTags\n"
