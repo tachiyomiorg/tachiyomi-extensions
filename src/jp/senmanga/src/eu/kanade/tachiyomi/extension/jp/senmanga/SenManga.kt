@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.senmanga
+package eu.kanade.tachiyomi.extension.jp.senmanga
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
