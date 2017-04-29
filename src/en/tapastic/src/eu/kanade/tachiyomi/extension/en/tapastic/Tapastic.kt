@@ -198,7 +198,7 @@ class Tapastic : ParsedHttpSource() {
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
-                                       val defaultValue: Int = 0):
+                                       defaultValue: Int = 0):
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if(state != 0 || !firstIsUnspecified)
