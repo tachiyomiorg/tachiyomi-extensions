@@ -4,7 +4,7 @@ package eu.kanade.tachiyomi.extension.all.nhentai
  * NHentai languages
  */
 
-class NHJapanese: NHentai("jp", "japanese")
+class NHJapanese: NHentai("ja", "japanese")
 class NHEnglish: NHentai("en", "english")
 class NHChinese: NHentai("zh", "chinese")
 class NHSpeechless: NHentai("none", "speechless")

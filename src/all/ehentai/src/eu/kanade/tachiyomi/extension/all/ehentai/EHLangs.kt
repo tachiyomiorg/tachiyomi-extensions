@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.all.ehentai
 /**
  * EHentai languages
  */
-class EHJapanese: EHentai("jp", "japanese")
+class EHJapanese: EHentai("ja", "japanese")
 class EHEnglish: EHentai("en", "english")
 class EHChinese: EHentai("zh", "chinese")
 class EHDutch: EHentai("nl", "dutch")

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.jp.senmanga
+package eu.kanade.tachiyomi.extension.ja.senmanga
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
@@ -17,7 +17,7 @@ import java.util.*
  */
 
 class SenManga: ParsedHttpSource() {
-    override val lang: String = "jp"
+    override val lang: String = "ja"
 
     //Latest updates currently returns duplicate manga as it separates manga into chapters
     override val supportsLatest = false
