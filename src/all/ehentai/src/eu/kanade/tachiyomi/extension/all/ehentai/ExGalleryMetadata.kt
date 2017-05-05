@@ -1,7 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.ehentai;
 
-import java.util.*
-
 /**
  * Gallery metadata storage model
  */
@@ -29,5 +27,5 @@ class ExGalleryMetadata {
 
     var uploader: String? = null
 
-    val tags: HashMap<String, ArrayList<Tag>> = HashMap()
+    val tags: MutableMap<String, List<Tag>> = mutableMapOf()
 }

@@ -24,7 +24,7 @@ import rx.Observable
 open class NHentai(override val lang: String, val nhLang: String) : HttpSource() {
     override val name = "nhentai"
 
-    override val baseUrl = NHentaiMetadata.BASE_URL
+    override val baseUrl = "https://nhentai.net"
 
     override val supportsLatest = true
 

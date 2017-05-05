@@ -55,9 +55,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
         }
         //Add to page if required
-        val hasNextPage = select("a[onclick=return false]").last()?.let {
-            it.text() == ">"
-        } ?: false
+        val hasNextPage = select("a[onclick=return false]").last()?.text() == ">"
         Pair(parsedMangas, hasNextPage)
     }
 
@@ -135,10 +133,10 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
 
     fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true)
-        = GET(page?.let {
-            addParam(url, "page", Integer.toString(page - 1))
-        } ?: url, additionalHeaders?.let {
-            val headers = headers.newBuilder()
+            = GET(page?.let {
+        addParam(url, "page", Integer.toString(page - 1))
+    } ?: url, additionalHeaders?.let {
+        val headers = headers.newBuilder()
         it.toMultimap().forEach { (t, u) ->
             u.forEach {
                 headers.add(t, it)
@@ -158,12 +156,15 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun mangaDetailsParse(response: Response) = with(response.asJsoup()) {
         val metdata = ExGalleryMetadata()
         with(metdata) {
-            url = response.request().url().toString()
+            url = response.request().url().encodedPath()
             title = select("#gn").text().nullIfBlank()?.trim()
 
             altTitle = select("#gj").text().nullIfBlank()?.trim()
 
-            thumbnailUrl = select("#gd1 img").attr("src").nullIfBlank()?.trim()
+            //Thumbnail is set as background of element in style attribute
+            thumbnailUrl = select("#gd1 div").attr("style").nullIfBlank()?.let {
+                it.substring(it.indexOf('(') + 1 until it.lastIndexOf(')'))
+            }
 
             genre = select(".ic").parents().attr("href").nullIfBlank()?.trim()?.substringAfterLast('/')
 
@@ -171,43 +172,33 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
             //Parse the table
             select("#gdd tr").forEach {
-                it.select(".gdt1")
-                        .text()
-                        .nullIfBlank()
-                        ?.trim()
-                        ?.let { left ->
-                            it.select(".gdt2")
-                                    .text()
-                                    .nullIfBlank()
-                                    ?.trim()
-                                    ?.let { right ->
-                                        ignore {
-                                            when (left.removeSuffix(":")
-                                                    .toLowerCase()) {
-                                                "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
-                                                "visible" -> visible = right.nullIfBlank()
-                                                "language" -> {
-                                                    language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
-                                                    translated = right.endsWith(TR_SUFFIX, true)
-                                                }
-                                                "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
-                                                "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
-                                                "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
-                                            }
-                                        }
-                                    }
+                val left = it.select(".gdt1").text().nullIfBlank()?.trim() ?: return@forEach
+                val right = it.select(".gdt2").text().nullIfBlank()?.trim() ?: return@forEach
+                ignore {
+                    when (left.removeSuffix(":")
+                            .toLowerCase()) {
+                        "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
+                        "visible" -> visible = right.nullIfBlank()
+                        "language" -> {
+                            language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
+                            translated = right.endsWith(TR_SUFFIX, true)
                         }
+                        "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
+                        "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
+                        "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
+                    }
+                }
             }
 
             //Parse ratings
             ignore {
-                averageRating = select("#rating_label")
+                averageRating = getElementById("rating_label")
                         .text()
                         .removePrefix("Average:")
                         .trim()
                         .nullIfBlank()
                         ?.toDouble()
-                ratingCount = select("#rating_count")
+                ratingCount = getElementById("rating_count")
                         .text()
                         .trim()
                         .nullIfBlank()
@@ -222,13 +213,12 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
                     Tag(it.text().trim(),
                             it.hasClass("gtl"))
                 }
-                tags.put(namespace, ArrayList(currentTags))
+                tags.put(namespace, currentTags)
             }
 
             //Copy metadata to manga
-            SManga.create().let {
-                copyTo(it)
-                it
+            SManga.create().apply {
+                copyTo(this)
             }
         }
     }
@@ -262,18 +252,18 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     }
 
     val cookiesHeader by lazy {
-        val cookies: MutableMap<String, String> = mutableMapOf()
+        val cookies = mutableMapOf<String, String>()
 
         //Setup settings
-        val settings = mutableListOf<String?>()
+        val settings = mutableListOf<String>()
 
         //Do not show popular right now pane as we can't parse it
-        settings.add("prn_n")
+        settings += "prn_n"
 
         //Exclude every other language except the one we have selected
-        settings.add("xl_" + languageMappings.filter { it.first != ehLang }
+        settings += "xl_" + languageMappings.filter { it.first != ehLang }
                 .flatMap { it.second }
-                .joinToString("x"))
+                .joinToString("x")
 
         cookies.put("uconfig", buildSettings(settings))
 
@@ -284,9 +274,8 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun headersBuilder()
             = super.headersBuilder().add("Cookie", cookiesHeader)!!
 
-    fun buildSettings(settings: List<String?>): String {
-        return settings.filterNotNull().joinToString(separator = "-")
-    }
+    fun buildSettings(settings: List<String?>)
+            = settings.filterNotNull().joinToString(separator = "-")
 
     fun buildCookies(cookies: Map<String, String>)
             = cookies.entries.map {

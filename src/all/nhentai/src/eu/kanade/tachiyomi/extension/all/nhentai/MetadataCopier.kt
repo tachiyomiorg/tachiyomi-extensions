@@ -15,10 +15,11 @@ private val EX_DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
 fun NHentaiMetadata.copyTo(manga: SManga) {
     url?.let { manga.url = it }
 
-    if(mediaId != null)
+    mediaId?.let {
         NHentaiMetadata.typeToExtension(thumbnailImageType)?.let {
             manga.thumbnail_url = "https://t.nhentai.net/galleries/$mediaId/thumb.$it"
         }
+    }
 
     manga.title = englishTitle ?: japaneseTitle ?: shortTitle!!
 

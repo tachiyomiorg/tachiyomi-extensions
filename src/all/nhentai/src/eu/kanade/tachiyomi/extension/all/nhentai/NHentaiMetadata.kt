@@ -8,12 +8,13 @@ class NHentaiMetadata {
 
     var id: Long? = null
 
-    var url: String? get() = id?.let { "$BASE_URL/g/$it" }
-    set(a) {
-        a?.let {
-            id = a.split("/").last().toLong()
+    var url: String?
+        get() = id?.let { "/g/$it" }
+        set(a) {
+            a?.let {
+                id = a.split("/").last().toLong()
+            }
         }
-    }
 
     var uploadDate: Long? = null
 
@@ -34,14 +35,12 @@ class NHentaiMetadata {
     val tags: MutableMap<String, MutableList<Tag>> = mutableMapOf()
 
     companion object {
-        val BASE_URL = "https://nhentai.net"
-
         fun typeToExtension(t: String?) =
-            when(t) {
-                "p" -> "png"
-                "j" -> "jpg"
-                else -> null
-            }
+                when(t) {
+                    "p" -> "png"
+                    "j" -> "jpg"
+                    else -> null
+                }
     }
 }
 
