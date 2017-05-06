@@ -3,10 +3,8 @@ package eu.kanade.tachiyomi.extension.en.webtoons
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -27,12 +25,23 @@ class Webtoons : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    val day: String
+        get() {
+            return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
+                Calendar.SUNDAY -> "div._list_SUNDAY"
+                Calendar.MONDAY -> "div._list_MONDAY"
+                Calendar.TUESDAY -> "div._list_TUESDAY"
+                Calendar.WEDNESDAY -> "div._list_WEDNESDAY"
+                Calendar.THURSDAY -> "div._list_THURSDAY"
+                Calendar.FRIDAY -> "div._list_FRIDAY"
+                Calendar.SATURDAY -> "div._list_SATURDAY"
+                else -> { "div" }
+            }
+        }
+
     override fun popularMangaSelector() = "div.left_area > ul.lst_type1 > li"
 
-    override fun latestUpdatesSelector() : String {
-        val day = getDay()
-        return "div#dailyList > $day li > a:contains(UP)"
-    }
+    override fun latestUpdatesSelector() = "div#dailyList > $day li > a:has(span:contains(UP))"
 
     override fun headersBuilder() = super.headersBuilder()
             .add("Referer", "http://www.webtoons.com/en/")
@@ -41,13 +50,9 @@ class Webtoons : ParsedHttpSource() {
             .add("Referer", "http://m.webtoons.com")
             .build()
 
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/en/top", headers)
-    }
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/en/top", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/en/dailySchedule?sortOrder=UPDATE&webtoonCompleteType=ONGOING", headers)
-    }
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/en/dailySchedule?sortOrder=UPDATE&webtoonCompleteType=ONGOING", headers)
 
     private fun mangaFromElement(query: String, element: Element): SManga {
         val manga = SManga.create()
@@ -58,25 +63,7 @@ class Webtoons : ParsedHttpSource() {
         return manga
     }
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        return mangaFromElement("a", element)
-    }
-
-    fun getDay() : String {
-        val cal : Calendar = Calendar.getInstance()
-        var selector : String = ""
-        when (cal.get(Calendar.DAY_OF_WEEK)) {
-            Calendar.SUNDAY -> selector = "div._list_SUNDAY"
-            Calendar.MONDAY -> selector = "div._list_MONDAY"
-            Calendar.TUESDAY -> selector = "div._list_TUESDAY"
-            Calendar.WEDNESDAY -> selector = "div._list_WEDNESDAY"
-            Calendar.THURSDAY -> selector = "div._list_THURSDAY"
-            Calendar.FRIDAY -> selector = "div._list_FRIDAY"
-            Calendar.SATURDAY -> selector = "div._list_SATURDAY"
-            Calendar.SUNDAY -> selector = "div._list_SUNDAY"
-        }
-        return selector
-    }
+    override fun popularMangaFromElement(element: Element) = mangaFromElement("a", element)
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -115,34 +102,20 @@ class Webtoons : ParsedHttpSource() {
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = "div.paginate > a[href=#]"
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        val mangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
-        }
-
-        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
-            document.select(selector)?.first()?.nextElementSibling()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
-    }
+    override fun searchMangaNextPageSelector() = "div.paginate > a[href=#] + a"
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val detailElement = document.select("#content > div.cont_box > div.detail_header > div.info").first()
-        val infoElement = document.select("#_asideDetail").first()
-        val picElement = document.select("#content > div.cont_box > div.detail_body").first()
-        val discoverPic = document.select("#content > div.cont_box > div.detail_header > span.thmb").first()
+        val detailElement = document.select("#content > div.cont_box > div.detail_header > div.info")
+        val infoElement = document.select("#_asideDetail")
+        val picElement = document.select("#content > div.cont_box > div.detail_body")
+        val discoverPic = document.select("#content > div.cont_box > div.detail_header > span.thmb")
 
         val manga = SManga.create()
-        manga.author = detailElement.select(".author:nth-of-type(1)").first()?.text()?.substringBefore("author info")
+        manga.author = detailElement.select(".author:nth-of-type(1)").text().substringBefore("author info")
         manga.artist = detailElement.select(".author:nth-of-type(2)").first()?.text()?.substringBefore("author info") ?: manga.author
-        manga.genre = detailElement.select(".genre").first()?.text()
-        manga.description = infoElement.select("p.summary").first()?.text()
-        manga.status = infoElement.select("p.day_info").first()?.text().orEmpty().let { parseStatus(it) }
+        manga.genre = detailElement.select(".genre").text()
+        manga.description = infoElement.select("p.summary").text()
+        manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = discoverPic.select("img").not("[alt=Representative image").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
         return manga
     }
@@ -156,34 +129,22 @@ class Webtoons : ParsedHttpSource() {
     override fun chapterListSelector() = "ul#_episodeList > li[id*=episode]"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a").first()
+        val urlElement = element.select("a")
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = element.select("a > div.row > div.info > p.sub_title > span.ellipsis").first()?.text() + ""
-        chapter.date_upload = element.select("a > div.row > div.info > p.date").first()?.text()?.let { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(it).time } ?: 0
+        chapter.name = element.select("a > div.row > div.info > p.sub_title > span.ellipsis").text()
+        chapter.date_upload = element.select("a > div.row > div.info > p.date").text()?.let { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(it).time } ?: 0
         return chapter
     }
 
-    override fun chapterListRequest(manga: SManga): Request {
-        return GET("http://m.webtoons.com" + manga.url, mobileHeaders)
-    }
+    override fun chapterListRequest(manga: SManga) = GET("http://m.webtoons.com" + manga.url, mobileHeaders)
 
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        for ((i, element) in document.select("div#_imageList > img").withIndex()) {
-            pages.add(Page(i, "", element.attr("data-url")))
-        }
-        return pages
-    }
+    override fun pageListParse(document: Document) = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
 
-    override fun imageUrlParse(document: Document): String {
-        return document.select("img").first().attr("src")
-    }
+    override fun imageUrlParse(document: Document) = document.select("img").first().attr("src")
 
     private class Type : Filter.Select<String>("Type", arrayOf("Webtoon (default)", "Discover"))
 
-    override fun getFilterList() = FilterList(
-            Type()
-    )
+    override fun getFilterList() = FilterList(Type())
 }
