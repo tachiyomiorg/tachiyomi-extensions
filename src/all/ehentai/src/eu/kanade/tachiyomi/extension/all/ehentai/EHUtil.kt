@@ -8,7 +8,7 @@ package eu.kanade.tachiyomi.extension.all.ehentai
  * Return null if String is blank, otherwise returns the original String
  * @returns null if the String is blank, otherwise returns the original String
  */
-fun String?.nullIfBlank(): String? = if(isNullOrBlank())
+fun String?.nullIfBlank(): String? = if (isNullOrBlank())
     null
 else
     this
@@ -17,13 +17,19 @@ else
  * Ignores any exceptions thrown inside a block
  */
 fun <T> ignore(expr: () -> T): T? {
-    return try { expr() } catch (t: Throwable) { null }
+    return try {
+        expr()
+    } catch (t: Throwable) {
+        null
+    }
 }
 
 /**
  * Use '+' to append Strings onto a StringBuilder
  */
-operator fun StringBuilder.plusAssign(other: String) { append(other) }
+operator fun StringBuilder.plusAssign(other: String) {
+    append(other)
+}
 
 /**
  * Converts bytes into a human readable String
@@ -36,8 +42,8 @@ fun humanReadableByteCount(bytes: Long, si: Boolean): String {
     return String.format("%.1f %sB", bytes / Math.pow(unit.toDouble(), exp.toDouble()), pre)
 }
 
-private val KB_FACTOR: Long = 1000
-private val KIB_FACTOR: Long = 1024
+private val KB_FACTOR = 1000
+private val KIB_FACTOR = 1024
 private val MB_FACTOR = 1000 * KB_FACTOR
 private val MIB_FACTOR = 1024 * KIB_FACTOR
 private val GB_FACTOR = 1000 * MB_FACTOR

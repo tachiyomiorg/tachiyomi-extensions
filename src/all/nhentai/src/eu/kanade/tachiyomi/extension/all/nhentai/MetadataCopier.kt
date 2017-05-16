@@ -15,9 +15,9 @@ private val EX_DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
 fun NHentaiMetadata.copyTo(manga: SManga) {
     url?.let { manga.url = it }
 
-    mediaId?.let {
+    mediaId?.let { mid ->
         NHentaiMetadata.typeToExtension(thumbnailImageType)?.let {
-            manga.thumbnail_url = "https://t.nhentai.net/galleries/$mediaId/thumb.$it"
+            manga.thumbnail_url = "https://t.nhentai.net/galleries/$mid/thumb.$it"
         }
     }
 
@@ -25,22 +25,20 @@ fun NHentaiMetadata.copyTo(manga: SManga) {
 
     //Set artist (if we can find one)
     tags["artist"]?.let {
-        if(it.isNotEmpty()) manga.artist = it.joinToString(transform = Tag::name)
+        if (it.isNotEmpty()) manga.artist = it.joinToString(transform = Tag::name)
     }
 
     tags["category"]?.let {
-        if(it.isNotEmpty()) manga.genre = it.joinToString(transform = Tag::name)
+        if (it.isNotEmpty()) manga.genre = it.joinToString(transform = Tag::name)
     }
 
     //Try to automatically identify if it is ongoing, we try not to be too lenient here to avoid making mistakes
     //We default to completed
     manga.status = SManga.COMPLETED
     englishTitle?.let { t ->
-        ONGOING_SUFFIX.find {
+        if (ONGOING_SUFFIX.any {
             t.endsWith(it, ignoreCase = true)
-        }?.let {
-            manga.status = SManga.ONGOING
-        }
+        }) manga.status = SManga.ONGOING
     }
 
     val titleDesc = StringBuilder()
@@ -72,7 +70,3 @@ private fun buildTagsDescription(metadata: NHentaiMetadata)
     }
 }
 
-fun String?.nullIfBlank(): String? = if(isNullOrBlank())
-    null
-else
-    this

@@ -5,8 +5,6 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -16,7 +14,7 @@ import java.util.*
  * Sen Manga source
  */
 
-class SenManga: ParsedHttpSource() {
+class SenManga : ParsedHttpSource() {
     override val lang: String = "ja"
 
     //Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -24,21 +22,18 @@ class SenManga: ParsedHttpSource() {
     override val name = "Sen Manga"
     override val baseUrl = "http://raw.senmanga.com"
 
-    override val client: OkHttpClient
-        get() = super.client.newBuilder().addInterceptor {
-            //Intercept any image requests and add a referer to them
-            //Enables bandwidth stealing feature
-            val request = if(it.request().url().pathSegments().firstOrNull()?.trim()?.toLowerCase() == "viewer") {
-                it.request().newBuilder()
-                        .addHeader("Referer", it.request().url().newBuilder()
-                                .removePathSegment(0)
-                                .toString())
-                        .build()
-            } else {
-                it.request()
-            }
-            it.proceed(request)
-        }.build()
+    override val client = super.client.newBuilder().addInterceptor {
+        //Intercept any image requests and add a referer to them
+        //Enables bandwidth stealing feature
+        val request = if (it.request().url().pathSegments().firstOrNull()?.trim()?.toLowerCase() == "viewer") {
+            it.request().newBuilder()
+                    .addHeader("Referer", it.request().url().newBuilder()
+                            .removePathSegment(0)
+                            .toString())
+                    .build()
+        } else it.request()
+        it.proceed(request)
+    }.build()!!
 
     //Sen Manga doesn't follow the specs and decides to use multiple elements with the same ID on the page...
     override fun popularMangaSelector() = "#manga-list"
@@ -86,52 +81,46 @@ class SenManga: ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/Manga/?order=popular&page=$page")
 
-    override fun latestUpdatesSelector(): String {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun latestUpdatesSelector()
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun latestUpdatesFromElement(element: Element)
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        if(response.request().url().pathSegments().firstOrNull()?.toLowerCase() != "search.php") {
-            //Use popular manga parser if we are not actually doing text search
-            return popularMangaParse(response)
-        } else {
-            val document = response.asJsoup()
+    override fun searchMangaParse(response: Response)
+            = if (response.request().url().pathSegments().firstOrNull()?.toLowerCase() != "search.php") {
+        //Use popular manga parser if we are not actually doing text search
+        popularMangaParse(response)
+    } else {
+        val document = response.asJsoup()
 
-            val mangas = document.select(searchMangaSelector()).map { element ->
-                searchMangaFromElement(element)
-            }
-
-            return MangasPage(mangas, false)
+        val mangas = document.select(searchMangaSelector()).map { element ->
+            searchMangaFromElement(element)
         }
+
+        MangasPage(mangas, false)
     }
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if(query.isNullOrBlank()) {
-            val genreFilter = filters.find { it is GenreFilter } as GenreFilter
-            val sortFilter = filters.find { it is SortFilter } as SortFilter
-            if(!sortFilter.isDefault() || genreFilter.genrePath() == ALL_GENRES_PATH) {
-                val uri = Uri.parse("$baseUrl/Manga/")
-                        .buildUpon()
-                sortFilter.addToUri(uri)
-                return GET(uri.toString())
-            } else {
-                return GET("$baseUrl/directory/category/${genreFilter.genrePath()}/")
-            }
-        } else {
-            val uri = Uri.parse("$baseUrl/Search.php")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
+            = GET(if (query.isNullOrBlank()) {
+        val genreFilter = filters.find { it is GenreFilter } as GenreFilter
+        val sortFilter = filters.find { it is SortFilter } as SortFilter
+        //If genre sort is not active or sort settings are changed
+        if (!sortFilter.isDefault() || genreFilter.genrePath() == ALL_GENRES_PATH) {
+            val uri = Uri.parse("$baseUrl/Manga/")
                     .buildUpon()
-                    .appendQueryParameter("q", query)
-            return GET(uri.toString())
-        }
-    }
+            sortFilter.addToUri(uri)
+            uri.toString()
+        } else "$baseUrl/directory/category/${genreFilter.genrePath()}/"
+    } else {
+        Uri.parse("$baseUrl/Search.php")
+                .buildUpon()
+                .appendQueryParameter("q", query)
+                .toString()
+    })
 
-    override fun latestUpdatesNextPageSelector(): String? {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun latestUpdatesNextPageSelector()
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         title = document.select("h1[itemprop=name]").text()
@@ -170,9 +159,8 @@ class SenManga: ParsedHttpSource() {
         description = seriesDesc.select("div[itemprop=description]").text()
     }
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun latestUpdatesRequest(page: Int)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     //This may be unreliable as Sen Manga breaks the specs by having multiple elements with the same ID
     override fun chapterListSelector() = "#post > table > tbody > tr:not(.headline)"
@@ -248,10 +236,9 @@ class SenManga: ParsedHttpSource() {
         }
     }
 
-    override fun imageUrlParse(document: Document): String {
-        //We are able to get the image URL directly from the page list
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    //We are able to get the image URL directly from the page list
+    override fun imageUrlParse(document: Document)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
             Filter.Header("NOTE: Ignored if using text search!"),
@@ -260,15 +247,15 @@ class SenManga: ParsedHttpSource() {
             SortFilter()
     )
 
-    private class GenreFilter: Filter.Select<String>("Genre", GENRES.map { it.second }.toTypedArray()) {
+    private class GenreFilter : Filter.Select<String>("Genre", GENRES.map { it.second }.toTypedArray()) {
         fun genrePath() = GENRES[state].first
     }
 
-    private class SortFilter: UriSelectFilter("Sort", "order", arrayOf(
-                    Pair("popular", "Popularity"),
-                    Pair("title", "Title"),
-                    Pair("rating", "Rating")
-            ), false) {
+    private class SortFilter : UriSelectFilter("Sort", "order", arrayOf(
+            Pair("popular", "Popularity"),
+            Pair("title", "Title"),
+            Pair("rating", "Rating")
+    ), false) {
         fun isDefault() = state == 0
     }
 
@@ -280,10 +267,10 @@ class SenManga: ParsedHttpSource() {
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0):
+                                       defaultValue: Int = 0) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            if(state != 0 || !firstIsUnspecified)
+            if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
         }
     }

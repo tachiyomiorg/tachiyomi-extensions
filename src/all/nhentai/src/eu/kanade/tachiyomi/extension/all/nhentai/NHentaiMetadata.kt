@@ -11,9 +11,7 @@ class NHentaiMetadata {
     var url: String?
         get() = id?.let { "/g/$it" }
         set(a) {
-            a?.let {
-                id = a.split("/").last().toLong()
-            }
+            id = a?.substringAfterLast('/')?.toLong()
         }
 
     var uploadDate: Long? = null
@@ -36,7 +34,7 @@ class NHentaiMetadata {
 
     companion object {
         fun typeToExtension(t: String?) =
-                when(t) {
+                when (t) {
                     "p" -> "png"
                     "j" -> "jpg"
                     else -> null

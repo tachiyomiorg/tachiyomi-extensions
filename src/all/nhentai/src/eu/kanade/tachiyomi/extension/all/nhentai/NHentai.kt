@@ -1,12 +1,7 @@
 package eu.kanade.tachiyomi.extension.all.nhentai
 
 import android.net.Uri
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.long
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonNull
+import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
@@ -32,20 +27,18 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
     //TODO Instead, we delegate this to the latest updates thing to avoid confusing users with an empty screen
     override fun fetchPopularManga(page: Int) = fetchLatestUpdates(page)
 
-    override fun popularMangaRequest(page: Int): Request {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun popularMangaRequest(page: Int)
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun popularMangaParse(response: Response): MangasPage {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun popularMangaParse(response: Response)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/api/galleries/search").buildUpon()
         uri.appendQueryParameter("query", "language:$nhLang $query")
         uri.appendQueryParameter("page", page.toString())
         filters.forEach {
-            if(it is UriFilter)
+            if (it is UriFilter)
                 it.addToUri(uri)
         }
         return nhGet(uri.toString(), page)
@@ -55,16 +48,14 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
 
     override fun fetchLatestUpdates(page: Int) = fetchSearchManga(page, "", getFilterList())
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun latestUpdatesRequest(page: Int)
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun latestUpdatesParse(response: Response)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun mangaDetailsParse(response: Response)
-            = parseGallery(jsonParser.parse(response.body().string()).asJsonObject)
+            = parseGallery(jsonParser.parse(response.body().string()).obj)
 
     //Hack so we can use a different URL for fetching manga details and opening the details in the browser
     override fun fetchMangaDetails(manga: SManga)
@@ -76,75 +67,72 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
 
     override fun mangaDetailsRequest(manga: SManga) = nhGet(manga.url)
 
-    fun urlToDetailsRequest(url: String) = nhGet("$baseUrl/api/gallery/${url.split("/").last()}")
+    fun urlToDetailsRequest(url: String) = nhGet("$baseUrl/api/gallery/${url.substringAfterLast('/')}")
 
     fun parseResultPage(response: Response): MangasPage {
-        val res = jsonParser.parse(response.body().string()).asJsonObject
+        val res = jsonParser.parse(response.body().string()).obj
 
-        val error = res.get("error")
-        if(error == null) {
-            val results = res.getAsJsonArray("result")?.map {
-                parseGallery(it.asJsonObject)
-            }
-            val numPages = res.get("num_pages")?.int
-            if(results != null && numPages != null)
-                return MangasPage(results, numPages > response.request().tag() as Int)
-        } else {
-            throw RuntimeException("An error occurred while performing the search: $error")
+        res["error"]?.let {
+            throw RuntimeException("An error occurred while performing the search: $it")
         }
+
+        val results = res.getAsJsonArray("result")?.map {
+            parseGallery(it.obj)
+        }
+        val numPages = res["num_pages"].nullInt
+        if (results != null && numPages != null)
+            return MangasPage(results, numPages > response.request().tag() as Int)
         return MangasPage(emptyList(), false)
     }
 
     fun rawParseGallery(obj: JsonObject) = NHentaiMetadata().apply {
-        uploadDate = obj.get("upload_date")?.notNull()?.long
+        uploadDate = obj["upload_date"].nullLong
 
-        favoritesCount = obj.get("num_favorites")?.notNull()?.long
+        favoritesCount = obj["num_favorites"].nullLong
 
-        mediaId = obj.get("media_id")?.notNull()?.string
+        mediaId = obj["media_id"].nullString
 
-        obj.get("title")?.asJsonObject?.let {
-            japaneseTitle = it.get("japanese")?.notNull()?.string
-            shortTitle = it.get("pretty")?.notNull()?.string
-            englishTitle = it.get("english")?.notNull()?.string
+        obj["title"].nullObj?.let {
+            japaneseTitle = it["japanese"].nullString
+            shortTitle = it["pretty"].nullString
+            englishTitle = it["english"].nullString
         }
 
-        obj.get("images")?.asJsonObject?.let {
-            coverImageType = it.get("cover")?.get("t")?.notNull()?.asString
-            it.get("pages")?.asJsonArray?.map {
-                it?.asJsonObject?.get("t")?.notNull()?.asString
+        obj["images"].nullObj?.let {
+            coverImageType = it["cover"]?.get("t").nullString
+            it["pages"].nullArray?.map {
+                it.nullObj?.get("t").nullString
             }?.filterNotNull()?.let {
                 pageImageTypes.clear()
                 pageImageTypes.addAll(it)
             }
-            thumbnailImageType = it.get("thumbnail")?.get("t")?.notNull()?.asString
+            thumbnailImageType = it["thumbnail"]?.get("t").nullString
         }
 
-        scanlator = obj.get("scanlator")?.notNull()?.asString
+        scanlator = obj["scanlator"].nullString
 
-        id = obj.get("id")?.asLong
+        id = obj["id"]?.asLong
 
-        obj.get("tags")?.asJsonArray?.map {
-            val asObj = it.asJsonObject
-            Pair(asObj.get("type")?.string, asObj.get("name")?.string)
+        obj["tags"].nullArray?.map {
+            val asObj = it.obj
+            Pair(asObj["type"].nullString, asObj["name"].nullString)
         }?.apply {
             tags.clear()
         }?.forEach {
-            if(it.first != null && it.second != null)
+            if (it.first != null && it.second != null)
                 tags.getOrPut(it.first!!, { mutableListOf<Tag>() }).add(Tag(it.second!!, false))
         }!!
     }
 
-    fun parseGallery(obj: JsonObject) = rawParseGallery(obj).let {
-        SManga.create().apply {
-            it.copyTo(this)
-        }
+    fun parseGallery(obj: JsonObject) = SManga.create().apply {
+        rawParseGallery(obj).copyTo(this)
     }
 
     fun lazyLoadMetadata(url: String) =
             client.newCall(urlToDetailsRequest(url))
                     .asObservableSuccess()
                     .map {
-                        rawParseGallery(jsonParser.parse(it.body().string()).asJsonObject)
+                        rawParseGallery(jsonParser.parse(it.body().string()).obj)
                     }!!
 
     override fun fetchChapterList(manga: SManga)
@@ -156,7 +144,7 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
 
     override fun fetchPageList(chapter: SChapter)
             = lazyLoadMetadata(chapter.url).map { metadata ->
-        if(metadata.mediaId == null) emptyList()
+        if (metadata.mediaId == null) emptyList()
         else
             metadata.pageImageTypes.mapIndexed { index, s ->
                 val imageUrl = imageUrlFromType(metadata.mediaId!!, index + 1, s)
@@ -170,21 +158,18 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
         "https://i.nhentai.net/galleries/$mediaId/$page.$it"
     }
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun chapterListParse(response: Response)
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun pageListParse(response: Response): List<Page> {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun pageListParse(response: Response)
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun imageUrlParse(response: Response): String {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun imageUrlParse(response: Response)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(SortFilter())
 
-    private class SortFilter: UriSelectFilter("Sort", "sort", arrayOf(
+    private class SortFilter : UriSelectFilter("Sort", "sort", arrayOf(
             Pair("date", "Date"),
             Pair("popular", "Popularity")
     ), firstIsUnspecified = false)
@@ -208,10 +193,10 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0):
+                                       defaultValue: Int = 0) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            if(state != 0 || !firstIsUnspecified)
+            if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
         }
     }
@@ -228,9 +213,4 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
             JsonParser()
         }
     }
-
-    fun JsonElement.notNull() =
-            if(this is JsonNull)
-                null
-            else this
 }

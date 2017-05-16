@@ -58,7 +58,7 @@ class MangaPark : ParsedHttpSource() {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
         uri.appendQueryParameter("q", query)
         filters.forEach {
-            if(it is UriFilter)
+            if (it is UriFilter)
                 it.addToUri(uri)
         }
         uri.appendQueryParameter("page", page.toString())
@@ -76,7 +76,7 @@ class MangaPark : ParsedHttpSource() {
 
         document.select(".attr > tbody > tr").forEach {
             val type = it.getElementsByTag("th").first().text().trim().toLowerCase()
-            when(type) {
+            when (type) {
                 "author(s)" -> {
                     author = it.getElementsByTag("a").joinToString(transform = Element::text)
                 }
@@ -87,7 +87,7 @@ class MangaPark : ParsedHttpSource() {
                     genre = it.getElementsByTag("a").joinToString(transform = Element::text)
                 }
                 "status" -> {
-                    status = when(it.getElementsByTag("td").text().trim().toLowerCase()) {
+                    status = when (it.getElementsByTag("td").text().trim().toLowerCase()) {
                         "ongoing" -> SManga.ONGOING
                         "completed" -> SManga.COMPLETED
                         else -> SManga.UNKNOWN
@@ -101,7 +101,7 @@ class MangaPark : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?latest")
 
-    //TODO MangaPark has "versioning" or something
+    //TODO MangaPark has "versioning"
     //TODO Currently we just use the version that is expanded by default
     //TODO Maybe make it possible for users to view the other versions as well?
     override fun chapterListSelector() = ".stream:not(.collapsed) .volume .chapter li"
@@ -115,14 +115,13 @@ class MangaPark : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document)
-        = document.getElementsByClass("img").map {
-            Page(it.attr("i").toInt() - 1, "", it.attr("src"))
-        }
-
-    override fun imageUrlParse(document: Document): String {
-        //Unused, we can get image urls directly from the chapter page
-        throw UnsupportedOperationException("This method should not be called!")
+            = document.getElementsByClass("img").map {
+        Page(it.attr("i").toInt() - 1, "", it.attr("src"))
     }
+
+    //Unused, we can get image urls directly from the chapter page
+    override fun imageUrlParse(document: Document)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
             AuthorArtistText(),
@@ -138,14 +137,14 @@ class MangaPark : ParsedHttpSource() {
             YearFilter()
     )
 
-    private class SearchTypeFilter(name: String, val uriParam: String):
-            Filter.Select<String>(name, stateMap), UriFilter {
+    private class SearchTypeFilter(name: String, val uriParam: String) :
+            Filter.Select<String>(name, STATE_MAP), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter(uriParam, stateMap[state])
+            uri.appendQueryParameter(uriParam, STATE_MAP[state])
         }
 
         companion object {
-            private val stateMap = arrayOf("contain", "begin", "end")
+            private val STATE_MAP = arrayOf("contain", "begin", "end")
         }
     }
 
@@ -155,7 +154,7 @@ class MangaPark : ParsedHttpSource() {
         }
     }
 
-    private class GenreFilter(val uriParam: String, displayName: String): Filter.TriState(displayName)
+    private class GenreFilter(val uriParam: String, displayName: String) : Filter.TriState(displayName)
 
     private class GenreGroup : Filter.Group<GenreFilter>("Genres", listOf(
             GenreFilter("4-koma", "4 koma"),
@@ -274,11 +273,11 @@ class MangaPark : ParsedHttpSource() {
      */
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                               val firstIsUnspecified: Boolean = true,
-                               defaultValue: Int = 0):
+                                       val firstIsUnspecified: Boolean = true,
+                                       defaultValue: Int = 0) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            if(state != 0 || !firstIsUnspecified)
+            if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
         }
     }

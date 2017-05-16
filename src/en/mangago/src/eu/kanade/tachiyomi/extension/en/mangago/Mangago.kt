@@ -4,7 +4,6 @@ import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -21,9 +20,9 @@ class Mangago : ParsedHttpSource() {
     override val name = "Mangago"
     override val baseUrl = "https://www.mangago.me"
 
-    override val client: OkHttpClient
-        get() = network.cloudflareClient
+    override val client = network.cloudflareClient!!
 
+    //Hybrid selector that selects manga from either the genre listing or the search results
     private val genreListingSelector = ".updatesli"
     private val genreListingNextPageSelector = ".current+li > a"
 
@@ -50,7 +49,6 @@ class Mangago : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-    //Hybrid selector that selects manga from either the genre listing or the search results
     override fun searchMangaNextPageSelector() = genreListingNextPageSelector
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/genre/all/$page/?f=1&o=1&sortby=view&e=")
@@ -61,7 +59,7 @@ class Mangago : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         //If text search is active use text search, otherwise use genre search
-        val url = if(query.isNotBlank()) {
+        val url = if (query.isNotBlank()) {
             Uri.parse("$baseUrl/r/l_search/")
                     .buildUpon()
                     .appendQueryParameter("name", query)
@@ -74,7 +72,7 @@ class Mangago : ParsedHttpSource() {
             }
             //Append included genres
             val activeGenres = genres.filter { it.isIncluded() }
-            uri.appendPath(if(activeGenres.isEmpty())
+            uri.appendPath(if (activeGenres.isEmpty())
                 "all"
             else
                 activeGenres.joinToString(",", transform = { it.name }))
@@ -86,7 +84,7 @@ class Mangago : ParsedHttpSource() {
                             .joinToString(",", transform = GenreFilter::name))
             //Append uri filters
             filters.forEach {
-                if(it is UriFilter)
+                if (it is UriFilter)
                     it.addToUri(uri)
             }
             uri.toString()
@@ -104,9 +102,9 @@ class Mangago : ParsedHttpSource() {
         thumbnail_url = coverElement.attr("src")
 
         document.select(".manga_right td").forEach {
-            when(it.getElementsByTag("label").text().trim().toLowerCase()) {
+            when (it.getElementsByTag("label").text().trim().toLowerCase()) {
                 "status:" -> {
-                    status = when(it.getElementsByTag("span").first().text().trim().toLowerCase()) {
+                    status = when (it.getElementsByTag("span").first().text().trim().toLowerCase()) {
                         "ongoing" -> SManga.ONGOING
                         "completed" -> SManga.COMPLETED
                         else -> SManga.UNKNOWN
@@ -139,7 +137,7 @@ class Mangago : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document)
-        = document.getElementById("pagenavigation").getElementsByTag("a").mapIndexed { index, element ->
+            = document.getElementById("pagenavigation").getElementsByTag("a").mapIndexed { index, element ->
         Page(index, element.attr("href"))
     }
 
@@ -194,15 +192,15 @@ class Mangago : ParsedHttpSource() {
             GenreFilter("Shotacon")
     ))
 
-    private class GenreFilter(name: String): Filter.TriState(name)
+    private class GenreFilter(name: String) : Filter.TriState(name)
 
-    private class StatusFilter(name: String, val uriParam: String): Filter.CheckBox(name, true), UriFilter {
+    private class StatusFilter(name: String, val uriParam: String) : Filter.CheckBox(name, true), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter(uriParam, if(state) "1" else "0")
+            uri.appendQueryParameter(uriParam, if (state) "1" else "0")
         }
     }
 
-    private class SortFilter: UriSelectFilter("Sort", "sortby", arrayOf(
+    private class SortFilter : UriSelectFilter("Sort", "sortby", arrayOf(
             Pair("random", "Random"),
             Pair("view", "Views"),
             Pair("comment_count", "Comment Count"),
@@ -218,10 +216,10 @@ class Mangago : ParsedHttpSource() {
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0):
+                                       defaultValue: Int = 0) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            if(state != 0 || !firstIsUnspecified)
+            if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
         }
     }
@@ -229,10 +227,10 @@ class Mangago : ParsedHttpSource() {
     /**
      * Uri filter group
      */
-    private open class UriFilterGroup<V>(name: String, val stateList: List<V>): Filter.Group<V>(name, stateList), UriFilter {
+    private open class UriFilterGroup<V>(name: String, val stateList: List<V>) : Filter.Group<V>(name, stateList), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             stateList.forEach {
-                if(it is UriFilter)
+                if (it is UriFilter)
                     it.addToUri(uri)
             }
         }

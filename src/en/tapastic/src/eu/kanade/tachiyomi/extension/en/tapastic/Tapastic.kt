@@ -53,7 +53,7 @@ class Tapastic : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         //If there is any search text, use text search, otherwise use filter search
-        val uri = if(query.isNotBlank()) {
+        val uri = if (query.isNotBlank()) {
             Uri.parse("$baseUrl/search")
                     .buildUpon()
                     .appendQueryParameter("t", "COMICS")
@@ -62,7 +62,7 @@ class Tapastic : ParsedHttpSource() {
             val uri = Uri.parse("$baseUrl/comics").buildUpon()
             //Append uri filters
             filters.forEach {
-                if(it is UriFilter)
+                if (it is UriFilter)
                     it.addToUri(uri)
             }
             uri
@@ -96,27 +96,27 @@ class Tapastic : ParsedHttpSource() {
     }.flatMap {
         val text = it.data()
         val episodeVar = text.indexOf("episodeList")
-        if(episodeVar == -1)
+        if (episodeVar == -1)
             return@flatMap emptyList<SChapter>()
 
         val episodeLeftBracket = text.indexOf('[', startIndex = episodeVar)
-        if(episodeLeftBracket == -1)
+        if (episodeLeftBracket == -1)
             return@flatMap emptyList<SChapter>()
 
         val endOfLine = text.indexOf('\n', startIndex = episodeLeftBracket)
-        if(endOfLine == -1)
+        if (endOfLine == -1)
             return@flatMap emptyList<SChapter>()
 
         val episodeRightBracket = text.lastIndexOf(']', startIndex = endOfLine)
-        if(episodeRightBracket == -1)
+        if (episodeRightBracket == -1)
             return@flatMap emptyList<SChapter>()
 
-        val episodeListText = text.substring(episodeLeftBracket .. episodeRightBracket)
+        val episodeListText = text.substring(episodeLeftBracket..episodeRightBracket)
 
         jsonParser.parse(episodeListText).array.map {
             val json = it.asJsonObject
             //Ensure that the chapter is published (tapastic allows scheduling chapters)
-            if(json["orgScene"].int != 0)
+            if (json["orgScene"].int != 0)
                 SChapter.create().apply {
                     url = "/episode/${json["id"].string}"
 
@@ -130,23 +130,20 @@ class Tapastic : ParsedHttpSource() {
         }.filterNotNull().sortedByDescending(SChapter::chapter_number)
     }
 
-    override fun chapterListSelector(): String {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun chapterListSelector()
+            = throw UnsupportedOperationException("This method should not be called!")
 
-    override fun chapterFromElement(element: Element): SChapter {
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    override fun chapterFromElement(element: Element)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun pageListParse(document: Document)
             = document.getElementsByClass("art-image").mapIndexed { index, element ->
         Page(index, "", element.attr("src"))
     }
 
-    override fun imageUrlParse(document: Document): String {
-        //Unused, we can get image urls directly from the chapter page
-        throw UnsupportedOperationException("This method should not be called!")
-    }
+    //Unused, we can get image urls directly from the chapter page
+    override fun imageUrlParse(document: Document)
+            = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
             //Tapastic does not support genre filtering and text search at the same time
@@ -159,7 +156,7 @@ class Tapastic : ParsedHttpSource() {
             SortFilter()
     )
 
-    private class FilterFilter: UriSelectFilter("Filter", "browse", arrayOf(
+    private class FilterFilter : UriSelectFilter("Filter", "browse", arrayOf(
             Pair("ALL", "None"),
             Pair("POPULAR", "Popular"),
             Pair("TRENDING", "Trending"),
@@ -167,7 +164,7 @@ class Tapastic : ParsedHttpSource() {
             Pair("TAPASTIC", "Staff Picks")
     ), firstIsUnspecified = false, defaultValue = 1)
 
-    private class GenreFilter: UriSelectFilter("Genre", "genreIds", arrayOf(
+    private class GenreFilter : UriSelectFilter("Genre", "genreIds", arrayOf(
             Pair("", "Any"),
             Pair("7", "Action"),
             Pair("2", "Comedy"),
@@ -181,7 +178,7 @@ class Tapastic : ParsedHttpSource() {
             Pair("1", "Slice of Life")
     ))
 
-    private class SortFilter: UriSelectFilter("Sort", "sortType", arrayOf(
+    private class SortFilter : UriSelectFilter("Sort", "sortType", arrayOf(
             Pair("SUBSCRIBE", "Subscribers"),
             Pair("LIKE", "Likes"),
             Pair("VIEW", "Views"),
@@ -198,10 +195,10 @@ class Tapastic : ParsedHttpSource() {
     //vals: <name, display>
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0):
+                                       defaultValue: Int = 0) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            if(state != 0 || !firstIsUnspecified)
+            if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
         }
     }

@@ -23,11 +23,11 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
 
     //Set artist (if we can find one)
     tags[EH_ARTIST_NAMESPACE]?.let {
-        if(it.isNotEmpty()) manga.artist = it.joinToString(transform = Tag::name)
+        if (it.isNotEmpty()) manga.artist = it.joinToString(transform = Tag::name)
     }
     //Set author (if we can find one)
     tags[EH_AUTHOR_NAMESPACE]?.let {
-        if(it.isNotEmpty()) manga.author = it.joinToString(transform = Tag::name)
+        if (it.isNotEmpty()) manga.author = it.joinToString(transform = Tag::name)
     }
     //Set genre
     genre?.let { manga.genre = it }
@@ -36,11 +36,9 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     //We default to completed
     manga.status = SManga.COMPLETED
     title?.let { t ->
-        ONGOING_SUFFIX.find {
+        if (ONGOING_SUFFIX.any {
             t.endsWith(it, ignoreCase = true)
-        }?.let {
-            manga.status = SManga.ONGOING
-        }
+        }) manga.status = SManga.ONGOING
     }
 
     //Build a nice looking description out of what we know
@@ -54,7 +52,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     visible?.let { detailsDesc += "Visible: $it\n" }
     language?.let {
         detailsDesc += "Language: $it"
-        if(translated == true) detailsDesc += " TR"
+        if (translated == true) detailsDesc += " TR"
         detailsDesc += "\n"
     }
     size?.let { detailsDesc += "File Size: ${humanReadableByteCount(it, true)}\n" }

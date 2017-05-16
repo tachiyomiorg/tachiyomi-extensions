@@ -6,15 +6,14 @@ import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Response
-import org.jsoup.nodes.Element
-import rx.Observable
-import java.net.URLEncoder
-import java.util.*
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import rx.Observable
+import java.net.URLEncoder
 
 open class EHentai(override val lang: String, val ehLang: String) : HttpSource() {
 
@@ -26,6 +25,8 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
     /**
      * Gallery list entry
+     * @param fav The favorite this gallery belongs to (currently unused)
+     * @param manga The manga object
      */
     data class ParsedManga(val fav: String?, val manga: SManga)
 
@@ -34,21 +35,19 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         //Parse mangas
         val parsedMangas = select(".gtr0,.gtr1").map {
             ParsedManga(
-                    fav = it.select(".itd .it3 > .i[id]").first()?.attr("title"),
+                    fav = it.select(".itd .it3 > .i[id]").attr("title"),
                     manga = SManga.create().apply {
                         //Get title
-                        it.select(".itd .it5 a").first()?.apply {
+                        it.select(".itd .it5 a").apply {
                             title = text()
                             setUrlWithoutDomain(addParam(attr("href"), "nw", "always"))
                         }
                         //Get image
-                        it.select(".itd .it2").first()?.apply {
+                        it.select(".itd .it2").first().apply {
                             children().first()?.let {
                                 thumbnail_url = it.attr("src")
-                            } ?: let {
-                                text().split("~").apply {
-                                    thumbnail_url = "http://${this[1]}/${this[2]}"
-                                }
+                            } ?: text().split("~").apply {
+                                thumbnail_url = "http://${this[1]}/${this[2]}"
                             }
                         }
                     })
@@ -86,30 +85,29 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
      */
     private fun fetchChapterPage(chapter: SChapter, np: String,
                                  pastUrls: List<String> = emptyList()): Observable<List<String>> {
-        val urls = ArrayList(pastUrls)
+        val urls = pastUrls.toMutableList()
         return chapterPageCall(np).flatMap {
             val jsoup = it.asJsoup()
             urls += parseChapterPage(jsoup)
-            val nextUrl = nextPageUrl(jsoup)
-            if(nextUrl != null) {
-                fetchChapterPage(chapter, nextUrl, urls)
-            } else {
-                Observable.just(urls)
-            }
+            nextPageUrl(jsoup)?.let {
+                fetchChapterPage(chapter, it, urls)
+            } ?: Observable.just(urls)
         }
     }
+
     private fun parseChapterPage(response: Element)
             = with(response) {
         select(".gdtm a").map {
             Pair(it.child(0).attr("alt").toInt(), it.attr("href"))
         }.sortedBy(Pair<Int, String>::first).map { it.second }
     }
+
     private fun chapterPageCall(np: String) = client.newCall(chapterPageRequest(np)).asObservableSuccess()
     private fun chapterPageRequest(np: String) = exGet(np, null, headers)
 
-    private fun nextPageUrl(element: Element): String?
+    private fun nextPageUrl(element: Element)
             = element.select("a[onclick=return false]").last()?.let {
-        return if (it.text() == ">") it.attr("href") else null
+        if (it.text() == ">") it.attr("href") else null
     }
 
     override fun popularMangaRequest(page: Int) = latestUpdatesRequest(page)
@@ -121,7 +119,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         val uri = Uri.parse("$baseUrl$QUERY_PREFIX").buildUpon()
         uri.appendQueryParameter("f_search", query)
         filters.forEach {
-            if(it is UriFilter) it.addToUri(uri)
+            if (it is UriFilter) it.addToUri(uri)
         }
         return exGet(uri.toString(), page)
     }
@@ -134,7 +132,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
     fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true)
             = GET(page?.let {
-        addParam(url, "page", Integer.toString(page - 1))
+        addParam(url, "page", (it - 1).toString())
     } ?: url, additionalHeaders?.let {
         val headers = headers.newBuilder()
         it.toMultimap().forEach { (t, u) ->
@@ -144,7 +142,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         }
         headers.build()
     } ?: headers).let {
-        if(!cache)
+        if (!cache)
             it.newBuilder().cacheControl(CacheControl.FORCE_NETWORK).build()
         else
             it
@@ -154,8 +152,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
      * Parse gallery page to metadata model
      */
     override fun mangaDetailsParse(response: Response) = with(response.asJsoup()) {
-        val metdata = ExGalleryMetadata()
-        with(metdata) {
+        with(ExGalleryMetadata()) {
             url = response.request().url().encodedPath()
             title = select("#gn").text().nullIfBlank()?.trim()
 
@@ -229,27 +226,24 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun pageListParse(response: Response)
             = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    override fun fetchImageUrl(page: Page): Observable<String> {
-        return client.newCall(imageUrlRequest(page))
-                .asObservableSuccess()
-                .map { realImageUrlParse(it, page) }
-    }
+    override fun fetchImageUrl(page: Page)
+            = client.newCall(imageUrlRequest(page))
+            .asObservableSuccess()
+            .map { realImageUrlParse(it, page) }!!
 
-    fun realImageUrlParse(response: Response, page: Page): String {
-        with(response.asJsoup()) {
-            val currentImage = getElementById("img").attr("src")
-            //TODO We cannot currently do this as page.url is immutable
-            //Each press of the retry button will choose another server
-            /*select("#loadfail").attr("onclick").nullIfBlank()?.let {
-                page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 .. it.lastIndexOf('\'') - 1))
-            }*/
-            return currentImage
-        }
-    }
+    fun realImageUrlParse(response: Response, page: Page)
+            = with(response.asJsoup()) {
+        val currentImage = getElementById("img").attr("src")
+        //TODO We cannot currently do this as page.url is immutable
+        //Each press of the retry button will choose another server
+        /*select("#loadfail").attr("onclick").nullIfBlank()?.let {
+            page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 .. it.lastIndexOf('\'') - 1))
+        }*/
+        currentImage
+    }!!
 
-    override fun imageUrlParse(response: Response): String {
-        throw UnsupportedOperationException("Unused method was called somehow!")
-    }
+    override fun imageUrlParse(response: Response)
+            = throw UnsupportedOperationException("Unused method was called somehow!")
 
     val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
@@ -305,11 +299,12 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             AdvancedGroup()
     )
 
-    class GenreOption(name: String, val genreId: String): Filter.CheckBox(name, false), UriFilter {
+    class GenreOption(name: String, val genreId: String) : Filter.CheckBox(name, false), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            builder.appendQueryParameter("f_" + genreId, if(state) "1" else "0")
+            builder.appendQueryParameter("f_" + genreId, if (state) "1" else "0")
         }
     }
+
     class GenreGroup : UriGroup<GenreOption>("Genres", listOf(
             GenreOption("Dōjinshi", "doujinshi"),
             GenreOption("Manga", "manga"),
@@ -323,12 +318,13 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             GenreOption("Misc", "misc")
     ))
 
-    class AdvancedOption(name: String, val param: String, defValue: Boolean = false): Filter.CheckBox(name, defValue), UriFilter {
+    class AdvancedOption(name: String, val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            if(state)
+            if (state)
                 builder.appendQueryParameter(param, "on")
         }
     }
+
     class RatingOption : Filter.Select<String>("Minimum Rating", arrayOf(
             "Any",
             "2 stars",
@@ -337,7 +333,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             "5 stars"
     )), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            if(state > 0) builder.appendQueryParameter("f_srdd", Integer.toString(state + 1))
+            if (state > 0) builder.appendQueryParameter("f_srdd", Integer.toString(state + 1))
         }
     }
 
