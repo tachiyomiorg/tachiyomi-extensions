@@ -10,6 +10,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.regex.Pattern
@@ -100,19 +101,25 @@ class ShoujoSense : ParsedHttpSource() {
         print(chapter.url)
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.meta_r").first()?.text()?.split(", ")?.get(1)?.let {
-            getDateFromString(it)
+            parseChapterDate(it)
         } ?: 0
         return chapter
     }
 
-    fun getDateFromString(s: String): Long {
-        val now = Calendar.getInstance()
-        when (s){
-            "Today" -> now.add(Calendar.DAY_OF_YEAR, 0)
-            "Yesterday" -> now.add(Calendar.DAY_OF_YEAR, -1)
-            else -> now.setTime(SimpleDateFormat("yyyy.MM.dd").parse(s))
+    fun parseChapterDate(date: String): Long {
+        return if ("Today" in date) {
+            Calendar.getInstance().timeInMillis
+        } else if ("Yesterday" in date) {
+            Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -1)
+            }.timeInMillis
+        } else {
+            try {
+                SimpleDateFormat("yyyy.MM.dd").parse(date).time
+            } catch (e: ParseException) {
+                0L
+            }
         }
-        return now.timeInMillis
     }
 
     override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url, headers)
