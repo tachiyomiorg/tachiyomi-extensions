@@ -106,7 +106,7 @@ class ShoujoSense : ParsedHttpSource() {
         return chapter
     }
 
-    fun parseChapterDate(date: String): Long {
+    private fun parseChapterDate(date: String): Long {
         return if ("Today" in date) {
             Calendar.getInstance().timeInMillis
         } else if ("Yesterday" in date) {
