@@ -67,8 +67,8 @@ class Hentai2Read : ParsedHttpSource() {
             add("txt_wpm_wgt_mng_sch_nme", "")
             add("cmd_wpm_pag_mng_sch_sbm", "")
             add("txt_wpm_pag_mng_sch_nme", query)
-            var sch_flt_in = mutableListOf<String>()
-            var sch_flt_out = mutableListOf<String>()
+            var schFltIn = mutableListOf<String>()
+            var schFltOut = mutableListOf<String>()
 
             for (filter in if (filters.isEmpty()) getFilterList() else filters) {
                 when (filter) {
@@ -80,14 +80,14 @@ class Hentai2Read : ParsedHttpSource() {
                     is Status -> add("rad_wpm_pag_mng_sch_sts", filter.state.toString())
                     is TagList -> filter.state.forEach { tag -> 
                         when (tag.state) {
-                            Filter.TriState.STATE_INCLUDE -> sch_flt_in.add(tag.id.toString())
-                            Filter.TriState.STATE_EXCLUDE -> sch_flt_out.add(tag.id.toString())
+                            Filter.TriState.STATE_INCLUDE -> schFltIn.add(tag.id.toString())
+                            Filter.TriState.STATE_EXCLUDE -> schFltOut.add(tag.id.toString())
                         }
                     }
                 }
             }
-            add("sch_flt_in", "[" + sch_flt_in.joinToString(",") + "]")
-            add("sch_flt_out", "[" + sch_flt_out.joinToString(",") + "]")
+            add("sch_flt_in", "[" + schFltIn.joinToString(",") + "]")
+            add("sch_flt_out", "[" + schFltOut.joinToString(",") + "]")
         }
         return POST("$baseUrl/hentai-list/advanced-search/", headers, form.build())
     }
