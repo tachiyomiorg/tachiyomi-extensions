@@ -39,13 +39,11 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "ul.nav-users li.ribbon"
 
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/hentai-list/all/any/most-popular/$page/", headers)
-    }
+    override fun popularMangaRequest(page: Int)
+        = GET("$baseUrl/hentai-list/all/any/most-popular/$page/", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/latest/$page/", headers)
-    }
+    override fun latestUpdatesRequest(page: Int)
+        = GET("$baseUrl/latest/$page/", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
