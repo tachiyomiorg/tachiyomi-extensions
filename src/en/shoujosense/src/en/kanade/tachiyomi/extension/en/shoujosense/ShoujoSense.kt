@@ -51,7 +51,7 @@ class ShoujoSense : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("div.title a:eq(0)").first().let {
+        element.select("div.title a:eq(0)").let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
         }
@@ -89,7 +89,7 @@ class ShoujoSense : ParsedHttpSource() {
         manga.genre = ""
         manga.description = infoElement.select("b:contains(Synopsis:first-child").first()?.text()?.split(": ")?.last()
         manga.status = SManga.UNKNOWN
-        manga.thumbnail_url = infoElement.select("img").first()?.attr("src")
+        manga.thumbnail_url = infoElement.select("img").attr("src")
         return manga
     }
 
@@ -108,7 +108,7 @@ class ShoujoSense : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         print(chapter.url)
         chapter.name = urlElement.text()
-        chapter.date_upload = element.select("div.meta_r").first()?.text()?.split(", ")?.get(1)?.let {
+        chapter.date_upload = element.select("div.meta_r").text()?.substringAfterLast(", ")?.let {
             parseChapterDate(it)
         } ?: 0
         return chapter
