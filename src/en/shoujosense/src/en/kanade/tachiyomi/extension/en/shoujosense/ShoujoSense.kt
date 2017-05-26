@@ -106,7 +106,6 @@ class ShoujoSense : ParsedHttpSource() {
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        print(chapter.url)
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.meta_r").text()?.substringAfterLast(", ")?.let {
             parseChapterDate(it)
