@@ -149,12 +149,15 @@ class Hentai2Read : ParsedHttpSource() {
             val timeAgo = Integer.parseInt(dateWords[0])
             return Calendar.getInstance().apply {
                 when (dateWords[1]) {
-                    "minute", "minutes" -> add(Calendar.MINUTE, -timeAgo)
-                    "hour", "hours" -> add(Calendar.HOUR, -timeAgo)
-                    "day", "days" -> add(Calendar.DAY_OF_YEAR, -timeAgo)
-                    "week", "weeks" -> add(Calendar.WEEK_OF_YEAR, -timeAgo)
-                    "month", "months" -> add(Calendar.MONTH, -timeAgo)
-                    "year", "years" -> add(Calendar.YEAR, -timeAgo)
+                    "minute", "minutes" -> Calendar.MINUTE
+                    "hour", "hours" -> Calendar.HOUR
+                    "day", "days" -> Calendar.DAY_OF_YEAR
+                    "week", "weeks" -> Calendar.WEEK_OF_YEAR
+                    "month", "months" -> Calendar.MONTH
+                    "year", "years" -> Calendar.YEAR
+                    else -> null
+                }?.let {
+                    add(it, -timeAgo)
                 }
             }.timeInMillis
         }
