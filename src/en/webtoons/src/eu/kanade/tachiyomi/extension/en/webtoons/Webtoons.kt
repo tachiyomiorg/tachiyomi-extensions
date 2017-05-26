@@ -15,8 +15,6 @@ import java.util.*
  */
 class Webtoons : ParsedHttpSource() {
 
-    override val id: Long = 22
-
     override val name = "Webtoons.com"
 
     override val baseUrl = "http://www.webtoons.com"
