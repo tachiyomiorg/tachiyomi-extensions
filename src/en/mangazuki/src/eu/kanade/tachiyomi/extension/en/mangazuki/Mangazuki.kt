@@ -26,15 +26,17 @@ class Mangazuki : ParsedHttpSource() {
 
     private val datePattern = Pattern.compile("(\\d+)\\s([a-z]*?)s?\\s")
 
-    private val dateFields = HashMap<String, Int>().apply {
-        put("second", Calendar.SECOND)
-        put("minute", Calendar.MINUTE)
-        put("hour", Calendar.HOUR)
-        put("day", Calendar.DATE)
-        put("week", Calendar.WEEK_OF_YEAR)
-        put("month", Calendar.MONTH)
-        put("year", Calendar.YEAR)
-    }
+    private val dateFormat = SimpleDateFormat("MMM d yyyy", Locale.ENGLISH)
+
+    private val dateFields = mutableMapOf(
+            Pair("second", Calendar.SECOND),
+            Pair("minute", Calendar.MINUTE),
+            Pair("hour", Calendar.HOUR),
+            Pair("day", Calendar.DATE),
+            Pair("week", Calendar.WEEK_OF_YEAR),
+            Pair("month", Calendar.MONTH),
+            Pair("year", Calendar.YEAR)
+    )
 
     override fun popularMangaSelector() = "div.caption > h6"
 
@@ -114,13 +116,13 @@ class Mangazuki : ParsedHttpSource() {
 
         var date: Date
         try {
-            date = SimpleDateFormat("MMM d yyyy", Locale.ENGLISH).parse(dateAsString.substringAfter("Added on "))
+            date = dateFormat.parse(dateAsString.substringAfter("Added on "))
         } catch (e: ParseException) {
             val m = datePattern.matcher(dateAsString)
             if (m.find()) {
                 val cal = Calendar.getInstance()
                 do {
-                    val amount = Integer.parseInt(m.group(1))
+                    val amount = m.group(1).toInt()
                     val unit = m.group(2)
 
                     cal.add(dateFields[unit]!!, -amount)
