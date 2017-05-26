@@ -84,10 +84,10 @@ class ShoujoSense : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.info").first()
         val manga = SManga.create()
-        manga.author = infoElement.select("b:contains(Author):first-child").first()?.text()?.split(": ")?.last()
+        manga.author = infoElement.select("b:contains(Author)").first()?.nextSibling()?.toString()?.substringAfterLast(": ")
         // ShoujoSense does not have genre tags
         manga.genre = ""
-        manga.description = infoElement.select("b:contains(Synopsis:first-child").first()?.text()?.split(": ")?.last()
+        manga.description = infoElement.select("b:contains(Synopsis)").first()?.nextSibling()?.toString()?.substringAfterLast(": ")
         manga.status = SManga.UNKNOWN
         manga.thumbnail_url = infoElement.select("img").attr("src")
         return manga
