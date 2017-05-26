@@ -135,7 +135,7 @@ class Hentai2Read : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.attr("href"))
         chapter.name = element.ownText().trim()
-        chapter.date_upload = element.select("div > small").text()?.substringAfterLast(" on ")?.let {
+        chapter.date_upload = element.select("div > small").text()?.substringAfterLast(" on ")?.trim()?.let {
             parseChapterDate(it)
         } ?: 0L
         return chapter
