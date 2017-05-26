@@ -28,6 +28,8 @@ class Hentai2Read : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     companion object {
+        val imageBaseUrl = "https://static.hentaicdn.com/hentai"
+
         val pagesUrlPattern by lazy {
             Pattern.compile("""'images' : \[\"(.*?)[,]?\"\]""")
         }
@@ -163,7 +165,6 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
-        val imageBaseUrl = "https://static.hentaicdn.com/hentai"
         val m = pagesUrlPattern.matcher(response.body().string())
         var i = 0
         while (m.find()) {
