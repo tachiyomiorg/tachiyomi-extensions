@@ -107,10 +107,7 @@ class Hentai2Read : ParsedHttpSource() {
         manga.author = infoElement.select("li:contains(Author) > a").first()?.text()
         manga.artist = infoElement.select("li:contains(Artist) > a").first()?.text()
         var tags = mutableListOf<String>()
-        infoElement.select("li:contains(Category) > a").forEach {
-            tags.add(it.text())
-        }
-        infoElement.select("li:contains(Content) > a").forEach {
+        infoElement.select("li:contains(Category) > a, li:contains(Content) > a").forEach {
             tags.add(it.text())
         }
         manga.genre = tags.joinToString(", ")
