@@ -43,13 +43,11 @@ class ShoujoSense : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/directory/$page", headers)
-    }
+    override fun popularMangaRequest(page: Int)
+        = GET("$baseUrl/directory/$page", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/latest/$page", headers)
-    }
+    override fun latestUpdatesRequest(page: Int)
+        = GET("$baseUrl/latest/$page", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
