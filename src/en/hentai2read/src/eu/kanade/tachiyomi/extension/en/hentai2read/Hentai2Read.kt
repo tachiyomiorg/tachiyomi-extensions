@@ -50,24 +50,24 @@ class Hentai2Read : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.attr("href"))
-        element.select("h2.mangaPopover").first().let {
-            manga.title = it.attr("data-title").trim().split(" [").first().trim()
+        element.select("h2.mangaPopover").let {
+            manga.title = it.attr("data-title").trim().substringBefore(" [").trim()
         }
         return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a.mangaPopover").first().let {
+        element.select("a.mangaPopover").let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.attr("data-title").trim().split(" [").first().trim()
+            manga.title = it.attr("data-title").trim().substringBefore(" [").trim()
         }
         return manga
     }
 
     override fun popularMangaNextPageSelector() = "a#js-linkNext"
 
-    override fun latestUpdatesNextPageSelector() = "a#js-linkNext"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val form = FormBody.Builder().apply {
@@ -112,16 +112,16 @@ class Hentai2Read : ParsedHttpSource() {
         val infoElement = document.select("ul.list-simple-mini").first()
 
         val manga = SManga.create()
-        manga.author = infoElement.select("li:contains(Author) > a").first()?.text()
-        manga.artist = infoElement.select("li:contains(Artist) > a").first()?.text()
+        manga.author = infoElement.select("li:contains(Author) > a")?.text()
+        manga.artist = infoElement.select("li:contains(Artist) > a")?.text()
         var tags = mutableListOf<String>()
         infoElement.select("li:contains(Category) > a, li:contains(Content) > a").forEach {
             tags.add(it.text())
         }
         manga.genre = tags.joinToString(", ")
-        manga.description = infoElement.select("li:contains(Storyline) > p").first()?.text()
-        manga.status = infoElement.select("li:contains(Status) > a").first()?.text().orEmpty().let {parseStatus(it)}
-        manga.thumbnail_url = document.select("a#js-linkNext > img").first()?.attr("src")
+        manga.description = infoElement.select("li:contains(Storyline) > p")?.text()
+        manga.status = infoElement.select("li:contains(Status) > a")?.text().orEmpty().let {parseStatus(it)}
+        manga.thumbnail_url = document.select("a#js-linkNext > img")?.attr("src")
         return manga
     }
 
@@ -136,8 +136,8 @@ class Hentai2Read : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.attr("href"))
-        chapter.name = element.text().split(" by ").first().trim()
-        chapter.date_upload = element.text()?.trim()?.split(" on ")?.last()?.let {
+        chapter.name = element.ownText().trim()
+        chapter.date_upload = element.select("div > small").text()?.substringAfterLast(" on ")?.let {
             parseChapterDate(it)
         } ?: 0L
         return chapter
