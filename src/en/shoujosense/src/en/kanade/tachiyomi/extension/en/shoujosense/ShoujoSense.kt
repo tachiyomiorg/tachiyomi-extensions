@@ -29,6 +29,16 @@ class ShoujoSense : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    companion object {
+        val dateFormat by lazy {
+            SimpleDateFormat("yyyy.MM.dd")
+        }
+
+        val pagesUrlPattern by lazy {
+            Pattern.compile("""\"url\":\"(.*?)\"""")
+        }
+    }
+
     override fun popularMangaSelector() = "div.list div.group"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -115,7 +125,7 @@ class ShoujoSense : ParsedHttpSource() {
             }.timeInMillis
         } else {
             try {
-                SimpleDateFormat("yyyy.MM.dd").parse(date).time
+                dateFormat.parse(date).time
             } catch (e: ParseException) {
                 0L
             }
@@ -128,7 +138,7 @@ class ShoujoSense : ParsedHttpSource() {
         val body = response.body().string()
         val pages = mutableListOf<Page>()
 
-        val p = Pattern.compile(""""url":"(.*?)"""")
+        val p = pagesUrlPattern
         val m = p.matcher(body)
 
         var i = 0
