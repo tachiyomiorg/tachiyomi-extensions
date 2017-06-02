@@ -205,7 +205,13 @@ class Hentai2Read : ParsedHttpSource() {
             Filter.Separator(),
             Status(),
             Filter.Separator(),
-            TagList("Tags", getTagList())
+            TagSearchMode(),
+            Filter.Separator(),
+            TagList("Categories", getCategoryList()),
+            Filter.Separator(),
+            TagList("Tags", getTagList()),
+            Filter.Separator(),
+            TagList("Doujins", getDoujinList())
     )
 
     // Categories : 27
