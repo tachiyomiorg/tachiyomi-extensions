@@ -69,12 +69,10 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val form = FormBody.Builder().apply {
-            add("cmd_wpm_wgt_sch_sbm", "Search")
+            add("cmd_wpm_wgt_mng_sch_sbm", "Search")
             add("txt_wpm_wgt_mng_sch_nme", "")
             add("cmd_wpm_pag_mng_sch_sbm", "")
             add("txt_wpm_pag_mng_sch_nme", query)
-            var schFltIn = mutableListOf<String>()
-            var schFltOut = mutableListOf<String>()
 
             for (filter in if (filters.isEmpty()) getFilterList() else filters) {
                 when (filter) {
@@ -86,14 +84,12 @@ class Hentai2Read : ParsedHttpSource() {
                     is Status -> add("rad_wpm_pag_mng_sch_sts", filter.state.toString())
                     is TagList -> filter.state.forEach { tag -> 
                         when (tag.state) {
-                            Filter.TriState.STATE_INCLUDE -> schFltIn.add(tag.id.toString())
-                            Filter.TriState.STATE_EXCLUDE -> schFltOut.add(tag.id.toString())
+                            Filter.TriState.STATE_INCLUDE -> add("chk_wpm_pag_mng_sch_mng_tag_inc[]", tag.id.toString())
+                            Filter.TriState.STATE_EXCLUDE -> add("chk_wpm_pag_mng_sch_mng_tag_exc[]", tag.id.toString())
                         }
                     }
                 }
             }
-            add("sch_flt_in", "[" + schFltIn.joinToString(",") + "]")
-            add("sch_flt_out", "[" + schFltOut.joinToString(",") + "]")
         }
         return POST("$baseUrl/hentai-list/advanced-search/", headers, form.build())
     }
