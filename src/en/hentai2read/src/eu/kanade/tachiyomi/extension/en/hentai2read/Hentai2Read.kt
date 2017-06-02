@@ -208,6 +208,41 @@ class Hentai2Read : ParsedHttpSource() {
             TagList("Tags", getTagList())
     )
 
+    // Categories : 27
+    // $("div#tab-category > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
+    // on https://hentai2read.com/hentai-search/"
+    private fun getCategoryList() = listOf(
+        Tag("Adult", 34),
+        Tag("Anal", 7),
+        Tag("Big Breasts", 20),
+        Tag("Comedy", 43),
+        Tag("Compilation", 46),
+        Tag("Doujinshi", 42),
+        Tag("Ecchi", 40),
+        Tag("Futanari", 14),
+        Tag("Gender Bender", 26),
+        Tag("Harem", 31),
+        Tag("Incest", 15),
+        Tag("Lactation", 16),
+        Tag("Licensed", 50),
+        Tag("Lolicon", 17),
+        Tag("Masturbation", 18),
+        Tag("Oneshot", 33),
+        Tag("Rape", 23),
+        Tag("Robotics", 30),
+        Tag("Romance", 41),
+        Tag("School Life", 48),
+        Tag("Serialized", 32),
+        Tag("Shotacon", 44),
+        Tag("Tentacles", 24),
+        Tag("Tragedy", 49),
+        Tag("Un-censored", 47),
+        Tag("Yaoi", 27),
+        Tag("Yuri", 28)
+    )
+
+    // Tags : 346
+    // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getTagList() = listOf(
             Tag("Abortion", 529),
