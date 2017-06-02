@@ -84,6 +84,7 @@ class Hentai2Read : ParsedHttpSource() {
                     is ReleaseYear -> add("txt_wpm_pag_mng_sch_rls_yer", filter.state)
                     is ReleaseYearSelect -> add("cbo_wpm_pag_mng_sch_rls_yer", filter.state.toString())
                     is Status -> add("rad_wpm_pag_mng_sch_sts", filter.state.toString())
+                    is TagSearchMode -> add("rad_wpm_pag_mng_sch_tag_mde", arrayOf("and", "or")[filter.state])
                     is TagList -> filter.state.forEach { tag -> 
                         when (tag.state) {
                             Filter.TriState.STATE_INCLUDE -> add("chk_wpm_pag_mng_sch_mng_tag_inc[]", tag.id.toString())
@@ -186,6 +187,7 @@ class Hentai2Read : ParsedHttpSource() {
     private class ReleaseYear : Filter.Text("Release Year")
     private class ReleaseYearSelect : Filter.Select<String>("Release Year", arrayOf("In", "Before", "After"))
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
+    private class TagSearchMode : Filter.Select<String>("Tag Search Mode", arrayOf("AND", "OR"))
     private class Tag(name: String, val id: Int) : Filter.TriState(name)
     private class TagList(tags: List<Tag>) : Filter.Group<Tag>("Tags", tags)
     override fun getFilterList() = FilterList(
