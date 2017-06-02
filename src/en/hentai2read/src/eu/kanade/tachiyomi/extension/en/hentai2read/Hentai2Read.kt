@@ -189,7 +189,8 @@ class Hentai2Read : ParsedHttpSource() {
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
     private class TagSearchMode : Filter.Select<String>("Tag Search Mode", arrayOf("AND", "OR"))
     private class Tag(name: String, val id: Int) : Filter.TriState(name)
-    private class TagList(tags: List<Tag>) : Filter.Group<Tag>("Tags", tags)
+    private class TagList(title: String, tags: List<Tag>) : Filter.Group<Tag>(title, tags)
+
     override fun getFilterList() = FilterList(
             MangaNameSelect(),
             Filter.Separator(),
