@@ -79,6 +79,8 @@ class Hentai2Read : ParsedHttpSource() {
                     is MangaNameSelect -> add("cbo_wpm_pag_mng_sch_nme", filter.state.toString())
                     is ArtistName -> add("txt_wpm_pag_mng_sch_ats", filter.state)
                     is ArtistNameSelect -> add("cbo_wpm_pag_mng_sch_ats", filter.state.toString())
+                    is CharacterName -> add("txt_wpm_pag_mng_sch_chr", filter.state)
+                    is CharacterNameSelect -> add("cbo_wpm_pag_mng_sch_chr", filter.state.toString())
                     is ReleaseYear -> add("txt_wpm_pag_mng_sch_rls_yer", filter.state)
                     is ReleaseYearSelect -> add("cbo_wpm_pag_mng_sch_rls_yer", filter.state.toString())
                     is Status -> add("rad_wpm_pag_mng_sch_sts", filter.state.toString())
@@ -179,6 +181,8 @@ class Hentai2Read : ParsedHttpSource() {
     private class MangaNameSelect : Filter.Select<String>("Manga Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ArtistName : Filter.Text("Artist")
     private class ArtistNameSelect : Filter.Select<String>("Artist Name", arrayOf("Contains", "Starts With", "Ends With"))
+    private class CharacterName : Filter.Text("Charactor")
+    private class CharacterNameSelect : Filter.Select<String>("Character Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ReleaseYear : Filter.Text("Release Year")
     private class ReleaseYearSelect : Filter.Select<String>("Release Year", arrayOf("In", "Before", "After"))
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
@@ -189,6 +193,9 @@ class Hentai2Read : ParsedHttpSource() {
             Filter.Separator(),
             ArtistName(),
             ArtistNameSelect(),
+            Filter.Separator(),
+            CharacterName(),
+            CharacterNameSelect(),
             Filter.Separator(),
             ReleaseYear(),
             ReleaseYearSelect(),
