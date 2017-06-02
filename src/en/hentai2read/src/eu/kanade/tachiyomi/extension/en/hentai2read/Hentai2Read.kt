@@ -205,7 +205,7 @@ class Hentai2Read : ParsedHttpSource() {
             Filter.Separator(),
             Status(),
             Filter.Separator(),
-            TagList(getTagList())
+            TagList("Tags", getTagList())
     )
 
     // on https://hentai2read.com/hentai-search/"
