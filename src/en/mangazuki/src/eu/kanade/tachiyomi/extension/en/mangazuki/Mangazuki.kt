@@ -1,5 +1,4 @@
 package eu.kanade.tachiyomi.extension.en.mangazuki
-
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -139,19 +138,27 @@ class Mangazuki : ParsedHttpSource() {
     private fun chapterNextPageSelector() = "ul.pagination > li.next > a[rel=next]"
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var page : Int = 1
+        val allChapters = mutableListOf<SChapter>()
+        var page = 1
         val urlBase = response.request().url().toString()
-        val list = mutableListOf<SChapter>()
-        do {
-            val url = urlBase + "?page=$page"
-            val document = client.newCall(GET(url, headers)).execute().asJsoup()
-            val hasNextPage = chapterNextPageSelector().let { selector ->
-                document.select(selector).first()
-            } != null
-            list.addAll(document.select(chapterListSelector()).map { chapterFromElement(it) })
-            page++
-        } while (hasNextPage)
-        return list
+        var document = response.asJsoup()
+
+        while (true) {
+            val pageChapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
+            if (pageChapters.isEmpty())
+                break
+
+            allChapters += pageChapters
+
+            val hasNextPage = document.select(chapterNextPageSelector()).isNotEmpty()
+            if (!hasNextPage)
+                break
+
+            val nextUrl = urlBase + "?page=${++page}"
+            document = client.newCall(GET(nextUrl, headers)).execute().asJsoup()
+        }
+
+        return allChapters
     }
 
     override fun pageListParse(document: Document) = document.select("div.row > img").mapIndexed { i, element -> Page(i, "", element.attr("src")) }
