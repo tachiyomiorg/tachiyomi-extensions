@@ -10,4 +10,9 @@ ext {
     libVersion = '1.0'
 }
 
+dependencies {
+    provided "com.google.code.gson:gson:2.8.0"
+    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+}
+
 apply from: "$rootDir/common.gradle"

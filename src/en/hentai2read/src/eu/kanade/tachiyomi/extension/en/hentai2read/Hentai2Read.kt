@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.hentai2read
 
+import com.github.salomonbrys.kotson.*
+import com.google.gson.*
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
