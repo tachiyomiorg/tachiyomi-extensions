@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.hentai2read
 
+import android.util.Base64
 import com.github.salomonbrys.kotson.*
 import com.google.gson.*
 import eu.kanade.tachiyomi.network.GET
@@ -35,6 +36,8 @@ class Hentai2Read : ParsedHttpSource() {
         val pagesUrlPattern by lazy {
             Pattern.compile("""'images' : \[\"(.*?)[,]?\"\]""")
         }
+
+        lateinit var base64Encoded: String
     }
 
     override fun popularMangaSelector() = "div.img-container div.img-overlay a"
@@ -69,6 +72,83 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
+    private fun h2rEncode(jobj: JsonElement): String = when (jobj) {
+        is JsonPrimitive -> {
+            when {
+                jobj.isString() -> {
+                    val s = jobj.getAsString()
+                    "s:${s.length}:\"${s}\";"
+                }
+                jobj.isNumber() -> "i:${jobj.getAsNumber()};"
+                else -> ""
+            }
+        }
+        is JsonArray -> {
+            var res = "a:${jobj.size()}:{"
+            jobj.forEachIndexed { i, el ->
+                res += h2rEncode(i.toJson())
+                res += h2rEncode(el)
+            }
+            res + "}"
+        }
+        is JsonObject -> {
+            var res = "a:${jobj.size()}:{"
+            jobj.forEach { key, value ->
+                res += h2rEncode(key.toJson())
+                res += h2rEncode(value)
+            }
+            res + "}"
+        }
+        else -> ""
+    }
+
+    private fun encode(form: FormBody): String {
+        var jobj = jsonObject(
+            "nme_opr" to "1",
+            "nme" to "",
+            "ats_opr" to "1",
+            "ats" to "",
+            "chr_opr" to "1",
+            "chr" to "",
+            "tag" to jsonObject(
+                "inc" to jsonArray(),
+                "exc" to jsonArray(),
+                "mde" to "0"
+            ),
+            "rls_yer_opr" to "0",
+            "rls_yer" to "",
+            "sts" to "0"
+        )
+        var inc = mutableListOf<String>()
+        var exc = mutableListOf<String>()
+
+        val encodedNames = (0 until form.size()).map {
+            form.encodedName(it)
+        }
+        val encodedValues = (0 until form.size()).map {
+            form.encodedValue(it)
+        }
+        for ((name, value) in encodedNames.zip(encodedValues)) {
+            when (name) {
+                "txt_wpm_pag_mng_sch_nme" -> jobj["nme"] = value
+                "cbo_wpm_pag_mng_sch_nme" -> jobj["nme_opr"] = value
+                "cbo_wpm_pag_mng_sch_ats" -> jobj["ats_opr"] = value
+                "txt_wpm_pag_mng_sch_ats" -> jobj["ats"] = value
+                "cbo_wpm_pag_mng_sch_chr" -> jobj["chr_opr"] = value
+                "txt_wpm_pag_mng_sch_chr" -> jobj["chr"] = value
+                "chk_wpm_pag_mng_sch_mng_tag_inc%5B%5D" -> inc.add(value)
+                "chk_wpm_pag_mng_sch_mng_tag_exc%5B%5D" -> exc.add(value)
+                "rad_wpm_pag_mng_sch_tag_mde" -> jobj["tag"]["mde"] = value
+                "cbo_wpm_pag_mng_sch_rls_yer" -> jobj["rls_yer_opr"] = value
+                "txt_wpm_pag_mng_sch_rls_yer" -> jobj["rls_yer"] = value
+                "rad_wpm_pag_mng_sch_sts" -> jobj["sts"] = value
+            }
+        }
+        jobj["tag"]["inc"] = inc.sortedBy { it.toInt() }.toJsonArray()
+        jobj["tag"]["exc"] = exc.sortedBy { it.toInt() }.toJsonArray()
+        return h2rEncode(jobj)
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val form = FormBody.Builder().apply {
             add("cmd_wpm_wgt_mng_sch_sbm", "Search")
@@ -95,8 +175,12 @@ class Hentai2Read : ParsedHttpSource() {
                     }
                 }
             }
+        }.build()
+
+        if (page == 1) {
+            base64Encoded = Base64.encodeToString(encode(form).toByteArray(), Base64.NO_PADDING)
         }
-        return POST("$baseUrl/hentai-list/advanced-search/", headers, form.build())
+        return POST("$baseUrl/hentai-list/advanced-search/${base64Encoded}/name-az/$page/", headers, form)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
