@@ -271,7 +271,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Yuri", 28)
     )
 
-    // Tags : 346
+    // Tags : 344
     // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getTagList() = listOf(
@@ -621,7 +621,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Young Master", 500)
     )
 
-    // Doujins : 805
+    // Doujins : 810
     // $("div#tab-doujin > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getDoujinList() = listOf(
