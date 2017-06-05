@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -34,7 +35,7 @@ class Hentai2Read : ParsedHttpSource() {
             Pattern.compile("""'images' : \[\"(.*?)[,]?\"\]""")
         }
 
-        lateinit var base64Encoded: String
+        lateinit var base64String: String
     }
 
     override fun popularMangaSelector() = "div.img-container div.img-overlay a"
@@ -95,9 +96,30 @@ class Hentai2Read : ParsedHttpSource() {
                     }
                 }
             }
-        }.build()
+        }
 
-        return POST("$baseUrl/hentai-list/advanced-search/${base64Encoded}/name-az/$page/", headers, form)
+        var searchUrl = "$baseUrl/hentai-list/advanced-search"
+        if (page > 1) { searchUrl += "/${base64String}" }
+
+        return POST("${searchUrl}/name-az/$page", headers, form.build())
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        var hasNextPage = false
+
+        val mangas = document.select(searchMangaSelector()).map { element ->
+            searchMangaFromElement(element)
+        }
+
+        val nextPage = document.select(searchMangaNextPageSelector())
+        nextPage.first()?.let {
+            hasNextPage = true
+            val url = it.attr("href")
+            base64String = url.substringAfter("/advanced-search/").substringBefore("/")
+        }
+
+        return MangasPage(mangas, hasNextPage)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
