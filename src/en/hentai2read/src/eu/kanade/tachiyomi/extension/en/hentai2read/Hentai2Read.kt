@@ -135,11 +135,9 @@ class Hentai2Read : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = infoElement.select("li:contains(Author) > a")?.text()
         manga.artist = infoElement.select("li:contains(Artist) > a")?.text()
-        var tags = mutableListOf<String>()
-        infoElement.select("li:contains(Category) > a, li:contains(Content) > a").forEach {
-            tags.add(it.text())
-        }
-        manga.genre = tags.joinToString(", ")
+        manga.genre = infoElement.select("li:contains(Category) > a, li:contains(Content) > a").map {
+            it.text()
+        }.joinToString(", ")
         manga.description = infoElement.select("li:contains(Storyline) > p")?.text()
         manga.status = infoElement.select("li:contains(Status) > a")?.text().orEmpty().let {parseStatus(it)}
         manga.thumbnail_url = document.select("a#js-linkNext > img")?.attr("src")
