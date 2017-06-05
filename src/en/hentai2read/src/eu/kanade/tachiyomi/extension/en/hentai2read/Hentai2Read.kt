@@ -115,8 +115,7 @@ class Hentai2Read : ParsedHttpSource() {
         val nextPage = document.select(searchMangaNextPageSelector())
         nextPage.first()?.let {
             hasNextPage = true
-            val url = it.attr("href")
-            base64String = url.substringAfter("/advanced-search/").substringBefore("/")
+            base64String = it.attr("href").substringAfter("/advanced-search/").substringBefore("/")
         }
 
         return MangasPage(mangas, hasNextPage)
