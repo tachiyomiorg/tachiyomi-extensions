@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: AcademyVN'
-    pkgNameSuffix = "vi.AcademyVN"
+    pkgNameSuffix = "vi.academyvn"
     extClass = '.AcademyVN'
     extVersionCode = 1
     extVersionSuffix = 1
