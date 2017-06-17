@@ -10,7 +10,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
 
-class Academyvn : ParsedHttpSource() {
+class AcademyVN : ParsedHttpSource() {
 
     override val name = "Academy VN"
 
@@ -52,7 +52,7 @@ class Academyvn : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = "li > a:contains(»)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/searchs?").newBuilder().addQueryParameter("keyword", query)
+        val url = HttpUrl.parse("$baseUrl/searchs?")!!.newBuilder().addQueryParameter("keyword", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Type -> url.addQueryParameter("type", if (filter.state == 0) "-1" else type.indexOf(filter.state.toString()).toString())
