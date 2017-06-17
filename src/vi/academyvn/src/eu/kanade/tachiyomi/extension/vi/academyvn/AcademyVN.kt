@@ -10,7 +10,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
 
-class AcademyVN : ParsedHttpSource() {
+class Academyvn : ParsedHttpSource() {
 
     override val name = "Academy VN"
 
