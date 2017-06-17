@@ -26,6 +26,7 @@ class MangaPark : ParsedHttpSource() {
     private val directoryNextPageSelector = ".paging.full > li:last-child > a"
 
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
+    private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
     override fun popularMangaSelector() = directorySelector
 
@@ -46,7 +47,7 @@ class MangaPark : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = ".paging > li:last-child > a"
+    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views")
 
@@ -111,7 +112,66 @@ class MangaPark : ParsedHttpSource() {
 
         name = element.getElementsByClass("ch").text()
 
-        date_upload = dateFormat.parse(element.getElementsByTag("i").text().trim()).time
+        date_upload = parseDate(element.getElementsByTag("i").text().trim())
+    }
+
+    private fun parseDate(date: String): Long {
+        val lcDate = date.toLowerCase()
+        if(lcDate.endsWith("ago")) return parseRelativeDate(lcDate)
+
+        //Handle 'yesterday' and 'today'
+        var relativeDate: Calendar? = null
+        if(lcDate.startsWith("yesterday")) {
+            relativeDate = Calendar.getInstance()
+            relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
+        } else if(lcDate.startsWith("today")) {
+            relativeDate = Calendar.getInstance()
+        }
+
+        relativeDate?.let {
+            //Since the date is not specified, it defaults to 1970!
+            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' '))
+            val cal = Calendar.getInstance()
+            cal.time = time
+
+            //Copy time to relative date
+            it.set(Calendar.HOUR_OF_DAY, cal.get(Calendar.HOUR_OF_DAY))
+            it.set(Calendar.MINUTE, cal.get(Calendar.MINUTE))
+            return it.timeInMillis
+        }
+
+        return dateFormat.parse(lcDate).time
+    }
+
+    /**
+     * Parses dates in this form:
+     * `11 days ago`
+     */
+    private fun parseRelativeDate(date: String): Long {
+        val trimmedDate = date.split(" ")
+
+        if (trimmedDate[2] != "ago") return 0
+
+        val number = trimmedDate[0].toIntOrNull() ?: return 0
+        val unit = trimmedDate[1].removeSuffix("s") //Remove 's' suffix
+
+        val now = Calendar.getInstance()
+
+        //Map English unit to Java unit
+        val javaUnit = when (unit) {
+            "year" -> Calendar.YEAR
+            "month" -> Calendar.MONTH
+            "week" -> Calendar.WEEK_OF_MONTH
+            "day" -> Calendar.DAY_OF_MONTH
+            "hour" -> Calendar.HOUR
+            "minute" -> Calendar.MINUTE
+            "second" -> Calendar.SECOND
+            else -> return 0
+        }
+
+        now.add(javaUnit, -number)
+
+        return now.timeInMillis
     }
 
     override fun pageListParse(document: Document)
