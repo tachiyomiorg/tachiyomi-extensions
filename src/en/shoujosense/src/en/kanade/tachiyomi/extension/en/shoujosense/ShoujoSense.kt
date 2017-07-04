@@ -16,9 +16,6 @@ import java.util.Calendar
 import java.util.regex.Pattern
 
 class ShoujoSense : ParsedHttpSource() {
-
-    override val id: Long = 150
-
     override val name = "ShoujoSense"
 
     override val baseUrl = "http://reader.shoujosense.com"
@@ -39,7 +36,7 @@ class ShoujoSense : ParsedHttpSource() {
         }
     }
 
-    override fun popularMangaSelector() = "div.list div.group"
+    override fun popularMangaSelector() = "div.list > div.group > div.title > a"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
@@ -51,10 +48,8 @@ class ShoujoSense : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("div.title a:eq(0)").let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
+        manga.setUrlWithoutDomain(element.attr("href"))
+        manga.title = element.text().trim()
         return manga
     }
 
@@ -141,7 +136,7 @@ class ShoujoSense : ParsedHttpSource() {
         var i = 0
         while (m.find()) {
             val url = m.group(1)
-            pages.add(Page(i++, "", url.replace("""\\"""", "/")))
+            pages.add(Page(i++, "", url.replace("""\\""", "/")))
         }
         return pages
     }
