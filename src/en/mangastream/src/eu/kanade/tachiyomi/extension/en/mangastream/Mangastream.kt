@@ -1,0 +1,166 @@
+package eu.kanade.tachiyomi.extension.en.mangastream
+
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.regex.Pattern
+
+/**
+ * Todo try to speed up cover fetch
+ */
+class Mangastream : ParsedHttpSource() {
+
+    override val name = "Mangastream"
+
+    override val baseUrl = "https://mangastream.com"
+
+    override val lang = "en"
+
+    override val supportsLatest = true
+
+    private val datePattern = Pattern.compile("(\\d+) days? ago")
+
+    private val updatesLinkPattern = Pattern.compile("http:\\/\\/readms\\.net\\/r\\/(\\S+)\\/\\d+\\/\\d+\\/.+"
+    )
+
+    override fun popularMangaSelector() = "table.table-striped > tbody > tr > td:nth-of-type(1)"
+
+    override fun latestUpdatesSelector() = "ul.new-list > li"
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga", headers)
+
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
+
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        element.select("strong > a").first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = if (it.hasAttr("title")) it.attr("title") else if (it.hasAttr("rel")) it.attr("rel") else it.text()
+        }
+        return manga
+    }
+
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        element.select("a").first().let {
+            val m = updatesLinkPattern.matcher(it.attr("href"))
+            if (m.matches()) manga.setUrlWithoutDomain("http://mangastream.com/manga/" + m.group(1))
+            manga.title = if (it.hasAttr("title")) it.attr("title") else if (it.hasAttr("rel")) it.attr("rel") else it.text()
+        }
+        return manga
+    }
+
+    override fun popularMangaNextPageSelector() = null
+
+    override fun latestUpdatesNextPageSelector() = null
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/manga", headers)
+
+    override fun searchMangaSelector() = popularMangaSelector()
+
+    private fun searchMangaSelector(query: String) = "table.table-striped > tbody > tr > td:nth-of-type(1):contains($query)"
+
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = null
+
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(searchMangaSelector(query)).map { element ->
+            searchMangaFromElement(element)
+        }
+
+        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response, query)
+                }
+    }
+
+    override fun mangaDetailsParse(document: Document): SManga {
+        val title = document.select("h1").first().text()
+        val manga = SManga.create()
+        manga.author = "Unknown"
+        manga.artist = "Unknown"
+        manga.genre = "Unknown"
+        manga.description = "Unknown"
+        manga.status = SManga.UNKNOWN
+        manga.thumbnail_url = if (title == "One Shot") "" else setThumbnail(title)
+        return manga
+    }
+
+    private fun setThumbnail(title: String): String {
+        return client.newCall(GET("https://myanimelist.net/manga.php?q=" + title.replace(" ", "%20"), headers)).execute().asJsoup().select("a.hoverinfo_trigger").first().attr("href").let {
+            client.newCall(GET(it, headers)).execute().asJsoup().select("img.ac").first().attr("src")
+        }
+    }
+
+    override fun chapterListSelector() = "table.table-striped > tbody > tr:has(td)"
+
+    override fun chapterFromElement(element: Element): SChapter {
+        val urlEl = element.select("td:nth-of-type(1) > a").first()
+        val dateEl = element.select("td:nth-of-type(2)")
+
+        val chapter = SChapter.create()
+        chapter.setUrlWithoutDomain(urlEl.attr("href"))
+        chapter.name = urlEl.text()
+        chapter.date_upload = dateEl.text()?.let { dateParse(it) } ?: 0
+        return chapter
+    }
+
+    private fun dateParse(dateAsString: String): Long {
+        var date: Date
+        try {
+            date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
+        } catch (e: ParseException) {
+            val m = datePattern.matcher(dateAsString)
+
+            if (dateAsString != "Today" && m.matches()) {
+                val amount = m.group(1).toInt()
+
+                date = Calendar.getInstance().apply {
+                    add(Calendar.DATE, -amount)
+                }.time
+            } else if (dateAsString == "Today"){
+                date = Calendar.getInstance().time
+            } else return 0
+        }
+
+        return date.time
+    }
+
+    override fun pageListParse(document: Document): List<Page> {
+        val num = document.select("div.btn-reader-page > ul.dropdown-menu > li").last().text().substringAfter("Last Page (").substringBefore(")")
+        val url = document.baseUri().substringBeforeLast("1")
+        val pages = mutableListOf<Page>()
+
+        for (i in 1..num.toInt())
+            pages.add(Page(i-1, url + i ))
+
+        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
+        return pages
+    }
+
+    override fun imageUrlParse(document: Document) = "http:" + document.getElementById("manga-page").attr("src")
+
+    override fun getFilterList() = super.getFilterList()
+}
