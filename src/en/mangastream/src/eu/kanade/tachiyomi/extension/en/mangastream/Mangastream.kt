@@ -15,9 +15,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 
-/**
- * Todo try to speed up cover fetch
- */
 class Mangastream : ParsedHttpSource() {
 
     override val name = "Mangastream"
