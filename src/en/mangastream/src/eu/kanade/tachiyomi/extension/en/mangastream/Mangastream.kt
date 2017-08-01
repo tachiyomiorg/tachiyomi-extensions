@@ -26,8 +26,6 @@ class Mangastream : ParsedHttpSource() {
 
     private val datePattern = Pattern.compile("(\\d+) days? ago")
 
-    private val updatesLinkPattern = Pattern.compile("""http://readms\.net/r/(\S+)/\d+/\d+/\d+""")
-
     override fun popularMangaSelector() = "table.table-striped > tbody > tr > td:nth-of-type(1)"
 
     override fun latestUpdatesSelector() = "div.side-nav > ul.new-list > li"
