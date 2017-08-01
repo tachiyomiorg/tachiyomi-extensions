@@ -5,7 +5,6 @@ import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -27,12 +26,11 @@ class Mangastream : ParsedHttpSource() {
 
     private val datePattern = Pattern.compile("(\\d+) days? ago")
 
-    private val updatesLinkPattern = Pattern.compile("http:\\/\\/readms\\.net\\/r\\/(\\S+)\\/\\d+\\/\\d+\\/.+"
-    )
+    private val updatesLinkPattern = Pattern.compile("""http://readms\.net/r/(\S+)/\d+/\d+/\d+""")
 
     override fun popularMangaSelector() = "table.table-striped > tbody > tr > td:nth-of-type(1)"
 
-    override fun latestUpdatesSelector() = "ul.new-list > li"
+    override fun latestUpdatesSelector() = "div.side-nav > ul.new-list > li"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga", headers)
 
@@ -50,9 +48,9 @@ class Mangastream : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a").first().let {
-            val m = updatesLinkPattern.matcher(it.attr("href"))
-            if (m.matches()) manga.setUrlWithoutDomain("http://mangastream.com/manga/" + m.group(1))
-            manga.title = if (it.hasAttr("title")) it.attr("title") else if (it.hasAttr("rel")) it.attr("rel") else it.text()
+            val name = it.attr("href").substringAfter("http://readms.net/r/").substringBefore("/")
+            manga.setUrlWithoutDomain("http://mangastream.com/manga/$name")
+            manga.title = it.html().substringBefore(" <strong>").substringAfterLast(">")
         }
         return manga
     }
@@ -146,11 +144,11 @@ class Mangastream : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val num = document.select("div.btn-reader-page > ul.dropdown-menu > li").last().text().substringAfter("Last Page (").substringBefore(")")
+        val num = document.select("div.btn-reader-page > ul.dropdown-menu > li").last().text().substringAfter("Last Page (").substringBefore(")").toInt()
         val url = document.baseUri().substringBeforeLast("1")
         val pages = mutableListOf<Page>()
 
-        for (i in 1..num.toInt())
+        for (i in 1..num)
             pages.add(Page(i-1, url + i ))
 
         pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
