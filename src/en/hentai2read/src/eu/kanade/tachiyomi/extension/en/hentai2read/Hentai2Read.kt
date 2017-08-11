@@ -20,7 +20,7 @@ class Hentai2Read : ParsedHttpSource() {
 
     override val name = "Hentai2Read"
 
-    override val baseUrl = "http://hentai2read.com"
+    override val baseUrl = "https://hentai2read.com"
 
     override val lang = "en"
 
