@@ -269,7 +269,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Yuri", 28)
     )
 
-    // Tags : 344
+    // Tags : 349
     // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getTagList() = listOf(
@@ -381,6 +381,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Drunk Intercourse", 438),
         Tag("Drunk", 864),
         Tag("Elf-Elves", 1370),
+        Tag("Emotionless Sex", 2312),
         Tag("Enema Play", 1740),
         Tag("Enemies Become Lovers", 803),
         Tag("Ero-Guro", 302),
@@ -405,6 +406,8 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Fox Girls", 1268),
         Tag("Friends Become Lovers", 1769),
         Tag("Full Color", 468),
+        Tag("Furry", 2315),
+        Tag("Futa on Female", 2309),
         Tag("Futa on Male", 1850),
         Tag("Gang Rape", 429),
         Tag("Gangbang", 462),
@@ -488,6 +491,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Outdoor Intercourse", 504),
         Tag("Paizuri", 360),
         Tag("Pantyhose", 1275),
+        Tag("Partial Censorship", 2303),
         Tag("Partially Colored", 665),
         Tag("Pegging", 1736),
         Tag("Personality Change", 576),
@@ -597,6 +601,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Uncle and Niece", 1923),
         Tag("Unlucky Character/s", 414),
         Tag("Unrequited Love", 1284),
+        Tag("Unusual Pupils", 2313),
         Tag("Urethral Intercourse", 1157),
         Tag("Urethral Play", 817),
         Tag("Urination", 435),
