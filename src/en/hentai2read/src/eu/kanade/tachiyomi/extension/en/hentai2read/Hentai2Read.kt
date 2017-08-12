@@ -204,7 +204,7 @@ class Hentai2Read : ParsedHttpSource() {
     private class MangaNameSelect : Filter.Select<String>("Manga Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ArtistName : Filter.Text("Artist")
     private class ArtistNameSelect : Filter.Select<String>("Artist Name", arrayOf("Contains", "Starts With", "Ends With"))
-    private class CharacterName : Filter.Text("Charactor")
+    private class CharacterName : Filter.Text("Character")
     private class CharacterNameSelect : Filter.Select<String>("Character Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ReleaseYear : Filter.Text("Release Year")
     private class ReleaseYearSelect : Filter.Select<String>("Release Year", arrayOf("In", "Before", "After"))
