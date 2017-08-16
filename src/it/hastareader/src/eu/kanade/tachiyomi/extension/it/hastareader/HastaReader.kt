@@ -140,6 +140,7 @@ class HastaReader : ParsedHttpSource() {
         }
         return pages
     }
+
     override fun pageListParse(document: Document): List<Page> {
         throw Exception("Not used")
     }
