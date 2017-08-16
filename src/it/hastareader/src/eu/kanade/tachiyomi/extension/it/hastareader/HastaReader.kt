@@ -136,7 +136,7 @@ class HastaReader : ParsedHttpSource() {
 
         var i = 0
         while (m.find()) {
-            pages.add(Page(i++, "", m.group(1)))
+            pages.add(Page(i++, "", m.group(1).replace("""\/""", "/")))
         }
         return pages
     }
