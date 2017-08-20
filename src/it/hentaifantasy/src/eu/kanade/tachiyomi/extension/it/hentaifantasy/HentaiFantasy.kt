@@ -181,7 +181,7 @@ class HentaiFantasy : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
-    private open class Tag(name: String, val id: Int) : Filter.CheckBox(name)
+    private class Tag(name: String, val id: Int) : Filter.CheckBox(name)
     private class TagList(title: String, tags: List<Tag>) : Filter.Group<Tag>(title, tags)
 
     override fun getFilterList() = FilterList(
