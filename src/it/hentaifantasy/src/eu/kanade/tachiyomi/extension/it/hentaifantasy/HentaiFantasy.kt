@@ -61,17 +61,44 @@ class HentaiFantasy : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query.length < 3) {
+        var tags = mutableListOf<String>()
+        var paths = mutableListOf<String>()
+        for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+            when (filter) {
+                is TagList -> filter.state
+                    .filter { it.state }
+                    .map {
+                        paths.add(it.name.toLowerCase().replace(" ", "_"));
+                        it.id.toString()
+                    }
+                    .forEach { tags.add(it) }
+            }
+        }
+
+        var searchTags = tags.size > 0
+        if (!searchTags && query.length < 3) {
             throw Exception("Inserisci almeno tre caratteri")
         }
 
         val form = FormBody.Builder().apply {
-            add("search", query)
+            if (!searchTags) {
+                add("search", query)
+            } else {
+                tags.forEach {
+                    add("tag[]", it)
+                }
+            }
         }
 
-        // As of right now, I have not seen hentaifantasy.it return
-        // more than one page when searching by keyword.
-        return POST("${baseUrl}/search/", headers, form.build())
+        var searchPath = if (!searchTags) {
+            "search"
+        } else if (paths.size == 1) {
+            "tag/${paths[0]}/${page}"
+        } else {
+            "search_tags"
+        }
+
+        return POST("${baseUrl}/${searchPath}", headers, form.build())
     }
 
     override fun searchMangaFromElement(element: Element): SManga {
@@ -154,5 +181,62 @@ class HentaiFantasy : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
-    override fun getFilterList() = FilterList()
+    private open class Tag(name: String, val id: Int) : Filter.CheckBox(name)
+    private class TagList(title: String, tags: List<Tag>) : Filter.Group<Tag>(title, tags)
+
+    override fun getFilterList() = FilterList(
+        TagList("Generi", getTagList())
+    )
+
+    // Tags: 47
+    // $("select[name='tag[]']:eq(0) > option").map((i, el) => `Tag("${$(el).text().trim()}", ${$(el).attr("value")})`).get().sort().join(",\n")
+    // on http://www.hentaifantasy.it/search/
+    private fun getTagList() = listOf(
+        Tag("Ahegao", 56),
+        Tag("Anal", 28),
+        Tag("Ashikoki", 12),
+        Tag("Bestiality", 24),
+        Tag("Bizzare", 44),
+        Tag("Bondage", 30),
+        Tag("Cheating", 33),
+        Tag("Chubby", 57),
+        Tag("Dark Skin", 39),
+        Tag("Demon Girl", 43),
+        Tag("Femdom", 38),
+        Tag("Forced", 46),
+        Tag("Full color", 52),
+        Tag("Furry", 36),
+        Tag("Futanari", 18),
+        Tag("Group", 34),
+        Tag("Guro", 8),
+        Tag("Harem", 41),
+        Tag("Housewife", 51),
+        Tag("Incest", 11),
+        Tag("Lolicon", 20),
+        Tag("Maid", 55),
+        Tag("Milf", 31),
+        Tag("Monster Girl", 15),
+        Tag("Nurse", 49),
+        Tag("Oppai", 25),
+        Tag("Paizuri", 42),
+        Tag("Pettanko", 35),
+        Tag("Pissing", 32),
+        Tag("Public", 53),
+        Tag("Rape", 21),
+        Tag("Schoolgirl", 27),
+        Tag("Shotacon", 26),
+        Tag("Stockings", 40),
+        Tag("Swimsuit", 47),
+        Tag("Tanlines", 48),
+        Tag("Teacher", 50),
+        Tag("Tentacle", 23),
+        Tag("Toys", 45),
+        Tag("Trap", 29),
+        Tag("Tsundere", 54),
+        Tag("Uncensored", 59),
+        Tag("Vanilla", 19),
+        Tag("Yandere", 58),
+        Tag("Yaoi", 22),
+        Tag("Yuri", 14)
+    )
 }
