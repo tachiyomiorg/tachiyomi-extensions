@@ -28,24 +28,20 @@ class MerakiScans : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     companion object {
-        val pagesUrlPattern by lazy {
-            Pattern.compile("""\"url\":\"(.*?)\"""")
-        }
-
         val dateFormat by lazy {
-            SimpleDateFormat("yyyy.MM.dd")
+            SimpleDateFormat("MMM dd, yyyy")
         }
     }
 
-    override fun popularMangaSelector() = "div.list > div.group > div.title > a"
+    override fun popularMangaSelector() = "div.mng_lst > div.nde > div.det > a"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/reader/directory/$page/", headers)
+        = GET("$baseUrl/manga-list/all/any/most-popular/", headers)
 
     override fun latestUpdatesRequest(page: Int)
-        = GET("$baseUrl/reader/latest/$page/", headers)
+        = GET("$baseUrl/manga-list/all/any/last-updated/", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -64,9 +60,11 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val form = FormBody.Builder().apply {
-            add("search", query)
+            add("cmd_wpm_search", "Search")
+            add("txt_wpm_wgt_mng_sch_nme", query)
+            add("cmd_wpm_wgt_mng_sch_sbm", "1")
         }
-        return POST("$baseUrl/reader/search/$page", headers, form.build())
+        return POST("$baseUrl/manga-list/search/", headers, form.build())
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -78,67 +76,66 @@ class MerakiScans : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.panel > div.comic > div.large > div.info").first()
+        val infoElement = document.select("div.mng_det > div.mng_ifo")
 
         val manga = SManga.create()
-        manga.author = infoElement.select("b:contains(Author)").first()?.nextSibling()?.toString()?.substringAfter(": ")
-        manga.artist = infoElement.select("b:contains(Artist)").first()?.nextSibling()?.toString()?.substringAfter(": ")
-        manga.genre = ""
-        manga.description = infoElement.select("b:contains(Synopsis)").first()?.nextSibling()?.toString()?.substringAfter(": ")
-        manga.status = SManga.UNKNOWN
-        manga.thumbnail_url = document.select("div.thumbnail > img")?.attr("src")
+        infoElement.select("div.det > p").forEachIndexed { i, el ->
+            if (i == 0) {
+                manga.description = el.text().trim()
+            }
+            when (el.select("b").text().trim()) {
+                "Author" -> manga.author = el.select("a").text()?.trim()
+                "Artist" -> manga.artist = el.select("a").text()?.trim()
+                "Category" -> manga.genre = el.select("a").map {
+                        it.text().trim()
+                    }.joinToString(", ")
+                "Status" -> manga.status = el.select("a").text().orEmpty().let {
+                        parseStatus(it)
+                    }
+            }
+        }
+        manga.thumbnail_url = infoElement.select("div.cvr_ara > img").attr("src")
+
         return manga
     }
 
-    override fun chapterListSelector() = "div.list > div.group > div.element"
+    private fun parseStatus(status: String) = when {
+        status.contains("Ongoing") -> SManga.ONGOING
+        status.contains("Completed") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
+    override fun chapterListSelector() = "ul.lst > li.lng_ > a"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-        element.select("div.title > a").let {
-            chapter.setUrlWithoutDomain(it.attr("href"))
-            chapter.name = it.text().trim()
-        }
-        chapter.date_upload = element.select("div.meta_r").first()?.ownText()?.substringAfterLast(", ")?.trim()?.let {
-            parseChapterDate(it)
-        } ?: 0L
+        chapter.setUrlWithoutDomain(element.attr("href"))
+        chapter.name = element.select("b.val").text().trim()
+        chapter.date_upload = element.select("b.dte").text().trim().let { parseChapterDate(it) }
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long {
-        return if (date == "Today") {
-            Calendar.getInstance().timeInMillis
-        } else if (date == "Yesterday") {
-            Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -1)
-            }.timeInMillis
-        } else {
-            try {
-                dateFormat.parse(date).time
-            } catch (e: ParseException) {
-                0L
-            }
+        return try {
+            dateFormat.parse(date).time
+        } catch (e: ParseException) {
+            0L
         }
     }
 
     override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url, headers)
 
-    override fun pageListParse(response: Response): List<Page> {
-        val body = response.body().string()
-        val pages = mutableListOf<Page>()
-
-        val p = pagesUrlPattern
-        val m = p.matcher(body)
-
-        var i = 0
-        while (m.find()) {
-            pages.add(Page(i++, "", m.group(1)))
+    override fun pageListParse(response: Response): List<Page> =
+        response.asJsoup().select("center#longWrap > img").mapIndexed { i, img ->
+            Page(i, "", img.attr("src"))
         }
-        return pages
-    }
+
     override fun pageListParse(document: Document): List<Page> {
         throw Exception("Not used")
     }
+
     override fun imageUrlRequest(page: Page) = GET(page.url)
+
     override fun imageUrlParse(document: Document) = ""
 
     override fun getFilterList() = FilterList()
