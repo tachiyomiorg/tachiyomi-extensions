@@ -43,7 +43,7 @@ class Hentai2Read : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "ul.nav-users li.ribbon"
 
     override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/hentai-list/all/any/most-popular/$page/", headers)
+        = GET("$baseUrl/hentai-list/all/any/all/most-popular/$page/", headers)
 
     override fun latestUpdatesRequest(page: Int)
         = GET("$baseUrl/latest/$page/", headers)
@@ -101,7 +101,7 @@ class Hentai2Read : ParsedHttpSource() {
         var searchUrl = "$baseUrl/hentai-list/advanced-search"
         if (page > 1) { searchUrl += "/${base64String}" }
 
-        return POST("${searchUrl}/name-az/$page", headers, form.build())
+        return POST("${searchUrl}/all/name-az/$page", headers, form.build())
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -196,11 +196,15 @@ class Hentai2Read : ParsedHttpSource() {
         }
         return pages
     }
+
     override fun pageListParse(document: Document): List<Page> {
         throw Exception("Not used")
     }
+
     override fun imageUrlRequest(page: Page) = GET(page.url)
+
     override fun imageUrlParse(document: Document) = ""
+
     private class MangaNameSelect : Filter.Select<String>("Manga Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ArtistName : Filter.Text("Artist")
     private class ArtistNameSelect : Filter.Select<String>("Artist Name", arrayOf("Contains", "Starts With", "Ends With"))
