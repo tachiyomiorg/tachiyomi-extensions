@@ -273,7 +273,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Yuri", 28)
     )
 
-    // Tags : 349
+    // Tags : 350
     // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getTagList() = listOf(
@@ -558,6 +558,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Sexual Abuse", 695),
         Tag("Sexual Assault", 476),
         Tag("Sexual Frustration", 1611),
+        Tag("Shemale", 2325),
         Tag("Shy Characters", 652),
         Tag("Sibling Love", 655),
         Tag("Sister Complex", 440),
