@@ -629,7 +629,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Young Master", 500)
     )
 
-    // Doujins : 822
+    // Doujins : 828
     // $("div#tab-doujin > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getDoujinList() = listOf(
@@ -657,6 +657,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Amagami", 937),
         Tag("Amagi Brilliant Park", 1989),
         Tag("Amanchu!", 2276),
+        Tag("Amano Megumi Ha Sukidarake", 2326),
         Tag("And Yet The Town Moves", 1916),
         Tag("Ane Doki", 1699),
         Tag("Angel Beats!", 1080),
@@ -711,6 +712,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Bishoujo Kamen Poitrine", 2162),
         Tag("Black Bullet", 1999),
         Tag("Black Cat", 1103),
+        Tag("Black Desert Online", 2321),
         Tag("Black Lagoon", 1249),
         Tag("Black Rock Shooter", 1802),
         Tag("Blast of Tempest", 2083),
@@ -952,6 +954,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("K-ON!", 945),
         Tag("Kaiten Mutenmaru", 2210),
         Tag("Kaitou Tenshi Twin Angel", 2126),
+        Tag("Kakegurui", 2324),
         Tag("Kaleido Star", 1202),
         Tag("Kamen Rider W", 1463),
         Tag("Kami Nomi zo Shiru Sekai", 1069),
@@ -1019,6 +1022,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Legend of the Mystical Ninja", 1926),
         Tag("Linebarrels of Iron", 1672),
         Tag("Little Busters", 2107),
+        Tag("Little Red Riding Hood", 2322),
         Tag("Log Horizon", 1914),
         Tag("Lotte no Omocha!", 1834),
         Tag("Love Hina", 1533),
@@ -1307,6 +1311,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Spice and Wolf", 1411),
         Tag("Splatoon", 2099),
         Tag("Star Driver", 1172),
+        Tag("Star Fox", 2327),
         Tag("Star Ocean 3", 1210),
         Tag("Star Ocean", 1655),
         Tag("Starry Sky", 2208),
@@ -1322,6 +1327,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Suite PreCure", 1020),
         Tag("Sukatto Golf Pangya", 1393),
         Tag("Summer Wars", 1131),
+        Tag("Summon Night", 2323),
         Tag("Sumomomo Momomo", 1697),
         Tag("Sunohara-sou no Kanrinin-san", 2197),
         Tag("Super Black Jack", 1208),
