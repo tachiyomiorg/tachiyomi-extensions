@@ -50,6 +50,13 @@ function genSource() {
             exit -1
         fi
     fi
+    # Check if latest manga is supported
+    LATEST_RESP=$(curl --write-out %{http_code} --silent --output /dev/null "$3/filterList?page=1&sortBy=last_release&asc=false")
+    SUPPORTS_LATEST="false"
+    if [ "$LATEST_RESP" -eq "200" ]
+    then
+        SUPPORTS_LATEST="true"
+    fi
     # Remove leftover html page
     rm tmp.html
 
@@ -58,6 +65,7 @@ function genSource() {
     echo "            \"$1\","
     echo "            \"$2\","
     echo "            \"$3\","
+    echo "            $SUPPORTS_LATEST,"
     echo "            \"$ITEM_URL\","
     echo "            mutableListOf<Pair<String, String>>().apply {"
     echo "$CATEGORIES"

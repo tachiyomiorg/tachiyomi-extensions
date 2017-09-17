@@ -19,15 +19,11 @@ import java.util.*
 class MyMangaReaderCMSSource(override val lang: String,
                              override val name: String,
                              override val baseUrl: String,
+                             override val supportsLatest: Boolean,
                              private val itemUrl: String,
                              private val categoryMappings: List<Pair<String, String>>) : ParsedHttpSource() {
     private val dateFormatter = SimpleDateFormat("d MMM. yyyy", Locale.US)
     private val jsonParser = JsonParser()
-
-    /**
-     * Whether the source has support for latest updates.
-     */
-    override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=views&asc=false")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {

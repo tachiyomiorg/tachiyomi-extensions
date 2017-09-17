@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.all.mmrcms
 private typealias MMRSource = MyMangaReaderCMSSource
 
 // GENERATED FILE, DO NOT MODIFY!
-// Generated on Sat Sep 16 21:35:10 EDT 2017
+// Generated on Sat Sep 16 23:21:29 EDT 2017
 
 val SOURCES = mutableListOf<MMRSource>().apply {
     // مانجا اون لاين
@@ -11,6 +11,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "ar",
             "مانجا اون لاين",
             "http://on-manga.com",
+            false,
             "http://on-manga.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "أكشن")
@@ -53,6 +54,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "Read Comics Online",
             "http://readcomics.website",
+            true,
             "http://readcomics.website/comic/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("17", "One Shots &amp; TPBs")
@@ -119,6 +121,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "Fallen Angels Scans",
             "http://manga.fascans.com",
+            false,
             "http://manga.fascans.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -162,6 +165,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "MangaRoot",
             "http://mangaroot.com",
+            false,
             "http://mangaroot.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -204,6 +208,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "Mangawww Reader",
             "http://mangawww.com",
+            false,
             "http://mangawww.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -245,6 +250,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "MangaForLife",
             "http://manga4ever.com",
+            false,
             "http://manga4ever.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -286,6 +292,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "Manga Mofo",
             "http://mangamofo.com",
+            false,
             "http://mangamofo.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -337,6 +344,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "H-Manga.moe",
             "https://h-manga.moe",
+            false,
             "https://h-manga.moe/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("4", "Doujinshi")
@@ -399,6 +407,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "MangaBlue",
             "http://mangablue.com",
+            true,
             "http://mangablue.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -444,6 +453,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "Manga Forest",
             "https://mangaforest.com",
+            false,
             "https://mangaforest.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -485,6 +495,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "en",
             "DManga",
             "http://dmanga.website",
+            false,
             "http://dmanga.website/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -526,6 +537,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "es",
             "My-mangas.com",
             "https://my-mangas.com",
+            true,
             "https://my-mangas.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Acción")
@@ -577,6 +589,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "fa",
             "TrinityReader",
             "http://trinityreader.pw",
+            false,
             "http://trinityreader.pw/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -618,6 +631,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "fr",
             "Manga-LEL",
             "https://www.manga-lel.com",
+            false,
             "https://www.manga-lel.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -661,6 +675,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "fr",
             "Manga Etonnia",
             "https://www.etonnia.com",
+            false,
             "https://www.etonnia.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -696,6 +711,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "fr",
             "Tous Vos Scans",
             "http://www.tous-vos-scans.com",
+            false,
             "http://www.tous-vos-scans.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -732,6 +748,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "Manga Desu",
             "http://mangadesu.net",
+            false,
             "http://mangadesu.net/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -777,6 +794,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "Komik Mangafire.ID",
             "http://go.mangafire.id",
+            false,
             "http://go.mangafire.id/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -818,6 +836,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "MangaOnline",
             "http://mangaonline.web.id",
+            false,
             "http://mangaonline.web.id/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -863,6 +882,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "MangaNesia",
             "https://manganesia.com",
+            false,
             "https://manganesia.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -904,6 +924,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "KOMIK.CO.ID",
             "https://komik.co.id",
+            false,
             "https://komik.co.id/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -945,6 +966,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "MangaID",
             "http://mangaid.co",
+            false,
             "http://mangaid.co/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -986,6 +1008,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "id",
             "Indo Manga Reader",
             "http://indomangareader.com",
+            false,
             "http://indomangareader.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -1027,6 +1050,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "ja",
             "IchigoBook",
             "http://ichigobook.com",
+            false,
             "http://ichigobook.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -1071,6 +1095,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "ja",
             "Mangaraw Online",
             "http://mangaraw.online",
+            false,
             "http://mangaraw.online/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -1112,6 +1137,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "pl",
             "Candy Scans",
             "http://csreader.webd.pl",
+            false,
             "http://csreader.webd.pl/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Akcja")
@@ -1153,6 +1179,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "pt",
             "Comic Space",
             "https://www.comicspace.com.br",
+            false,
             "https://www.comicspace.com.br/manga/",
             mutableListOf<Pair<String, String>>().apply {
 
@@ -1163,6 +1190,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "pt",
             "Mangás Yuri",
             "https://www.mangasyuri.net",
+            false,
             "https://www.mangasyuri.net/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Ação")
@@ -1203,6 +1231,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "ru",
             "NAKAMA",
             "http://nakama.ru",
+            false,
             "http://nakama.ru/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("20", "Антиутопия")
@@ -1236,6 +1265,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "tr",
             "MangAoi",
             "http://mangaoi.com",
+            false,
             "http://mangaoi.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
@@ -1277,6 +1307,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "tr",
             "MangaHanta",
             "http://mangahanta.com",
+            false,
             "http://mangahanta.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Aksiyon")
