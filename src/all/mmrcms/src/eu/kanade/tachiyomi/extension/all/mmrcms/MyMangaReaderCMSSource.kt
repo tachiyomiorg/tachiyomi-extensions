@@ -1,6 +1,9 @@
 package eu.kanade.tachiyomi.extension.all.mmrcms
 
 import android.net.Uri
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -59,13 +62,15 @@ class MyMangaReaderCMSSource(override val lang: String,
         return if(response.request().url().queryParameter("query")?.isNotBlank() == true) {
             //If a search query was specified, use search instead!
             MangasPage(jsonParser
-                    .parse(response.body()!!.string())
-                    .asJsonObject["suggestions"]
-                    .asJsonArray.map { it.asJsonObject }
+                    .parse(response.body()!!.string())["suggestions"].array
                     .map {
                         SManga.create().apply {
-                            setUrlWithoutDomain(itemUrl + it["data"].asString)
-                            title = it["value"].asString
+                            val segment = it["data"].string
+                            setUrlWithoutDomain(itemUrl + segment)
+                            title = it["value"].string
+
+                            // Guess thumbnails
+                            thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
                         }
                     }, false)
         } else {
@@ -83,7 +88,7 @@ class MyMangaReaderCMSSource(override val lang: String,
             title = urlElement.text().trim()
             thumbnail_url = it.select(".media-left img").attr("src")
 
-            // Fix thumbnails on broken websites
+            // Guess thumbnails on broken websites
             if(thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false) {
                 thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
             }
@@ -105,14 +110,53 @@ class MyMangaReaderCMSSource(override val lang: String,
             when(element.tagName()) {
                 "dt" -> cur = element.text().trim().toLowerCase()
                 "dd" -> when(cur) {
-                    "author(s)", "autor(es)" -> author = element.text()
-                    "artist(s)" -> artist = element.text()
-                    "categories", "categorías" -> genre = element.getElementsByTag("a").joinToString {
+                    "author(s)",
+                    "autor(es)",
+                    "auteur(s)",
+                    "著作",
+                    "yazar(lar)",
+                    "mangaka(lar)",
+                    "pengarang/penulis",
+                    "pengarang",
+                    "penulis",
+                    "autor",
+                    "المؤلف",
+                    "перевод" -> author = element.text()
+
+                    "artist(s)",
+                    "artiste(s)",
+                    "sanatçi(lar)",
+                    "artista(s)",
+                    "artist(s)/ilustrator",
+                    "الرسام",
+                    "seniman" -> artist = element.text()
+
+                    "categories",
+                    "categorías",
+                    "catégories",
+                    "ジャンル",
+                    "kategoriler",
+                    "categorias",
+                    "kategorie",
+                    "التصنيفات",
+                    "жанр",
+                    "kategori" -> genre = element.getElementsByTag("a").joinToString {
                         it.text().trim()
                     }
-                    "status", "estado" -> status = when(element.text().trim().toLowerCase()) {
-                        "complete" -> SManga.COMPLETED
-                        "ongoing" -> SManga.ONGOING
+
+                    "status",
+                    "statut",
+                    "estado",
+                    "状態",
+                    "durum",
+                    "الحالة",
+                    "статус" -> status = when(element.text().trim().toLowerCase()) {
+                        "complete",
+                        "مكتملة",
+                        "complet" -> SManga.COMPLETED
+                        "ongoing",
+                        "مستمرة",
+                        "en cours" -> SManga.ONGOING
                         else -> SManga.UNKNOWN
                     }
                 }
