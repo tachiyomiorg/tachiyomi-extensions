@@ -51,9 +51,9 @@ function genSource() {
         fi
     fi
     # Check if latest manga is supported
-    LATEST_RESP=$(curl --write-out %{http_code} --silent --output /dev/null "$3/filterList?page=1&sortBy=last_release&asc=false")
+    LATEST_RESP=$(curl --write-out \\n%{http_code} --silent --output - "$3/filterList?page=1&sortBy=last_release&asc=false")
     SUPPORTS_LATEST="false"
-    if [ "$LATEST_RESP" -eq "200" ]
+    if [ "${LATEST_RESP##*$'\n'}" -eq "200" ] && [[ "$LATEST_RESP" != *"Whoops, looks like something went wrong"* ]]
     then
         SUPPORTS_LATEST="true"
     fi

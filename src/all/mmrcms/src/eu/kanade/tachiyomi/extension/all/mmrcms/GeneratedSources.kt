@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.all.mmrcms
 private typealias MMRSource = MyMangaReaderCMSSource
 
 // GENERATED FILE, DO NOT MODIFY!
-// Generated on Sat Sep 16 23:21:29 EDT 2017
+// Generated on Sat Sep 16 23:39:51 EDT 2017
 
 val SOURCES = mutableListOf<MMRSource>().apply {
     // مانجا اون لاين
@@ -537,7 +537,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "es",
             "My-mangas.com",
             "https://my-mangas.com",
-            true,
+            false,
             "https://my-mangas.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Acción")
