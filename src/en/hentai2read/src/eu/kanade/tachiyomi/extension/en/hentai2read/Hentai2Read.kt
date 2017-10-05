@@ -20,7 +20,7 @@ class Hentai2Read : ParsedHttpSource() {
 
     override val name = "Hentai2Read"
 
-    override val baseUrl = "http://hentai2read.com"
+    override val baseUrl = "https://hentai2read.com"
 
     override val lang = "en"
 
@@ -43,7 +43,7 @@ class Hentai2Read : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "ul.nav-users li.ribbon"
 
     override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/hentai-list/all/any/most-popular/$page/", headers)
+        = GET("$baseUrl/hentai-list/all/any/all/most-popular/$page/", headers)
 
     override fun latestUpdatesRequest(page: Int)
         = GET("$baseUrl/latest/$page/", headers)
@@ -101,7 +101,7 @@ class Hentai2Read : ParsedHttpSource() {
         var searchUrl = "$baseUrl/hentai-list/advanced-search"
         if (page > 1) { searchUrl += "/${base64String}" }
 
-        return POST("${searchUrl}/name-az/$page", headers, form.build())
+        return POST("${searchUrl}/all/name-az/$page", headers, form.build())
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -196,15 +196,19 @@ class Hentai2Read : ParsedHttpSource() {
         }
         return pages
     }
+
     override fun pageListParse(document: Document): List<Page> {
         throw Exception("Not used")
     }
+
     override fun imageUrlRequest(page: Page) = GET(page.url)
+
     override fun imageUrlParse(document: Document) = ""
+
     private class MangaNameSelect : Filter.Select<String>("Manga Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ArtistName : Filter.Text("Artist")
     private class ArtistNameSelect : Filter.Select<String>("Artist Name", arrayOf("Contains", "Starts With", "Ends With"))
-    private class CharacterName : Filter.Text("Charactor")
+    private class CharacterName : Filter.Text("Character")
     private class CharacterNameSelect : Filter.Select<String>("Character Name", arrayOf("Contains", "Starts With", "Ends With"))
     private class ReleaseYear : Filter.Text("Release Year")
     private class ReleaseYearSelect : Filter.Select<String>("Release Year", arrayOf("In", "Before", "After"))
@@ -269,7 +273,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Yuri", 28)
     )
 
-    // Tags : 344
+    // Tags : 350
     // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getTagList() = listOf(
@@ -381,6 +385,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Drunk Intercourse", 438),
         Tag("Drunk", 864),
         Tag("Elf-Elves", 1370),
+        Tag("Emotionless Sex", 2312),
         Tag("Enema Play", 1740),
         Tag("Enemies Become Lovers", 803),
         Tag("Ero-Guro", 302),
@@ -405,6 +410,8 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Fox Girls", 1268),
         Tag("Friends Become Lovers", 1769),
         Tag("Full Color", 468),
+        Tag("Furry", 2315),
+        Tag("Futa on Female", 2309),
         Tag("Futa on Male", 1850),
         Tag("Gang Rape", 429),
         Tag("Gangbang", 462),
@@ -488,6 +495,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Outdoor Intercourse", 504),
         Tag("Paizuri", 360),
         Tag("Pantyhose", 1275),
+        Tag("Partial Censorship", 2303),
         Tag("Partially Colored", 665),
         Tag("Pegging", 1736),
         Tag("Personality Change", 576),
@@ -550,6 +558,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Sexual Abuse", 695),
         Tag("Sexual Assault", 476),
         Tag("Sexual Frustration", 1611),
+        Tag("Shemale", 2325),
         Tag("Shy Characters", 652),
         Tag("Sibling Love", 655),
         Tag("Sister Complex", 440),
@@ -597,6 +606,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Uncle and Niece", 1923),
         Tag("Unlucky Character/s", 414),
         Tag("Unrequited Love", 1284),
+        Tag("Unusual Pupils", 2313),
         Tag("Urethral Intercourse", 1157),
         Tag("Urethral Play", 817),
         Tag("Urination", 435),
@@ -619,7 +629,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Young Master", 500)
     )
 
-    // Doujins : 810
+    // Doujins : 828
     // $("div#tab-doujin > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getDoujinList() = listOf(
@@ -647,9 +657,11 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Amagami", 937),
         Tag("Amagi Brilliant Park", 1989),
         Tag("Amanchu!", 2276),
+        Tag("Amano Megumi Ha Sukidarake", 2326),
         Tag("And Yet The Town Moves", 1916),
         Tag("Ane Doki", 1699),
         Tag("Angel Beats!", 1080),
+        Tag("Anne Happy", 2317),
         Tag("Ano Hana", 1090),
         Tag("Ano Hi Mita Hana no Namae o Bokutachi wa Mada Shiranai", 1109),
         Tag("Ano Natsu de Matteru", 1470),
@@ -700,6 +712,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Bishoujo Kamen Poitrine", 2162),
         Tag("Black Bullet", 1999),
         Tag("Black Cat", 1103),
+        Tag("Black Desert Online", 2321),
         Tag("Black Lagoon", 1249),
         Tag("Black Rock Shooter", 1802),
         Tag("Blast of Tempest", 2083),
@@ -708,6 +721,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Blue Exorcist", 2027),
         Tag("Boku wa Tomodachi ga Sukunai", 954),
         Tag("Brave Beats", 2206),
+        Tag("Brave Witches", 2320),
         Tag("Bravely Default", 1902),
         Tag("Brothers Conflict", 1947),
         Tag("Brynhildr in the Darkness", 1944),
@@ -717,6 +731,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Busou Shinki", 1801),
         Tag("CANAAN", 2037),
         Tag("Campione!", 1706),
+        Tag("Canvas", 2318),
         Tag("Captain Earth", 2146),
         Tag("Card Captor Sakura", 1919),
         Tag("Cardfight!! Vanguard", 2020),
@@ -736,9 +751,9 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Corpse Party", 2124),
         Tag("Cowboy Bebop", 1958),
         Tag("Crayon Shin-chan", 2011),
+        Tag("Cutey Honey", 2314),
         Tag("Cyborg 009", 1410),
         Tag("D-Fragments", 1242),
-        Tag("D.Gray-Man", 1343),
         Tag("Da Capo", 1723),
         Tag("Dagashi Kashi", 2053),
         Tag("Daily Life with a Monster Girl", 1781),
@@ -817,6 +832,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Fire Emblem", 1205),
         Tag("Flip Flappers", 2289),
         Tag("Flower Knight Girl", 2252),
+        Tag("Flying Witch", 2308),
         Tag("Free!", 2100),
         Tag("Freezing", 1847),
         Tag("Fresh Precure!", 993),
@@ -928,6 +944,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Jewelpet Sunshine", 1874),
         Tag("Jigoku Sensei Nube", 1765),
         Tag("Jinrui Wa Suitai Shimashita", 2123),
+        Tag("Jitsu wa Watashi wa", 2310),
         Tag("JoJos Bizarre Adventures", 1534),
         Tag("Joker Game", 2274),
         Tag("Jormungand", 1770),
@@ -937,6 +954,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("K-ON!", 945),
         Tag("Kaiten Mutenmaru", 2210),
         Tag("Kaitou Tenshi Twin Angel", 2126),
+        Tag("Kakegurui", 2324),
         Tag("Kaleido Star", 1202),
         Tag("Kamen Rider W", 1463),
         Tag("Kami Nomi zo Shiru Sekai", 1069),
@@ -992,9 +1010,11 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Kuromukuro", 2302),
         Tag("Kuttsukiboshi", 1820),
         Tag("Kyo Kara Maoh!", 2128),
+        Tag("Kyonyuu Fantasy", 2305),
         Tag("Kyoukai Senjou no Horizon", 941),
         Tag("Kyoukai no Kanata", 2074),
         Tag("Kyuujou Lovers", 2223),
+        Tag("Last Period", 2311),
         Tag("Le Fruit de la Grisaia", 2012),
         Tag("League of Legends", 1720),
         Tag("Leed Sha", 418),
@@ -1002,6 +1022,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Legend of the Mystical Ninja", 1926),
         Tag("Linebarrels of Iron", 1672),
         Tag("Little Busters", 2107),
+        Tag("Little Red Riding Hood", 2322),
         Tag("Log Horizon", 1914),
         Tag("Lotte no Omocha!", 1834),
         Tag("Love Hina", 1533),
@@ -1023,6 +1044,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Magical Taluluto-kun", 1935),
         Tag("Maho Girls Precure", 2165),
         Tag("Mahou Sensei Negima", 1019),
+        Tag("Mahou Shoujo Ai", 2316),
         Tag("Mahou Shoujo Ikusei Keikaku", 2253),
         Tag("Mahou Shoujo Lyrical Nanoha StrikerS", 1431),
         Tag("Mahou Shoujo Madoka Magica", 942),
@@ -1098,6 +1120,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("No Game No Life", 1972),
         Tag("No More Heroes", 2003),
         Tag("No-Rin", 1908),
+        Tag("Nodame Cantabile", 2319),
         Tag("Noein", 2233),
         Tag("Non Non Biyori", 1888),
         Tag("Noragami", 1945),
@@ -1201,6 +1224,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Sabagebu", 2098),
         Tag("Saber Marionette", 2004),
         Tag("Saenai Heroine no Sodatekata", 2043),
+        Tag("Saijaku Muhai No Bahamut", 2304),
         Tag("Sailor Moon", 927),
         Tag("Saint Seiya", 2063),
         Tag("Saki Achiga-hen", 1934),
@@ -1287,6 +1311,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Spice and Wolf", 1411),
         Tag("Splatoon", 2099),
         Tag("Star Driver", 1172),
+        Tag("Star Fox", 2327),
         Tag("Star Ocean 3", 1210),
         Tag("Star Ocean", 1655),
         Tag("Starry Sky", 2208),
@@ -1302,6 +1327,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Suite PreCure", 1020),
         Tag("Sukatto Golf Pangya", 1393),
         Tag("Summer Wars", 1131),
+        Tag("Summon Night", 2323),
         Tag("Sumomomo Momomo", 1697),
         Tag("Sunohara-sou no Kanrinin-san", 2197),
         Tag("Super Black Jack", 1208),
@@ -1393,6 +1419,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Viper", 2007),
         Tag("Vividred Operation", 1838),
         Tag("Vocaloid", 1013),
+        Tag("Voiceroid", 2306),
         Tag("Waiting in the Summer", 1906),
         Tag("Walkure Romanze", 2000),
         Tag("Warriors Orochi Z", 1684),
@@ -1406,6 +1433,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("World Masterpiece Theater", 2050),
         Tag("World Trigger", 2149),
         Tag("Wrestle Angels", 1267),
+        Tag("Xenoblade", 2307),
         Tag("Xenogears", 1777),
         Tag("Xenosaga", 1928),
         Tag("Yahari Ore no Seishun Rabukome wa Machigatte Iru.", 1796),

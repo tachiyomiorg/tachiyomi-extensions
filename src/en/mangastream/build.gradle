@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Hentai2Read'
-    pkgNameSuffix = 'en.hentai2read'
-    extClass = '.Hentai2Read'
-    extVersionCode = 2
+    appName = 'Tachiyomi: Mangastream'
+    pkgNameSuffix = "en.mangastream"
+    extClass = '.Mangastream'
+    extVersionCode = 1
     extVersionSuffix = 1
     libVersion = '1.0'
 }

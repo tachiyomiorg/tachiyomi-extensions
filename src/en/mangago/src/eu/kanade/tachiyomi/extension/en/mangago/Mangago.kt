@@ -136,12 +136,18 @@ class Mangago : ParsedHttpSource() {
         date_upload = dateFormat.parse(element.getElementsByClass("no").text().trim()).time
     }
 
-    override fun pageListParse(document: Document)
-            = document.getElementById("pagenavigation").getElementsByTag("a").mapIndexed { index, element ->
-        Page(index, element.attr("href"))
+    private val JS_BEGIN_MARKER = "var imgsrcs = new Array('"
+    override fun pageListParse(document: Document): List<Page> {
+        val dString = document.toString()
+        val jsBegin = dString.indexOf(JS_BEGIN_MARKER) + JS_BEGIN_MARKER.length
+        val jsEnd = dString.indexOf("');", startIndex = jsBegin)
+        val arrString = dString.substring(jsBegin .. jsEnd)
+        return arrString.split("','").mapIndexed { i, s ->
+            Page(i, s, s)
+        }
     }
 
-    override fun imageUrlParse(document: Document) = document.getElementById("page1").attr("src")!!
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Unused method called!")
 
     override fun getFilterList() = FilterList(
             //Mangago does not support genre filtering and text search at the same time
