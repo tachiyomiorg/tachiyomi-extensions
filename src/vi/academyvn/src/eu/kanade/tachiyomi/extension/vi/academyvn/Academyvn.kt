@@ -14,7 +14,7 @@ class Academyvn : ParsedHttpSource() {
 
     override val name = "Academy VN"
 
-    override val baseUrl = "http://truyen.academyvn.com"
+    override val baseUrl = "http://hocvientruyentranh.com"
 
     override val lang = "vi"
 
