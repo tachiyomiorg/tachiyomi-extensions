@@ -2,6 +2,9 @@
 echo "My Manga Reader CMS source generator by: nulldev"
 # CMS: https://getcyberworks.com/product/manga-reader-cms/
 
+# Go to source folder
+cd "src/eu/kanade/tachiyomi/extension/all/mmrcms"
+
 # Target file
 TARGET=GeneratedSources.kt
 
@@ -91,16 +94,21 @@ gen "fr" "Manga-LEL" "https://www.manga-lel.com"
 gen "fr" "Manga Etonnia" "https://www.etonnia.com"
 gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
 gen "id" "Manga Desu" "http://mangadesu.net"
-gen "id" "Komik Mangafire.ID" "http://go.mangafire.id"
+# Went offline
+# gen "id" "Komik Mangafire.ID" "http://go.mangafire.id"
 gen "id" "MangaOnline" "http://mangaonline.web.id"
-gen "id" "MangaNesia" "https://manganesia.com"
+# Went offline
+# gen "id" "MangaNesia" "https://manganesia.com"
 gen "id" "KOMIK.CO.ID" "https://komik.co.id"
 gen "id" "MangaID" "http://mangaid.co"
-gen "id" "Indo Manga Reader" "http://indomangareader.com"
-gen "ja" "IchigoBook" "http://ichigobook.com"
+# Went offline
+# gen "id" "Indo Manga Reader" "http://indomangareader.com"
+# Went offline
+# gen "ja" "IchigoBook" "http://ichigobook.com"
 gen "ja" "Mangaraw Online" "http://mangaraw.online"
 gen "pl" "Candy Scans" "http://csreader.webd.pl"
-gen "pt" "Comic Space" "https://www.comicspace.com.br"
+# Advanced search screen removed (unsupported)
+# gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://www.mangasyuri.net"
 gen "ru" "NAKAMA" "http://nakama.ru"
 gen "tr" "MangAoi" "http://mangaoi.com"
