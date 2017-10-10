@@ -32,6 +32,7 @@ class HastaReader : ParsedHttpSource() {
         val dateFormat by lazy {
             SimpleDateFormat("dd/MM/yyyy")
         }
+
         // HastaReader has a check for adult content on some manga.
         private val adultCheck: RequestBody by lazy {
             FormBody.Builder().apply {
@@ -39,6 +40,9 @@ class HastaReader : ParsedHttpSource() {
             }.build()
         }
     }
+
+    override fun headersBuilder() = super.headersBuilder()
+        .add("Referer", "$baseUrl/slide")
 
     override fun popularMangaSelector() = "div.list > div.group > div.title > a"
 
