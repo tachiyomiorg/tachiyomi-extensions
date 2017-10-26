@@ -13,7 +13,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import timber.log.Timber
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -208,7 +207,6 @@ class MyMangaReaderCMSSource(override val lang: String,
         val formattedDate = try {
             dateFormatter.parse(dateText).time
         } catch (e: ParseException) {
-            Timber.w(e, "Could not parse date: '$dateText'!")
             0L
         }
         chapter.date_upload = formattedDate
