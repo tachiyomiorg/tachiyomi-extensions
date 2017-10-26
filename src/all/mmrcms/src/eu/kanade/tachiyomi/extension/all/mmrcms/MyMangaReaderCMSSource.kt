@@ -13,6 +13,8 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import timber.log.Timber
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -24,6 +26,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                              private val categoryMappings: List<Pair<String, String>>) : ParsedHttpSource() {
     private val dateFormatter = SimpleDateFormat("d MMM. yyyy", Locale.US)
     private val jsonParser = JsonParser()
+    private val itemUrlPath = Uri.parse(itemUrl).pathSegments.first()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=views&asc=false")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -161,21 +164,56 @@ class MyMangaReaderCMSSource(override val lang: String,
     }
 
     /**
+     * Parses the response from the site and returns a list of chapters.
+     *
+     * Overriden to allow for null chapters
+     *
+     * @param response the response from the site.
+     */
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        return document.select(chapterListSelector()).mapNotNull { nullableChapterFromElement(it) }
+    }
+
+    /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each chapter.
      */
     override fun chapterListSelector() = ".chapters > li:not(.btn)"
+
+    // Unused as we need to be able to return null in this function
+    override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Unused method called!")
 
     /**
      * Returns a chapter from the given element.
      *
      * @param element an element obtained from [chapterListSelector].
      */
-    override fun chapterFromElement(element: Element)
-            = SChapter.create().apply {
+    private fun nullableChapterFromElement(element: Element): SChapter? {
         val titleWrapper = element.getElementsByClass("chapter-title-rtl").first()
-        setUrlWithoutDomain(titleWrapper.getElementsByTag("a").attr("href"))
-        name = titleWrapper.text()
-        date_upload = dateFormatter.parse(element.getElementsByClass("date-chapter-title-rtl").text().trim()).time
+        val url = titleWrapper.getElementsByTag("a").attr("href")
+
+        // Ensure chapter actually links to a manga
+        // Some websites use the chapters box to link to post announcements
+        if (!Uri.parse(url).pathSegments.firstOrNull().equals(itemUrlPath, true)) {
+            return null
+        }
+
+        val chapter = SChapter.create()
+
+        chapter.setUrlWithoutDomain(url)
+        chapter.name = titleWrapper.text()
+
+        // Parse date
+        val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
+        val formattedDate = try {
+            dateFormatter.parse(dateText).time
+        } catch (e: ParseException) {
+            Timber.w(e, "Could not parse date: '$dateText'!")
+            0L
+        }
+        chapter.date_upload = formattedDate
+
+        return chapter
     }
 
     /**
@@ -205,26 +243,30 @@ class MyMangaReaderCMSSource(override val lang: String,
             AuthorFilter(),
             UriSelectFilter("Category",
                     "cat",
-                    arrayOf(Pair("", "Any"),
-                            *categoryMappings.toTypedArray())),
+                    arrayOf("" to "Any",
+                            *categoryMappings.toTypedArray()
+                    )
+            ),
             UriSelectFilter("Begins with",
                     "alpha",
-                    arrayOf(Pair("", "Any"),
+                    arrayOf("" to "Any",
                             *"#ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray().map {
                                 Pair(it.toString(), it.toString())
-                            }.toTypedArray())),
+                            }.toTypedArray()
+                    )
+            ),
             UriSelectFilter("Sort by",
                     "sortBy",
                     arrayOf(
-                            Pair("name", "Name"),
-                            Pair("views", "Popularity"),
-                            Pair("last_release", "Last update")
+                            "name" to "Name",
+                            "views" to "Popularity",
+                            "last_release" to "Last update"
                     ), false),
             UriSelectFilter("Sort direction",
                     "asc",
                     arrayOf(
-                            Pair("true", "Ascending"),
-                            Pair("false", "Descending")
+                            "true" to "Ascending",
+                            "false" to "Descending"
                     ), false)
     )
 

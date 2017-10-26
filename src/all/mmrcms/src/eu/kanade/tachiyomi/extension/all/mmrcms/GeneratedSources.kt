@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.all.mmrcms
 private typealias MMRSource = MyMangaReaderCMSSource
 
 // GENERATED FILE, DO NOT MODIFY!
-// Generated on Mon Oct  9 21:10:59 EDT 2017
+// Generated on Wed Oct 25 23:35:45 EDT 2017
 
 val SOURCES = mutableListOf<MMRSource>().apply {
     // مانجا اون لاين
@@ -158,49 +158,6 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("32", "Yuri")
                 this += Pair("33", "4-Koma")
                 this += Pair("34", "Cooking")
-            }
-    )
-    // MangaRoot
-    this += MMRSource(
-            "en",
-            "MangaRoot",
-            "http://mangaroot.com",
-            false,
-            "http://mangaroot.com/manga/",
-            mutableListOf<Pair<String, String>>().apply {
-                this += Pair("1", "Action")
-                this += Pair("2", "Adventure")
-                this += Pair("3", "Comedy")
-                this += Pair("4", "Doujinshi")
-                this += Pair("5", "Drama")
-                this += Pair("6", "Ecchi")
-                this += Pair("7", "Fantasy")
-                this += Pair("8", "Gender Bender")
-                this += Pair("9", "Harem")
-                this += Pair("10", "Historical")
-                this += Pair("11", "Horror")
-                this += Pair("12", "Josei")
-                this += Pair("13", "Martial Arts")
-                this += Pair("14", "Mature")
-                this += Pair("15", "Mecha")
-                this += Pair("16", "Mystery")
-                this += Pair("17", "One Shot")
-                this += Pair("18", "Psychological")
-                this += Pair("19", "Romance")
-                this += Pair("20", "School Life")
-                this += Pair("21", "Sci-fi")
-                this += Pair("22", "Seinen")
-                this += Pair("23", "Shoujo")
-                this += Pair("24", "Shoujo Ai")
-                this += Pair("25", "Shounen")
-                this += Pair("26", "Shounen Ai")
-                this += Pair("27", "Slice of Life")
-                this += Pair("28", "Sports")
-                this += Pair("29", "Supernatural")
-                this += Pair("30", "Tragedy")
-                this += Pair("31", "Yaoi")
-                this += Pair("32", "Yuri")
-                this += Pair("33", "Webtoon")
             }
     )
     // Mangawww Reader
@@ -454,7 +411,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             "Manga Forest",
             "https://mangaforest.com",
             false,
-            "https://mangaforest.com/manga/",
+            "http://mangaforest.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
                 this += Pair("2", "Adventure")

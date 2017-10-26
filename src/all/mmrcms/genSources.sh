@@ -2,26 +2,76 @@
 echo "My Manga Reader CMS source generator by: nulldev"
 # CMS: https://getcyberworks.com/product/manga-reader-cms/
 
-# Go to source folder
-cd "src/eu/kanade/tachiyomi/extension/all/mmrcms"
-
+function printHelp() {
+    echo "Usage: ./genSources.sh [options]"
+    echo ""
+    echo "Options:"
+    echo "--help: Show this help page"
+    echo "--dry-run: Perform a dry run (make no changes)"
+    echo "--list: List currently available sources"
+    echo "--out <file>: Explicitly specify output file"
+}
 # Target file
-TARGET=GeneratedSources.kt
+TARGET="src/eu/kanade/tachiyomi/extension/all/mmrcms/GeneratedSources.kt"
 
-# Delete old sources
-rm "$TARGET"
+# Parse CLI args
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        --help)
+	    printHelp
+	    exit 0
+            ;;
+        --dry-run) OPT_DRY_RUN=true
+            ;;
+        --list)
+	    OPT_DRY_RUN=true
+	    OPT_LIST=true
+            ;;
+        --out)
+	    TARGET="$2"
+	    shift
+            ;;
+        --*)
+	    echo "Invalid option $1!"
+	    printHelp
+	    exit -1
+            ;;
+        *)
+	    echo "Invalid argument $1!"
+	    printHelp
+	    exit -1
+            ;;
+    esac
+    shift
+done
 
-echo -e "package eu.kanade.tachiyomi.extension.all.mmrcms\n" >> $TARGET
-echo -e "private typealias MMRSource = MyMangaReaderCMSSource\n" >> $TARGET
-echo -e "// GENERATED FILE, DO NOT MODIFY!" >> $TARGET
-echo -e "// Generated on $(date)\n" >> $TARGET
-echo "val SOURCES = mutableListOf<MMRSource>().apply {" >> $TARGET
+# Change target if performing dry run
+if [ "$OPT_DRY_RUN" = true ] ; then
+    # Do not warn if dry running because of list
+    if ! [ "$OPT_LIST" = true ] ; then
+	    echo "Performing a dry run, no changes will be made!"
+    fi
+    TARGET="/dev/null"
+else
+    # Delete old sources
+    rm "$TARGET"
+fi
+
+echo -e "package eu.kanade.tachiyomi.extension.all.mmrcms\n" >> "$TARGET"
+echo -e "private typealias MMRSource = MyMangaReaderCMSSource\n" >> "$TARGET"
+echo -e "// GENERATED FILE, DO NOT MODIFY!" >> "$TARGET"
+echo -e "// Generated on $(date)\n" >> "$TARGET"
+echo "val SOURCES = mutableListOf<MMRSource>().apply {" >> "$TARGET"
 
 # lang, name, baseUrl
 function gen() {
-    echo "Generating source: $2"
-    genSource "$1" "$2" "$3" >> $TARGET
-    #echo "- $(echo "$1" | awk '{print toupper($0)}'): $2"
+    if [ "$OPT_LIST" = true ] ; then
+        echo "- $(echo "$1" | awk '{print toupper($0)}'): $2"
+    else
+        echo "Generating source: $2"
+        genSource "$1" "$2" "$3" >> "$TARGET"
+    fi
 }
 
 function getItemUrl() {
@@ -80,7 +130,8 @@ function genSource() {
 gen "ar" "مانجا اون لاين" "http://on-manga.com"
 gen "en" "Read Comics Online" "http://readcomics.website"
 gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
-gen "en" "MangaRoot" "http://mangaroot.com"
+# Went offline
+# gen "en" "MangaRoot" "http://mangaroot.com"
 gen "en" "Mangawww Reader" "http://mangawww.com"
 gen "en" "MangaForLife" "http://manga4ever.com"
 gen "en" "Manga Mofo" "http://mangamofo.com"
@@ -114,6 +165,6 @@ gen "ru" "NAKAMA" "http://nakama.ru"
 gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"
 
-echo "}" >> $TARGET
+echo "}" >> "$TARGET"
 
 echo "Done!"
