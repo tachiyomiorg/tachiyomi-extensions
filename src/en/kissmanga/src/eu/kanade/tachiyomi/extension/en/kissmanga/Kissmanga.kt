@@ -213,7 +213,9 @@ class Kissmanga : ParsedHttpSource() {
             Genre("Smut"),
             Genre("Sports"),
             Genre("Supernatural"),
+            Genre("Time Travel"),
             Genre("Tragedy"),
+            Genre("Transported"),
             Genre("Webtoon"),
             Genre("Yaoi"),
             Genre("Yuri")
