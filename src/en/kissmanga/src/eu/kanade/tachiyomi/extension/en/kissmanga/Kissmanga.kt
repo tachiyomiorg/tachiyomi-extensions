@@ -199,6 +199,7 @@ class Kissmanga : ParsedHttpSource() {
             Genre("Mystery"),
             Genre("One shot"),
             Genre("Psychological"),
+            Genre("Reincarnation"),
             Genre("Romance"),
             Genre("School Life"),
             Genre("Sci-fi"),
