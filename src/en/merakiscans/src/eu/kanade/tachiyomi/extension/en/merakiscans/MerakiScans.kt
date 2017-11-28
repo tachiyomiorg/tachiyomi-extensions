@@ -43,16 +43,12 @@ class MerakiScans : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int)
         = GET("$baseUrl/manga-list/all/any/last-updated/", headers)
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.setUrlWithoutDomain(element.attr("href"))
-        manga.title = element.text().trim()
-        return manga
+    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+        setUrlWithoutDomain(element.attr("href"))
+        title = element.text().trim()
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
-    }
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "div.next > a.gbutton:contains(Next »)"
 
@@ -69,34 +65,29 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
-    }
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun mangaDetailsParse(document: Document): SManga {
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val infoElement = document.select("div.mng_det > div.mng_ifo")
 
-        val manga = SManga.create()
         infoElement.select("div.det > p").forEachIndexed { i, el ->
             if (i == 0) {
-                manga.description = el.text().trim()
+                description = el.text().trim()
             }
             when (el.select("b").text().trim()) {
-                "Author" -> manga.author = el.select("a").text()?.trim()
-                "Artist" -> manga.artist = el.select("a").text()?.trim()
-                "Category" -> manga.genre = el.select("a").map {
+                "Author" -> author = el.select("a").text()?.trim()
+                "Artist" -> artist = el.select("a").text()?.trim()
+                "Category" -> genre = el.select("a").map {
                         it.text().trim()
                     }.joinToString(", ")
-                "Status" -> manga.status = el.select("a").text().orEmpty().let {
+                "Status" -> status = el.select("a").text().orEmpty().let {
                         parseStatus(it)
                     }
             }
         }
-        manga.thumbnail_url = infoElement.select("div.cvr_ara > img").attr("src")
-
-        return manga
+        thumbnail_url = infoElement.select("div.cvr_ara > img").attr("src")
     }
 
     private fun parseStatus(status: String) = when {
@@ -105,14 +96,30 @@ class MerakiScans : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        var response = response
+        val chapters = mutableListOf<SChapter>()
+        do {
+            val document = response.asJsoup()
+            document.select(chapterListSelector()).forEach {
+                chapters.add(chapterFromElement(it))
+            }
+            val nextPage = chapterListNextPageSelector().let { document.select(it).first() }
+            if (nextPage != null) {
+                response = client.newCall(GET(nextPage.attr("href"))).execute()
+            }
+        } while (nextPage != null)
+        return chapters
+    }
+
+    private fun chapterListNextPageSelector() = "ul.pgg > li > a:contains(Next)"
+
     override fun chapterListSelector() = "ul.lst > li.lng_ > a"
 
-    override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(element.attr("href"))
-        chapter.name = element.select("b.val").text().trim()
-        chapter.date_upload = element.select("b.dte").text().trim().let { parseChapterDate(it) }
-        return chapter
+    override fun chapterFromElement(element: Element) = SChapter.create().apply {
+        setUrlWithoutDomain(element.attr("href"))
+        name = element.select("b.val").text().trim()
+        date_upload = element.select("b.dte").text().trim().let { parseChapterDate(it) }
     }
 
     private fun parseChapterDate(date: String): Long {
