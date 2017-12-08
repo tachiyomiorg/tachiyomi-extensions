@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.source.online.russian
+package eu.kanade.tachiyomi.extension.ru.mintmanga
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
