@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.all.mmrcms
 private typealias MMRSource = MyMangaReaderCMSSource
 
 // GENERATED FILE, DO NOT MODIFY!
-// Generated on Wed Oct 25 23:35:45 EDT 2017
+// Generated on Sat Dec  9 11:18:23 EST 2017
 
 val SOURCES = mutableListOf<MMRSource>().apply {
     // مانجا اون لاين
@@ -57,7 +57,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
             true,
             "http://readcomics.website/comic/",
             mutableListOf<Pair<String, String>>().apply {
-                this += Pair("17", "One Shots &amp; TPBs")
+                this += Pair("17", "One Shots & TPBs")
                 this += Pair("33", "DC Comics")
                 this += Pair("34", "Marvel Comics")
                 this += Pair("35", "Boom Studios")
@@ -110,7 +110,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("82", "MAD")
                 this += Pair("83", "Comics Experience")
                 this += Pair("84", "Alterna Comics")
-                this += Pair("85", "Lion Force")
+                this += Pair("85", "Lion Forge")
                 this += Pair("86", "Benitez")
                 this += Pair("87", "Storm King")
                 this += Pair("88", "Sucker")
@@ -244,13 +244,13 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("32", "Yuri")
             }
     )
-    // Manga Mofo
+    // Manga Spoil
     this += MMRSource(
             "en",
-            "Manga Mofo",
-            "http://mangamofo.com",
+            "Manga Spoil",
+            "http://mangaspoil.com",
             false,
-            "http://mangamofo.com/manga/",
+            "http://mangaspoil.com/manga/",
             mutableListOf<Pair<String, String>>().apply {
                 this += Pair("1", "Action")
                 this += Pair("33", "Adult")
@@ -359,94 +359,6 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("84", "Yuri")
             }
     )
-    // MangaBlue
-    this += MMRSource(
-            "en",
-            "MangaBlue",
-            "http://mangablue.com",
-            true,
-            "http://mangablue.com/manga/",
-            mutableListOf<Pair<String, String>>().apply {
-                this += Pair("1", "Action")
-                this += Pair("2", "Adventure")
-                this += Pair("3", "Comedy")
-                this += Pair("4", "Doujinshi")
-                this += Pair("5", "Drama")
-                this += Pair("6", "Ecchi")
-                this += Pair("7", "Fantasy")
-                this += Pair("8", "Gender Bender")
-                this += Pair("9", "Harem")
-                this += Pair("10", "Historical")
-                this += Pair("11", "Horror")
-                this += Pair("12", "Josei")
-                this += Pair("13", "Martial Arts")
-                this += Pair("14", "Mature")
-                this += Pair("15", "Mecha")
-                this += Pair("16", "Mystery")
-                this += Pair("17", "One Shot")
-                this += Pair("18", "Psychological")
-                this += Pair("19", "Romance")
-                this += Pair("20", "School Life")
-                this += Pair("21", "Sci-fi")
-                this += Pair("22", "Seinen")
-                this += Pair("23", "Shoujo")
-                this += Pair("24", "Shoujo Ai")
-                this += Pair("25", "Shounen")
-                this += Pair("26", "Shounen Ai")
-                this += Pair("27", "Slice of Life")
-                this += Pair("28", "Sports")
-                this += Pair("29", "Supernatural")
-                this += Pair("30", "Tragedy")
-                this += Pair("31", "Yaoi")
-                this += Pair("32", "Yuri")
-                this += Pair("33", "Smut")
-                this += Pair("34", "Vampire")
-                this += Pair("35", "Adult")
-                this += Pair("36", "Webtoon")
-            }
-    )
-    // Manga Forest
-    this += MMRSource(
-            "en",
-            "Manga Forest",
-            "https://mangaforest.com",
-            false,
-            "http://mangaforest.com/manga/",
-            mutableListOf<Pair<String, String>>().apply {
-                this += Pair("1", "Action")
-                this += Pair("2", "Adventure")
-                this += Pair("3", "Comedy")
-                this += Pair("4", "Doujinshi")
-                this += Pair("5", "Drama")
-                this += Pair("6", "Ecchi")
-                this += Pair("7", "Fantasy")
-                this += Pair("8", "Gender Bender")
-                this += Pair("9", "Harem")
-                this += Pair("10", "Historical")
-                this += Pair("11", "Horror")
-                this += Pair("12", "Josei")
-                this += Pair("13", "Martial Arts")
-                this += Pair("14", "Mature")
-                this += Pair("15", "Mecha")
-                this += Pair("16", "Mystery")
-                this += Pair("17", "One Shot")
-                this += Pair("18", "Psychological")
-                this += Pair("19", "Romance")
-                this += Pair("20", "School Life")
-                this += Pair("21", "Sci-fi")
-                this += Pair("22", "Seinen")
-                this += Pair("23", "Shoujo")
-                this += Pair("24", "Shoujo Ai")
-                this += Pair("25", "Shounen")
-                this += Pair("26", "Shounen Ai")
-                this += Pair("27", "Slice of Life")
-                this += Pair("28", "Sports")
-                this += Pair("29", "Supernatural")
-                this += Pair("30", "Tragedy")
-                this += Pair("31", "Yaoi")
-                this += Pair("32", "Yuri")
-            }
-    )
     // DManga
     this += MMRSource(
             "en",
@@ -487,6 +399,82 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("30", "Tragedy")
                 this += Pair("31", "Yaoi")
                 this += Pair("32", "Yuri")
+            }
+    )
+    // Chibi Manga Reader
+    this += MMRSource(
+            "en",
+            "Chibi Manga Reader",
+            "http://www.cmreader.info",
+            false,
+            "http://www.cmreader.info/manga/",
+            mutableListOf<Pair<String, String>>().apply {
+                this += Pair("1", "Action")
+                this += Pair("2", "Adventure")
+                this += Pair("3", "Comedy")
+                this += Pair("5", "Drama")
+                this += Pair("7", "Fantasy")
+                this += Pair("8", "Gender Bender")
+                this += Pair("9", "Harem")
+                this += Pair("10", "Historical")
+                this += Pair("11", "Horror")
+                this += Pair("12", "Josei")
+                this += Pair("13", "Martial Arts")
+                this += Pair("14", "Mature")
+                this += Pair("16", "Mystery")
+                this += Pair("17", "One Shot")
+                this += Pair("18", "Psychological")
+                this += Pair("19", "Romance")
+                this += Pair("20", "School Life")
+                this += Pair("21", "Sci-fi")
+                this += Pair("23", "Shoujo")
+                this += Pair("25", "Slice of Life")
+                this += Pair("27", "Smut")
+                this += Pair("28", "Sports")
+                this += Pair("29", "Supernatural")
+                this += Pair("30", "Tragedy")
+            }
+    )
+    // ZXComic
+    this += MMRSource(
+            "en",
+            "ZXComic",
+            "http://zxcomic.com",
+            false,
+            "http://zxcomic.com/comic/",
+            mutableListOf<Pair<String, String>>().apply {
+                this += Pair("1", "Action")
+                this += Pair("2", "Adventure")
+                this += Pair("3", "Comedy")
+                this += Pair("5", "Drama")
+                this += Pair("7", "Fantasy")
+                this += Pair("8", "Gender Bender")
+                this += Pair("9", "Harem")
+                this += Pair("10", "Historical")
+                this += Pair("11", "Horror")
+                this += Pair("13", "Martial Arts")
+                this += Pair("14", "Mature")
+                this += Pair("15", "Mecha")
+                this += Pair("16", "Mystery")
+                this += Pair("17", "One Shot")
+                this += Pair("18", "Psychological")
+                this += Pair("19", "Romance")
+                this += Pair("20", "School Life")
+                this += Pair("21", "Sci-fi")
+                this += Pair("27", "Slice of Life")
+                this += Pair("28", "Sports")
+                this += Pair("29", "Supernatural")
+                this += Pair("30", "Tragedy")
+                this += Pair("33", "Superhero")
+                this += Pair("34", "Video Games")
+                this += Pair("35", "Movies & TV")
+                this += Pair("36", "Graphic Novels")
+                this += Pair("37", "Family")
+                this += Pair("38", "Thriller")
+                this += Pair("39", "Crime")
+                this += Pair("40", "Spy")
+                this += Pair("41", "Suspense")
+                this += Pair("42", "Leading Ladies")
             }
     )
     // My-mangas.com
@@ -581,6 +569,7 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("30", "Tragedy")
                 this += Pair("31", "Yaoi")
                 this += Pair("32", "Yuri")
+                this += Pair("33", "Comics")
             }
     )
     // Manga-LEL
@@ -661,43 +650,6 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("29", "Surnaturel")
                 this += Pair("31", "Yaoi")
                 this += Pair("32", "Yuri")
-            }
-    )
-    // Tous Vos Scans
-    this += MMRSource(
-            "fr",
-            "Tous Vos Scans",
-            "http://www.tous-vos-scans.com",
-            false,
-            "http://www.tous-vos-scans.com/manga/",
-            mutableListOf<Pair<String, String>>().apply {
-                this += Pair("1", "Action")
-                this += Pair("2", "Aventure")
-                this += Pair("3", "Comédie")
-                this += Pair("5", "Drame")
-                this += Pair("6", "Ecchi")
-                this += Pair("7", "Fantastique")
-                this += Pair("9", "Harem")
-                this += Pair("11", "Horreur")
-                this += Pair("12", "Josei")
-                this += Pair("13", "Arts Martiaux")
-                this += Pair("14", "Adulte")
-                this += Pair("15", "Mecha")
-                this += Pair("16", "Mystère")
-                this += Pair("17", "One Shot")
-                this += Pair("18", "Psychologique")
-                this += Pair("19", "Romance")
-                this += Pair("20", "Vie Scolaire")
-                this += Pair("21", "Science-Fiction")
-                this += Pair("22", "Seinen")
-                this += Pair("23", "Shôjo")
-                this += Pair("25", "Shônen")
-                this += Pair("27", "Tranche de Vie")
-                this += Pair("28", "Sports")
-                this += Pair("29", "Surnaturel")
-                this += Pair("31", "Yaoi")
-                this += Pair("32", "Yuri")
-                this += Pair("33", "Historique")
             }
     )
     // Manga Desu
@@ -877,6 +829,51 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("33", "Isekai")
             }
     )
+    // Manga Seru
+    this += MMRSource(
+            "id",
+            "Manga Seru",
+            "http://www.mangaseru.top",
+            false,
+            "http://www.mangaseru.top/manga/",
+            mutableListOf<Pair<String, String>>().apply {
+                this += Pair("1", "Action")
+                this += Pair("2", "Adventure")
+                this += Pair("3", "Comedy")
+                this += Pair("4", "Doujinshi")
+                this += Pair("5", "Drama")
+                this += Pair("6", "Ecchi")
+                this += Pair("7", "Fantasy")
+                this += Pair("8", "Gender Bender")
+                this += Pair("9", "Harem")
+                this += Pair("10", "Historical")
+                this += Pair("11", "Horror")
+                this += Pair("12", "Josei")
+                this += Pair("13", "Martial Arts")
+                this += Pair("14", "Mature")
+                this += Pair("15", "Mecha")
+                this += Pair("16", "Mystery")
+                this += Pair("17", "One Shot")
+                this += Pair("18", "Psychological")
+                this += Pair("19", "Romance")
+                this += Pair("20", "School Life")
+                this += Pair("21", "Sci-fi")
+                this += Pair("22", "Seinen")
+                this += Pair("23", "Shoujo")
+                this += Pair("24", "Shoujo Ai")
+                this += Pair("25", "Shounen")
+                this += Pair("26", "Shounen Ai")
+                this += Pair("27", "Slice of Life")
+                this += Pair("28", "Sports")
+                this += Pair("29", "Supernatural")
+                this += Pair("30", "Tragedy")
+                this += Pair("31", "Yaoi")
+                this += Pair("32", "Yuri")
+                this += Pair("33", "Bara")
+                this += Pair("34", "Indonesia")
+                this += Pair("35", "English")
+            }
+    )
     // Mangaraw Online
     this += MMRSource(
             "ja",
@@ -918,6 +915,48 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("31", "Yaoi")
                 this += Pair("32", "Yuri")
                 this += Pair("33", "Adult")
+            }
+    )
+    // Mangazuki RAWS
+    this += MMRSource(
+            "ja",
+            "Mangazuki RAWS",
+            "https://raws.mangazuki.co",
+            false,
+            "https://raws.mangazuki.co/manga/",
+            mutableListOf<Pair<String, String>>().apply {
+                this += Pair("1", "Action")
+                this += Pair("2", "Adventure")
+                this += Pair("3", "Comedy")
+                this += Pair("4", "Doujinshi")
+                this += Pair("5", "Drama")
+                this += Pair("6", "Ecchi")
+                this += Pair("7", "Fantasy")
+                this += Pair("8", "Gender Bender")
+                this += Pair("9", "Harem")
+                this += Pair("10", "Historical")
+                this += Pair("11", "Horror")
+                this += Pair("12", "Josei")
+                this += Pair("13", "Martial Arts")
+                this += Pair("14", "Mature")
+                this += Pair("15", "Mecha")
+                this += Pair("16", "Mystery")
+                this += Pair("17", "One Shot")
+                this += Pair("18", "Psychological")
+                this += Pair("19", "Romance")
+                this += Pair("20", "School Life")
+                this += Pair("21", "Sci-fi")
+                this += Pair("22", "Seinen")
+                this += Pair("23", "Shoujo")
+                this += Pair("24", "Shoujo Ai")
+                this += Pair("25", "Shounen")
+                this += Pair("26", "Shounen Ai")
+                this += Pair("27", "Slice of Life")
+                this += Pair("28", "Sports")
+                this += Pair("29", "Supernatural")
+                this += Pair("30", "Tragedy")
+                this += Pair("31", "Yaoi")
+                this += Pair("32", "Yuri")
             }
     )
     // Candy Scans
@@ -1121,6 +1160,18 @@ val SOURCES = mutableListOf<MMRSource>().apply {
                 this += Pair("32", "Yuri")
                 this += Pair("33", "Vampir")
                 this += Pair("34", "Webtoon")
+            }
+    )
+    // HentaiShark
+    this += MMRSource(
+            "other",
+            "HentaiShark",
+            "http://www.hentaishark.com",
+            false,
+            "http://www.hentaishark.com/manga/",
+            mutableListOf<Pair<String, String>>().apply {
+                this += Pair("4", "Doujinshi")
+                this += Pair("33", "Manga")
             }
     )
 }

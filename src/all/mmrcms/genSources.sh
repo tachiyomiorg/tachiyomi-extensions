@@ -89,6 +89,8 @@ function genSource() {
     # Find and transform categories
     CATEGORIES="$(xmllint --xpath "//select[@name='categories[]']/option" --html tmp.html 2>/dev/null |\
         sed 's/<\/option>/\")\n/g; s/<option value=\"/                this += Pair(\"/g; s/\">/\", \"/g;')"
+    # Escape HTML entities
+    CATEGORIES=$(echo "$CATEGORIES" | perl -C -MHTML::Entities -pe 'decode_entities($_);')
     # Find manga/comic URL
     ITEM_URL="$(getItemUrl)"
     # Get from home page if not on advanced search page!
@@ -134,16 +136,21 @@ gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
 # gen "en" "MangaRoot" "http://mangaroot.com"
 gen "en" "Mangawww Reader" "http://mangawww.com"
 gen "en" "MangaForLife" "http://manga4ever.com"
-gen "en" "Manga Mofo" "http://mangamofo.com"
+gen "en" "Manga Spoil" "http://mangaspoil.com"
 gen "en" "H-Manga.moe" "https://h-manga.moe"
-gen "en" "MangaBlue" "http://mangablue.com"
-gen "en" "Manga Forest" "https://mangaforest.com"
+# Protected by CloudFlare
+# gen "en" "MangaBlue" "http://mangablue.com"
+# Advanced search page exists but does not work (unsupported)
+# gen "en" "Manga Forest" "https://mangaforest.com"
 gen "en" "DManga" "http://dmanga.website"
+gen "en" "Chibi Manga Reader" "http://www.cmreader.info"
+gen "en" "ZXComic" "http://zxcomic.com"
 gen "es" "My-mangas.com" "https://my-mangas.com"
 gen "fa" "TrinityReader" "http://trinityreader.pw"
 gen "fr" "Manga-LEL" "https://www.manga-lel.com"
 gen "fr" "Manga Etonnia" "https://www.etonnia.com"
-gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
+# Went offline
+# gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
 gen "id" "Manga Desu" "http://mangadesu.net"
 # Went offline
 # gen "id" "Komik Mangafire.ID" "http://go.mangafire.id"
@@ -152,11 +159,13 @@ gen "id" "MangaOnline" "http://mangaonline.web.id"
 # gen "id" "MangaNesia" "https://manganesia.com"
 gen "id" "KOMIK.CO.ID" "https://komik.co.id"
 gen "id" "MangaID" "http://mangaid.co"
+gen "id" "Manga Seru" "http://www.mangaseru.top"
 # Went offline
 # gen "id" "Indo Manga Reader" "http://indomangareader.com"
 # Went offline
 # gen "ja" "IchigoBook" "http://ichigobook.com"
 gen "ja" "Mangaraw Online" "http://mangaraw.online"
+gen "ja" "Mangazuki RAWS" "https://raws.mangazuki.co"
 gen "pl" "Candy Scans" "http://csreader.webd.pl"
 # Advanced search screen removed (unsupported)
 # gen "pt" "Comic Space" "https://www.comicspace.com.br"
@@ -164,6 +173,8 @@ gen "pt" "Mangás Yuri" "https://www.mangasyuri.net"
 gen "ru" "NAKAMA" "http://nakama.ru"
 gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"
+# NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
+gen "other" "HentaiShark" "http://www.hentaishark.com"
 
 echo "}" >> "$TARGET"
 
