@@ -5,9 +5,9 @@ ext {
     appName = 'Tachiyomi: Mangafox'
     pkgNameSuffix = "en.mangafox"
     extClass = '.Mangafox'
-    extVersionCode = 1
-    extVersionSuffix = 1
-    libVersion = '1.0'
+    extVersionCode = 2
+    extVersionSuffix = 2
+    libVersion = '1.1'
 }
 
 apply from: "$rootDir/common.gradle"
