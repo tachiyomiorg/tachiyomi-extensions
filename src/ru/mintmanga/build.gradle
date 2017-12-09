@@ -6,8 +6,8 @@ ext {
     pkgNameSuffix = "ru.mintmanga"
     extClass = '.Mintmanga'
     extVersionCode = 3
-    extVersionSuffix = 2
-    libVersion = '1.1'
+    extVersionSuffix = 3
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
