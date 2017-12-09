@@ -7,7 +7,7 @@ ext {
     extClass = '.Mangachan'
     extVersionCode = 3
     extVersionSuffix = 2
-    libVersion = '1.1'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
