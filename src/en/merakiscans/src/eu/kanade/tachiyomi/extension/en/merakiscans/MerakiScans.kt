@@ -14,7 +14,6 @@ import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.regex.Pattern
 
 class MerakiScans : ParsedHttpSource() {
     override val name = "MerakiScans"
@@ -56,7 +55,6 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val form = FormBody.Builder().apply {
-            add("cmd_wpm_search", "Search")
             add("txt_wpm_wgt_mng_sch_nme", query)
             add("cmd_wpm_wgt_mng_sch_sbm", "1")
         }
