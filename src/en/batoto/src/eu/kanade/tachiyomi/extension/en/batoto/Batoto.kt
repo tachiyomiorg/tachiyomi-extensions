@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.batoto
 
+import android.content.SharedPreferences
 import android.text.Html
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -20,6 +21,9 @@ import java.util.regex.Pattern
 
 class Batoto : ParsedHttpSource(), LoginSource {
 
+
+    override lateinit var sharedPreference: SharedPreferences
+
     override val id: Long = 1
 
     override val name = "Batoto"
@@ -29,6 +33,11 @@ class Batoto : ParsedHttpSource(), LoginSource {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    private val userNamePref = "pref_source_username"
+
+    private val passwordPref = "pref_source_password"
+
 
     private val datePattern = Pattern.compile("(\\d+|A|An)\\s+(.*?)s? ago.*")
 
@@ -281,17 +290,32 @@ class Batoto : ParsedHttpSource(), LoginSource {
         return client.newCall(POST(url, headers, payload)).asObservable()
     }
 
-    override fun isAuthenticationSuccessful(response: Response) =
+    private fun isAuthenticationSuccessful(response: Response) =
             response.priorResponse() != null && response.priorResponse()!!.code() == 302
 
     override fun isLogged(): Boolean {
         return network.cookies.get(URI(baseUrl)).any { it.name() == "pass_hash" }
     }
 
+    override fun getPassword(): String {
+        return sharedPreference.getString(passwordPref, "")
+    }
+
+    override fun getUserName(): String {
+        return sharedPreference.getString(userNamePref, "")
+    }
+
+    override fun setUserNameAndPassword(username: String, password: String) {
+        sharedPreference.edit()
+                .putString(userNamePref, username)
+                .putString(passwordPref, password)
+                .apply()
+    }
+
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         if (!isLogged()) {
-            val username = preferences.sourceUsername(this)
-            val password = preferences.sourcePassword(this)
+            val username = getUserName()
+            val password = getPassword()
 
             if (username.isNullOrEmpty() || password.isNullOrEmpty()) {
                 return Observable.error(Exception("User not logged"))
