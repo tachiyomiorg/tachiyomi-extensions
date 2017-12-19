@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.batoto
+package eu.kanade.tachiyomi.extension.all.batoto
 
 import android.content.SharedPreferences
 import android.text.Html
@@ -19,18 +19,14 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 
-class Batoto : ParsedHttpSource(), LoginSource {
+open class Batoto(override val lang: String, val bLang: String) : ParsedHttpSource(), LoginSource {
 
 
     override lateinit var sharedPreference: SharedPreferences
 
-    override val id: Long = 1
-
     override val name = "Batoto"
 
     override val baseUrl = "https://bato.to"
-
-    override val lang = "en"
 
     override val supportsLatest = true
 
@@ -56,7 +52,7 @@ class Batoto : ParsedHttpSource(), LoginSource {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Cookie", "lang_option=English")
+            .add("Cookie", "lang_option=" + bLang)
 
     private val pageHeaders = super.headersBuilder()
             .add("Referer", "$baseUrl/reader")
@@ -193,7 +189,7 @@ class Batoto : ParsedHttpSource(), LoginSource {
         return document.select(chapterListSelector()).map { chapterFromElement(it) }
     }
 
-    override fun chapterListSelector() = "tr.row.lang_English.chapter_row"
+    override fun chapterListSelector() = "tr.row.lang_" + bLang + ".chapter_row"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a[href*=bato.to/reader").first()
