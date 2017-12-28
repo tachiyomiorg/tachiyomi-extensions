@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Batoto'
+    pkgNameSuffix = "all.batoto"
+    extClass = ".BSpanish; .BEnglish; .BFrench; .BGerman; .BPortuguese; .BTurkish; .BIndonesian; .BGreek; .BFilipino; .BPolish; .BThai; .BMalay; .BHungarian; .BRomanian; .BArabic; .BHebrew; .BRussian; .BVietnamese; .BDutch; .BBengali; .BPersian; .BCzech; .BBrazilian; .BBulgarian; .BDanish; .BEsperanto; .BSwedish; .BLithuanian; .BOther"
+    extVersionCode = 1
+    extVersionSuffix = 0
+    libVersion = '1.3'
+}
+
+apply from: "$rootDir/common.gradle"
