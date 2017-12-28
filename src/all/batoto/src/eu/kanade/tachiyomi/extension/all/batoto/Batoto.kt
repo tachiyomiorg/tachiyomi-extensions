@@ -14,6 +14,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URI
+import java.security.MessageDigest
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,6 +26,15 @@ open class Batoto(override val lang: String, val bLang: String) : ParsedHttpSour
     override lateinit var sharedPreference: SharedPreferences
 
     override val name = "Batoto"
+
+    override val id: Long = when(lang){
+        "en" -> 1
+        else -> {
+            val key = "${name.toLowerCase()}/$lang/$versionId"
+            val bytes = MessageDigest.getInstance("MD5").digest(key.toByteArray())
+            (0..7).map { bytes[it].toLong() and 0xff shl 8 * (7 - it) }.reduce(Long::or) and Long.MAX_VALUE
+        }
+    }
 
     override val baseUrl = "https://bato.to"
 
