@@ -154,10 +154,12 @@ gen "fr" "Manga Etonnia" "https://www.etonnia.com"
 gen "id" "Manga Desu" "http://mangadesu.net"
 # Went offline
 # gen "id" "Komik Mangafire.ID" "http://go.mangafire.id"
-gen "id" "MangaOnline" "http://mangaonline.web.id"
+# Went offline
+# gen "id" "MangaOnline" "http://mangaonline.web.id"
 # Went offline
 # gen "id" "MangaNesia" "https://manganesia.com"
-gen "id" "KOMIK.CO.ID" "https://komik.co.id"
+# Went offline
+# gen "id" "KOMIK.CO.ID" "https://komik.co.id"
 gen "id" "MangaID" "http://mangaid.co"
 gen "id" "Manga Seru" "http://www.mangaseru.top"
 # Went offline
