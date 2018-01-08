@@ -7,11 +7,10 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -22,8 +21,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                              override val baseUrl: String,
                              override val supportsLatest: Boolean,
                              private val itemUrl: String,
-                             private val categoryMappings: List<Pair<String, String>>) : ParsedHttpSource() {
-    private val dateFormatter = SimpleDateFormat("d MMM. yyyy", Locale.US)
+                             private val categoryMappings: List<Pair<String, String>>) : HttpSource() {
     private val jsonParser = JsonParser()
     private val itemUrlPath = Uri.parse(itemUrl).pathSegments.first()
 
@@ -42,18 +40,6 @@ class MyMangaReaderCMSSource(override val lang: String,
         return GET(url.toString())
     }
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=last_release&asc=false")
-
-    override fun popularMangaFromElement(element: Element) = throw UnsupportedOperationException("Unused method called!")
-    override fun searchMangaFromElement(element: Element) = throw UnsupportedOperationException("Unused method called!")
-    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("Unused method called!")
-
-    override fun popularMangaSelector() = throw UnsupportedOperationException("Unused method called!")
-    override fun searchMangaSelector() = throw UnsupportedOperationException("Unused method called!")
-    override fun latestUpdatesSelector() = throw UnsupportedOperationException("Unused method called!")
-
-    override fun popularMangaNextPageSelector() = throw UnsupportedOperationException("Unused method called!")
-    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Unused method called!")
-    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("Unused method called!")
 
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
@@ -77,28 +63,25 @@ class MyMangaReaderCMSSource(override val lang: String,
     }
     override fun latestUpdatesParse(response: Response) = internalMangaParse(response)
 
-    private fun internalMangaParse(response: Response) = internalMangaParse(response.asJsoup())
-    private fun internalMangaParse(document: Document)
-            = MangasPage(document.getElementsByClass("col-sm-6").map {
-        SManga.create().apply {
-            val urlElement = it.getElementsByClass("chart-title")
-            setUrlWithoutDomain(urlElement.attr("href"))
-            title = urlElement.text().trim()
-            thumbnail_url = it.select(".media-left img").attr("src")
-
-            // Guess thumbnails on broken websites
-            if(thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false) {
-                thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
+    private fun internalMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        return MangasPage(document.getElementsByClass("col-sm-6").map {
+            SManga.create().apply {
+                val urlElement = it.getElementsByClass("chart-title")
+                setUrlWithoutDomain(urlElement.attr("href"))
+                title = urlElement.text().trim()
+                thumbnail_url = it.select(".media-left img").attr("src")
+            
+                // Guess thumbnails on broken websites
+                if (thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false) {
+                    thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
+                }
             }
-        }
-    }, document.select(".pagination a[rel=next]").isNotEmpty())
+        }, document.select(".pagination a[rel=next]").isNotEmpty())
+    }
 
-    /**
-     * Returns the details of the manga from the given [document].
-     *
-     * @param document the parsed document.
-     */
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
+    override fun mangaDetailsParse(response:Response) = SManga.create().apply {
+        val document = response.asJsoup()
         title = document.getElementsByClass("widget-title").text().trim()
         thumbnail_url = document.select(".row .img-responsive").attr("src")
         description = document.select(".row .well p").text().trim()
@@ -177,10 +160,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each chapter.
      */
-    override fun chapterListSelector() = ".chapters > li:not(.btn)"
-
-    // Unused as we need to be able to return null in this function
-    override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Unused method called!")
+    fun chapterListSelector() = ".chapters > li:not(.btn)"
 
     /**
      * Returns a chapter from the given element.
@@ -205,7 +185,7 @@ class MyMangaReaderCMSSource(override val lang: String,
         // Parse date
         val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
         val formattedDate = try {
-            dateFormatter.parse(dateText).time
+            DATE_FORMAT.parse(dateText).time
         } catch (e: ParseException) {
             0L
         }
@@ -213,25 +193,15 @@ class MyMangaReaderCMSSource(override val lang: String,
 
         return chapter
     }
-
-    /**
-     * Returns a page list from the given document.
-     *
-     * @param document the parsed document.
-     */
-    override fun pageListParse(document: Document)
-            = document.select("#all > .img-responsive")
+    
+    override fun pageListParse(response: Response)
+            = response.asJsoup().select("#all > .img-responsive")
             .mapIndexed { i, e ->
                 val url = e.attr("data-src").trim()
                 Page(i, url, url)
             }
-
-    /**
-     * Returns the absolute url to the source image from the document.
-     *
-     * @param document the parsed document.
-     */
-    override fun imageUrlParse(document: Document)
+    
+    override fun imageUrlParse(response: Response)
             = throw UnsupportedOperationException("Unused method called!")
 
     /**
@@ -295,5 +265,9 @@ class MyMangaReaderCMSSource(override val lang: String,
      */
     interface UriFilter {
         fun addToUri(uri: Uri.Builder)
+    }
+    
+    companion object {
+        private val DATE_FORMAT = SimpleDateFormat("d MMM. yyyy", Locale.US)
     }
 }
