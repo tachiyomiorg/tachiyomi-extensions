@@ -30,13 +30,17 @@ class MangaPark : ParsedHttpSource() {
 
     override fun popularMangaSelector() = directorySelector
 
+    private fun cleanUrl(url: String) = if (url.startsWith("//"))
+        "http:$url"
+    else url
+
     private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
         url = coverElement.attr("href")
 
         title = coverElement.attr("title")
 
-        thumbnail_url = coverElement.getElementsByTag("img").attr("src")
+        thumbnail_url = cleanUrl(coverElement.getElementsByTag("img").attr("src"))
     }
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
@@ -73,7 +77,7 @@ class MangaPark : ParsedHttpSource() {
 
         title = coverElement.attr("title")
 
-        thumbnail_url = coverElement.attr("src")
+        thumbnail_url = cleanUrl(coverElement.attr("src"))
 
         document.select(".attr > tbody > tr").forEach {
             val type = it.getElementsByTag("th").first().text().trim().toLowerCase()
@@ -117,14 +121,14 @@ class MangaPark : ParsedHttpSource() {
 
     private fun parseDate(date: String): Long {
         val lcDate = date.toLowerCase()
-        if(lcDate.endsWith("ago")) return parseRelativeDate(lcDate)
+        if (lcDate.endsWith("ago")) return parseRelativeDate(lcDate)
 
         //Handle 'yesterday' and 'today'
         var relativeDate: Calendar? = null
-        if(lcDate.startsWith("yesterday")) {
+        if (lcDate.startsWith("yesterday")) {
             relativeDate = Calendar.getInstance()
             relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
-        } else if(lcDate.startsWith("today")) {
+        } else if (lcDate.startsWith("today")) {
             relativeDate = Calendar.getInstance()
         }
 
@@ -176,7 +180,7 @@ class MangaPark : ParsedHttpSource() {
 
     override fun pageListParse(document: Document)
             = document.getElementsByClass("img").map {
-        Page(it.attr("i").toInt() - 1, "", it.attr("src"))
+        Page(it.attr("i").toInt() - 1, "", cleanUrl(it.attr("src")))
     }
 
     //Unused, we can get image urls directly from the chapter page
