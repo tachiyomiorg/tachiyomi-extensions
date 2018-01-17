@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.ru.readmanga
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -26,6 +27,11 @@ class Readmanga : ParsedHttpSource() {
     override fun popularMangaSelector() = "div.desc"
 
     override fun latestUpdatesSelector() = "div.desc"
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        add("Referer", baseUrl)
+    }
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
