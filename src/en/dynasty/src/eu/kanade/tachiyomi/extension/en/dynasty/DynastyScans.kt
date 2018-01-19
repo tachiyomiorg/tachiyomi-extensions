@@ -17,7 +17,6 @@ import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.regex.Pattern
 
 abstract class DynastyScans : ParsedHttpSource() {
 
@@ -155,12 +154,8 @@ abstract class DynastyScans : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         try {
-            val script = document.select("script").last()
-            val p = Pattern.compile("(?s)(pages)\\s??=\\s??\\[(.*?)\\]")
-            val m = p.matcher(script.html())
-            var imageUrls = JSONArray()
-            while (m.find())
-                imageUrls = JSONArray("[" + m.group(2) + "]")
+            val imageUrl = document.select("script").last().html().substringAfter("var pages = [").substringBefore("];")
+            var imageUrls = JSONArray("[$imageUrl]")
 
             (0..imageUrls.length() - 1)
                     .map { imageUrls.getJSONObject(it) }
