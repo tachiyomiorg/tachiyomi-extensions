@@ -1,11 +1,9 @@
 package eu.kanade.tachiyomi.extension.en.mangadex
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -54,10 +52,16 @@ class Mangadex : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/?page=search&title=$query", headers)
+        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("title", query)
+        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+            when (filter) {
+                is TextField -> url.addQueryParameter(filter.key, filter.state)
+            }
+        }
+        return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = ".table.table-striped.table-hover.table-condensed tr:not(:first-child)"
+    override fun searchMangaSelector() = ".table.table-striped.table-hover.table-condensed tbody tr"
 
     override fun searchMangaFromElement(element: Element): SManga {
         return latestUpdatesFromElement(element)
@@ -117,5 +121,12 @@ class Mangadex : ParsedHttpSource() {
         status.contains("Licensed") -> SManga.LICENSED
         else -> SManga.UNKNOWN
     }
+
+    private class TextField(name: String, val key: String) : Filter.Text(name)
+
+    override fun getFilterList() = FilterList(
+            TextField("Author", "author"),
+            TextField("Artist", "artist")
+    )
 
 }
