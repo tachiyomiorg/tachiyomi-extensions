@@ -28,7 +28,7 @@ class Mangastream : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "table.table-striped > tbody > tr > td:nth-of-type(1)"
 
-    override fun latestUpdatesSelector() = "div.side-nav > ul.new-list > li"
+    override fun latestUpdatesSelector() = "div.col-sm-4 > div.side-nav > ul.new-list > li"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga", headers)
 
@@ -46,7 +46,7 @@ class Mangastream : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a").first().let {
-            val name = it.attr("href").substringAfter("http://readms.net/r/").substringBefore("/")
+            val name = it.attr("href").substringAfter("/r/").substringBefore("/")
             manga.setUrlWithoutDomain("http://mangastream.com/manga/$name")
             manga.title = it.html().substringBefore(" <strong>").substringAfterLast(">")
         }
