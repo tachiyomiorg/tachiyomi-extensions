@@ -84,7 +84,7 @@ class Mangadex : ParsedHttpSource() {
         return manga
     }
 
-    override fun chapterListSelector() = ".table.table-striped.table-hover.table-condensed tr:not(:first-child)"
+    override fun chapterListSelector() = ".table.table-striped.table-hover.table-condensed tbody tr"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("td:eq(0)").first()
