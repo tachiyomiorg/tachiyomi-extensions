@@ -19,6 +19,8 @@ class Mangadex : ParsedHttpSource() {
 
     override val lang = "en"
 
+    val internalLang = "gb"
+
     override val client = network.cloudflareClient
 
     override fun popularMangaSelector() = latestUpdatesSelector()
@@ -84,7 +86,7 @@ class Mangadex : ParsedHttpSource() {
         return manga
     }
 
-    override fun chapterListSelector() = ".table.table-striped.table-hover.table-condensed tbody tr"
+    override fun chapterListSelector() = ".table.table-striped.table-hover.table-condensed tbody tr:has(img[src*=$internalLang])"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("td:eq(0)").first()
