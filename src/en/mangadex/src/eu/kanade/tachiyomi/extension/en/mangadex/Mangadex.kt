@@ -81,7 +81,7 @@ class Mangadex : ParsedHttpSource() {
     override fun searchMangaSelector() = ".table.table-striped.table-hover.table-condensed tbody tr"
 
     override fun searchMangaFromElement(element: Element): SManga {
-        return latestUpdatesFromElement(element)
+        return popularMangaFromElement(element)
     }
 
     override fun searchMangaNextPageSelector() = null
