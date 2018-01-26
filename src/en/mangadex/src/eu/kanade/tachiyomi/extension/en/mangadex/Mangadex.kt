@@ -109,7 +109,7 @@ class Mangadex : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("td:eq(0)").first()
         val dateElement = element.select("td:eq(6)").first()
-        val scanlatorElement = element.select("td:eq(3)").first()
+        val scanlatorElement = element.select("td:eq(2)").first()
 
         val chapter = SChapter.create()
         chapter.url = (urlElement.select("a").attr("href"))
