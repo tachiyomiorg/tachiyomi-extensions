@@ -132,7 +132,14 @@ class Mangadex : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = baseUrl + document.select("#current_page").first().attr("src")
+    override fun imageUrlParse(document: Document): String {
+        val attr = document.select("#current_page").first().attr("src")
+
+        if (attr.startsWith("http")) {
+            return attr
+        }
+        return baseUrl + attr
+    }
 
     private fun parseStatus(status: String?) = when {
         status == null -> SManga.UNKNOWN
