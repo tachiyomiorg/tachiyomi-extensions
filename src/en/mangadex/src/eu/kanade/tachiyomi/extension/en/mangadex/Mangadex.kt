@@ -98,7 +98,7 @@ class Mangadex : ParsedHttpSource() {
         manga.description = infoElement.select("tr:eq(7) td").first()?.text()
         manga.thumbnail_url = imageElement.select("img").first()?.attr("src").let { baseUrl + "/" + it }
         var genres = mutableListOf<String>()
-        genreElement.forEach { genres.add(it.text()) }
+        genreElement?.forEach { genres.add(it.text()) }
         manga.genre = genres.joinToString(", ")
 
         return manga
