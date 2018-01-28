@@ -50,7 +50,7 @@ class Readcomiconline : ParsedHttpSource() {
         return popularMangaFromElement(element)
     }
 
-    override fun popularMangaNextPageSelector() = "li > a:contains(› Next)"
+    override fun popularMangaNextPageSelector() = "li > a:contains(Next)"
 
     override fun latestUpdatesNextPageSelector(): String = "ul.pager > li > a:contains(Next)"
 
