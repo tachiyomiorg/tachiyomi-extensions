@@ -33,7 +33,8 @@ class Mangadex : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/$page", headers)
+        val pageStr = if (page != 1) "" + ((page * 20) - 20) else ""
+        return GET("$baseUrl/1/$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -57,7 +58,7 @@ class Mangadex : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
-    override fun latestUpdatesNextPageSelector() = null
+    override fun latestUpdatesNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("title", query)
