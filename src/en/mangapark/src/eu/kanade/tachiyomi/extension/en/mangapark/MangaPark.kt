@@ -40,7 +40,6 @@ class MangaPark : ParsedHttpSource() {
 
         title = coverElement.attr("title")
 
-        thumbnail_url = cleanUrl(coverElement.getElementsByTag("img").attr("src"))
     }
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
