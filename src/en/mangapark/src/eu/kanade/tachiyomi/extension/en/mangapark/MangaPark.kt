@@ -106,14 +106,17 @@ class MangaPark : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?latest")
 
     //TODO MangaPark has "versioning"
-    //TODO Currently we just use the version that is expanded by default
+    //TODO Previously we just use the version that is expanded by default however this caused an issue when a manga didnt have an expanded version
+    //TODO if we just choose one to expand it will cause potential missing chapters
+    //TODO right now all versions are combined so no chapters are missed
     //TODO Maybe make it possible for users to view the other versions as well?
-    override fun chapterListSelector() = ".stream:not(.collapsed) .volume .chapter li"
+    override fun chapterListSelector() = ".stream .volume .chapter li"
+
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         url = element.select("em > a").last().attr("href")
 
-        name = element.getElementsByClass("ch").text()
+        name = element.select("li span").first().text()
 
         date_upload = parseDate(element.getElementsByTag("i").text().trim())
     }
