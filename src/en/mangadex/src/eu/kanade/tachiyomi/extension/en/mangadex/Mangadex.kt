@@ -65,16 +65,19 @@ class Mangadex : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val byGenre = filters.find { it is GenreList } as GenreList
+        val byGenre = filters.find { it is GenreList }
         val genres = mutableListOf<String>()
-        byGenre.state.forEach { genre ->
-            when (genre.state) {
-                true -> genres.add(genre.id)
+        if (byGenre != null) {
+            byGenre as GenreList
+            byGenre.state.forEach { genre ->
+                when (genre.state) {
+                    true -> genres.add(genre.id)
+                }
             }
         }
-        val byLetter = filters.find { it is ByLetter } as ByLetter
-        //do browse by letter
-        if (byLetter.state != 0) {
+        //do browse by letter if set
+        val byLetter = filters.find { it is ByLetter }
+        if (byLetter != null && (byLetter as ByLetter).state != 0) {
             val s = byLetter.values[byLetter.state]
             val pageStr = if (page != 1) (((page - 1) * 100)).toString() else "0"
             val url = HttpUrl.parse("$baseUrl/titles/")!!.newBuilder().addPathSegment(s).addPathSegment(pageStr)
