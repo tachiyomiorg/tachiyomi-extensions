@@ -143,9 +143,17 @@ class Mangadex : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val url = document.baseUri()
-        document.select("#jump_page").first().select("option").forEach {
-            pages.add(Page(pages.size, url + "/" + it.attr("value")))
+        val select = document.select("#jump_page")
+        if (select.isNotEmpty()) {
+            select.first().select("option").forEach {
+                pages.add(Page(pages.size, url + "/" + it.attr("value")))
+            }
+        } else {
+            document.select(".edit.webtoon").forEach {
+                pages.add(Page(pages.size, "", it.attr("src")))
+            }
         }
+
         return pages
     }
 
