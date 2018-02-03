@@ -110,7 +110,7 @@ class Readcomiconline : ParsedHttpSource() {
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url, headers)
+    override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url+"&quality=hq", headers)
 
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
