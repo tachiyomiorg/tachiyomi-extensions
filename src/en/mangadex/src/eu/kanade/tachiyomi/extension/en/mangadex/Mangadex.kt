@@ -7,6 +7,7 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 
 class Mangadex : ParsedHttpSource() {
@@ -21,9 +22,34 @@ class Mangadex : ParsedHttpSource() {
 
     private val internalLang = "gb"
 
-    override val client = network.cloudflareClient
+    override val client = network.cloudflareClient.newBuilder()
+            .addNetworkInterceptor { chain ->
+                val newReq = chain
+                        .request()
+                        .newBuilder()
+                        .addHeader("Cookie", cookiesHeader)
+                        .build()
+
+                chain.proceed(newReq)
+            }.build()!!
 
     override fun headersBuilder() = super.headersBuilder().add("cookie", "mangadex_h_toggle=1")!!
+
+    private val pageHeaders = headersBuilder()
+            .build()
+
+    val cookiesHeader by lazy {
+        val cookies = mutableMapOf<String, String>()
+
+        cookies.put("mangadex_h_toggle", "2")
+
+        buildCookies(cookies)
+    }
+
+    fun buildCookies(cookies: Map<String, String>)
+            = cookies.entries.map {
+        "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+    }.joinToString(separator = "; ", postfix = ";")
 
     override fun popularMangaSelector() = ".table-responsive tbody tr"
 
@@ -31,12 +57,12 @@ class Mangadex : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "//" + ((page * 100) - 100) else ""
-        return GET("$baseUrl/titles$pageStr", headers)
+        return GET("$baseUrl/titles$pageStr", pageHeaders)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
         val pageStr = if (page != 1) ((page * 20) - 20) else ""
-        return GET("$baseUrl/1/$page", headers)
+        return GET("$baseUrl/1/$page", pageHeaders)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -81,7 +107,7 @@ class Mangadex : ParsedHttpSource() {
             val s = byLetter.values[byLetter.state]
             val pageStr = if (page != 1) (((page - 1) * 100)).toString() else "0"
             val url = HttpUrl.parse("$baseUrl/titles/")!!.newBuilder().addPathSegment(s).addPathSegment(pageStr)
-            return GET(url.toString(), headers)
+            return GET(url.toString(), pageHeaders)
 
         } else {
             //do traditional search
@@ -93,7 +119,7 @@ class Mangadex : ParsedHttpSource() {
             }
             if (genres.isNotEmpty()) url.addQueryParameter("genres", genres.joinToString(","))
 
-            return GET(url.toString(), headers)
+            return GET(url.toString(), pageHeaders)
         }
     }
 
