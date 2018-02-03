@@ -33,16 +33,13 @@ class Mangadex : ParsedHttpSource() {
                 chain.proceed(newReq)
             }.build()!!
 
-    private val pageHeaders = headersBuilder()
-            .build()
-
-    val cookiesHeader by lazy {
+    private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
         cookies.put("mangadex_h_toggle", "1")
         buildCookies(cookies)
     }
 
-    fun buildCookies(cookies: Map<String, String>)
+    private fun buildCookies(cookies: Map<String, String>)
             = cookies.entries.map {
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
     }.joinToString(separator = "; ", postfix = ";")
@@ -53,12 +50,12 @@ class Mangadex : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "//" + ((page * 100) - 100) else ""
-        return GET("$baseUrl/titles$pageStr", pageHeaders)
+        return GET("$baseUrl/titles$pageStr", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
         val pageStr = if (page != 1) ((page * 20) - 20) else ""
-        return GET("$baseUrl/1/$page", pageHeaders)
+        return GET("$baseUrl/1/$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -103,7 +100,7 @@ class Mangadex : ParsedHttpSource() {
             val s = byLetter.values[byLetter.state]
             val pageStr = if (page != 1) (((page - 1) * 100)).toString() else "0"
             val url = HttpUrl.parse("$baseUrl/titles/")!!.newBuilder().addPathSegment(s).addPathSegment(pageStr)
-            return GET(url.toString(), pageHeaders)
+            return GET(url.toString(), headers)
 
         } else {
             //do traditional search
@@ -115,7 +112,7 @@ class Mangadex : ParsedHttpSource() {
             }
             if (genres.isNotEmpty()) url.addQueryParameter("genres", genres.joinToString(","))
 
-            return GET(url.toString(), pageHeaders)
+            return GET(url.toString(), headers)
         }
     }
 
@@ -166,11 +163,13 @@ class Mangadex : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         val url = document.baseUri()
         val select = document.select("#jump_page")
+        //if its a regular manga get the pages from the drop down selector
         if (select.isNotEmpty()) {
             select.first().select("option").forEach {
                 pages.add(Page(pages.size, url + "/" + it.attr("value")))
             }
         } else {
+            //webtoon get all the image urls on the one page
             document.select(".edit.webtoon").forEach {
                 pages.add(Page(pages.size, "", it.attr("src")))
             }
@@ -181,7 +180,7 @@ class Mangadex : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String {
         val attr = document.select("#current_page").first().attr("src")
-
+        //some images are hosted elsewhere
         if (attr.startsWith("http")) {
             return attr
         }
