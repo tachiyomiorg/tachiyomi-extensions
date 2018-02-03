@@ -13,6 +13,8 @@ function printHelp() {
 }
 # Target file
 TARGET="src/eu/kanade/tachiyomi/extension/all/mmrcms/GeneratedSources.kt"
+# String containing processed URLs (used to detect duplicate URLs)
+PROCESSED=""
 
 # Parse CLI args
 while [ $# -gt 0 ]
@@ -66,6 +68,7 @@ echo "val SOURCES = mutableListOf<MMRSource>().apply {" >> "$TARGET"
 
 # lang, name, baseUrl
 function gen() {
+    PROCESSED="$PROCESSED$3\n"
     if [ "$OPT_LIST" = true ] ; then
         echo "- $(echo "$1" | awk '{print toupper($0)}'): $2"
     else
@@ -134,10 +137,10 @@ gen "en" "Read Comics Online" "http://readcomics.website"
 gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
 # Went offline
 # gen "en" "MangaRoot" "http://mangaroot.com"
-gen "en" "Mangawww Reader" "http://mangawww.com"
+# Advanced search screen removed (unsupported)
+# gen "en" "Mangawww Reader" "http://mangawww.com"
 gen "en" "MangaForLife" "http://manga4ever.com"
 gen "en" "Manga Spoil" "http://mangaspoil.com"
-gen "en" "H-Manga.moe" "https://h-manga.moe"
 # Protected by CloudFlare
 # gen "en" "MangaBlue" "http://mangablue.com"
 # Advanced search page exists but does not work (unsupported)
@@ -145,10 +148,21 @@ gen "en" "H-Manga.moe" "https://h-manga.moe"
 gen "en" "DManga" "http://dmanga.website"
 gen "en" "Chibi Manga Reader" "http://www.cmreader.info"
 gen "en" "ZXComic" "http://zxcomic.com"
+gen "en" "DB Manga" "http://dbmanga.com"
+gen "en" "Mangacox" "http://mangacox.com"
+gen "en" "GO Manhwa" "http://gomanhwa.xyz"
+# Advanced search screen removed (unsupported)
+# gen "en" "KoManga" "https://komanga.net"
+# Advanced search screen removed (unsupported)
+# gen "en" "Manganimecan" "http://manganimecan.com"
+gen "en" "Hentai2Manga" "http://hentai2manga.com"
 gen "es" "My-mangas.com" "https://my-mangas.com"
+gen "es" "SOS Scanlation" "https://sosscanlation.com"
 gen "fa" "TrinityReader" "http://trinityreader.pw"
 gen "fr" "Manga-LEL" "https://www.manga-lel.com"
-gen "fr" "Manga Etonnia" "https://www.etonnia.com"
+# Advanced search screen removed (unsupported)
+# gen "fr" "Manga Etonnia" "https://www.etonnia.com"
+gen "fr" "Scan FR" "http://www.scan-fr.net"
 # Went offline
 # gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
 gen "id" "Manga Desu" "http://mangadesu.net"
@@ -158,8 +172,7 @@ gen "id" "Manga Desu" "http://mangadesu.net"
 # gen "id" "MangaOnline" "http://mangaonline.web.id"
 # Went offline
 # gen "id" "MangaNesia" "https://manganesia.com"
-# Went offline
-# gen "id" "KOMIK.CO.ID" "https://komik.co.id"
+gen "id" "Komikid" "http://www.komikid.com"
 gen "id" "MangaID" "http://mangaid.co"
 gen "id" "Manga Seru" "http://www.mangaseru.top"
 # Went offline
@@ -168,16 +181,31 @@ gen "id" "Manga Seru" "http://www.mangaseru.top"
 # gen "ja" "IchigoBook" "http://ichigobook.com"
 gen "ja" "Mangaraw Online" "http://mangaraw.online"
 gen "ja" "Mangazuki RAWS" "https://raws.mangazuki.co"
+gen "ja" "MangaRAW" "https://www.mgraw.com"
 gen "pl" "Candy Scans" "http://csreader.webd.pl"
 # Advanced search screen removed (unsupported)
 # gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://www.mangasyuri.net"
 gen "ru" "NAKAMA" "http://nakama.ru"
+gen "ru" "AkaiYuhiMun team" "https://akaiyuhimun.ru/reader"
 gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"
+gen "tr" "ManhuaTR" "http://www.manhua-tr.com"
+# Blocks bots (like this one)
+# gen "tr" "Epikmanga" "http://www.epikmanga.com"
 # NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
 gen "other" "HentaiShark" "http://www.hentaishark.com"
 
 echo "}" >> "$TARGET"
+
+# Detect and warn about duplicate sources
+DUPES="$(echo -e "$PROCESSED" | sort | uniq -d)"
+if [[ ! -z "$DUPES" ]]; then
+	echo
+	echo "----> WARNING, DUPLICATE SOURCES DETECTED! <----"
+	echo "Listing duplicates:"
+	echo "$DUPES"
+	echo
+fi
 
 echo "Done!"
