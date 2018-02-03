@@ -33,16 +33,12 @@ class Mangadex : ParsedHttpSource() {
                 chain.proceed(newReq)
             }.build()!!
 
-    override fun headersBuilder() = super.headersBuilder().add("cookie", "mangadex_h_toggle=1")!!
-
     private val pageHeaders = headersBuilder()
             .build()
 
     val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
-
-        cookies.put("mangadex_h_toggle", "2")
-
+        cookies.put("mangadex_h_toggle", "1")
         buildCookies(cookies)
     }
 
