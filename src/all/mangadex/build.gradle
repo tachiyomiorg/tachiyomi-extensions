@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: MangaDex'
+    pkgNameSuffix = "all.mangadex"
+    extClass = '.MangaDexEnglish; .MangaDexPolish; .MangaDexItalian; .MangaDexRussian; .MangaDexGerman; .MangaDexFrench; .MangaDexVietnamese; .MangaDexSpanishSpain; .MangaDexPortuguese; .MangaDexSwedish; .MangaDexTurkish; .MangaDexIndonesian; .MangaDexSpanishLTAM; .MangaDexCatalan'
+    extVersionCode = 4
+    extVersionSuffix = 4
+    libVersion = '1.2'
+}
+
+dependencies {
+
+}
+
+apply from: "$rootDir/common.gradle"
