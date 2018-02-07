@@ -16,7 +16,7 @@ class MangaDexPortuguese : Mangadex("pt", "br", 16)
 class MangaDexSwedish : Mangadex("sv", "se", 18)
 class MangaDexTurkish : Mangadex("tr", "tr", 26)
 class MangaDexIndonesian : Mangadex("id", "id", 27)
-class MangaDexSpanishLTAM : Mangadex("Español Latin America", "mx", 29)
+class MangaDexSpanishLTAM : Mangadex("es-419", "mx", 29)
 class MangaDexCatalan : Mangadex("ca", "ct", 33)
 
 fun getAllEHentaiLanguages() = listOf(
