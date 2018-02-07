@@ -1,12 +1,15 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 
@@ -18,27 +21,28 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override val supportsLatest = true
 
-    override val client = network.cloudflareClient.newBuilder()
+    override val client = clientBuilder(ALL)
+
+    private fun clientBuilder(r18Toggle: Int): OkHttpClient = network.cloudflareClient.newBuilder()
             .addNetworkInterceptor { chain ->
                 val newReq = chain
                         .request()
                         .newBuilder()
-                        .addHeader("Cookie", cookiesHeader)
+                        .addHeader("Cookie", cookiesHeader(r18Toggle))
                         .build()
-
                 chain.proceed(newReq)
             }.build()!!
 
-    private val cookiesHeader by lazy {
+    private fun cookiesHeader(r18Toggle: Int): String {
         val cookies = mutableMapOf<String, String>()
-        cookies.put("mangadex_h_toggle", "1")
-        buildCookies(cookies)
+        cookies.put("mangadex_h_toggle", r18Toggle.toString())
+        return buildCookies(cookies)
     }
 
     private fun buildCookies(cookies: Map<String, String>)
-            = cookies.entries.map {
+            = cookies.entries.joinToString(separator = "; ", postfix = ";") {
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
-    }.joinToString(separator = "; ", postfix = ";")
+    }
 
     override fun popularMangaSelector() = ".table-responsive tbody tr"
 
@@ -78,6 +82,30 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun latestUpdatesNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+    }
+
+    private fun getSearchClient(filters: FilterList): OkHttpClient {
+        filters.forEach { filter ->
+            when (filter) {
+                is R18 -> {
+                    return when {
+                        filter.isExcluded() -> clientBuilder(NO_R18)
+                        filter.isIncluded() -> clientBuilder(ONLY_R18)
+                        else -> clientBuilder(ALL)
+
+                    }
+                }
+            }
+        }
+        return clientBuilder(ALL)
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val byGenre = filters.find { it is GenreList }
@@ -200,15 +228,18 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Genre(val id: String, name: String) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    private class R18(name: String) : Filter.TriState(name)
     private class ByLetter(letters: List<Letters>) : Filter.Group<Letters>("Browse by Letter only", letters)
     private class Letters : Filter.Select<String>("Letter", arrayOf("", "~", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"))
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
+            R18("R18+"),
             GenreList(getGenreList()),
             ByLetter(listOf(Letters()))
     )
+
 
     private fun getGenreList() = listOf(
             Genre("1", "4-koma"),
@@ -252,4 +283,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             Genre("39", "[no chapters]"),
             Genre("40", "Game")
     )
+    companion object {
+        val NO_R18 = 0
+        val ALL = 1
+        val ONLY_R18 = 2
+    }
 }
