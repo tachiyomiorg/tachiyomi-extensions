@@ -91,6 +91,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 }
     }
 
+    /* get search client based off r18 filter.  This will always return default client builder now until r18 solution is found or login is add
+     */
     private fun getSearchClient(filters: FilterList): OkHttpClient {
         filters.forEach { filter ->
             when (filter) {
@@ -235,7 +237,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
-            R18("R18+"),
+            // R18("R18+"),
             GenreList(getGenreList()),
             ByLetter(listOf(Letters()))
     )
@@ -283,6 +285,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             Genre("39", "[no chapters]"),
             Genre("40", "Game")
     )
+
     companion object {
         val NO_R18 = 0
         val ALL = 1
