@@ -5,7 +5,6 @@ package eu.kanade.tachiyomi.extension.all.mangadex
  */
 
 class MangaDexEnglish : Mangadex("en", "gb", 1)
-
 class MangaDexPolish : Mangadex("pl", "pl", 3)
 class MangaDexItalian : Mangadex("it", "it", 6)
 class MangaDexRussian : Mangadex("ru", "ru", 7)
