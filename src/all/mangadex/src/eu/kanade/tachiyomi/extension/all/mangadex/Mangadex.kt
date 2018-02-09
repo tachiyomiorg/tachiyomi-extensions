@@ -151,15 +151,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        val imageElement = document.select(".table-condensed").first()
-        val infoElement = document.select(".table.table-condensed.edit").first()
+        val infoElement = document.select(".row.edit").first()
         val genreElement = infoElement.select("tr:eq(3) td .genre")
 
         manga.author = infoElement.select("tr:eq(1) td").first()?.text()
         manga.artist = infoElement.select("tr:eq(2) td").first()?.text()
         manga.status = parseStatus(infoElement.select("tr:eq(5) td").first()?.text())
         manga.description = infoElement.select("tr:eq(7) td").first()?.text()
-        manga.thumbnail_url = imageElement.select("img").first()?.attr("src").let { baseUrl + "/" + it }
+        manga.thumbnail_url = infoElement.select("img").first()?.attr("src").let { baseUrl + "/" + it }
         var genres = mutableListOf<String>()
         genreElement?.forEach { genres.add(it.text()) }
         manga.genre = genres.joinToString(", ")
