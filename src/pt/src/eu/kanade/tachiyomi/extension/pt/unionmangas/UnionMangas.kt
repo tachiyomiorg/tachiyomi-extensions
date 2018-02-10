@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.ptBR.unionmangas
+package eu.kanade.tachiyomi.extension.pt.unionmangas
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -18,7 +18,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override val baseUrl = "http://unionmangas.cc"
 
-    override val lang = "pt-BR"
+    override val lang = "pt"
 
     override val supportsLatest = true
 
