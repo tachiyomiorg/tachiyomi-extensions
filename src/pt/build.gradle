@@ -2,12 +2,16 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-	appName = "Tachiyomi: Union Mangás"
-	pkgNameSuffix = "pt.unionmangas"
-	extClass = ".UnionMangas"
-	extVersionCode = 1
-	extVersionSuffix = 1
-	libVersion = '1.2'
+    appName = 'Tachiyomi: Union Mangás'
+    pkgNameSuffix = 'pt.unionmangas'
+    extClass = '.UnionMangas'
+    extVersionCode = 1
+    extVersionSuffix = 1
+    libVersion = '1.2'
 }
 
-apply from: '$rootDir/common.gradle'
+dependencies {
+
+}
+
+apply from: "$rootDir/common.gradle"
