@@ -16,8 +16,6 @@ import java.util.regex.Pattern
 
 class Hentai2Read : ParsedHttpSource() {
 
-    override val id: Long = 20
-
     override val name = "Hentai2Read"
 
     override val baseUrl = "https://hentai2read.com"
@@ -150,7 +148,7 @@ class Hentai2Read : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "ul.nav-chapters li a.link-effect"
+    override fun chapterListSelector() = "ul.nav-chapters > li > div.media > a"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
