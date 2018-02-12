@@ -271,7 +271,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Yuri", 28)
     )
 
-    // Tags : 350
+    // Tags : 355
     // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
     private fun getTagList() = listOf(
@@ -299,6 +299,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Anthology", 589),
         Tag("Anthropomorphism", 913),
         Tag("Apron", 975),
+        Tag("Armpit Licking", 2360),
         Tag("Armpit Sex", 1843),
         Tag("Arranged Marriage", 846),
         Tag("Artificial Intelligence", 1719),
@@ -352,6 +353,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Child Prostitute", 1663),
         Tag("Childhood Friends", 309),
         Tag("Childhood Love", 310),
+        Tag("Chinese Dress", 2344),
         Tag("Chubby", 1819),
         Tag("Club President", 1586),
         Tag("Clumsy Character", 1808),
@@ -421,6 +423,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Goddess", 1309),
         Tag("Group Intercourse", 311),
         Tag("Gyaru", 2185),
+        Tag("Hairy Armpit", 2359),
         Tag("Hand Job", 534),
         Tag("Happy Sex", 491),
         Tag("Hardcore", 1397),
@@ -485,6 +488,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Nurses", 1046),
         Tag("Obsessive Love", 605),
         Tag("Office Ladies", 1738),
+        Tag("Old Man", 2331),
         Tag("Older Brother", 1366),
         Tag("Older Female Young Boy", 1648),
         Tag("Older Female Younger Male", 355),
@@ -624,7 +628,8 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("X-Ray", 1071),
         Tag("Yandere", 873),
         Tag("Youkai", 1029),
-        Tag("Young Master", 500)
+        Tag("Young Master", 500),
+        Tag("Yuri as a Subplot", 2342)
     )
 
     // Doujins : 828
