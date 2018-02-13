@@ -96,11 +96,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         filters.forEach { filter ->
             when (filter) {
                 is R18 -> {
-                    return when {
-                        filter.isExcluded() -> clientBuilder(NO_R18)
-                        filter.isIncluded() -> clientBuilder(ONLY_R18)
+                    return when (filter.state) {
+                        1 -> clientBuilder(ONLY_R18)
+                        2 -> clientBuilder(NO_R18)
                         else -> clientBuilder(ALL)
-
                     }
                 }
             }
@@ -222,14 +221,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Genre(val id: String, name: String) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
-    private class R18(name: String) : Filter.TriState(name)
+    private class R18 : Filter.Select<String>("R18+", arrayOf("Show all", "Show only", "Show none"))
     private class ByLetter(letters: List<Letters>) : Filter.Group<Letters>("Browse by Letter only", letters)
     private class Letters : Filter.Select<String>("Letter", arrayOf("", "~", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"))
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
-            //R18("Show R18+"),
+            R18(),
             GenreList(getGenreList()),
             ByLetter(listOf(Letters()))
     )
@@ -279,6 +278,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     )
 
     companion object {
+        //this number matches to the cookie
         const val NO_R18 = 0
         const val ALL = 1
         const val ONLY_R18 = 2
