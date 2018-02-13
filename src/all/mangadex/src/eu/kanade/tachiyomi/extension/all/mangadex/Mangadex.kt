@@ -39,8 +39,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return buildCookies(cookies)
     }
 
-    private fun buildCookies(cookies: Map<String, String>)
-            = cookies.entries.joinToString(separator = "; ", postfix = ";") {
+    private fun buildCookies(cookies: Map<String, String>) = cookies.entries.joinToString(separator = "; ", postfix = ";") {
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
     }
 
@@ -188,27 +187,21 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val url = document.baseUri()
-        val select = document.select("#jump_page")
-        //if its a regular manga get the pages from the drop down selector
-        if (select.isNotEmpty()) {
-            select.first().select("option").forEach {
-                pages.add(Page(pages.size, url + "/" + it.attr("value")))
-            }
-        } else {
-            //webtoon get all the image urls on the one page
-            document.select(".edit.webtoon").forEach {
-                pages.add(Page(pages.size, "", getImageUrl(it.attr("src"))))
-            }
+
+        val dataUrl = document.select("script").last().html().substringAfter("dataurl = '").substringBefore("';")
+        val imageUrl = document.select("script").last().html().substringAfter("page_array = [").substringBefore("];")
+        val listImageUrls = imageUrl.replace("'", "").split(",")
+        val server = document.select("script").last().html().substringAfter("server = '").substringBefore("';")
+
+        listImageUrls.filter { it.isNotBlank() }.forEach {
+            val url = "$server$dataUrl/$it"
+            pages.add(Page(pages.size, "", getImageUrl(url)))
         }
 
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String {
-        val attr = document.select("#current_page").first().attr("src")
-        //some images are hosted elsewhere
-        return getImageUrl(attr)
-    }
+    override fun imageUrlParse(document: Document): String = ""
 
     private fun parseStatus(status: String?) = when {
         status == null -> SManga.UNKNOWN
@@ -236,7 +229,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
-            // R18("R18+"),
+            //R18("Show R18+"),
             GenreList(getGenreList()),
             ByLetter(listOf(Letters()))
     )
@@ -286,8 +279,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     )
 
     companion object {
-        val NO_R18 = 0
-        val ALL = 1
-        val ONLY_R18 = 2
+        const val NO_R18 = 0
+        const val ALL = 1
+        const val ONLY_R18 = 2
     }
 }
