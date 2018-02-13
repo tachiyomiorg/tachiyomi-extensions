@@ -33,6 +33,10 @@ class Hentai2Read : ParsedHttpSource() {
             Pattern.compile("""'images' : \[\"(.*?)[,]?\"\]""")
         }
 
+        val chapterDatePattern by lazy {
+            Pattern.compile("""about (\d+\s+\w+\s+ago)""")
+        }
+
         lateinit var base64String: String
     }
 
@@ -142,7 +146,7 @@ class Hentai2Read : ParsedHttpSource() {
         return manga
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -154,8 +158,13 @@ class Hentai2Read : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.attr("href"))
         chapter.name = element.ownText().trim()
-        chapter.date_upload = element.select("div > small").text()?.substringAfterLast(" on ")?.trim()?.let {
-            parseChapterDate(it)
+        chapter.date_upload = element.select("div > small").text()?.let {
+            val matcher = chapterDatePattern.matcher(it)
+            if (matcher.find()) {
+                parseChapterDate(matcher.group(1))
+            } else {
+                0L
+            }
         } ?: 0L
         return chapter
     }
