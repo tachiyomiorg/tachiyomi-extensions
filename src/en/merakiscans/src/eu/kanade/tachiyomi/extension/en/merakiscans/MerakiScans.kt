@@ -32,7 +32,7 @@ class MerakiScans : ParsedHttpSource() {
         }
     }
 
-    override fun popularMangaSelector() = "div.mng_lst > div.nde > div.det > a"
+    override fun popularMangaSelector() = "div.mng_lst > div.row > div.item > div.det > a"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
@@ -49,7 +49,7 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "div.next > a.gbutton:contains(Next »)"
+    override fun popularMangaNextPageSelector() = null
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
