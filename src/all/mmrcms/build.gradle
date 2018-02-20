@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: My Manga Reader CMS Sources'
+    appName = 'Tachiyomi: My Manga Reader CMS (Many sources)'
     pkgNameSuffix = 'all.mmrcms'
     extClass = '.MyMangaReaderCMSSources'
     extVersionCode = 1

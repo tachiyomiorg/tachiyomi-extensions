@@ -148,9 +148,11 @@ gen "en" "Manga Spoil" "http://mangaspoil.com"
 gen "en" "DManga" "http://dmanga.website"
 gen "en" "Chibi Manga Reader" "http://www.cmreader.info"
 gen "en" "ZXComic" "http://zxcomic.com"
-gen "en" "DB Manga" "http://dbmanga.com"
+# Went offline
+# gen "en" "DB Manga" "http://dbmanga.com"
 gen "en" "Mangacox" "http://mangacox.com"
-gen "en" "GO Manhwa" "http://gomanhwa.xyz"
+# Protected by CloudFlare
+# gen "en" "GO Manhwa" "http://gomanhwa.xyz"
 # Advanced search screen removed (unsupported)
 # gen "en" "KoManga" "https://komanga.net"
 # Advanced search screen removed (unsupported)
@@ -187,7 +189,8 @@ gen "pl" "Candy Scans" "http://csreader.webd.pl"
 # gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://www.mangasyuri.net"
 gen "ru" "NAKAMA" "http://nakama.ru"
-gen "ru" "AkaiYuhiMun team" "https://akaiyuhimun.ru/reader"
+# Went offline
+# gen "ru" "AkaiYuhiMun team" "https://akaiyuhimun.ru/reader"
 gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"
 gen "tr" "ManhuaTR" "http://www.manhua-tr.com"
