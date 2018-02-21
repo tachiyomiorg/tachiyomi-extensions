@@ -1,0 +1,19 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: xkcd'
+    pkgNameSuffix = "en.xkcd"
+    extClass = '.Xkcd'
+    extVersionCode = 1
+    extVersionSuffix = 0
+    libVersion = '1.2'
+}
+
+dependencies {
+    provided project(':duktape-stub')
+    provided "com.google.code.gson:gson:2.8.0"
+    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+}
+
+apply from: "$rootDir/common.gradle"
