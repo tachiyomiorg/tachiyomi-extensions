@@ -60,7 +60,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a[href*=manga]").first().let {
-            manga.setUrlWithoutDomain(removeMangaNameFromUrl(it.attr("href")))
+            val url = removeMangaNameFromUrl(it.attr("href"))
+            manga.setUrlWithoutDomain(url)
+            manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
             manga.title = it.text().trim()
             manga.author = it?.text()?.trim()
         }
@@ -158,7 +160,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.artist = infoElement.select("tr:eq(2) td").first()?.text()
         manga.status = parseStatus(infoElement.select("tr:eq(5) td").first()?.text())
         manga.description = infoElement.select("tr:eq(7) td").first()?.text()
-        manga.thumbnail_url = infoElement.select("img").first()?.attr("src").let { baseUrl + "/" + it }
+        var thumbnail = infoElement.select("img").first()?.attr("src").let { baseUrl + "/" + it }
+        if (manga.thumbnail_url != thumbnail) {
+            manga.thumbnail_url = thumbnail
+        }
         var genres = mutableListOf<String>()
         genreElement?.forEach { genres.add(it.text()) }
         manga.genre = genres.joinToString(", ")
