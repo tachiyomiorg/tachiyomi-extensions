@@ -5,7 +5,6 @@ import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -32,7 +31,7 @@ class Xkcd : ParsedHttpSource() {
         manga.author = "Randall Munroe"
         manga.status = SManga.ONGOING
         manga.description = "A webcomic of romance, sarcasm, math and language"
-        manga.thumbnail_url = "https://xkcd.com/s/0b7742.png"
+        manga.thumbnail_url = thumbnailUrl
 
         return Observable.just(MangasPage(arrayListOf(manga), false))
     }
@@ -60,16 +59,43 @@ class Xkcd : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url + "info.0.json")
 
     override fun pageListParse(response: Response): List<Page> {
-        var jsonData = response.asJsoup().text()
+        var jsonData = response.body()!!.string()
+        jsonData = jsonData.replace("\\u00e2\\u0080\\u0094", "\\u2014").replace("\\u00c3\\u00a9", "\\u00e9").replace("\\u00e2\\u0080\\u0093", "\\u2014").replace("\\u00c3\\u00b3", "\\u00F3")
         val json = JsonParser().parse(jsonData).asJsonObject
         val imageUrl = json["img"].string
         val pages = mutableListOf<Page>()
         pages.add(Page(0, "", imageUrl))
+        var titleWords = json["safe_title"].string.splitToSequence(" ")
+        var altTextWords = json["alt"].string.splitToSequence(" ")
+
+        var builder = StringBuilder()
+        var count = 0
+
+        for (i in titleWords) {
+            if (count != 0 && count.rem(6) == 0) {
+                builder.append("%0A")
+            }
+            builder.append(i).append("+")
+            count++
+        }
+        builder.append("%0A%0A")
+
+        var charCount = 0
+
+        for (i in altTextWords) {
+            if (charCount > 25) {
+                builder.append("%0A")
+                charCount = 0
+            }
+            builder.append(i).append("+")
+            charCount += i.length + 1
+        }
+
+        pages.add(Page(1, "", baseAltTextUrl + builder.toString() + baseAltTextPostUrl))
         return pages
     }
 
     override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
-
 
     override fun imageUrlRequest(page: Page) = GET(page.url)
 
@@ -100,5 +126,11 @@ class Xkcd : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
     override fun latestUpdatesSelector(): String = throw Exception("Not used")
+
+    companion object {
+        const val thumbnailUrl = "https://fakeimg.pl/550x780/ffffff/6E7B91/?text=xkcd&font=museo"
+        const val baseAltTextUrl = "https://fakeimg.pl/1500x2126/ffffff/000000/?text="
+        const val baseAltTextPostUrl = "&font_size=64&font=museo"
+    }
 
 }
