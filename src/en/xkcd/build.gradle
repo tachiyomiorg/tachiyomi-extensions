@@ -6,7 +6,7 @@ ext {
     pkgNameSuffix = "en.xkcd"
     extClass = '.Xkcd'
     extVersionCode = 1
-    extVersionSuffix = 1
+    extVersionSuffix = 2
     libVersion = '1.2'
 }
 
