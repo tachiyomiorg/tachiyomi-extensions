@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.xkcd
 
+import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
@@ -62,9 +63,17 @@ class Xkcd : ParsedHttpSource() {
         var jsonData = response.body()!!.string()
         jsonData = jsonData.replace("\\u00e2\\u0080\\u0094", "\\u2014").replace("\\u00c3\\u00a9", "\\u00e9").replace("\\u00e2\\u0080\\u0093", "\\u2014").replace("\\u00c3\\u00b3", "\\u00F3")
         val json = JsonParser().parse(jsonData).asJsonObject
-        val imageUrl = json["img"].string
+
+        //the comic get hd if  1084 or higher
+        var imageUrl = json["img"].string
+        val number = json["num"].int
+        if (number >= 1084) {
+            imageUrl = imageUrl.replace(defaultExt, comicsAfter1084Ext)
+        }
         val pages = mutableListOf<Page>()
         pages.add(Page(0, "", imageUrl))
+
+        //create a text image for the alt text
         var titleWords = json["safe_title"].string.splitToSequence(" ")
         var altTextWords = json["alt"].string.splitToSequence(" ")
 
@@ -131,6 +140,8 @@ class Xkcd : ParsedHttpSource() {
         const val thumbnailUrl = "https://fakeimg.pl/550x780/ffffff/6E7B91/?text=xkcd&font=museo"
         const val baseAltTextUrl = "https://fakeimg.pl/1500x2126/ffffff/000000/?text="
         const val baseAltTextPostUrl = "&font_size=64&font=museo"
+        const val comicsAfter1084Ext = "_2x.png"
+        const val defaultExt = ".png"
     }
 
 }
