@@ -13,7 +13,7 @@ class DynastyIssues : DynastyScans() {
     override fun popularMangaInitialUrl() = "$baseUrl/issues?view=cover"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query&classes%5B%5D=Series&sort=", headers)
+        return GET("$baseUrl/search?q=$query&classes%5B%5D=Issue&sort=", headers)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
