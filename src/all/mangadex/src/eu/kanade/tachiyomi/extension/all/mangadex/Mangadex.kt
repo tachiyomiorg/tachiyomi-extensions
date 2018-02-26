@@ -4,14 +4,17 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
+import java.util.concurrent.TimeUnit
 
 open class Mangadex(override val lang: String, private val internalLang: String, val pageStart: Int) : ParsedHttpSource() {
 
@@ -24,6 +27,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override val client = clientBuilder(ALL)
 
     private fun clientBuilder(r18Toggle: Int): OkHttpClient = network.cloudflareClient.newBuilder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .addNetworkInterceptor { chain ->
                 val newReq = chain
                         .request()
@@ -85,6 +90,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun latestUpdatesNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+
+    private fun mangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
@@ -155,7 +163,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val manga = SManga.create()
         val infoElement = document.select(".row.edit").first()
         val genreElement = infoElement.select("tr:eq(3) td .genre")
-
+        // val mangaUrl = document.select(".pagination a").first()
+        //manga.url = mangaUrl.attr("href")
         manga.author = infoElement.select("tr:eq(1) td").first()?.text()
         manga.artist = infoElement.select("tr:eq(2) td").first()?.text()
         manga.status = parseStatus(infoElement.select("tr:eq(5) td").first()?.text())
@@ -172,6 +181,44 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun chapterListSelector() = ".table.table-striped.table-hover.table-condensed tbody tr:has(img[src*=$internalLang])"
+
+
+    private fun pagedChapterListRequest(url: String, page: Int): Request {
+        var pageUrl = url + "/" + ((page * 100))
+        return GET(pageUrl, headers)
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return client.newCall(chapterListRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    chapterListParse(response)
+                }
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        var document = response.asJsoup()
+        val baseUri = baseUrl + document.select("li.paging a").first()?.attr("href")?.substringBeforeLast("/")
+        var page = 1
+        val chapters = mutableListOf<SChapter>()
+        do {
+            document.select(chapterListSelector()).forEach {
+                chapters.add(chapterFromElement(it))
+            }
+            val nextPage = hasNextPage(document)
+            if (nextPage) {
+                var resp = client.newCall(pagedChapterListRequest(baseUri, page)).execute()
+                document = resp.asJsoup()
+                page++
+            }
+        } while (nextPage)
+
+        return chapters
+    }
+
+
+    private fun hasNextPage(document: Document) = document.select(mangaNextPageSelector()).isNotEmpty()
+
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("td:eq(0)").first()
