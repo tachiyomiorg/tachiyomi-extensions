@@ -15,6 +15,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
+import org.jsoup.select.Elements
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -99,9 +100,10 @@ abstract class DynastyScans : ParsedHttpSource() {
         return true
     }
 
-    protected fun parseGenres(document: Document, manga: SManga) {
+    protected fun parseGenres(document: Document, manga: SManga, select: String = "div.tags > div.tag-tags") {
         manga.genre = ""
-        val glist = document.select("div.tags > div.tag-tags").first().getElementsByTag("a")
+        val glist = document.select(select).first().getElementsByTag("a")
+        parseGenres(glist, manga)
         if (!glist.isEmpty()) {
             for (g in glist) {
                 val s = g.text()
@@ -109,6 +111,15 @@ abstract class DynastyScans : ParsedHttpSource() {
             }
         }
     }
+
+    protected fun parseGenres(elements: Elements, manga: SManga) {
+        if (!elements.isEmpty()) {
+            var genres = mutableListOf<String>()
+            elements?.forEach { genres.add(it.text()) }
+            manga.genre = genres.joinToString(", ")
+        }
+    }
+
 
     protected fun parseDescription(document: Document, manga: SManga) {
         manga.description = document.select("div.tags > div.row div.description").text()
