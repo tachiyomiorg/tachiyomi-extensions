@@ -92,6 +92,7 @@ abstract class DynastyScans : ParsedHttpSource() {
             when {
                 it.contains("Ongoing") -> SManga.ONGOING
                 it.contains("Completed") -> SManga.COMPLETED
+                it.contains("Licensed") -> SManga.LICENSED
                 else -> SManga.UNKNOWN
             }
         }
