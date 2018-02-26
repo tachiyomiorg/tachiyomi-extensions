@@ -13,7 +13,7 @@ class DynastyFactory : SourceFactory {
 fun getAllDynasty() =
         listOf(
                 DynastyAnthologies(),
-                DynastyOneshot(),
+                DynastyOneshots(),
                 DynastyDoujins(),
                 DynastyIssues(),
                 DynastySeries())

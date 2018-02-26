@@ -12,9 +12,9 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DynastyOneshot : DynastyScans() {
+class DynastyOneshots : DynastyScans() {
 
-    override val name = "Dynasty- Oneshot"
+    override val name = "Dynasty- Oneshots"
 
     override fun popularMangaInitialUrl() = "$baseUrl/search?q=&with%5B%5D=5102&sort="
 
