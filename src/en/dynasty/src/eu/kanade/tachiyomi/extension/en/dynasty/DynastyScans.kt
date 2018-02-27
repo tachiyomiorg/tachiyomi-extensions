@@ -39,7 +39,7 @@ abstract class DynastyScans : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(popularMangaInitialUrl(), headers)
-    }
+}
 
     override fun popularMangaSelector() = "ul.thumbnails > li.span2"
 

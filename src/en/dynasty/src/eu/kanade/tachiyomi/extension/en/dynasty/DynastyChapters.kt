@@ -12,15 +12,16 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DynastyOneshots : DynastyScans() {
+class DynastyChapters : DynastyScans() {
+    override val name = "Dynasty-Chapters"
+    override fun popularMangaInitialUrl() = ""
 
-    override val name = "Dynasty- Oneshots"
-
-    override fun popularMangaInitialUrl() = "$baseUrl/search?q=&with%5B%5D=5102&sort="
+    private fun popularMangaInitialUrl(page: Int) = "$baseUrl/search?q=&classes%5B%5D=Chapter&page=$page=$&sort="
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query&with%5B%5D=5102&sort=", headers)
+        return GET("$baseUrl/search?q=$query&classes%5B%5D=Chapter&sort=", headers)
     }
+
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create()
 
@@ -65,6 +66,12 @@ class DynastyOneshots : DynastyScans() {
         }
         return chapter
     }
+
+    override fun popularMangaRequest(page: Int): Request {
+        return GET(popularMangaInitialUrl(page), headers)
+    }
+
+    override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
 
     override fun popularMangaSelector() = searchMangaSelector()
 
