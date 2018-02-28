@@ -45,7 +45,7 @@ class Dmzj : HttpSource() {
                 url = "/comic/$cid.json"
             })
         }
-        return MangasPage(ret, arr.length() != 0)
+        return MangasPage(ret, false)
     }
 
     private fun mangaFromJSON2(json: String): MangasPage {
