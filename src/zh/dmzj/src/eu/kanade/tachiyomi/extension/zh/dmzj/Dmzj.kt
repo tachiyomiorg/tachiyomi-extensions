@@ -237,8 +237,8 @@ class Dmzj : HttpSource() {
     ))
 
     private class SortFilter : UriPartFilter("排序", arrayOf(
-            Pair("更新", "1"),
-            Pair("人气", "0")
+            Pair("人气", "0"),
+            Pair("更新", "1")
     ))
 
     private class ReaderFilter : UriPartFilter("读者", arrayOf(
