@@ -128,6 +128,11 @@ class Dmzj : HttpSource() {
             tmparr.add(arr.getJSONObject(i).getString("tag_name"))
         }
         genre = tmparr.joinToString(", ")
+        status = when(obj.getJSONArray("status").getJSONObject(0).getInt("tag_id")) {
+            2310 -> SManga.COMPLETED
+            2309 -> SManga.ONGOING
+            else -> SManga.UNKNOWN
+        }
 
         description = obj.getString("description")
     }
