@@ -14,6 +14,7 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 open class Mangadex(override val lang: String, private val internalLang: String, val pageStart: Int) : ParsedHttpSource() {
@@ -200,10 +201,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         var document = response.asJsoup()
         val baseUri = baseUrl + document.select("li.paging a").first()?.attr("href")?.substringBeforeLast("/")
         var page = 1
+        val now = Date().time
         val chapters = mutableListOf<SChapter>()
         do {
             document.select(chapterListSelector()).forEach {
-                chapters.add(chapterFromElement(it))
+                val chapterFromElement = chapterFromElement(it)
+                //ignore chapters that are on the site but have a future date because scanlator has a delay set
+                if (chapterFromElement.date_upload <= now) {
+                    chapters.add(chapterFromElement)
+                }
             }
             val nextPage = hasNextPage(document)
             if (nextPage) {
@@ -234,7 +240,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     private fun parseChapterDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(date).time
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
+        dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+        return dateFormat.parse(date).time
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -264,7 +272,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         else -> SManga.UNKNOWN
     }
 
-    fun getImageUrl(attr: String): String {
+    private fun getImageUrl(attr: String): String {
         //some images are hosted elsewhere
         if (attr.startsWith("http")) {
             return attr
