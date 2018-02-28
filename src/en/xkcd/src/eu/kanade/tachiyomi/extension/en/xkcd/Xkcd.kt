@@ -37,6 +37,8 @@ class Xkcd : ParsedHttpSource() {
         return Observable.just(MangasPage(arrayListOf(manga), false))
     }
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList) = Observable.just(MangasPage(arrayListOf(), false))
+
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return Observable.just(manga)
     }
