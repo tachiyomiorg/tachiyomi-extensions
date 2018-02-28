@@ -145,7 +145,7 @@ class Dmzj : HttpSource() {
                 val chapter = arr2.getJSONObject(j)
                 ret.add(SChapter.create().apply {
                     name = "$prefix: ${chapter.getString("chapter_title")}"
-                    date_upload = chapter.getString("updatetime").toLong()
+                    date_upload = chapter.getString("updatetime").toLong()*1000 //milliseconds
                     url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
                 })
             }
