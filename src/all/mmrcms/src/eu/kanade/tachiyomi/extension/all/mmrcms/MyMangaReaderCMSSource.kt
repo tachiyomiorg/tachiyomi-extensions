@@ -21,7 +21,8 @@ class MyMangaReaderCMSSource(override val lang: String,
                              override val baseUrl: String,
                              override val supportsLatest: Boolean,
                              private val itemUrl: String,
-                             private val categoryMappings: List<Pair<String, String>>) : HttpSource() {
+                             private val categoryMappings: List<Pair<String, String>>,
+                             private val tagMappings: List<Pair<String, String>>?) : HttpSource() {
     private val jsonParser = JsonParser()
     private val itemUrlPath = Uri.parse(itemUrl).pathSegments.first()
 
@@ -71,7 +72,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                 setUrlWithoutDomain(urlElement.attr("href"))
                 title = urlElement.text().trim()
                 thumbnail_url = it.select(".media-left img").attr("src")
-            
+
                 // Guess thumbnails on broken websites
                 if (thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false) {
                     thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
@@ -193,21 +194,20 @@ class MyMangaReaderCMSSource(override val lang: String,
 
         return chapter
     }
-    
+
     override fun pageListParse(response: Response)
             = response.asJsoup().select("#all > .img-responsive")
             .mapIndexed { i, e ->
                 val url = e.attr("data-src").trim()
                 Page(i, url, url)
             }
-    
+
     override fun imageUrlParse(response: Response)
             = throw UnsupportedOperationException("Unused method called!")
 
-    /**
-     * Returns the list of filters for the source.
-     */
-    override fun getFilterList() = FilterList(
+    private fun getInitialFilterList() = listOf<Filter<*>>(
+            Filter.Header("NOTE: Ignored if using text search!"),
+            Filter.Separator(),
             AuthorFilter(),
             UriSelectFilter("Category",
                     "cat",
@@ -239,6 +239,19 @@ class MyMangaReaderCMSSource(override val lang: String,
     )
 
     /**
+     * Returns the list of filters for the source.
+     */
+    override fun getFilterList() = FilterList(
+            if(tagMappings != null)
+                (getInitialFilterList() + UriSelectFilter("Tag",
+                        "tag",
+                        arrayOf("" to "Any",
+				*tagMappings.toTypedArray()
+			)))
+            else getInitialFilterList()
+    )
+
+    /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
      * If an entry is selected it is appended as a query parameter onto the end of the URI.
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
@@ -266,7 +279,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     interface UriFilter {
         fun addToUri(uri: Uri.Builder)
     }
-    
+
     companion object {
         private val DATE_FORMAT = SimpleDateFormat("d MMM. yyyy", Locale.US)
     }
