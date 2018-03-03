@@ -21,7 +21,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override val name = "MangaDex"
 
-    override val baseUrl = "https://mangadex.com"
+    override val baseUrl = "https://mangadex.org"
 
     override val supportsLatest = true
 
@@ -185,7 +185,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
 
     private fun pagedChapterListRequest(url: String, page: Int): Request {
-        var pageUrl = url + "/" + ((page * 100))
+        var pageUrl = url + "/" + page
         return GET(pageUrl, headers)
     }
 
@@ -200,7 +200,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun chapterListParse(response: Response): List<SChapter> {
         var document = response.asJsoup()
         val baseUri = baseUrl + document.select("li.paging a").first()?.attr("href")?.substringBeforeLast("/")
-        var page = 1
+        var page = 2
         val now = Date().time
         val chapters = mutableListOf<SChapter>()
         do {
