@@ -197,6 +197,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return manga
     }
 
+    //remove bbcode as well as parses any html characters in description or chapter name to actual characters for example &hearts will show a heart
     private fun cleanString(description: String): String {
         return Jsoup.parseBodyFragment(description.replace("[list]", "").replace("[/list]", "").replace("[*]", "").replace("""\[(\w+)[^\]]*](.*?)\[/\1]""".toRegex(), "$2")).text()
     }
@@ -223,6 +224,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val chapterJson = json.getAsJsonObject("chapter")
         val chapters = mutableListOf<SChapter>()
 
+        //skip chapters that dont match the desired language, or are future releases
         chapterJson?.forEach { key, jsonElement ->
             val chapterElement = jsonElement.asJsonObject
             if (chapterElement.get("lang_code").string == internalLang && chapterElement.get("timestamp").asLong <= now) {
@@ -237,6 +239,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val chapter = SChapter.create()
         chapter.url = BASE_CHAPTER + chapterId
         var chapterName = mutableListOf<String>()
+        //build chapter name
         if (chapterJson.get("volume").string.isNotBlank()) {
             chapterName.add("Vol." + chapterJson.get("volume").string)
         }
@@ -248,6 +251,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         }
 
         chapter.name = cleanString(chapterName.joinToString(" "))
+        //convert from unix time
         chapter.date_upload = chapterJson.get("timestamp").long * 1000
         chapter.scanlator = chapterJson.get("group_name").string
         return chapter
