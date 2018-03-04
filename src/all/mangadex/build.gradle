@@ -5,13 +5,14 @@ ext {
     appName = 'Tachiyomi: MangaDex'
     pkgNameSuffix = "all.mangadex"
     extClass = '.MangadexFactory'
-    extVersionCode = 10
-    extVersionSuffix = 10
+    extVersionCode = 11
+    extVersionSuffix = 11
     libVersion = '1.2'
 }
 
 dependencies {
-
+    provided "com.google.code.gson:gson:2.8.0"
+    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
 }
 
 apply from: "$rootDir/common.gradle"

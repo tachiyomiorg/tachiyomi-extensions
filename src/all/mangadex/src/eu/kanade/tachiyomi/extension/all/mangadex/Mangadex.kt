@@ -1,19 +1,24 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
+import com.github.salomonbrys.kotson.forEach
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.long
+import com.github.salomonbrys.kotson.string
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
-import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -35,13 +40,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         .request()
                         .newBuilder()
                         .addHeader("Cookie", cookiesHeader(r18Toggle))
+                        .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
                         .build()
                 chain.proceed(newReq)
             }.build()!!
 
     private fun cookiesHeader(r18Toggle: Int): String {
         val cookies = mutableMapOf<String, String>()
-        cookies.put("mangadex_h_toggle", r18Toggle.toString())
+        cookies["mangadex_h_toggle"] = r18Toggle.toString()
         return buildCookies(cookies)
     }
 
@@ -91,9 +97,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun latestUpdatesNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
-
-    private fun mangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
-
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
@@ -160,37 +163,53 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return popularMangaFromElement(element)
     }
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
-        val infoElement = document.select(".row.edit").first()
-        val genreElement = infoElement.select("tr:eq(3) td .genre")
-        // val mangaUrl = document.select(".pagination a").first()
-        //manga.url = mangaUrl.attr("href")
-        manga.author = infoElement.select("tr:eq(1) td").first()?.text()
-        manga.artist = infoElement.select("tr:eq(2) td").first()?.text()
-        manga.status = parseStatus(infoElement.select("tr:eq(5) td").first()?.text())
-        manga.description = infoElement.select("tr:eq(7) td").first()?.text()
-        var thumbnail = infoElement.select("img").first()?.attr("src").let { baseUrl + "/" + it }
-        if (manga.thumbnail_url != thumbnail) {
-            manga.thumbnail_url = thumbnail
-        }
-        var genres = mutableListOf<String>()
-        genreElement?.forEach { genres.add(it.text()) }
-        manga.genre = genres.joinToString(", ")
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(apiRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    mangaDetailsParse(response).apply { initialized = true }
+                }
+    }
 
+    private fun apiRequest(manga: SManga): Request {
+        return GET(baseUrl + URL + getMangaId(manga.url), headers)
+    }
+
+    private fun getMangaId(url: String) = url.trimEnd('/').substringAfterLast("/")
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        val manga = SManga.create()
+        var jsonData = response.body()!!.string()
+        val json = JsonParser().parse(jsonData).asJsonObject
+        val mangaJson = json.getAsJsonObject("manga")
+        manga.thumbnail_url = baseUrl + mangaJson.get("cover_url").string
+        manga.description = cleanString(mangaJson.get("description").string)
+        manga.author = mangaJson.get("author").string
+        manga.artist = mangaJson.get("artist").string
+        manga.status = parseStatus(mangaJson.get("status").int)
+        var genres = mutableListOf<String>()
+        mangaJson.get("genres").asJsonArray.forEach { it ->
+            getGenre(it.int)?.let { name ->
+                genres.add(name)
+            }
+        }
+        manga.genre = genres.joinToString(", ")
         return manga
     }
 
-    override fun chapterListSelector() = ".table.table-striped.table-hover.table-condensed tbody tr:has(img[src*=$internalLang])"
-
-
-    private fun pagedChapterListRequest(url: String, page: Int): Request {
-        var pageUrl = url + "/" + page
-        return GET(pageUrl, headers)
+    private fun cleanString(description: String): String {
+        return Jsoup.parseBodyFragment(description.replace("[list]", "").replace("[/list]", "").replace("[*]", "").replace("""\[(\w+)[^\]]*](.*?)\[/\1]""".toRegex(), "$2")).text()
     }
 
+
+    private fun getGenre(int: Int): String? = GENRE_MAP.getValue(int)?.name
+
+    override fun mangaDetailsParse(document: Document) = throw Exception("Not Used")
+
+    override fun chapterListSelector() = ""
+
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return client.newCall(chapterListRequest(manga))
+        return client.newCall(apiRequest(manga))
                 .asObservableSuccess()
                 .map { response ->
                     chapterListParse(response)
@@ -198,52 +217,43 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var document = response.asJsoup()
-        val baseUri = baseUrl + document.select("li.paging a").first()?.attr("href")?.substringBeforeLast("/")
-        var page = 2
         val now = Date().time
+        var jsonData = response.body()!!.string()
+        val json = JsonParser().parse(jsonData).asJsonObject
+        val chapterJson = json.getAsJsonObject("chapter")
         val chapters = mutableListOf<SChapter>()
-        do {
-            document.select(chapterListSelector()).forEach {
-                val chapterFromElement = chapterFromElement(it)
-                //ignore chapters that are on the site but have a future date because scanlator has a delay set
-                if (chapterFromElement.date_upload <= now) {
-                    chapters.add(chapterFromElement)
-                }
-            }
-            val nextPage = hasNextPage(document)
-            if (nextPage) {
-                var resp = client.newCall(pagedChapterListRequest(baseUri, page)).execute()
-                document = resp.asJsoup()
-                page++
-            }
-        } while (nextPage)
 
+        chapterJson?.forEach { key, jsonElement ->
+            val chapterElement = jsonElement.asJsonObject
+            if (chapterElement.get("lang_code").string == internalLang && chapterElement.get("timestamp").asLong <= now) {
+                chapterElement.toString()
+                chapters.add(chapterFromJson(key, chapterElement))
+            }
+        }
         return chapters
     }
 
-
-    private fun hasNextPage(document: Document) = document.select(mangaNextPageSelector()).isNotEmpty()
-
-
-    override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("td:eq(0)").first()
-        val dateElement = element.select("td:eq(5)").first()
-        val scanlatorElement = element.select("td:eq(2)").first()
-
+    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject): SChapter {
         val chapter = SChapter.create()
-        chapter.url = (urlElement.select("a").attr("href"))
-        chapter.name = urlElement.text()
-        chapter.date_upload = dateElement?.attr("title")?.let { parseChapterDate(it.removeSuffix(" UTC")) } ?: 0
-        chapter.scanlator = scanlatorElement?.text()
+        chapter.url = BASE_CHAPTER + chapterId
+        var chapterName = mutableListOf<String>()
+        if (chapterJson.get("volume").string.isNotBlank()) {
+            chapterName.add("Vol." + chapterJson.get("volume").string)
+        }
+        if (chapterJson.get("chapter").string.isNotBlank()) {
+            chapterName.add("Ch." + chapterJson.get("chapter").string)
+        }
+        if (chapterJson.get("title").string.isNotBlank()) {
+            chapterName.add(chapterJson.get("title").string)
+        }
+
+        chapter.name = cleanString(chapterName.joinToString(" "))
+        chapter.date_upload = chapterJson.get("timestamp").long * 1000
+        chapter.scanlator = chapterJson.get("group_name").string
         return chapter
     }
 
-    private fun parseChapterDate(date: String): Long {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
-        dateFormat.timeZone = TimeZone.getTimeZone("UTC")
-        return dateFormat.parse(date).time
-    }
+    override fun chapterFromElement(element: Element) = throw Exception("Not used")
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
@@ -264,11 +274,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun imageUrlParse(document: Document): String = ""
 
-    private fun parseStatus(status: String?) = when {
-        status == null -> SManga.UNKNOWN
-        status.contains("Ongoing") -> SManga.ONGOING
-        status.contains("Completed") -> SManga.COMPLETED
-        status.contains("Licensed") -> SManga.LICENSED
+    private fun parseStatus(status: Int) = when (status) {
+        1 -> SManga.ONGOING
+        2 -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -296,53 +304,55 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     )
 
 
-    private fun getGenreList() = listOf(
-            Genre("1", "4-koma"),
-            Genre("2", "Action"),
-            Genre("3", "Adventure"),
-            Genre("4", "Award Winning"),
-            Genre("5", "Comedy"),
-            Genre("6", "Cooking"),
-            Genre("7", "Doujinshi"),
-            Genre("8", "Drama"),
-            Genre("9", "Ecchi"),
-            Genre("10", "Fantasy"),
-            Genre("11", "Gender Bender"),
-            Genre("12", "Harem"),
-            Genre("13", "Historical"),
-            Genre("14", "Horror"),
-            Genre("15", "Josei"),
-            Genre("16", "Martial Arts"),
-            Genre("17", "Mecha"),
-            Genre("18", "Medical"),
-            Genre("19", "Music"),
-            Genre("20", "Mystery"),
-            Genre("21", "Oneshot"),
-            Genre("22", "Psychological"),
-            Genre("23", "Romance"),
-            Genre("24", "School Life"),
-            Genre("25", "Sci-Fi"),
-            Genre("26", "Seinen"),
-            Genre("27", "Shoujo"),
-            Genre("28", "Shoujo Ai"),
-            Genre("29", "Shounen"),
-            Genre("30", "Shounen Ai"),
-            Genre("31", "Slice of Life"),
-            Genre("32", "Smut"),
-            Genre("33", "Sports"),
-            Genre("34", "Supernatural"),
-            Genre("35", "Tragedy"),
-            Genre("36", "Webtoon"),
-            Genre("37", "Yaoi"),
-            Genre("38", "Yuri"),
-            Genre("39", "[no chapters]"),
-            Genre("40", "Game")
-    )
+    private fun getGenreList() = GENRE_MAP.values.toList()
 
     companion object {
         //this number matches to the cookie
-        const val NO_R18 = 0
-        const val ALL = 1
-        const val ONLY_R18 = 2
+        private const val NO_R18 = 0
+        private const val ALL = 1
+        private const val ONLY_R18 = 2
+        private const val URL = "/api/3640f3fb/"
+        private const val BASE_CHAPTER = "/chapter/"
+        private val GENRE_MAP = mapOf(
+                1 to Genre("1", "4-koma"),
+                2 to Genre("2", "Action"),
+                3 to Genre("3", "Adventure"),
+                4 to Genre("4", "Award Winning"),
+                5 to Genre("5", "Comedy"),
+                6 to Genre("6", "Cooking"),
+                7 to Genre("7", "Doujinshi"),
+                8 to Genre("8", "Drama"),
+                9 to Genre("9", "Ecchi"),
+                10 to Genre("10", "Fantasy"),
+                11 to Genre("11", "Gender Bender"),
+                12 to Genre("12", "Harem"),
+                13 to Genre("13", "Historical"),
+                14 to Genre("14", "Horror"),
+                15 to Genre("15", "Josei"),
+                16 to Genre("16", "Martial Arts"),
+                17 to Genre("17", "Mecha"),
+                18 to Genre("18", "Medical"),
+                19 to Genre("19", "Music"),
+                20 to Genre("20", "Mystery"),
+                21 to Genre("21", "Oneshot"),
+                22 to Genre("22", "Psychological"),
+                23 to Genre("23", "Romance"),
+                24 to Genre("24", "School Life"),
+                25 to Genre("25", "Sci-Fi"),
+                26 to Genre("26", "Seinen"),
+                27 to Genre("27", "Shoujo"),
+                28 to Genre("28", "Shoujo Ai"),
+                29 to Genre("29", "Shounen"),
+                30 to Genre("30", "Shounen Ai"),
+                31 to Genre("31", "Slice of Life"),
+                32 to Genre("32", "Smut"),
+                33 to Genre("33", "Sports"),
+                34 to Genre("34", "Supernatural"),
+                35 to Genre("35", "Tragedy"),
+                36 to Genre("36", "Webtoon"),
+                37 to Genre("37", "Yaoi"),
+                38 to Genre("38", "Yuri"),
+                39 to Genre("39", "[no chapters]"),
+                40 to Genre("40", "Game"))
     }
 }
