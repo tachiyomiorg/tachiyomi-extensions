@@ -23,7 +23,11 @@ class DynastyChapters : DynastyScans() {
     }
 
 
-    override fun mangaDetailsParse(document: Document): SManga = SManga.create()
+    override fun mangaDetailsParse(document: Document): SManga {
+        val manga = SManga.create()
+        manga.thumbnail_url = document.select("img")[2].absUrl("src")
+        return manga
+    }
 
     override fun searchMangaSelector() = "dd"
 

@@ -39,7 +39,7 @@ abstract class DynastyScans : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(popularMangaInitialUrl(), headers)
-}
+    }
 
     override fun popularMangaSelector() = "ul.thumbnails > li.span2"
 
@@ -100,22 +100,16 @@ abstract class DynastyScans : ParsedHttpSource() {
         return true
     }
 
-    protected fun parseGenres(document: Document, manga: SManga, select: String = "div.tags > div.tag-tags") {
-        manga.genre = ""
-        val glist = document.select(select).first().getElementsByTag("a")
-        parseGenres(glist, manga)
-        if (!glist.isEmpty()) {
-            for (g in glist) {
-                val s = g.text()
-                manga.genre += if (glist.last() == (g)) s else "$s, "
-            }
-        }
+    protected fun parseGenres(document: Document, manga: SManga, select: String = "div.tags > div.tag-tags a") {
+        parseGenres(document.select(select), manga)
     }
 
     protected fun parseGenres(elements: Elements, manga: SManga) {
         if (!elements.isEmpty()) {
             var genres = mutableListOf<String>()
-            elements?.forEach { genres.add(it.text()) }
+            elements?.forEach {
+                genres.add(it.text())
+            }
             manga.genre = genres.joinToString(", ")
         }
     }
