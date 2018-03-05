@@ -25,7 +25,22 @@ class DynastyChapters : DynastyScans() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = document.select("img")[2].absUrl("src")
+
+        manga.thumbnail_url = document.select("img").last().absUrl("src")
+        manga.title = document.select("h3 b").text()
+        val artistAuthorElements = document.select("a[href*=author]")
+        if (!artistAuthorElements.isEmpty()) {
+            if (artistAuthorElements.size == 1) {
+                manga.author = artistAuthorElements[0].text()
+            } else {
+                manga.artist = artistAuthorElements[0].text()
+                manga.author = artistAuthorElements[1].text()
+            }
+        }
+
+        val genreElements = document.select(".tags a")
+        parseGenres(genreElements, manga)
+
         return manga
     }
 
@@ -34,20 +49,8 @@ class DynastyChapters : DynastyScans() {
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         val titleSelect = element.select("a.name")
-        manga.setUrlWithoutDomain(titleSelect.attr("href"))
         manga.title = titleSelect.text()
-        val artistAuthorElements = element.select("a")
-        if (!artistAuthorElements.isEmpty()) {
-            if (artistAuthorElements.lastIndex == 1) {
-                manga.author = artistAuthorElements[1].text()
-            } else {
-                manga.artist = artistAuthorElements[1].text()
-                manga.author = artistAuthorElements[2].text()
-            }
-        }
-
-        val genreElements = element.select("a.label")
-        parseGenres(genreElements, manga)
+        manga.setUrlWithoutDomain(titleSelect.attr("href"))
         return manga
     }
 
