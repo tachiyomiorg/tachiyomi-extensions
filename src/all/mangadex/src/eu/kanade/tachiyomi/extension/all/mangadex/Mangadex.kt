@@ -1,9 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-import com.github.salomonbrys.kotson.forEach
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.long
-import com.github.salomonbrys.kotson.string
+import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
@@ -253,7 +250,19 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         chapter.name = cleanString(chapterName.joinToString(" "))
         //convert from unix time
         chapter.date_upload = chapterJson.get("timestamp").long * 1000
-        chapter.scanlator = chapterJson.get("group_name").string
+        var scanlatorName = mutableListOf<String>()
+        if (!chapterJson.get("group_name").nullString.isNullOrBlank()) {
+            scanlatorName.add(chapterJson.get("group_name").string)
+        }
+        if (!chapterJson.get("group_name_2").nullString.isNullOrBlank()) {
+            scanlatorName.add(chapterJson.get("group_name_2").string)
+        }
+        if (!chapterJson.get("group_name_3").nullString.isNullOrBlank()) {
+            scanlatorName.add(chapterJson.get("group_name_3").string)
+        }
+        chapter.scanlator = scanlatorName.joinToString(" & ")
+
+
         return chapter
     }
 
