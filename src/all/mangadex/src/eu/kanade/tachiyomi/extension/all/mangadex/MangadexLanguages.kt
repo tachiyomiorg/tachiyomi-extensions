@@ -17,6 +17,9 @@ class MangaDexTurkish : Mangadex("tr", "tr", 26)
 class MangaDexIndonesian : Mangadex("id", "id", 27)
 class MangaDexSpanishLTAM : Mangadex("es-419", "mx", 29)
 class MangaDexCatalan : Mangadex("ca", "ct", 33)
+class MangaDexHungarian : Mangadex("hu", "hu", 9)
+class MangaDexBulgarian : Mangadex("bg", "bg", 14)
+class MangaDexFilipino : Mangadex("fil", "ph", 34)
 
 fun getAllMangaDexLanguages() = listOf(
         MangaDexEnglish(),
@@ -32,5 +35,8 @@ fun getAllMangaDexLanguages() = listOf(
         MangaDexTurkish(),
         MangaDexIndonesian(),
         MangaDexSpanishLTAM(),
-        MangaDexCatalan()
+        MangaDexCatalan(),
+        MangaDexHungarian(),
+        MangaDexBulgarian(),
+        MangaDexFilipino()
 )
