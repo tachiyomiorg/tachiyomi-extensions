@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.xkcd
 
-import android.util.Log
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
@@ -71,7 +70,6 @@ class Xkcd : ParsedHttpSource() {
                 .replace("#", "%23")
                 .replace("&eacute;", "\\u00e9")
         val json = JsonParser().parse(jsonData).asJsonObject
-        Log.d("Esco", json.toString())
 
         //the comic get hd if  1084 or higher
         var imageUrl = json["img"].string
