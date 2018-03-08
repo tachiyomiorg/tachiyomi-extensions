@@ -253,6 +253,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             chapterName.add("Ch." + chapterJson.get("chapter").string)
         }
         if (chapterJson.get("title").string.isNotBlank()) {
+            chapterName.add("-")
             chapterName.add(chapterJson.get("title").string)
         }
 
