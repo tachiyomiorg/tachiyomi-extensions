@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: MangaDex'
     pkgNameSuffix = "all.mangadex"
     extClass = '.MangadexFactory'
-    extVersionCode = 12
-    extVersionSuffix = 12
+    extVersionCode = 13
+    extVersionSuffix = 13
     libVersion = '1.2'
 }
 

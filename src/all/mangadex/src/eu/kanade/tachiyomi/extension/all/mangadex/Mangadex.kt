@@ -172,7 +172,16 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return GET(baseUrl + URL + getMangaId(manga.url), headers)
     }
 
-    private fun getMangaId(url: String) = url.trimEnd('/').substringAfterLast("/")
+    private fun getMangaId(url: String): String {
+
+        val lastSection = url.trimEnd('/').substringAfterLast("/")
+        return if (lastSection.toIntOrNull() != null) {
+            lastSection
+        } else {
+            //this occurs if person has manga from before that had the id/name/
+            url.trimEnd('/').substringBeforeLast("/").substringAfterLast("/")
+        }
+    }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = SManga.create()
