@@ -194,9 +194,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.artist = mangaJson.get("artist").string
         manga.status = parseStatus(mangaJson.get("status").int)
         var genres = mutableListOf<String>()
-        mangaJson.get("genres").asJsonArray.forEach { it ->
-            getGenre(it.int)?.let { name ->
-                genres.add(name)
+
+        mangaJson.get("genres").asJsonArray.forEach { id ->
+            getGenreList().find { it -> it.id == id.string }?.let { genre ->
+                genres.add(genre.name)
             }
         }
         manga.genre = genres.joinToString(", ")
@@ -208,8 +209,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return Jsoup.parseBodyFragment(description.replace("[list]", "").replace("[/list]", "").replace("[*]", "").replace("""\[(\w+)[^\]]*](.*?)\[/\1]""".toRegex(), "$2")).text()
     }
 
-
-    private fun getGenre(int: Int): String? = GENRE_MAP.getValue(int)?.name
 
     override fun mangaDetailsParse(document: Document) = throw Exception("Not Used")
 
@@ -327,7 +326,48 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     )
 
 
-    private fun getGenreList() = GENRE_MAP.values.toList()
+    private fun getGenreList() = listOf(
+            Genre("1", "4-koma"),
+            Genre("2", "Action"),
+            Genre("3", "Adventure"),
+            Genre("4", "Award Winning"),
+            Genre("5", "Comedy"),
+            Genre("6", "Cooking"),
+            Genre("7", "Doujinshi"),
+            Genre("8", "Drama"),
+            Genre("9", "Ecchi"),
+            Genre("10", "Fantasy"),
+            Genre("11", "Gender Bender"),
+            Genre("12", "Harem"),
+            Genre("13", "Historical"),
+            Genre("14", "Horror"),
+            Genre("15", "Josei"),
+            Genre("16", "Martial Arts"),
+            Genre("17", "Mecha"),
+            Genre("18", "Medical"),
+            Genre("19", "Music"),
+            Genre("20", "Mystery"),
+            Genre("21", "Oneshot"),
+            Genre("22", "Psychological"),
+            Genre("23", "Romance"),
+            Genre("24", "School Life"),
+            Genre("25", "Sci-Fi"),
+            Genre("26", "Seinen"),
+            Genre("27", "Shoujo"),
+            Genre("28", "Shoujo Ai"),
+            Genre("29", "Shounen"),
+            Genre("30", "Shounen Ai"),
+            Genre("31", "Slice of Life"),
+            Genre("32", "Smut"),
+            Genre("33", "Sports"),
+            Genre("34", "Supernatural"),
+            Genre("35", "Tragedy"),
+            Genre("36", "Webtoon"),
+            Genre("37", "Yaoi"),
+            Genre("38", "Yuri"),
+            Genre("39", "[no chapters]"),
+            Genre("40", "Game")
+    )
 
     companion object {
         //this number matches to the cookie
@@ -336,46 +376,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val ONLY_R18 = 2
         private const val URL = "/api/3640f3fb/"
         private const val BASE_CHAPTER = "/chapter/"
-        private val GENRE_MAP = mapOf(
-                1 to Genre("1", "4-koma"),
-                2 to Genre("2", "Action"),
-                3 to Genre("3", "Adventure"),
-                4 to Genre("4", "Award Winning"),
-                5 to Genre("5", "Comedy"),
-                6 to Genre("6", "Cooking"),
-                7 to Genre("7", "Doujinshi"),
-                8 to Genre("8", "Drama"),
-                9 to Genre("9", "Ecchi"),
-                10 to Genre("10", "Fantasy"),
-                11 to Genre("11", "Gender Bender"),
-                12 to Genre("12", "Harem"),
-                13 to Genre("13", "Historical"),
-                14 to Genre("14", "Horror"),
-                15 to Genre("15", "Josei"),
-                16 to Genre("16", "Martial Arts"),
-                17 to Genre("17", "Mecha"),
-                18 to Genre("18", "Medical"),
-                19 to Genre("19", "Music"),
-                20 to Genre("20", "Mystery"),
-                21 to Genre("21", "Oneshot"),
-                22 to Genre("22", "Psychological"),
-                23 to Genre("23", "Romance"),
-                24 to Genre("24", "School Life"),
-                25 to Genre("25", "Sci-Fi"),
-                26 to Genre("26", "Seinen"),
-                27 to Genre("27", "Shoujo"),
-                28 to Genre("28", "Shoujo Ai"),
-                29 to Genre("29", "Shounen"),
-                30 to Genre("30", "Shounen Ai"),
-                31 to Genre("31", "Slice of Life"),
-                32 to Genre("32", "Smut"),
-                33 to Genre("33", "Sports"),
-                34 to Genre("34", "Supernatural"),
-                35 to Genre("35", "Tragedy"),
-                36 to Genre("36", "Webtoon"),
-                37 to Genre("37", "Yaoi"),
-                38 to Genre("38", "Yuri"),
-                39 to Genre("39", "[no chapters]"),
-                40 to Genre("40", "Game"))
+
     }
 }
