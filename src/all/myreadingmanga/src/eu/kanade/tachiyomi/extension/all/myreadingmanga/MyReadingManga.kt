@@ -112,6 +112,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                 chapters.add(createChapter(it.text(), document.baseUri(), date))
             }
         }
+        chapters.reverse()
+
         return chapters
     }
 
