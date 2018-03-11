@@ -117,7 +117,6 @@ class JaiminisBox : ParsedHttpSource() {
         } catch (e: ParseException) {
             0L
         }
-
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -131,7 +130,6 @@ class JaiminisBox : ParsedHttpSource() {
         json.forEach {
             pages.add(Page(pages.size, "", it.get("url").asString))
         }
-
         return pages
     }
 
