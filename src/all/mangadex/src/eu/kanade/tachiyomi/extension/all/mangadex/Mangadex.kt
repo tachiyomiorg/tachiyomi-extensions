@@ -232,7 +232,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         //skip chapters that dont match the desired language, or are future releases
         chapterJson?.forEach { key, jsonElement ->
             val chapterElement = jsonElement.asJsonObject
-            if (chapterElement.get("lang_code").string == internalLang && chapterElement.get("timestamp").asLong <= now) {
+            if (chapterElement.get("lang_code").string == internalLang && (chapterElement.get("timestamp").asLong * 1000) <= now) {
                 chapterElement.toString()
                 chapters.add(chapterFromJson(key, chapterElement))
             }
