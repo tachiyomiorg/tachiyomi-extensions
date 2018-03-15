@@ -15,7 +15,7 @@ class FoolSlideFactory : SourceFactory {
 
 
 fun getAllFoolSlide(): List<Source> {
-    return listOf(JaminisBox(), ChampionScans())
+    return listOf(JaminisBox(), ChampionScans(), HelveticaScans())
 }
 
 class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
@@ -34,3 +34,5 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
 }
 
 class ChampionScans : FoolSlide("Champion Scans", "http://reader.championscans.com", "en")
+
+class HelveticaScans : FoolSlide("Helvetica Scans", "http://helveticascans.com", "en", "/r")

@@ -6,7 +6,7 @@ ext {
     pkgNameSuffix = "all.foolslide"
     extClass = '.FoolSlideFactory'
     extVersionCode = 1
-    extVersionSuffix = 0
+    extVersionSuffix = 1
     libVersion = '1.2'
 }
 dependencies {
