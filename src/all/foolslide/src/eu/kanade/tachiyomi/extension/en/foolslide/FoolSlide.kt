@@ -16,9 +16,7 @@ import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 
-/**
- * Created by Carlos on 3/14/2018.
- */
+
 open class FoolSlide(override val name: String, override val baseUrl: String, override val lang: String, private val urlModifier: String = "") : ParsedHttpSource() {
 
     override val supportsLatest = true
