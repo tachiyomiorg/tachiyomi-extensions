@@ -8,9 +8,7 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Page
 import org.jsoup.nodes.Document
 
-/**
- * Created by Carlos on 3/14/2018.
- */
+
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = getAllFoolSlide()
 }
