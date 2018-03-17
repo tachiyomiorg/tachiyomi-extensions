@@ -252,7 +252,8 @@ gen "en" "ZXComic" "http://zxcomic.com"
 gen "en" "Mangacox" "http://mangacox.com"
 # Protected by CloudFlare
 # gen "en" "GO Manhwa" "http://gomanhwa.xyz"
-gen "en" "KoManga" "https://komanga.net"
+# Went offline
+# gen "en" "KoManga" "https://komanga.net"
 gen "en" "Manganimecan" "http://manganimecan.com"
 gen "en" "Hentai2Manga" "http://hentai2manga.com"
 gen "en" "White Cloud Pavilion" "http://www.whitecloudpavilion.com/manga/free"
