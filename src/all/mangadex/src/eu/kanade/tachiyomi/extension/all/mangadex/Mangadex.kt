@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-import android.util.Log
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -72,7 +71,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
-            Log.d("ESCO", manga.thumbnail_url)
             manga.title = it.text().trim()
             manga.author = it?.text()?.trim()
         }
