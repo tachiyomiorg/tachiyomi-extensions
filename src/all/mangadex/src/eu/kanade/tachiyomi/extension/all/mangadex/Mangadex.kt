@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
+import android.util.Log
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -19,7 +20,7 @@ import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-open class Mangadex(override val lang: String, private val internalLang: String, val pageStart: Int) : ParsedHttpSource() {
+open class Mangadex(override val lang: String, private val internalLang: String, val langCode: Int) : ParsedHttpSource() {
 
     override val name = "MangaDex"
 
@@ -36,15 +37,16 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 val newReq = chain
                         .request()
                         .newBuilder()
-                        .addHeader("Cookie", cookiesHeader(r18Toggle))
+                        .addHeader("Cookie", cookiesHeader(r18Toggle, langCode))
                         .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
                         .build()
                 chain.proceed(newReq)
             }.build()!!
 
-    private fun cookiesHeader(r18Toggle: Int): String {
+    private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
         val cookies = mutableMapOf<String, String>()
         cookies["mangadex_h_toggle"] = r18Toggle.toString()
+        cookies["mangadex_filter_langs"] = langCode.toString()
         return buildCookies(cookies)
     }
 
@@ -52,26 +54,25 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
     }
 
-    override fun popularMangaSelector() = ".table-responsive tbody tr"
+    override fun popularMangaSelector() = "div.col-sm-6"
 
     override fun latestUpdatesSelector() = ".table-responsive tbody tr a.manga_title[href*=manga]"
 
     override fun popularMangaRequest(page: Int): Request {
-        val pageStr = if (page != 1) "/" + ((page * 100) - 100) else ""
-        return GET("$baseUrl/titles$pageStr", headers)
+        return GET("$baseUrl/titles/0/$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val pageStr = if (page != 1) "/" + ((page * 20)) else ""
-        return GET("$baseUrl/$pageStart$pageStr", headers)
+        return GET("$baseUrl/0/$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a[href*=manga]").first().let {
+        element.select("a.manga_title").first().let {
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
+            Log.d("ESCO", manga.thumbnail_url)
             manga.title = it.text().trim()
             manga.author = it?.text()?.trim()
         }
@@ -157,7 +158,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun searchMangaSelector() = ".table.table-striped.table-hover.table-condensed tbody tr"
 
     override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
+        val manga = SManga.create()
+        element.select("a[href*=manga]").first().let {
+            val url = removeMangaNameFromUrl(it.attr("href"))
+            manga.setUrlWithoutDomain(url)
+            manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
+            manga.title = it.text().trim()
+            manga.author = it?.text()?.trim()
+        }
+        return manga
     }
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
