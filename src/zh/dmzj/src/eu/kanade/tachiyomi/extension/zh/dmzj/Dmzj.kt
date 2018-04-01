@@ -163,7 +163,7 @@ class Dmzj : HttpSource() {
         val arr = obj.getJSONArray("page_url")
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
-            ret.add(Page(i+1, "", arr.getString(i)))
+            ret.add(Page(i, "", arr.getString(i)))
         }
         return ret
     }
