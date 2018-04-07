@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Manga Rock'
+    pkgNameSuffix = "en.mangarock"
+    extClass = '.MangaRock'
+    extVersionCode = 1
+    extVersionSuffix = 1
+    libVersion = '1.0'
+}
+
+apply from: "$rootDir/common.gradle"
