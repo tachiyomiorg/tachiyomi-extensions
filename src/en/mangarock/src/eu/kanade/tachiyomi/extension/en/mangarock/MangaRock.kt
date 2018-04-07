@@ -58,21 +58,56 @@ class MangaRock : HttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val jsonType = MediaType.parse("application/jsonType; charset=utf-8")
+
+        // Filter
+        if (query.isBlank()) {
+            var status = ""
+            var rank = ""
+            var orderBy = ""
+            var genres = ""
+            filters.forEach { filter ->
+                when (filter) {
+                    is StatusFilter -> {
+                        status = filter.toUriPart()
+                    }
+                    is RankFilter -> {
+                        rank = filter.toUriPart()
+                    }
+                    is SortBy -> {
+                        orderBy = filter.toUriPart()
+                    }
+                    is GenreList -> {
+                        genres = filter.state
+                                .filter { genre -> genre.state != Filter.TriState.STATE_IGNORE }
+                                .map { genre ->
+                                    "\"${genre.id}\": ${if (genre.state == Filter.TriState.STATE_INCLUDE) "true" else "false"}"
+                                }
+                                .joinToString(",")
+                    }
+                }
+            }
+
+            val body = RequestBody.create(jsonType, "{\"status\":\"$status\",\"genres\":{$genres},\"rank\":\"$rank\",\"order\":\"$orderBy\"}")
+            return POST("$baseUrl/mrs_filter", headers, body)
+        }
+
+        // Regular search
         val body = RequestBody.create(jsonType, "{\"type\":\"series\", \"keywords\":\"$query\"}")
         return POST("$baseUrl/mrs_search", headers, body)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val obj = JSONObject(response.body()!!.string()).getJSONArray("data")
+        val idArray = JSONObject(response.body()!!.string()).getJSONArray("data")
 
         val jsonType = MediaType.parse("application/jsonType; charset=utf-8")
-        val body = RequestBody.create(jsonType, obj.toString())
+        val body = RequestBody.create(jsonType, idArray.toString())
         val metaRes = client.newCall(POST("https://api.mangarockhd.com/meta", headers, body)).execute().body()!!.string()
 
         val res = JSONObject(metaRes).getJSONObject("data")
         val mangas = ArrayList<SManga>(res.length())
-        for (key in res.keys()) {
-            mangas.add(parseMangaJson(res.getJSONObject(key)))
+        for (i in 0 until idArray.length()) {
+            val id = idArray.get(i).toString()
+            mangas.add(parseMangaJson(res.getJSONObject(id)))
         }
         return MangasPage(mangas, false)
     }
@@ -162,8 +197,7 @@ class MangaRock : HttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(response: Response)
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("This method should not be called!")
 
     // See drawWebpToCanvas function in the site's client.js file
     // Extracted code: https://jsfiddle.net/6h2sLcs4/30/
@@ -202,20 +236,43 @@ class MangaRock : HttpSource() {
         return buffer
     }
 
-    // "{\"status\":\"all\",\"genres\":{},\"rank\":\"all\",\"order\":\"rank\"}"
-    private class Status : Filter.Select<String>("Completed", arrayOf("all", "completed", "ongoing"))
-    private class Rank : Filter.Select<String>("Rank", arrayOf("All", "1-999", "1000-2000"))
-    private class OrderBy : Filter.Select<String>("Order", arrayOf("name", "rank"))
+    private class StatusFilter : UriPartFilter("Completed", arrayOf(
+            Pair("All", "all"),
+            Pair("Completed", "completed"),
+            Pair("Ongoing", "ongoing")
+    ))
 
-    private class Genre(name: String, id: String) : Filter.TriState(name)
+    private class RankFilter : UriPartFilter("Rank", arrayOf(
+            Pair("All", "all"),
+            Pair("1 - 999", "1-999"),
+            Pair("1k - 2k", "1000-2000"),
+            Pair("2k - 3k", "2000-3000"),
+            Pair("3k - 4k", "3000-4000"),
+            Pair("4k - 5k", "4000-5000"),
+            Pair("5k - 6k", "5000-6000"),
+            Pair("6k - 7k", "6000-7000"),
+            Pair("7k - 8k", "7000-8000"),
+            Pair("8k - 9k", "8000-9000"),
+            Pair("9k - 19k", "9000-10000"),
+            Pair("10k - 11k", "10000-11000")
+    ))
+
+    private class SortBy : UriPartFilter("Sort by", arrayOf(
+            Pair("Name", "name"),
+            Pair("Rank", "rank")
+    ))
+
+    private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
-    // TODO: can only filter by status/genres/rank/ordering if you get the full list of manga
     override fun getFilterList() = FilterList(
-//            Status(),
-//            Rank(),
-//            OrderBy(),
-//            GenreList(getGenreList())
+            // Search and filter don't work at the same time
+            Filter.Header("NOTE: Ignored if using text search!"),
+            Filter.Separator(),
+            StatusFilter(),
+            RankFilter(),
+            SortBy(),
+            GenreList(getGenreList())
     )
 
     // [... new Set($$('a[href^="/genre"]').filter(a => a.innerText !== '').map(a => `Genre("${a.innerText}", "${a.href.replace('https://mangarock.com/genre/', '')}")`))].sort().join(',\n')
@@ -268,5 +325,10 @@ class MangaRock : HttpSource() {
             Genre("Yaoi", "mrs-genre-304202"),
             Genre("Yuri", "mrs-genre-304690")
     )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 
 }
