@@ -68,7 +68,11 @@ class MangaRock : HttpSource() {
             filters.forEach { filter ->
                 when (filter) {
                     is StatusFilter -> {
-                        status = filter.toUriPart()
+                        status = when (filter.state) {
+                            Filter.TriState.STATE_INCLUDE -> "completed"
+                            Filter.TriState.STATE_EXCLUDE -> "ongoing"
+                            else -> "all"
+                        }
                     }
                     is RankFilter -> {
                         rank = filter.toUriPart()
@@ -177,7 +181,8 @@ class MangaRock : HttpSource() {
         val obj = JSONObject(response.body()!!.string()).getJSONObject("data")
         val chapters = ArrayList<SChapter>()
         val arr = obj.getJSONArray("chapters")
-        for (i in 0 until arr.length()) {
+        // Iterate backwards to match website's sorting
+        for (i in arr.length() - 1 downTo 0) {
             val chapter = arr.getJSONObject(i)
             chapters.add(SChapter.create().apply {
                 name = chapter.getString("name")
@@ -236,11 +241,7 @@ class MangaRock : HttpSource() {
         return buffer
     }
 
-    private class StatusFilter : UriPartFilter("Completed", arrayOf(
-            Pair("All", "all"),
-            Pair("Completed", "completed"),
-            Pair("Ongoing", "ongoing")
-    ))
+    private class StatusFilter : Filter.TriState("Completed")
 
     private class RankFilter : UriPartFilter("Rank", arrayOf(
             Pair("All", "all"),
