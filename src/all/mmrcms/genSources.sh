@@ -233,7 +233,7 @@ function genSource() {
 # Source list
 gen "ar" "مانجا اون لاين" "http://www.on-manga.com"
 gen "ar" "Manga FYI" "http://mangafyi.com/manga/arabic"
-gen "en" "Read Comics Online" "http://readcomics.website"
+gen "en" "Read Comics Online" "http://readcomicsonline.ru"
 gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
 # Went offline
 # gen "en" "MangaRoot" "http://mangaroot.com"
@@ -252,24 +252,28 @@ gen "en" "ZXComic" "http://zxcomic.com"
 gen "en" "Mangacox" "http://mangacox.com"
 # Protected by CloudFlare
 # gen "en" "GO Manhwa" "http://gomanhwa.xyz"
+gen "en" "KoManga" "https://komanga.net"
 # Went offline
-# gen "en" "KoManga" "https://komanga.net"
-gen "en" "Manganimecan" "http://manganimecan.com"
+# gen "en" "Manganimecan" "http://manganimecan.com"
 gen "en" "Hentai2Manga" "http://hentai2manga.com"
 gen "en" "White Cloud Pavilion" "http://www.whitecloudpavilion.com/manga/free"
 gen "en" "4 Manga" "http://4-manga.com"
 gen "en" "XYXX.INFO" "http://xyxx.info"
+gen "en" "Bacamangaku" "http://www.bacamangaku.com"
 gen "es" "My-mangas.com" "https://my-mangas.com"
 gen "es" "SOS Scanlation" "https://sosscanlation.com"
+gen "es" "Doujin Hentai" "http://doujinhentai.net"
 # Went offline
 # gen "fa" "TrinityReader" "http://trinityreader.pw"
 gen "fr" "Manga-LEL" "https://www.manga-lel.com"
 gen "fr" "Manga Etonnia" "https://www.etonnia.com"
-gen "fr" "Scan FR" "http://www.scan-fr.net"
-gen "fr" "ScanFR.com" "http://scanfr.com"
+gen "fr" "Scan FR" "http://www.scan-fr.net" # Also available here: http://www.scan-fr.io
+# Went offline
+# gen "fr" "ScanFR.com" "http://scanfr.com"
 gen "fr" "Manga FYI" "http://mangafyi.com/manga/french"
 gen "fr" "Mugiwara" "http://mugiwara.be"
 gen "fr" "scans-manga" "http://scans-manga.com"
+gen "fr" "Henka no Kaze" "http://henkanokazelel.esy.es/upload"
 # Went offline
 # gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
 gen "id" "Manga Desu" "http://mangadesu.net"
@@ -292,7 +296,7 @@ gen "id" "Manga FYI" "http://mangafyi.com/manga/indonesian"
 # gen "ja" "Mangaraw Online" "http://mangaraw.online"
 gen "ja" "Mangazuki RAWS" "https://raws.mangazuki.co"
 gen "ja" "MangaRAW" "https://www.mgraw.com"
-gen "pl" "Candy Scans" "http://csreader.webd.pl"
+gen "ja" "マンガ/漫画 マガジン/雑誌 raw" "http://netabare-manga-raw.com"
 gen "pl" "ToraScans" "http://torascans.pl"
 gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://mangasyuri.net"
@@ -306,7 +310,7 @@ gen "vi" "Fallen Angels Scans" "http://truyen.fascans.com"
 # Blocks bots (like this one)
 # gen "tr" "Epikmanga" "http://www.epikmanga.com"
 # NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
-gen "other" "HentaiShark" "http://www.hentaishark.com"
+gen "other" "HentaiShark" "https://www.hentaishark.com"
 
 if ! [ "$OPT_LIST" = true ] ; then
 	# Remove last comma from output
