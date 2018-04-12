@@ -11,9 +11,7 @@ import org.json.JSONObject
 import java.util.*
 
 class Desu : HttpSource() {
-
-    override val id: Long = 12
-
+    
     override val name = "Desu"
 
     override val baseUrl = "http://desu.me/manga/api"
