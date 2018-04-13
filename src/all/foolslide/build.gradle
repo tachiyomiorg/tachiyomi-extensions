@@ -2,11 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi:  FoolSlide'
+    appName = 'Tachiyomi: FoolSlide'
     pkgNameSuffix = "all.foolslide"
     extClass = '.FoolSlideFactory'
-    extVersionCode = 1
-    extVersionSuffix = 1
+    extVersionCode = 2
+    extVersionSuffix = 2
     libVersion = '1.2'
 }
 dependencies {
