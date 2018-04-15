@@ -15,6 +15,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.*
 
 
 open class FoolSlide(override val name: String, override val baseUrl: String, override val lang: String, private val urlModifier: String = "") : ParsedHttpSource() {
@@ -62,9 +63,8 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
     override fun latestUpdatesNextPageSelector() = "div.next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val form = FormBody.Builder().apply {
-            add("search", query)
-        }
+        val form = FormBody.Builder()
+                .add("search", query)
 
         return POST("$baseUrl$urlModifier/search/", headers, form.build())
     }
@@ -105,26 +105,25 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
         return chapter
     }
 
-    private fun parseChapterDate(date: String): Long {
+    open fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy.MM.dd").parse(date).time
+            SimpleDateFormat("yyyy.MM.dd", Locale.US).parse(date).time
         } catch (e: ParseException) {
             0L
         }
     }
 
     override fun pageListParse(document: Document): List<Page> {
-
         val doc = document.toString()
         val jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
         val json = JsonParser().parse(jsonstr).asJsonArray
         val pages = mutableListOf<Page>()
         json.forEach {
-            pages.add(Page(pages.size, "", it.get("url").asString))
+            pages.add(Page(pages.size, "", it["url"].asString))
         }
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = throw Exception("Not used")
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
 }
