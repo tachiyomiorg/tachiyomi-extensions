@@ -18,7 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-open class FoolSlide(override val name: String, override val baseUrl: String, override val lang: String, private val urlModifier: String = "") : ParsedHttpSource() {
+open class FoolSlide(override val name: String, override val baseUrl: String, override val lang: String, val urlModifier: String = "") : ParsedHttpSource() {
 
     override val supportsLatest = true
 
@@ -42,8 +42,8 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
             manga.title = it.text()
         }
 
-        element.select("img").first().let {
-            manga.thumbnail_url = it.attr("src").replace("/thumb_", "/")
+        element.select("img").first()?.let {
+            manga.thumbnail_url = it.absUrl("src").replace("/thumb_", "/")
         }
 
         return manga
@@ -82,22 +82,45 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
 
     override fun searchMangaNextPageSelector() = "a:has(span.next)"
 
+    override fun mangaDetailsRequest(manga: SManga)
+        = allowAdult(super.mangaDetailsRequest(manga))
+
+    open val mangaDetailsInfoSelector = "div.info"
+    open val mangaDetailsThumbnailSelector = "div.thumbnail img"
+
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.info").first().text()
+        val infoElement = document.select(mangaDetailsInfoSelector).first().text()
 
         val manga = SManga.create()
         manga.author = infoElement.substringAfter("Author:").substringBefore("Artist:")
         manga.artist = infoElement.substringAfter("Artist:").substringBefore("Synopsis:")
         manga.description = infoElement.substringAfter("Synopsis:")
-        manga.thumbnail_url = document.select("div.thumbnail img").first()?.attr("src")
+        manga.thumbnail_url = document.select(mangaDetailsThumbnailSelector).first()?.absUrl("src")
+
         return manga
     }
 
-    override fun chapterListSelector() = "div.group div.element"
+    /**
+     * Transform a GET request into a POST request that automatically authorizes all adult content
+     */
+    private fun allowAdult(request: Request): Request {
+        return POST(request.url().toString(), body = FormBody.Builder()
+                .add("adult", "true")
+                .build())
+    }
+
+    override fun chapterListRequest(manga: SManga)
+        = allowAdult(super.chapterListRequest(manga))
+
+    override fun chapterListSelector() = "div.group div.element, div.list div.element"
+
+    open val chapterDateSelector = "div.meta_r"
+
+    open val chapterUrlSelector = "a[title]"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a[title]").first()
-        val dateElement = element.select("div.meta_r").first()
+        val urlElement = element.select(chapterUrlSelector).first()
+        val dateElement = element.select(chapterDateSelector).first()
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
@@ -113,13 +136,21 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
         }
     }
 
+    override fun pageListRequest(chapter: SChapter)
+        = allowAdult(super.pageListRequest(chapter))
+
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
         val jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
         val json = JsonParser().parse(jsonstr).asJsonArray
         val pages = mutableListOf<Page>()
         json.forEach {
-            pages.add(Page(pages.size, "", it["url"].asString))
+            // Create dummy element to resolve relative URL
+            val absUrl = document.createElement("a")
+                    .attr("href", it["url"].asString)
+                    .absUrl("href")
+
+            pages.add(Page(pages.size, "", absUrl))
         }
         return pages
     }

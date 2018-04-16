@@ -3,12 +3,14 @@ package eu.kanade.tachiyomi.extension.all.foolslide
 import android.util.Base64
 import com.github.salomonbrys.kotson.get
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SManga
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import java.util.*
-
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = getAllFoolSlide()
@@ -33,7 +35,6 @@ fun getAllFoolSlide(): List<Source> {
         DKThias(),
         MangaichiScanlationDivision(),
         WorldThree(),
-        ForbiddenGarden(),
         TheCatScans(),
         AngelicScanlations(),
         DokiFansubs(),
@@ -132,9 +133,13 @@ class KireiCake : FoolSlide("Kirei Cake", "https://reader.kireicake.com", "en")
 
 class HiranoMoeScansBureau : FoolSlide("HiranoMoe Scans Bureau", "http://hiranomoe.com", "en", "/r")
 
-class SilentSky : FoolSlide("Silent Sky", "http://reader.silentsky-scans.net", "en", "/reader")
+class SilentSky : FoolSlide("Silent Sky", "http://reader.silentsky-scans.net", "en")
 
-class Mangatellers : FoolSlide("Mangatellers", "http://www.mangatellers.gr", "en", "/reader")
+class Mangatellers : FoolSlide("Mangatellers", "http://www.mangatellers.gr", "en", "/reader/reader") {
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl$urlModifier/list/$page/", headers)
+    }
+}
 
 class IskultripScans : FoolSlide("Iskultrip Scans", "http://www.maryfaye.net", "en", "/reader")
 
@@ -143,21 +148,59 @@ class PinkFatale : FoolSlide("PinkFatale", "http://manga.pinkfatale.net", "en")
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.maos.ca", "en")
 
 // Has other languages too but it is difficult to differentiate between them
-class HatigarmScans : FoolSlide("Hatigarm Scans", "http://hatigarmscans.eu", "en", "/hs")
+class HatigarmScans : FoolSlide("Hatigarm Scans", "http://hatigarmscans.eu", "en", "/hs") {
+    override fun chapterListSelector() = "div.list-group div.list-group-item:not(.active)"
+
+    override val chapterDateSelector = "div.label"
+
+    override val chapterUrlSelector = ".title > a"
+
+    override fun popularMangaSelector() = ".well > a"
+
+    override fun latestUpdatesSelector() = "div.latest > div.row"
+
+    override val mangaDetailsInfoSelector = "div.col-md-9"
+
+    override val mangaDetailsThumbnailSelector = "div.thumb > img"
+}
 
 class DeathTollScans : FoolSlide("Death Toll Scans", "https://reader.deathtollscans.net", "en")
 
-class DKThias : FoolSlide("DKThias Scanlations", "http://reader.dkthias.com", "en")
+class DKThias : FoolSlide("DKThias Scanlations", "http://reader.dkthias.com", "en", "/reader") {
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl$urlModifier/list/$page/", headers)
+    }
+}
 
 class MangaichiScanlationDivision : FoolSlide("Mangaichi Scanlation Division", "http://mangaichiscans.mokkori.fr", "en", "/fs")
 
 class WorldThree : FoolSlide("World Three", "http://www.slide.world-three.org", "en")
 
-class ForbiddenGarden : FoolSlide("Forbidden Garden", "http://www.fgreader.com", "en")
-
 class TheCatScans : FoolSlide("The Cat Scans", "https://reader.thecatscans.com", "en")
 
-class AngelicScanlations : FoolSlide("Angelic Scanlations", "http://www.angelicscans.net", "en", "/foolslide")
+class AngelicScanlations : FoolSlide("Angelic Scanlations", "http://www.angelicscans.net", "en", "/foolslide") {
+    override fun latestUpdatesSelector() = "div.list > div.releases"
+
+    override fun popularMangaSelector() = ".grouped > .series-block"
+
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            thumbnail_url = document.select(".preview > img").attr("src")
+
+            val info = document.select(".data").first()
+            title = info.select("h2.title").text().trim()
+            val authorArtist = info.select(".author").text().split("/")
+            author = authorArtist.getOrNull(0)?.trim()
+            artist = authorArtist.getOrNull(1)?.trim()
+
+            description = info.ownText().trim()
+        }
+    }
+
+    override fun chapterListSelector() = ".list > .release"
+
+    override val chapterDateSelector = ".metadata"
+}
 
 class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en", "/reader")
 
