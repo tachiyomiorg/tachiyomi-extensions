@@ -141,7 +141,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         } else {
             //do traditional search
-            val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("title", query)
+            val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("p", page.toString()).addQueryParameter("title", query)
             filters.forEach { filter ->
                 when (filter) {
                     is TextField -> url.addQueryParameter(filter.key, filter.state)
@@ -153,11 +153,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         }
     }
 
-    override fun searchMangaSelector() = ".table.table-striped.table-hover.table-condensed tbody tr"
+    override fun searchMangaSelector() = "div.col-sm-6"
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a[href*=manga]").first().let {
+        element.select("a.manga_title").first().let {
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
