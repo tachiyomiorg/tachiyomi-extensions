@@ -130,27 +130,19 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 }
             }
         }
-        //do browse by letter if set
-        val byLetter = filters.find { it is ByLetter }
-
-        if (byLetter != null && (byLetter as ByLetter).state.first().state != 0) {
-            val s = byLetter.state.first().values[byLetter.state.first().state]
-            val pageStr = if (page != 1) (((page - 1) * 100)).toString() else "0"
-            val url = HttpUrl.parse("$baseUrl/titles/")!!.newBuilder().addPathSegment(s).addPathSegment(pageStr)
-            return GET(url.toString(), headers)
-
-        } else {
-            //do traditional search
-            val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("p", page.toString()).addQueryParameter("title", query)
-            filters.forEach { filter ->
-                when (filter) {
-                    is TextField -> url.addQueryParameter(filter.key, filter.state)
-                }
+        //do traditional search
+        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("p", page.toString()).addQueryParameter("title", query)
+        filters.forEach { filter ->
+            when (filter) {
+                is TextField -> url.addQueryParameter(filter.key, filter.state)
             }
-            if (genres.isNotEmpty()) url.addQueryParameter("genres", genres.joinToString(","))
-
-            return GET(url.toString(), headers)
         }
+        if (genres.isNotEmpty()) {
+            url.addQueryParameter("genres", genres.joinToString(","))
+        }
+
+        return GET(url.toString(), headers)
+
     }
 
     override fun searchMangaSelector() = "div.col-sm-6"
@@ -321,15 +313,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class Genre(val id: String, name: String) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Show all", "Show only", "Show none"))
-    private class ByLetter(letters: List<Letters>) : Filter.Group<Letters>("Browse by Letter only", letters)
-    private class Letters : Filter.Select<String>("Letter", arrayOf("", "~", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"))
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
             R18(),
-            GenreList(getGenreList()),
-            ByLetter(listOf(Letters()))
+            GenreList(getGenreList())
     )
 
 
