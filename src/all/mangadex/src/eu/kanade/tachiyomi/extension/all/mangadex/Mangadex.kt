@@ -19,7 +19,7 @@ import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-open class Mangadex(override val lang: String, private val internalLang: String, val langCode: Int) : ParsedHttpSource() {
+open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ParsedHttpSource() {
 
     override val name = "MangaDex"
 
@@ -67,10 +67,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
+        element.select("div.large_logo img").first().let {
+            manga.thumbnail_url = baseUrl + it.attr("src")
+        }
         element.select("a.manga_title").first().let {
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
-            manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
             manga.title = it.text().trim()
             manga.author = it?.text()?.trim()
         }
@@ -84,6 +86,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         element.let {
             manga.setUrlWithoutDomain(removeMangaNameFromUrl(it.attr("href")))
             manga.title = it.text().trim()
+
         }
         return manga
     }
@@ -149,10 +152,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
+        element.select("div.large_logo img").first().let {
+            manga.thumbnail_url = baseUrl + it.attr("src")
+        }
         element.select("a.manga_title").first().let {
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
-            manga.thumbnail_url = baseUrl + "/images" + manga.url.substringBeforeLast("/") + ".jpg"
             manga.title = it.text().trim()
             manga.author = it?.text()?.trim()
         }
