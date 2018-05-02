@@ -48,7 +48,8 @@ fun getAllFoolSlide(): List<Source> {
         MidnightHaven(),
         Russification(),
         NieznaniReader(),
-        EvilFlowers()
+        EvilFlowers(),
+        NaniScans()
     )
 }
 
@@ -173,3 +174,5 @@ class Russification : FoolSlide("Русификация", "http://rusmanga.ru", 
 class NieznaniReader : FoolSlide("Nieznani", "http://reader.nieznani.mynindo.pl", "pl")
 
 class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
+
+class NaniScans : FoolSlide("NANI? SCANS", "https://reader.naniscans.xyz", "en")
