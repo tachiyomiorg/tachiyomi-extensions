@@ -12,7 +12,7 @@ import java.util.*
 
 class Academyvn : ParsedHttpSource() {
 
-    override val name = "Academy VN"
+    override val name = "HocVienTruyenTranh"
 
     override val baseUrl = "http://hocvientruyentranh.com"
 

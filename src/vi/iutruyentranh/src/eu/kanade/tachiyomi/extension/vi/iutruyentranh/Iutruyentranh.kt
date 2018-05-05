@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.source.online.vietnamese
+package eu.kanade.tachiyomi.extension.vi.iutruyentranh
 
 import android.util.Log
 import eu.kanade.tachiyomi.network.GET

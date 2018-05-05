@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.source.online.vietnamese
+package eu.kanade.tachiyomi.extension.vi.truyentranhlh
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
