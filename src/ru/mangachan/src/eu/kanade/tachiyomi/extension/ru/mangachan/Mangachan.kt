@@ -23,9 +23,8 @@ class Mangachan : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
-    }
+    override fun popularMangaRequest(page: Int): Request =
+            GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var pageNum = 1
@@ -36,21 +35,69 @@ class Mangachan : ParsedHttpSource() {
         val url = if (query.isNotEmpty()) {
             "$baseUrl/?do=search&subaction=search&story=$query&search_start=$pageNum"
         } else {
-            val filt = filters.filterIsInstance<Genre>().filter { !it.isIgnored() }
-            if (filt.isNotEmpty()) {
-                var genres = ""
-                filt.forEach { genres += (if (it.isExcluded()) "-" else "") + it.id + '+' }
-                "$baseUrl/tags/${genres.dropLast(1)}?offset=${20 * (pageNum - 1)}"
+
+            var genres = ""
+            var order = ""
+            var statusParam = true
+            var status = ""
+            for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+                when (filter) {
+                    is GenreList -> {
+                        filter.state.forEach { f ->
+                            if (!f.isIgnored()) {
+                                genres += (if (f.isExcluded()) "-" else "") + f.id + '+'
+                            }
+                        }
+                    }
+                    is OrderBy -> {
+                        if (filter.state!!.ascending && filter.state!!.index == 0) {
+                            statusParam = false
+                        }
+                    }
+                    is Status -> status = arrayOf("", "all_done", "end", "ongoing", "new_ch")[filter.state]
+                }
+            }
+
+            if (genres.isNotEmpty()) {
+                for (filter in filters) {
+                    when (filter) {
+                        is OrderBy -> {
+                            order = if (filter.state!!.ascending) {
+                                arrayOf("", "&n=favasc", "&n=abcdesc", "&n=chasc")[filter.state!!.index]
+                            } else {
+                                arrayOf("&n=dateasc", "&n=favdesc", "&n=abcasc", "&n=chdesc")[filter.state!!.index]
+                            }
+                        }
+                    }
+                }
+                if (statusParam) {
+                    "$baseUrl/tags/${genres.dropLast(1)}$order?offset=${20 * (pageNum - 1)}&status=$status"
+                } else {
+                    "$baseUrl/tags/$status/${genres.dropLast(1)}/$order?offset=${20 * (pageNum - 1)}"
+                }
             } else {
-                "$baseUrl/?do=search&subaction=search&story=$query&search_start=$pageNum"
+                for (filter in filters) {
+                    when (filter) {
+                        is OrderBy -> {
+                            order = if (filter.state!!.ascending) {
+                                arrayOf("manga/new", "manga/new&n=favasc", "manga/new&n=abcdesc", "manga/new&n=chasc")[filter.state!!.index]
+                            } else {
+                                arrayOf("manga/new&n=dateasc", "mostfavorites", "catalog", "sortch")[filter.state!!.index]
+                            }
+                        }
+                    }
+                }
+                if (statusParam) {
+                    "$baseUrl/$order?offset=${20 * (pageNum - 1)}&status=$status"
+                } else {
+                    "$baseUrl/$order/$status?offset=${20 * (pageNum - 1)}"
+                }
             }
         }
         return GET(url, headers)
     }
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/newestch?page=$page")
-    }
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/newestch?page=$page")
 
     override fun popularMangaSelector() = "div.content_row"
 
@@ -60,6 +107,7 @@ class Mangachan : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
+        manga.thumbnail_url = element.select("div.manga_images img").first().attr("src")
         element.select("h2 > a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
@@ -76,9 +124,7 @@ class Mangachan : ParsedHttpSource() {
         return manga
     }
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
-    }
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a:contains(Вперед)"
 
@@ -125,16 +171,14 @@ class Mangachan : ParsedHttpSource() {
         manga.genre = infoElement.select("tr:eq(5) > td:eq(1)").text()
         manga.status = parseStatus(infoElement.select("tr:eq(4) > td:eq(1)").text())
         manga.description = descElement.textNodes().first().text()
-        manga.thumbnail_url = baseUrl + imgElement.attr("src")
+        manga.thumbnail_url = imgElement.attr("src")
         return manga
     }
 
-    private fun parseStatus(element: String): Int {
-        when {
-            element.contains("перевод завершен") -> return SManga.COMPLETED
-            element.contains("перевод продолжается") -> return SManga.ONGOING
-            else -> return SManga.UNKNOWN
-        }
+    private fun parseStatus(element: String): Int = when {
+        element.contains("перевод завершен") -> SManga.COMPLETED
+        element.contains("перевод продолжается") -> SManga.ONGOING
+        else -> SManga.UNKNOWN
     }
 
     override fun chapterListSelector() = "table.table_cha tr:gt(1)"
@@ -167,25 +211,36 @@ class Mangachan : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
     private class Genre(name: String, val id: String = name.replace(' ', '_')) : Filter.TriState(name)
+    private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Перевод завершен", "Выпуск завершен", "Онгоинг", "Новые главы"))
+    private class OrderBy : Filter.Sort("Сортировка",
+            arrayOf("Дата", "Популярность", "Имя", "Главы"),
+            Filter.Sort.Selection(1, false))
 
-    /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")].map((el,i) =>
-    *  { const link=el.getAttribute('href');const id=link.substr(6,link.length);
-    *  return `Genre("${id.replace("_", " ")}")` }).join(',\n')
+
+    override fun getFilterList() = FilterList(
+            Status(),
+            OrderBy(),
+            GenreList(getGenreList())
+    )
+
+
+    /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")]
+    *  .map(el => `Genre("${el.getAttribute('href').substr(6)}")`).join(',\n')
     *  on http://mangachan.me/
     */
-    override fun getFilterList() = FilterList(
-            Genre("18 плюс"),
+    private fun getGenreList() = listOf(
+            Genre("18_плюс"),
             Genre("bdsm"),
             Genre("арт"),
-            Genre("биография"),
             Genre("боевик"),
-            Genre("боевые искусства"),
+            Genre("боевые_искусства"),
             Genre("вампиры"),
             Genre("веб"),
             Genre("гарем"),
-            Genre("гендерная интрига"),
-            Genre("героическое фэнтези"),
+            Genre("гендерная_интрига"),
+            Genre("героическое_фэнтези"),
             Genre("детектив"),
             Genre("дзёсэй"),
             Genre("додзинси"),
@@ -198,18 +253,17 @@ class Mangachan : ParsedHttpSource() {
             Genre("кодомо"),
             Genre("комедия"),
             Genre("литРПГ"),
-            Genre("магия"),
             Genre("махо-сёдзё"),
             Genre("меха"),
             Genre("мистика"),
             Genre("музыка"),
-            Genre("научная фантастика"),
+            Genre("научная_фантастика"),
             Genre("повседневность"),
             Genre("постапокалиптика"),
             Genre("приключения"),
             Genre("психология"),
             Genre("романтика"),
-            Genre("самурайский боевик"),
+            Genre("самурайский_боевик"),
             Genre("сборник"),
             Genre("сверхъестественное"),
             Genre("сказка"),

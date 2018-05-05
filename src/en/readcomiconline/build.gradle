@@ -5,9 +5,9 @@ ext {
     appName = 'Tachiyomi: ReadComicOnline'
     pkgNameSuffix = "en.readcomiconline"
     extClass = '.Readcomiconline'
-    extVersionCode = 1
+    extVersionCode = 2
     extVersionSuffix = 1
-    libVersion = '1.0'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

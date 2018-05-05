@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Desu'
+    pkgNameSuffix = "ru.desu"
+    extClass = '.Desu'
+    extVersionCode = 2
+    extVersionSuffix = 1
+    libVersion = '1.0'
+}
+
+apply from: "$rootDir/common.gradle"

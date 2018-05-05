@@ -6,3 +6,5 @@ build/
 /captures
 .idea/
 *.iml
+repo/
+apk/

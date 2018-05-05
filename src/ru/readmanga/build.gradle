@@ -5,9 +5,9 @@ ext {
     appName = 'Tachiyomi: Readmanga'
     pkgNameSuffix = "ru.readmanga"
     extClass = '.Readmanga'
-    extVersionCode = 2
-    extVersionSuffix = 2
-    libVersion = '1.0'
+    extVersionCode = 4
+    extVersionSuffix = 4
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

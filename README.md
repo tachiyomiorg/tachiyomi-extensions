@@ -5,7 +5,7 @@ This repository contains the available extension catalogues for the [Tachiyomi](
 
 # Usage
 
-Extension sources are considered pre-release. They are installed and uninstalled like apps, in .apk format. The plan is to have a UI in the main app, that will enable installing and updating extensions. If you want to try them now regardless, you can use the [F-Droid repo for dev versions](//github.com/inorichi/tachiyomi/wiki/FDroid-for-dev-versions).
+Extension sources are considered pre-release. They are installed and uninstalled like apps, in .apk format. The plan is to have a UI in the main app, that will enable installing and updating extensions. If you want to try them now regardless, you can use the [Github Repo](//github.com/inorichi/tachiyomi-extensions/tree/repo/apk).
 
 ## Requests
 

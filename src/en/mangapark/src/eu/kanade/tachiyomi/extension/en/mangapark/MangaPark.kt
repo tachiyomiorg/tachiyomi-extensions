@@ -30,13 +30,16 @@ class MangaPark : ParsedHttpSource() {
 
     override fun popularMangaSelector() = directorySelector
 
+    private fun cleanUrl(url: String) = if (url.startsWith("//"))
+        "http:$url"
+    else url
+
     private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
         url = coverElement.attr("href")
 
         title = coverElement.attr("title")
 
-        thumbnail_url = coverElement.getElementsByTag("img").attr("src")
     }
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
@@ -73,7 +76,7 @@ class MangaPark : ParsedHttpSource() {
 
         title = coverElement.attr("title")
 
-        thumbnail_url = coverElement.attr("src")
+        thumbnail_url = cleanUrl(coverElement.attr("src"))
 
         document.select(".attr > tbody > tr").forEach {
             val type = it.getElementsByTag("th").first().text().trim().toLowerCase()
@@ -103,28 +106,31 @@ class MangaPark : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?latest")
 
     //TODO MangaPark has "versioning"
-    //TODO Currently we just use the version that is expanded by default
+    //TODO Previously we just use the version that is expanded by default however this caused an issue when a manga didnt have an expanded version
+    //TODO if we just choose one to expand it will cause potential missing chapters
+    //TODO right now all versions are combined so no chapters are missed
     //TODO Maybe make it possible for users to view the other versions as well?
-    override fun chapterListSelector() = ".stream:not(.collapsed) .volume .chapter li"
+    override fun chapterListSelector() = ".stream .volume .chapter li"
+
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         url = element.select("em > a").last().attr("href")
 
-        name = element.getElementsByClass("ch").text()
+        name = element.select("li span").first().text()
 
         date_upload = parseDate(element.getElementsByTag("i").text().trim())
     }
 
     private fun parseDate(date: String): Long {
         val lcDate = date.toLowerCase()
-        if(lcDate.endsWith("ago")) return parseRelativeDate(lcDate)
+        if (lcDate.endsWith("ago")) return parseRelativeDate(lcDate)
 
         //Handle 'yesterday' and 'today'
         var relativeDate: Calendar? = null
-        if(lcDate.startsWith("yesterday")) {
+        if (lcDate.startsWith("yesterday")) {
             relativeDate = Calendar.getInstance()
             relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
-        } else if(lcDate.startsWith("today")) {
+        } else if (lcDate.startsWith("today")) {
             relativeDate = Calendar.getInstance()
         }
 
@@ -176,7 +182,7 @@ class MangaPark : ParsedHttpSource() {
 
     override fun pageListParse(document: Document)
             = document.getElementsByClass("img").map {
-        Page(it.attr("i").toInt() - 1, "", it.attr("src"))
+        Page(it.attr("i").toInt() - 1, "", cleanUrl(it.attr("src")))
     }
 
     //Unused, we can get image urls directly from the chapter page

@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.ru.mintmanga
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -23,20 +24,19 @@ class Mintmanga : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
-    }
+    override fun popularMangaRequest(page: Int): Request =
+            GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
-    }
+    override fun latestUpdatesRequest(page: Int): Request =
+            GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
 
-    override fun popularMangaSelector() = "div.desc"
+    override fun popularMangaSelector() = "div.tile"
 
-    override fun latestUpdatesSelector() = "div.desc"
+    override fun latestUpdatesSelector() = "div.tile"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
+        manga.thumbnail_url = element.select("img.lazy").first().attr("data-original")
         element.select("h3 > a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
@@ -44,24 +44,21 @@ class Mintmanga : ParsedHttpSource() {
         return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
-    }
+    override fun latestUpdatesFromElement(element: Element): SManga =
+            popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a.nextLink"
 
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val genres = filters.filterIsInstance<Genre>().map { it.id + arrayOf("=", "=in", "=ex")[it.state] }.joinToString("&")
-        return GET("$baseUrl/search?q=$query&$genres", headers)
+        val genres = filters.filterIsInstance<Genre>().joinToString("&") { it.id + arrayOf("=", "=in", "=ex")[it.state] }
+        return GET("$baseUrl/search/advanced?q=$query&$genres", headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
-    }
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     // max 200 results
     override fun searchMangaNextPageSelector() = null
@@ -78,23 +75,26 @@ class Mintmanga : ParsedHttpSource() {
         return manga
     }
 
-    private fun parseStatus(element: String): Int {
-        when {
-            element.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> return SManga.LICENSED
-            element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> return SManga.COMPLETED
-            element.contains("<b>Перевод:</b> продолжается") -> return SManga.ONGOING
-            else -> return SManga.UNKNOWN
-        }
+    private fun parseStatus(element: String): Int = when {
+        element.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
+        element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
+        element.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
+        else -> SManga.UNKNOWN
     }
 
     override fun chapterListSelector() = "div.chapters-link tbody tr"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
+        val urlText = urlElement.text()
 
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href") + "?mature=1")
-        chapter.name = urlElement.text().replace(" новое", "")
+        chapter.setUrlWithoutDomain(urlElement.attr("href") + "?mtr=1")
+        if (urlText.endsWith(" новое")) {
+            chapter.name = urlText.dropLast(6)
+        } else {
+            chapter.name = urlText
+        }
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
             SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
         } ?: 0
@@ -125,7 +125,7 @@ class Mintmanga : ParsedHttpSource() {
         val endIndex = html.indexOf("], 0, false);", beginIndex)
         val trimmedHtml = html.substring(beginIndex, endIndex)
 
-        val p = Pattern.compile("'.+?','.+?',\".+?\"")
+        val p = Pattern.compile("'.*?','.*?',\".*?\"")
         val m = p.matcher(trimmedHtml)
 
         val pages = mutableListOf<Page>()
@@ -144,12 +144,20 @@ class Mintmanga : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
+    override fun imageRequest(page: Page): Request {
+        val imgHeader = Headers.Builder().apply {
+            add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+            add("Referer", baseUrl)
+        }.build()
+        return GET(page.imageUrl!!, imgHeader)
+    }
+
     private class Genre(name: String, val id: String) : Filter.TriState(name)
 
-    /* [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")].map((el,i) => {
-    *  const onClick=el.getAttribute('onclick');const id=onClick.substr(31,onClick.length-33);
-    *  return `Genre("${el.textContent.trim()}", "${id}")` }).join(',\n')
-    *  on http://mintmanga.com/search
+    /*  [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")]
+    *  .map(el => `Genre("${el.textContent.trim()}", $"{el.getAttribute('onclick')
+    *  .substr(31,el.getAttribute('onclick').length-33)"})`).join(',\n')
+    *  on http://mintmanga.com/search/advanced
     */
     override fun getFilterList() = FilterList(
             Genre("арт", "el_2220"),
@@ -171,6 +179,7 @@ class Mintmanga : ParsedHttpSource() {
             Genre("меха", "el_1318"),
             Genre("мистика", "el_1324"),
             Genre("научная фантастика", "el_1325"),
+            Genre("омегаверс", "el_5676"),
             Genre("повседневность", "el_1327"),
             Genre("постапокалиптика", "el_1342"),
             Genre("приключения", "el_1322"),

@@ -1,43 +1,49 @@
 language: android
 android:
   components:
-    - platform-tools
-    - tools
-
-    # The BuildTools version used by your project
-    - build-tools-25.0.1
-    - android-25
-    - extra-android-m2repository
-    - extra-google-m2repository
-    - extra-android-support
-    - extra-google-google_play_services
-
+  - build-tools-27.0.2
+  - android-27
+  - extra-android-m2repository
+  - extra-google-m2repository
+  - extra-android-support
   licenses:
-    - android-sdk-license-.+
-    - '.+'
-
-jdk:
-  - oraclejdk8
-
-before_script:
-  - chmod +x gradlew
-
+  - android-sdk-license-.+
 before_install:
-  - mkdir "$ANDROID_HOME/licenses" || true
-  - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
-  - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-
-#Build, and run tests
-script: "./gradlew clean assembleDebug"
-sudo: false
-
+- yes | sdkmanager "platforms;android-27" # workaround for accepting the license
+- if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+    openssl aes-256-cbc -K $encrypted_5ba4ee4c096f_key -iv $encrypted_5ba4ee4c096f_iv -in "$PWD/.travis/secrets.tar.enc" -out secrets.tar -d;
+    tar xf secrets.tar;
+  fi
+- mkdir "$ANDROID_HOME/licenses" || true
+- echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
+- echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+script:
+  - .travis/build.sh && .travis/create-repo.sh
 before_cache:
-  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
-  
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
-    
+  - $HOME/.gradle/caches/
+  - $HOME/.gradle/wrapper/
+  - $HOME/.android/build-cache
+  - repo
+deploy:
+- edge:
+    branch: v1.8.47
+  provider: pages
+  local-dir: repo
+  target-branch: repo
+  skip-cleanup: true
+  keep-history: true
+  github-token:
+    secure: "SCzQyavQM/bfOjEF+eKp9l0DxiAgsB3v64hYQNb2s/sql4WiL8Mjv9HEAyxBWDfGwUg1cNELWR7s2Y1j/8lCLFaZ5doy7222ZSaRP48MGhpGJQi22jGOqavMNCIcS5EZCjo3OJ9+VWLcx67OIJUQK3KHmnxgeM00luPjzC0a3FiED7/7joU4y9fkQhizfnV6AEZjEma0wUH4+wQxUC+5H71nNDZuz77BO3slZ4TX2YKg9O+QIr5jIjv4GT7dqh+UDQUoMvPXVtORUTI3yOzziwEawc64uMUr+0NtSr9ww+9lg4fs7IeVwkTlDEDbVDFdwvLYAvKlZCqboKygG7NX5Pi11grLYYCrqynXXIsyyBtEyV/fkGt2UcQrMOJRxxI6RkZFuUwozP/DVVO9XiebEfoKKZaQ/ehljveu8+B5S+qsKTO/sFMQJhvi2muhXkUvXeduSjHfqgAxEzrnh6sTR4laI05ICVJVw5j38iUfqOEo4rF+cX11ywgHFzp9RJjYCYhndvobv5vtwk77hrndzVcLlKKlKO4tJDfwg+czRRD7oSX9pT0NeL7tRyD86sNryPMG5pBAfJ4D7knnM9+YmRNJmnsmnu/FGeYlBygUK5IiG05LQ7TfkXiF0wQt7nvlixAiB3ULrso18lqP9U2bGHdjLNaRip3dVxHbrCmP9xY="
+  on:
+    branch: master
+    repo: inorichi/tachiyomi-extensions
 env:
-  - GRADLE_OPTS="-XX:MaxPermSize=1024m -XX:+CMSClassUnloadingEnabled -XX:+HeapDumpOnOutOfMemoryError -Xmx2048m"
+  global:
+  - secure: "VvCw9E2eOPoExCKjs4jbGEUJ8hYS6Hw8YzJ4VPqtLa0YJSMKhdwNAcW2ldy47tJklTYKv6djehjh7oivTMFOR4m5jhG5MNrAbCprPtTeiK7KU3o8vCK8CyCYgRS/+LfmryNdXTB4N5B8VQzx26jl3+aJE8g5uJacSOYnv1bc+i89ZLAVW9Xwy4EGKZqQW/cZrDS6NDAPyU05Hell/PZMcHIqkNhcb4AJdGfjXJ3zOrv02F7PxYL8cAsapfUgaFME/2rNokuUTYAWN9lHx3VH51bxEM36lVlPKme0O9Op7hVE4GWvcjab7u54oOlOTFk1L4f2gYC75f1rsweRLwxpQ/XgZgwMAQHkGdYsp1jagVJkbXZE0p+jFN12KOQK/+9ahLuSJwxk4rCsIvR1XlIU2Taw0/v3OWM5u2A00WQkRHW7A3LfHGDFg2JgKCxPnBlzUFliFEubuU5WyWK/BllqZPpSUhinQrymVQEdSFM1eJEfJNVxN6lj4DmcWUmcMiRQIjol5tqopDbL/Htf3sRMacL+X9acPSuUQGnJdQWJ+6VIXmzyrjQl1IXCll4MHvAAnHkn/v4wFHjgKMESYlVtk6q8yiWVgoGkR1lq13TYnjXLTPqmFgBzFd/IqmNYn+33QwRi9s3Njuawm61eDspqmJ8OXxM+QStDW8DckRQCEts="
+  - secure: "GkIGZB+A0N+NMhWlX1d9bLpz98qwHu6nWO525MzdQ5y+tC+OtuEJURxzd9kvy0Q3Q0jrEU50Y8vB7xTgP1YptVZpdhNjVp3WgYloQNkRO/xUQWxDBE2wArJ+mKHYmbgqCYdQ8szsjUw/JIBzlpMU7wniU9oDWZx8r1NirdtRzP7osV3jVa6zg9uXHZMc65mOR7mf8LJWT9FBSqwOVvFYrgIS/XIQ32T55NgAt19Bmndf+0JLE5ZdQ/6ZRGuzyfAlOpXSxaQxKVDHcs7FJhLMH9liTj1trSLj3tETyAsnwjiJV7PNuv43mRJKIc0oBCBqRu7TtJVo8BNGyoiCP49FvNLq03nPIPIPWULa8wZVg4FruWvEY5iERqodaIwDPS7mawbXloc2+htDlAzLGKfd0IOiAsTrQqE5F6g90XCW8DmyJLMrLixsXGWmUf/qsFGJJTEmpNsy5p15Pm7BypvoFJ/QB6quEe5or2J6J7NzqLxe1AGplHjkIStApVNm6tRHsxBDOCPo1oCPQTc5H77Fh6odWOf0A/6wC7+HYKJptycmpL8qUzwLSZbOC05WCMrEQQKYNJYWkZgEt0G+8jpaeri66146LRjYuFeKtj/IRlHNY31pL9tZCkgV9wVFLd2s0Z+YfaTW3+Nxls8z4llUaGdgQjjNqNr8P6PKoEQ+9bI="
+  - secure: "iZlQiZiOt5YKOJR6I5aRkhF09G/SFd712CnHHbVu6070MIAQ4WGyqMw4DuiqbgCW2153ol1nQhtb9PIDSyys3g+N0/OEXwxoE0frvf48AlUd7I2l/6f8rVwrCJ55ZtWVhKTR+fz+Kqxj1SOwcBshapUCB4V7CdPg0i+XjHrSf3MKIGFyOLyl38hQHhrNqWttc9b6g1728HPu1XB2w0sqYJ3IfV8VGjURZkjAYoA3p5dklcUUa6bdIT9bhQp854ROUWrAn/oudkOe0JvDJhYnF31qmoTkYePdvnycC7/yKH6sXf89F5HKUB6NwvDWWwVySHV3Eu4C/KppAZtRVGwJ1liX/AH9c5zfYYuUpGRIwk6R/xUffk8DJFdKvI3mK0mEzuESBwH9Y1FI2VvcifVL0ELPGJO6zXl8A/dP5v8Wtwa0Ipv/bpqZwE7unZU1PxF0f4xd4QmCfjZ98oi1TLV5uY+z+2kuWaXcKF1ETNof9oYgkUKg++ezYLhyLp1NxFtEpgAFgWSTHG838PfvCX0768Ept0XifICz+SjD5jnSZ7Vi9D77czSmKGQO2tnT3+tqf3A2ldZjzEY9oLnYbxpEwBC6PYzthn0rox5KmE3ffIQnt299Em9yxbXH3jqOQo2pFvthuiEzZ9G+dZ6bNRqfT25T7HwzqtDlNLypEvi8/UA="
+  - secure: "XiY+CQZqCSfo4DMUWuA+7YAuDSZxphTODAhENwsTV/jPKm/CV4i4bw3mdS7EtMLVyixFuvV1RdNd96MEF+kjpFG1qN3xO8+6VP6GVz7ycBP73NVGwseLvCaSG+xiW/iiwpINRCMdLS+9YGcj9rGKvPYkLrLQMox9zFoHFEXvRxGCe72sOgRaqf5AQICn4KTyaDBFsCrVtWI9obPNGDel4Y7ZpSRiz5JPxPQVBFC4FX5CdH5MuHQVHuiAHcwKIzzienwhAAkzK0pPINTpNdQB6Qa1R8B8/vNE12iHPMCGF5eQFWe5yy07lOwrt5Np3gVbg8cLocv9L+dUKuG+qXnLS8UlEtiFj01MImG/1qS+TNY323S1sPD/zmQrKCRj77qtxwC2mmZ3PONpkqEwx/wlyk4up93F9jDZWrHPDxw7kbvIP5AiNPR5ZQG7U++ClcFzAxhKNMGFaJV2W3XKFjOwZbMy7bwIKOHXxQQrQsb8kdFnZ1G4Y+WersYolf4/1PItHmhCM1KaXL8qu5JuwQCiOUsRrip+a3AB3T2+yfYY3m0xH73X4SoMUWWAgBJqTSghgCxtxTqMaeI1psMq2k1IWq42wPYlDlEqRNoyR1q4Hh3CW4Q6Sz3k5lktLoUUsQREJ5/5d/mNOr76gOUDO4C+QJKYBLojZnfHiY66RjHIqjs="

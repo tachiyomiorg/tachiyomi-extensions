@@ -20,7 +20,7 @@ class SenManga : ParsedHttpSource() {
     //Latest updates currently returns duplicate manga as it separates manga into chapters
     override val supportsLatest = false
     override val name = "Sen Manga"
-    override val baseUrl = "http://raw.senmanga.com"
+    override val baseUrl = "https://raw.senmanga.com"
 
     override val client = super.client.newBuilder().addInterceptor {
         //Intercept any image requests and add a referer to them
@@ -36,33 +36,17 @@ class SenManga : ParsedHttpSource() {
     }.build()!!
 
     //Sen Manga doesn't follow the specs and decides to use multiple elements with the same ID on the page...
-    override fun popularMangaSelector() = "#manga-list"
+    override fun popularMangaSelector() = ".update"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        val linkElement = element.select("h1 a")
+        val linkElement = element.select("a")
+        val titleElement = element.select("p.title").first()
 
-        url = linkElement.attr("href")
-
-        title = linkElement.text()
-
-        thumbnail_url = baseUrl + element.getElementsByClass("series-cover").attr("src")
+        setUrlWithoutDomain(linkElement.attr("href"))
+        title = titleElement.text()
     }
 
-    override fun popularMangaNextPageSelector() = "#Navigation > span > ul > li:nth-last-child(2)"
-
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        val mangas = document.select(popularMangaSelector()).map { element ->
-            popularMangaFromElement(element)
-        }
-
-        val hasNextPage = document.select(popularMangaNextPageSelector()).let {
-            it.isNotEmpty() && it.text().trim().toLowerCase() == "Next"
-        }
-
-        return MangasPage(mangas, hasNextPage)
-    }
+    override fun popularMangaNextPageSelector() = "#Navigation > span > ul > li:nth-last-child(2):contains(next page)"
 
     override fun searchMangaSelector() = ".search-results"
 
@@ -79,7 +63,7 @@ class SenManga : ParsedHttpSource() {
     //Sen Manga search returns one page max!
     override fun searchMangaNextPageSelector() = null
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/Manga/?order=popular&page=$page")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/directory/popular/page/$page")
 
     override fun latestUpdatesSelector()
             = throw UnsupportedOperationException("This method should not be called!")
@@ -107,15 +91,14 @@ class SenManga : ParsedHttpSource() {
         val sortFilter = filters.find { it is SortFilter } as SortFilter
         //If genre sort is not active or sort settings are changed
         if (!sortFilter.isDefault() || genreFilter.genrePath() == ALL_GENRES_PATH) {
-            val uri = Uri.parse("$baseUrl/Manga/")
+            val uri = Uri.parse("$baseUrl/directory/")
                     .buildUpon()
             sortFilter.addToUri(uri)
             uri.toString()
         } else "$baseUrl/directory/category/${genreFilter.genrePath()}/"
     } else {
-        Uri.parse("$baseUrl/Search.php")
-                .buildUpon()
-                .appendQueryParameter("q", query)
+        Uri.parse("$baseUrl/Search/")
+                .buildUpon().appendPath(query)
                 .toString()
     })
 
@@ -123,52 +106,39 @@ class SenManga : ParsedHttpSource() {
             = throw UnsupportedOperationException("This method should not be called!")
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        title = document.select("h1[itemprop=name]").text()
+        title = document.select("div.panel h1.title").text()
 
-        thumbnail_url = baseUrl + document.select(".cover > img").attr("src")
+        thumbnail_url = document.select("img[itemprop=image]").first().attr("src")
 
-        val seriesDesc = document.getElementsByClass("series_desc")
+        val seriesElement = document.select("ul.series-info")
 
-        //Get the next paragraph after paragraph with "Categorize in:"
-        genre = seriesDesc.first()
-                .children()
-                .find {
-                    it.tagName().toLowerCase() == "p"
-                            && it.text().trim().toLowerCase() == "categorize in:"
-                }?.nextElementSibling()
-                ?.text()
-                ?.trim()
+        description = seriesElement.select("span").text()
+        author = seriesElement.select("li:eq(4) a").text()
+        artist = seriesElement.select("li:eq(5) a").text()
+        status = seriesElement.select("li:eq(7)").first()?.text().orEmpty().let { parseStatus(it.substringAfter("Status:")) }
 
+        val genreElement = seriesElement.select("li:eq(2) a")
+        var genres = mutableListOf<String>()
+        genreElement?.forEach { genres.add(it.text()) }
+        genre = genres.joinToString(", ")
+    }
 
-        author = seriesDesc.select("div > span")?.text()?.trim()
-
-        seriesDesc?.first()?.children()?.forEach {
-            val keyText = it.select("p > strong").text().trim().toLowerCase()
-            val valueText = it.select("p > .desc").text().trim()
-
-            when (keyText) {
-                "artist:" -> artist = valueText
-                "status:" -> status = when (valueText.toLowerCase()) {
-                    "ongoing" -> SManga.ONGOING
-                    "complete" -> SManga.COMPLETED
-                    else -> SManga.UNKNOWN
-                }
-            }
-        }
-
-        description = seriesDesc.select("div[itemprop=description]").text()
+    fun parseStatus(status: String) = when {
+        status.contains("Ongoing") -> SManga.ONGOING
+        status.contains("Complete") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
     }
 
     override fun latestUpdatesRequest(page: Int)
             = throw UnsupportedOperationException("This method should not be called!")
 
     //This may be unreliable as Sen Manga breaks the specs by having multiple elements with the same ID
-    override fun chapterListSelector() = "#post > table > tbody > tr:not(.headline)"
+    override fun chapterListSelector() = "div.element"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         val linkElement = element.getElementsByTag("a")
 
-        url = linkElement.attr("href")
+        setUrlWithoutDomain(linkElement.attr("href"))
 
         name = linkElement.text()
 
@@ -225,12 +195,14 @@ class SenManga : ParsedHttpSource() {
             }
         }.build()
 
+        val token = document.select("img[id=picture]").attr("src").substringAfter("?token=")
+
         return document.select("select[name=page] > option").map {
             val index = it.attr("value")
 
             val uri = baseUri.buildUpon().appendPath(index).build()
 
-            val imageUriBuilder = baseImageUri.buildUpon().appendPath(index).build()
+            val imageUriBuilder = baseImageUri.buildUpon().appendPath(index).appendQueryParameter("token", token)
 
             Page(index.toInt() - 1, uri.toString(), imageUriBuilder.toString())
         }

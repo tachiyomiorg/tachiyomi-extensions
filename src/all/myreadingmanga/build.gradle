@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: MyReadingManga'
+    pkgNameSuffix = "all.myreadingmanga"
+    extClass = '.MyReadingMangaFactory'
+    extVersionCode = 2
+    extVersionSuffix = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+
+}
+
+apply from: "$rootDir/common.gradle"

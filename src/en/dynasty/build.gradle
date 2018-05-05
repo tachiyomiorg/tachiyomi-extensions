@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Dynasty'
+    pkgNameSuffix = "en.dynasty"
+    extClass = '.DynastyFactory'
+    extVersionCode = 6
+    extVersionSuffix = 6
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

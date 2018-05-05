@@ -17,11 +17,15 @@ class WieManga : ParsedHttpSource() {
 
     override val name = "Wie Manga!"
 
-    override val baseUrl = "http://www.wiemanga.com"
+    override val baseUrl = "https://www.wiemanga.com"
 
     override val lang = "de"
 
     override val supportsLatest = true
+
+    private fun imageHeader(refer: String) = super.headersBuilder()
+            .add("Referer", refer)
+            .build()
 
     override fun popularMangaSelector() = ".booklist td > div"
 
@@ -115,6 +119,10 @@ class WieManga : ParsedHttpSource() {
             pages.add(Page(pages.size, it.attr("value")))
         }
         return pages
+    }
+
+    override fun imageUrlRequest(page: Page): Request {
+        return GET(page.url, imageHeader(page.url))
     }
 
     override fun imageUrlParse(document: Document) = document.select("img#comicpic").first().attr("src")
