@@ -117,6 +117,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     popularMangaParse(response)
                 }
     }
+
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         return clientBuilder().newCall(latestUpdatesRequest(page))
                 .asObservableSuccess()
@@ -132,9 +133,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     searchMangaParse(response)
                 }
     }
-
-    /* get search client based off r18 filter.  This will always return default client builder now until r18 solution is found or login is add
-     */
+    
     private fun getSearchClient(filters: FilterList): OkHttpClient {
         filters.forEach { filter ->
             when (filter) {

@@ -16,7 +16,6 @@ allprojects {
         google()
         maven { url 'https://dl.bintray.com/inorichi/tachiyomi' }
         maven { url "https://jitpack.io" }
-
     }
 }
 
