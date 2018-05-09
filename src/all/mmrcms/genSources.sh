@@ -306,8 +306,6 @@ gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://mangasyuri.net"
 gen "ru" "NAKAMA" "http://nakama.ru"
 # Went offline
-# gen "ru" "AkaiYuhiMun team" "https://akaiyuhimun.ru/reader"
-# Went offline
 # gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"
 gen "tr" "ManhuaTR" "http://www.manhua-tr.com"

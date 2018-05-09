@@ -221,7 +221,14 @@ class MyMangaReaderCMSSource(override val lang: String,
     override fun pageListParse(response: Response)
             = response.asJsoup().select("#all > .img-responsive")
             .mapIndexed { i, e ->
-                val url = e.attr("data-src").trim()
+                var url = e.attr("data-src")
+
+                if(url.isBlank()) {
+                   url = e.attr("src")
+                }
+
+                url = url.trim()
+
                 Page(i, url, url)
             }
 
