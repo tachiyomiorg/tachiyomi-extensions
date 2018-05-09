@@ -238,13 +238,14 @@ gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
 # Went offline
 # gen "en" "MangaRoot" "http://mangaroot.com"
 gen "en" "Mangawww Reader" "http://mangawww.com"
-gen "en" "MangaForLife" "http://manga4ever.com"
+# Went offline
+# gen "en" "MangaForLife" "http://manga4ever.com"
 gen "en" "Manga Spoil" "http://mangaspoil.com"
 # Protected by CloudFlare
 # gen "en" "MangaBlue" "http://mangablue.com"
-# Some sort of anti-bot system
-# gen "en" "Manga Forest" "https://mangaforest.com"
-gen "en" "DManga" "http://dmanga.website"
+gen "en" "Manga Forest" "https://mangaforest.com"
+# Went offline
+# gen "en" "DManga" "http://dmanga.website"
 gen "en" "Chibi Manga Reader" "http://www.cmreader.info"
 gen "en" "ZXComic" "http://zxcomic.com"
 # Went offline
@@ -252,7 +253,8 @@ gen "en" "ZXComic" "http://zxcomic.com"
 gen "en" "Mangacox" "http://mangacox.com"
 # Protected by CloudFlare
 # gen "en" "GO Manhwa" "http://gomanhwa.xyz"
-gen "en" "KoManga" "https://komanga.net"
+# Went offline
+# gen "en" "KoManga" "https://komanga.net"
 # Went offline
 # gen "en" "Manganimecan" "http://manganimecan.com"
 gen "en" "Hentai2Manga" "http://hentai2manga.com"
@@ -275,7 +277,8 @@ gen "fr" "scans-manga" "http://scans-manga.com"
 gen "fr" "Henka no Kaze" "http://henkanokazelel.esy.es/upload"
 # Went offline
 # gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
-gen "id" "Manga Desu" "http://mangadesu.net"
+# Went offline
+# gen "id" "Manga Desu" "http://mangadesu.net"
 # Went offline
 # gen "id" "Komik Mangafire.ID" "http://go.mangafire.id"
 gen "id" "MangaOnline" "http://mangaonline.web.id"
@@ -288,14 +291,15 @@ gen "id" "Manga FYI" "http://mangafyi.com/manga/indonesian"
 gen "id" "Bacamangaku" "http://www.bacamangaku.com"
 # Went offline
 # gen "id" "Indo Manga Reader" "http://indomangareader.com"
-# Some sort of anti-bot system
+# Protected by Cloudflare
 # gen "it" "Kingdom Italia Reader" "http://kireader.altervista.org"
 # Went offline
 # gen "ja" "IchigoBook" "http://ichigobook.com"
 # Went offline
 # gen "ja" "Mangaraw Online" "http://mangaraw.online"
 gen "ja" "Mangazuki RAWS" "https://raws.mangazuki.co"
-gen "ja" "MangaRAW" "https://www.mgraw.com"
+# Went offline
+# gen "ja" "MangaRAW" "https://www.mgraw.com"
 gen "ja" "マンガ/漫画 マガジン/雑誌 raw" "http://netabare-manga-raw.com"
 gen "pl" "ToraScans" "http://torascans.pl"
 gen "pt" "Comic Space" "https://www.comicspace.com.br"
@@ -303,7 +307,8 @@ gen "pt" "Mangás Yuri" "https://mangasyuri.net"
 gen "ru" "NAKAMA" "http://nakama.ru"
 # Went offline
 # gen "ru" "AkaiYuhiMun team" "https://akaiyuhimun.ru/reader"
-gen "tr" "MangAoi" "http://mangaoi.com"
+# Went offline
+# gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"
 gen "tr" "ManhuaTR" "http://www.manhua-tr.com"
 gen "vi" "Fallen Angels Scans" "http://truyen.fascans.com"
