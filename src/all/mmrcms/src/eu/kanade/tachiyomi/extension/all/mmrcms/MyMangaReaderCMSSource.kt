@@ -246,19 +246,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                             }.toTypedArray()
                     )
             ),
-            UriSelectFilter("Sort by",
-                    "sortBy",
-                    arrayOf(
-                            "name" to "Name",
-                            "views" to "Popularity",
-                            "last_release" to "Last update"
-                    ), false),
-            UriSelectFilter("Sort direction",
-                    "asc",
-                    arrayOf(
-                            "true" to "Ascending",
-                            "false" to "Descending"
-                    ), false)
+            SortFilter()
     )
 
     /**
@@ -293,6 +281,23 @@ class MyMangaReaderCMSSource(override val lang: String,
     class AuthorFilter: Filter.Text("Author"), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter("author", state)
+        }
+    }
+
+    class SortFilter: Filter.Sort("Sort",
+            sortables.map { it.second }.toTypedArray(),
+            Filter.Sort.Selection(0, true)), UriFilter {
+        override fun addToUri(uri: Uri.Builder) {
+            uri.appendQueryParameter("sortBy", sortables[state!!.index].first)
+            uri.appendQueryParameter("asc", state!!.ascending.toString())
+        }
+
+        companion object {
+            private val sortables = arrayOf(
+                    "name" to "Name",
+                    "views" to "Popularity",
+                    "last_release" to "Last update"
+            )
         }
     }
 
