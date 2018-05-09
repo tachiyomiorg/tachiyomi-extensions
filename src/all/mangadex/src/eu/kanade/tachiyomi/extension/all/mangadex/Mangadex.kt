@@ -35,10 +35,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient by lazy {
-        clientBuilder()
-    }
-
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
@@ -114,6 +110,21 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
+    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        return clientBuilder().newCall(popularMangaRequest(page))
+                .asObservableSuccess()
+                .map { response ->
+                    popularMangaParse(response)
+                }
+    }
+    override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
+        return clientBuilder().newCall(latestUpdatesRequest(page))
+                .asObservableSuccess()
+                .map { response ->
+                    latestUpdatesParse(response)
+                }
+    }
+
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
@@ -182,7 +193,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return client.newCall(apiRequest(manga))
+        return clientBuilder().newCall(apiRequest(manga))
                 .asObservableSuccess()
                 .map { response ->
                     mangaDetailsParse(response).apply { initialized = true }
@@ -236,7 +247,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun chapterListSelector() = ""
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return client.newCall(apiRequest(manga))
+        return clientBuilder().newCall(apiRequest(manga))
                 .asObservableSuccess()
                 .map { response ->
                     chapterListParse(response)
