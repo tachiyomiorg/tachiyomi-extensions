@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Log
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -61,7 +60,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }.build()!!
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
-        Log.d("ESCO", "r18 toggle = " + r18Toggle)
         val cookies = mutableMapOf<String, String>()
         cookies["mangadex_h_toggle"] = r18Toggle.toString()
         cookies["mangadex_filter_langs"] = langCode.toString()
