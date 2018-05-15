@@ -13,7 +13,7 @@ ext {
 dependencies {
     provided "com.google.code.gson:gson:2.8.0"
     provided "com.github.salomonbrys.kotson:kotson:2.5.0"
-    provided project(':tachiyomi-stub')
+    provided project(':preference-stub')
     provided "com.github.inorichi.injekt:injekt-core:65b0440"
 }
 

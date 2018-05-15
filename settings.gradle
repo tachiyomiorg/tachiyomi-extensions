@@ -5,5 +5,7 @@ new File(rootDir, "src").eachDir { dir ->
         project(name).projectDir = new File("src/${dir.name}/${subdir.name}")
     }
 }
-include ':duktape-stub', ':tachiyomi-stub'
+include ':duktape-stub'
+include ':preference-stub'
 project(':duktape-stub').projectDir = new File("lib/duktape-stub")
+project(':preference-stub').projectDir = new File("lib/preference-stub")
