@@ -58,4 +58,12 @@ public class ListPreference extends Preference {
     public void setValue(String value) {
         throw new RuntimeException("Stub!");
     }
+
+    public void setSummary(CharSequence summary) {
+        throw new RuntimeException("Stub!");
+    }
+
+    public CharSequence getSummary() {
+        throw new RuntimeException("Stub!");
+    }
 }

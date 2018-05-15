@@ -356,6 +356,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             title = SHOW_R18_PREF_Title
             entries = arrayOf("Show No R18+", "Show All", "Show Only R18+")
             entryValues = arrayOf("0", "1", "2")
+            summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
