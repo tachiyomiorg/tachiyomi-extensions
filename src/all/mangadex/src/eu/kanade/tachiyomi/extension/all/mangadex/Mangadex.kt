@@ -224,7 +224,13 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.description = cleanString(mangaJson.get("description").string)
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
-        manga.status = parseStatus(mangaJson.get("status").int)
+        val finalChapterNumber = mangaJson.get("last_chapter").int
+        if (finalChapterNumber != 0) {
+            manga.status = SManga.COMPLETED
+        } else {
+            manga.status = parseStatus(mangaJson.get("status").int)
+        }
+
         var genres = mutableListOf<String>()
 
         mangaJson.get("genres").asJsonArray.forEach { id ->
@@ -260,7 +266,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
 
-        val finalChapterNumber = mangaJson.get("last_chapter").int
+        val finalChapterNumber = mangaJson.get("last_chapter").double
         val chapterJson = json.getAsJsonObject("chapter")
         val chapters = mutableListOf<SChapter>()
 
@@ -275,7 +281,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return chapters
     }
 
-    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: Int): SChapter {
+    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: Double): SChapter {
         val chapter = SChapter.create()
         chapter.url = BASE_CHAPTER + chapterId
         var chapterName = mutableListOf<String>()
@@ -290,7 +296,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             chapterName.add("-")
             chapterName.add(chapterJson.get("title").string)
         }
-        if (finalChapterNumber != 0 && chapterJson.get("chapter").int == finalChapterNumber) {
+        if (finalChapterNumber != 0.00 && chapterJson.get("chapter").double == finalChapterNumber) {
             chapterName.add(" [END]")
         }
 
@@ -336,7 +342,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun parseStatus(status: Int) = when (status) {
         1 -> SManga.ONGOING
-        2 -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
