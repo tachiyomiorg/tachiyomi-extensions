@@ -296,7 +296,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             chapterName.add("-")
             chapterName.add(chapterJson.get("title").string)
         }
-        if (finalChapterNumber != 0.00 && chapterJson.get("chapter").double == finalChapterNumber) {
+        if (finalChapterNumber != 0.00 && chapterJson.get("chapter").string.isNotEmpty() && chapterJson.get("chapter").double == finalChapterNumber) {
             chapterName.add(" [END]")
         }
 
