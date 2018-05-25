@@ -224,8 +224,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.description = cleanString(mangaJson.get("description").string)
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
-        val finalChapterNumber = mangaJson.get("last_chapter").int
-        if (finalChapterNumber != 0) {
+        val finalChapterNumber = getFinalChapter(mangaJson)
+        if (finalChapterNumber != 0.00) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(mangaJson.get("status").int)
@@ -260,13 +260,23 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 }
     }
 
+    private fun getFinalChapter(jsonObj: JsonObject): Double {
+        var finalChapterNumber = 0.00
+
+        if (jsonObj.get("last_chapter").string.isNotBlank()) {
+            finalChapterNumber = jsonObj.get("last_chapter").double
+        }
+        return finalChapterNumber
+    }
+
     override fun chapterListParse(response: Response): List<SChapter> {
         val now = Date().time
         var jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
 
-        val finalChapterNumber = mangaJson.get("last_chapter").double
+
+        var finalChapterNumber = getFinalChapter(mangaJson)
         val chapterJson = json.getAsJsonObject("chapter")
         val chapters = mutableListOf<SChapter>()
 
