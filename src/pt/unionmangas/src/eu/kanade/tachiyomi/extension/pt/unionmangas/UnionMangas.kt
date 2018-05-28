@@ -16,7 +16,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override val name = "Union Mangás"
 
-    override val baseUrl = "http://unionmangas.cc"
+    override val baseUrl = "http://unionmangas.site"
 
     override val lang = "pt"
 
@@ -34,7 +34,7 @@ class UnionMangas : ParsedHttpSource() {
 
     private val catalogHeaders = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-        add("Host", "unionmangas.cc")
+        add("Host", "unionmangas.site")
         add("Referer", baseUrl)
     }.build()
 
