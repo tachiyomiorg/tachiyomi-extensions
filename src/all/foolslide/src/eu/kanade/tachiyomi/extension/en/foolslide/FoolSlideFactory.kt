@@ -71,15 +71,15 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
 
 class ChampionScans : FoolSlide("Champion Scans", "http://reader.championscans.com", "en")
 
-class HelveticaScans : FoolSlide("Helvetica Scans", "http://helveticascans.com", "en", "/r")
+class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
-class SenseScans : FoolSlide("Sense-Scans", "http://sensescans.com", "en", "/reader")
+class SenseScans : FoolSlide("Sense-Scans", "https://sensescans.com", "en", "/reader")
 
 class SeaOtterScans : FoolSlide("Sea Otter Scans", "https://reader.seaotterscans.com", "en")
 
 class KireiCake : FoolSlide("Kirei Cake", "https://reader.kireicake.com", "en")
 
-class HiranoMoeScansBureau : FoolSlide("HiranoMoe Scans Bureau", "http://hiranomoe.com", "en", "/r")
+class HiranoMoeScansBureau : FoolSlide("HiranoMoe Scans Bureau", "https://hiranomoe.com", "en", "/r")
 
 class SilentSky : FoolSlide("Silent Sky", "http://reader.silentsky-scans.net", "en")
 
@@ -152,9 +152,9 @@ class AngelicScanlations : FoolSlide("Angelic Scanlations", "http://www.angelics
 
 class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en", "/reader")
 
-class YuriIsm : FoolSlide("Yuri-ism", "http://reader.yuri-ism.com", "en", "/slide")
+class YuriIsm : FoolSlide("Yuri-ism", "https://reader.yuri-ism.com", "en", "/slide")
 
-class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "http://ajianoscantrad.fr", "fr", "/reader")
+class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr", "fr", "/reader")
 
 class OneTimeScans : FoolSlide("One Time Scans", "https://otscans.com", "en", "/foolslide")
 
@@ -170,7 +170,7 @@ class Lilyreader : FoolSlide("Lilyreader", "https://manga.smuglo.li", "en")
 
 class MidnightHaven : FoolSlide("Midnight Haven", "http://midnighthaven.shounen-ai.net", "en", "/reader")
 
-class Russification : FoolSlide("Русификация", "http://rusmanga.ru", "ru")
+class Russification : FoolSlide("Русификация", "https://rusmanga.ru", "ru")
 
 class NieznaniReader : FoolSlide("Nieznani", "http://reader.nieznani.mynindo.pl", "pl")
 
