@@ -165,12 +165,17 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         filters.forEach { filter ->
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
+                is Demographic -> {
+                    if (filter.state != 0) {
+                        url.addQueryParameter("demo", filter.state.toString())
+                    }
+                }
             }
         }
+
         if (genres.isNotEmpty()) {
             url.addQueryParameter("genres", genres.joinToString(","))
         }
-
         return GET(url.toString(), headers)
 
     }
@@ -389,11 +394,13 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class Genre(val id: String, name: String) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Show all", "Show only", "Show none"))
+    private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
             R18(),
+            Demographic(),
             GenreList(getGenreList())
     )
 
