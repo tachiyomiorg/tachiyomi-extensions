@@ -33,7 +33,9 @@ class Webtoons : ParsedHttpSource() {
                 Calendar.THURSDAY -> "div._list_THURSDAY"
                 Calendar.FRIDAY -> "div._list_FRIDAY"
                 Calendar.SATURDAY -> "div._list_SATURDAY"
-                else -> { "div" }
+                else -> {
+                    "div"
+                }
             }
         }
 
@@ -132,6 +134,10 @@ class Webtoons : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = element.select("a > div.row > div.info > p.sub_title > span.ellipsis").text()
+        val select = element.select("a > div.row > div.num")
+        if (select.isNotEmpty()) {
+            chapter.name = chapter.name + " Ch. " + select.text()
+        }
         chapter.date_upload = element.select("a > div.row > div.info > p.date").text()?.let { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(it).time } ?: 0
         return chapter
     }
