@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -65,7 +64,7 @@ open class WpManga(override val name: String, override val baseUrl: String, over
         return manga
     }
 
-    override fun searchMangaNextPageSelector(): String = throw Exception("Not used")
+    override fun searchMangaNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.tab-summary").first()
@@ -155,14 +154,6 @@ open class WpManga(override val name: String, override val baseUrl: String, over
         now.add(javaUnit, -number)
 
         return now.timeInMillis
-    }
-
-    private fun SimpleDateFormat.parseOrNull(string: String): Date? {
-        return try {
-            parse(string)
-        } catch (e: ParseException) {
-            null
-        }
     }
 
     override fun pageListParse(document: Document): List<Page> {
