@@ -136,7 +136,7 @@ class Webtoons : ParsedHttpSource() {
         chapter.name = element.select("a > div.row > div.info > p.sub_title > span.ellipsis").text()
         val select = element.select("a > div.row > div.num")
         if (select.isNotEmpty()) {
-            chapter.name = chapter.name + " Ch. " + select.text()
+            chapter.name = chapter.name + " Ch. " + select.text().substringAfter("#")
         }
         chapter.date_upload = element.select("a > div.row > div.info > p.date").text()?.let { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(it).time } ?: 0
         return chapter
