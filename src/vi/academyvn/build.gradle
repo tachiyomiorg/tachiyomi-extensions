@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: AcademyVN'
     pkgNameSuffix = "vi.academyvn"
     extClass = '.Academyvn'
-    extVersionCode = 2
-    extVersionSuffix = 1
+    extVersionCode = 3
+    extVersionSuffix = 2
     libVersion = '1.2'
 }
 
