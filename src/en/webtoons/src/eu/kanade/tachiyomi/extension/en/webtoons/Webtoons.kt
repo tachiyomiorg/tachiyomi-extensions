@@ -3,16 +3,15 @@ package eu.kanade.tachiyomi.extension.en.webtoons
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- *  Todo Cover -> crop right //possible?
- */
 class Webtoons : ParsedHttpSource() {
 
     override val name = "Webtoons.com"
@@ -81,14 +80,25 @@ class Webtoons : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search?keyword=$query").newBuilder()
 
-        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
-            when (filter) {
-                is Type -> url.addQueryParameter("searchType", arrayOf("WEBTOON", "CHALLENGE")[filter.state])
-            }
+        url.addQueryParameter("searchType", "WEBTOON")
+        return GET(url.toString(), headers)
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val query = response.request().url().queryParameter("keyword")
+        val toonDocument = response.asJsoup()
+        val discDocument = client.newCall(GET("$baseUrl/search?keyword=$query&searchType=CHALLENGE", headers)).execute().asJsoup()
+
+        val elements = mutableListOf<Element>().apply {
+            addAll(toonDocument.select(searchMangaSelector()))
+            addAll(discDocument.select(searchMangaSelector()))
         }
 
-        url.addQueryParameter("page", page.toString())
-        return GET(url.toString(), headers)
+        val mangas = elements.map { element ->
+            searchMangaFromElement(element)
+        }
+
+        return MangasPage(mangas, false)
     }
 
     override fun searchMangaSelector() = "#content > div.card_wrap.search li"
@@ -102,7 +112,7 @@ class Webtoons : ParsedHttpSource() {
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = "div.paginate > a[href=#] + a"
+    override fun searchMangaNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val detailElement = document.select("#content > div.cont_box > div.detail_header > div.info")
@@ -147,8 +157,4 @@ class Webtoons : ParsedHttpSource() {
     override fun pageListParse(document: Document) = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
 
     override fun imageUrlParse(document: Document) = document.select("img").first().attr("src")
-
-    private class Type : Filter.Select<String>("Type", arrayOf("Webtoon (default)", "Discover"))
-
-    override fun getFilterList() = FilterList(Type())
 }
