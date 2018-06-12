@@ -32,7 +32,7 @@ class Mangago : ParsedHttpSource() {
     override val client = network.cloudflareClient.newBuilder().addInterceptor { chain ->
         val request = chain.request()
         val response = chain.proceed(request)
-        if(!request.url().pathSegments().contains("cspiclink")) return@addInterceptor response
+        if (!request.url().pathSegments().contains("cspiclink")) return@addInterceptor response
 
         val res = response.body()!!.byteStream().use {
             decodeImage(request.url().toString(), it)
@@ -222,43 +222,44 @@ class Mangago : ParsedHttpSource() {
     // Array.from(document.querySelectorAll('#genre_panel ul li:not(.genres_title) a')).map(a => `GenreFilter("${a.getAttribute('_id')}")`).sort().join(',\n')
     // on http://www.mangago.me/genre/all/
     private class GenreGroup : UriFilterGroup<GenreFilter>("Genres", listOf(
-            GenreFilter("Action"),
-            GenreFilter("Adult"),
-            GenreFilter("Adventure"),
-            GenreFilter("Bara"),
-            GenreFilter("Comedy"),
+            GenreFilter("Yaoi"),
             GenreFilter("Doujinshi"),
-            GenreFilter("Drama"),
-            GenreFilter("Ecchi"),
+            GenreFilter("Shounen Ai"),
+            GenreFilter("Shoujo"),
+            GenreFilter("Yuri"),
+            GenreFilter("Romance"),
             GenreFilter("Fantasy"),
-            GenreFilter("Gender Bender"),
+            GenreFilter("Comedy"),
+            GenreFilter("Smut"),
+            GenreFilter("Adult"),
+            GenreFilter("School Life"),
+            GenreFilter("Mystery"),
+            GenreFilter("One Shot"),
+            GenreFilter("Ecchi"),
+            GenreFilter("Shounen"),
+            GenreFilter("Martial Arts"),
+            GenreFilter("Shoujo Ai"),
+            GenreFilter("Supernatural"),
+            GenreFilter("Drama"),
+            GenreFilter("Action"),
+            GenreFilter("Adventure"),
             GenreFilter("Harem"),
             GenreFilter("Historical"),
             GenreFilter("Horror"),
             GenreFilter("Josei"),
-            GenreFilter("Martial Arts"),
             GenreFilter("Mature"),
             GenreFilter("Mecha"),
-            GenreFilter("Mystery"),
-            GenreFilter("One Shot"),
             GenreFilter("Psychological"),
-            GenreFilter("Romance"),
-            GenreFilter("School Life"),
             GenreFilter("Sci-fi"),
             GenreFilter("Seinen"),
-            GenreFilter("Shotacon"),
-            GenreFilter("Shoujo Ai"),
-            GenreFilter("Shoujo"),
-            GenreFilter("Shounen Ai"),
-            GenreFilter("Shounen"),
             GenreFilter("Slice Of Life"),
-            GenreFilter("Smut"),
             GenreFilter("Sports"),
-            GenreFilter("Supernatural"),
+            GenreFilter("Gender Bender"),
             GenreFilter("Tragedy"),
-            GenreFilter("Webtoons"),
-            GenreFilter("Yaoi"),
-            GenreFilter("Yuri")
+            GenreFilter("Bara"),
+            GenreFilter("Shotacon"),
+            GenreFilter("Webtoons")
+
     ))
 
     private class GenreFilter(name: String) : Filter.TriState(name)
@@ -392,6 +393,7 @@ var l = "18a72a69a64a13a1a43a3aa42a23a66a26a19a51a54a78a34a17a31a35a15a58a29a61a
   return result;
 })();
             """
+
         // Allow destructuring up to 6 items for lists
         private operator fun <T> List<T>.component6() = get(5)
     }
