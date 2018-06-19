@@ -270,16 +270,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 }
     }
 
-    private fun getFinalChapter(jsonObj: JsonObject): Double {
-        var finalChapterNumber = 0.00
+    private fun getFinalChapter(jsonObj: JsonObject) = jsonObj.get("last_chapter").string.trim()
 
-        if (jsonObj.get("last_chapter").string.isNotBlank()) {
-            finalChapterNumber = jsonObj.get("last_chapter").double
-        }
-        return finalChapterNumber
-    }
-
-    private fun isMangaCompleted(finalChapterNumber: Double, chapterJson: JsonObject): Boolean {
+    private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
 
         val count = chapterJson.toMap().values.filter { it ->
             val chapterElement = it.asJsonObject
@@ -293,8 +286,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     }
 
-    private fun doesFinalChapterExist(finalChapterNumber: Double, chapterJson: JsonElement) = finalChapterNumber != 0.00 && chapterJson.get("chapter").string.isNotEmpty() && chapterJson.get("chapter").double == finalChapterNumber
-
+    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson.get("chapter").string.trim()
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val now = Date().time
@@ -318,7 +310,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return chapters
     }
 
-    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: Double): SChapter {
+    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String): SChapter {
         val chapter = SChapter.create()
         chapter.url = BASE_CHAPTER + chapterId
         var chapterName = mutableListOf<String>()
@@ -330,11 +322,13 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             chapterName.add("Ch." + chapterJson.get("chapter").string)
         }
         if (chapterJson.get("title").string.isNotBlank()) {
-            chapterName.add("-")
+            if (!chapterName.isEmpty()) {
+                chapterName.add("-")
+            }
             chapterName.add(chapterJson.get("title").string)
         }
         if (doesFinalChapterExist(finalChapterNumber, chapterJson)) {
-            chapterName.add(" [END]")
+            chapterName.add("[END]")
         }
 
         chapter.name = cleanString(chapterName.joinToString(" "))
