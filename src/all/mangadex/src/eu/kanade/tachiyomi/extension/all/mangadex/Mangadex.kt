@@ -231,9 +231,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
         val finalChapterNumber = getFinalChapter(mangaJson)
-        val chapterJson = json.getAsJsonObject("chapter")
-
-        if (isMangaCompleted(finalChapterNumber, chapterJson)) {
+        if (json.getAsJsonObject("chapter") != null && isMangaCompleted(finalChapterNumber, json.getAsJsonObject("chapter"))) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(mangaJson.get("status").int)
