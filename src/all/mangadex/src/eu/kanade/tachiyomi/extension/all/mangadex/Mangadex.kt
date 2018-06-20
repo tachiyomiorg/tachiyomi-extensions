@@ -222,7 +222,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = SManga.create()
-        
         var jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
@@ -274,7 +273,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
 
-        val count = chapterJson.toMap().values.filter { it ->
+        val count = chapterJson?.toMap().values.filter { it ->
             val chapterElement = it.asJsonObject
             return chapterElement.get("lang_code").string == internalLang && doesFinalChapterExist(finalChapterNumber, it)
         }?.count()
