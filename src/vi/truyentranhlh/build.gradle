@@ -4,9 +4,9 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: TruyenTranhLh'
     pkgNameSuffix = "vi.truyentranhlh"
-    extClass = '.Truyentrnahlh'
-    extVersionCode = 3
-    extVersionSuffix = 2
+    extClass = '.Truyentranhlh'
+    extVersionCode = 4
+    extVersionSuffix = 3
     libVersion = '1.2'
 }
 
