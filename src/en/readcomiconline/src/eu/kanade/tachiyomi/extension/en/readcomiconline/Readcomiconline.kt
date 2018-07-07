@@ -17,7 +17,7 @@ class Readcomiconline : ParsedHttpSource() {
 
     override val name = "ReadComicOnline"
 
-    override val baseUrl = "http://readcomiconline.to"
+    override val baseUrl = "https://readcomiconline.to"
 
     override val lang = "en"
 
@@ -34,7 +34,7 @@ class Readcomiconline : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("http://readcomiconline.to/ComicList/LatestUpdate?page=$page", headers)
+        return GET("https://readcomiconline.to/ComicList/LatestUpdate?page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -145,7 +145,7 @@ class Readcomiconline : ParsedHttpSource() {
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
-    // on http://readcomiconline.to/AdvanceSearch
+    // on https://readcomiconline.to/AdvanceSearch
     private fun getGenreList() = listOf(
             Genre("Action"),
             Genre("Adventure"),
