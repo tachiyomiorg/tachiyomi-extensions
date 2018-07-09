@@ -143,13 +143,21 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
         if (lcDate.endsWith(" ago"))
             parseRelativeDate(lcDate)?.let { return it }
 
-        //Handle 'yesterday' and 'today'
+        //Handle 'yesterday' and 'today', using midnight
         var relativeDate: Calendar? = null
         if (lcDate.startsWith("yesterday")) {
             relativeDate = Calendar.getInstance()
             relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
+            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+            relativeDate.set(Calendar.MINUTE, 0)
+            relativeDate.set(Calendar.SECOND, 0)
+            relativeDate.set(Calendar.MILLISECOND, 0)
         } else if (lcDate.startsWith("today")) {
             relativeDate = Calendar.getInstance()
+            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+            relativeDate.set(Calendar.MINUTE, 0)
+            relativeDate.set(Calendar.SECOND, 0)
+            relativeDate.set(Calendar.MILLISECOND, 0)
         }
 
         relativeDate?.timeInMillis?.let {
