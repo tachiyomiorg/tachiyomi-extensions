@@ -86,7 +86,7 @@ class Readcomiconline : ParsedHttpSource() {
         manga.genre = infoElement.select("p:has(span:contains(Genres:)) > *:gt(0)").text()
         manga.description = infoElement.select("p:has(span:contains(Summary:)) ~ p").text()
         manga.status = infoElement.select("p:has(span:contains(Status:))").first()?.text().orEmpty().let { parseStatus(it) }
-        manga.thumbnail_url = document.select(".rightBox:eq(0) img").first()?.attr("src")
+        manga.thumbnail_url = document.select(".rightBox:eq(0) img").first()?.absUrl("src")
         return manga
     }
 
