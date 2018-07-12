@@ -109,7 +109,9 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         //see if there are multiple chapters or not
         document.select(chapterListSelector())?.let { it ->
             it.forEach {
-                chapters.add(createChapter(it.text(), document.baseUri(), date))
+                if (!it.text().contains("Next »", true)) {
+                    chapters.add(createChapter(it.text(), document.baseUri(), date))
+                }
             }
         }
         chapters.reverse()
@@ -145,5 +147,5 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListParse(document: Document) = throw Exception("Not used")
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
-    
+
 }
