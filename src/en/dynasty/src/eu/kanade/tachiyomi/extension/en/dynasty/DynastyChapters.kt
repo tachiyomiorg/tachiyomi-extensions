@@ -28,6 +28,7 @@ class DynastyChapters : DynastyScans() {
 
         manga.thumbnail_url = document.select("img").last().absUrl("src")
         manga.title = document.select("h3 b").text()
+        manga.status = SManga.COMPLETED
         val artistAuthorElements = document.select("a[href*=author]")
         if (!artistAuthorElements.isEmpty()) {
             if (artistAuthorElements.size == 1) {
