@@ -174,6 +174,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         url.addQueryParameter("demo", filter.state.toString())
                     }
                 }
+                is OriginalLanguage -> {
+                    if (filter.state != 0) {
+                        val number: String = SOURCE_LANG_LIST.first { it -> it.first == filter.values[filter.state] }?.second
+                        url.addQueryParameter("source_lang", number)
+                    }
+                }
             }
         }
 
@@ -212,7 +218,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     private fun apiRequest(manga: SManga): Request {
-        return GET(baseUrl.replace("https", "http") + API_MANGA + getMangaId(manga.url), headers)
+        return GET(baseUrl + API_MANGA + getMangaId(manga.url), headers)
     }
 
     private fun getMangaId(url: String): String {
@@ -247,7 +253,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         var genres = mutableListOf<String>()
 
         mangaJson.get("genres").asJsonArray.forEach { id ->
-            getGenreList().find { it -> it.id == id.string }?.let { genre ->
+            GENRE_LIST.find { it -> it.id == id.string }?.let { genre ->
                 genres.add(genre.name)
             }
         }
@@ -419,59 +425,18 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Show all", "Show only", "Show none"))
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
+    private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
+
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
             R18(),
             Demographic(),
-            GenreList(getGenreList())
+            OriginalLanguage(),
+            GenreList(GENRE_LIST)
     )
 
-
-    private fun getGenreList() = listOf(
-            Genre("1", "4-koma"),
-            Genre("2", "Action"),
-            Genre("3", "Adventure"),
-            Genre("4", "Award Winning"),
-            Genre("5", "Comedy"),
-            Genre("6", "Cooking"),
-            Genre("7", "Doujinshi"),
-            Genre("8", "Drama"),
-            Genre("9", "Ecchi"),
-            Genre("10", "Fantasy"),
-            Genre("11", "Gender Bender"),
-            Genre("12", "Harem"),
-            Genre("13", "Historical"),
-            Genre("14", "Horror"),
-            Genre("15", "Josei"),
-            Genre("16", "Martial Arts"),
-            Genre("17", "Mecha"),
-            Genre("18", "Medical"),
-            Genre("19", "Music"),
-            Genre("20", "Mystery"),
-            Genre("21", "Oneshot"),
-            Genre("22", "Psychological"),
-            Genre("23", "Romance"),
-            Genre("24", "School Life"),
-            Genre("25", "Sci-Fi"),
-            Genre("26", "Seinen"),
-            Genre("27", "Shoujo"),
-            Genre("28", "Shoujo Ai"),
-            Genre("29", "Shounen"),
-            Genre("30", "Shounen Ai"),
-            Genre("31", "Slice of Life"),
-            Genre("32", "Smut"),
-            Genre("33", "Sports"),
-            Genre("34", "Supernatural"),
-            Genre("35", "Tragedy"),
-            Genre("36", "Webtoon"),
-            Genre("37", "Yaoi"),
-            Genre("38", "Yuri"),
-            Genre("39", "[no chapters]"),
-            Genre("40", "Game"),
-            Genre("41", "Isekai")
-    )
 
     companion object {
         //this number matches to the cookie
@@ -482,6 +447,63 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val SHOW_R18_PREF = "showR18Default"
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
+        private val SOURCE_LANG_LIST = listOf(
+                Pair("All", "0"),
+                Pair("Japanese", "2"),
+                Pair("English", "1"),
+                Pair("Polish", "3"),
+                Pair("German", "8"),
+                Pair("French", "10"),
+                Pair("Vietnamese", "12"),
+                Pair("Chinese", "21"),
+                Pair("Indonesian", "27"),
+                Pair("Korean", "28"),
+                Pair("Spanish (LATAM)", "29"),
+                Pair("Thai", "32"),
+                Pair("Filipino", "34")
+        )
+        private val GENRE_LIST = listOf(
+                Genre("1", "4-koma"),
+                Genre("2", "Action"),
+                Genre("3", "Adventure"),
+                Genre("4", "Award Winning"),
+                Genre("5", "Comedy"),
+                Genre("6", "Cooking"),
+                Genre("7", "Doujinshi"),
+                Genre("8", "Drama"),
+                Genre("9", "Ecchi"),
+                Genre("10", "Fantasy"),
+                Genre("11", "Gender Bender"),
+                Genre("12", "Harem"),
+                Genre("13", "Historical"),
+                Genre("14", "Horror"),
+                Genre("15", "Josei"),
+                Genre("16", "Martial Arts"),
+                Genre("17", "Mecha"),
+                Genre("18", "Medical"),
+                Genre("19", "Music"),
+                Genre("20", "Mystery"),
+                Genre("21", "Oneshot"),
+                Genre("22", "Psychological"),
+                Genre("23", "Romance"),
+                Genre("24", "School Life"),
+                Genre("25", "Sci-Fi"),
+                Genre("26", "Seinen"),
+                Genre("27", "Shoujo"),
+                Genre("28", "Shoujo Ai"),
+                Genre("29", "Shounen"),
+                Genre("30", "Shounen Ai"),
+                Genre("31", "Slice of Life"),
+                Genre("32", "Smut"),
+                Genre("33", "Sports"),
+                Genre("34", "Supernatural"),
+                Genre("35", "Tragedy"),
+                Genre("36", "Webtoon"),
+                Genre("37", "Yaoi"),
+                Genre("38", "Yuri"),
+                Genre("39", "[no chapters]"),
+                Genre("40", "Game"),
+                Genre("41", "Isekai"))
 
     }
 }
