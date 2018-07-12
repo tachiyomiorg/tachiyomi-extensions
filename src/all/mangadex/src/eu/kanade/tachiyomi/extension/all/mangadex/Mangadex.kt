@@ -51,7 +51,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         .request()
                         .newBuilder()
                         .addHeader("Cookie", cookiesHeader(r18Toggle, langCode))
-                        .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
                         .build()
                 chain.proceed(newReq)
             }.build()!!
@@ -152,17 +151,21 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val byGenre = filters.find { it is GenreList }
-        val genres = mutableListOf<String>()
+        val genresToInclude = mutableListOf<String>()
+        val genresToExclude = mutableListOf<String>()
+
         if (byGenre != null) {
             byGenre as GenreList
             byGenre.state.forEach { genre ->
-                when (genre.state) {
-                    true -> genres.add(genre.id)
+                if (genre.isExcluded()) {
+                    genresToExclude.add(genre.id)
+                } else if (genre.isIncluded()) {
+                    genresToInclude.add(genre.id)
                 }
             }
         }
         //do traditional search
-        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("p", page.toString()).addQueryParameter("title", query)
+        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("s", "0").addQueryParameter("p", page.toString()).addQueryParameter("title", query)
         filters.forEach { filter ->
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
@@ -174,8 +177,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }
         }
 
-        if (genres.isNotEmpty()) {
-            url.addQueryParameter("genres", genres.joinToString(","))
+        if (genresToInclude.isNotEmpty()) {
+            url.addQueryParameter("genres_inc", genresToInclude.joinToString(","))
+        }
+        if (genresToExclude.isNotEmpty()) {
+            url.addQueryParameter("genres_exc", genresToExclude.joinToString(","))
         }
         return GET(url.toString(), headers)
 
@@ -206,7 +212,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     private fun apiRequest(manga: SManga): Request {
-        return GET(baseUrl + URL + getMangaId(manga.url), headers)
+        return GET(baseUrl.replace("https", "http") + API_MANGA + getMangaId(manga.url), headers)
     }
 
     private fun getMangaId(url: String): String {
@@ -288,7 +294,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val now = Date().time
-        var jsonData = response.body()!!.string()
+        val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
         val status = mangaJson.get("status").int
@@ -311,8 +317,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
         val chapter = SChapter.create()
-        chapter.url = BASE_CHAPTER + chapterId
-        var chapterName = mutableListOf<String>()
+        chapter.url = API_CHAPTER + chapterId
+        val chapterName = mutableListOf<String>()
         //build chapter name
         if (chapterJson.get("volume").string.isNotBlank()) {
             chapterName.add("Vol." + chapterJson.get("volume").string)
@@ -343,7 +349,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         if (!chapterJson.get("group_name_3").nullString.isNullOrBlank()) {
             scanlatorName.add(chapterJson.get("group_name_3").string)
         }
-        chapter.scanlator = scanlatorName.joinToString(" & ")
+        chapter.scanlator = cleanString(scanlatorName.joinToString(" & "))
 
 
         return chapter
@@ -351,17 +357,20 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
 
-    override fun pageListParse(document: Document): List<Page> {
+    override fun pageListParse(document: Document) = throw Exception("Not used")
+
+    override fun pageListParse(response: Response): List<Page> {
+        var jsonData = response.body()!!.string()
+        val json = JsonParser().parse(jsonData).asJsonObject
+
         val pages = mutableListOf<Page>()
-        val url = document.baseUri()
 
-        val dataUrl = document.select("script").last().html().substringAfter("dataurl = '").substringBefore("';")
-        val imageUrl = document.select("script").last().html().substringAfter("page_array = [").substringBefore("];")
-        val listImageUrls = imageUrl.replace("'", "").split(",")
-        val server = document.select("script").last().html().substringAfter("server = '").substringBefore("';")
+        val hash = json.get("server").string
+        val pageArray = json.getAsJsonArray("page_array")
+        val server = json.get("server").string
 
-        listImageUrls.filter { it.isNotBlank() }.forEach {
-            val url = "$server$dataUrl/$it"
+        pageArray.forEach {
+            val url = "$server$hash/$it"
             pages.add(Page(pages.size, "", getImageUrl(url)))
         }
 
@@ -406,7 +415,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
-    private class Genre(val id: String, name: String) : Filter.CheckBox(name)
+    private class Genre(val id: String, name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Show all", "Show only", "Show none"))
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
@@ -471,8 +480,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val ONLY_R18 = 2
         private const val SHOW_R18_PREF_Title = "Default R18 Setting"
         private const val SHOW_R18_PREF = "showR18Default"
-        private const val URL = "/api/3640f3fb/"
-        private const val BASE_CHAPTER = "/chapter/"
+        private const val API_MANGA = "/api/manga/"
+        private const val API_CHAPTER = "/api/chapter/"
 
     }
 }
