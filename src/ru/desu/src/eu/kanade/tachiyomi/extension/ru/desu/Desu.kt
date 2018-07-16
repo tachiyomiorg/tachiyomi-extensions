@@ -30,19 +30,28 @@ class Desu : HttpSource() {
         for (i in 0 until arr.length()) {
             var obj = arr.getJSONObject(i)
             ret.add(SManga.create().apply {
-                mangaFromJSON(obj)
+                mangaFromJSON(obj, false)
             })
         }
         return MangasPage(ret, next)
     }
 
-    private fun SManga.mangaFromJSON(obj: JSONObject) {
+    private fun SManga.mangaFromJSON(obj: JSONObject, chapter: Boolean) {
         val id = obj.getInt("id")
         url = "/$id"
         title = obj.getString("name")
         thumbnail_url = obj.getJSONObject("image").getString("original")
         description = obj.getString("description")
-
+        genre = if (chapter) {
+            val jsonArray = obj.getJSONArray("genres")
+            var genreList = kotlin.collections.mutableListOf<String>()
+            for (i in 0 until jsonArray.length()) {
+                genreList.add(jsonArray.getJSONObject(i).getString("russian"))
+            }
+            genreList.joinToString()
+        } else {
+            obj.getString("genres")
+        }
         status = when (obj.getString("status")) {
             "ongoing" -> SManga.ONGOING
             "released" -> SManga.COMPLETED
@@ -95,7 +104,7 @@ class Desu : HttpSource() {
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val obj = JSONObject(response.body()!!.string()).getJSONObject("response")
-        mangaFromJSON(obj)
+        mangaFromJSON(obj, true)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -110,9 +119,15 @@ class Desu : HttpSource() {
             ret.add(SChapter.create().apply {
                 val ch = obj2.getString("ch")
                 val title = if (obj2.getString("title") == "null") "" else obj2.getString("title")
-                name = "$ch - $title"
+                if (title.isEmpty()) {
+                    name = "Глава $ch"
+                } else {
+                    name = "$ch - $title"
+                }
                 val id = obj2.getString("id")
                 url = "/$cid/chapter/$id"
+                chapter_number = ch.toFloat()
+                date_upload = obj2.getLong("date")*1000
             })
         }
         return ret
