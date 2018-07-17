@@ -7,13 +7,13 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
+import java.util.*
 
 class Rawlh : ParsedHttpSource() {
 
     override val name = "RawLH"
 
-    override val baseUrl = "http://rawlh.com"
+    override val baseUrl = "http://lhscan.net"
 
     override val lang = "ja"
 
