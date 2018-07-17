@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: RawQQ'
+    pkgNameSuffix = "ja.rawqq"
+    extClass = '.Rawqq'
+    extVersionCode = 1
+    extVersionSuffix = 0
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"
