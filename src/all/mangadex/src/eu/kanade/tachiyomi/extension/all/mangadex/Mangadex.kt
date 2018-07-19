@@ -40,6 +40,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
+    private val whitespaceRegex = "\\s".toRegex()
+
     private fun clientBuilder(): OkHttpClient = clientBuilder(getShowR18())
 
 
@@ -162,7 +164,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }
         }
         //do traditional search
-        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("p", page.toString()).addQueryParameter("title", query)
+        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("p", page.toString()).addQueryParameter("title", query.replace(whitespaceRegex, " "))
         filters.forEach { filter ->
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
