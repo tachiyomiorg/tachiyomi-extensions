@@ -103,11 +103,11 @@ class Rawlh : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = " table.table.table-hover tbody tr"
+    override fun chapterListSelector() = ".list-chapters p"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("td a").first()
-        val timeElement = element.select("td time").first()
+        val urlElement = element.select("a.chapter").first()
+        val timeElement = element.select(".pubDate time").first()
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain("/" + urlElement.attr("href"))
