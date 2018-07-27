@@ -17,7 +17,7 @@ class Readcomictv : ParsedHttpSource() {
     override val lang = "en"
     override val name = "ReadComicsWebsite"
     override val supportsLatest = true
-    override val baseUrl = "http://readcomics.website"
+    override val baseUrl = "http://readcomics.io"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -64,8 +64,8 @@ class Readcomictv : ParsedHttpSource() {
         val info = document.select(".manga-details table")
         manga.author = info.select("tr:nth-child(5) > td:nth-child(2)").text()
         manga.artist = info.select("tr:nth-child(5) > td:nth-child(2)").text()
-        manga.description = document.select(".pdesc").text()
-        manga.thumbnail_url = document.select(".manga-image img").attr("src")
+        manga.description = document.select(".detail-desc-content p").text()
+        manga.thumbnail_url = document.select(".anime-image img").attr("src")
         manga.genre = info.select("tr:nth-child(6) > td:nth-child(2)").text()
         val  status = info.select("tr:nth-child(4) > td:nth-child(2)").text()
         manga.status = if (status == "Completed") SManga.COMPLETED else if (status == "Ongoing") SManga.ONGOING else SManga.UNKNOWN
@@ -89,7 +89,7 @@ class Readcomictv : ParsedHttpSource() {
     override fun popularMangaNextPageSelector(): String? = ".general-nav :last-child"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET(baseUrl + "/popular-comic/$page",headers)
+        return GET(baseUrl + "/popular-comics/$page",headers)
     }
 
     override fun popularMangaSelector(): String = ".manga-box h3 a"
@@ -110,7 +110,7 @@ class Readcomictv : ParsedHttpSource() {
     }
 
     override fun searchMangaSelector(): String {
-        return ".manga-box h3 a"
+        return ".dlb-title"
     }
 
 }
