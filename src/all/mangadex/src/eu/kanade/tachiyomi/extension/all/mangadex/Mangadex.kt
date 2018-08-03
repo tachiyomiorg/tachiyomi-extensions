@@ -225,6 +225,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         var jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
+        val chapterJson = json.getAsJsonObject("chapter")
         manga.title = baseUrl + mangaJson.get("title").string
         manga.thumbnail_url = baseUrl + mangaJson.get("cover_url").string
         manga.description = cleanString(mangaJson.get("description").string)
@@ -232,7 +233,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.artist = mangaJson.get("artist").string
         val status = mangaJson.get("status").int
         val finalChapterNumber = getFinalChapter(mangaJson)
-        if (status == 2 && json.getAsJsonObject("chapter") != null && isMangaCompleted(finalChapterNumber, json.getAsJsonObject("chapter"))) {
+        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(finalChapterNumber, chapterJson)) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
@@ -271,17 +272,13 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private fun getFinalChapter(jsonObj: JsonObject) = jsonObj.get("last_chapter").string.trim()
 
     private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
-
-        val count = chapterJson?.toMap().values.filter { it ->
-            val chapterElement = it.asJsonObject
-            return chapterElement.get("lang_code").string == internalLang && doesFinalChapterExist(finalChapterNumber, it)
-        }?.count()
-
+        val count = chapterJson.entrySet()
+                .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
+                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }?.count()
         return when (count) {
             0 -> false
             else -> true
         }
-
     }
 
     private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson.get("chapter").string.trim()
@@ -326,7 +323,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }
             chapterName.add(chapterJson.get("title").string)
         }
-        if (status == 2 && doesFinalChapterExist(finalChapterNumber, chapterJson)) {
+        if ((status == 2 || status == 3) && doesFinalChapterExist(finalChapterNumber, chapterJson)) {
             chapterName.add("[END]")
         }
 
