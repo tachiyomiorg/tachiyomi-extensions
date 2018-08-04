@@ -69,12 +69,11 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-src"))
+        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-lazy-src"))
         return manga
     }
 
     //removes resizing
-
     private fun getThumbnail(thumbnailUrl: String) = thumbnailUrl.substringBeforeLast("-") + "." + thumbnailUrl.substringAfterLast(".")
 
     //cleans up the name removing author and language from the title
@@ -89,7 +88,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             it.text().contains("artist", true) || it.text().contains("author", true)
         }?.text()?.substringAfter(":")
 
-        var glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
+        val glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
         manga.genre = glist.joinToString(", ")
         manga.description = document.select(".entry-content blockquote")?.first()?.text() ?: ""
         manga.status = SManga.UNKNOWN
@@ -124,8 +123,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     private fun createChapter(pageNumber: String, mangaUrl: String, date: Long): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(mangaUrl + "/" + pageNumber)
-        chapter.name = "Ch. " + pageNumber
+        chapter.setUrlWithoutDomain("$mangaUrl/$pageNumber")
+        chapter.name = "Ch. $pageNumber"
         chapter.date_upload = date
         return chapter
     }
@@ -138,7 +137,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         val elements = body.select("div.separator > img")
 
-        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("data-src")) }
+        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("data-lazy-src")) }
 
         return pages
     }
