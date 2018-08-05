@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: MangaKakalot'
+    pkgNameSuffix = "en.mangakakalot"
+    extClass = '.Mangakakalot'
+    extVersionCode = 0
+    extVersionSuffix = 1
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"
