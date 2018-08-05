@@ -38,7 +38,7 @@ class Perveden : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/en/en-directory/").newBuilder().addQueryParameter("title", query)
+        val url = HttpUrl.parse("$baseUrl/en/en-directory/")?.newBuilder()!!.addQueryParameter("title", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is StatusList -> filter.state

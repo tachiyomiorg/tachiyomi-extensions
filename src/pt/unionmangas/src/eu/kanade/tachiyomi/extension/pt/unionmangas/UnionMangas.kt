@@ -126,7 +126,7 @@ class UnionMangas : ParsedHttpSource() {
     }
 
     private fun removeLabel(text: String?): String {
-        return text!!.substring(text!!.indexOf(":") + 1)
+        return text!!.substring(text.indexOf(":") + 1)
     }
 
     override fun chapterListSelector() = "div.row.lancamento-linha"

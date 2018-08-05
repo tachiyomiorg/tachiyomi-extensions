@@ -276,7 +276,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
         val count = chapterJson.entrySet()
                 .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
-                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }?.count()
+                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }.count()
         return when (count) {
             0 -> false
             else -> true
@@ -352,8 +352,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val url = document.baseUri()
-
         val dataUrl = document.select("script").last().html().substringAfter("dataurl = '").substringBefore("';")
         val imageUrl = document.select("script").last().html().substringAfter("page_array = [").substringBefore("];")
         val listImageUrls = imageUrl.replace("'", "").split(",")

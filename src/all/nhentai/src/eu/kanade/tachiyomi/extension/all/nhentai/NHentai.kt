@@ -55,7 +55,7 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
             = throw UnsupportedOperationException("This method should not be called!")
 
     override fun mangaDetailsParse(response: Response)
-            = parseGallery(jsonParser.parse(response.body().string()).obj)
+            = parseGallery(jsonParser.parse(response.body()!!.string()).obj)
 
     //Hack so we can use a different URL for fetching manga details and opening the details in the browser
     override fun fetchMangaDetails(manga: SManga)
@@ -70,7 +70,7 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
     fun urlToDetailsRequest(url: String) = nhGet("$baseUrl/api/gallery/${url.substringAfterLast('/')}")
 
     fun parseResultPage(response: Response): MangasPage {
-        val res = jsonParser.parse(response.body().string()).obj
+        val res = jsonParser.parse(response.body()!!.string()).obj
 
         res["error"]?.let {
             throw RuntimeException("An error occurred while performing the search: $it")
@@ -120,7 +120,7 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
             tags.clear()
         }?.forEach {
             if (it.first != null && it.second != null)
-                tags.getOrPut(it.first!!, { mutableListOf<Tag>() }).add(Tag(it.second!!, false))
+                tags.getOrPut(it.first!!) { mutableListOf() }.add(Tag(it.second!!, false))
         }!!
     }
 
@@ -132,7 +132,7 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
             client.newCall(urlToDetailsRequest(url))
                     .asObservableSuccess()
                     .map {
-                        rawParseGallery(jsonParser.parse(it.body().string()).obj)
+                        rawParseGallery(jsonParser.parse(it.body()!!.string()).obj)
                     }!!
 
     override fun fetchChapterList(manga: SManga)

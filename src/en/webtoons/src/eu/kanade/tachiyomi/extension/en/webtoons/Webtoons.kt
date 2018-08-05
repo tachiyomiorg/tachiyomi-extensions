@@ -78,8 +78,7 @@ class Webtoons : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search?keyword=$query").newBuilder()
-
+        val url = HttpUrl.parse("$baseUrl/search?keyword=$query")?.newBuilder()!!
         url.addQueryParameter("searchType", "WEBTOON")
         return GET(url.toString(), headers)
     }

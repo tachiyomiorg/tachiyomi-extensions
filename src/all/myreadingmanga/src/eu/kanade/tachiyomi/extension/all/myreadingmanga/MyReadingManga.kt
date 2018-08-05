@@ -40,7 +40,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             }
         }
 
-        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 

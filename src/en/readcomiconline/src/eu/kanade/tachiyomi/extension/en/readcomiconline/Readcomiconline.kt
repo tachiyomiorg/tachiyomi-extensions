@@ -116,7 +116,7 @@ class Readcomiconline : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         //language=RegExp
         val p = Pattern.compile("""lstImages.push\("(.+?)"""")
-        val m = p.matcher(response.body().string())
+        val m = p.matcher(response.body()!!.string())
 
         var i = 0
         while (m.find()) {
