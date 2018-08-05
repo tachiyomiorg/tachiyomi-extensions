@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: TruyenTranhLh'
-    pkgNameSuffix = "vi.truyentranhlh"
+    pkgNameSuffix = 'vi.truyentranhlh'
     extClass = '.Truyentranhlh'
     extVersionCode = 4
     extVersionSuffix = 3
@@ -11,8 +11,8 @@ ext {
 }
 
 dependencies {
-    provided "com.google.code.gson:gson:2.8.0"
-    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+    compileOnly 'com.google.code.gson:gson:2.8.0'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"

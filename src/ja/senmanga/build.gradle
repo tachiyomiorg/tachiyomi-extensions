@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Sen Manga'
-    pkgNameSuffix = "ja.senmanga"
+    pkgNameSuffix = 'ja.senmanga'
     extClass = '.SenManga'
     extVersionCode = 2
     extVersionSuffix = 1

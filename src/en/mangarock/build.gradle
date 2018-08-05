@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Manga Rock'
-    pkgNameSuffix = "en.mangarock"
+    pkgNameSuffix = 'en.mangarock'
     extClass = '.MangaRock'
     extVersionCode = 3
     extVersionSuffix = 2

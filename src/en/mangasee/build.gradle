@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Mangasee'
-    pkgNameSuffix = "en.mangasee"
+    pkgNameSuffix = 'en.mangasee'
     extClass = '.Mangasee'
     extVersionCode = 2
     extVersionSuffix = 2

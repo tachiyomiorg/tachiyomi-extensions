@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: RawLH'
-    pkgNameSuffix = "ja.rawlh"
+    pkgNameSuffix = 'ja.rawlh'
     extClass = '.Rawlh'
     extVersionCode = 4
     extVersionSuffix = 2

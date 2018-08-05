@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: xkcd'
-    pkgNameSuffix = "en.xkcd"
+    pkgNameSuffix = 'en.xkcd'
     extClass = '.Xkcd'
     extVersionCode = 4
     extVersionSuffix = 4
@@ -11,9 +11,9 @@ ext {
 }
 
 dependencies {
-    provided project(':duktape-stub')
-    provided "com.google.code.gson:gson:2.8.0"
-    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+    compileOnly project(':duktape-stub')
+    compileOnly 'com.google.code.gson:gson:2.8.0'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"

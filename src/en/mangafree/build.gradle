@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Mangafree'
-    pkgNameSuffix = "en.mangafree"
+    pkgNameSuffix = 'en.mangafree'
     extClass = '.Mangafree'
     extVersionCode = 0
     extVersionSuffix = 1

@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: E-Hentai'
-    pkgNameSuffix = "all.ehentai"
+    pkgNameSuffix = 'all.ehentai'
     extClass = '.EHJapanese; .EHEnglish; .EHChinese; .EHDutch; .EHFrench; .EHGerman; .EHHungarian; .EHItalian; .EHKorean; .EHPolish; .EHPolish; .EHPortuguese; .EHRussian; .EHSpanish; .EHThai; .EHVietnamese; .EHSpeechless; .EHOther'
     extVersionCode = 1
     extVersionSuffix = 1
@@ -11,8 +11,8 @@ ext {
 }
 
 dependencies {
-    provided "com.google.code.gson:gson:2.8.0"
-    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+    compileOnly 'com.google.code.gson:gson:2.8.0'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"
