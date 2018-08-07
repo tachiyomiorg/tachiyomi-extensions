@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: RawQQ'
-    pkgNameSuffix = "ja.rawqq"
+    pkgNameSuffix = 'ja.rawqq'
     extClass = '.Rawqq'
     extVersionCode = 1
     extVersionSuffix = 0

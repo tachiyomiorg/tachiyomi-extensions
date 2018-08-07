@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Dmzj'
-    pkgNameSuffix = "zh.dmzj"
+    pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
     extVersionCode = 4
     extVersionSuffix = 4

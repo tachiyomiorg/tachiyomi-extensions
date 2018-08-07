@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Tapastic'
-    pkgNameSuffix = "en.tapastic"
+    pkgNameSuffix = 'en.tapastic'
     extClass = '.Tapastic'
     extVersionCode = 1
     extVersionSuffix = 1
@@ -11,8 +11,8 @@ ext {
 }
 
 dependencies {
-    provided "com.google.code.gson:gson:2.8.0"
-    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"

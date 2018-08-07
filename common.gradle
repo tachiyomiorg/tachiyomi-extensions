@@ -45,9 +45,9 @@ repositories {
 }
 
 dependencies {
-    provided "eu.kanade.tachiyomi:extensions-library:$libVersion"
-    provided "com.squareup.okhttp3:okhttp:3.5.0"
-    provided 'io.reactivex:rxjava:1.2.4'
-    provided 'org.jsoup:jsoup:1.10.1'
-    provided "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compileOnly "eu.kanade.tachiyomi:extensions-library:$libVersion"
+    compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
+    compileOnly 'io.reactivex:rxjava:1.3.6'
+    compileOnly 'org.jsoup:jsoup:1.10.2'
 }

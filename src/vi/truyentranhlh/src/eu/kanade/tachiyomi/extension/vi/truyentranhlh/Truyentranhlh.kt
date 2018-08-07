@@ -39,7 +39,7 @@ class Truyentranhlh : HttpSource() {
             popularMangaFromElement(element)
         }
 
-        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
@@ -58,7 +58,7 @@ class Truyentranhlh : HttpSource() {
             latestUpdatesFromElement(element)
         }
 
-        val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
+        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 

@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Blogtruyen'
-    pkgNameSuffix = "vi.blogtruyen"
+    pkgNameSuffix = 'vi.blogtruyen'
     extClass = '.Blogtruyen'
     extVersionCode = 2
     extVersionSuffix = 1

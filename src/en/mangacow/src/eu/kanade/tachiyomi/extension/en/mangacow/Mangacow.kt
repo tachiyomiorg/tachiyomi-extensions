@@ -145,7 +145,7 @@ class Mangacow : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
-        val m = pagesUrlPattern.matcher(response.body().string())
+        val m = pagesUrlPattern.matcher(response.body()!!.string())
         var i = 0
         while (m.find()) {
             pages.add(Page(i++, "", m.group(1)))

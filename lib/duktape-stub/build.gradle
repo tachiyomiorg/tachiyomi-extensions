@@ -7,7 +7,6 @@ sourceSets {
 }
 
 dependencies {
-
 }
 
 sourceCompatibility = "1.6"

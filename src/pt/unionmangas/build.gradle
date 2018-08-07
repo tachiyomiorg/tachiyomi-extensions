@@ -10,8 +10,4 @@ ext {
     libVersion = '1.2'
 }
 
-dependencies {
-
-}
-
 apply from: "$rootDir/common.gradle"

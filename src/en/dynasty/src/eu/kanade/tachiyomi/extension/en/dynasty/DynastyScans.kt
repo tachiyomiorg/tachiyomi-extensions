@@ -106,8 +106,8 @@ abstract class DynastyScans : ParsedHttpSource() {
 
     protected fun parseGenres(elements: Elements, manga: SManga) {
         if (!elements.isEmpty()) {
-            var genres = mutableListOf<String>()
-            elements?.forEach {
+            val genres = mutableListOf<String>()
+            elements.forEach {
                 genres.add(it.text())
             }
             manga.genre = genres.joinToString(", ")

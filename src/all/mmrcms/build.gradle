@@ -5,14 +5,14 @@ ext {
     appName = 'Tachiyomi: My Manga Reader CMS (Many sources)'
     pkgNameSuffix = 'all.mmrcms'
     extClass = '.MyMangaReaderCMSSources'
-    extVersionCode = 5
-    extVersionSuffix = 5
+    extVersionCode = 6
+    extVersionSuffix = 6
     libVersion = '1.2'
 }
 
 dependencies {
-    provided "com.google.code.gson:gson:2.8.1"
-    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"

@@ -148,9 +148,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
-
 
         //do traditional search
         val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("s", "0").addQueryParameter("p", page.toString()).addQueryParameter("title", query.replace(whitespaceRegex, " "))
@@ -168,6 +168,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         url.addQueryParameter("source_lang", number)
                     }
                 }
+
                 is GenreList -> {
                     filter.state.forEach { genre ->
                         if (genre.isExcluded()) {
@@ -283,7 +284,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
         val count = chapterJson.entrySet()
                 .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
-                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }?.count()
+                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }.count()
         return when (count) {
             0 -> false
             else -> true

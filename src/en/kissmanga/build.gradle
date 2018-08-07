@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Kissmanga'
-    pkgNameSuffix = "en.kissmanga"
+    pkgNameSuffix = 'en.kissmanga'
     extClass = '.Kissmanga'
     extVersionCode = 7
     extVersionSuffix = 4
@@ -11,7 +11,7 @@ ext {
 }
 
 dependencies {
-    provided project(':duktape-stub')
+    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"

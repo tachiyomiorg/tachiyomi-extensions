@@ -127,7 +127,7 @@ class ShoujoSense : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url, headers)
 
     override fun pageListParse(response: Response): List<Page> {
-        val body = response.body().string()
+        val body = response.body()!!.string()
         val pages = mutableListOf<Page>()
 
         val p = pagesUrlPattern

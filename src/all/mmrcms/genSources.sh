@@ -151,7 +151,7 @@ function genSource() {
 	PG_TMP="$(mktemp)"
 
 	# Fetch categories from advanced search
-	wget "$3/advanced-search" -O "$DL_TMP"
+	wget "$3/advanced-search" -O "$DL_TMP" --no-check-certificate
 	# Find manga/comic URL
 	ITEM_URL="$(getItemUrl "$DL_TMP")"
 	# Remove scripts
@@ -161,7 +161,7 @@ function genSource() {
 	# Get item url from home page if not on advanced search page!
 	if [[ -z "${ITEM_URL// }" ]]; then
 		# Download home page
-		wget "$3" -O "$DL_TMP"
+		wget "$3" -O "$DL_TMP" --no-check-certificate
 		# Extract item url again
 		ITEM_URL="$(getItemUrl "$DL_TMP")"
 		# Still missing?
@@ -178,7 +178,7 @@ function genSource() {
 		LIST_URL_PREFIX="${BASH_REMATCH[1]}"
 	fi
 	# Download manga list page
-	wget "$3/$LIST_URL_PREFIX-list" -O "$DL_TMP"
+	wget "$3/$LIST_URL_PREFIX-list" -O "$DL_TMP" --no-check-certificate
 	# Remove scripts
 	cat "$DL_TMP" | stripScripts > "$PG_TMP"
 
@@ -205,7 +205,7 @@ function genSource() {
 	# Unescape HTML entities
 	CATEGORIES="$(unescapeHtml "$CATEGORIES")"
 	# Check if latest manga is supported
-	LATEST_RESP=$(curl --write-out \\n%{http_code} --silent --output - "$3/filterList?page=1&sortBy=last_release&asc=false")
+	LATEST_RESP=$(curl -k --write-out \\n%{http_code} --silent --output - "$3/filterList?page=1&sortBy=last_release&asc=false")
 	SUPPORTS_LATEST="false"
 	if verifyResponse "$LATEST_RESP"; then
 		SUPPORTS_LATEST="true"
@@ -232,7 +232,8 @@ function genSource() {
 
 # Source list
 gen "ar" "مانجا اون لاين" "http://www.on-manga.com"
-gen "ar" "Manga FYI" "http://mangafyi.com/manga/arabic"
+# Went offline
+# gen "ar" "Manga FYI" "http://mangafyi.com/manga/arabic"
 gen "en" "Read Comics Online" "http://readcomicsonline.ru"
 gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
 # Went offline
@@ -240,10 +241,12 @@ gen "en" "Fallen Angels Scans" "http://manga.fascans.com"
 gen "en" "Mangawww Reader" "http://mangawww.com"
 # Went offline
 # gen "en" "MangaForLife" "http://manga4ever.com"
-gen "en" "Manga Spoil" "http://mangaspoil.com"
+# Went offline
+# gen "en" "Manga Spoil" "http://mangaspoil.com"
 # Protected by CloudFlare
 # gen "en" "MangaBlue" "http://mangablue.com"
-gen "en" "Manga Forest" "https://mangaforest.com"
+# Went offline
+# gen "en" "Manga Forest" "https://mangaforest.com"
 # Went offline
 # gen "en" "DManga" "http://dmanga.website"
 gen "en" "Chibi Manga Reader" "http://www.cmreader.info"
@@ -251,29 +254,32 @@ gen "en" "ZXComic" "http://zxcomic.com"
 # Went offline
 # gen "en" "DB Manga" "http://dbmanga.com"
 gen "en" "Mangacox" "http://mangacox.com"
+
 # Protected by CloudFlare
 # gen "en" "GO Manhwa" "http://gomanhwa.xyz"
 # Went offline
 # gen "en" "KoManga" "https://komanga.net"
 # Went offline
 # gen "en" "Manganimecan" "http://manganimecan.com"
-gen "en" "Hentai2Manga" "http://hentai2manga.com"
+# Went offline
+# gen "en" "Hentai2Manga" "http://hentai2manga.com"
 gen "en" "White Cloud Pavilion" "http://www.whitecloudpavilion.com/manga/free"
 gen "en" "4 Manga" "http://4-manga.com"
 gen "en" "XYXX.INFO" "http://xyxx.info"
+gen "en" "MangaTreat Scans" "http://www.mangatreat.com"
+gen "en" "Isekai Manga Reader" "https://isekaimanga.club"
 gen "es" "My-mangas.com" "https://my-mangas.com"
-gen "es" "SOS Scanlation" "https://sosscanlation.com"
-gen "es" "Doujin Hentai" "http://doujinhentai.net"
+gen "es" "SOS Scanlation" "http://sosscanlation.com"
 # Went offline
 # gen "fa" "TrinityReader" "http://trinityreader.pw"
 gen "fr" "Manga-LEL" "https://www.manga-lel.com"
 gen "fr" "Manga Etonnia" "https://www.etonnia.com"
 gen "fr" "Scan FR" "http://www.scan-fr.net" # Also available here: http://www.scan-fr.io
+gen "fr" "ScanFR.com" "http://scanfr.com"
 # Went offline
-# gen "fr" "ScanFR.com" "http://scanfr.com"
-gen "fr" "Manga FYI" "http://mangafyi.com/manga/french"
-gen "fr" "Mugiwara" "http://mugiwara.be"
-gen "fr" "scans-manga" "http://scans-manga.com"
+# gen "fr" "Manga FYI" "http://mangafyi.com/manga/french"
+# Went offline
+# gen "fr" "scans-manga" "http://scans-manga.com"
 gen "fr" "Henka no Kaze" "http://henkanokazelel.esy.es/upload"
 # Went offline
 # gen "fr" "Tous Vos Scans" "http://www.tous-vos-scans.com"
@@ -286,8 +292,10 @@ gen "id" "MangaOnline" "http://mangaonline.web.id"
 # gen "id" "MangaNesia" "https://manganesia.com"
 gen "id" "Komikid" "http://www.komikid.com"
 gen "id" "MangaID" "http://mangaid.co"
-gen "id" "Manga Seru" "http://www.mangaseru.top"
-gen "id" "Manga FYI" "http://mangafyi.com/manga/indonesian"
+# Went offline
+# gen "id" "Manga Seru" "http://www.mangaseru.top"
+# Went offline
+# gen "id" "Manga FYI" "http://mangafyi.com/manga/indonesian"
 gen "id" "Bacamangaku" "http://www.bacamangaku.com"
 # Went offline
 # gen "id" "Indo Manga Reader" "http://indomangareader.com"
@@ -298,13 +306,18 @@ gen "id" "Bacamangaku" "http://www.bacamangaku.com"
 # Went offline
 # gen "ja" "Mangaraw Online" "http://mangaraw.online"
 gen "ja" "Mangazuki RAWS" "https://raws.mangazuki.co"
+gen "ja" "RAW MANGA READER" "https://rawmanga.site"
 # Went offline
 # gen "ja" "MangaRAW" "https://www.mgraw.com"
 gen "ja" "マンガ/漫画 マガジン/雑誌 raw" "http://netabare-manga-raw.com"
 gen "pl" "ToraScans" "http://torascans.pl"
 gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://mangasyuri.net"
-gen "ru" "NAKAMA" "http://nakama.ru"
+gen "pl" "Dracaena" "http://dracaena.webd.pl/czytnik"
+gen "pl" "Nikushima" "http://azbivo.webd.pro"
+# Went offline
+# gen "ru" "NAKAMA" "http://nakama.ru"
+gen "ru" "Anigai clan" "http://anigai.ru"
 # Went offline
 # gen "tr" "MangAoi" "http://mangaoi.com"
 gen "tr" "MangaHanta" "http://mangahanta.com"

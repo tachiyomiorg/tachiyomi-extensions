@@ -58,8 +58,7 @@ class Mangazuki : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga-list").newBuilder()
-
+        val url = HttpUrl.parse("$baseUrl/manga-list")?.newBuilder()!!
         return GET(url.toString(), headers)
     }
     override fun searchMangaSelector() = popularMangaSelector()
