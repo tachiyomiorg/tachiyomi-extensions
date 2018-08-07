@@ -68,28 +68,24 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
     }
 
-    override fun popularMangaSelector() = "div.col-sm-6"
+    override fun popularMangaSelector() = "div.col-lg-6.border-bottom.pl-0.my-1"
 
-    override fun latestUpdatesSelector() = ".table-responsive tbody tr a.manga_title[href*=manga]"
+    override fun latestUpdatesSelector() = "tr a.manga_title"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/titles/0/$page", headers)
+        return GET("$baseUrl/titles/0/$page/", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/0/$page", headers)
+        return GET("$baseUrl/updates/$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("div.large_logo img").first().let {
-            manga.thumbnail_url = baseUrl + it.attr("src")
-        }
         element.select("a.manga_title").first().let {
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
-            manga.author = it?.text()?.trim()
         }
         return manga
     }
@@ -152,20 +148,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val byGenre = filters.find { it is GenreList }
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
 
-        if (byGenre != null) {
-            byGenre as GenreList
-            byGenre.state.forEach { genre ->
-                if (genre.isExcluded()) {
-                    genresToExclude.add(genre.id)
-                } else if (genre.isIncluded()) {
-                    genresToInclude.add(genre.id)
-                }
-            }
-        }
+
         //do traditional search
         val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("s", "0").addQueryParameter("p", page.toString()).addQueryParameter("title", query.replace(whitespaceRegex, " "))
         filters.forEach { filter ->
@@ -182,24 +168,33 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         url.addQueryParameter("source_lang", number)
                     }
                 }
+                is GenreList -> {
+                    filter.state.forEach { genre ->
+                        if (genre.isExcluded()) {
+                            genresToExclude.add(genre.id)
+                        } else if (genre.isIncluded()) {
+                            genresToInclude.add(genre.id)
+                        } 
+                    }
+                }
             }
         }
-
+        var urlToUse = url.toString()
         if (genresToInclude.isNotEmpty()) {
-            url.addQueryParameter("genres_inc", genresToInclude.joinToString(","))
+            urlToUse = urlToUse + ("?genres_inc=") + genresToInclude.joinToString()
         }
         if (genresToExclude.isNotEmpty()) {
-            url.addQueryParameter("genres_exc", genresToExclude.joinToString(","))
+            urlToUse = urlToUse + ("?genres_exc=") + genresToExclude.joinToString()
         }
-        return GET(url.toString(), headers)
+        return GET(urlToUse, headers)
 
     }
 
-    override fun searchMangaSelector() = "div.col-sm-6"
+    override fun searchMangaSelector() = "div.col-lg-6.border-bottom.pl-0.my-1"
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("div.large_logo img").first().let {
+        element.select("div.rounded.large_logo.mr-2 img").first().let {
             manga.thumbnail_url = baseUrl + it.attr("src")
         }
         element.select("a.manga_title").first().let {
@@ -370,12 +365,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         val pages = mutableListOf<Page>()
 
-        val hash = json.get("server").string
+        val hash = json.get("hash").string
         val pageArray = json.getAsJsonArray("page_array")
         val server = json.get("server").string
 
         pageArray.forEach {
-            val url = "$server$hash/$it"
+            val url = "$server$hash/${it.asString}"
             pages.add(Page(pages.size, "", getImageUrl(url)))
         }
 
