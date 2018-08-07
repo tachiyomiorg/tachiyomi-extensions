@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: MangaDex'
-    pkgNameSuffix = "all.mangadex"
+    pkgNameSuffix = 'all.mangadex'
     extClass = '.MangadexFactory'
     extVersionCode = 33
     extVersionSuffix = 33
@@ -11,10 +11,10 @@ ext {
 }
 
 dependencies {
-    provided "com.google.code.gson:gson:2.8.0"
-    provided "com.github.salomonbrys.kotson:kotson:2.5.0"
-    provided project(':preference-stub')
-    provided "com.github.inorichi.injekt:injekt-core:65b0440"
+    compileOnly project(':preference-stub')
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

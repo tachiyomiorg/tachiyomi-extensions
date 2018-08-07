@@ -90,7 +90,7 @@ class Hentai2Read : ParsedHttpSource() {
                     is ReleaseYearSelect -> add("cbo_wpm_pag_mng_sch_rls_yer", filter.state.toString())
                     is Status -> add("rad_wpm_pag_mng_sch_sts", filter.state.toString())
                     is TagSearchMode -> add("rad_wpm_pag_mng_sch_tag_mde", arrayOf("and", "or")[filter.state])
-                    is TagList -> filter.state.forEach { tag -> 
+                    is TagList -> filter.state.forEach { tag ->
                         when (tag.state) {
                             Filter.TriState.STATE_INCLUDE -> add("chk_wpm_pag_mng_sch_mng_tag_inc[]", tag.id.toString())
                             Filter.TriState.STATE_EXCLUDE -> add("chk_wpm_pag_mng_sch_mng_tag_exc[]", tag.id.toString())
@@ -194,7 +194,7 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
-        val m = pagesUrlPattern.matcher(response.body().string())
+        val m = pagesUrlPattern.matcher(response.body()!!.string())
         var i = 0
         while (m.find()) {
             m.group(1).split(",").forEach {

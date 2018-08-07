@@ -3,15 +3,15 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Mangago'
-    pkgNameSuffix = "en.mangago"
+    pkgNameSuffix = 'en.mangago'
     extClass = '.Mangago'
     extVersionCode = 6
     extVersionSuffix = 5
     libVersion = '1.2'
 }
 
-apply from: "$rootDir/common.gradle"
-
 dependencies {
-    provided project(':duktape-stub')
+    compileOnly project(':duktape-stub')
 }
+
+apply from: "$rootDir/common.gradle"

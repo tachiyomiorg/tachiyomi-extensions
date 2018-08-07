@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Perveden'
-    pkgNameSuffix = "it.perveden"
+    pkgNameSuffix = 'it.perveden'
     extClass = '.Perveden'
     extVersionCode = 1
     extVersionSuffix = 1

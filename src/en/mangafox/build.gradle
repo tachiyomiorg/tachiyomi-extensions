@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Mangafox'
-    pkgNameSuffix = "en.mangafox"
+    pkgNameSuffix = 'en.mangafox'
     extClass = '.Mangafox'
     extVersionCode = 3
     extVersionSuffix = 1

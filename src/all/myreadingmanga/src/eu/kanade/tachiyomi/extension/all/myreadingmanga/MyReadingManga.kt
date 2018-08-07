@@ -40,7 +40,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             }
         }
 
-        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
@@ -65,17 +65,15 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img").first())
 
-
     private fun buildManga(titleElement: Element, thumbnailElement: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("src"))
+        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-lazy-src"))
         return manga
     }
 
     //removes resizing
-
     private fun getThumbnail(thumbnailUrl: String) = thumbnailUrl.substringBeforeLast("-") + "." + thumbnailUrl.substringAfterLast(".")
 
     //cleans up the name removing author and language from the title
@@ -90,7 +88,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             it.text().contains("artist", true) || it.text().contains("author", true)
         }?.text()?.substringAfter(":")
 
-        var glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
+        val glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
         manga.genre = glist.joinToString(", ")
         manga.description = document.select(".entry-content blockquote")?.first()?.text() ?: ""
         manga.status = SManga.UNKNOWN
@@ -125,8 +123,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     private fun createChapter(pageNumber: String, mangaUrl: String, date: Long): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(mangaUrl + "/" + pageNumber)
-        chapter.name = "Ch. " + pageNumber
+        chapter.setUrlWithoutDomain("$mangaUrl/$pageNumber")
+        chapter.name = "Ch. $pageNumber"
         chapter.date_upload = date
         return chapter
     }
@@ -137,9 +135,9 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         val pages = mutableListOf<Page>()
-        val elements = body.select("div.separator noscript img")
+        val elements = body.select("div.separator > img")
 
-        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("src")) }
+        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("data-lazy-src")) }
 
         return pages
     }

@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Webtoons'
-    pkgNameSuffix = "en.webtoons"
+    pkgNameSuffix = 'en.webtoons'
     extClass = '.Webtoons'
     extVersionCode = 4
     extVersionSuffix = 3

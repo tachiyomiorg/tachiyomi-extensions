@@ -3,15 +3,11 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: MyReadingManga'
-    pkgNameSuffix = "all.myreadingmanga"
+    pkgNameSuffix = 'all.myreadingmanga'
     extClass = '.MyReadingMangaFactory'
-    extVersionCode = 4
-    extVersionSuffix = 3
+    extVersionCode = 6
+    extVersionSuffix = 5
     libVersion = '1.2'
-}
-
-dependencies {
-
 }
 
 apply from: "$rootDir/common.gradle"

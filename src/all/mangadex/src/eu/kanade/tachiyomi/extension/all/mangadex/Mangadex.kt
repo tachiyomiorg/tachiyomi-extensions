@@ -288,7 +288,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
         val count = chapterJson.entrySet()
                 .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
-                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }?.count()
+                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }.count()
         return when (count) {
             0 -> false
             else -> true
@@ -370,7 +370,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         val pages = mutableListOf<Page>()
 
-        val hash = json.get("server").string
+        val hash = json.get("hash").string
         val pageArray = json.getAsJsonArray("page_array")
         val server = json.get("server").string
 

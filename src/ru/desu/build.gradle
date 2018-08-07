@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Desu'
-    pkgNameSuffix = "ru.desu"
+    pkgNameSuffix = 'ru.desu'
     extClass = '.Desu'
     extVersionCode = 4
     extVersionSuffix = 3
