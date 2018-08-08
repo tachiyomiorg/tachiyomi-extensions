@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit
 
 open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ConfigurableSource, ParsedHttpSource() {
 
-
     override val name = "MangaDex"
 
     override val baseUrl = "https://mangadex.org"
@@ -40,10 +39,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    private val whitespaceRegex = "\\s".toRegex()
-
     private fun clientBuilder(): OkHttpClient = clientBuilder(getShowR18())
-
 
     private fun clientBuilder(r18Toggle: Int): OkHttpClient = network.cloudflareClient.newBuilder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -148,12 +144,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
 
-        //do traditional search
-        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder().addQueryParameter("s", "0").addQueryParameter("p", page.toString()).addQueryParameter("title", query.replace(whitespaceRegex, " "))
+        // Do traditional search
+        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder()
+                .addQueryParameter("s", "0")
+                .addQueryParameter("p", page.toString())
+                .addQueryParameter("title", query.replace(WHITESPACE_REGEX, " "))
+
         filters.forEach { filter ->
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
@@ -164,31 +163,32 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 }
                 is OriginalLanguage -> {
                     if (filter.state != 0) {
-                        val number: String = SOURCE_LANG_LIST.first { it -> it.first == filter.values[filter.state] }?.second
+                        val number: String = SOURCE_LANG_LIST.first { it -> it.first == filter.values[filter.state] }.second
                         url.addQueryParameter("source_lang", number)
                     }
                 }
-
                 is GenreList -> {
                     filter.state.forEach { genre ->
                         if (genre.isExcluded()) {
                             genresToExclude.add(genre.id)
                         } else if (genre.isIncluded()) {
                             genresToInclude.add(genre.id)
-                        } 
+                        }
                     }
                 }
             }
         }
+
+        // Manually append genres list to avoid commas being encoded
         var urlToUse = url.toString()
         if (genresToInclude.isNotEmpty()) {
-            urlToUse = urlToUse + ("?genres_inc=") + genresToInclude.joinToString()
+            urlToUse += "&genres_inc=" + genresToInclude.joinToString(",")
         }
         if (genresToExclude.isNotEmpty()) {
-            urlToUse = urlToUse + ("?genres_exc=") + genresToExclude.joinToString()
+            urlToUse += "&genres_exc=" + genresToExclude.joinToString(",")
         }
-        return GET(urlToUse, headers)
 
+        return GET(urlToUse, headers)
     }
 
     override fun searchMangaSelector() = "div.col-lg-6.border-bottom.pl-0.my-1"
@@ -220,7 +220,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     private fun getMangaId(url: String): String {
-
         val lastSection = url.trimEnd('/').substringAfterLast("/")
         return if (lastSection.toIntOrNull() != null) {
             lastSection
@@ -232,7 +231,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = SManga.create()
-        var jsonData = response.body()!!.string()
+        val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
         val chapterJson = json.getAsJsonObject("chapter")
@@ -249,8 +248,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.status = parseStatus(status)
         }
 
-        var genres = mutableListOf<String>()
-
+        val genres = mutableListOf<String>()
         mangaJson.get("genres").asJsonArray.forEach { id ->
             GENRE_LIST.find { it -> it.id == id.string }?.let { genre ->
                 genres.add(genre.name)
@@ -261,11 +259,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return manga
     }
 
-    //remove bbcode as well as parses any html characters in description or chapter name to actual characters for example &hearts will show a heart
+    // Remove bbcode tags as well as parses any html characters in description or chapter name to actual characters for example &hearts will show a heart
     private fun cleanString(description: String): String {
-        return Jsoup.parseBodyFragment(description.replace("[list]", "").replace("[/list]", "").replace("[*]", "").replace("""\[(\w+)[^\]]*](.*?)\[/\1]""".toRegex(), "$2")).text()
+        return Jsoup.parseBodyFragment(description
+                .replace("[list]", "")
+                .replace("[/list]", "")
+                .replace("[*]", "")
+                .replace("""\[(\w+)[^\]]*](.*?)\[/\1]""".toRegex(), "$2")).text()
     }
-
 
     override fun mangaDetailsParse(document: Document) = throw Exception("Not Used")
 
@@ -285,10 +286,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val count = chapterJson.entrySet()
                 .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
                 .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }.count()
-        return when (count) {
-            0 -> false
-            else -> true
-        }
+        return count != 0
     }
 
     private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson.get("chapter").string.trim()
@@ -300,12 +298,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val mangaJson = json.getAsJsonObject("manga")
         val status = mangaJson.get("status").int
 
-
-        var finalChapterNumber = getFinalChapter(mangaJson)
+        val finalChapterNumber = getFinalChapter(mangaJson)
         val chapterJson = json.getAsJsonObject("chapter")
         val chapters = mutableListOf<SChapter>()
 
-        //skip chapters that dont match the desired language, or are future releases
+        // Skip chapters that don't match the desired language, or are future releases
         chapterJson?.forEach { key, jsonElement ->
             val chapterElement = jsonElement.asJsonObject
             if (chapterElement.get("lang_code").string == internalLang && (chapterElement.get("timestamp").asLong * 1000) <= now) {
@@ -320,7 +317,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val chapter = SChapter.create()
         chapter.url = API_CHAPTER + chapterId
         val chapterName = mutableListOf<String>()
-        //build chapter name
+        // Build chapter name
         if (chapterJson.get("volume").string.isNotBlank()) {
             chapterName.add("Vol." + chapterJson.get("volume").string)
         }
@@ -338,9 +335,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         }
 
         chapter.name = cleanString(chapterName.joinToString(" "))
-        //convert from unix time
+        // Convert from unix time
         chapter.date_upload = chapterJson.get("timestamp").long * 1000
-        var scanlatorName = mutableListOf<String>()
+        val scanlatorName = mutableListOf<String>()
         if (!chapterJson.get("group_name").nullString.isNullOrBlank()) {
             scanlatorName.add(chapterJson.get("group_name").string)
         }
@@ -352,7 +349,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         }
         chapter.scanlator = cleanString(scanlatorName.joinToString(" & "))
 
-
         return chapter
     }
 
@@ -361,7 +357,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun pageListParse(document: Document) = throw Exception("Not used")
 
     override fun pageListParse(response: Response): List<Page> {
-        var jsonData = response.body()!!.string()
+        val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
 
         val pages = mutableListOf<Page>()
@@ -386,7 +382,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     private fun getImageUrl(attr: String): String {
-        //some images are hosted elsewhere
+        // Some images are hosted elsewhere
         if (attr.startsWith("http")) {
             return attr
         }
@@ -422,7 +418,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
 
-
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
@@ -432,16 +427,20 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             GenreList(GENRE_LIST)
     )
 
-
     companion object {
-        //this number matches to the cookie
+        private val WHITESPACE_REGEX = "\\s".toRegex()
+
+        // This number matches to the cookie
         private const val NO_R18 = 0
         private const val ALL = 1
         private const val ONLY_R18 = 2
+
         private const val SHOW_R18_PREF_Title = "Default R18 Setting"
         private const val SHOW_R18_PREF = "showR18Default"
+
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
+
         private val SOURCE_LANG_LIST = listOf(
                 Pair("All", "0"),
                 Pair("Japanese", "2"),
@@ -499,6 +498,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 Genre("39", "[no chapters]"),
                 Genre("40", "Game"),
                 Genre("41", "Isekai"))
-
     }
+
 }
