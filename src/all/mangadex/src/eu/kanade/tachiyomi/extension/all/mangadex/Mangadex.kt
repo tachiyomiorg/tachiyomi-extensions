@@ -195,9 +195,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("div.rounded.large_logo.mr-2 img").first().let {
-            manga.thumbnail_url = baseUrl + it.attr("src")
-        }
+
         element.select("a.manga_title").first().let {
             val url = removeMangaNameFromUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
