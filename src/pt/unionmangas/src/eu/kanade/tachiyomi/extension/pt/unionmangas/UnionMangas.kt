@@ -2,9 +2,14 @@ package eu.kanade.tachiyomi.extension.pt.unionmangas
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.FormBody
+import okhttp3.Headers
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
@@ -157,7 +162,7 @@ class UnionMangas : ParsedHttpSource() {
 
         return pages
                 .filter { it.attr("src").contains("leitor") }
-                .mapIndexed { i, element -> Page(i, "", "http://" + element.attr("src"))}
+                .mapIndexed { i, element -> Page(i, "", element.absUrl("src"))}
     }
 
     override fun imageUrlParse(document: Document) = ""
