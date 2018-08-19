@@ -79,19 +79,19 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a.manga_title").first().let {
-            val url = removeMangaNameFromUrl(it.attr("href"))
+            val url = modifyMangaUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
         return manga
     }
 
-    private fun removeMangaNameFromUrl(url: String): String = url.substringBeforeLast("/") + "/"
+    private fun modifyMangaUrl(url: String): String = url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.let {
-            manga.setUrlWithoutDomain(removeMangaNameFromUrl(it.attr("href")))
+            manga.setUrlWithoutDomain(modifyMangaUrl(it.attr("href")))
             manga.title = it.text().trim()
 
         }
@@ -197,7 +197,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val manga = SManga.create()
 
         element.select("a.manga_title").first().let {
-            val url = removeMangaNameFromUrl(it.attr("href"))
+            val url = modifyMangaUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
             manga.author = it?.text()?.trim()
