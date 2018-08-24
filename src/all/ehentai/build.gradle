@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-
 ext {
     appName = 'Tachiyomi: E-Hentai'
     pkgNameSuffix = 'all.ehentai'
@@ -9,5 +8,4 @@ ext {
     extVersionSuffix = 1
     libVersion = '1.0'
 }
-
 apply from: "$rootDir/common.gradle"
