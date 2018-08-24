@@ -22,25 +22,9 @@ class Webtoons : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    val day: String
-        get() {
-            return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
-                Calendar.SUNDAY -> "div._list_SUNDAY"
-                Calendar.MONDAY -> "div._list_MONDAY"
-                Calendar.TUESDAY -> "div._list_TUESDAY"
-                Calendar.WEDNESDAY -> "div._list_WEDNESDAY"
-                Calendar.THURSDAY -> "div._list_THURSDAY"
-                Calendar.FRIDAY -> "div._list_FRIDAY"
-                Calendar.SATURDAY -> "div._list_SATURDAY"
-                else -> {
-                    "div"
-                }
-            }
-        }
+    override fun popularMangaSelector() = ".challenge_lst > ul > li"
 
-    override fun popularMangaSelector() = "div.left_area > ul.lst_type1 > li"
-
-    override fun latestUpdatesSelector() = "div#dailyList > $day li > a:has(span:contains(UP))"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun headersBuilder() = super.headersBuilder()
             .add("Referer", "http://www.webtoons.com/en/")
@@ -49,37 +33,29 @@ class Webtoons : ParsedHttpSource() {
             .add("Referer", "http://m.webtoons.com")
             .build()
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/en/top", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/en/challenge/list?genreTab=ALL&sortOrder=READ_COUNT", headers)
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/en/dailySchedule?sortOrder=UPDATE&webtoonCompleteType=ONGOING", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/en/challenge/list?genreTab=ALL&sortOrder=UPDATE", headers)
 
-    private fun mangaFromElement(query: String, element: Element): SManga {
-        val manga = SManga.create()
-        element.select(query).first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("p.subj").text()
-        }
-        return manga
-    }
-
-    override fun popularMangaFromElement(element: Element) = mangaFromElement("a", element)
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
+    override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.let {
-            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.setUrlWithoutDomain(it.select("a").attr("href"))
             manga.title = it.select("p.subj").text()
+            manga.author = it.select(".author").text()
+            manga.thumbnail_url = it.select("img").attr("src").substringBefore('?')
         }
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = null
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = null
+    override fun popularMangaNextPageSelector() = ".paginate a[href='#'] + a"
+
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search?keyword=$query")?.newBuilder()!!
-        url.addQueryParameter("searchType", "WEBTOON")
+        val url = HttpUrl.parse("$baseUrl/search?keyword=$query&searchType=WEBTOON")?.newBuilder()!!
         return GET(url.toString(), headers)
     }
 
@@ -102,19 +78,12 @@ class Webtoons : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "#content > div.card_wrap.search li"
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("p.subj").text()
-        }
-        return manga
-    }
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val detailElement = document.select("#content > div.cont_box > div.detail_header > div.info")
+        val detailElement = document.select(".detail_header > .info")
         val infoElement = document.select("#_asideDetail")
         val picElement = document.select("#content > div.cont_box > div.detail_body")
         val discoverPic = document.select("#content > div.cont_box > div.detail_header > span.thmb")
@@ -156,4 +125,5 @@ class Webtoons : ParsedHttpSource() {
     override fun pageListParse(document: Document) = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
 
     override fun imageUrlParse(document: Document) = document.select("img").first().attr("src")
+
 }
