@@ -167,47 +167,16 @@ class LeoManga : ParsedHttpSource() {
             val timeAgo = Integer.parseInt(dateWords[1])
             val dates: Calendar = Calendar.getInstance()
 
-            if (dateWords[2].contains("segundo")) {
-                dates.add(Calendar.SECOND, -timeAgo)
-            } else if (dateWords[2].contains("segundos")) {
-                dates.add(Calendar.SECOND, -timeAgo)
+            when{
+                dateWords[2].contains("segundo") || dateWords[2].contains("segundos") -> dates.add(Calendar.SECOND, -timeAgo)
+                dateWords[2].contains("minuto") || dateWords[2].contains("minutos") -> dates.add(Calendar.MINUTE, -timeAgo)
+                dateWords[2].contains("hora") || dateWords[2].contains("horas") -> dates.add(Calendar.HOUR_OF_DAY, -timeAgo)
+                dateWords[2].contains("día") || dateWords[2].contains("dias") -> dates.add(Calendar.DAY_OF_YEAR, -timeAgo)
+                dateWords[2].contains("semana") || dateWords[2].contains("semanas") -> dates.add(Calendar.WEEK_OF_YEAR, -timeAgo)
+                dateWords[2].contains("mes") || dateWords[2].contains("meses") -> dates.add(Calendar.MONTH, -timeAgo)
+                dateWords[2].contains("año") || dateWords[2].contains("años") -> dates.add(Calendar.YEAR, -timeAgo)
             }
 
-            else if (dateWords[2].contains("minuto")) {
-                dates.add(Calendar.MINUTE, -timeAgo)
-            } else if (dateWords[2].contains("minutos")) {
-                dates.add(Calendar.MINUTE, -timeAgo)
-            }
-
-            else if (dateWords[2].contains("hora")) {
-                dates.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            } else if (dateWords[2].contains("horas")) {
-                dates.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            }
-
-            else if (dateWords[2].contains("dia")) {
-                dates.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            } else if (dateWords[2].contains("dias")) {
-                dates.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            }
-
-            else if (dateWords[2].contains("semana")) {
-                dates.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            } else if (dateWords[2].contains("semanas")) {
-                dates.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            }
-
-            else if (dateWords[2].contains("mes")) {
-                dates.add(Calendar.MONTH, -timeAgo)
-            } else if (dateWords[2].contains("meses")) {
-                dates.add(Calendar.MONTH, -timeAgo)
-            }
-
-            else if (dateWords[2].contains("año")) {
-                dates.add(Calendar.YEAR, -timeAgo)
-            } else if (dateWords[2].contains("años")) {
-                dates.add(Calendar.YEAR, -timeAgo)
-            }
             return dates.timeInMillis
         }
         return 0L
