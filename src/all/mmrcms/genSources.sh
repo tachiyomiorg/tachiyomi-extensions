@@ -253,7 +253,8 @@ gen "en" "Chibi Manga Reader" "http://www.cmreader.info"
 gen "en" "ZXComic" "http://zxcomic.com"
 # Went offline
 # gen "en" "DB Manga" "http://dbmanga.com"
-gen "en" "Mangacox" "http://mangacox.com"
+# Went offline
+# gen "en" "Mangacox" "http://mangacox.com"
 
 # Protected by CloudFlare
 # gen "en" "GO Manhwa" "http://gomanhwa.xyz"
@@ -269,13 +270,14 @@ gen "en" "XYXX.INFO" "http://xyxx.info"
 gen "en" "MangaTreat Scans" "http://www.mangatreat.com"
 gen "en" "Isekai Manga Reader" "https://isekaimanga.club"
 gen "es" "My-mangas.com" "https://my-mangas.com"
-gen "es" "SOS Scanlation" "http://sosscanlation.com"
+gen "es" "SOS Scanlation" "https://sosscanlation.com"
 # Went offline
 # gen "fa" "TrinityReader" "http://trinityreader.pw"
 gen "fr" "Manga-LEL" "https://www.manga-lel.com"
 gen "fr" "Manga Etonnia" "https://www.etonnia.com"
-gen "fr" "Scan FR" "http://www.scan-fr.net" # Also available here: http://www.scan-fr.io
-gen "fr" "ScanFR.com" "http://scanfr.com"
+gen "fr" "Scan FR" "http://www.scan-fr.io"
+# Went offline
+# gen "fr" "ScanFR.com" "http://scanfr.com"
 # Went offline
 # gen "fr" "Manga FYI" "http://mangafyi.com/manga/french"
 # Went offline
@@ -287,11 +289,12 @@ gen "fr" "Henka no Kaze" "http://henkanokazelel.esy.es/upload"
 # gen "id" "Manga Desu" "http://mangadesu.net"
 # Went offline
 # gen "id" "Komik Mangafire.ID" "http://go.mangafire.id"
-gen "id" "MangaOnline" "http://mangaonline.web.id"
+gen "id" "MangaOnline" "https://mangaonline.web.id"
 # Went offline
 # gen "id" "MangaNesia" "https://manganesia.com"
 gen "id" "Komikid" "http://www.komikid.com"
-gen "id" "MangaID" "http://mangaid.co"
+# Now uses wpmanga
+# gen "id" "MangaID" "https://mangaid.me"
 # Went offline
 # gen "id" "Manga Seru" "http://www.mangaseru.top"
 # Went offline
