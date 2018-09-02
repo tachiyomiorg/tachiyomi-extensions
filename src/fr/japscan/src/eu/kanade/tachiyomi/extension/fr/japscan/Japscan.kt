@@ -83,8 +83,8 @@ class Japscan : ParsedHttpSource() {
         manga.author = rowElement.select("div:eq(0)").first()?.text()
         manga.artist = rowElement.select("div:eq(0)").first()?.text()
         manga.genre = rowElement.select("div:eq(2)").first()?.text()
-        manga.description = infoElement.select("div.synopsis").first()?.text()
-
+        manga.description = infoElement.select("div#synopsis").text()
+		
         manga.status = rowElement.select("div:eq(4)").first()?.text().orEmpty().let { parseStatus(it) }
 
         return manga
