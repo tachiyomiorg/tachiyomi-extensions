@@ -243,8 +243,7 @@ gen "en" "Mangawww Reader" "http://mangawww.com"
 # gen "en" "MangaForLife" "http://manga4ever.com"
 # Went offline
 # gen "en" "Manga Spoil" "http://mangaspoil.com"
-# Protected by CloudFlare
-# gen "en" "MangaBlue" "http://mangablue.com"
+gen "en" "MangaBlue" "http://mangablue.com"
 # Went offline
 # gen "en" "Manga Forest" "https://mangaforest.com"
 # Went offline
@@ -318,8 +317,7 @@ gen "pt" "Comic Space" "https://www.comicspace.com.br"
 gen "pt" "Mangás Yuri" "https://mangasyuri.net"
 gen "pl" "Dracaena" "http://dracaena.webd.pl/czytnik"
 gen "pl" "Nikushima" "http://azbivo.webd.pro"
-# Went offline
-# gen "ru" "NAKAMA" "http://nakama.ru"
+gen "ru" "NAKAMA" "http://nakama.ru"
 gen "ru" "Anigai clan" "http://anigai.ru"
 # Went offline
 # gen "tr" "MangAoi" "http://mangaoi.com"
