@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.source.online.french
+package eu.kanade.tachiyomi.extension.fr.japscan
 
 /**
  * @file Japscan.kt
