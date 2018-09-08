@@ -133,14 +133,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             when (filter) {
                 is R18 -> {
                     return when (filter.state) {
-                        1 -> clientBuilder(ONLY_R18)
-                        2 -> clientBuilder(NO_R18)
-                        else -> clientBuilder(ALL)
+                        1 -> clientBuilder(ALL)
+                        2 -> clientBuilder(ONLY_R18)
+                        3 -> clientBuilder(NO_R18)
+                        else -> clientBuilder()
                     }
                 }
             }
         }
-        return clientBuilder(ALL)
+        return clientBuilder()
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -413,7 +414,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Genre(val id: String, name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
-    private class R18 : Filter.Select<String>("R18+", arrayOf("Show all", "Show only", "Show none"))
+    private class R18 : Filter.Select<String>("R18+", arrayOf("Default","Show all", "Show only", "Show none"))
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
 
