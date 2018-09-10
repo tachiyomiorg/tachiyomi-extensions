@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.ja.rawqq
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -161,6 +162,16 @@ class Rawqq : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
+
+    override fun imageRequest(page: Page): Request {
+        if (page.imageUrl!!.contains("lhscanlation.club")) {
+            val imgHeader = Headers.Builder().apply {
+                add("Referer", "https://lhscan.net")
+            }.build()
+            return GET(page.imageUrl!!, imgHeader)
+        }
+        return GET(page.imageUrl!!)
+    }
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
