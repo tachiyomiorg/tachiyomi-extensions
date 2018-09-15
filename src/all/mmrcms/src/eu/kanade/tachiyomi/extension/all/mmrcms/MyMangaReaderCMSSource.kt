@@ -74,14 +74,25 @@ class MyMangaReaderCMSSource(override val lang: String,
                 val urlElement = it.getElementsByClass("chart-title")
                 url = getUrlWithoutBaseUrl(urlElement.attr("href"))
                 title = urlElement.text().trim()
-                thumbnail_url = it.select(".media-left img").attr("src")
-
-                // Guess thumbnails on broken websites
-                if (thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false || thumbnail_url?.startsWith("//") != false) {
-                    thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
-                }
+                thumbnail_url = coverGuess(it.select(".media-left img").attr("src"))
             }
         }, document.select(".pagination a[rel=next]").isNotEmpty())
+    }
+
+    // Guess thumbnails on broken websites
+
+    private fun coverGuess(url: String?): String {
+        // Guess thumbnails on broken websites
+        if (url != null && url.isNotBlank()) {
+            if( url.startsWith("//")){
+                return "$baseUrl/uploads/manga/${url.substringBeforeLast("/cover/").substringAfter("/manga/")}/cover/cover_250x350.jpg"
+            }
+            if (url.endsWith("no-image.png")) {
+                return "$baseUrl/uploads/manga/${url?.substringAfterLast('/')}/cover/cover_250x350.jpg"
+            }
+            return url
+        }
+        return ""
     }
 
     private fun getUrlWithoutBaseUrl(newUrl: String): String {
@@ -109,7 +120,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
         title = document.getElementsByClass("widget-title").text().trim()
-        thumbnail_url = document.select(".row .img-responsive").attr("src")
+        thumbnail_url = coverGuess(document.select(".row .img-responsive").attr("src"))
         description = document.select(".row .well p").text().trim()
 
         var cur: String? = null
