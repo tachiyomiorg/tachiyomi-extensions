@@ -31,7 +31,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         //Query overrides everything
         val url: Uri.Builder
-        if(query.isNotBlank()) {
+        if (query.isNotBlank()) {
             url = Uri.parse("$baseUrl/search")!!.buildUpon()
             url.appendQueryParameter("query", query)
         } else {
@@ -41,11 +41,12 @@ class MyMangaReaderCMSSource(override val lang: String,
         }
         return GET(url.toString())
     }
+
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=last_release&asc=false")
 
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
-        return if(response.request().url().queryParameter("query")?.isNotBlank() == true) {
+        return if (response.request().url().queryParameter("query")?.isNotBlank() == true) {
             //If a search query was specified, use search instead!
             MangasPage(jsonParser
                     .parse(response.body()!!.string())["suggestions"].array
@@ -63,6 +64,7 @@ class MyMangaReaderCMSSource(override val lang: String,
             internalMangaParse(response)
         }
     }
+
     override fun latestUpdatesParse(response: Response) = internalMangaParse(response)
 
     private fun internalMangaParse(response: Response): MangasPage {
@@ -75,7 +77,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                 thumbnail_url = it.select(".media-left img").attr("src")
 
                 // Guess thumbnails on broken websites
-                if (thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false) {
+                if (thumbnail_url?.isBlank() != false || thumbnail_url?.endsWith("no-image.png") != false || thumbnail_url?.startsWith("//") != false) {
                     thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
                 }
             }
@@ -86,8 +88,8 @@ class MyMangaReaderCMSSource(override val lang: String,
         val parsedNewUrl = Uri.parse(newUrl)
         val newPathSegments = parsedNewUrl.pathSegments.toMutableList()
 
-        for(i in parsedBaseUrl.pathSegments) {
-            if(i.trim().equals(newPathSegments.first(), true)) {
+        for (i in parsedBaseUrl.pathSegments) {
+            if (i.trim().equals(newPathSegments.first(), true)) {
                 newPathSegments.removeAt(0)
             } else break
         }
@@ -104,17 +106,17 @@ class MyMangaReaderCMSSource(override val lang: String,
         return out
     }
 
-    override fun mangaDetailsParse(response:Response) = SManga.create().apply {
+    override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
         title = document.getElementsByClass("widget-title").text().trim()
         thumbnail_url = document.select(".row .img-responsive").attr("src")
         description = document.select(".row .well p").text().trim()
 
         var cur: String? = null
-        for(element in document.select(".row .dl-horizontal").select("dt,dd")) {
-            when(element.tagName()) {
+        for (element in document.select(".row .dl-horizontal").select("dt,dd")) {
+            when (element.tagName()) {
                 "dt" -> cur = element.text().trim().toLowerCase()
-                "dd" -> when(cur) {
+                "dd" -> when (cur) {
                     "author(s)",
                     "autor(es)",
                     "auteur(s)",
@@ -155,7 +157,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                     "状態",
                     "durum",
                     "الحالة",
-                    "статус" -> status = when(element.text().trim().toLowerCase()) {
+                    "статус" -> status = when (element.text().trim().toLowerCase()) {
                         "complete",
                         "مكتملة",
                         "complet" -> SManga.COMPLETED
@@ -218,13 +220,12 @@ class MyMangaReaderCMSSource(override val lang: String,
         return chapter
     }
 
-    override fun pageListParse(response: Response)
-            = response.asJsoup().select("#all > .img-responsive")
+    override fun pageListParse(response: Response) = response.asJsoup().select("#all > .img-responsive")
             .mapIndexed { i, e ->
                 var url = e.attr("data-src")
 
-                if(url.isBlank()) {
-                   url = e.attr("src")
+                if (url.isBlank()) {
+                    url = e.attr("src")
                 }
 
                 url = url.trim()
@@ -232,8 +233,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                 Page(i, url, url)
             }
 
-    override fun imageUrlParse(response: Response)
-            = throw UnsupportedOperationException("Unused method called!")
+    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method called!")
 
     private fun getInitialFilterList() = listOf<Filter<*>>(
             Filter.Header("NOTE: Ignored if using text search!"),
@@ -260,12 +260,12 @@ class MyMangaReaderCMSSource(override val lang: String,
      * Returns the list of filters for the source.
      */
     override fun getFilterList() = FilterList(
-            if(tagMappings != null)
+            if (tagMappings != null)
                 (getInitialFilterList() + UriSelectFilter("Tag",
                         "tag",
                         arrayOf("" to "Any",
-				*tagMappings.toTypedArray()
-			)))
+                                *tagMappings.toTypedArray()
+                        )))
             else getInitialFilterList()
     )
 
@@ -285,13 +285,13 @@ class MyMangaReaderCMSSource(override val lang: String,
         }
     }
 
-    class AuthorFilter: Filter.Text("Author"), UriFilter {
+    class AuthorFilter : Filter.Text("Author"), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter("author", state)
         }
     }
 
-    class SortFilter: Filter.Sort("Sort",
+    class SortFilter : Filter.Sort("Sort",
             sortables.map { it.second }.toTypedArray(),
             Filter.Sort.Selection(0, true)), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
