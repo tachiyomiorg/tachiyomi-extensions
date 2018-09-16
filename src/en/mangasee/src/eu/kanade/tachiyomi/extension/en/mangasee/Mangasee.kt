@@ -18,7 +18,7 @@ class Mangasee : ParsedHttpSource() {
 
     override val name = "Mangasee"
 
-    override val baseUrl = "http://mangaseeonline.net"
+    override val baseUrl = "http://mangaseeonline.us"
 
     override val lang = "en"
 
@@ -86,7 +86,7 @@ class Mangasee : ParsedHttpSource() {
     private fun convertQueryToPost(page: Int, url: String): Pair<FormBody.Builder, String> {
         val url = HttpUrl.parse(url)!!
         val body = FormBody.Builder().add("page", page.toString())
-        for (i in 0..url.querySize() - 1) {
+        for (i in 0 until url.querySize()) {
             body.add(url.queryParameterName(i), url.queryParameterValue(i))
         }
         val requestUrl = url.scheme() + "://" + url.host() + url.encodedPath()
@@ -183,7 +183,7 @@ class Mangasee : ParsedHttpSource() {
             val defaultText = it.select("p.clamp2").text()
             val m = recentUpdatesPattern.matcher(defaultText)
             val title = if (m.matches()) m.group(1) else defaultText
-            manga.setUrlWithoutDomain("/manga" + mangaUrl)
+            manga.setUrlWithoutDomain("/manga$mangaUrl")
             manga.title = title
         }
         return manga
