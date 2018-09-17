@@ -13,10 +13,7 @@ import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -52,6 +49,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         .build()
                 chain.proceed(newReq)
             }.build()!!
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Tachiyomi Mozilla/5.0 (Windows NT 6.3; WOW64)")
+    }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
         val cookies = mutableMapOf<String, String>()
