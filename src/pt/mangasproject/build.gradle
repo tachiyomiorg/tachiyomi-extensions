@@ -1,0 +1,18 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: mangásPROJECT'
+    pkgNameSuffix = 'pt.mangasproject'
+    extClass = '.MangasProject'
+    extVersionCode = 1
+    extVersionSuffix = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+}
+
+apply from: "$rootDir/common.gradle"
