@@ -13,8 +13,6 @@ import org.json.JSONObject
 
 class Mangalib : ParsedHttpSource() {
 
-    override val id: Long = 11
-
     override val name = "Mangalib"
 
     override val baseUrl = "https://mangalib.me"
