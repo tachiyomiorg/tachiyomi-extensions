@@ -182,7 +182,7 @@ class Mangalib : ParsedHttpSource() {
     private fun getStatusList() = listOf(
             SearchFilter("продолжается", "1"),
             SearchFilter("завершен", "2"),
-            SearchFilter("Заморожен", "3")
+            SearchFilter("заморожен", "3")
     )
 
     /*
