@@ -61,7 +61,7 @@ class Mangalib : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(chapterLink.attr("href"))
         chapter.name = chapterLink.text()
-        chapter.date_upload = SimpleDateFormat("dd.MM.yy", Locale.US)
+        chapter.date_upload = SimpleDateFormat("dd.MM.yyyy", Locale.US)
                 .parse(element.select("div.chapter-item__date").text()).time
         return chapter
     }
