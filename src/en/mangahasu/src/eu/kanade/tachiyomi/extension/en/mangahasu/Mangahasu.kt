@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.source.online.english
+package eu.kanade.tachiyomi.extension.en.mangahasu
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
