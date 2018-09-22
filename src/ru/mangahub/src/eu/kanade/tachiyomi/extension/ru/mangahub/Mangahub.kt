@@ -46,18 +46,18 @@ open class Mangahub : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = ".next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/manga?query=$query&page=${page + 1}")
+        return GET("$baseUrl/search/manga?query=$query&sort=score&page=${page + 1}")
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector(): Nothing? = null
+    override fun searchMangaNextPageSelector(): String? = ".next"
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.author = if(document.select("[itemprop=\"author\"]") != null) document.select("[itemprop=\"author\"]").text() else null
+        manga.author = if(document.select("[itemprop=\"author\"]") != null) document.select("[itemprop=\"author\"]").text()
         manga.genre = document.select("div.b-dtl-desc__labels")[0].text().replace(" ", ", ")
         manga.description = if (document.select("div.b-dtl-desc__desc-info > p").last() != null) document.select("div.b-dtl-desc__desc-info > p").last().text() else null
         manga.status = parseStatus(document)
@@ -67,7 +67,8 @@ open class Mangahub : ParsedHttpSource() {
 
     private fun parseStatus(element: Document): Int = when {
         element.select("div.b-status-label__one > span.b-status-label__name.b-status-label__name-completed").size != 0 -> SManga.COMPLETED
-        element.select("div.b-status-label__one > span.b-status-label__name.b-status-label__name-translated").size != 0 && element.select("div.b-status-label__one > span.b-status-label__name.b-status-label__name-updated").size == 0 -> SManga.COMPLETED
+        element.select("div.b-status-label__one > span.b-status-label__name.b-status-label__name-translated").size != 0
+                && element.select("div.b-status-label__one > span.b-status-label__name.b-status-label__name-updated").size == 0 -> SManga.COMPLETED
         element.select("div.b-status-label__one > span.b-status-label__name.b-status-label__name-updated").size != 0 -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }
