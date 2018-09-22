@@ -110,7 +110,7 @@ class Mangahasu: ParsedHttpSource() {
             }
         }
     }
-    
+
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         var i = 0
