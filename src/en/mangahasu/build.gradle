@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Selfmanga'
-    pkgNameSuffix = 'ru.selfmanga'
-    extClass = '.Selfmanga'
+    appName = 'Tachiyomi: Mangahasu'
+    pkgNameSuffix = 'en.mangahasu'
+    extClass = '.Mangahasu'
     extVersionCode = 2
     extVersionSuffix = 2
     libVersion = '1.2'
