@@ -21,10 +21,10 @@ open class Mangahub : ParsedHttpSource() {
     override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/explore?search%5Bsort%5D=rating&search%5BdateStart%5D%5Bleft_number%5D=1972&search%5BdateStart%5D%5Bright_number%5D=2018&page=${page + 1}", headers)
+            GET("$baseUrl/explore?search[sort]=rating&search[dateStart][left_number]=1972&search[dateStart][right_number]=2018&page=${page + 1}", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/explore?search%5Bsort%5D=update&search%5BdateStart%5D%5Bleft_number%5D=1972&search%5BdateStart%5D%5Bright_number%5D=2018&page=${page + 1}", headers)
+            GET("$baseUrl/explore?search[sort]=update&search[dateStart][left_number]=1972&search[dateStart][right_number]=2018&page=${page + 1}", headers)
 
     override fun popularMangaSelector() = "div.list-element"
 
@@ -57,7 +57,7 @@ open class Mangahub : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.author = if(document.select("[itemprop=\"author\"]") != null) document.select("[itemprop=\"author\"]").text()
+        manga.author = document.select("[itemprop=\"author\"]")?.text()
         manga.genre = document.select("div.b-dtl-desc__labels")[0].text().replace(" ", ", ")
         manga.description = if (document.select("div.b-dtl-desc__desc-info > p").last() != null) document.select("div.b-dtl-desc__desc-info > p").last().text() else null
         manga.status = parseStatus(document)
@@ -102,10 +102,8 @@ open class Mangahub : ParsedHttpSource() {
         val pictures = document.select("div.b-reader.b-reader__full").attr("data-js-scans").replace("&quot;", "\"").replace("\\/", "/")
         val r = Regex("""\/\/([\w\.\/])+""")
         val pages = mutableListOf<Page>()
-        var index = 0
-        r.findAll(pictures).forEach {
-            pages.add(Page(index=index, imageUrl="http:${it.value}"))
-            index++
+        for((index, value) in r.findAll(pictures).withIndex()) {
+            pages.add(Page(index=index, imageUrl="http:${value.value}"))
         }
 
         return pages
