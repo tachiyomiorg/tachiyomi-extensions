@@ -168,7 +168,7 @@ class Mangasee : ParsedHttpSource() {
     override fun latestUpdatesSelector(): String = "a.latestSeries"
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val url = "http://mangaseeonline.us/home/latest.request.php"
+        val url = "$baseUrl/home/latest.request.php"
         val (body, requestUrl) = convertQueryToPost(page, url)
         return POST(requestUrl, catalogHeaders, body.build())
     }
