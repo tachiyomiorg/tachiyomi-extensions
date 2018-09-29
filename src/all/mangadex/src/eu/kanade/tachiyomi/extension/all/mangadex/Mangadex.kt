@@ -151,7 +151,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         // Do traditional search
         val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder()
-                .addQueryParameter("s", "0")
                 .addQueryParameter("p", page.toString())
                 .addQueryParameter("title", query.replace(WHITESPACE_REGEX, " "))
 
@@ -175,6 +174,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                             genresToExclude.add(genre.id)
                         } else if (genre.isIncluded()) {
                             genresToInclude.add(genre.id)
+                        }
+                    }
+                }
+                is SortFilter -> {
+                    if (filter.state != null) {
+                        if (filter.state!!.ascending) {
+                            url.addQueryParameter("s", sortables[filter.state!!.index].second.toString())
+                        } else {
+                            url.addQueryParameter("s", sortables[filter.state!!.index].third.toString())
                         }
                     }
                 }
@@ -417,12 +425,18 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
+
+    class SortFilter : Filter.Sort("Sort",
+            sortables.map { it.first }.toTypedArray(),
+            Filter.Sort.Selection(0, true))
+
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
             R18(),
+            SortFilter(),
             Demographic(),
             OriginalLanguage(),
             GenreList(getGenreList())
@@ -471,6 +485,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             Genre("40", "Game"),
             Genre("41", "Isekai"))
 
+
     companion object {
         private val WHITESPACE_REGEX = "\\s".toRegex()
 
@@ -484,6 +499,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
+
+        private val sortables = listOf(
+                Triple("Update date", 0, 1),
+                Triple("Alphabetically", 2, 3),
+                Triple("Number of comments", 4, 5),
+                Triple("Rating", 6, 7),
+                Triple("Views", 8, 9),
+                Triple("Follows", 10, 11))
 
         private val SOURCE_LANG_LIST = listOf(
                 Pair("All", "0"),
