@@ -19,7 +19,7 @@ class DynastyChapters : DynastyScans() {
     private fun popularMangaInitialUrl(page: Int) = "$baseUrl/search?q=&classes%5B%5D=Chapter&page=$page=$&sort="
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query&classes%5B%5D=Chapter&sort=", headers)
+        return GET("$baseUrl/search?q=$query&classes%5B%5D=Chapter&sort=&page=$page", headers)
     }
 
 
