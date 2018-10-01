@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
@@ -26,6 +27,8 @@ class MyMangaReaderCMSSource(override val lang: String,
     private val jsonParser = JsonParser()
     private val itemUrlPath = Uri.parse(itemUrl).pathSegments.first()
     private val parsedBaseUrl = Uri.parse(baseUrl)
+
+    override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=views&asc=false")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -57,7 +60,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                             title = it["value"].string
 
                             // Guess thumbnails
-                            thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
+                            // thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
                         }
                     }, false)
         } else {
@@ -69,26 +72,39 @@ class MyMangaReaderCMSSource(override val lang: String,
 
     private fun internalMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
-        return MangasPage(document.getElementsByClass("col-sm-6").map {
+
+        return MangasPage(document.select("div[class^=col-sm]").map {
             SManga.create().apply {
                 val urlElement = it.getElementsByClass("chart-title")
-                url = getUrlWithoutBaseUrl(urlElement.attr("href"))
-                title = urlElement.text().trim()
-                thumbnail_url = coverGuess(it.select(".media-left img").attr("src"))
+                if (urlElement.size == 0) {
+                    url = getUrlWithoutBaseUrl(it.select("a").attr("href"))
+                    title = it.select("div.caption").text()
+                } else {
+                    url = getUrlWithoutBaseUrl(urlElement.attr("href"))
+                    title = urlElement.text().trim()
+                }
+
+                val cover = it.select(".media-left img").attr("src")
+                thumbnail_url =
+                        if (cover.isEmpty()) {
+                            coverGuess(it.select("img").attr("src"), url)
+                        } else {
+                            coverGuess(cover, url)
+                        }
             }
         }, document.select(".pagination a[rel=next]").isNotEmpty())
     }
 
     // Guess thumbnails on broken websites
 
-    private fun coverGuess(url: String?): String {
+    private fun coverGuess(url: String?, mangaUrl: String): String {
         // Guess thumbnails on broken websites
         if (url != null && url.isNotBlank()) {
-            if( url.startsWith("//")){
+            if (url.startsWith("//")) {
                 return "$baseUrl/uploads/manga/${url.substringBeforeLast("/cover/").substringAfter("/manga/")}/cover/cover_250x350.jpg"
             }
             if (url.endsWith("no-image.png")) {
-                return "$baseUrl/uploads/manga/${url?.substringAfterLast('/')}/cover/cover_250x350.jpg"
+                return "$baseUrl/uploads/manga/${mangaUrl?.substringAfterLast('/')}/cover/cover_250x350.jpg"
             }
             return url
         }
@@ -120,7 +136,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
         title = document.getElementsByClass("widget-title").text().trim()
-        thumbnail_url = coverGuess(document.select(".row .img-responsive").attr("src"))
+        thumbnail_url = coverGuess(document.select(".row .img-responsive").attr("src"), document.location())
         description = document.select(".row .well p").text().trim()
 
         var cur: String? = null

@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: My Manga Reader CMS (Many sources)'
     pkgNameSuffix = 'all.mmrcms'
     extClass = '.MyMangaReaderCMSSources'
-    extVersionCode = 10
-    extVersionSuffix = 10
+    extVersionCode = 11
+    extVersionSuffix = 11
     libVersion = '1.2'
 }
 
@@ -16,3 +16,10 @@ dependencies {
 }
 
 apply from: "$rootDir/common.gradle"
+
+android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
