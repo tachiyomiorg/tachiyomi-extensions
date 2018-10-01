@@ -58,7 +58,7 @@ class Generator {
                 if (parseCategories.isEmpty()) {
                     parseCategories = parseCategories(mangaListDocument)
                 }
-                map["item_url"] = itemUrl
+                map["item_url"] = "$itemUrl/"
                 map["categories"] = parseCategories
                 val tags = parseTags(mangaListDocument)
                 map["tags"] = "null"
