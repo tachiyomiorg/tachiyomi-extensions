@@ -69,7 +69,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-lazy-src"))
+        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-src"))
         return manga
     }
 
@@ -137,7 +137,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         val elements = body.select("div.separator > img")
 
-        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("data-lazy-src")) }
+        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("data-src")) }
 
         return pages
     }
