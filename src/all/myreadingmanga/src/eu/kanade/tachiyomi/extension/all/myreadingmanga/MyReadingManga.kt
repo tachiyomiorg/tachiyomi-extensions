@@ -69,7 +69,13 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-src"))
+        manga.thumbnail_url =
+                when {
+                    thumbnailElement.attr("data-src").endsWith(".jpg") -> getThumbnail(thumbnailElement.attr("data-src"))
+                    thumbnailElement.attr("src").endsWith(".jpg") -> getThumbnail(thumbnailElement.attr("src"))
+                    else -> getThumbnail(thumbnailElement.attr("data-lazy-src"))
+                }
+
         return manga
     }
 
@@ -79,8 +85,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     //cleans up the name removing author and language from the title
     private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(")
 
-
-    override fun searchMangaNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -128,6 +132,9 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         chapter.date_upload = date
         return chapter
     }
+
+    override fun searchMangaNextPageSelector() = null
+
 
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
