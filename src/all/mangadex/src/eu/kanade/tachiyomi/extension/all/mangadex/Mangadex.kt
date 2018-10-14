@@ -210,7 +210,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             val url = modifyMangaUrl(it.attr("href"))
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
-            manga.author = it?.text()?.trim()
         }
         return manga
     }
