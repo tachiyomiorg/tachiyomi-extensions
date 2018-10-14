@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: Dynasty'
     pkgNameSuffix = 'en.dynasty'
     extClass = '.DynastyFactory'
-    extVersionCode = 7
-    extVersionSuffix = 7
+    extVersionCode = 8
+    extVersionSuffix = 8
     libVersion = '1.2'
 }
 

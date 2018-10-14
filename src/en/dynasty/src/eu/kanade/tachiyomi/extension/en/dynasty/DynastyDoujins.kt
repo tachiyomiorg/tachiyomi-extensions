@@ -13,7 +13,7 @@ class DynastyDoujins : DynastyScans() {
     override fun popularMangaInitialUrl() = "$baseUrl/doujins?view=cover"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query&classes%5B%5D=Doujin&sort=", headers)
+        return GET("$baseUrl/search?q=$query&classes%5B%5D=Doujin&sort=&page=$page", headers)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
