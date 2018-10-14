@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: WPManga (Many sources)'
     pkgNameSuffix = 'all.wpmanga'
     extClass = '.WpMangaFactory'
-    extVersionCode = 2
-    extVersionSuffix = 2
+    extVersionCode = 3
+    extVersionSuffix = 3
     libVersion = '1.2'
 }
 

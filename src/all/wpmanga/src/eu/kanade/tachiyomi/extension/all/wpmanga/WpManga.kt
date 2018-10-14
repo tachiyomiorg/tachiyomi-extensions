@@ -97,10 +97,18 @@ open class WpManga(override val name: String, override val baseUrl: String, over
         val urlElement = element.select("a").first()
         val dateElement = element.select("span").first()
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href") + "?style=list")
+        chapter.setUrlWithoutDomain(getUrl(urlElement))
         chapter.name = urlElement.text()
         chapter.date_upload = dateElement.text()?.let { parseChapterDate(it) } ?: 0
         return chapter
+    }
+
+    private fun getUrl(urlElement: Element): String {
+        var url = urlElement.attr("href")
+        return when {
+            url.endsWith("?style=list") -> url
+            else -> "$url?style=list"
+        }
     }
 
     open fun parseChapterDate(date: String): Long? {
@@ -165,7 +173,7 @@ open class WpManga(override val name: String, override val baseUrl: String, over
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val doc = document.select("div.page-break img");
+        val doc = document.select("div.page-break img")
 
         val pages = mutableListOf<Page>()
         doc.forEach {
