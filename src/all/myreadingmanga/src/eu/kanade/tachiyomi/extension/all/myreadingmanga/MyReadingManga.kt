@@ -69,8 +69,16 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(thumbnailElement.attr("data-lazy-src"))
+        manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
         return manga
+    }
+
+    private fun getImage(element: Element): String {
+        return when {
+            element.attr("data-src").endsWith(".jpg") -> element.attr("data-src")
+            element.attr("src").endsWith(".jpg") -> element.attr("src")
+            else -> element.attr("data-lazy-src")
+        }
     }
 
     //removes resizing
@@ -79,8 +87,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     //cleans up the name removing author and language from the title
     private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(")
 
-
-    override fun searchMangaNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -129,6 +135,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return chapter
     }
 
+    override fun searchMangaNextPageSelector() = null
+
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
 
@@ -137,7 +145,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         val elements = body.select("div.separator > img")
 
-        (0 until elements.size).mapTo(pages) { Page(it, "", elements[it].attr("data-lazy-src")) }
+        (0 until elements.size).mapTo(pages) { Page(it, "", getImage(elements[it])) }
 
         return pages
     }

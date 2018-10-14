@@ -5,11 +5,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.FormBody
-import okhttp3.Headers
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -31,7 +27,7 @@ class Kissmanga : ParsedHttpSource() {
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
     }
 
     override fun popularMangaSelector() = "table.listing tr:gt(1)"
@@ -217,6 +213,7 @@ class Kissmanga : ParsedHttpSource() {
             Genre("Harem"),
             Genre("Historical"),
             Genre("Horror"),
+            Genre("Isekai"),
             Genre("Josei"),
             Genre("Lolicon"),
             Genre("Manga"),
