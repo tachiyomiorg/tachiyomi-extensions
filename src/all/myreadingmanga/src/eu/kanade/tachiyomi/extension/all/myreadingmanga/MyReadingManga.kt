@@ -75,8 +75,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     private fun getImage(element: Element): String {
         return when {
-            element.attr("data-src").endsWith(".jpg") -> element.attr("data-src")
-            element.attr("src").endsWith(".jpg") -> element.attr("src")
+            element.attr("data-src").endsWith(".jpg")  || element.attr("data-src").endsWith(".png") -> element.attr("data-src")
+            element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") -> element.attr("src")
             else -> element.attr("data-lazy-src")
         }
     }
@@ -143,7 +143,13 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         val pages = mutableListOf<Page>()
-        val elements = body.select("div.separator > img")
+        var elements = body.select("div.separator > img")
+        if(elements.size == 0){
+            elements = body.select("div.entry-content img")
+        }
+
+        (0 until elements.size).mapTo(pages) { Page(it, "", getImage(elements[it])) }
+
 
         (0 until elements.size).mapTo(pages) { Page(it, "", getImage(elements[it])) }
 
