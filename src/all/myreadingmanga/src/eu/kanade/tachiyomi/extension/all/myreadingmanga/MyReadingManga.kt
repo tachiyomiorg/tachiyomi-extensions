@@ -61,6 +61,21 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return GET(uri.toString())
     }
 
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val elements = document.select(searchMangaSelector())
+        var mangas = mutableListOf<SManga>()
+        for (element in elements) {
+            if (element.select("a").attr("href").contains("-$lang")) {
+                mangas.add(searchMangaFromElement(element))
+            }
+        }
+
+        return MangasPage(mangas, false)
+    }
+
     override fun searchMangaSelector() = "div.results-by-facets div[id*=res]"
 
     override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img").first())
@@ -74,11 +89,16 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
     private fun getImage(element: Element): String {
-        return when {
-            element.attr("data-src").endsWith(".jpg")  || element.attr("data-src").endsWith(".png") -> element.attr("data-src")
-            element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") -> element.attr("src")
-            else -> element.attr("data-lazy-src")
+        var url =
+                when {
+                    element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") -> element.attr("data-src")
+                    element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") -> element.attr("src")
+                    else -> element.attr("data-lazy-src")
+                }
+        if (url.startsWith("//")) {
+            url = "http:$url"
         }
+        return url
     }
 
     //removes resizing
@@ -96,7 +116,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
         val glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
         manga.genre = glist.joinToString(", ")
-        manga.description = document.select(".entry-content blockquote")?.first()?.text() ?: ""
+        manga.description = document.select("h1").text() + "\n" + (document.select(".entry-content blockquote")?.first()?.text() ?: "")
         manga.status = SManga.UNKNOWN
         return manga
     }
@@ -135,7 +155,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return chapter
     }
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector() = throw Exception("Not used")
 
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
@@ -143,16 +163,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         val pages = mutableListOf<Page>()
-        var elements = body.select("div.separator > img")
-        if(elements.size == 0){
-            elements = body.select("div.entry-content img")
+        val elements = body.select("noscript img")
+        for (i in 0 until elements.size) {
+            pages.add(Page(1, "", getImage(elements[i])))
         }
-
-        (0 until elements.size).mapTo(pages) { Page(it, "", getImage(elements[it])) }
-
-
-        (0 until elements.size).mapTo(pages) { Page(it, "", getImage(elements[it])) }
-
         return pages
     }
 
