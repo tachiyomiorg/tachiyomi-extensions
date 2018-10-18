@@ -21,10 +21,10 @@ open class Mangahub : ParsedHttpSource() {
     override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/explore?search[sort]=rating&search[dateStart][left_number]=1972&search[dateStart][right_number]=2018&page=${page + 1}", headers)
+            GET("$baseUrl/explore?search[sort]=rating&search[dateStart][left_number]=1972&search[dateStart][right_number]=2018&page=$page", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/explore?search[sort]=update&search[dateStart][left_number]=1972&search[dateStart][right_number]=2018&page=${page + 1}", headers)
+            GET("$baseUrl/explore?search[sort]=update&search[dateStart][left_number]=1972&search[dateStart][right_number]=2018&page=$page", headers)
 
     override fun popularMangaSelector() = "div.list-element"
 
@@ -46,7 +46,7 @@ open class Mangahub : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = ".next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/manga?query=$query&sort=score&page=${page + 1}")
+        return GET("$baseUrl/search/manga?query=$query&sort=score&page=$page")
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
