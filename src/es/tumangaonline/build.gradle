@@ -5,9 +5,9 @@ ext {
     appName = 'Tachiyomi: TuMangaOnline'
     pkgNameSuffix = 'es.tumangaonline'
     extClass = '.TuMangaOnline'
-    extVersionCode = 1
+    extVersionCode = 2
     extVersionSuffix = 1
-    libVersion = '1.2.1'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
