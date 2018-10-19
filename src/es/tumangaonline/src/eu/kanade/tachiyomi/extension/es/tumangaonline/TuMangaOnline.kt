@@ -4,10 +4,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -30,7 +27,10 @@ class TuMangaOnline : ParsedHttpSource() {
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .build()!!
-
+    override fun headersBuilder(): Headers.Builder {
+        return Headers.Builder()
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+    }
     private fun getBuilder(url: String): String {
         val req = Request.Builder()
                 .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
@@ -196,7 +196,7 @@ class TuMangaOnline : ParsedHttpSource() {
         val url = getBuilder(baseUrl + chapter.url)
 
         // Get /cascade instead of /paginate to get all pages at once
-        return GET(url.substringBeforeLast("/") + "/cascade")
+        return GET(url.substringBeforeLast("/") + "/cascade", headers)
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
