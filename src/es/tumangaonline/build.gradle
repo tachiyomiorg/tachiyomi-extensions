@@ -7,7 +7,7 @@ ext {
     extClass = '.TuMangaOnline'
     extVersionCode = 1
     extVersionSuffix = 1
-    libVersion = '1.2'
+    libVersion = '1.2.1'
 }
 
 apply from: "$rootDir/common.gradle"
