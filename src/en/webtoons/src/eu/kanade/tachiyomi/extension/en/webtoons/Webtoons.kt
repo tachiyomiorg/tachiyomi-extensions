@@ -122,7 +122,7 @@ class Webtoons : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = detailElement.select(".author:nth-of-type(1)").text().substringBefore("author info")
         manga.artist = detailElement.select(".author:nth-of-type(2)").first()?.text()?.substringBefore("author info") ?: manga.author
-        manga.genre = detailElement.select(".genre").text()
+        manga.genre = detailElement.select(".genre").map { it.text() }.joinToString(", ")
         manga.description = infoElement.select("p.summary").text()
         manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = discoverPic.select("img").not("[alt=Representative image").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
