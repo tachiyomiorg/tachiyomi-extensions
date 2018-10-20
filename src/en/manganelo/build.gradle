@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: MangaNelo'
+    pkgNameSuffix = 'en.manganelo'
+    extClass = '.Manganelo'
+    extVersionCode = 1
+    extVersionSuffix = 2
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"
