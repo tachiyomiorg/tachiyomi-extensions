@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.webtoons'
     extClass = '.Webtoons'
     extVersionCode = 5
-    extVersionSuffix = 4
     libVersion = '1.2'
 }
 

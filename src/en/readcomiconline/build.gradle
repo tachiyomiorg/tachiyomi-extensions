@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.readcomiconline'
     extClass = '.Readcomiconline'
     extVersionCode = 4
-    extVersionSuffix = 3
     libVersion = '1.2'
 }
 

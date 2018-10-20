@@ -10,7 +10,7 @@ Before you start, please note that the ability to use following technologies is 
 
 ## Writing an extension
 
-The quickest way to get started is to copy an existing extension's folder structure and renaming it as needed. Of course, that also means that there's plenty of existing extensions that you can reference as you go! 
+The quickest way to get started is to copy an existing extension's folder structure and renaming it as needed. Of course, that also means that there's plenty of existing extensions that you can reference as you go!
 
 Make sure that your new extension's `build.gradle` file follows the following structure:
 
@@ -23,7 +23,6 @@ ext {
     pkgNameSuffix = 'lang.mycatalogue'
     extClass = '.MyCatalogue'
     extVersionCode = 1
-    extVersionSuffix = 1
     libVersion = '1.2'
 }
 
@@ -35,9 +34,10 @@ apply from: "$rootDir/common.gradle"
 | `appName` | The name of the Android application. By prefixing it with `Tachiyomi: `, it will be easier to locate with an Android package manager. |
 | `pkgNameSuffix` | A unique suffic added to `eu.kanade.tachiyomi.extension`. The language and the site name should be enough. Remember your catalogue code implementation must be placed in this package. |
 | `extClass` | Points to the catalogue class. You can use a relative path starting with a dot (the package name is the base path). This is required for Tachiyomi to instantiate the catalogue. |
-| `extVersionCode` | The version code of the catalogue. This must be increased with any change to the implementation. |
-| `extVersionSuffix` | The last part of the versioning. |
-| `libVersion` | The version of the [extensions library](https://github.com/inorichi/tachiyomi-extensions-lib)* used. When this value is changed, `extVersionSuffix` should be reset to `1`. With the example used above, the version of the catalogue would be `1.2.1`. |
+| `extVersionCode` | The version code of the catalogue. This must be increased with any change to the implementation and cannot be `0`. |
+| `libVersion` | The version of the [extensions library](https://github.com/inorichi/tachiyomi-extensions-lib)* used. |
+
+The catalogue's version name is based off of `libVersion` and `extVersionCode`. With the example used above, the version of the catalogue would be `1.2.1`.
 
 \* Note: this library only contains the method definitions so that the compiler can resolve them. The actual implementation is written in Tachiyomi.
 

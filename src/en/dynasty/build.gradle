@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.dynasty'
     extClass = '.DynastyFactory'
     extVersionCode = 8
-    extVersionSuffix = 8
     libVersion = '1.2'
 }
 

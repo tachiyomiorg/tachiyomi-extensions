@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'ja.senmanga'
     extClass = '.SenManga'
     extVersionCode = 2
-    extVersionSuffix = 1
     libVersion = '1.2'
 }
 

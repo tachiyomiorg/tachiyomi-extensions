@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'ja.rawlh'
     extClass = '.Rawlh'
     extVersionCode = 5
-    extVersionSuffix = 3
     libVersion = '1.2'
 }
 

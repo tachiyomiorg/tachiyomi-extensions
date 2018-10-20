@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'de.wiemanga'
     extClass = '.WieManga'
     extVersionCode = 2
-    extVersionSuffix = 0
     libVersion = '1.2'
 }
 

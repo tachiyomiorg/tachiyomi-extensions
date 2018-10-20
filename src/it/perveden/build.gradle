@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'it.perveden'
     extClass = '.Perveden'
     extVersionCode = 1
-    extVersionSuffix = 1
     libVersion = '1.0'
 }
 

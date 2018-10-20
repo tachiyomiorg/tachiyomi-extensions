@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.mangahere'
     extClass = '.Mangahere'
     extVersionCode = 6
-    extVersionSuffix = 4
     libVersion = '1.2'
 }
 

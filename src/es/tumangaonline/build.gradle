@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'es.tumangaonline'
     extClass = '.TuMangaOnline'
     extVersionCode = 2
-    extVersionSuffix = 2
     libVersion = '1.2'
 }
 

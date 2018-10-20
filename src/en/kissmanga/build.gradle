@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.kissmanga'
     extClass = '.Kissmanga'
     extVersionCode = 8
-    extVersionSuffix = 5
     libVersion = '1.2'
 }
 

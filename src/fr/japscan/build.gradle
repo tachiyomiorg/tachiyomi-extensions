@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'fr.japscan'
     extClass = '.Japscan'
     extVersionCode = 3
-    extVersionSuffix = 3
     libVersion = '1.2'
 }
 

@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.hentai2read'
     extClass = '.Hentai2Read'
     extVersionCode = 3
-    extVersionSuffix = 1
     libVersion = '1.2'
 }
 

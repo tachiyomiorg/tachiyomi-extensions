@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'it.mangaeden'
     extClass = '.Mangaeden'
     extVersionCode = 1
-    extVersionSuffix = 1
     libVersion = '1.0'
 }
 

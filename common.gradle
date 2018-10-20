@@ -31,7 +31,7 @@ android {
         targetSdkVersion 27
         applicationIdSuffix pkgNameSuffix
         versionCode extVersionCode
-        versionName "$libVersion.$extVersionSuffix"
+        versionName "$libVersion.$extVersionCode"
         setProperty("archivesBaseName", "tachiyomi-$pkgNameSuffix-v$versionName")
         manifestPlaceholders = [
                 appName: appName,

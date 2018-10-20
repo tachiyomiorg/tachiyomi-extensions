@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'ru.mangahub'
     extClass = '.Mangahub'
     extVersionCode = 2
-    extVersionSuffix = 2
     libVersion = '1.2'
 }
 

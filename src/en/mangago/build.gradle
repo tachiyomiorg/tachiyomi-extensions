@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'en.mangago'
     extClass = '.Mangago'
     extVersionCode = 6
-    extVersionSuffix = 5
     libVersion = '1.2'
 }
 

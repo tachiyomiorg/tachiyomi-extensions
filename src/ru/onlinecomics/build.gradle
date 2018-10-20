@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'ru.onlinecomics'
     extClass = '.Onlinecomics'
     extVersionCode = 1
-    extVersionSuffix = 1
     libVersion = '1.2'
 }
 

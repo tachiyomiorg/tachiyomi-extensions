@@ -6,7 +6,6 @@ ext {
     pkgNameSuffix = 'vi.blogtruyen'
     extClass = '.Blogtruyen'
     extVersionCode = 2
-    extVersionSuffix = 1
     libVersion = '1.2'
 }
 
