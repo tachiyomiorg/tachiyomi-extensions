@@ -91,8 +91,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private fun getImage(element: Element): String {
         var url =
                 when {
-                    element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") -> element.attr("data-src")
-                    element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") -> element.attr("src")
+                    element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("data-src")
+                    element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("src")
                     else -> element.attr("data-lazy-src")
                 }
         if (url.startsWith("//")) {
