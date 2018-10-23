@@ -218,6 +218,7 @@ class Manhuaren : HttpSource() {
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd")
                 name = getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
                 date_upload = dateFormat.parse(obj.getString("releaseTime")).getTime()
+                chapter_number = obj.getInt("sectionSort").toFloat()
                 url = generateApiRequestUrl(
                     "/v1/manga/getRead",
                     mutableMapOf(
