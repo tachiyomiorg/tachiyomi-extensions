@@ -186,7 +186,20 @@ class Manhuaren : HttpSource() {
         val res = response.body()!!.string()
         val obj = JSONObject(res).getJSONObject("response")
         title = obj.getString("mangaName")
-        thumbnail_url = obj.getString("mangaCoverimageUrl")
+        thumbnail_url = ""
+        obj.optString("mangaCoverimageUrl").let {
+            if (it != "") { thumbnail_url = it }
+        }
+        if (thumbnail_url == "") {
+            obj.optString("mangaPicimageUrl").let {
+                if (it != "") { thumbnail_url = it }
+            }
+        }
+        if (thumbnail_url == "") {
+            obj.optString("shareIcon").let {
+                if (it != "") { thumbnail_url = it }
+            }
+        }
 
         var arr = obj.getJSONArray("mangaAuthors")
         var tmparr = ArrayList<String>(arr.length())
