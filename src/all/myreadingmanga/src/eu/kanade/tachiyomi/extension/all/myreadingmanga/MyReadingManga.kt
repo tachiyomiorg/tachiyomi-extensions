@@ -163,7 +163,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         val pages = mutableListOf<Page>()
-        val elements = body.select(".separator [data-lazyloaded='1']")
+        val elements = body.select("[data-lazyloaded='1']:not([width='120']):not([data-original-width='300'])")
         for (i in 0 until elements.size) {
             pages.add(Page(i, "", getImage(elements[i])))
         }
