@@ -78,9 +78,6 @@ class Rawlh : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    private fun searchGenresNextPageSelector() = popularMangaNextPageSelector()
-
-
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         val infoElement = document.select("div.row").first()
@@ -104,11 +101,11 @@ class Rawlh : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = ".list-chapters p"
+    override fun chapterListSelector() = " table.table.table-hover tbody tr"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a.chapter").first()
-        val timeElement = element.select(".pubDate time").first()
+        val urlElement = element.select("td a").first()
+        val timeElement = element.select("td time").first()
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain("/" + urlElement.attr("href"))
@@ -146,7 +143,6 @@ class Rawlh : ParsedHttpSource() {
         }
     }
 
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select("img.chapter-img").forEach {
@@ -180,10 +176,8 @@ class Rawlh : ParsedHttpSource() {
             GenreList(getGenreList())
     )
 
-    /* [...document.querySelectorAll("div.panel-body a")].map((el,i) =>
-    *  { return `Genre("${el.innerHTML}")` }).join(',\n')
-    *  on http://rawlh.com/search
-    */
+    // [...document.querySelectorAll("div.panel-body a")].map((el,i) => `Genre("${el.innerText.trim()}")`).join(',\n')
+    //  on https://lhscan.net/search
     private fun getGenreList() = listOf(
             Genre("4-Koma"),
             Genre("Action"),
