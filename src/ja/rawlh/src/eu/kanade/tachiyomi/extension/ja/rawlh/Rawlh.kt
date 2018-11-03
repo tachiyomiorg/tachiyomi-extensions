@@ -117,22 +117,22 @@ class Rawlh : ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[0].toInt()
         return when {
-            "hour(s) ago" in date -> Calendar.getInstance().apply {
+            "hours ago" in date -> Calendar.getInstance().apply {
                 add(Calendar.HOUR_OF_DAY, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "day(s) ago" in date -> Calendar.getInstance().apply {
+            "days ago" in date -> Calendar.getInstance().apply {
                 add(Calendar.DATE, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "week(s) ago" in date -> Calendar.getInstance().apply {
+            "weeks ago" in date -> Calendar.getInstance().apply {
                 add(Calendar.DATE, value * 7 * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "month(s) ago" in date -> Calendar.getInstance().apply {
+            "months ago" in date -> Calendar.getInstance().apply {
                 add(Calendar.MONTH, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
