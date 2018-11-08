@@ -15,7 +15,7 @@ class TuMangaOnline : ParsedHttpSource() {
 
     override val name = "TuMangaOnline"
 
-    override val baseUrl = "https://tumangaonline.me"
+    override val baseUrl = "https://tmofans.com"
 
     override val lang = "es"
 
@@ -27,15 +27,18 @@ class TuMangaOnline : ParsedHttpSource() {
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .build()!!
+
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
                 .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
     }
+
     private fun getBuilder(url: String): String {
         val req = Request.Builder()
-                .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
-                .addHeader("Referer", "https://tumangaonline.me/library/manga/")
-                .addHeader("Cache-mode", "no-cache")
+                .headers(headersBuilder()
+                        .add("Referer", "$baseUrl/library/manga/")
+                        .add("Cache-mode", "no-cache")
+                        .build())
                 .url(url)
                 .build()
 
