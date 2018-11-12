@@ -195,7 +195,7 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.tk", "it", "/reader") {
             "Licenzia" -> SManga.LICENSED
             else -> SManga.UNKNOWN
         }
-        manga.description = infoElement.substringAfter("Trama:")
+        manga.description = infoElement.substringAfter("Trama: ")
         manga.thumbnail_url = document.select(mangaDetailsThumbnailSelector).first()?.absUrl("src")
 
         return manga
