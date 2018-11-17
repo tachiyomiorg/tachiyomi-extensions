@@ -17,7 +17,7 @@ class Kissmanga : ParsedHttpSource() {
 
     override val name = "Kissmanga"
 
-    override val baseUrl = "http://kissmanga.com"
+    override val baseUrl = "https://kissmanga.com"
 
     override val lang = "en"
 
@@ -39,7 +39,7 @@ class Kissmanga : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("http://kissmanga.com/MangaList/LatestUpdate?page=$page", headers)
+        return GET("https://kissmanga.com/MangaList/LatestUpdate?page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -196,7 +196,7 @@ class Kissmanga : ParsedHttpSource() {
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
-    // on http://kissmanga.com/AdvanceSearch
+    // on https://kissmanga.com/AdvanceSearch
     private fun getGenreList() = listOf(
             Genre("4-Koma"),
             Genre("Action"),
