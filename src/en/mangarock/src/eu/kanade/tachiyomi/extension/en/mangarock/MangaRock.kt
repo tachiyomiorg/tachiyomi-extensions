@@ -18,7 +18,7 @@ class MangaRock : HttpSource() {
 
     override val name = "Manga Rock"
 
-    override val baseUrl = "https://api.mangarockhd.com/query/web400"
+    override val baseUrl = "https://api.mangarockhd.com/query/web401"
 
     override val lang = "en"
 
