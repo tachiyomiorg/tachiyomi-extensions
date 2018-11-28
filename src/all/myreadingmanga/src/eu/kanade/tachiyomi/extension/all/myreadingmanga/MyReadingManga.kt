@@ -92,7 +92,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         var url =
                 when {
                     element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("data-src")
-                    element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("src")
+                    element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") || element.attr("src").endsWith(".jpeg") -> element.attr("src")
                     else -> element.attr("data-lazy-src")
                 }
         if (url.startsWith("//")) {
@@ -163,7 +163,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         val pages = mutableListOf<Page>()
-        val elements = body.select("[data-lazyloaded='1']:not([width='120']):not([data-original-width='300'])")
+        val elements = body.select("[data-original-width]:not([width='120']):not([data-original-width='300'])")
         for (i in 0 until elements.size) {
             pages.add(Page(i, "", getImage(elements[i])))
         }

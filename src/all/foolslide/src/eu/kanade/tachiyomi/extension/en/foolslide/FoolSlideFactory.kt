@@ -17,40 +17,41 @@ class FoolSlideFactory : SourceFactory {
 
 fun getAllFoolSlide(): List<Source> {
     return listOf(
-        JaminisBox(),
-        ChampionScans(),
-        HelveticaScans(),
-        SenseScans(),
-        SeaOtterScans(),
-        KireiCake(),
-        HiranoMoeScansBureau(),
-        SilentSky(),
-        Mangatellers(),
-        IskultripScans(),
-        PinkFatale(),
-        AnataNoMotokare(),
-        HatigarmScans(),
-        DeathTollScans(),
-        DKThias(),
-        MangaichiScanlationDivision(),
-        WorldThree(),
-        TheCatScans(),
-        AngelicScanlations(),
-        DokiFansubs(),
-        YuriIsm(),
-        AjiaNoScantrad(),
-        OneTimeScans(),
-        TsubasaSociety(),
-        Helheim(),
-        MangaScouts(),
-        StormInHeaven(),
-        Lilyreader(),
-        MidnightHaven(),
-        Russification(),
-        NieznaniReader(),
-        EvilFlowers(),
-        NaniScans(),
-        AkaiYuhiMunTeam()
+            JaminisBox(),
+            ChampionScans(),
+            HelveticaScans(),
+            SenseScans(),
+            SeaOtterScans(),
+            KireiCake(),
+            HiranoMoeScansBureau(),
+            SilentSky(),
+            Mangatellers(),
+            IskultripScans(),
+            PinkFatale(),
+            AnataNoMotokare(),
+            HatigarmScans(),
+            DeathTollScans(),
+            DKThias(),
+            MangaichiScanlationDivision(),
+            WorldThree(),
+            TheCatScans(),
+            AngelicScanlations(),
+            DokiFansubs(),
+            YuriIsm(),
+            AjiaNoScantrad(),
+            OneTimeScans(),
+            TsubasaSociety(),
+            Helheim(),
+            MangaScouts(),
+            StormInHeaven(),
+            Lilyreader(),
+            MidnightHaven(),
+            Russification(),
+            NieznaniReader(),
+            EvilFlowers(),
+            NaniScans(),
+            AkaiYuhiMunTeam(),
+            LupiTeam()
     )
 }
 
@@ -179,3 +180,24 @@ class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "
 class NaniScans : FoolSlide("NANI? SCANS", "https://reader.naniscans.xyz", "en")
 
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
+
+class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.tk", "it", "/reader") {
+    override fun mangaDetailsParse(document: Document): SManga {
+        val infoElement = document.select(mangaDetailsInfoSelector).first().text()
+
+        val manga = SManga.create()
+        manga.author = infoElement.substringAfter("Autore: ").substringBefore("Artista: ")
+        manga.artist = infoElement.substringAfter("Artista: ").substringBefore("Target: ")
+        val stato = infoElement.substringAfter("Stato: ").substringBefore("Trama: ").substring(0, 8)
+        manga.status = when (stato) {
+            "In corso" -> SManga.ONGOING
+            "Completa" -> SManga.COMPLETED
+            "Licenzia" -> SManga.LICENSED
+            else -> SManga.UNKNOWN
+        }
+        manga.description = infoElement.substringAfter("Trama: ")
+        manga.thumbnail_url = document.select(mangaDetailsThumbnailSelector).first()?.absUrl("src")
+
+        return manga
+    }
+}
