@@ -276,8 +276,8 @@ class MangaRock : HttpSource() {
             GenreList(getGenreList())
     )
 
-    // [... new Set($$('a[href^="/genre"]').filter(a => a.innerText !== '').map(a => `Genre("${a.innerText}", "${a.href.replace('https://mangarock.com/genre/', '')}")`))].sort().join(',\n')
-    // on https://mangarock.com/
+    // [...document.querySelectorAll('._2DMqI .mdl-checkbox')].map(n => `Genre("${n.querySelector('.mdl-checkbox__label').innerText}", "${n.querySelector('input').dataset.oid}")`).sort().join(',\n')
+    // on https://mangarock.com/manga
     private fun getGenreList() = listOf(
             Genre("4-koma", "mrs-genre-100117675"),
             Genre("Action", "mrs-genre-304068"),
@@ -293,6 +293,7 @@ class MangaRock : HttpSource() {
             Genre("Harem", "mrs-genre-304075"),
             Genre("Historical", "mrs-genre-304306"),
             Genre("Horror", "mrs-genre-304259"),
+            Genre("Isekai", "mrs-genre-100291868"),
             Genre("Josei", "mrs-genre-304070"),
             Genre("Kids", "mrs-genre-304846"),
             Genre("Magic", "mrs-genre-304090"),
