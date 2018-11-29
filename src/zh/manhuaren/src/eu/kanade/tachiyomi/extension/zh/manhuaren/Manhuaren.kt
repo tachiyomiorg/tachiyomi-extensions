@@ -1,15 +1,9 @@
 package eu.kanade.tachiyomi.extension.zh.manhuaren
 
+import android.text.format.DateFormat
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
-import kotlin.collections.mutableMapOf
-import kotlin.collections.MutableMap
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -17,8 +11,8 @@ import org.json.JSONObject
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.util.*
+
 
 class Manhuaren : HttpSource() {
     override val lang = "zh"
@@ -71,8 +65,7 @@ class Manhuaren : HttpSource() {
     }
 
     private fun generateApiRequestUrl(path: String, params: MutableMap<String, String>): String {
-        val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd+HH:mm:ss")
-        val now = LocalDateTime.now().format(dateFormatter)
+        val now = DateFormat.format("yyyy-MM-dd+HH:mm:ss", Date()).toString()
 
         params["gsm"] = "md5"
         params["gft"] = "json"
@@ -90,8 +83,8 @@ class Manhuaren : HttpSource() {
     private fun mangasFromJSONArray(arr: JSONArray): MangasPage {
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
-            var obj = arr.getJSONObject(i)
-            var id = obj.getInt("mangaId")
+            val obj = arr.getJSONObject(i)
+            val id = obj.getInt("mangaId")
             ret.add(SManga.create().apply {
                 title = obj.getString("mangaName")
                 thumbnail_url = obj.getString("mangaCoverimageUrl")
@@ -103,7 +96,7 @@ class Manhuaren : HttpSource() {
                 }
                 url = generateApiRequestUrl(
                     "/v1/manga/getDetail",
-                    mutableMapOf<String, String>("mangaId" to id.toString())
+                    mutableMapOf("mangaId" to id.toString())
                 )
             })
         }
@@ -117,7 +110,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun popularMangaRequest(page: Int): Request {
-        val params = mutableMapOf<String, String>(
+        val params = mutableMapOf(
             "subCategoryType" to "0",
             "subCategoryId" to "0",
             "start" to (pageSize * (page - 1)).toString(),
@@ -128,7 +121,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val params = mutableMapOf<String, String>(
+        val params = mutableMapOf(
             "subCategoryType" to "0",
             "subCategoryId" to "0",
             "start" to (pageSize * (page - 1)).toString(),
@@ -150,14 +143,14 @@ class Manhuaren : HttpSource() {
         if (query != "") {
             return myGet(baseUrl + generateApiRequestUrl(
                 "/v1/search/getSearchManga",
-                mutableMapOf<String, String>(
+                mutableMapOf(
                     "keywords" to query,
                     "start" to (pageSize * (page - 1)).toString(),
                     "limit" to pageSize.toString()
                 )
             ))
         }
-        val params = mutableMapOf<String, String>(
+        val params = mutableMapOf(
             "start" to (pageSize * (page - 1)).toString(),
             "limit" to pageSize.toString()
         )
@@ -201,8 +194,8 @@ class Manhuaren : HttpSource() {
             }
         }
 
-        var arr = obj.getJSONArray("mangaAuthors")
-        var tmparr = ArrayList<String>(arr.length())
+        val arr = obj.getJSONArray("mangaAuthors")
+        val tmparr = ArrayList<String>(arr.length())
         for (i in 0 until arr.length()) {
             tmparr.add(arr.getString(i))
         }
@@ -228,9 +221,9 @@ class Manhuaren : HttpSource() {
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
             ret.add(SChapter.create().apply {
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 name = getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
-                date_upload = dateFormat.parse(obj.getString("releaseTime")).getTime()
+                date_upload = dateFormat.parse(obj.getString("releaseTime")).time
                 chapter_number = obj.getInt("sectionSort").toFloat()
                 url = generateApiRequestUrl(
                     "/v1/manga/getRead",
@@ -346,4 +339,5 @@ class Manhuaren : HttpSource() {
         fun getId() = vals[state].id
         fun getType() = vals[state].type
     }
+
 }
