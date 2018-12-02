@@ -33,11 +33,13 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val document = response.asJsoup()
 
         val mangas = mutableListOf<SManga>()
-        document.select(popularMangaSelector()).forEach { element ->
-            //this filters out language specific
-            element.select("a[rel][href*=-$lang]")?.first()?.let { _ ->
-                mangas.add(popularMangaFromElement(element))
-            }
+        val list  = document.select(popularMangaSelector()).filter { element ->
+            val select = element.select("a[rel=bookmark]")
+            select.text().contains("[$lang", true)
+        }
+        for (element in list) {
+            mangas.add(popularMangaFromElement(element))
+
         }
 
         val hasNextPage = popularMangaNextPageSelector().let { selector ->
@@ -68,7 +70,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val elements = document.select(searchMangaSelector())
         var mangas = mutableListOf<SManga>()
         for (element in elements) {
-            if (element.select("a").attr("href").contains("-$lang")) {
+            if (element.text().contains("[$lang", true)) {
                 mangas.add(searchMangaFromElement(element))
             }
         }
