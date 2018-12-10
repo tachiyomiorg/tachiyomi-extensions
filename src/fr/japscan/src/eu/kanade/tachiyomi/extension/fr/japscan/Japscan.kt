@@ -23,7 +23,7 @@ class Japscan : ParsedHttpSource() {
 
     override val name = "Japscan"
 
-    override val baseUrl = "https://www.japscan.cc"
+    override val baseUrl = "https://www.japscan.to"
 
     override val lang = "fr"
 

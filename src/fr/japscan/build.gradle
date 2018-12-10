@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Japscan'
     pkgNameSuffix = 'fr.japscan'
     extClass = '.Japscan'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 
