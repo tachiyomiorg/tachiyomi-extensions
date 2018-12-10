@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
 import okhttp3.Request
+import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.security.SecureRandom
@@ -79,7 +80,6 @@ class Neumanga : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/advanced_search")!!.newBuilder()
-                .addQueryParameter("sortby", "name")
                 .addQueryParameter("advpage", page.toString())
                 .addQueryParameter("name_search_mode", "contain")
                 .addQueryParameter("artist_search_mode", "contain")
@@ -88,12 +88,23 @@ class Neumanga : ParsedHttpSource() {
                 .addQueryParameter("rating_search_mode", "is")
                 .addQueryParameter("name_search_query", query)
 
-        // TODO:
-        // - create filter by genre
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Status -> url.addQueryParameter("manga_status", arrayOf("", "completed", "ongoing")[filter.state])
-                // is GenreList -> filter.state.forEach { genre -> url.addQueryParameter(genre.id, genre.state.toString()) }
+                is GenreList -> {
+                    val genreInclude = mutableListOf<String>()
+                    val genreExclude = mutableListOf<String>()
+                    filter.state.forEach {
+                        if (it.state == 1) {
+                            genreInclude.add(it.id)
+                        } else if (it.state == 2){
+                            genreExclude.add(it.id)
+                        }
+                    }
+                    url.addQueryParameter("genre1", JSONArray(genreInclude).toString())
+                    url.addQueryParameter("genre2", JSONArray(genreExclude).toString())
+                }
+                is SelectField -> url.addQueryParameter(filter.key, filter.values[filter.state])
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
             }
         }
@@ -115,8 +126,8 @@ class Neumanga : ParsedHttpSource() {
         manga.author = mangaInformationWrapper.select("span a[href*=author_search_mode]").first().text()
         manga.artist = mangaInformationWrapper.select("span a[href*=artist_search_mode]").first().text()
         manga.genre = mangaInformationWrapper.select("a[href*=genre]").map { it.text() }.joinToString()
-        manga.description = document.select(".summary").text()
         manga.thumbnail_url = mangaInformationWrapper.select("img.imagemg").first().attr("src")
+        manga.description = document.select(".summary").first().textNodes()[1].toString()
         manga.status = parseStatus(mangaInformationWrapper.select("span a[href*=manga_status]").first().text())
 
         return manga
@@ -150,50 +161,90 @@ class Neumanga : ParsedHttpSource() {
 
     private class Status : Filter.TriState("Completed")
     private class TextField(name: String, val key: String) : Filter.Text(name)
-
-    private class Genre(name: String, val id: String = "genres[$name]") : Filter.TriState(name)
+    private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    private class SelectField(name: String, val key: String, values: Array<String>, state: Int = 0) : Filter.Select<String>(name, values, state)
 
     override fun getFilterList() = FilterList(
-            TextField("Author", "author_search_query"),
-            TextField("Artist", "artist_search_query"),
-            // GenreList(getGenreList()),
-            Status()
+        SelectField("Sort", "sortby", arrayOf("rating", "name", "views", "latest")),
+        TextField("Author", "author_search_query"),
+        TextField("Artist", "artist_search_query"),
+        TextField("Release Year", "year_value"),
+        Status(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adventure"),
-            Genre("Comedy"),
-            Genre("Doujinshi"),
-            Genre("Drama"),
-            Genre("Ecchi"),
-            Genre("Fantasy"),
-            Genre("Gender Bender"),
-            Genre("Harem"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Josei"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Mecha"),
-            Genre("Mystery"),
-            Genre("One Shot"),
-            Genre("Psychological"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci-fi"),
-            Genre("Seinen"),
-            Genre("Shoujo"),
-            Genre("Shoujo Ai"),
-            Genre("Shounen"),
-            Genre("Shounen Ai"),
-            Genre("Slice of Life"),
-            Genre("Sports"),
-            Genre("Supernatural"),
-            Genre("Tragedy"),
-            Genre("Yaoi"),
-            Genre("Yuri")
+        Genre("Adventure", "Adventure"),
+        Genre("Demons", "Demons"),
+        Genre("fighting", "fighting"),
+        Genre("Horor", "Horor"),
+        Genre("legend", "legend"),
+        Genre("Manhua", "Manhua"),
+        Genre("Mecha", "Mecha"),
+        Genre("Romance", "Romance"),
+        Genre("neco", "neco"),
+        Genre("Seinen", "Seinen"),
+        Genre("Slice Of Life", "Slice Of Life"),
+        Genre("Superhero", "Superhero"),
+        Genre("Tragedy", "Tragedy"),
+        Genre("Vampire", "Vampire"),
+        Genre("Supernatural", "Supernatural"),
+        Genre("Shoujo", "Shoujo"),
+        Genre("Smut", "Smut"),
+        Genre("School", "School"),
+        Genre("Oneshot", "Oneshot"),
+        Genre("Miatery", "Miatery"),
+        Genre("Manhwa", "Manhwa"),
+        Genre("live School", "live School"),
+        Genre("Horror", "Horror"),
+        Genre("Game", "Game"),
+        Genre("Antihero", "Antihero"),
+        Genre("Action", "Action"),
+        Genre("Comedy", "Comedy"),
+        Genre("Drama", "Drama"),
+        Genre("Ecchi", "Ecchi"),
+        Genre("Action. Adventure", "Action. Adventure"),
+        Genre("Gender Bender", "Gender Bender"),
+        Genre("Inaka", "Inaka"),
+        Genre("Lolicon", "Lolicon"),
+        Genre("Adult", "Adult"),
+        Genre("Cooking", "Cooking"),
+        Genre("Harem", "Harem"),
+        Genre("Isekai", "Isekai"),
+        Genre("Magic", "Magic"),
+        Genre("Music", "Music"),
+        Genre("Martial Arts", "Martial Arts"),
+        Genre("Project", "Project"),
+        Genre("sci fi", "sci fi"),
+        Genre("Shounen", "Shounen"),
+        Genre("Military", "Military"),
+        Genre("Martial Art", "Martial Art"),
+        Genre("Over Power", "Over Power"),
+        Genre("School Life", "School Life"),
+        Genre("Shoujo Ai", "Shoujo Ai"),
+        Genre("sport", "sport"),
+        Genre("Supranatural", "Supranatural"),
+        Genre("Webtoon", "Webtoon"),
+        Genre("Webtoons", "Webtoons"),
+        Genre("Suspense", "Suspense"),
+        Genre("Sports", "Sports"),
+        Genre("Yuri", "Yuri"),
+        Genre("Thriller", "Thriller"),
+        Genre("Super Power", "Super Power"),
+        Genre("ShounenS", "ShounenS"),
+        Genre("Sci-fi", "Sci-fi"),
+        Genre("Psychological", "Psychological"),
+        Genre("Mystery", "Mystery"),
+        Genre("Mature", "Mature"),
+        Genre("Manga", "Manga"),
+        Genre("Josei", "Josei"),
+        Genre("Historical", "Historical"),
+        Genre("Fantasy", "Fantasy"),
+        Genre("Dachima", "Dachima"),
+        Genre("Advanture", "Advanture"),
+        Genre("Echi", "Echi"),
+        Genre("4-Koma", "4-Koma")
     )
 
 }
