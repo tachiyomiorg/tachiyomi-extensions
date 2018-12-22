@@ -17,7 +17,7 @@ class Readcomictv : ParsedHttpSource() {
     override val lang = "en"
     override val name = "ReadComicsWebsite"
     override val supportsLatest = true
-    override val baseUrl = "http://readcomics.io"
+    override val baseUrl = "https://readcomicsonline.ru/"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
