@@ -177,6 +177,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         }
                     }
                 }
+                is ThemeList -> {
+                    filter.state.forEach { theme ->
+                        if (theme.isExcluded()) {
+                            genresToExclude.add(theme.id)
+                        } else if (theme.isIncluded()) {
+                            genresToInclude.add(theme.id)
+                        }
+                    }
+                }
                 is SortFilter -> {
                     if (filter.state != null) {
                         if (filter.state!!.ascending) {
@@ -192,10 +201,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         // Manually append genres list to avoid commas being encoded
         var urlToUse = url.toString()
         if (genresToInclude.isNotEmpty()) {
-            urlToUse += "&genres_inc=" + genresToInclude.joinToString(",")
+            urlToUse += "&tags_inc=" + genresToInclude.joinToString(",")
         }
         if (genresToExclude.isNotEmpty()) {
-            urlToUse += "&genres_exc=" + genresToExclude.joinToString(",")
+            urlToUse += "&tags_exc=" + genresToExclude.joinToString(",")
         }
 
         return GET(urlToUse, headers)
@@ -428,6 +437,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
+    private class Theme(val id: String, name: String) : Filter.TriState(name)
+    private class ThemeList(themes: List<Theme>) : Filter.Group<Theme>("Themes", themes)
 
     class SortFilter : Filter.Sort("Sort",
             sortables.map { it.first }.toTypedArray(),
@@ -442,7 +453,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             SortFilter(),
             Demographic(),
             OriginalLanguage(),
-            GenreList(getGenreList())
+            GenreList(getGenreList()),
+            ThemeList(getThemeList())
     )
 
     private fun getGenreList() = listOf(
@@ -487,6 +499,37 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             Genre("39", "[no chapters]"),
             Genre("40", "Game"),
             Genre("41", "Isekai"))
+
+    private fun getThemeList() = listOf(
+            Theme("57", "Aliens"),
+            Theme("58", "Animals"),
+            Theme("59", "Crossdressing"),
+            Theme("60", "Demons"),
+            Theme("61", "Delinquents"),
+            Theme("62", "Genderswap"),
+            Theme("63", "Ghosts"),
+            Theme("64", "Monster Girls"),
+            Theme("65", "Loli"),
+            Theme("66", "Magic"),
+            Theme("67", "Military"),
+            Theme("68", "Monsters"),
+            Theme("69", "Ninja"),
+            Theme("70", "Office Workers"),
+            Theme("71", "Police"),
+            Theme("72", "Post-Apocalyptic"),
+            Theme("73", "Reincarnation"),
+            Theme("74", "Reverse Harem"),
+            Theme("75", "Samurai"),
+            Theme("76", "Shota"),
+            Theme("77", "Survival"),
+            Theme("78", "Time Travel"),
+            Theme("79", "Vampires"),
+            Theme("80", "Traditional Games"),
+            Theme("81", "Virtual Reality"),
+            Theme("82", "Zombies"),
+            Theme("83", "Incest")
+
+    )
 
 
     companion object {
