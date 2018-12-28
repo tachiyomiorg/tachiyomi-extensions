@@ -10,18 +10,15 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * MangaPark source
- */
-
 class MangaPark : ParsedHttpSource() {
+
     override val lang = "en"
 
     override val supportsLatest = true
     override val name = "MangaPark"
     override val baseUrl = "https://mangapark.me"
 
-    private val directorySelector = ".item"
+    private val directorySelector = ".ls1 .item"
     private val directoryUrl = "/genre"
     private val directoryNextPageSelector = ".paging.full > li:last-child > a"
 
@@ -37,9 +34,7 @@ class MangaPark : ParsedHttpSource() {
     private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
         url = coverElement.attr("href")
-
         title = coverElement.attr("title")
-
     }
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
@@ -112,13 +107,10 @@ class MangaPark : ParsedHttpSource() {
     //TODO Maybe make it possible for users to view the other versions as well?
     override fun chapterListSelector() = ".stream .volume .chapter li"
 
-
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        url = element.select("em > a").last().attr("href")
-
-        name = element.select("li span").first().text()
-
-        date_upload = parseDate(element.getElementsByTag("i").text().trim())
+        url = element.select(".tit > a").first().attr("href")
+        name = element.select(".tit > a").first().text()
+        date_upload = parseDate(element.select(".time").first().text().trim())
     }
 
     private fun parseDate(date: String): Long {
@@ -158,7 +150,10 @@ class MangaPark : ParsedHttpSource() {
 
         if (trimmedDate[2] != "ago") return 0
 
-        val number = trimmedDate[0].toIntOrNull() ?: return 0
+        val number = when (trimmedDate[0]) {
+            "a" -> 1
+            else -> trimmedDate[0].toIntOrNull() ?: return 0
+        }
         val unit = trimmedDate[1].removeSuffix("s") //Remove 's' suffix
 
         val now = Calendar.getInstance()
