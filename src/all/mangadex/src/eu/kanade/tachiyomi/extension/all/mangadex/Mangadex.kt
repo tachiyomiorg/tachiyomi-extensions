@@ -159,14 +159,25 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is Demographic -> {
                     if (filter.state != 0) {
-                        url.addQueryParameter("demo", filter.state.toString())
+                        url.addQueryParameter("demo_id", filter.state.toString())
+                    }
+                }
+                is PublicationStatus -> {
+                    if (filter.state != 0) {
+                        url.addQueryParameter("status_id", filter.state.toString())
                     }
                 }
                 is OriginalLanguage -> {
                     if (filter.state != 0) {
                         val number: String = SOURCE_LANG_LIST.first { it -> it.first == filter.values[filter.state] }.second
-                        url.addQueryParameter("source_lang", number)
+                        url.addQueryParameter("lang_id", number)
                     }
+                }
+                is TagInclusionMode -> {
+                    url.addQueryParameter("tag_mode_inc", arrayOf("all", "any")[filter.state])
+                }
+                is TagExclusionMode -> {
+                    url.addQueryParameter("tag_mode_exc", arrayOf("all", "any")[filter.state])
                 }
                 is ContentList -> {
                     filter.state.forEach { content ->
@@ -284,13 +295,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.status = parseStatus(status)
         }
 
-        val genres = mutableListOf<String>()
-        val genreList = getGenreList()
-        mangaJson.get("genres").asJsonArray.forEach { id ->
-            genreList.find { it -> it.id == id.string }?.let { genre ->
-                genres.add(genre.name)
-            }
-        }
+        val genres = (if (mangaJson.get("hentai").int == 1) listOf("Hentai") else listOf()) +
+                mangaJson.get("genres").asJsonArray.mapNotNull { GENRES.get(it.toString()) }
         manga.genre = genres.joinToString(", ")
 
         return manga
@@ -467,7 +473,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
     private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
+    private class PublicationStatus : Filter.Select<String>("Publication status", arrayOf("All", "Ongoing", "Completed", "Cancelled", "Hiatus"))
     private class ThemeList(themes: List<Tag>) : Filter.Group<Tag>("Themes", themes)
+    private class TagInclusionMode : Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
+    private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
 
     class SortFilter : Filter.Sort("Sort",
             sortables.map { it.first }.toTypedArray(),
@@ -481,11 +490,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             R18(),
             SortFilter(),
             Demographic(),
+            PublicationStatus(),
             OriginalLanguage(),
             ContentList(getContentList()),
             FormatList(getFormatList()),
             GenreList(getGenreList()),
-            ThemeList(getThemeList())
+            ThemeList(getThemeList()),
+            TagInclusionMode(),
+            TagExclusionMode()
     )
 
     private fun getContentList() = listOf(
@@ -514,12 +526,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             Tag("2", "Action"),
             Tag("3", "Adventure"),
             Tag("5", "Comedy"),
-            Tag("6", "Cooking"),
             Tag("8", "Drama"),
             Tag("10", "Fantasy"),
             Tag("13", "Historical"),
             Tag("14", "Horror"),
-            Tag("15", "Josei"),
             Tag("17", "Mecha"),
             Tag("18", "Medical"),
             Tag("20", "Mystery"),
@@ -543,6 +553,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     ).sortedWith(compareBy { it.name })
 
     private fun getThemeList() = listOf(
+            Tag("6", "Cooking"),
+            Tag("11", "Gyaru"),
             Tag("12", "Harem"),
             Tag("16", "Martial Arts"),
             Tag("19", "Music"),
@@ -578,6 +590,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             Tag("83", "Incest")
     ).sortedWith(compareBy { it.name })
 
+    private val GENRES = (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }.toMap()
 
     companion object {
         private val WHITESPACE_REGEX = "\\s".toRegex()
