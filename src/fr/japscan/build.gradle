@@ -5,8 +5,13 @@ ext {
     appName = 'Tachiyomi: Japscan'
     pkgNameSuffix = 'fr.japscan'
     extClass = '.Japscan'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'org.apache.commons:commons-lang3:3.8.1'
+}
