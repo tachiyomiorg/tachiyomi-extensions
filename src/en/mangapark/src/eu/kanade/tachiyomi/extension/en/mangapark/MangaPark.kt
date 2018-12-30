@@ -108,7 +108,7 @@ class MangaPark : ParsedHttpSource() {
     override fun chapterListSelector() = ".stream .volume .chapter li"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        url = element.select(".tit > a").first().attr("href")
+        url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
         name = element.select(".tit > a").first().text()
         date_upload = parseDate(element.select(".time").first().text().trim())
     }
