@@ -196,7 +196,7 @@ class Generator {
     companion object {
         const val DRY_RUN = false
         val sources = listOf(
-                Triple("ar", "مانجا اون لاين", "http://www.on-manga.com"),
+                Triple("ar", "مانجا اون لاين", "https://www.on-manga.me"),
                 //Went offline
                 //Triple("ar", "Manga FYI", "http://mangafyi.com/manga/arabic"
                 Triple("en", "Read Manhua", "https://readmanhua.net"),
