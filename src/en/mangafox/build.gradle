@@ -5,8 +5,12 @@ ext {
     appName = 'Tachiyomi: Mangafox'
     pkgNameSuffix = 'en.mangafox'
     extClass = '.Mangafox'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"
