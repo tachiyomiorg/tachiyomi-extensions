@@ -18,7 +18,7 @@ import java.util.Calendar
 class MerakiScans : ParsedHttpSource() {
     override val name = "MerakiScans"
 
-    override val baseUrl = "http://merakiscans.com"
+    override val baseUrl = "https://merakiscans.com"
 
     override val lang = "en"
 
