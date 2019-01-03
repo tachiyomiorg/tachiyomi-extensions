@@ -181,7 +181,7 @@ class NaniScans : FoolSlide("NANI? SCANS", "https://reader.naniscans.xyz", "en")
 
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
 
-class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.tk", "it", "/reader") {
+class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.ml", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(mangaDetailsInfoSelector).first().text()
 
