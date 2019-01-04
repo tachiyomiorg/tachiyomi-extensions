@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: MerakiScans'
     pkgNameSuffix = 'en.merakiscans'
     extClass = '.MerakiScans'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 
