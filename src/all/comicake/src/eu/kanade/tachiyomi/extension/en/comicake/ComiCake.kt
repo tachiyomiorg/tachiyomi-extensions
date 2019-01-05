@@ -44,17 +44,27 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
         var response = JSONObject(json)
         var results = response.getJSONArray("results")
         val mangas = ArrayList<SManga>()
+        val ids = mutableListOf<Int>();
 
         for (i in 0 until results.length()) {
             val obj = results.getJSONObject(i)
             if(nested) {
-                val manga = SManga.create()
                 val nestedComic = obj.getJSONObject("comic");
-                manga.url = nestedComic.getInt("id").toString()
+                val id = nestedComic.getInt("id")
+                if(ids.contains(id))
+                    continue
+                ids.add(id)
+                val manga = SManga.create()
+                manga.url = id.toString()
                 manga.title = nestedComic.getString("name")
                 mangas.add(manga)
-            } else
+            } else {
+                val id = obj.getInt("id")
+                if(ids.contains(id))
+                    continue
+                ids.add(id)
                 mangas.add(parseComicJson(obj))
+            }
         }
         return MangasPage(mangas, if (response.getString("next").isNullOrEmpty() || response.getString("next") == "null") false else true)
     }
