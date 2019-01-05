@@ -30,9 +30,16 @@ class MerakiScans : ParsedHttpSource() {
         }
     }
 
+
     override fun popularMangaSelector() = "#all > #listitem > a"
 
     override fun latestUpdatesSelector() = "#mangalisthome > #mangalistitem > #mangaitem > #manganame > a"
+
+    override fun popularMangaRequest(page: Int)
+        = GET("$baseUrl/manga", headers)
+
+    override fun latestUpdatesRequest(page: Int)
+        = GET("$baseUrl", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
@@ -127,7 +134,7 @@ class MerakiScans : ParsedHttpSource() {
             0L
         }
     }
-    
+
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
         val imgarray = doc.substringAfter("var images = [").substringBefore("];").split(",").map { it.replace("\"","") }
