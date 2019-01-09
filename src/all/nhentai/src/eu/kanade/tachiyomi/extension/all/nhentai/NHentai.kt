@@ -65,7 +65,7 @@ open class NHentai(override val lang: String, val nhLang: String) : HttpSource()
                 mangaDetailsParse(response).apply { initialized = true }
             }
 
-    override fun mangaDetailsRequest(manga: SManga) = nhGet(manga.url)
+    override fun mangaDetailsRequest(manga: SManga) = nhGet( "$baseUrl" + manga.url )
 
     fun urlToDetailsRequest(url: String) = nhGet("$baseUrl/api/gallery/${url.substringAfterLast('/')}")
 
