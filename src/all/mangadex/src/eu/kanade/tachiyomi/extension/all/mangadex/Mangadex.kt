@@ -289,7 +289,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val finalChapterNumber = getFinalChapter(mangaJson)
         if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(finalChapterNumber, chapterJson)) {
             manga.status = SManga.COMPLETED
-        } else if (status == 2 && isOneshot(chapterJson)){
+        } else if (status == 2 && isOneshot(chapterJson, finalChapterNumber)){
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
@@ -325,10 +325,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun getFinalChapter(jsonObj: JsonObject): String = jsonObj.get("last_chapter").string.trim()
 
-    private fun isOneshot(chapterJson: JsonObject): Boolean {
+    private fun isOneshot(chapterJson: JsonObject, lastChapter: String): Boolean {
         val chapter = chapterJson.takeIf { it.size() > 0 }?.get(chapterJson.keys().elementAt(0))?.obj?.get("title")?.string
         return if (chapter != null) {
-            chapter == "Oneshot" || chapter.isEmpty()
+            chapter == "Oneshot" || chapter.isEmpty() && lastChapter == "0"
         } else {
             false
         }
