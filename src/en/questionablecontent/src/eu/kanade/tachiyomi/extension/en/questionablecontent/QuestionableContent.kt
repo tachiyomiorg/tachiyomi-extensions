@@ -8,9 +8,8 @@ import org.jsoup.nodes.Element
 import rx.Observable
 
 class QuestionableContent : ParsedHttpSource() {
-    override val name = "Questionable Content"
 
-    override val versionId = 1
+    override val name = "Questionable Content"
 
     override val baseUrl = "https://www.questionablecontent.net"
 
@@ -19,32 +18,35 @@ class QuestionableContent : ParsedHttpSource() {
     override val supportsLatest = false
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
-        val manga = SManga.create()
-        manga.title = "Questionable Content"
-        manga.artist = "Jeph Jacques"
-        manga.author = "Jeph Jacques"
-        manga.status = SManga.ONGOING
-        manga.url = "/archive.php"
-        manga.description = "An internet comic strip about romance and robots"
-        manga.thumbnail_url = "https://i.ibb.co/ZVL9ncS/qc-teh.png"
+        val manga = SManga.create().apply {
+            title = "Questionable Content"
+            artist = "Jeph Jacques"
+            author = "Jeph Jacques"
+            status = SManga.ONGOING
+            url = "/archive.php"
+            description = "An internet comic strip about romance and robots"
+            thumbnail_url = "https://i.ibb.co/ZVL9ncS/qc-teh.png"
+        }
+
         return Observable.just(MangasPage(arrayListOf(manga), false))
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList) = Observable.just(MangasPage(arrayListOf(), false))
 
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return Observable.just(manga)
-    }
+    override fun fetchMangaDetails(manga: SManga) = Observable.just(manga)
 
     override fun chapterListSelector() = """div#container a[href^="view.php?comic="]"""
 
     override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
         val urlregex = """view\.php\?comic=(.*)""".toRegex()
-        val number = urlregex.find(element.attr("href"))!!.groupValues[1]
-        chapter.chapter_number = number.toFloat()
-        chapter.name = element.text()
-        return chapter
+        val chapterUrl = element.attr("href")
+        val number = urlregex.find(chapterUrl)!!.groupValues[1]
+
+        return SChapter.create().apply {
+            url = chapterUrl
+            chapter_number = number.toFloat()
+            name = element.text()
+        }
     }
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
