@@ -243,11 +243,14 @@ class MangaLivre : HttpSource() {
     private fun chapterListItemParse(obj: JsonObject): SChapter {
         val scan = obj["releases"]!!.asJsonObject!!.entrySet().first().value.obj
         val cName = obj["chapter_name"]!!.asString
+        
+        val scanlators = scan["scanlators"]!!.asJsonArray
+                .joinToString { it.asJsonObject["name"].asString }
 
         return SChapter.create().apply {
             name = "Cap. ${obj["number"]!!.asString}" + (if (cName == "") "" else " - $cName")
-            date_upload = parseChapterDate(obj["date"].nullString)
-            scanlator = scan["scanlators"]!!.asJsonArray.get(0)!!.asJsonObject["name"].nullString
+            date_upload = parseChapterDate(obj["date_created"].asString.substring(0, 10))
+            scanlator = scanlators
             url = scan["link"]!!.nullString ?: ""
             chapter_number = obj["number"]!!.asString.toFloatOrNull() ?: "1".toFloat()
         }
@@ -255,7 +258,7 @@ class MangaLivre : HttpSource() {
 
     private fun parseChapterDate(date: String?) : Long {
         return try {
-            SimpleDateFormat("dd/MM/yy", Locale.ENGLISH).parse(date).time
+            SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).parse(date).time
         } catch (e: ParseException) {
             0L
         }
