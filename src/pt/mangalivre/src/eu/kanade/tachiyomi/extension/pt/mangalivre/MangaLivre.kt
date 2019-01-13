@@ -140,41 +140,25 @@ class MangaLivre : HttpSource() {
         val isCompleted = document.select("div#series-data span.series-author i.complete-series").first() != null
         val cGenre = document.select("div#series-data ul.tags li").joinToString { it!!.text() }
 
-        val seriesAuthor = if (isCompleted) {
-            document.select("div#series-data span.series-author").first()!!.nextSibling().toString().substringBeforeLast("+")
-        } else {
-            document.select("div#series-data span.series-author").first()!!.text().substringBeforeLast("+")
-        }
+        val seriesAuthor = document.select("div#series-data span.series-author").text()
+                .substringAfter("Completo").substringBefore("+")
 
         val authors = seriesAuthor.split("&")
                 .map { it.trim() }
 
         val cAuthor = authors.filter { !it.contains("(Arte)") }
-                .map { author ->
-                  if (author.contains(", ")) {
-                      val authorSplit = author.split(", ")
-                      authorSplit[1] + " " + authorSplit[0]
-                  } else {
-                      author
-                  }
-                }
+                .map { it.split(", ").reversed().joinToString(" ") }
 
         val cArtist = authors.filter { it.contains("(Arte)") }
                 .map { it.replace("\\(Arte\\)".toRegex(), "").trim() }
-                .map { author ->
-                  if (author.contains(", ")) {
-                      val authorSplit = author.split(", ")
-                      authorSplit[1] + " " + authorSplit[0]
-                  } else {
-                      author
-                  }
-                }
+                .map { it.split(", ").reversed().joinToString(" ") }
 
         // Check if the manga was removed by the publisher.
-        val cStatus = if (document.select("div.series-blocked-img").first() == null) {
-            if (isCompleted) SManga.COMPLETED else SManga.ONGOING
-        } else {
-            SManga.LICENSED
+        var seriesBlocked = document.select("div.series-blocked-img").first()
+        val cStatus = when {
+            seriesBlocked == null && isCompleted -> SManga.COMPLETED
+            seriesBlocked == null && !isCompleted -> SManga.ONGOING
+            else -> SManga.LICENSED
         }
 
         return SManga.create().apply {
