@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: MangaHost'
+    pkgNameSuffix = 'pt.mangahost'
+    extClass = '.MangaHost'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+sourceSets {
+    main.java.srcDirs += 'src/eu/kanade/tachiyomi/extension/pt/mangahost'
+}
+
+apply from: "$rootDir/common.gradle"
