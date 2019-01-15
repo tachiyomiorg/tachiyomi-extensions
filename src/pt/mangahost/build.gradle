@@ -5,12 +5,8 @@ ext {
     appName = 'Tachiyomi: MangaHost'
     pkgNameSuffix = 'pt.mangahost'
     extClass = '.MangaHost'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
-}
-
-sourceSets {
-    main.java.srcDirs += 'src/eu/kanade/tachiyomi/extension/pt/mangahost'
 }
 
 apply from: "$rootDir/common.gradle"
