@@ -6,7 +6,7 @@ ext {
     pkgNameSuffix = 'en.naniscans'
     extClass = '.NaniScans'
     extVersionCode = 1
-    libVersion = '1.0'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
