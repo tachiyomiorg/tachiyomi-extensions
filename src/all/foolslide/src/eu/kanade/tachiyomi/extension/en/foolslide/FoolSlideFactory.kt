@@ -48,7 +48,6 @@ fun getAllFoolSlide(): List<Source> {
             Russification(),
             NieznaniReader(),
             EvilFlowers(),
-            NaniScans(),
             AkaiYuhiMunTeam(),
             LupiTeam()
     )
@@ -173,8 +172,6 @@ class Russification : FoolSlide("Русификация", "https://rusmanga.ru",
 class NieznaniReader : FoolSlide("Nieznani", "http://reader.nieznani.mynindo.pl", "pl")
 
 class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
-
-class NaniScans : FoolSlide("NANI? SCANS", "https://reader.naniscans.xyz", "en")
 
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
 
