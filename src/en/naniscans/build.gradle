@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: NANI? Scans'
+    pkgNameSuffix = 'en.naniscans'
+    extClass = '.NaniScans'
+    extVersionCode = 1
+    libVersion = '1.0'
+}
+
+apply from: "$rootDir/common.gradle"
