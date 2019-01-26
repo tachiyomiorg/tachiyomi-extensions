@@ -91,7 +91,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     override fun popularMangaNextPageSelector() = "#content > section.pagination > a.next"
 
-    override fun popularMangaRequest(page: Int) = GET("$searchUrl/?q=+english&sort=popular")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/language/$nhLang/popular?page=$page")
 
     override fun popularMangaSelector() = "#content > div > div"
 
