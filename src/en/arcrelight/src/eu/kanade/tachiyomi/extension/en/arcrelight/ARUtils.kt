@@ -4,7 +4,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import org.json.JSONArray
 import org.json.JSONObject
-import java.lang.IllegalArgumentException
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -74,14 +73,12 @@ fun SManga.fromJSON(obj: JSONObject) {
  */
 fun SChapter.fromJSON(obj: JSONObject) {
     url = obj.getString("url")
-    chapter_number = obj.getString("chapter").toFloat()
+    chapter_number = obj.optString("chapter", "0").toFloat()
     date_upload = httpDateToTimestamp(obj.getString("date"))
     scanlator = obj.getJSONArray("groups")?.joinField("name", " & ")
-    val vol = obj.getString("volume")
-    val ch = DecimalFormat("0.#").format(chapter_number)
     name = buildString {
-        if (vol != "0") append("Vol.$vol ")
-        append("Ch.$ch - ")
+        obj.optInt("volume").let { if (it != 0) append("Vol.$it ") }
+        append("Ch.${DecimalFormat("#.#").format(chapter_number)} - ")
         append(obj.getString("title"))
         if (obj.getBoolean("final")) append(" [END]")
     }

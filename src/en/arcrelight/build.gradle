@@ -5,8 +5,7 @@ ext {
     appName = 'Tachiyomi: Arc-Relight'
     pkgNameSuffix = 'en.arcrelight'
     extClass = '.ArcRelight'
-    extVersionCode = 1
-    extVersionSuffix = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

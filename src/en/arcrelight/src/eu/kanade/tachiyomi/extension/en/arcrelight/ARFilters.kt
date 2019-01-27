@@ -7,20 +7,21 @@ private val STATUSES = arrayOf("Any", "Completed", "Ongoing")
 
 /** List containing the possible categories of a manga */
 private val CATEGORIES = listOf(
-        Category("4-Koma"),
-        Category("Chaos;Head"),
-        Category("Comedy"),
-        Category("Drama"),
-        Category("Mystery"),
-        Category("Psychological"),
-        Category("Robotics;Notes"),
-        Category("Romance"),
-        Category("Sci-Fi"),
-        Category("Seinen"),
-        Category("Shounen"),
-        Category("Steins;Gate"),
-        Category("Supernatural"),
-        Category("Tragedy")
+    Category("4-Koma"),
+    Category("Chaos;Head"),
+    Category("Collection"),
+    Category("Comedy"),
+    Category("Drama"),
+    Category("Mystery"),
+    Category("Psychological"),
+    Category("Robotics;Notes"),
+    Category("Romance"),
+    Category("Sci-Fi"),
+    Category("Seinen"),
+    Category("Shounen"),
+    Category("Steins;Gate"),
+    Category("Supernatural"),
+    Category("Tragedy")
 )
 
 /**
@@ -41,7 +42,7 @@ class Status : Filter.Select<String>("Status", STATUSES) {
  */
 class Category(name: String) : Filter.TriState(name) {
     /** Returns the [state] as a string, or null if [isIgnored]. */
-    fun stringOpt() = when(state) {
+    fun optString() = when (state) {
         STATE_INCLUDE -> name.toLowerCase()
         STATE_EXCLUDE -> "-" + name.toLowerCase()
         else -> null
