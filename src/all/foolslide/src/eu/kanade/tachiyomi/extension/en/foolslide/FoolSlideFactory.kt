@@ -49,7 +49,8 @@ fun getAllFoolSlide(): List<Source> {
             NieznaniReader(),
             EvilFlowers(),
             AkaiYuhiMunTeam(),
-            LupiTeam()
+            LupiTeam(),
+            HotChocolateScans()
     )
 }
 
@@ -67,6 +68,8 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
         return pages
     }
 }
+
+class HotChocolateScans : FoolSlide("Hot Chocolate Scans", "http://hotchocolatescans.com", "en", "/fs")
 
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
