@@ -96,10 +96,10 @@ class BoredomSociety : ParsedHttpSource() {
 
         if (!jsonElement["chapter_name"].string.startsWith("Chapter", true)) {
             if (jsonElement["chapter_volume"].string?.isNotBlank()) {
-                chapterName.add("Vol: " + jsonElement["chapter_volume"].string)
+                chapterName.add("Vol. " + jsonElement["chapter_volume"].string)
             }
             if (jsonElement["chapter_number"].string?.isNotBlank()) {
-                chapterName.add("Ch: " + jsonElement["chapter_number"].string + " - ")
+                chapterName.add("Ch. " + jsonElement["chapter_number"].string + " - ")
             }
         }
         chapterName.add(jsonElement["chapter_name"].string)
