@@ -159,15 +159,18 @@ class MangaPlus : HttpSource() {
         val chapters = titleDetailView["firstChapterList"].array +
                 (titleDetailView["lastChapterList"].nullArray ?: emptyList())
 
-        return chapters.reversed().map {
-            SChapter.create().apply {
-                name = "${it["name"].string} - ${it["subTitle"].string}"
-                scanlator = "Shueisha"
-                date_upload = 1000L * it["startTimeStamp"].long
-                url = "#/viewer/${it["chapterId"].int}"
-                chapter_number = it["name"].string.substringAfter("#").toFloatOrNull() ?: 0f
-            }
-        }
+        return chapters.reversed()
+                // If the subTitle is null, then the chapter time expired.
+                .filter { it.obj["subTitle"] != null }
+                .map {
+                    SChapter.create().apply {
+                        name = "${it["name"].string} - ${it["subTitle"].string}"
+                        scanlator = "Shueisha"
+                        date_upload = 1000L * it["startTimeStamp"].long
+                        url = "#/viewer/${it["chapterId"].int}"
+                        chapter_number = it["name"].string.substringAfter("#").toFloatOrNull() ?: 0f
+                    }
+                }
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -347,7 +350,7 @@ class MangaPlus : HttpSource() {
                   .add(new Field("titleId", 1, "uint32"))
                   .add(new Field("chapterId", 2, "uint32"))
                   .add(new Field("name", 3, "string"))
-                  .add(new Field("subTitle", 4, "string"))
+                  .add(new Field("subTitle", 4, "string", "optional"))
                   .add(new Field("startTimeStamp", 6, "uint32"))
                   .add(new Field("endTimeStamp", 7, "uint32"));
 
