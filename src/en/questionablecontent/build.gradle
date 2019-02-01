@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Questionable Content'
     pkgNameSuffix = 'en.questionablecontent'
     extClass = '.QuestionableContent'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

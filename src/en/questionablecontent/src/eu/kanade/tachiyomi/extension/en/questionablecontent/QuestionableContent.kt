@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.en.questionablecontent
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -35,6 +36,10 @@ class QuestionableContent : ParsedHttpSource() {
 
     override fun fetchMangaDetails(manga: SManga) = Observable.just(manga)
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return super.chapterListParse(response).distinct()
+    }
+
     override fun chapterListSelector() = """div#container a[href^="view.php?comic="]"""
 
     override fun chapterFromElement(element: Element): SChapter {
@@ -42,20 +47,14 @@ class QuestionableContent : ParsedHttpSource() {
         val chapterUrl = element.attr("href")
         val number = urlregex.find(chapterUrl)!!.groupValues[1]
 
-        return SChapter.create().apply {
-            url = chapterUrl
-            chapter_number = number.toFloat()
-            name = element.text()
-        }
+        val chapter = SChapter.create()
+        chapter.setUrlWithoutDomain("/$chapterUrl")
+        chapter.name = element.text()
+        chapter.chapter_number = number.toFloat()
+        return chapter
     }
 
-    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        val pages = mutableListOf<Page>()
-        pages.add(Page(0, "", "$baseUrl/comics/${chapter.chapter_number.toInt()}.png"))
-        return Observable.just(pages)
-    }
-
-    override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
+    override fun pageListParse(document: Document) = document.select("#strip").mapIndexed { i, element -> Page(i, "", baseUrl + element.attr("src").substring(1)) }
 
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
