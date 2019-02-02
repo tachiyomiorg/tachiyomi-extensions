@@ -178,7 +178,7 @@ class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "
 
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
 
-class LupiTeam : FoolSlide("LupiTeam", "http://52.47.38.169", "it", "/reader") {
+class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(mangaDetailsInfoSelector).first().text()
 
