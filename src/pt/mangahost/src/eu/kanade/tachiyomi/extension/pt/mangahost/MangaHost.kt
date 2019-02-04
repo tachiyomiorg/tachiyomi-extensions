@@ -15,7 +15,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Manga Host"
 
-    override val baseUrl = "https://mangahost1.com/"
+    override val baseUrl = "https://mangahost2.com"
 
     override val lang = "pt"
 
