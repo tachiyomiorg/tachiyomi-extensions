@@ -12,7 +12,7 @@ private val CATEGORIES = listOf(
     Category("Collection"),
     Category("Comedy"),
     Category("Drama"),
-    Category("Jubilee),
+    Category("Jubilee"),
     Category("Mystery"),
     Category("Psychological"),
     Category("Robotics;Notes"),
