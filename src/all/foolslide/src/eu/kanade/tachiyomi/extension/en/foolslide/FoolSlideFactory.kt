@@ -58,9 +58,12 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
 
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
-        val base64Json = doc.substringAfter("JSON.parse(atob(\"").substringBefore("\"));")
-        val decodeJson = String(Base64.decode(base64Json, Base64.DEFAULT))
-        val json = JsonParser().parse(decodeJson).asJsonArray
+        var jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
+        if (jsonstr.substring(0,10) == "JSON.parse") {
+            val base64Json = jsonstr.substringAfter("JSON.parse(atob(\"").substringBefore("\"));")
+            jsonstr = String(Base64.decode(base64Json, Base64.DEFAULT))
+        }
+        val json = JsonParser().parse(jsonstr).asJsonArray
         val pages = mutableListOf<Page>()
         json.forEach {
             pages.add(Page(pages.size, "", it["url"].asString))
