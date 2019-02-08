@@ -15,5 +15,3 @@ fun getAllLibManga(): List<Source> {
 }
 
 class Mangalib : LibManga("Mangalib", "https://mangalib.me", "https://img1.mangalib.me")
-
-class Yaoilib : LibManga("Yaoilib", "https://yaoilib.me", "https://img1.yaoilib.me")
