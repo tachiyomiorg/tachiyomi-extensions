@@ -40,7 +40,7 @@ class NewToki : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "ul.pagination > li:not(.disabled)"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic" + if (page > 1) "p$page" else "")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic" + if (page > 1) "/p$page" else "")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -114,7 +114,20 @@ class NewToki : ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long {
         return try {
             if (date.contains(":")) {
-                Calendar.getInstance().time.time
+                val calendar = Calendar.getInstance()
+                val splitDate = date.split(":")
+
+                val hours = splitDate.first().toInt()
+                val minutes = splitDate.last().toInt()
+
+                val calendarHours = calendar.get(Calendar.HOUR)
+                val calendarMinutes = calendar.get(Calendar.MINUTE)
+
+                if (calendarHours >= hours && calendarMinutes > minutes) {
+                    calendar.add(Calendar.DATE, -1)
+                }
+
+                calendar.timeInMillis
             } else {
                 SimpleDateFormat("yyyy.MM.dd").parse(date).time
             }
