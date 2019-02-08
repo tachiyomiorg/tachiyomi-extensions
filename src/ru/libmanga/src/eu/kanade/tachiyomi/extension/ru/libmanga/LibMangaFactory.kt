@@ -9,8 +9,7 @@ class LibMangaFactory : SourceFactory {
 
 fun getAllLibManga(): List<Source> {
     return listOf(
-            Mangalib(),
-            Yaoilib()
+            Mangalib()
     )
 }
 
