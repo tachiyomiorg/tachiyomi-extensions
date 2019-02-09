@@ -137,6 +137,11 @@ class Rawlh : ParsedHttpSource() {
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
+            "years ago" in date -> Calendar.getInstance().apply {
+                add(Calendar.YEAR, value * -1)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
             else -> {
                 return 0
             }
