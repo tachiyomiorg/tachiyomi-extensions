@@ -7,7 +7,7 @@ ext {
     extClass = '.AComics'
     extVersionCode = 1
     extVersionSuffix = 1
-    libVersion = '1.0'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
