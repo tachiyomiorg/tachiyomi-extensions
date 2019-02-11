@@ -8,6 +8,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 
 class AComics : ParsedHttpSource() {
 
@@ -17,10 +18,35 @@ class AComics : ParsedHttpSource() {
 
     override val lang = "ru"
 
+    val cookiesHeader by lazy {
+        val cookies = mutableMapOf<String, String>()
+        cookies.put("ageRestrict", "17")
+        buildCookies(cookies)
+    }
+
+    fun buildCookies(cookies: Map<String, String>) = cookies.entries.map {
+        "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+    }.joinToString(separator = "; ", postfix = ";")
+
+    override val client = network.client.newBuilder()
+            .addNetworkInterceptor { chain ->
+                val newReq = chain
+                        .request()
+                        .newBuilder()
+                        .addHeader("Cookie", cookiesHeader)
+                        .build()
+
+                chain.proceed(newReq)
+            }.build()!!
+
+
     override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/comics?categories=&ratings[]=1&ratings[]=2&ratings[]=3&ratings[]=4&ratings[]=5ratings[]=6&&type=0&updatable=0&subscribe=0&issue_count=2&sort=subscr_count&skip=${10 * (page - 1)}", headers)
+
+    override fun latestUpdatesRequest(page: Int): Request =
+            GET("$baseUrl/comics?categories=&ratings[]=1&ratings[]=2&ratings[]=3&ratings[]=4&ratings[]=5ratings[]=6&&type=0&updatable=0&subscribe=0&issue_count=2&sort=last_update&skip=${10 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url: String = if (query.isNotEmpty()) {
@@ -46,7 +72,7 @@ class AComics : ParsedHttpSource() {
                             status = "yes"
                         }
                     }
-                    is Rating -> {
+                    is RatingList -> {
                         filter.state.forEach {
                             if (it.state) {
                                 rating.add(it.id)
@@ -59,10 +85,6 @@ class AComics : ParsedHttpSource() {
         }
         return GET(url, headers)
     }
-
-    override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/comics?categories=&ratings[]=2&ratings[]=3&ratings[]=4&ratings[]=5&type=0&updatable=0&subscribe=0&issue_count=2&sort=last_update?skip=${10 * (page - 1)}", headers)
-
 
     override fun popularMangaSelector() = "table.list-loadable > tbody > tr"
 
@@ -103,7 +125,7 @@ class AComics : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var res = mutableListOf<SChapter>()
+        val res = mutableListOf<SChapter>()
         val count = response.asJsoup()
                 .select(".about-summary > p:contains(Количество выпусков:)")
                 .text()
@@ -132,40 +154,41 @@ class AComics : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
-    private class GenreList(genres: List<Storage>) : Filter.Group<Storage>("Категории", genres)
-    private class Storage(name: String, val id: Int) : Filter.CheckBox(name)
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Категории", genres)
+    private class Genre(name: String, val id: Int) : Filter.CheckBox(name)
+    private class Rating(name: String, val id: Int) : Filter.CheckBox(name, state = true)
     private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Завершенный", "Продолжающийся"))
 
-    private class Rating : Filter.Group<Storage>("Возрастная категория", listOf(
-            Storage("???", 1),
-            Storage("0+", 2),
-            Storage("6+", 3),
-            Storage("12+", 4),
-            Storage("16+", 5),
-            Storage("18+", 6)
+    private class RatingList : Filter.Group<Rating>("Возрастная категория", listOf(
+            Rating("???", 1),
+            Rating("0+", 2),
+            Rating("6+", 3),
+            Rating("12+", 4),
+            Rating("16+", 5),
+            Rating("18+", 6)
     ))
 
 
     override fun getFilterList() = FilterList(
             Status(),
-            Rating(),
+            RatingList(),
             GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Storage("Животные", 1),
-            Storage("Драма", 2),
-            Storage("Фэнтези", 3),
-            Storage("Игры", 4),
-            Storage("Юмор", 5),
-            Storage("Журнал", 6),
-            Storage("Паранормальное", 7),
-            Storage("Конец света", 8),
-            Storage("Романтика", 9),
-            Storage("Фантастика", 10),
-            Storage("Бытовое", 11),
-            Storage("Стимпанк", 12),
-            Storage("Супергерои", 13)
+            Genre("Животные", 1),
+            Genre("Драма", 2),
+            Genre("Фэнтези", 3),
+            Genre("Игры", 4),
+            Genre("Юмор", 5),
+            Genre("Журнал", 6),
+            Genre("Паранормальное", 7),
+            Genre("Конец света", 8),
+            Genre("Романтика", 9),
+            Genre("Фантастика", 10),
+            Genre("Бытовое", 11),
+            Genre("Стимпанк", 12),
+            Genre("Супергерои", 13)
     )
 
 }
