@@ -287,9 +287,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.artist = mangaJson.get("artist").string
         val status = mangaJson.get("status").int
         val finalChapterNumber = getFinalChapter(mangaJson)
-        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(finalChapterNumber, chapterJson)) {
+        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(chapterJson, finalChapterNumber)) {
             manga.status = SManga.COMPLETED
-        } else if (status == 2 && isOneshot(chapterJson, finalChapterNumber)){
+        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, finalChapterNumber)){
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
@@ -334,7 +334,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         }
     }
 
-    private fun isMangaCompleted(finalChapterNumber: String, chapterJson: JsonObject): Boolean {
+    private fun isMangaCompleted(chapterJson: JsonObject, finalChapterNumber: String): Boolean {
         val count = chapterJson.entrySet()
                 .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
                 .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }.count()
