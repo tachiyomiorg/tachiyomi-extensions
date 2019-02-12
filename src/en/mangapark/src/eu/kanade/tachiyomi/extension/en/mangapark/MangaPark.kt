@@ -184,7 +184,7 @@ class MangaPark : ParsedHttpSource() {
         for (i in 0 until imglist.length()) {
             var item = imglist.getJSONObject(i)
             var page = item.getString("u")
-            if (page.startsWith("//") {
+            if (page.startsWith("//")) {
                 page = "https:$page"
             }
             pages.add(Page(i, "", page))
