@@ -5,17 +5,24 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
+import java.util.concurrent.TimeUnit
 
 open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     override val name = "MyReadingManga"
 
     override val baseUrl = "https://myreadingmanga.info"
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+            .connectTimeout(1, TimeUnit.MINUTES)
+            .readTimeout(1, TimeUnit.MINUTES)
+            .retryOnConnectionFailure(true)
+            .followRedirects(true)
+            .build()!!
 
     override val supportsLatest = false
 
