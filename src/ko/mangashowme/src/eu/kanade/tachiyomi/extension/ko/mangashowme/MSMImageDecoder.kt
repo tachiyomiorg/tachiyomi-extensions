@@ -69,7 +69,7 @@ internal class ImageDecoderInterceptor : Interceptor {
 
     /*
      * `decodeV1ImageNative` is modified version of
-     *  https://github.com/junheah/MangaViewAndroid/blob/master/app/src/main/java/ml/melun/mangaview/Downloader.java#L213-L245
+     *  https://github.com/junheah/MangaViewAndroid/blob/b69a4427258fe7fc5fb5363108572bbee0d65e94/app/src/main/java/ml/melun/mangaview/mangaview/Decoder.java#L6-L60
      *
      * MIT License
      *
@@ -122,7 +122,7 @@ internal class ImageDecoderInterceptor : Interceptor {
 
     /*
      * `decodeRandom` is modified version of
-     *  https://github.com/junheah/MangaViewAndroid/blob/master/app/src/main/java/ml/melun/mangaview/Downloader.java#L213-L245
+     *  https://github.com/junheah/MangaViewAndroid/blob/b69a4427258fe7fc5fb5363108572bbee0d65e94/app/src/main/java/ml/melun/mangaview/mangaview/Decoder.java#L6-L60
      *
      * MIT License
      *
