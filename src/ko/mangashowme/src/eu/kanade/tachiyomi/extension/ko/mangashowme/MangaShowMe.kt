@@ -34,6 +34,21 @@ class MangaShowMe : ParsedHttpSource() {
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(ImageDecoderInterceptor())
             .addInterceptor { chain ->
+                val req = chain.request()
+                var res: Response? = null
+
+                for (_i in 0..10) {
+                    try {
+                        res = chain.proceed(req)
+                    } catch (e: javax.net.ssl.SSLHandshakeException) {
+                        if (e.message.toString().contains("Connection reset by peer")) continue
+                    }
+                    break
+                }
+
+                res ?: chain.proceed(req)
+            }
+            .addInterceptor { chain ->
                 val response = chain.proceed(chain.request())
                 if (response.code() == 503) {
                     val body = response.body().toString()
