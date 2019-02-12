@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -16,7 +17,7 @@ class MangaPark : ParsedHttpSource() {
 
     override val supportsLatest = true
     override val name = "MangaPark"
-    override val baseUrl = "https://mangapark.me"
+    override val baseUrl = "https://mangapark.net"
 
     private val directorySelector = ".ls1 .item"
     private val directoryUrl = "/genre"
@@ -175,9 +176,20 @@ class MangaPark : ParsedHttpSource() {
         return now.timeInMillis
     }
 
-    override fun pageListParse(document: Document)
-            = document.getElementsByClass("img").map {
-        Page(it.attr("i").toInt() - 1, "", cleanUrl(it.attr("src")))
+    override fun pageListParse(document: Document): List<Page> {
+        val doc = document.toString()
+        val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
+        val pages = mutableListOf<Page>()
+        var imglist = JSONObject("""{"data": $obj}""").getJSONArray("data")
+        for (i in 0 until imglist.length()) {
+            var item = imglist.getJSONObject(i)
+            var page = item.getString("u")
+            if (page.startsWith("//") {
+                page = "https:$page"
+            }
+            pages.add(Page(i, "", page))
+        }
+        return pages
     }
 
     //Unused, we can get image urls directly from the chapter page
