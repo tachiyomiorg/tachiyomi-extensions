@@ -18,12 +18,29 @@ import java.util.*
  **/
 class NewToki : ParsedHttpSource() {
     override val name = "NewToki"
-    override val baseUrl = "https://newtoki.net"
+    override val baseUrl = "https://newtoki2.net"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
     override val supportsLatest = false
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+            .addInterceptor { chain ->
+                val req = chain.request()
+                var res: Response? = null
+
+                for (_i in 0..10) {
+                    try {
+                        res = chain.proceed(req)
+                    } catch (e: javax.net.ssl.SSLHandshakeException) {
+                        if (e.message!!.contains("Connection reset by peer")) continue
+                    }
+                    break
+                }
+
+                res ?: chain.proceed(req)
+            }
+            .build()!!
+
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
 
@@ -32,7 +49,7 @@ class NewToki : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.setUrlWithoutDomain(linkElement.attr("href"))
-        manga.title = element.attr("date-title")
+        manga.title = element.select("span.title").first().ownText()
         manga.thumbnail_url = linkElement.getElementsByTag("img").attr("src")
         return manga
     }
@@ -66,9 +83,9 @@ class NewToki : ParsedHttpSource() {
 
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val info = document.select("div.view-title").first()
+        val info = document.select("div.view-title > .view-content").first()
         val authorText = info.select("span.label.btn-info").text()
-        val title = info.select(".view-content > span > b").text()
+        val title = info.select("div.view-content > span[style] > b").text()
         val genres = mutableListOf<String>()
         info.select("span.label.label-success").forEach {
             genres.add(it.text())
