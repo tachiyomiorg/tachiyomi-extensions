@@ -30,6 +30,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override val baseUrl = "https://mangadex.org"
 
+    val cdnUrl = "https://cdndex.com"
+
     override val supportsLatest = true
 
     private val preferences: SharedPreferences by lazy {
@@ -281,7 +283,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val mangaJson = json.getAsJsonObject("manga")
         val chapterJson = json.getAsJsonObject("chapter")
         manga.title = baseUrl + mangaJson.get("title").string
-        manga.thumbnail_url = baseUrl + mangaJson.get("cover_url").string
+        manga.thumbnail_url = cdnUrl + mangaJson.get("cover_url").string
         manga.description = cleanString(mangaJson.get("description").string)
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
