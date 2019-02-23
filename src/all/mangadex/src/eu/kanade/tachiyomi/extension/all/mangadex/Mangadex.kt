@@ -86,10 +86,13 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
+        manga.thumbnail_url = formThumbUrl(manga.url)
         return manga
     }
 
     private fun modifyMangaUrl(url: String): String = url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
+
+    private fun formThumbUrl(mangaUrl: String): String = cdnUrl + "/images/manga/" + getMangaId(mangaUrl) +".thumb.jpg"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -98,6 +101,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.title = it.text().trim()
 
         }
+        manga.thumbnail_url = formThumbUrl(manga.url)
         return manga
     }
 
@@ -251,6 +255,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
+        manga.thumbnail_url = formThumbUrl(manga.url)
         return manga
     }
 
@@ -631,5 +636,4 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 Pair("Thai", "32"),
                 Pair("Filipino", "34"))
     }
-
 }
