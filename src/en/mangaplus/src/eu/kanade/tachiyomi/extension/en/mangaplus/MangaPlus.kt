@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.*
 import rx.Observable
 import java.lang.Exception
+import java.util.UUID.randomUUID
 
 class MangaPlus : HttpSource() {
     override val name = "Manga Plus by Shueisha"
@@ -25,7 +26,7 @@ class MangaPlus : HttpSource() {
         add("Origin", WEB_URL)
         add("Referer", WEB_URL)
         add("User-Agent", USER_AGENT)
-        add("X-Requested-With", "XMLHttpRequest")
+        add("SESSION-TOKEN", randomUUID().toString())
     }.build()
 
     override val client = network.client.newBuilder().addInterceptor {
