@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: Mangaonlinebiz'
     pkgNameSuffix = 'ru.mangaonlinebiz'
-    extClass = '.Mangaonlinebiz'
-    extVersionCode = 1
+    extClass = '.MangaOnlineBiz'
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
