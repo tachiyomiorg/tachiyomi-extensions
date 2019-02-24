@@ -62,14 +62,16 @@ echo -e "**Page under construction**" >> Extensions.md
 
 for langcode in $(ls src/)
 do 
+    # Language
     lang=$(lang_from_langcode $langcode)
     echo Language $lang
-    echo -e "\n## $lang\n" >> Extensions.md
-    echo -e "<table border=\"0\">" >> Extensions.md
+    echo -e "<details open>\n\t<summary>" >> Extensions.md
+    echo -e "<b>$lang</b>" >> Extensions.md
+    echo -e "\t</summary>\n" >> Extensions.md
+    echo -e "## $lang" >> Extensions.md
+    echo -e "<table>" >> Extensions.md
     for shrtname in $(ls src/$langcode/)
     do
-        # Language
-        echo short name $shrtname
         # Title
         name=$(grep 'appName' src/$langcode/$shrtname/build.gradle | cut -d '=' -f2 | awk '{split($0,a,"Tachiyomi:"); print a[2]}')
         name=${name::-1}
@@ -82,7 +84,6 @@ do
         version=${version:2}
         version=$version.${code:1}
         echo Version $version
-        # cat src/$langcode/$shrtname/build.gradle
         # Image
         image=src/$langcode/$shrtname/res/web_hi_res_512.png
         if [ -f $image ]; then
@@ -91,8 +92,6 @@ do
             echo Using Default Image
             image="res/mipmap-xxxhdpi/ic_launcher.png"
         fi
-
-        # echo -e "**${name:1}** *$version*" >> Extensions.md
         echo -e "\t<tr>" >> Extensions.md
         echo -e "\t\t<td rowspan=\"2\">" >> Extensions.md
         echo -e "\t\t\t<a href=\"$TreeURL/$langcode/$shrtname\">" >> Extensions.md
@@ -110,4 +109,5 @@ do
         echo -e "\t</tr>" >> Extensions.md
     done
     echo -e "</table>" >> Extensions.md
+    echo -e "</details>\n" >> Extensions.md
 done
