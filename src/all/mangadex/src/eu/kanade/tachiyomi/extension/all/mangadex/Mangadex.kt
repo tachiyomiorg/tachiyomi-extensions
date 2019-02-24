@@ -86,7 +86,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
-        manga.thumbnail_url = formThumbUrl(manga.url)
+        if (getShowThumbnail() == LOW_QUALITY) {
+            manga.thumbnail_url = formThumbUrl(manga.url)
+        }
         return manga
     }
 
@@ -101,7 +103,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.title = it.text().trim()
 
         }
-        manga.thumbnail_url = formThumbUrl(manga.url)
+        if (getShowThumbnail() == LOW_QUALITY) {
+            manga.thumbnail_url = formThumbUrl(manga.url)
+        }
+
         return manga
     }
 
@@ -255,7 +260,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
-        manga.thumbnail_url = formThumbUrl(manga.url)
+
+        if (getShowThumbnail() == LOW_QUALITY) {
+            manga.thumbnail_url = formThumbUrl(manga.url)
+        }
+
         return manga
     }
 
@@ -467,10 +476,28 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 preferences.edit().putInt(SHOW_R18_PREF, index).commit()
             }
         }
+        val thumbsPref = ListPreference(screen.context).apply {
+            key = SHOW_THUMBNAIL_PREF_Title
+            title = SHOW_THUMBNAIL_PREF_Title
+
+            title = SHOW_THUMBNAIL_PREF_Title
+            entries = arrayOf("Show high quality", "Show low quality")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
+            }
+        }
+
         screen.addPreference(myPref)
+        screen.addPreference(thumbsPref)
     }
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
+    private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
 
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
@@ -609,6 +636,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         private const val SHOW_R18_PREF_Title = "Default R18 Setting"
         private const val SHOW_R18_PREF = "showR18Default"
+
+        private const val HIGH_QUALITY = 0
+        private const val LOW_QUALITY = 1
+
+        private const val SHOW_THUMBNAIL_PREF_Title = "Default thumbnail quality"
+        private const val SHOW_THUMBNAIL_PREF = "showThumbnailDefault"
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
