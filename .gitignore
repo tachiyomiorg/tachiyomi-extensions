@@ -8,3 +8,6 @@ build/
 *.iml
 repo/
 apk/
+.settings/
+.classpath
+.project
