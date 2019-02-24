@@ -2,6 +2,7 @@
 # Github @phanirithvij (https://github.com/phanirithvij)
 
 # NOTE: Run this from tachiyomi-extensions/
+# NOTE: E-Hentai has it's image name as laucher.png not launcher.png
 
 # backup wikifile (just in case)
 cp Extensions.md Extensions_backup.md
@@ -83,14 +84,20 @@ do
         version=${version::-1}
         version=${version:2}
         version=$version.${code:1}
-        echo Version $version
+        # echo Version $version
         # Image
-        image=src/$langcode/$shrtname/res/web_hi_res_512.png
+        image=src/$langcode/$shrtname/res/mipmap-xxxhdpi/ic_launcher.png
         if [ -f $image ]; then
             echo Image Exists
         else
-            echo Using Default Image
-            image="res/mipmap-xxxhdpi/ic_launcher.png"
+            image="src/$langcode/$shrtname/res/mipmap-xxxhdpi/ic_laucher.png"
+                if [ -f $image ]; then
+                    #Laucher not Launcher for E-Hentai
+                    echo "This is E-Hentai"
+                else
+                    echo Using 404 Image
+                    image="res/mipmap-xxxhdpi/ic_launcher.png"
+                fi
         fi
         echo -e "\t<tr>" >> Extensions.md
         echo -e "\t\t<td rowspan=\"2\">" >> Extensions.md
