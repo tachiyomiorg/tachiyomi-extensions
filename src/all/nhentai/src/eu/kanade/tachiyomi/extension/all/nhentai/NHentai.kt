@@ -8,8 +8,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
@@ -19,6 +18,10 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override val name = "NHentai"
     override val supportsLatest = true
     override val client = network.cloudflareClient
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36")
+    }
 
     private val searchUrl = "$baseUrl/search"
 
@@ -39,7 +42,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
         return chapterList
     }
 
-    override fun chapterListRequest(manga: SManga): Request = GET("$baseUrl${manga.url}")
+    override fun chapterListRequest(manga: SManga): Request = GET("$baseUrl${manga.url}", headers)
 
     override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
 
@@ -54,7 +57,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     override fun latestUpdatesNextPageSelector() = "#content > section.pagination > a.next"
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/language/$nhLang/?page=$page")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/language/$nhLang/?page=$page", headers)
 
     override fun latestUpdatesSelector() = "#content > div > div"
 
@@ -82,7 +85,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
         return pageList
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET("$baseUrl${chapter.url}")
+    override fun pageListRequest(chapter: SChapter) = GET("$baseUrl${chapter.url}", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
@@ -91,7 +94,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     override fun popularMangaNextPageSelector() = "#content > section.pagination > a.next"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/language/$nhLang/popular?page=$page")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/language/$nhLang/popular?page=$page", headers)
 
     override fun popularMangaSelector() = "#content > div > div"
 
@@ -115,7 +118,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
         stringBuilder.append("page=$page")
 
-        return GET(stringBuilder.toString())
+        return GET(stringBuilder.toString(), headers)
     }
 
     override fun searchMangaSelector() = "#content > div > div"
