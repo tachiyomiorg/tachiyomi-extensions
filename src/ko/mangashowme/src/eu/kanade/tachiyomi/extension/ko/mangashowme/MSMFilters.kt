@@ -8,48 +8,50 @@ import okhttp3.Request
 
 
 // TODO: Completely Implement/Update Filters(Genre/Artist).
-// private class TextField(name: String, val key: String) : Filter.Text(name)
+private class TextField(name: String, val key: String) : Filter.Text(name)
 private class SearchCheckBox(val id: Int, name: String) : Filter.CheckBox(name)
 
 private class SearchFieldMatch : Filter.Select<String>("Search Match", arrayOf("Not Set", "AND", "OR"))
 private class SearchTagMatch : Filter.Select<String>("Tag Match", arrayOf("AND", "OR"))
 private class SearchGenresList(genres: List<SearchCheckBox>) : Filter.Group<SearchCheckBox>("Genres", genres)
-private class SearchNamingList(naming: List<SearchCheckBox>) : Filter.Group<SearchCheckBox>("Naming", naming)
-private class SearchStatusList(status: List<SearchCheckBox>) : Filter.Group<SearchCheckBox>("Status", status)
+private class SearchNamingList : Filter.Select<String>("Naming", searchNaming())
+private class SearchStatusList : Filter.Select<String>("Status", searchStatus())
 
-private fun searchNaming() = listOf(
-        SearchCheckBox(0, "ㄱ"),
-        SearchCheckBox(1, "ㄲ"),
-        SearchCheckBox(2, "ㄴ"),
-        SearchCheckBox(3, "ㄷ"),
-        SearchCheckBox(4, "ㄸ"),
-        SearchCheckBox(5, "ㄹ"),
-        SearchCheckBox(6, "ㅁ"),
-        SearchCheckBox(7, "ㅂ"),
-        SearchCheckBox(8, "ㅃ"),
-        SearchCheckBox(9, "ㅅ"),
-        SearchCheckBox(10, "ㅆ"),
-        SearchCheckBox(11, "ㅇ"),
-        SearchCheckBox(12, "ㅈ"),
-        SearchCheckBox(13, "ㅉ"),
-        SearchCheckBox(14, "ㅊ"),
-        SearchCheckBox(15, "ㅋ"),
-        SearchCheckBox(16, "ㅌ"),
-        SearchCheckBox(17, "ㅍ"),
-        SearchCheckBox(18, "ㅎ"),
-        SearchCheckBox(19, "A-Z"),
-        SearchCheckBox(20, "0-9")
+private fun searchNaming() = arrayOf(
+        "Not Set",
+        "ㄱ",
+        "ㄲ",
+        "ㄴ",
+        "ㄷ",
+        "ㄸ",
+        "ㄹ",
+        "ㅁ",
+        "ㅂ",
+        "ㅃ",
+        "ㅅ",
+        "ㅆ",
+        "ㅇ",
+        "ㅈ",
+        "ㅉ",
+        "ㅊ",
+        "ㅋ",
+        "ㅌ",
+        "ㅍ",
+        "ㅎ",
+        "A-Z",
+        "0-9"
 )
 
-private fun searchStatus() = listOf(
-        SearchCheckBox(0, "미분류"),
-        SearchCheckBox(1, "주간"),
-        SearchCheckBox(2, "격주"),
-        SearchCheckBox(3, "월간"),
-        SearchCheckBox(4, "격월/비정기"),
-        SearchCheckBox(5, "단편"),
-        SearchCheckBox(6, "단행본"),
-        SearchCheckBox(7, "완결")
+private fun searchStatus() = arrayOf(
+        "Not Set",
+        "미분류",
+        "주간",
+        "격주",
+        "월간",
+        "격월/비정기",
+        "단편",
+        "단행본",
+        "완결"
 )
 
 private fun searchGenres() = listOf(
@@ -87,14 +89,14 @@ private fun searchGenres() = listOf(
 )
 
 fun getFilters() = FilterList(
-        SearchNamingList(searchNaming()),
-        SearchStatusList(searchStatus()),
+        SearchNamingList(),
+        SearchStatusList(),
         SearchGenresList(searchGenres()),
         Filter.Separator(),
         SearchFieldMatch(),
-        SearchTagMatch()
-        //Filter.Separator(),
-        //TextField("Author/Artist (Accurate full name)", "author")
+        SearchTagMatch(),
+        Filter.Separator(),
+        TextField("Author/Artist (Exact Search)", "author")
 )
 
 fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: String, filters: FilterList): Request {
@@ -115,18 +117,29 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
         return GET(url.toString())
     }
 
-    val nameFilter = mutableListOf<Int>()
-    val statusFilter = mutableListOf<Int>()
+    var nameFilter: Int? = null
+    var statusFilter: Int? = null
     val genresFilter = mutableListOf<String>()
     var matchFieldFilter = 0
     var matchTagFilter = 1
+    var authorFilter: String? = null
 
     filters.forEach { filter ->
         when (filter) {
             is SearchFieldMatch -> {
                 matchFieldFilter = filter.state
             }
+
+            is TextField -> {
+                if (filter.key == "author" && !filter.state.isEmpty()) {
+                    authorFilter = filter.state
+                }
+            }
         }
+    }
+
+    if (!authorFilter.isNullOrEmpty()) {
+        return GET("$baseUrl/bbs/page.php?hid=manga_list&sfl=4&stx=$authorFilter&page=${page - 1}")
     }
 
     filters.forEach { filter ->
@@ -138,18 +151,14 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
             }
 
             is SearchNamingList -> {
-                filter.state.forEach {
-                    if (it.state) {
-                        nameFilter.add(it.id)
-                    }
+                if (filter.state > 0) {
+                    nameFilter = filter.state - 1
                 }
             }
 
             is SearchStatusList -> {
-                filter.state.forEach {
-                    if (it.state) {
-                        statusFilter.add(it.id)
-                    }
+                if (filter.state > 0) {
+                    statusFilter = filter.state - 1
                 }
             }
 
@@ -160,14 +169,6 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
                     }
                 }
             }
-
-//            is TextField -> {
-//                if (type == 4 && filter.key == "author") {
-//                    if (filter.key.length > 1) {
-//                        return GET("$baseUrl/bbs/page.php?hid=manga_list&sfl=4&stx=${filter.state}")
-//                    }
-//                }
-//            }
         }
     }
 
@@ -176,14 +177,14 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
         return normalSearch(matchFieldFilter)
     }
 
-    if (nameFilter.isEmpty() && statusFilter.isEmpty() && genresFilter.isEmpty()) {
+    if (nameFilter == null && statusFilter == null && genresFilter.isEmpty()) {
         return GET("$baseUrl/bbs/page.php?hid=manga_list")
     }
 
     val url = HttpUrl.parse("$baseUrl/bbs/page.php?hid=manga_list")!!.newBuilder()
     url.addQueryParameter("search_type", matchTagFilter.toString())
-    url.addQueryParameter("_1", nameFilter.joinToString(","))
-    url.addQueryParameter("_2", statusFilter.joinToString(","))
+    url.addQueryParameter("_1", nameFilter?.toString() ?: "")
+    url.addQueryParameter("_2", statusFilter?.toString() ?: "")
     url.addQueryParameter("_3", genresFilter.joinToString(","))
     if (page > 1) {
         url.addQueryParameter("page", "${page - 1}")

@@ -134,7 +134,6 @@ class MangaShowMe : ParsedHttpSource() {
     private fun parseStatus(status: String) = when (status.trim()) {
         "주간", "격주", "월간", "격월/비정기", "단행본" -> SManga.ONGOING
         "단편", "완결" -> SManga.COMPLETED
-        // "미분류", "" -> SManga.UNKNOWN
         else -> SManga.UNKNOWN
     }
 
@@ -156,7 +155,7 @@ class MangaShowMe : ParsedHttpSource() {
         val rawName = linkElement.select("div.title").last()
 
         val chapter = SChapter.create()
-        chapter.url = linkElement.attr("href")
+        chapter.setUrlWithoutDomain(linkElement.attr("href"))
         chapter.chapter_number = parseChapterNumber(rawName.text())
         chapter.name = rawName.ownText().trim()
         chapter.date_upload = parseChapterDate(element.select("div.addedAt").text().split(" ").first())
@@ -199,7 +198,7 @@ class MangaShowMe : ParsedHttpSource() {
 
     // They are using full url in every links.
     // There's possibility to using another domain for serve manga(s). Like marumaru.
-    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
+    //override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()

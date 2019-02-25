@@ -15,7 +15,7 @@ import org.jsoup.nodes.Element
  **/
 class JMana : ParsedHttpSource() {
     override val name = "JMana"
-    override val baseUrl = "https://www.jmana2.com"
+    override val baseUrl = "https://jmana1.com"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -29,7 +29,7 @@ class JMana : ParsedHttpSource() {
         val titleElement = element.select(".titBox .price").first()
 
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(linkElement.attr("href"))
+        manga.setUrlWithoutDomain(linkElement.attr("href").replace(" ", "%20"))
         manga.title = titleElement.text()
         manga.thumbnail_url = baseUrl + element.select(".imgBox img").attr("src")
         return manga
@@ -38,7 +38,7 @@ class JMana : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "div.page > ul > li"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET(baseUrl + if (page > 1) "/?page=${page - 1}" else "")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/frame/?page=${page - 1}")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -61,7 +61,7 @@ class JMana : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/?keyword=$query" + if (page > 1) "&page=${page - 1}" else "")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/frame/?keyword=$query&page=${page - 1}")
 
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -84,7 +84,7 @@ class JMana : ParsedHttpSource() {
         val rawName = linkElement.text()
 
         val chapter = SChapter.create()
-        chapter.url = linkElement.attr("href")
+        chapter.url = linkElement.attr("href").replace("book/", "book_frame/")
         chapter.chapter_number = parseChapterNumber(rawName)
         chapter.name = rawName.trim()
         return chapter
@@ -116,7 +116,6 @@ class JMana : ParsedHttpSource() {
 
         return pages
     }
-
 
     // Latest not supported
     override fun latestUpdatesSelector() = throw UnsupportedOperationException("This method should not be called!")

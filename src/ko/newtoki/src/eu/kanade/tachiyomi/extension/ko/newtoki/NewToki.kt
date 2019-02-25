@@ -84,19 +84,36 @@ class NewToki : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.view-title > .view-content").first()
-        val authorText = info.select("span.label.btn-info").text()
-        val title = info.select("div.view-content > span[style] > b").text()
-        val genres = mutableListOf<String>()
-        info.select("span.label.label-success").forEach {
-            genres.add(it.text())
+        val title = document.select("div.view-content > span > b").text()
+        val descriptionElement = info.select("div.row div.view-content:not([style])")
+        val description = descriptionElement.map {
+            it.text().trim()
         }
 
         val manga = SManga.create()
         manga.title = title
-        manga.author = authorText
-        manga.genre = genres.joinToString(", ")
-        manga.status = SManga.UNKNOWN
+        manga.description = description.joinToString("\n")
+        descriptionElement.forEach {
+            val text = it.text()
+            when {
+                "작가" in text -> manga.author = it.getElementsByTag("a").text()
+                "분류" in text -> {
+                    val genres = mutableListOf<String>()
+                    it.getElementsByTag("a").forEach { item ->
+                        genres.add(item.text())
+                    }
+                    manga.genre = genres.joinToString(", ")
+                }
+                "발행구분" in text -> manga.status = parseStatus(it.getElementsByTag("a").text())
+            }
+        }
         return manga
+    }
+
+    private fun parseStatus(status: String) = when (status.trim()) {
+        "주간", "격주", "월간", "격월/비정기", "단행본" -> SManga.ONGOING
+        "단편", "완결" -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
     }
 
     override fun chapterListSelector() = "div.serial-list > ul.list-body > li.list-item"
