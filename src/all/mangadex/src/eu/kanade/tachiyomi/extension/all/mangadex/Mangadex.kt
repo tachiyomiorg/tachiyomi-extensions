@@ -53,7 +53,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }.build()!!
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        add("User-Agent", "Tachiyomi "+ System.getProperty("http.agent"))
     }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
