@@ -136,6 +136,55 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         return GET(url.toString(), headers)
     }
 
+
+    // Hack search method to add some results from search popup
+    override fun searchMangaParse(response: Response): MangasPage {
+        val searchRequest = response.request().url().queryParameter("name")
+        val mangas = mutableListOf<SManga>()
+        if (!searchRequest.isNullOrEmpty()) {
+            val popupSearchHeaders = headers
+                    .newBuilder()
+                    .add("Accept", "application/json, text/plain, */*")
+                    .add("X-Requested-With", "XMLHttpRequest")
+                    .build()
+
+            // +200ms
+            val popup = client.newCall(
+                    GET("https://mangalib.me/search?query=$searchRequest", headers = popupSearchHeaders)
+            ).execute().body()!!.string()
+            val jsonList = JsonParser().parse(popup).asJsonArray
+            jsonList.forEach {
+                val element = it.asJsonObject
+                val manga = SManga.create()
+                manga.setUrlWithoutDomain("/" + element.get("slug").string)
+                manga.description = element.get("summary").nullString
+                manga.author = element.get("author").nullString
+                manga.title = element.get("name").string
+                val status = element.get("status_id").int
+                manga.status = if (status > 2) 2 else status
+                mangas.add(manga)
+            }
+
+        }
+        val document = response.asJsoup()
+
+        val searchedMangas = document.select(searchMangaSelector()).map { element ->
+            searchMangaFromElement(element)
+        }
+
+        // Filtered out what find in popup search
+        mangas.addAll(searchedMangas.filter { search ->
+            mangas.find { search.title == it.title } == null
+        })
+
+
+        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
+
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
@@ -153,7 +202,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
     private class OrderBy : Filter.Sort("Сортировка",
             arrayOf("Рейтинг", "Имя", "Просмотры", "Дата"),
-            Filter.Sort.Selection(1, false))
+            Filter.Sort.Selection(0, false))
 
     /*
     * Use console
@@ -176,9 +225,9 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getStatusList() = listOf(
-            SearchFilter("продолжается", "1"),
-            SearchFilter("завершен", "2"),
-            SearchFilter("заморожен", "3")
+            SearchFilter("Продолжается", "1"),
+            SearchFilter("Завершен", "2"),
+            SearchFilter("Заморожен", "3")
     )
 
     /*
