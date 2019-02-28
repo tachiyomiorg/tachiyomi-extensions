@@ -76,13 +76,19 @@ class MangaOnlineBiz : ParsedHttpSource() {
         manga.genre = infoElement.select("a.label").joinToString { it.text() }
         manga.description = infoElement.select(".description").text()
         manga.thumbnail_url = infoElement.select("img").first().attr("src")
+        if (infoElement.text().contains("Перевод: закончен")) {
+            manga.status = SManga.COMPLETED
+        } else if (infoElement.text().contains("Перевод: продолжается")) {
+            manga.status = SManga.ONGOING
+        }
+
         return manga
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val html = response.body()!!.string()
 
-        val jsonData = html.split("App.Collection.MangaChapter(").last().split(");").first()
+        val jsonData = html.split("App.Collection.MangaChapter(").last().split("]);").first() + "]"
         val mangaName = html.split("mangaName: '").last().split("' });").first()
         val json = JsonParser().parse(jsonData).asJsonArray
         val chapterList = mutableListOf<SChapter>()
@@ -105,7 +111,7 @@ class MangaOnlineBiz : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val html = response.body()!!.string()
-        val jsonData = html.split("new App.Router.Chapter(").last().split(");").first()
+        val jsonData = html.split("new App.Router.Chapter(").last().split("});").first() + "}"
         val json = JsonParser().parse(jsonData).asJsonObject
         val cdnUrl = json.get("srcBaseUrl").string
         val pages = json.get("pages").asJsonObject
