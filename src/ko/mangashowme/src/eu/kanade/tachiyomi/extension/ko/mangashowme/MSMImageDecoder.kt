@@ -51,7 +51,7 @@ internal class ImageDecoderInterceptor : Interceptor {
                 val chapter = reqUrl.queryParameter("ch")!!
                 val imageUrl = url.split("?").first()
 
-                val response = chain.proceed(GET(imageUrl))
+                val response = chain.proceed(GET("$imageUrl?v=2"))
                 val res = response.body()!!.byteStream().use {
                     decodeImageRequest(version, chapter, viewCnt, it)
                 }

@@ -211,6 +211,10 @@ class MangaShowMe : ParsedHttpSource() {
 
             (0 until imageUrls.length())
                     .map { imageUrls.getString(it) }
+                    .map {
+                        it.replace(".mangashow.me", ".mangashow3.me")
+                                .replace(".mangashow2.me", ".mangashow3.me")
+                    }
                     .forEach { pages.add(Page(pages.size, "", decoder.request(it))) }
         } catch (e: Exception) {
             e.printStackTrace()
