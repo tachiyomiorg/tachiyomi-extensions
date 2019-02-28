@@ -9,13 +9,14 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
 
 /**
  * JMana Source
  **/
 class JMana : ParsedHttpSource() {
     override val name = "JMana"
-    override val baseUrl = "https://jmana1.com"
+    override val baseUrl = "https://mangahide.com"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -87,6 +88,7 @@ class JMana : ParsedHttpSource() {
         chapter.url = linkElement.attr("href").replace("book/", "book_frame/")
         chapter.chapter_number = parseChapterNumber(rawName)
         chapter.name = rawName.trim()
+        chapter.date_upload = parseChapterDate(element.select("ul > li:not(.fcR)").last().text())
         return chapter
     }
 
@@ -101,6 +103,15 @@ class JMana : ParsedHttpSource() {
         } catch (e: Exception) {
             e.printStackTrace()
             return -1f
+        }
+    }
+
+    private fun parseChapterDate(date: String): Long {
+        return try {
+            SimpleDateFormat("yyyy-MM-dd").parse(date).time
+        } catch (e: Exception) {
+            e.printStackTrace()
+            0
         }
     }
 
