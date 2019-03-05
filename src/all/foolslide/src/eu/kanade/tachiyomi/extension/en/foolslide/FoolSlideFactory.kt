@@ -18,7 +18,6 @@ class FoolSlideFactory : SourceFactory {
 fun getAllFoolSlide(): List<Source> {
     return listOf(
             JaminisBox(),
-            ChampionScans(),
             HelveticaScans(),
             SenseScans(),
             SeaOtterScans(),
@@ -49,9 +48,9 @@ fun getAllFoolSlide(): List<Source> {
             Russification(),
             NieznaniReader(),
             EvilFlowers(),
-            NaniScans(),
             AkaiYuhiMunTeam(),
-            LupiTeam()
+            LupiTeam(),
+            HotChocolateScans()
     )
 }
 
@@ -59,9 +58,12 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
 
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
-        val base64Json = doc.substringAfter("JSON.parse(atob(\"").substringBefore("\"));")
-        val decodeJson = String(Base64.decode(base64Json, Base64.DEFAULT))
-        val json = JsonParser().parse(decodeJson).asJsonArray
+        var jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
+        if (jsonstr.contains("JSON.parse")) {
+            val base64Json = jsonstr.substringAfter("JSON.parse(atob(\"").substringBefore("\"));")
+            jsonstr = String(Base64.decode(base64Json, Base64.DEFAULT))
+        }
+        val json = JsonParser().parse(jsonstr).asJsonArray
         val pages = mutableListOf<Page>()
         json.forEach {
             pages.add(Page(pages.size, "", it["url"].asString))
@@ -70,7 +72,7 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
     }
 }
 
-class ChampionScans : FoolSlide("Champion Scans", "http://reader.championscans.com", "en")
+class HotChocolateScans : FoolSlide("Hot Chocolate Scans", "http://hotchocolatescans.com", "en", "/fs")
 
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
@@ -177,11 +179,9 @@ class NieznaniReader : FoolSlide("Nieznani", "http://reader.nieznani.mynindo.pl"
 
 class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
 
-class NaniScans : FoolSlide("NANI? SCANS", "https://reader.naniscans.xyz", "en")
-
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
 
-class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.tk", "it", "/reader") {
+class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(mangaDetailsInfoSelector).first().text()
 

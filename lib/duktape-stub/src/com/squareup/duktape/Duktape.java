@@ -19,4 +19,8 @@ public class Duktape implements Closeable {
         throw new RuntimeException("Stub!");
     }
 
+    public synchronized <T> void set(String name, Class<T> type, T object) {
+        throw new RuntimeException("Stub!");
+    }
+
 }

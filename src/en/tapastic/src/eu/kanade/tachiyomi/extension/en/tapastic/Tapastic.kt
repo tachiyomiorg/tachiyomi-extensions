@@ -167,6 +167,7 @@ class Tapastic : ParsedHttpSource() {
     private class GenreFilter : UriSelectFilter("Genre", "genreIds", arrayOf(
             Pair("", "Any"),
             Pair("7", "Action"),
+            Pair("22", "Boys Love"),
             Pair("2", "Comedy"),
             Pair("8", "Drama"),
             Pair("3", "Fantasy"),

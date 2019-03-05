@@ -196,9 +196,10 @@ class Generator {
     companion object {
         const val DRY_RUN = false
         val sources = listOf(
-                Triple("ar", "مانجا اون لاين", "http://www.on-manga.com"),
+                Triple("ar", "مانجا اون لاين", "https://www.on-manga.me"),
                 //Went offline
                 //Triple("ar", "Manga FYI", "http://mangafyi.com/manga/arabic"
+                Triple("en", "Read Manhua", "https://readmanhua.net"),
                 Triple("en", "Read Comics Online", "http://readcomicsonline.ru"),
                 Triple("en", "Fallen Angels", "http://manga.fascans.com"),
                 //Went offline
@@ -213,7 +214,8 @@ class Generator {
                 //Triple("en", "Manga Forest", "https://mangaforest.com"),
                 //Went offline
                 //Triple("en", "DManga", "http://dmanga.website"
-                Triple("en", "Chibi Manga Reader", "http://www.cmreader.info"),
+                //Now uses wpmanga
+                //Triple("en", "Chibi Manga Reader", "http://www.cmreader.info"),
                 Triple("en", "ZXComic", "http://zxcomic.com"),
                 //Went offline
                 //Triple("en", "DB Manga", "http://dbmanga.com"),
@@ -233,7 +235,8 @@ class Generator {
                 //Triple("en", "4 Manga", "http://4-manga.com"),
                 Triple("en", "XYXX.INFO", "http://xyxx.info"),
                 Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
-                Triple("en", "Isekai Manga Reader", "https://isekaimanga.club"),
+                //Went offline
+                //Triple("en", "Isekai Manga Reader", "https://isekaimanga.club"),
                 Triple("es", "My-mangas.com", "https://my-mangas.com"),
                 Triple("es", "SOS Scanlation", "https://sosscanlation.com"),
                 //Went offline
@@ -273,17 +276,20 @@ class Generator {
                 //Triple("ja", "IchigoBook", "http://ichigobook.com"),
                 //Went offline
                 //Triple("ja", "Mangaraw Online", "http://mangaraw.online"
-                Triple("ja", "Mangazuki RAWS", "https://raws.mangazuki.co"),
+                //Now uses custom reader
+                //Triple("ja", "Mangazuki RAWS", "https://raws.mangazuki.co"),
                 Triple("ja", "RAW MANGA READER", "https://rawmanga.site"),
                 //Went offline
                 //Triple("ja", "MangaRAW", "https://www.mgraw.com"),
-                Triple("ja", "マンガ/漫画 マガジン/雑誌 raw", "http://netabare-manga-raw.com"),
+                //Went offline
+                //Triple("ja", "マンガ/漫画 マガジン/雑誌 raw", "http://netabare-manga-raw.com"),
                 Triple("pl", "ToraScans", "http://torascans.pl"),
                 Triple("pt", "Comic Space", "https://www.comicspace.com.br"),
                 Triple("pt", "Mangás Yuri", "https://mangasyuri.net"),
                 Triple("pl", "Dracaena", "http://dracaena.webd.pl/czytnik"),
                 Triple("pl", "Nikushima", "http://azbivo.webd.pro"),
-                Triple("ru", "NAKAMA", "http://nakama.ru"),
+                //Went offline
+                //Triple("ru", "NAKAMA", "http://nakama.ru"),
                 Triple("ru", "Anigai clan", "http://anigai.ru"),
                 //Went offline
                 //Triple("tr", "MangAoi", "http://mangaoi.com"),

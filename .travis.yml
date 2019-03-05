@@ -29,9 +29,7 @@ cache:
   - $HOME/.android/build-cache
   - repo
 deploy:
-- edge:
-    branch: v1.8.47
-  provider: pages
+- provider: pages
   local-dir: repo
   target-branch: repo
   skip-cleanup: true

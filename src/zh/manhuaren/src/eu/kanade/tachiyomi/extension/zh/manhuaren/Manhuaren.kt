@@ -4,6 +4,7 @@ import android.text.format.DateFormat
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -28,7 +29,13 @@ class Manhuaren : HttpSource() {
         return GET(url, headers)
     }
 
-    override fun headersBuilder() = super.headersBuilder().add("X-Yq-Yqci", "{\"le\": \"zh\"}")
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("X-Yq-Yqci", "{\"le\": \"zh\"}")
+        add("User-Agent", "okhttp/3.11.0")
+        add("Referer", "http://www.dm5.com/dm5api/")
+        add("clubReferer", "http://mangaapi.manhuaren.com/")
+    }
+
 
     private fun hashString(type: String, input: String): String {
         val HEX_CHARS = "0123456789abcdef"
@@ -257,8 +264,9 @@ class Manhuaren : HttpSource() {
         val ret = ArrayList<Page>()
         val host = obj.getJSONArray("hostList").getString(0)
         val arr = obj.getJSONArray("mangaSectionImages")
+        val query = obj.getString("query")
         for (i in 0 until arr.length()) {
-            ret.add(Page(i, "$host${arr.getString(i)}", "$host${arr.getString(i)}"))
+            ret.add(Page(i, "$host${arr.getString(i)}$query", "$host${arr.getString(i)}$query"))
         }
         return ret
     }

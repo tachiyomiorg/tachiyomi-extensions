@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Neumanga'
+    pkgNameSuffix = 'id.neumanga'
+    extClass = '.Neumanga'
+    extVersionCode = 2
+    libVersion = '1.0'
+}
+
+apply from: "$rootDir/common.gradle"

@@ -4,13 +4,17 @@ import android.net.Uri
 import android.os.Build.VERSION
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import org.json.JSONArray
-import org.json.JSONObject
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
+import org.json.JSONArray
+import org.json.JSONObject
 
 /** Arc-Relight source */
 class ArcRelight : HttpSource() {
@@ -29,8 +33,8 @@ class ArcRelight : HttpSource() {
      * Includes the user's Android version
      * and the current extension version.
      */
-    private val userAgent = "Mozilla/5.0 (" +
-            "Android ${VERSION.RELEASE}; Mobile) " +
+    private val userAgent = "Mozilla/5.0 " +
+            "(Android ${VERSION.RELEASE}; Mobile) " +
             "Tachiyomi/${BuildConfig.VERSION_NAME}"
 
     override fun headersBuilder() = Headers.Builder().apply {
@@ -38,19 +42,28 @@ class ArcRelight : HttpSource() {
         add("Referer", baseUrl)
     }
 
-    override fun latestUpdatesRequest(page: Int) =
-            GET("$baseUrl/releases/", headers)
+    override fun latestUpdatesRequest(page: Int) = GET(
+        "$baseUrl/releases/", headers
+    )
 
-    override fun pageListRequest(chapter: SChapter) =
-            GET(Uri.parse(chapter.url).path.replace(
-                    "/reader/", "$baseUrl/series/"), headers)
+    override fun pageListRequest(chapter: SChapter) = GET(
+        "$baseUrl/series/${chapter.url.substringAfter("/reader/")}", headers
+    )
 
-    override fun mangaDetailsRequest(manga: SManga) =
-            GET("$baseUrl/series/${manga.url.split("/")
-                    .last { it != "" }}/", headers)
+    override fun chapterListRequest(manga: SManga) = GET(
+        "$baseUrl/series/${Uri.parse(manga.url).lastPathSegment}/", headers
+    )
 
-    override fun chapterListRequest(manga: SManga) =
-            mangaDetailsRequest(manga)
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        // Workaround to get the proper URL in openInBrowser
+        val method = Thread.currentThread()
+            .stackTrace.getOrNull(2)?.methodName ?: ""
+        return if (method == "openInBrowser") {
+            GET(manga.url, headers)
+        } else {
+            chapterListRequest(manga)
+        }
+    }
 
     override fun searchMangaRequest(page: Int, query: String,
                                     filters: FilterList): Request {
@@ -61,8 +74,8 @@ class ArcRelight : HttpSource() {
             when (it) {
                 is Person -> uri.appendQueryParameter("author", it.state)
                 is Status -> uri.appendQueryParameter("status", it.string())
-                is CategoryList -> cat.addAll(it.state.mapNotNull {
-                    c -> Uri.encode(c.stringOpt())
+                is CategoryList -> cat.addAll(it.state.mapNotNull { c ->
+                    Uri.encode(c.optString())
                 })
             }
         }
@@ -71,16 +84,20 @@ class ArcRelight : HttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val arr = JSONArray(response.body()!!.string())
-        val ret = ArrayList<SManga>(arr.length())
+        val ret = mutableListOf<SManga>()
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
             ret.add(SManga.create().apply {
                 url = obj.getString("url")
                 title = obj.getString("title")
                 thumbnail_url = obj.getString("cover")
+                // A bit of a hack to sort by date
+                description = httpDateToTimestamp(
+                    obj.getJSONObject("latest_chapter").getString("date")
+                ).toString()
             })
         }
-        return MangasPage(ret, false)
+        return MangasPage(ret.sortedByDescending { it.description }, false)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -90,19 +107,19 @@ class ArcRelight : HttpSource() {
         volumes.keys().forEach { vol ->
             val chapters = volumes.getJSONObject(vol)
             chapters.keys().forEach { ch ->
-                val obj = chapters.getJSONObject(ch)
-                obj.put("chapter", ch)
-                obj.put("volume", vol)
-                ret.add(SChapter.create().apply { fromJSON(obj) })
+                ret.add(SChapter.create().apply {
+                    fromJSON(chapters.getJSONObject(ch).also {
+                        it.put("volume", vol)
+                        it.put("chapter", ch)
+                    })
+                })
             }
         }
         return ret.sortedByDescending { it.name }
     }
 
-    override fun mangaDetailsParse(response: Response) =
-            SManga.create().apply {
-                fromJSON(JSONObject(response.body()!!.string()))
-            }
+    override fun mangaDetailsParse(response: Response) = SManga.create()
+            .apply { fromJSON(JSONObject(response.body()!!.string())) }
 
     override fun pageListParse(response: Response): List<Page> {
         val obj = JSONObject(response.body()!!.string())
@@ -128,7 +145,7 @@ class ArcRelight : HttpSource() {
     }
 
     override fun getFilterList() = FilterList(
-            Person(), Status(), CategoryList()
+        Person(), Status(), CategoryList()
     )
 
     override fun fetchPopularManga(page: Int) =
@@ -136,14 +153,17 @@ class ArcRelight : HttpSource() {
 
     override fun popularMangaRequest(page: Int) =
             throw UnsupportedOperationException(
-                    "This method should not be called!")
+                "This method should not be called!"
+            )
 
     override fun popularMangaParse(response: Response) =
             throw UnsupportedOperationException(
-                    "This method should not be called!")
+                "This method should not be called!"
+            )
 
     override fun imageUrlParse(response: Response) =
             throw UnsupportedOperationException(
-                    "This method should not be called!")
+                "This method should not be called!"
+            )
 }
 

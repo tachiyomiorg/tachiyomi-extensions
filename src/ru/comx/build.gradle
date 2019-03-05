@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: ComX'
     pkgNameSuffix = 'ru.comx'
     extClass = '.ComX'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

@@ -9,11 +9,8 @@ class LibMangaFactory : SourceFactory {
 
 fun getAllLibManga(): List<Source> {
     return listOf(
-            Mangalib(),
-            Yaoilib()
+            Mangalib()
     )
 }
 
 class Mangalib : LibManga("Mangalib", "https://mangalib.me", "https://img1.mangalib.me")
-
-class Yaoilib : LibManga("Yaoilib", "https://yaoilib.me", "https://img1.yaoilib.me")

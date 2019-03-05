@@ -63,7 +63,7 @@ class BoredomSociety : ParsedHttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val jsonArray = getJsonArray(response)
-        val sortedJson = jsonArray.sortedBy { it["last_updated"].long }
+        val sortedJson = jsonArray.sortedBy { it["last_updated"].long }.asReversed()
         val list = parseData(sortedJson)
         return MangasPage(list, false)
     }
@@ -74,7 +74,7 @@ class BoredomSociety : ParsedHttpSource() {
     }
 
     private fun parseData(jsonArray: List<JsonElement>): List<SManga> {
-        var mutableList = mutableListOf<SManga>()
+        val mutableList = mutableListOf<SManga>()
         jsonArray.forEach { json ->
             val manga = SManga.create()
             manga.url = MANGA_URL + json["id"].string
@@ -92,19 +92,19 @@ class BoredomSociety : ParsedHttpSource() {
     private fun parseChapter(jsonElement: JsonElement): SChapter {
         val sChapter = SChapter.create()
         sChapter.url = CHAPTER_URL + jsonElement["id"].string
-        sChapter.date_upload = jsonElement["creation_timestamp"].long * 1000
         val chapterName = mutableListOf<String>()
 
         if (!jsonElement["chapter_name"].string.startsWith("Chapter", true)) {
             if (jsonElement["chapter_volume"].string?.isNotBlank()) {
-                chapterName.add("Vol: " + jsonElement["chapter_volume"].string)
+                chapterName.add("Vol. " + jsonElement["chapter_volume"].string)
             }
             if (jsonElement["chapter_number"].string?.isNotBlank()) {
-                chapterName.add("Ch: " + jsonElement["chapter_number"].string + " - ")
+                chapterName.add("Ch. " + jsonElement["chapter_number"].string + " - ")
             }
         }
         chapterName.add(jsonElement["chapter_name"].string)
         sChapter.name = cleanString(chapterName.joinToString(" "))
+        sChapter.date_upload = jsonElement["creation_timestamp"].long * 1000
         return sChapter
     }
 
@@ -148,6 +148,7 @@ class BoredomSociety : ParsedHttpSource() {
         json["chapters"].asJsonArray.forEach { it ->
             mutableChapters.add(parseChapter(it))
         }
+        mutableChapters.reverse()
         return mutableChapters
     }
 

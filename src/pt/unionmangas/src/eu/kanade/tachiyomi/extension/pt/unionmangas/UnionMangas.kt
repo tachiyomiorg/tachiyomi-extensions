@@ -21,21 +21,19 @@ class UnionMangas : ParsedHttpSource() {
 
     override val name = "Union Mangás"
 
-    override val baseUrl = "http://unionmangas.top"
+    override val baseUrl = "https://unionmangas.top"
 
     override val lang = "pt"
 
     override val supportsLatest = true
 
-    // Sometimes the site it's very slow...
+    // Sometimes the site is very slow.
     override val client =
-        network.client.newBuilder()
-                .connectTimeout(3, TimeUnit.MINUTES)
-                .readTimeout(3, TimeUnit.MINUTES)
-                .writeTimeout(3, TimeUnit.MINUTES)
-                .build()
-
-    private val langRegex: String = "( )?\\(Pt-Br\\)"
+            network.client.newBuilder()
+                    .connectTimeout(3, TimeUnit.MINUTES)
+                    .readTimeout(3, TimeUnit.MINUTES)
+                    .writeTimeout(3, TimeUnit.MINUTES)
+                    .build()
 
     private val catalogHeaders = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
@@ -55,7 +53,7 @@ class UnionMangas : ParsedHttpSource() {
         manga.thumbnail_url = element.select("a img").first()?.attr("src")
         element.select("a").last().let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text().replace(langRegex.toRegex(), "")
+            manga.title = it.text().replace(LANG_REGEX.toRegex(), "")
         }
 
         return manga
@@ -63,7 +61,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = ".pagination li:contains(Next)"
 
-    override fun latestUpdatesSelector() = "div.row[style=margin-bottom: 10px;] > div.col-md-12"
+    override fun latestUpdatesSelector() = "div.row[style] div.col-md-12[style]"
 
     override fun latestUpdatesRequest(page: Int): Request {
         val form = FormBody.Builder().apply {
@@ -74,24 +72,33 @@ class UnionMangas : ParsedHttpSource() {
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
+        // return popularMangaFromElement(element)
+        val manga = SManga.create()
+        val infoElements = element.select("a.link-titulo")
+        manga.thumbnail_url = infoElements.first()?.select("img")?.attr("src")
+        infoElements.last().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = it.text().replace(LANG_REGEX.toRegex(), "")
+        }
+
+        return manga
     }
 
     override fun latestUpdatesNextPageSelector() = "div#linha-botao-mais"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-       return GET("$baseUrl/busca/$query/$page", headers)
+        return GET("$baseUrl/busca/$query/$page", headers)
     }
 
     override fun searchMangaSelector() = ".bloco-manga"
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-
-        manga.thumbnail_url = element.select("a img.img-thumbnail").first().attr("src")
+        val thumbnailElement = element.select("a img.img-thumbnail").first()
+        manga.thumbnail_url = thumbnailElement.attr("src").replace("com.br", "top")
         element.select("a").last().let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text().replace(langRegex.toRegex(), "")
+            manga.title = it.text().replace(LANG_REGEX.toRegex(), "")
         }
 
         return manga
@@ -119,7 +126,7 @@ class UnionMangas : ParsedHttpSource() {
         manga.thumbnail_url = infoElement.select(".img-thumbnail").first()?.attr("src")
 
         // Need to grab title again because the ellipsize in search.
-        manga.title = infoElement.select("h2").first()!!.text().replace(langRegex.toRegex(), "")
+        manga.title = infoElement.select("h2").first()!!.text().replace(LANG_REGEX.toRegex(), "")
 
         return manga
     }
@@ -166,4 +173,8 @@ class UnionMangas : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
+
+    companion object {
+        private const val LANG_REGEX = "( )?\\(Pt-Br\\)"
+    }
 }

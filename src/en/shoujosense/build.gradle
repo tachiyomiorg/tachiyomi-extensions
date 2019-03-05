@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: ShoujoSense'
     pkgNameSuffix = 'en.shoujosense'
     extClass = '.ShoujoSense'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.0'
 }
 
