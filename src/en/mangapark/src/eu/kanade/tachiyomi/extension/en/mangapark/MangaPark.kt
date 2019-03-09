@@ -2,14 +2,19 @@ package eu.kanade.tachiyomi.extension.en.mangapark
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 
 class MangaPark : ParsedHttpSource() {
 
@@ -26,33 +31,28 @@ class MangaPark : ParsedHttpSource() {
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
-    override fun popularMangaSelector() = directorySelector
-
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
         "http:$url"
     else url
 
-    private fun mangaFromElement(element: Element) = SManga.create().apply {
-        val coverElement = element.getElementsByClass("cover").first()
-        url = coverElement.attr("href")
-        title = coverElement.attr("title")
-    }
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views_a")
+
+    override fun popularMangaSelector() = directorySelector
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = directoryNextPageSelector
 
-    override fun searchMangaSelector() = ".item"
 
-    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
-
-    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
-
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?update")
 
     override fun latestUpdatesSelector() = directorySelector
 
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
+
+    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
@@ -65,7 +65,18 @@ class MangaPark : ParsedHttpSource() {
         return GET(uri.toString())
     }
 
-    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+    override fun searchMangaSelector() = ".item"
+
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
+
+    private fun mangaFromElement(element: Element) = SManga.create().apply {
+        val coverElement = element.getElementsByClass("cover").first()
+        url = coverElement.attr("href")
+        title = coverElement.attr("title")
+    }
+
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val coverElement = document.select(".cover > img").first()
@@ -98,8 +109,6 @@ class MangaPark : ParsedHttpSource() {
 
         description = document.getElementsByClass("summary").text().trim()
     }
-
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?latest")
 
     //TODO MangaPark has "versioning"
     //TODO Previously we just use the version that is expanded by default however this caused an issue when a manga didnt have an expanded version
@@ -180,9 +189,9 @@ class MangaPark : ParsedHttpSource() {
         val doc = document.toString()
         val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
         val pages = mutableListOf<Page>()
-        var imglist = JSONObject("""{"data": $obj}""").getJSONArray("data")
+        val imglist = JSONObject("""{"data": $obj}""").getJSONArray("data")
         for (i in 0 until imglist.length()) {
-            var item = imglist.getJSONObject(i)
+            val item = imglist.getJSONObject(i)
             var page = item.getString("u")
             if (page.startsWith("//")) {
                 page = "https:$page"
@@ -193,8 +202,7 @@ class MangaPark : ParsedHttpSource() {
     }
 
     //Unused, we can get image urls directly from the chapter page
-    override fun imageUrlParse(document: Document)
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
             AuthorArtistText(),
@@ -410,4 +418,5 @@ class MangaPark : ParsedHttpSource() {
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
     }
+
 }
