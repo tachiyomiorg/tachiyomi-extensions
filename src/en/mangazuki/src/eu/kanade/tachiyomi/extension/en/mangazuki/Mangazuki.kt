@@ -24,25 +24,16 @@ class Mangazuki : ParsedHttpSource() {
 
     private val dateFormat = SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
 
-    override fun popularMangaSelector() = "div.filter-content > div.col-sm-6"
+    override fun popularMangaSelector() = "div.col-sm-6"
 
     override fun latestUpdatesSelector() = "div.timeline > dl > dd"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga-list", headers)
+        return GET("$baseUrl/filterList?page=$page&cat=&alpha=&sortBy=name&asc=true&author=&tag=", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET(baseUrl, headers)
-    }
-
-    private fun mangaFromElement(query: String, element: Element): SManga {
-        val manga = SManga.create()
-        element.select(query).first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        return manga
+        return GET("$baseUrl/latest-release", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -53,21 +44,27 @@ class Mangazuki : ParsedHttpSource() {
         return mangaFromElement("h3.events-heading > a", element)
     }
 
-    override fun popularMangaNextPageSelector() = null
-
-    override fun latestUpdatesNextPageSelector() = null
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga-list")?.newBuilder()!!
-        return GET(url.toString(), headers)
-    }
-    override fun searchMangaSelector() = popularMangaSelector()
-
-    override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
+    private fun mangaFromElement(query: String, element: Element): SManga {
+        val manga = SManga.create()
+        element.select(query).first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = it.text()
+        }
+        manga.thumbnail_url = element.select("img").first().attr("src")
+        return manga
     }
 
-    override fun searchMangaNextPageSelector() = null
+    override fun popularMangaNextPageSelector() = ".pagination .active + li:not(.disabled)"
+
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
+
+    override fun searchMangaSelector() = throw Exception("Not used")
+
+    override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not used")
+
+    override fun searchMangaNextPageSelector() = throw Exception("Not used")
 
     override fun mangaDetailsParse(document: Document): SManga {
         val commonPath = "div.container > div:nth-of-type(3) > div"
@@ -106,9 +103,7 @@ class Mangazuki : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
-        chapter.date_upload = element.select("div.date-chapter-title-rtl").first().let {
-            parseDateFromElement(it)
-        }
+        chapter.date_upload = parseDateFromElement(element.select("div.date-chapter-title-rtl").first())
         return chapter
     }
 
@@ -128,4 +123,5 @@ class Mangazuki : ParsedHttpSource() {
     override fun pageListParse(document: Document) = document.select("div#all > img").mapIndexed { i, element -> Page(i, "", element.attr("data-src")) }
 
     override fun imageUrlParse(document: Document) = ""
+
 }
