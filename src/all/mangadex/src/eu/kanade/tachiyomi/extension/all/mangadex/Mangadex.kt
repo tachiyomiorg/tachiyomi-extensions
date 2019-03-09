@@ -133,11 +133,22 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response)
-                }
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(searchMangaByIdRequest(realQuery))
+                    .asObservableSuccess()
+                    .map { response ->
+                        val details = mangaDetailsParse(response)
+                        details.url = "/manga/$realQuery/"
+                        MangasPage(listOf(details), false)
+                    }
+        } else {
+            getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
+                    .asObservableSuccess()
+                    .map { response ->
+                        searchMangaParse(response)
+                    }
+        }
     }
 
     private fun getSearchClient(filters: FilterList): OkHttpClient {
@@ -280,6 +291,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return GET(baseUrl + API_MANGA + getMangaId(manga.url), headers)
     }
 
+    private fun searchMangaByIdRequest(id: String): Request {
+        return GET(baseUrl + API_MANGA + id, headers)
+    }
+
     private fun getMangaId(url: String): String {
         val lastSection = url.trimEnd('/').substringAfterLast("/")
         return if (lastSection.toIntOrNull() != null) {
@@ -296,7 +311,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val json = JsonParser().parse(jsonData).asJsonObject
         val mangaJson = json.getAsJsonObject("manga")
         val chapterJson = json.getAsJsonObject("chapter")
-        manga.title = baseUrl + mangaJson.get("title").string
+        manga.title = mangaJson.get("title").string
         manga.thumbnail_url = cdnUrl + mangaJson.get("cover_url").string
         manga.description = cleanString(mangaJson.get("description").string)
         manga.author = mangaJson.get("author").string
@@ -645,6 +660,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
+
+        private const val PREFIX_ID_SEARCH = "id:"
 
         private val sortables = listOf(
                 Triple("Update date", 0, 1),
