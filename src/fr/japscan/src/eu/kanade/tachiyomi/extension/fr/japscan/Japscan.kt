@@ -7,21 +7,24 @@ package eu.kanade.tachiyomi.extension.fr.japscan
  * @version 1.0
  */
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Rect
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.FormBody
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.OkHttpClient
+import okhttp3.*
+import org.apache.commons.lang3.StringUtils
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import org.apache.commons.lang3.StringUtils
 
 class Japscan : ParsedHttpSource() {
 
@@ -35,7 +38,18 @@ class Japscan : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
+        val request = chain.request()
+        val response = chain.proceed(request)
+        if (!request.url().pathSegments().contains("clel")) return@addInterceptor response
+
+        val res = response.body()!!.byteStream().use {
+            decodeImage(it)
+        }
+
+        val rb = ResponseBody.create(MediaType.parse("image/png"), res)
+        response.newBuilder().body(rb).build()
+    }.build()
 
     companion object {
         val dateFormat by lazy {
@@ -167,4 +181,49 @@ class Japscan : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = ""
+
+    private fun decodeImage(img: InputStream): ByteArray {
+        val input = BitmapFactory.decodeStream(img)
+
+        val xResult = Bitmap.createBitmap(input.width,
+                input.height,
+                Bitmap.Config.ARGB_8888)
+        val xCanvas = Canvas(xResult)
+
+        val result = Bitmap.createBitmap(input.width,
+                input.height,
+                Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        for (x in 0..input.width step 200) {
+            val col1 = Rect(x, 0, x + 100, input.height)
+            if ((x + 200) <= input.width) {
+                val col2 = Rect(x + 100, 0, x + 200, input.height)
+                xCanvas.drawBitmap(input, col1, col2, null)
+                xCanvas.drawBitmap(input, col2, col1, null)
+            } else {
+                val col2 = Rect(x + 100, 0, input.width, input.height)
+                xCanvas.drawBitmap(input, col1, col1, null)
+                xCanvas.drawBitmap(input, col2, col2, null)
+            }
+        }
+
+        for (y in 0..input.height step 200) {
+            val row1 = Rect(0, y, input.width, y + 100)
+
+            if ((y + 200) <= input.height) {
+                val row2 = Rect(0, y + 100, input.width, y + 200)
+                canvas.drawBitmap(xResult, row1, row2, null)
+                canvas.drawBitmap(xResult, row2, row1, null)
+            } else {
+                val row2 = Rect(0, y + 100, input.width, input.height)
+                canvas.drawBitmap(xResult, row1, row1, null)
+                canvas.drawBitmap(xResult, row2, row2, null)
+            }
+        }
+
+        val output = ByteArrayOutputStream()
+        result.compress(Bitmap.CompressFormat.PNG, 100, output)
+        return output.toByteArray()
+    }
 }
