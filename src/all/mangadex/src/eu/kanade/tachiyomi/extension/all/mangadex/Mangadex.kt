@@ -58,7 +58,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
-        add("X-Requested-With","XMLHttpRequest")
+        add("X-Requested-With", "XMLHttpRequest")
     }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
@@ -91,7 +91,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
-            manga.thumbnail_url = formThumbUrl(manga.url)
+        manga.thumbnail_url = formThumbUrl(manga.url)
 
         return manga
     }
@@ -101,7 +101,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private fun formThumbUrl(mangaUrl: String): String {
         var ext = ".jpg"
 
-        if(getShowThumbnail() == LOW_QUALITY){
+        if (getShowThumbnail() == LOW_QUALITY) {
             ext = ".thumb$ext"
         }
 
@@ -115,7 +115,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.title = it.text().trim()
 
         }
-            manga.thumbnail_url = formThumbUrl(manga.url)
+        manga.thumbnail_url = formThumbUrl(manga.url)
 
         return manga
     }
@@ -179,7 +179,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
 
-        if(!isLogged()){
+        if (!isLogged()) {
             throw Exception("Must be logged in to search")
         }
 
@@ -287,7 +287,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.title = it.text().trim()
         }
 
-            manga.thumbnail_url = formThumbUrl(manga.url)
+        manga.thumbnail_url = formThumbUrl(manga.url)
 
 
         return manga
@@ -508,8 +508,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val thumbsPref = ListPreference(screen.context).apply {
             key = SHOW_THUMBNAIL_PREF_Title
             title = SHOW_THUMBNAIL_PREF_Title
-
-            title = SHOW_THUMBNAIL_PREF_Title
             entries = arrayOf("Show high quality", "Show low quality")
             entryValues = arrayOf("0", "1")
             summary = "%s"
@@ -535,7 +533,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 .add("login_password", password).build()
 
 
-       return  client.newCall(POST("$baseUrl/ajax/actions.ajax.php?function=login", headers, formBody))
+        return client.newCall(POST("$baseUrl/ajax/actions.ajax.php?function=login", headers, formBody))
                 .asObservable()
                 .map { isAuthenticationSuccessful(it) }
     }
@@ -689,11 +687,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val SHOW_R18_PREF_Title = "Default R18 Setting"
         private const val SHOW_R18_PREF = "showR18Default"
 
-        private const val HIGH_QUALITY = 0
         private const val LOW_QUALITY = 1
 
         private const val SHOW_THUMBNAIL_PREF_Title = "Default thumbnail quality"
         private const val SHOW_THUMBNAIL_PREF = "showThumbnailDefault"
+
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
