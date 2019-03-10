@@ -9,9 +9,12 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.online.LoginSource
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
 import org.jsoup.Jsoup
@@ -20,17 +23,18 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.net.URI
 import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ConfigurableSource, ParsedHttpSource() {
+open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ConfigurableSource, LoginSource, ParsedHttpSource() {
 
     override val name = "MangaDex"
 
     override val baseUrl = "https://mangadex.org"
 
-    val cdnUrl = "https://cdndex.com"
+    private val cdnUrl = "https://cdndex.com"
 
     override val supportsLatest = true
 
@@ -53,7 +57,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }.build()!!
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi "+ System.getProperty("http.agent"))
+        add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
     }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
@@ -86,15 +90,22 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.setUrlWithoutDomain(url)
             manga.title = it.text().trim()
         }
-        if (getShowThumbnail() == LOW_QUALITY) {
             manga.thumbnail_url = formThumbUrl(manga.url)
-        }
+
         return manga
     }
 
     private fun modifyMangaUrl(url: String): String = url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
 
-    private fun formThumbUrl(mangaUrl: String): String = cdnUrl + "/images/manga/" + getMangaId(mangaUrl) +".thumb.jpg"
+    private fun formThumbUrl(mangaUrl: String): String {
+        var ext = ".jpg"
+
+        if(getShowThumbnail() == LOW_QUALITY){
+            ext = ".thumb$ext"
+        }
+
+        return cdnUrl + "/images/manga/" + getMangaId(mangaUrl) + ext
+    }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -103,9 +114,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.title = it.text().trim()
 
         }
-        if (getShowThumbnail() == LOW_QUALITY) {
             manga.thumbnail_url = formThumbUrl(manga.url)
-        }
 
         return manga
     }
@@ -168,6 +177,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+
+        if(!isLogged()){
+            throw Exception("Must be logged in to search")
+        }
+
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
 
@@ -272,9 +286,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             manga.title = it.text().trim()
         }
 
-        if (getShowThumbnail() == LOW_QUALITY) {
             manga.thumbnail_url = formThumbUrl(manga.url)
-        }
+
 
         return manga
     }
@@ -320,7 +333,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         val finalChapterNumber = getFinalChapter(mangaJson)
         if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(chapterJson, finalChapterNumber)) {
             manga.status = SManga.COMPLETED
-        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, finalChapterNumber)){
+        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, finalChapterNumber)) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
@@ -413,7 +426,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             chapterName.add(chapterJson.get("title").string)
         }
         //if volume, chapter and title is empty its a oneshot
-        if(chapterName.isEmpty()){
+        if (chapterName.isEmpty()) {
             chapterName.add("Oneshot")
         }
         if ((status == 2 || status == 3) && doesFinalChapterExist(finalChapterNumber, chapterJson)) {
@@ -509,6 +522,28 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         screen.addPreference(myPref)
         screen.addPreference(thumbsPref)
+    }
+
+    override fun isLogged(): Boolean {
+        return network.cookies.get(URI(baseUrl)).any { it.name() == "mangadex_session" }
+    }
+
+    override fun login(username: String, password: String): Observable<Boolean> {
+        val formBody = FormBody.Builder()
+                .add("login_username", username)
+                .add("login_password", password).build()
+
+       return  client.newCall(POST("$baseUrl/login", headers, formBody))
+                .asObservable()
+                .map { isAuthenticationSuccessful(it) }
+    }
+
+
+    override fun isAuthenticationSuccessful(response: Response): Boolean {
+        if (response.body()!!.string()!!.isEmpty()) {
+            return true
+        }
+        return false
     }
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)

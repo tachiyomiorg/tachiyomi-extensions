@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly "com.squareup.okhttp3:okhttp:3.8.1"
+    compileOnly "io.reactivex:rxjava:1.3.0"
+    compileOnly "org.jsoup:jsoup:1.10.2"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}
+
+sourceCompatibility = "1.6"
+targetCompatibility = "1.6"
+

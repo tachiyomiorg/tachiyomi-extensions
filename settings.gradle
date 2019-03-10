@@ -6,6 +6,6 @@ new File(rootDir, "src").eachDir { dir ->
     }
 }
 include ':duktape-stub'
-include ':preference-stub'
+include ':main-stub'
 project(':duktape-stub').projectDir = new File("lib/duktape-stub")
-project(':preference-stub').projectDir = new File("lib/preference-stub")
+project(':main-stub').projectDir = new File("lib/main-stub")

@@ -45,8 +45,8 @@ repositories {
 }
 
 dependencies {
+    compileOnly project(':main-stub')
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compileOnly "eu.kanade.tachiyomi:extensions-library:$libVersion"
     compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
     compileOnly 'io.reactivex:rxjava:1.3.6'
     compileOnly 'org.jsoup:jsoup:1.10.2'
