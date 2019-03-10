@@ -23,7 +23,6 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.net.URI
 import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -178,10 +177,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-
-        if (!isLogged()) {
-            throw Exception("Must be logged in to search")
-        }
 
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
@@ -524,7 +519,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun isLogged(): Boolean {
-        return network.cookies.get(URI(baseUrl)).any { it.name() == "mangadex_session" }
+        val httpUrl = HttpUrl.parse(baseUrl)!!
+        return network.cookies.get(httpUrl).any { it.name() == "mangadex_session" }
     }
 
     override fun login(username: String, password: String): Observable<Boolean> {
