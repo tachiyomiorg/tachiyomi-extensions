@@ -58,6 +58,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
+        add("X-Requested-With","XMLHttpRequest")
     }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
@@ -533,7 +534,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 .add("login_username", username)
                 .add("login_password", password).build()
 
-       return  client.newCall(POST("$baseUrl/login", headers, formBody))
+
+       return  client.newCall(POST("$baseUrl/ajax/actions.ajax.php?function=login", headers, formBody))
                 .asObservable()
                 .map { isAuthenticationSuccessful(it) }
     }
