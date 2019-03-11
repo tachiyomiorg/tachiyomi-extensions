@@ -135,7 +135,10 @@ class Generator {
     }
 
     private fun getItemUrl(document: Document): String {
-        return document.toString().substringAfter("showURL = \"").substringBefore("/SELECTION\";")
+        return document.toString().substringAfter("showURL = \"").substringAfter("showURL=\"").substringBefore("/SELECTION\";")
+
+        //Some websites like mangasyuri use javascript minifiers, and thus "showURL = " becomes "showURL="https://mangasyuri.net/manga/SELECTION""
+        //(without spaces). Hence the double substringAfter.
     }
 
     private fun supportsLatest(third: String): Boolean {
@@ -199,7 +202,8 @@ class Generator {
                 Triple("ar", "مانجا اون لاين", "https://www.on-manga.me"),
                 //Went offline
                 //Triple("ar", "Manga FYI", "http://mangafyi.com/manga/arabic"
-                Triple("en", "Read Manhua", "https://readmanhua.net"),
+                //Now uses WPManga
+                //Triple("en", "Read Manhua", "https://readmanhua.net"),
                 Triple("en", "Read Comics Online", "http://readcomicsonline.ru"),
                 Triple("en", "Fallen Angels", "http://manga.fascans.com"),
                 //Went offline
@@ -209,7 +213,8 @@ class Generator {
                 //Triple("en", "MangaForLife", "http://manga4ever.com"),
                 //Went offline
                 //Triple("en", "Manga Spoil", "http://mangaspoil.com"),
-                Triple("en", "MangaBlue", "http://mangablue.com"),
+                //Went offline
+                //Triple("en", "MangaBlue", "http://mangablue.com"),
                 //Went offline
                 //Triple("en", "Manga Forest", "https://mangaforest.com"),
                 //Went offline
@@ -222,7 +227,7 @@ class Generator {
                 //Went offline
                 //Triple("en", "Mangacox", "http://mangacox.com"),
 
-                //Protected by CloudFlare
+                //Went offline
                 //Triple("en", "GO Manhwa", "http://gomanhwa.xyz"
                 //Went offline
                 //Triple("en", "KoManga", "https://komanga.net"
@@ -233,7 +238,8 @@ class Generator {
                 Triple("en", "White Cloud Pavilion", "http://www.whitecloudpavilion.com/manga/free"),
                 //Went offline
                 //Triple("en", "4 Manga", "http://4-manga.com"),
-                Triple("en", "XYXX.INFO", "http://xyxx.info"),
+                //Went offline
+                //Triple("en", "XYXX.INFO", "http://xyxx.info"),
                 Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
                 //Went offline
                 //Triple("en", "Isekai Manga Reader", "https://isekaimanga.club"),
@@ -245,19 +251,21 @@ class Generator {
                 Triple("fr", "Manga Etonnia", "https://www.etonnia.com"),
                 Triple("fr", "Scan FR", "http://www.scan-fr.io"),
                 //Went offline
-                //Triple("fr", "ScanFR.com"),, "http://scanfr.com"),
+                //Triple("fr", "ScanFR.com"), "http://scanfr.com"),
                 //Went offline
                 //Triple("fr", "Manga FYI", "http://mangafyi.com/manga/french"
                 //Went offline
                 //Triple("fr", "scans-manga", "http://scans-manga.com"),
-                Triple("fr", "Henka no Kaze", "http://henkanokazelel.esy.es/upload"),
+                //Went offline
+                //Triple("fr", "Henka no Kaze", "http://henkanokazelel.esy.es/upload"),
                 //Went offline
                 //Triple("fr", "Tous Vos Scans", "http://www.tous-vos-scans.com"),
                 //Went offline
                 //Triple("id", "Manga Desu", "http://mangadesu.net"
                 //Went offline
                 //Triple("id", "Komik Mangafire.ID", "http://go.mangafire.id"
-                Triple("id", "MangaOnline", "https://mangaonline.web.id"),
+                //Went offline
+                //Triple("id", "MangaOnline", "https://mangaonline.web.id"),
                 //Went offline
                 //Triple("id", "MangaNesia", "https://manganesia.com"),
                 Triple("id", "Komikid", "http://www.komikid.com"),
@@ -267,7 +275,8 @@ class Generator {
                 //Triple("id", "Manga Seru", "http://www.mangaseru.top"
                 //Went offline
                 //Triple("id", "Manga FYI", "http://mangafyi.com/manga/indonesian"
-                Triple("id", "Bacamangaku", "http://www.bacamangaku.com"),
+                //Went offline
+                //Triple("id", "Bacamangaku", "http://www.bacamangaku.com"),
                 //Went offline
                 //Triple("id", "Indo Manga Reader", "http://indomangareader.com"),
                 //Protected by Cloudflare
