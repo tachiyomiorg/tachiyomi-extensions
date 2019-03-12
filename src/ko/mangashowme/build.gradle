@@ -5,12 +5,8 @@ ext {
     appName = 'Tachiyomi: MangaShow.Me'
     pkgNameSuffix = 'ko.mangashowme'
     extClass = '.MangaShowMe'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"

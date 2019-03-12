@@ -16,7 +16,7 @@ import java.text.SimpleDateFormat
  **/
 class JMana : ParsedHttpSource() {
     override val name = "JMana"
-    override val baseUrl = "https://mangahide.com"
+    override val baseUrl = "https://jmana5.com"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters

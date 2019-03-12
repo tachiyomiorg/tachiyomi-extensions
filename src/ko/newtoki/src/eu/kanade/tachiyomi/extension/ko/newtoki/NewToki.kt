@@ -18,7 +18,7 @@ import java.util.*
  **/
 class NewToki : ParsedHttpSource() {
     override val name = "NewToki"
-    override val baseUrl = "https://newtoki2.net"
+    override val baseUrl = "https://newtoki3.net"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters

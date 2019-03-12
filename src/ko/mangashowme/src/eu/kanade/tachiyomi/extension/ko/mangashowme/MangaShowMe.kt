@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  **/
 class MangaShowMe : ParsedHttpSource() {
     override val name = "MangaShow.Me"
-    override val baseUrl = "https://mangashow3.me"
+    override val baseUrl = "https://mangashow5.me"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -212,8 +212,11 @@ class MangaShowMe : ParsedHttpSource() {
             (0 until imageUrls.length())
                     .map { imageUrls.getString(it) }
                     .map {
-                        it.replace(".mangashow.me", ".mangashow3.me")
-                                .replace(".mangashow2.me", ".mangashow3.me")
+                        val curr = ".mangashow5.me"
+                        it
+                                .replace(".mangashow.me", curr)
+                                .replace(".mangashow2.me", curr)
+                                .replace(".mangashow3.me", curr)
                     }
                     .forEach { pages.add(Page(pages.size, "", decoder.request(it))) }
         } catch (e: Exception) {

@@ -39,9 +39,13 @@ class Japscan : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
+        val indicator = "&decodeImage"
+
         val request = chain.request()
-        val response = chain.proceed(request)
-        if (!request.url().pathSegments().contains("clel")) return@addInterceptor response
+        val url = request.url().toString()
+        val response = chain.proceed(GET(url.substringBefore(indicator)))
+
+        if (!url.endsWith(indicator)) return@addInterceptor response
 
         val res = response.body()!!.byteStream().use {
             decodeImage(it)
@@ -60,13 +64,13 @@ class Japscan : ParsedHttpSource() {
     override fun popularMangaSelector() = "#top_mangas_week li > span"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl", headers)
+        return GET(baseUrl, headers)
     }
 
     override fun latestUpdatesSelector() = "#chapters > div:eq(0) > h3.text-truncate"
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl", headers)
+        return GET(baseUrl, headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -172,9 +176,10 @@ class Japscan : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))
+        val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_']").isNullOrEmpty()) "&decodeImage" else ""
 
         document.select("select#pages").first()?.select("option")?.forEach {
-            pages.add(Page(pages.size, "", "${imagePath?.groupValues?.get(1)}${it.attr("data-img")}"))
+            pages.add(Page(pages.size, "", "${imagePath?.groupValues?.get(1)}${it.attr("data-img")}$imageScrambled"))
         }
 
         return pages
@@ -197,7 +202,7 @@ class Japscan : ParsedHttpSource() {
 
         for (x in 0..input.width step 200) {
             val col1 = Rect(x, 0, x + 100, input.height)
-            if ((x + 200) <= input.width) {
+            if ((x + 200) < input.width) {
                 val col2 = Rect(x + 100, 0, x + 200, input.height)
                 xCanvas.drawBitmap(input, col1, col2, null)
                 xCanvas.drawBitmap(input, col2, col1, null)
@@ -211,7 +216,7 @@ class Japscan : ParsedHttpSource() {
         for (y in 0..input.height step 200) {
             val row1 = Rect(0, y, input.width, y + 100)
 
-            if ((y + 200) <= input.height) {
+            if ((y + 200) < input.height) {
                 val row2 = Rect(0, y + 100, input.width, y + 200)
                 canvas.drawBitmap(xResult, row1, row2, null)
                 canvas.drawBitmap(xResult, row2, row1, null)
