@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Arc-Relight'
-    pkgNameSuffix = 'en.arcrelight'
-    extClass = '.ArcRelight'
-    extVersionCode = 2
+    appName = 'Tachiyomi: MangAdventure'
+    pkgNameSuffix = 'all.mangadventure'
+    extClass = '.MangAdventureFactory'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 

@@ -1,27 +1,10 @@
-package eu.kanade.tachiyomi.extension.en.arcrelight
+package eu.kanade.tachiyomi.extension.all.mangadventure
 
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.util.Locale
-
-/**
- * The HTTP date format specified in
- * [RFC 1123](https://tools.ietf.org/html/rfc1123#page-55).
- */
-private const val HTTP_DATE = "EEE, dd MMM yyyy HH:mm:ss zzz"
-
-/**
- * Converts a date in the [HTTP_DATE] format to a Unix timestamp.
- *
- * @param date The date to convert.
- * @return The timestamp of the date.
- */
-fun httpDateToTimestamp(date: String) =
-        SimpleDateFormat(HTTP_DATE, Locale.US).parse(date).time
 
 /**
  * Joins each value of a given [field] of the array using [sep].
@@ -52,7 +35,7 @@ fun JSONArray.joinField(field: Any, sep: String = ", "): String? {
  *
  * @param obj The object containing the manga info.
  */
-fun SManga.fromJSON(obj: JSONObject) {
+fun SManga.fromJSON(obj: JSONObject) = apply {
     url = obj.getString("url")
     title = obj.getString("title")
     description = obj.getString("description")
@@ -71,10 +54,10 @@ fun SManga.fromJSON(obj: JSONObject) {
  *
  * @param obj The object containing the chapter info.
  */
-fun SChapter.fromJSON(obj: JSONObject) {
+fun SChapter.fromJSON(obj: JSONObject) = apply {
     url = obj.getString("url")
     chapter_number = obj.optString("chapter", "0").toFloat()
-    date_upload = httpDateToTimestamp(obj.getString("date"))
+    date_upload = MangAdventure.httpDateToTimestamp(obj.getString("date"))
     scanlator = obj.getJSONArray("groups")?.joinField("name", " & ")
     name = buildString {
         obj.optInt("volume").let { if (it != 0) append("Vol.$it ") }

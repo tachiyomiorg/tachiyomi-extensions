@@ -1,9 +1,10 @@
-package eu.kanade.tachiyomi.extension.en.arcrelight
+package eu.kanade.tachiyomi.extension.all.mangadventure
 
 import android.net.Uri
 import android.os.Build.VERSION
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -15,16 +16,20 @@ import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-/** Arc-Relight source */
-class ArcRelight : HttpSource() {
-    override val versionId = 1
+/** MangAdventure source. */
+open class MangAdventure(
+        override val name: String,
+        override val baseUrl: String,
+        val categories: Array<String> = DEFAULT_CATEGORIES,
+        override val lang: String = "en",
+        override val versionId: Int = 1,
+        apiPath: String = "/api") : HttpSource() {
 
-    override val name = "Arc-Relight"
-
-    override val baseUrl = "https://arc-relight.site/api/v$versionId"
-
-    override val lang = "en"
+    /** The URL to the site's API. */
+    open val apiUrl by lazy { "$baseUrl/$apiPath/v$versionId" }
 
     override val supportsLatest = true
 
@@ -43,31 +48,22 @@ class ArcRelight : HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int) = GET(
-        "$baseUrl/releases/", headers
+        "$apiUrl/releases/", headers
     )
 
     override fun pageListRequest(chapter: SChapter) = GET(
-        "$baseUrl/series/${chapter.url.substringAfter("/reader/")}", headers
+        "$apiUrl/series/${chapter.url.substringAfter("/reader/")}", headers
     )
 
     override fun chapterListRequest(manga: SManga) = GET(
-        "$baseUrl/series/${Uri.parse(manga.url).lastPathSegment}/", headers
+        "$apiUrl/series/${Uri.parse(manga.url).lastPathSegment}/", headers
     )
 
-    override fun mangaDetailsRequest(manga: SManga): Request {
-        // Workaround to get the proper URL in openInBrowser
-        val method = Thread.currentThread()
-            .stackTrace.getOrNull(2)?.methodName ?: ""
-        return if (method == "openInBrowser") {
-            GET(manga.url, headers)
-        } else {
-            chapterListRequest(manga)
-        }
-    }
+    override fun mangaDetailsRequest(manga: SManga) = chapterListRequest(manga)
 
     override fun searchMangaRequest(page: Int, query: String,
                                     filters: FilterList): Request {
-        val uri = Uri.parse("$baseUrl/series/").buildUpon()
+        val uri = Uri.parse("$apiUrl/series/").buildUpon()
         uri.appendQueryParameter("q", query)
         val cat = mutableListOf<String>()
         filters.forEach {
@@ -107,19 +103,19 @@ class ArcRelight : HttpSource() {
         volumes.keys().forEach { vol ->
             val chapters = volumes.getJSONObject(vol)
             chapters.keys().forEach { ch ->
-                ret.add(SChapter.create().apply {
-                    fromJSON(chapters.getJSONObject(ch).also {
+                ret.add(SChapter.create().fromJSON(
+                    chapters.getJSONObject(ch).also {
                         it.put("volume", vol)
                         it.put("chapter", ch)
-                    })
-                })
+                    }
+                ))
             }
         }
         return ret.sortedByDescending { it.name }
     }
 
-    override fun mangaDetailsParse(response: Response) = SManga.create()
-            .apply { fromJSON(JSONObject(response.body()!!.string())) }
+    override fun mangaDetailsParse(response: Response) =
+            SManga.create().fromJSON(JSONObject(response.body()!!.string()))
 
     override fun pageListParse(response: Response): List<Page> {
         val obj = JSONObject(response.body()!!.string())
@@ -165,5 +161,103 @@ class ArcRelight : HttpSource() {
             throw UnsupportedOperationException(
                 "This method should not be called!"
             )
+
+    companion object {
+        /** The possible statuses of a manga. */
+        private val STATUSES = arrayOf("Any", "Completed", "Ongoing")
+
+        /** Manga categories from MangAdventure `categories.xml` fixture. */
+        internal val DEFAULT_CATEGORIES = arrayOf(
+            "4-Koma",
+            "Action",
+            "Adventure",
+            "Comedy",
+            "Doujinshi",
+            "Drama",
+            "Ecchi",
+            "Fantasy",
+            "Gender Bender",
+            "Harem",
+            "Hentai",
+            "Historical",
+            "Horror",
+            "Josei",
+            "Martial Arts",
+            "Mecha",
+            "Mystery",
+            "Psychological",
+            "Romance",
+            "School Life",
+            "Sci-Fi",
+            "Seinen",
+            "Shoujo",
+            "Shoujo Ai",
+            "Shounen",
+            "Shounen Ai",
+            "Slice of Life",
+            "Smut",
+            "Sports",
+            "Supernatural",
+            "Tragedy",
+            "Yaoi",
+            "Yuri"
+        )
+
+        /**
+         * The HTTP date format specified in
+         * [RFC 1123](https://tools.ietf.org/html/rfc1123#page-55).
+         */
+        private const val HTTP_DATE = "EEE, dd MMM yyyy HH:mm:ss zzz"
+
+        /**
+         * Converts a date in the [HTTP_DATE] format to a Unix timestamp.
+         *
+         * @param date The date to convert.
+         * @return The timestamp of the date.
+         */
+        fun httpDateToTimestamp(date: String) =
+                SimpleDateFormat(HTTP_DATE, Locale.US).parse(date).time
+    }
+
+    /**
+     * Filter representing the status of a manga.
+     *
+     * @constructor Creates a [Filter.Select] object with [STATUSES].
+     */
+    inner class Status : Filter.Select<String>("Status", STATUSES) {
+        /** Returns the [state] as a string. */
+        fun string() = values[state].toLowerCase()
+    }
+
+    /**
+     * Filter representing a manga category.
+     *
+     * @property name The display name of the category.
+     * @constructor Creates a [Filter.TriState] object using [name].
+     */
+    inner class Category(name: String) : Filter.TriState(name) {
+        /** Returns the [state] as a string, or null if [isIgnored]. */
+        fun optString() = when (state) {
+            STATE_INCLUDE -> name.toLowerCase()
+            STATE_EXCLUDE -> "-" + name.toLowerCase()
+            else -> null
+        }
+    }
+
+    /**
+     * Filter representing the [categories][Category] of a manga.
+     *
+     * @constructor Creates a [Filter.Group] object with categories.
+     */
+    inner class CategoryList : Filter.Group<Category>(
+        "Categories", categories.map { Category(it) }
+    )
+
+    /**
+     * Filter representing the name of an author or artist.
+     *
+     * @constructor Creates a [Filter.Text] object.
+     */
+    inner class Person : Filter.Text("Author/Artist")
 }
 
