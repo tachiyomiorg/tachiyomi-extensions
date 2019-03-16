@@ -47,7 +47,7 @@ class Henchan : ParsedHttpSource() {
             }
         }
 
-        val hasNextPage = searchMangaNextPageSelector().let { selector ->
+        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
             document.select(selector).first()
         } != null
 
@@ -108,18 +108,43 @@ class Henchan : ParsedHttpSource() {
             return listOf(chap)
 
         }
-        return document.select(chapterListSelector()).map { chapterFromElement(it) }
+
+
+        val result = mutableListOf<SChapter>()
+        result.addAll(document.select(chapterListSelector()).mapIndexed { index, element ->
+            chapterFromElement(index, element)
+        })
+
+        var url = document.select("div#pagination_related a:contains(Вперед)").attr("href")
+        while (url.isNotBlank()) {
+            val get = GET(
+                    "${response.request().url()}/$url",
+                    headers = headers
+            )
+            val nextPage = client.newCall(get).execute().asJsoup()
+            result.addAll(nextPage.select(chapterListSelector()).mapIndexed {
+                index, element ->
+                chapterFromElement(index, element)
+            })
+
+            url = nextPage.select("div#pagination_related a:contains(Вперед)").attr("href")
+        }
+
+        return result.reversed()
     }
 
-    override fun chapterFromElement(element: Element): SChapter {
+    fun chapterFromElement(index: Int, element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.select("h2 a").attr("href"))
         chapter.name = element.select("h2 a").attr("title")
-        chapter.chapter_number = 0.0F
+        chapter.chapter_number = index.toFloat()
         chapter.date_upload = 0L
         return chapter
 
     }
+
+    override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
+
     override fun pageListRequest(chapter: SChapter): Request {
         return GET((baseUrl + chapter.url).replace("/manga/", "/online/"), headers)
     }
