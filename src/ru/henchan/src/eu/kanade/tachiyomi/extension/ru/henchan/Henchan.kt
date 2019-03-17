@@ -47,11 +47,7 @@ class Henchan : ParsedHttpSource() {
             }
         }
 
-        val hasNextPage = searchMangaNextPageSelector().let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, false)
     }
 
 
@@ -80,7 +76,8 @@ class Henchan : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = ""
+    override fun searchMangaNextPageSelector() = throw Exception("Not Used")
+
 
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -140,7 +137,6 @@ class Henchan : ParsedHttpSource() {
         chapter.chapter_number = index.toFloat()
         chapter.date_upload = 0L
         return chapter
-
     }
 
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
