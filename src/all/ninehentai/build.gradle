@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: NineHentai'
     pkgNameSuffix = 'all.ninehentai'
     extClass = '.NineHentai'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 dependencies {

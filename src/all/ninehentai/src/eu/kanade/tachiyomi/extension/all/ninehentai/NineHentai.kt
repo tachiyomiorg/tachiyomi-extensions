@@ -17,8 +17,10 @@ import rx.Observable
 import java.net.URLEncoder
 import java.util.*
 
-open class NineHentai() : ParsedHttpSource() {
+open class NineHentai : ParsedHttpSource() {
+
     final override val baseUrl = "https://9hentai.com"
+
     override val name = "NineHentai"
 
     override val lang = "en"
@@ -46,7 +48,7 @@ open class NineHentai() : ParsedHttpSource() {
 
     override fun popularMangaParse(response: Response): MangasPage {
         val list = getMangaList(response)
-        return MangasPage(list, false)
+        return MangasPage(list, list.isNotEmpty())
     }
 
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
@@ -164,18 +166,7 @@ open class NineHentai() : ParsedHttpSource() {
     private fun buildRequestBody(searchText: String = "", page: Int = 0, sort: Int = 0): RequestBody {
         //in the future switch this to dtos and actually build the json.  This is just a work around for
         //initial release, then you can have actual tag searching etc
-        var json = """{"search":{"text":"","page":0,"sort":0,"pages":{"range":[0,2000]},"tag":{"text":"","type":1,"tags":[],"items":{"included":[],"excluded":[]}}}}"""
-        if (searchText.isNotEmpty()) {
-            val encodedSearch = URLEncoder.encode(searchText, "UTF-8")
-            json = json.replaceFirst(""""text":""""", """"text":"$encodedSearch"""")
-        }
-        if (page > 0) {
-            json =  json.replaceFirst(""""page":0""", """"page":$page""")
-        }
-        if (sort > 0) {
-            json = json.replaceFirst(""""sort":0""", """"sort":$sort""")
-
-        }
+        val json = """{"search":{"text":"${URLEncoder.encode(searchText, "UTF-8")}","page":$page,"sort":$sort,"pages":{"range":[0,2000]},"tag":{"text":"","type":1,"tags":[],"items":{"included":[],"excluded":[]}}}}"""
         return RequestBody.create(MEDIA_TYPE, json)
     }
 
