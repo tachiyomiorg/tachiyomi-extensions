@@ -34,7 +34,7 @@ class Henchan : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun searchMangaSelector() = ""
+    override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -47,7 +47,7 @@ class Henchan : ParsedHttpSource() {
             }
         }
 
-        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = searchMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
