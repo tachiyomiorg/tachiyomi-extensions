@@ -15,8 +15,6 @@ import javax.net.ssl.X509TrustManager
 
 class Neumanga : ParsedHttpSource() {
 
-    override val id: Long = 2
-
     override val name = "Neumanga"
 
     override val baseUrl = "https://neumanga.tv"
