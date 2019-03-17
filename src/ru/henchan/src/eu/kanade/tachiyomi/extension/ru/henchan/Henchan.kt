@@ -76,11 +76,11 @@ class Henchan : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga =
             popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "#pagination > a:nth-child(2)"
+    override fun popularMangaNextPageSelector() = "#pagination > a:contains(Вперед)"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = ".navigation a#nextlink"
+    override fun searchMangaNextPageSelector() = ""
 
 
     override fun mangaDetailsParse(document: Document): SManga {
