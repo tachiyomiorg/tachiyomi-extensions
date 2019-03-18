@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Komikgo'
     pkgNameSuffix = 'id.komikgo'
     extClass = '.Komikgo'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
