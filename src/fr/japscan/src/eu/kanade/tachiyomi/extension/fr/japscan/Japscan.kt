@@ -1,12 +1,5 @@
 package eu.kanade.tachiyomi.extension.fr.japscan
 
-/**
- * @file Japscan.kt
- * @brief Defines class Japscan for french source Japscan
- * @date 2018-09-02
- * @version 1.0
- */
-
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -15,9 +8,18 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.FormBody
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.apache.commons.lang3.StringUtils
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -43,7 +45,11 @@ class Japscan : ParsedHttpSource() {
 
         val request = chain.request()
         val url = request.url().toString()
-        val response = chain.proceed(GET(url.substringBefore(indicator)))
+
+        val newRequest = request.newBuilder()
+                .url(url.substringBefore(indicator))
+                .build()
+        val response = chain.proceed(newRequest)
 
         if (!url.endsWith(indicator)) return@addInterceptor response
 
