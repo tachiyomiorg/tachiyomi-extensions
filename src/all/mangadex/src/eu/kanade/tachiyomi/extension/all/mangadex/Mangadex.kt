@@ -53,11 +53,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }.build()!!
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi "+ System.getProperty("http.agent"))
+        add("User-Agent", "Tachiyomi")
     }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
         val cookies = mutableMapOf<String, String>()
+        cookies["mangadex_rememberme_token"] = "f8134e4836d9c8fd61b15d4c7cab9fc48dd314b1c27ca3d5e4f3338f421c9176"
         cookies["mangadex_h_toggle"] = r18Toggle.toString()
         cookies["mangadex_filter_langs"] = langCode.toString()
         return buildCookies(cookies)
