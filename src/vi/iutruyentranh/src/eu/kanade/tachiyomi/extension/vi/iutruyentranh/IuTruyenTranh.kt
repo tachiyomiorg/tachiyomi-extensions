@@ -14,11 +14,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 
-/**
- * Created by Nam Nguyen on 29/4/2017.
- */
-
-class Iutruyentranh : ParsedHttpSource() {
+class IuTruyenTranh : ParsedHttpSource() {
 
     override val name = "IuTruyenTranh"
 

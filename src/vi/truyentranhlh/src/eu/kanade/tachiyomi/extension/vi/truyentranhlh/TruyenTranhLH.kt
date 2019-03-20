@@ -9,14 +9,15 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.helper.StringUtil
 import org.jsoup.nodes.Element
 import java.util.*
 
-class Truyentranhlh : HttpSource() {
+class TruyenTranhLH : HttpSource() {
 
     override val name = "TruyenTranhLH"
 
-    override val baseUrl = "http://truyentranhlh.com"
+    override val baseUrl = "https://truyentranhlh.net"
 
     override val lang = "vi"
 
@@ -112,7 +113,7 @@ class Truyentranhlh : HttpSource() {
 
         val manga = SManga.create()
         manga.author = infoElement.select("a.btn.btn-xs.btn-info").first()?.text()
-        manga.genre = infoElement.select("a.btn.btn-xs.btn-danger").text()
+        manga.genre = infoElement.select("a.btn.btn-xs.btn-danger").joinToString { it.text() }
         manga.description = document.select("h3:contains(Sơ lược) + p").text()
         manga.status = infoElement.select("a.btn.btn-xs.btn-success").last()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("img.thumbnail").first()?.attr("src")
@@ -178,7 +179,11 @@ class Truyentranhlh : HttpSource() {
         val pages = mutableListOf<Page>()
         var i = 0
         document.select("div.chapter-content > img").forEach {
-            pages.add(Page(i++, "", it.attr("src")))
+            var url = it.attr("src")
+            if (StringUtil.isBlank(url)) {
+                url = it.attr("data-original")
+            }
+            pages.add(Page(i++, "", url))
         }
         return pages
     }

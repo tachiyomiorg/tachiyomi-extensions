@@ -10,11 +10,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
 
-class Academyvn : ParsedHttpSource() {
+class HocVienTruyenTranh : ParsedHttpSource() {
 
     override val name = "HocVienTruyenTranh"
 
-    override val baseUrl = "http://hocvientruyentranh.com"
+    override val baseUrl = "https://hocvientruyentranh.net"
 
     override val lang = "vi"
 
@@ -80,7 +80,7 @@ class Academyvn : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.author = infoElement.select("p:has(strong:contains(Tác giả:)) > a").first()?.text()
-        manga.genre = infoElement.select("p:has(strong:contains(Thể loại:)) > *:gt(0)").text()
+        manga.genre = infoElement.select("p:has(strong:contains(Thể loại:)) > *:gt(0)").joinToString { it.text() }
         manga.description = infoElement.select("div.__description > p").text()
         manga.status = infoElement.select("p:has(strong:contains(Tình trạng:))").first()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("div.__left img").first()?.attr("src")

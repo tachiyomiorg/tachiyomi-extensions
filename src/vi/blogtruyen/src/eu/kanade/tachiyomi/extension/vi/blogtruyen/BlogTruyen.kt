@@ -15,11 +15,11 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 
 
-class Blogtruyen : ParsedHttpSource() {
+class BlogTruyen : ParsedHttpSource() {
 
-    override val name = "Blogtruyen"
+    override val name = "BlogTruyen"
 
-    override val baseUrl = "http://blogtruyen.com"
+    override val baseUrl = "https://blogtruyen.com"
 
     override val lang = "vi"
 
@@ -107,7 +107,7 @@ class Blogtruyen : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.author = infoElement.select("p:contains(Tác giả) > a").first()?.text()
-        manga.genre = infoElement.select("p:contains(Thể loại) > span.category > a").text()
+        manga.genre = infoElement.select("p:contains(Thể loại) > span.category > a").joinToString { it.text() }
         manga.description = document.select("div.detail > div.content").text()
         manga.status = infoElement.select("p:contains(Trạng thái) > span.color-red").first()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("div.thumbnail > img").first()?.attr("src")
