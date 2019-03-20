@@ -1,15 +1,21 @@
 package eu.kanade.tachiyomi.extension.id.komikgo
 
-import java.util.*
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
-import java.text.ParseException
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
-import eu.kanade.tachiyomi.source.model.*
+import java.util.Locale
 
 
 class Komikgo : ParsedHttpSource() {
@@ -101,11 +107,9 @@ class Komikgo : ParsedHttpSource() {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
             }
         }
-        Log.d("TAG", url.toString())
 
         return GET(url.toString(), headers)
     }
-
 
 
     // max 200 results
