@@ -5,22 +5,41 @@ import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getGroups
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTags
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTime
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
 
 open class NHentai(override val lang: String, private val nhLang: String) : ParsedHttpSource() {
+
     final override val baseUrl = "https://nhentai.net"
     override val name = "NHentai"
     override val supportsLatest = true
-    override val client = network.cloudflareClient
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
+        val url = chain.request().url().toString()
+
+        // Artificial delay for images (aka ghetto throttling)
+        if (url.contains("i.nh")) {
+            Thread.sleep(250)
+        }
+
+        chain.proceed(chain.request())
+    }.build()
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36")
+        add("User-Agent", "Tachiyomi ${System.getProperty("http.agent")}")
     }
 
     private val searchUrl = "$baseUrl/search"
