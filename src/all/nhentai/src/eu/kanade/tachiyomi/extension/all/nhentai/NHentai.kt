@@ -72,6 +72,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("a > div").text().replace("\"", "").trim()
+        thumbnail_url = element.select("a > img").attr("data-src").replace("t.nh", "i.nh").replace("t.", ".")
     }
 
     override fun latestUpdatesNextPageSelector() = "#content > section.pagination > a.next"
@@ -82,7 +83,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         title = document.select("#info > h1").text().replace("\"", "").trim()
-        thumbnail_url = document.select("#cover > a > img").attr("data-src")
+        //thumbnail_url = document.select("#cover > a > img").attr("data-src")
         status = SManga.COMPLETED
         artist = getArtists(document)
         author = artist
@@ -109,6 +110,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("a > div").text().replace("\"", "").trim()
+        thumbnail_url = element.select("a > img").attr("data-src").replace("t.nh", "i.nh").replace("t.", ".")
     }
 
     override fun popularMangaNextPageSelector() = "#content > section.pagination > a.next"
@@ -120,6 +122,7 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun searchMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("a > div").text().replace("\"", "").trim()
+        thumbnail_url = element.select("a > img").attr("data-src").replace("t.nh", "i.nh").replace("t.", ".")
     }
 
     override fun searchMangaNextPageSelector() = "#content > section.pagination > a.next"
