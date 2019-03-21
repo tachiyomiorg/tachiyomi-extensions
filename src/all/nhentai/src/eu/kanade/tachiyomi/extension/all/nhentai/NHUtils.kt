@@ -11,7 +11,7 @@ class NHUtils {
             val artists = document.select("#tags > div:nth-child(4) > span > a")
 
             artists.forEach {
-                stringBuilder.append(cleanTag(it.text()))
+                stringBuilder.append(it.text().replace(Regex("\\(.*\\)"), ""))
 
                 if (it != artists.last())
                     stringBuilder.append(", ")
@@ -25,7 +25,7 @@ class NHUtils {
             val groups = document.select("#tags > div:nth-child(5) > span > a")
 
             groups.forEach {
-                stringBuilder.append(cleanTag(it.text()))
+                stringBuilder.append(it.text().replace(Regex("\\(.*\\)"), ""))
 
                 if (it != groups.last())
                     stringBuilder.append(", ")
