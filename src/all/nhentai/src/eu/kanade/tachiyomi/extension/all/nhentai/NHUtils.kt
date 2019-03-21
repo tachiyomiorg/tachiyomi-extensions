@@ -34,58 +34,26 @@ class NHUtils {
             return if (stringBuilder.toString().isEmpty()) null else stringBuilder.toString()
         }
 
-        fun getTags(document: Document): String {
-            val stringBuilder = StringBuilder()
+        fun getDesc(document: Document): String {
             val parodies = document.select("#tags > div:nth-child(1) > span > a")
+                .map { it.text().replace(Regex("\\(.*\\)"), "") }
+                .joinToString(", ") { it.trim() }
             val characters = document.select("#tags > div:nth-child(2) > span > a")
-            val tags = document.select("#tags > div:nth-child(3) > span > a")
-
-            if (parodies.size > 0) {
-                stringBuilder.append("Parodies: ")
-
-                parodies.forEach {
-                    stringBuilder.append(cleanTag(it.text()))
-
-                    if (it != parodies.last())
-                        stringBuilder.append(", ")
-                }
-
-                stringBuilder.append("\n\n")
-            }
-
-            if (characters.size > 0) {
-                stringBuilder.append("Characters: ")
-
-                characters.forEach {
-                    stringBuilder.append(cleanTag(it.text()))
-
-                    if (it != characters.last())
-                        stringBuilder.append(", ")
-                }
-
-                stringBuilder.append("\n\n")
-            }
-
-            if (tags.size > 0) {
-                stringBuilder.append("Tags: ")
-
-                tags.forEach {
-                    stringBuilder.append(cleanTag(it.text()))
-
-                    if (it != tags.last())
-                        stringBuilder.append(", ")
-                }
-            }
-
-            return stringBuilder.toString()
+                .map { it.text().replace(Regex("\\(.*\\)"), "") }
+                .joinToString(", ") { it.trim() }
+            return parodies.plus("\n\n").plus(characters)
         }
 
+        fun getTags(document: Document): String {
+            return document.select("#tags > div:nth-child(3) > span > a")
+                .map { it.text().replace(Regex("\\(.*\\)"), "") }
+                .joinToString(", ") { it.trim() }            
+        }
+        
         fun getTime(document: Document): Long {
             val timeString = document.toString().substringAfter("datetime=\"").substringBefore("\">").replace("T", " ")
 
             return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSSZ").parse(timeString).time
         }
-
-        private fun cleanTag(tag: String): String = tag.replace(Regex("\\(.*\\)"), "").trim()
     }
 }
