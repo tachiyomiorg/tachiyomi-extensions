@@ -19,6 +19,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.lang.StringBuilder
 
 open class NHentai(override val lang: String, private val nhLang: String) : ParsedHttpSource() {
 
@@ -81,6 +82,16 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
         artist = getArtists(document)
         author = artist
         description = getTags(document)
+        val stringBuilder = StringBuilder()
+        val tags = document.select("#tags > div:nth-child(3) > span > a")
+        if (tags.size > 0) {
+            tags.forEach {
+                stringBuilder.append(it.text().replace(Regex("\\(.*\\)"), "").trim())
+                if (it != tags.last())
+                    stringBuilder.append(", ")
+            }
+        }
+        genre = stringBuilder.toString()
     }
 
     override fun chapterListRequest(manga: SManga): Request = GET("$baseUrl${manga.url}", headers)
