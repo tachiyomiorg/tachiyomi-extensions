@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: TruyenTranhLh'
+    appName = 'Tachiyomi: TruyenTranhLH'
     pkgNameSuffix = 'vi.truyentranhlh'
-    extClass = '.Truyentranhlh'
-    extVersionCode = 4
+    extClass = '.TruyenTranhLH'
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
