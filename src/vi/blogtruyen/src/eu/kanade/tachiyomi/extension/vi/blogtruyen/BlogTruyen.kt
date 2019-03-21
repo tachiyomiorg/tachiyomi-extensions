@@ -13,6 +13,7 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
+import java.util.*
 
 
 class BlogTruyen : ParsedHttpSource() {
@@ -53,7 +54,6 @@ class BlogTruyen : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = element.select("img").first().attr("alt").toString()
-            //manga.thumbnail_url = element.select("img").first().attr("src").toString()
         }
         return manga
     }
@@ -107,7 +107,7 @@ class BlogTruyen : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.author = infoElement.select("p:contains(Tác giả) > a").first()?.text()
-        manga.genre = infoElement.select("p:contains(Thể loại) > span.category > a").joinToString { it.text() }
+        manga.genre = infoElement.select("span.category a").joinToString { it.text() }
         manga.description = document.select("div.detail > div.content").text()
         manga.status = infoElement.select("p:contains(Trạng thái) > span.color-red").first()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("div.thumbnail > img").first()?.attr("src")
@@ -129,7 +129,7 @@ class BlogTruyen : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.attr("title")
         chapter.date_upload = element.select("span.publishedDate").first()?.text()?.let {
-            SimpleDateFormat("dd/MM/yyyy HH:mm").parse(it).time
+            SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ENGLISH).parse(it).time
         } ?: 0
         return chapter
     }

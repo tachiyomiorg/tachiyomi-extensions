@@ -27,11 +27,11 @@ class HocVienTruyenTranh : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "table.table.table-hover > tbody > tr"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga/all?filter_type=view&page=$page", headers)
+        return GET("$baseUrl/truyen/all?filter_type=view&page=$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/manga/all?filter_type=latest-chapter&page=$page", headers)
+        return GET("$baseUrl/truyen/all?filter_type=latest-chapter&page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {

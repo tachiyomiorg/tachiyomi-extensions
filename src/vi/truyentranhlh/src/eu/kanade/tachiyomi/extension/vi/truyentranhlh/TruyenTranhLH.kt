@@ -25,6 +25,10 @@ class TruyenTranhLH : HttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    private fun imageHeader() = super.headersBuilder()
+            .add("Referer", baseUrl)
+            .build()
+
     fun popularMangaSelector() = "div.media-body > h3"
 
     fun latestUpdatesSelector() = popularMangaSelector()
@@ -179,16 +183,12 @@ class TruyenTranhLH : HttpSource() {
         val pages = mutableListOf<Page>()
         var i = 0
         document.select("div.chapter-content > img").forEach {
-            var url = it.attr("src")
-            if (StringUtil.isBlank(url)) {
-                url = it.attr("data-original")
-            }
-            pages.add(Page(i++, "", url))
+            pages.add(Page(i++, "", it.attr("src")))
         }
         return pages
     }
 
-    override fun imageUrlRequest(page: Page) = GET(page.url)
+    override fun imageUrlRequest(page: Page) = GET(page.url, imageHeader())
 
     override fun imageUrlParse(response: Response): String {
         return ""
