@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getArtists
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getGroups
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTags
+import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getDesc
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTime
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -19,7 +20,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.StringBuilder
 
 open class NHentai(override val lang: String, private val nhLang: String) : ParsedHttpSource() {
 
