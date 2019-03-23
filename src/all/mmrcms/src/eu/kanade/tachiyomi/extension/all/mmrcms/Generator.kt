@@ -53,6 +53,12 @@ class Generator {
 
                 var prefix = itemUrl.substringAfterLast("/").substringBeforeLast("/")
 
+                //Sometimes itemUrl is the root of the website, and thus the prefix found is the website address.
+                // In this case, we set the default prefix as "manga".
+                if (prefix.startsWith("www")){
+                    prefix="manga"
+                }
+
                 val mangaListDocument = getDocument("${it.third}/$prefix-list")!!
 
                 if (parseCategories.isEmpty()) {
@@ -250,6 +256,7 @@ class Generator {
                 Triple("fr", "Manga-LEL", "https://www.manga-lel.com"),
                 Triple("fr", "Manga Etonnia", "https://www.etonnia.com"),
                 Triple("fr", "Scan FR", "http://www.scan-fr.io"),
+                Triple("fr", "Scan VF", "https://www.scan-vf.co"),
                 //Went offline
                 //Triple("fr", "ScanFR.com"), "http://scanfr.com"),
                 //Went offline

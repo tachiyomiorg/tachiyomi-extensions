@@ -25,7 +25,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                              private val categoryMappings: List<Pair<String, String>>,
                              private val tagMappings: List<Pair<String, String>>?) : HttpSource() {
     private val jsonParser = JsonParser()
-    private val itemUrlPath = Uri.parse(itemUrl).pathSegments.first()
+    private val itemUrlPath = Uri.parse(itemUrl).pathSegments.firstOrNull()
     private val parsedBaseUrl = Uri.parse(baseUrl)
 
     override val client: OkHttpClient = network.cloudflareClient
@@ -228,7 +228,8 @@ class MyMangaReaderCMSSource(override val lang: String,
 
         // Ensure chapter actually links to a manga
         // Some websites use the chapters box to link to post announcements
-        if (!Uri.parse(url).pathSegments.firstOrNull().equals(itemUrlPath, true)) {
+        // The check is skipped if mangas are stored in the root of the website (ex '/one-piece' without a segment like '/manga/one-piece')
+        if (itemUrlPath!=null&& !Uri.parse(url).pathSegments.firstOrNull().equals(itemUrlPath, true)) {
             return null
         }
 
