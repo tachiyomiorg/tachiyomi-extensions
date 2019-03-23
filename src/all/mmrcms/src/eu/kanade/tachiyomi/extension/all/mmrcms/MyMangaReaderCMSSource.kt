@@ -213,7 +213,8 @@ class MyMangaReaderCMSSource(override val lang: String,
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each chapter.
      */
-    fun chapterListSelector() = ".chapters > li:not(.btn)"
+    fun chapterListSelector() = "ul[class^=chapters] > li:not(.btn)"
+    //Some websites add characters after "chapters" thus the need of checking classes that starts with "chapters"
 
     /**
      * Returns a chapter from the given element.
@@ -221,7 +222,8 @@ class MyMangaReaderCMSSource(override val lang: String,
      * @param element an element obtained from [chapterListSelector].
      */
     private fun nullableChapterFromElement(element: Element): SChapter? {
-        val titleWrapper = element.getElementsByClass("chapter-title-rtl").first()
+        val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
+        //Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
         val url = titleWrapper.getElementsByTag("a").attr("href")
 
         // Ensure chapter actually links to a manga
