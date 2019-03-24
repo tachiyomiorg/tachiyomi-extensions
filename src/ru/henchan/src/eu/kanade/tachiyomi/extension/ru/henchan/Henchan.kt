@@ -50,10 +50,11 @@ class Henchan : ParsedHttpSource() {
         return MangasPage(mangas, false)
     }
 
+    private fun String.getHQThumbnail(): String = this.replace("manganew_thumbs", "showfull_retina/manga").replace("img.", "imgcover.")
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = element.select("img").first().attr("src")
+        manga.thumbnail_url = element.select("img").first().attr("src").getHQThumbnail()
         element.select("h2 > a").first().let {
             val url = it.attr("href")
             if (url.contains("/manga/")) {
@@ -89,13 +90,29 @@ class Henchan : ParsedHttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET((baseUrl + manga.url).replace("/manga/", "/related/"), headers)
+        val nonLolconRequest = GET((baseUrl + manga.url).replace("/manga/", "/related/"), headers)
+        if(manga.thumbnail_url?.isBlank() ?: return nonLolconRequest){
+            return GET((baseUrl + manga.url), headers)
+        }else {
+            return nonLolconRequest
+        }
     }
 
     override fun chapterListSelector() = ".related"
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        val responseUrl = response.request().url().toString()
         val document = response.asJsoup()
+
+        if(responseUrl.contains("/manga/")){
+            val chap = SChapter.create()
+            chap.url = responseUrl.replace("henchan.me", "exhentaidono.me").replace("/manga/", "/online/") + "?development_access=true"
+            chap.name = document.select("a.title_top_a").text()
+            chap.chapter_number = 0.0F
+            chap.date_upload = 0L
+            return listOf(chap)
+        }
+
         if (document.select("#right > div:nth-child(4)").text().contains(" похожий на ")) {
             val chap = SChapter.create()
             chap.setUrlWithoutDomain(document.select("#left > div > a").attr("href"))
@@ -103,7 +120,6 @@ class Henchan : ParsedHttpSource() {
             chap.chapter_number = 0.0F
             chap.date_upload = 0L
             return listOf(chap)
-
         }
 
 
@@ -130,7 +146,7 @@ class Henchan : ParsedHttpSource() {
         return result.reversed()
     }
 
-    fun chapterFromElement(index: Int, element: Element): SChapter {
+    private fun chapterFromElement(index: Int, element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.select("h2 a").attr("href"))
         chapter.name = element.select("h2 a").attr("title")
@@ -142,16 +158,19 @@ class Henchan : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET((baseUrl + chapter.url).replace("/manga/", "/online/"), headers)
+        return if(chapter.url.contains("exhentaidono.me"))
+            GET(chapter.url, headers)
+        else
+            GET((baseUrl + chapter.url).replace("/manga/", "/online/"), headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
         val html = response.body()!!.string()
-        val imgString = html.split("\"fullimg\":[").last().split(",]").first()
+        val imgString = html.split("\"fullimg\":[", "\"fullimg\": [").last().split(",]", "]").first()
         val resPages = mutableListOf<Page>()
         val imgs = imgString.split(",")
         imgs.forEachIndexed { index, s ->
-            resPages.add(Page(index, imageUrl = s.removeSurrounding("\"")))
+            resPages.add(Page(index, imageUrl = s.replace("[\"|\']".toRegex(), "")))
         }
         return resPages
     }
