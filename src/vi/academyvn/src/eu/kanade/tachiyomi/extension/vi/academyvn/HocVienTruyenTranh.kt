@@ -131,9 +131,8 @@ class HocVienTruyenTranh : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        var i = 0
         document.select("div.manga-container > img").forEach {
-            pages.add(Page(i++, "", it.attr("src")))
+            pages.add(Page(pages.size, "", it.attr("src")))
         }
         return pages
     }
