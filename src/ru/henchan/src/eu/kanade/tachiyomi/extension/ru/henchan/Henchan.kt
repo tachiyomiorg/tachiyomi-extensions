@@ -15,6 +15,8 @@ class Henchan : ParsedHttpSource() {
 
     override val baseUrl = "http://henchan.me"
 
+    private val exhentaiBaseUrl = "http://exhentaidono.me"
+
     override val lang = "ru"
 
     override val supportsLatest = true
@@ -90,11 +92,11 @@ class Henchan : ParsedHttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        val nonLolconRequest = GET((baseUrl + manga.url).replace("/manga/", "/related/"), headers)
-        if(manga.thumbnail_url?.isBlank() ?: return nonLolconRequest){
-            return GET((baseUrl + manga.url), headers)
+        val baseMangaUrl = baseUrl + manga.url
+        if(manga.thumbnail_url?.isBlank() ?: return GET(baseMangaUrl.replace("/manga/", "/related/"), headers)){
+            return GET(baseMangaUrl, headers)
         }else {
-            return nonLolconRequest
+            return GET(baseMangaUrl.replace("/manga/", "/related/"), headers)
         }
     }
 
@@ -106,7 +108,7 @@ class Henchan : ParsedHttpSource() {
 
         if(responseUrl.contains("/manga/")){
             val chap = SChapter.create()
-            chap.url = responseUrl.replace("henchan.me", "exhentaidono.me").replace("/manga/", "/online/") + "?development_access=true"
+            chap.setUrlWithoutDomain(responseUrl.removePrefix(baseUrl))
             chap.name = document.select("a.title_top_a").text()
             chap.chapter_number = 0.0F
             chap.date_upload = 0L
@@ -158,19 +160,16 @@ class Henchan : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return if(chapter.url.contains("exhentaidono.me"))
-            GET(chapter.url, headers)
-        else
-            GET((baseUrl + chapter.url).replace("/manga/", "/online/"), headers)
+        return GET(exhentaiBaseUrl + chapter.url.replace("/manga/", "/online/") + "?development_access=true", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
         val html = response.body()!!.string()
-        val imgString = html.split("\"fullimg\":[", "\"fullimg\": [").last().split(",]", "]").first()
+        val imgString = html.split("\"fullimg\": [").last().split("]").first()
         val resPages = mutableListOf<Page>()
         val imgs = imgString.split(",")
         imgs.forEachIndexed { index, s ->
-            resPages.add(Page(index, imageUrl = s.replace("[\"|\']".toRegex(), "")))
+            resPages.add(Page(index, imageUrl = s.trim('"', '\'', '[', ' ')))
         }
         return resPages
     }
