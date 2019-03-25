@@ -168,7 +168,8 @@ class Japscan : ParsedHttpSource() {
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.text().replace(" VUS", "")
+        chapter.name = urlElement.ownText()
+        //Using ownText() so that the childs text (like "VUS" or "RAW" badges) isn't part of the chapter name.
         chapter.date_upload = element.select("> span").text().trim().let { parseChapterDate(it) }
         return chapter
     }
