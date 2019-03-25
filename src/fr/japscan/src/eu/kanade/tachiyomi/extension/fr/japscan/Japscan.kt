@@ -159,7 +159,9 @@ class Japscan : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "div#chapters_list > div.collapse > div.chapters_list"
+    override fun chapterListSelector() = "div#chapters_list > div.collapse > div.chapters_list:not(:contains(spoiler spoiler))"
+    //JapScan uploads some useless "preview" chapters, containing untranslated pictures taken from a raw.
+    //Those are tagged as "spoiler SPOILER", so the selector makes sure to dismiss these from the chapter list.
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
