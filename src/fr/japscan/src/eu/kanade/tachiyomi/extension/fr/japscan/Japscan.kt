@@ -159,9 +159,11 @@ class Japscan : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "div#chapters_list > div.collapse > div.chapters_list:not(:contains(spoiler spoiler))"
-    //JapScan uploads some useless "preview" chapters, containing untranslated pictures taken from a raw.
-    //Those are tagged as "spoiler SPOILER", so the selector makes sure to dismiss these from the chapter list.
+    override fun chapterListSelector() = "#chapters_list > div.collapse > div.chapters_list"+
+            ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW))"
+    //JapScan sometimes uploads some "spoiler preview" chapters, containing 2 or 3 untranslated pictures taken from a raw. Sometimes they also upload full RAWs and replace it with a translation as soon as available.
+    //Those have a span.badge "SPOILER" or "RAW". The additional pseudo selector makes sure to exclude these from the chapter list.
+
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
@@ -169,7 +171,7 @@ class Japscan : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.ownText()
-        //Using ownText() so that the childs text (like "VUS" or "RAW" badges) isn't part of the chapter name.
+        //Using ownText() doesn't include childs' text, like "VUS" or "RAW" badges, in the chapter name.
         chapter.date_upload = element.select("> span").text().trim().let { parseChapterDate(it) }
         return chapter
     }
