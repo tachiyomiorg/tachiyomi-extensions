@@ -9,4 +9,8 @@ ext {
     libVersion = '1.0'
 }
 
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+}
+
 apply from: "$rootDir/common.gradle"
