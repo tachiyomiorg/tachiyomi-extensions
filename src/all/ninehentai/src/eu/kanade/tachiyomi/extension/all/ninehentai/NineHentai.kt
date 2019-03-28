@@ -4,6 +4,7 @@ import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.POST
@@ -164,14 +165,13 @@ open class NineHentai : ParsedHttpSource() {
     }
 
     private fun buildRequestBody(searchText: String = "", page: Int = 0, sort: Int = 0): RequestBody {
-        //in the future switch this to dtos and actually build the json.  This is just a work around for
-        //initial release, then you can have actual tag searching etc
-        val json = """{"search":{"text":"${URLEncoder.encode(searchText, "UTF-8")}","page":$page,"sort":$sort,"pages":{"range":[0,2000]},"tag":{"text":"","type":1,"tags":[],"items":{"included":[],"excluded":[]}}}}"""
+        val gson = GsonBuilder().create()
+        val json = gson.toJson(mapOf("search" to mapOf("text" to searchText, "page" to page, "sort" to sort, "pages" to mapOf("range" to intArrayOf(0, 2000)), "tag" to mapOf("text" to "", "type" to 1, "tags" to arrayOf<String>(), "items" to mapOf("included" to arrayOf<String>(), "excluded" to arrayOf())))))
         return RequestBody.create(MEDIA_TYPE, json)
     }
 
-    override fun mangaDetailsRequest(smanga: SManga): Request {
-        val id = smanga.url.substringAfter("/g/").toInt()
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        val id = manga.url.substringAfter("/g/").toInt()
         return POST(baseUrl + MANGA_URL, headers, buildIdBody(id))
     }
 
