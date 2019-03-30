@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit
 
 open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ConfigurableSource, ParsedHttpSource() {
 
+    var logged = false
+
     override val name = "MangaDex"
 
     override val baseUrl = "https://mangadex.org"
@@ -146,13 +148,137 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         details.url = "/manga/$realQuery/"
                         MangasPage(listOf(details), false)
                     }
-        } else {
+        } else if (logged) {
             getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                     .asObservableSuccess()
                     .map { response ->
                         searchMangaParse(response)
                     }
+        } else {
+            localSearch(page, query, filters)
         }
+    }
+
+    private fun localSearch(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        var publicationStatus = 0
+        var originalLanguage = 0
+        var r18 = getShowR18()
+        var ascending = true
+        val genresToInclude = mutableListOf<String>()
+        val genresToExclude = mutableListOf<String>()
+        filters.forEach { filter ->
+            when (filter) {
+                is PublicationStatus -> {
+                    publicationStatus = filter.state
+                }
+                is OriginalLanguage -> {
+                    if (filter.state != 0) {
+                        originalLanguage = SOURCE_LANG_LIST.first { it -> it.first == filter.values[filter.state] }.second.toInt()
+                    }
+                }
+                is ContentList -> {
+                    filter.state.forEach { content ->
+                        if (content.isExcluded()) {
+                            genresToExclude.add(content.id)
+                        } else if (content.isIncluded()) {
+                            genresToInclude.add(content.id)
+                        }
+                    }
+                }
+                is FormatList -> {
+                    filter.state.forEach { format ->
+                        if (format.isExcluded()) {
+                            genresToExclude.add(format.id)
+                        } else if (format.isIncluded()) {
+                            genresToInclude.add(format.id)
+                        }
+                    }
+                }
+                is GenreList -> {
+                    filter.state.forEach { genre ->
+                        if (genre.isExcluded()) {
+                            genresToExclude.add(genre.id)
+                        } else if (genre.isIncluded()) {
+                            genresToInclude.add(genre.id)
+                        }
+                    }
+                }
+                is ThemeList -> {
+                    filter.state.forEach { theme ->
+                        if (theme.isExcluded()) {
+                            genresToExclude.add(theme.id)
+                        } else if (theme.isIncluded()) {
+                            genresToInclude.add(theme.id)
+                        }
+                    }
+                }
+                is Filter.Sort -> {
+                    if (filter.state != null) {
+                        ascending = filter.state!!.ascending
+                    }
+                }
+                is Tag -> {
+                    if (filter.isExcluded()) {
+                        genresToExclude.add(filter.id)
+                    } else if (filter.isIncluded()) {
+                        genresToInclude.add(filter.id)
+                    }
+                }
+                is R18 -> {
+                    r18 = when (filter.state) {
+                        1 -> ALL
+                        2 -> ONLY_R18
+                        3 -> NO_R18
+                        else -> getShowR18()
+                    }
+                }
+            }
+        }
+        val include = IntArray(6)
+        val exclude = IntArray(6)
+        if (r18 == ONLY_R18)
+            include[0] = 1
+        else if (r18 == NO_R18) {
+            exclude[0] = 1
+        }
+        for (genre in genresToInclude) {
+            val g = genre.toInt()
+            include[g / 16] = include[g / 16] or (1 shl g % 16)
+        }
+        for (genre in genresToExclude) {
+            val g = genre.toInt()
+            exclude[g / 16] = exclude[g / 16] or (1 shl g % 16)
+        }
+
+        val mangaPerPage = 50
+        var i = if (ascending) -1 else Data.DATA.size
+        var mangas = mutableListOf<SManga>()
+        ext@ while ((if (ascending) ++i < Data.DATA.size else --i >= 0) && mangas.size < page * mangaPerPage) {
+            val mdata = Data.DATA[i]
+            val title = mdata.substring(7)
+            if (!title.contains(query.replace(WHITESPACE_REGEX, " "), true)) {
+                continue
+            }
+            val b5 = mdata[5].toInt()
+            if (publicationStatus != 0 && publicationStatus != b5 shr 7 and 7) {
+                continue
+            }
+            if (originalLanguage != 0 && originalLanguage != b5 shr 10) {
+                continue
+            }
+            for (j in 0..5) {
+                val b = mdata[j].toInt()
+                if ((b and include[j] != include[j]) || (b and exclude[j] != 0))
+                    continue@ext
+            }
+            val manga = SManga.create()
+            manga.title = title
+            manga.url = "/manga/" + mdata.get(6).toInt() + "/"
+            manga.thumbnail_url = formThumbUrl(manga.url)
+            mangas.add(manga)
+        }
+        mangas = mangas.subList((page - 1) * mangaPerPage, mangas.size)
+        return Observable.just(MangasPage(mangas, mangas.size == mangaPerPage))
     }
 
     private fun getSearchClient(filters: FilterList): OkHttpClient {
@@ -319,18 +445,17 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
         val status = mangaJson.get("status").int
+        val genres = (if (mangaJson.get("hentai").int == 1) listOf("Hentai") else listOf()) +
+                mangaJson.get("genres").asJsonArray.mapNotNull { GENRES.get(it.toString()) }
+        manga.genre = genres.joinToString(", ")
         val finalChapterNumber = getFinalChapter(mangaJson)
         if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(chapterJson, finalChapterNumber)) {
             manga.status = SManga.COMPLETED
-        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, finalChapterNumber)){
+        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, genres)) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
         }
-
-        val genres = (if (mangaJson.get("hentai").int == 1) listOf("Hentai") else listOf()) +
-                mangaJson.get("genres").asJsonArray.mapNotNull { GENRES.get(it.toString()) }
-        manga.genre = genres.joinToString(", ")
 
         return manga
     }
@@ -358,10 +483,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun getFinalChapter(jsonObj: JsonObject): String = jsonObj.get("last_chapter").string.trim()
 
-    private fun isOneshot(chapterJson: JsonObject, lastChapter: String): Boolean {
+    private fun isOneshot(chapterJson: JsonObject, genres: List<String>): Boolean {
         val chapter = chapterJson.takeIf { it.size() > 0 }?.get(chapterJson.keys().elementAt(0))?.obj?.get("title")?.string
         return if (chapter != null) {
-            chapter == "Oneshot" || chapter.isEmpty() && lastChapter == "0"
+            chapter == "Oneshot" || genres.contains("Oneshot")
         } else {
             false
         }
@@ -533,7 +658,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
 
-    override fun getFilterList() = FilterList(
+    override fun getFilterList() = if (logged) FilterList(
             TextField("Author", "author"),
             TextField("Artist", "artist"),
             R18(),
@@ -547,6 +672,16 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             ThemeList(getThemeList()),
             TagInclusionMode(),
             TagExclusionMode()
+    ) else FilterList(
+            R18(),
+            object : Filter.Sort("Sort", arrayOf("Update date"), Filter.Sort.Selection(0, true)) {},
+            Tag("86", "Completed (English)"),
+            PublicationStatus(),
+            OriginalLanguage(),
+            ContentList(getContentList()),
+            FormatList(getFormatList()),
+            GenreList(getGenreList()),
+            ThemeList(getThemeList())
     )
 
     private fun getContentList() = listOf(
@@ -683,6 +818,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 Pair("Korean", "28"),
                 Pair("Spanish (LATAM)", "29"),
                 Pair("Thai", "32"),
-                Pair("Filipino", "34"))
+                Pair("Filipino", "34"),
+                Pair("Portuguese (Br)", "16"), // absent in MangaDex search filed
+                Pair("Italian", "6"), // absent in MangaDex search filed
+                Pair("Malay", "31")) // absent in MangaDex search filed
     }
 }
