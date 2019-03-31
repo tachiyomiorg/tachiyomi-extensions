@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit
  *     `manga_list` returns latest 'added' manga. not a chapter updates.
  **/
 class MangaShowMe : ParsedHttpSource() {
-    override val name = "MangaShow.Me"
-    override val baseUrl = "https://mangashow5.me"
+    override val name = "ManaMoa (MangaShow.Me)"
+    override val baseUrl = "https://manamoa.net"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -68,7 +68,7 @@ class MangaShowMe : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.url = urlTitleEscape(linkElement.attr("href"))
-        manga.title = titleElement.text()
+        manga.title = titleElement.text().trim()
         manga.thumbnail_url = urlFinder(element.select(".img-wrap-back").attr("style"))
         return manga
     }
@@ -211,13 +211,6 @@ class MangaShowMe : ParsedHttpSource() {
 
             (0 until imageUrls.length())
                     .map { imageUrls.getString(it) }
-                    .map {
-                        val curr = ".mangashow5.me"
-                        it
-                                .replace(".mangashow.me", curr)
-                                .replace(".mangashow2.me", curr)
-                                .replace(".mangashow3.me", curr)
-                    }
                     .forEach { pages.add(Page(pages.size, "", decoder.request(it))) }
         } catch (e: Exception) {
             e.printStackTrace()

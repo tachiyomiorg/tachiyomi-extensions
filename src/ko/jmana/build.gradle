@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: JMana'
     pkgNameSuffix = 'ko.jmana'
     extClass = '.JMana'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
