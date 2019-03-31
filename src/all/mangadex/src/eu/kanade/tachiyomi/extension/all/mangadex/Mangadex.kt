@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit
 open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ConfigurableSource, ParsedHttpSource() {
 
     var logged = false
+    val updateUrl = "https://raw.githubusercontent.com/paronos/tachiyomi-extensions/mangadexupdate/update.json"
+    val timeBetweenUpdate = 43200000L
 
     override val name = "MangaDex"
 
@@ -154,16 +156,32 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     .map { response ->
                         searchMangaParse(response)
                     }
+        } else if (Data.updatetime + timeBetweenUpdate < System.currentTimeMillis()) {
+            client.newCall(GET(updateUrl))
+                    .asObservableSuccess()
+                    .map { response ->
+                        Data.updatetime = System.currentTimeMillis()
+                        val jsonData = response.body()!!.string()
+                        val json = JsonParser().parse(jsonData).asJsonObject
+                        json.forEach { k, v ->
+                            val i = k.toInt();
+                            while (Data.DATA.size <= i) {
+                                Data.DATA.add(null)
+                            }
+                            Data.DATA.set(i, v.asString)
+                        }
+                        localSearch(page, query, filters)
+                    }
         } else {
-            localSearch(page, query, filters)
+            Observable.just(localSearch(page, query, filters))
         }
     }
 
-    private fun localSearch(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+    private fun localSearch(page: Int, query: String, filters: FilterList): MangasPage {
         var publicationStatus = 0
         var originalLanguage = 0
         var r18 = getShowR18()
-        var ascending = true
+        var ascending = false
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
         filters.forEach { filter ->
@@ -254,7 +272,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         var i = if (ascending) -1 else Data.DATA.size
         var mangas = mutableListOf<SManga>()
         ext@ while ((if (ascending) ++i < Data.DATA.size else --i >= 0) && mangas.size < page * mangaPerPage) {
-            val mdata = Data.DATA[i]
+            val mdata = Data.DATA.getOrNull(i)
+            if (mdata == null || mdata.length <= 7)
+                continue
             val title = mdata.substring(7)
             if (!title.contains(query.replace(WHITESPACE_REGEX, " "), true)) {
                 continue
@@ -278,7 +298,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             mangas.add(manga)
         }
         mangas = mangas.subList((page - 1) * mangaPerPage, mangas.size)
-        return Observable.just(MangasPage(mangas, mangas.size == mangaPerPage))
+        return MangasPage(mangas, mangas.size == mangaPerPage)
     }
 
     private fun getSearchClient(filters: FilterList): OkHttpClient {
@@ -674,7 +694,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             TagExclusionMode()
     ) else FilterList(
             R18(),
-            object : Filter.Sort("Sort", arrayOf("Update date"), Filter.Sort.Selection(0, true)) {},
+            object : Filter.Sort("Sort", arrayOf("Update date"), Filter.Sort.Selection(0, false)) {},
             Tag("86", "Completed (English)"),
             PublicationStatus(),
             OriginalLanguage(),
