@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ManaMoa (MangaShow.Me)'
+    appName = 'Tachiyomi: MangaShow.Me (ManaMoa)'
     pkgNameSuffix = 'ko.mangashowme'
     extClass = '.MangaShowMe'
-    extVersionCode = 8
+    extVersionCode = 9
     libVersion = '1.2'
 }
 

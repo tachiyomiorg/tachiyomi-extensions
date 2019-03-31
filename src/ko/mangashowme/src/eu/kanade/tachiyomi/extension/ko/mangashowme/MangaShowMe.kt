@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  *     `manga_list` returns latest 'added' manga. not a chapter updates.
  **/
 class MangaShowMe : ParsedHttpSource() {
-    override val name = "ManaMoa (MangaShow.Me)"
+    override val name = "MangaShow.Me"
     override val baseUrl = "https://manamoa.net"
     override val lang: String = "ko"
 
@@ -33,30 +33,6 @@ class MangaShowMe : ParsedHttpSource() {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(ImageDecoderInterceptor())
-            .addInterceptor { chain ->
-                val req = chain.request()
-                var res: Response? = null
-
-                for (_i in 0..10) {
-                    try {
-                        res = chain.proceed(req)
-                    } catch (e: javax.net.ssl.SSLHandshakeException) {
-                        if (e.message.toString().contains("Connection reset by peer")) continue
-                    }
-                    break
-                }
-
-                res ?: chain.proceed(req)
-            }
-            .addInterceptor { chain ->
-                val response = chain.proceed(chain.request())
-                if (response.code() == 503) {
-                    val body = response.body().toString()
-                    if (body.contains("console.log(\"503\")") || body.contains("console.log('503')"))
-                        throw Exception("Try again.\nServer returns 503 Service Unavailable.")
-                }
-                response
-            }
             .build()!!
 
     //override fun popularMangaSelector() = "div.basic-post-gallery > div >  div.post-row"
