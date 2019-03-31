@@ -1,9 +1,15 @@
 package eu.kanade.tachiyomi.extension.ru.henchan
 
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.fromJson
+import com.github.salomonbrys.kotson.string
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -31,54 +37,42 @@ class Henchan : ParsedHttpSource() {
             GET("$baseUrl/manga/new?offset=${20 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var pageNum = 1
-        when {
-            page <  1 -> pageNum = 1
-            page >= 1 -> pageNum = page
-        }
+
         val url = if (query.isNotEmpty()) {
-            "$baseUrl/?do=search&subaction=search&story=$query&search_start=$pageNum"
+            "$baseUrl/?do=search&subaction=search&story=$query&search_start=$page"
         } else {
             var genres = ""
             var order = ""
-            for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+            filters.forEach {filter ->
                 when(filter){
                     is GenreList -> {
-                        filter.state.forEach { f ->
-                            if (!f.isIgnored()) {
-                                genres += (if (f.isExcluded()) "-" else "") + f.id + '+'
-                            }
-                        }
+                        filter.state
+                                .filter { !it.isIgnored() }
+                                .forEach { f ->
+                                    genres += (if (f.isExcluded()) "-" else "") + f.id + '+'
+                                }
                     }
                 }
             }
 
             if (genres.isNotEmpty()) {
-                for (filter in filters) {
+                filters.forEach {filter ->
                     when (filter) {
                         is OrderBy -> {
-                            order = if (filter.state!!.ascending) {
-                                arrayOf("&n=dateasc", "&n=favasc", "&n=abcdesc")[filter.state!!.index]
-                            } else {
-                                arrayOf("", "&n=favdesc", "&n=abcasc")[filter.state!!.index]
-                            }
+                            order = filter.toUriPartWithGenres()
                         }
                     }
                 }
-                "$baseUrl/tags/${genres.dropLast(1)}&sort=manga$order?offset=${20 * (pageNum - 1)}"
+                "$baseUrl/tags/${genres.dropLast(1)}&sort=manga$order?offset=${20 * (page - 1)}"
             }else{
-                for (filter in filters) {
+                filters.forEach {filter ->
                     when (filter) {
                         is OrderBy -> {
-                            order = if (filter.state!!.ascending) {
-                                arrayOf("manga/new&n=dateasc", "manga/new&n=favasc", "manga/new&n=abcdesc")[filter.state!!.index]
-                            } else {
-                                arrayOf("manga/new", "mostfavorites&sort=manga", "manga/new&n=abcasc")[filter.state!!.index]
-                            }
+                            order = filter.toUriPartWithoutGenres()
                         }
                     }
                 }
-                "$baseUrl/$order?offset=${20 * (pageNum - 1)}"
+                "$baseUrl/$order?offset=${20 * (page - 1)}"
             }
         }
         return GET(url, headers)
@@ -198,29 +192,35 @@ class Henchan : ParsedHttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET(exhentaiBaseUrl + chapter.url.replace("/manga/", "/online/") + "?development_access=true", headers)
-    }
-
-    override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
-        val imgString = html.split("\"fullimg\": [").last().split("]").first()
-        val resPages = mutableListOf<Page>()
-        val imgs = imgString.split(",")
-        imgs.forEachIndexed { index, s ->
-            resPages.add(Page(index, imageUrl = s.trim('"', '\'', ' ')))
-        }
-        return resPages
+        val url = exhentaiBaseUrl + chapter.url.replace("/manga/", "/online/") + "?development_access=true"
+        return GET(url, Headers.Builder().add("Accept", "image/webp,image/apng").build())
     }
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
-    override fun pageListParse(document: Document): List<Page> = throw Exception("Not Used")
+    override fun pageListParse(document: Document): List<Page> {
+        val imgScript = document.select("script:containsData(fullimg)").first().toString()
+        val imgString =  imgScript.substring(imgScript.indexOf('{'), imgScript.lastIndexOf('}') + 1)
+        val jsonArray = Gson().fromJson<JsonObject>(imgString)["fullimg"].array
+
+        val resPages = mutableListOf<Page>()
+        jsonArray.forEachIndexed { index, imageUrl ->
+            resPages.add(Page(index, imageUrl = imageUrl.string.replace(".gif.webp", ".gif")))
+        }
+        return resPages
+    }
 
     private class Genre(val id: String, name: String = id.replace('_', ' ').capitalize()) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
-    private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Дата", "Популярность", "Алфавит"),
-            Filter.Sort.Selection(1, false))
+    private class OrderBy : UriPartFilter("Сортировка", arrayOf("Дата", "Популярность", "Алфавит"),
+            arrayOf("&n=dateasc" to "", "&n=favasc" to "&n=favdesc", "&n=abcdesc" to "&n=abcasc"),
+            arrayOf("manga/new&n=dateasc" to "manga/new", "manga/new&n=favasc" to "mostfavorites&sort=manga", "manga/new&n=abcdesc" to "manga/new&n=abcasc"))
+
+    private open class UriPartFilter(displayName: String, sortNames: Array<String>, val withGenres: Array<Pair<String, String>>, val withoutGenres: Array<Pair<String, String>>) :
+            Filter.Sort(displayName, sortNames, Filter.Sort.Selection(1, false)) {
+        fun toUriPartWithGenres() = if(state!!.ascending) withGenres[state!!.index].first else withGenres[state!!.index].second
+        fun toUriPartWithoutGenres() = if(state!!.ascending) withoutGenres[state!!.index].first else withoutGenres[state!!.index].second
+    }
 
     override fun getFilterList() = FilterList(
             OrderBy(),
