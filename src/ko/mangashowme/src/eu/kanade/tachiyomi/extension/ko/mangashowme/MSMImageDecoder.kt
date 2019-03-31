@@ -7,6 +7,7 @@ import android.graphics.Rect
 import eu.kanade.tachiyomi.network.GET
 import okhttp3.*
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.InputStream
 
 /*
@@ -60,7 +61,7 @@ internal class ImageDecoderInterceptor : Interceptor {
                 response.newBuilder().body(rb).build()
             } catch (e: Exception) {
                 e.printStackTrace()
-                chain.proceed(req)
+                throw IOException("Image decoder failure.", e)
             }
         } else {
             chain.proceed(req)
