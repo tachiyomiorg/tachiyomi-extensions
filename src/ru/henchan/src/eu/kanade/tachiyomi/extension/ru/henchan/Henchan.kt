@@ -115,6 +115,7 @@ class Henchan : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
+        manga.thumbnail_url = document.select("#cover").first().attr("src")
         manga.author = document.select(".row .item2 h2")[1].text()
         manga.genre = document.select(".sidetag > a:eq(2)").joinToString { it.text() }
         manga.description = document.select("#description").text()
