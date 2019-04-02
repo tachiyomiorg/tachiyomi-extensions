@@ -27,11 +27,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
 
     override fun latestUpdatesNextPageSelector() = ".x-pagination li:last-child a"
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        // The site redirects page 1 -> baseUrl so we do this redirect early for optimization
-        return if(page == 1) GET(baseUrl)
-        else GET("$baseUrl/page/$page/")
-    }
+    override fun latestUpdatesRequest(page: Int) = pagedRequest("$baseUrl/", page)
 
     override fun latestUpdatesSelector() = "article"
 
@@ -95,11 +91,14 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
         }
 
         return url?.let {
-            val builtUrl = baseUrl + url
-            // The site redirects page 1 -> url without page so we do this redirect early for optimization
-            if(page == 1) GET(builtUrl)
-            else GET("${builtUrl}page/$page/")
+            pagedRequest("$baseUrl$url", page, queryString)
         } ?: latestUpdatesRequest(page)
+    }
+
+    private fun pagedRequest(url: String, page: Int, queryString: String? = null): Request {
+        // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
+        val builtUrl =  if(page == 1) url else "${url}page/$page/"
+        return GET(if(queryString != null) "$builtUrl?$queryString" else builtUrl)
     }
 
     override fun searchMangaParse(response: Response) = latestUpdatesParse(response)
