@@ -3,14 +3,19 @@ package eu.kanade.tachiyomi.extension.all.ehentai
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
+import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
@@ -23,47 +28,37 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
     override val supportsLatest = true
 
-    /**
-     * Gallery list entry
-     * @param fav The favorite this gallery belongs to (currently unused)
-     * @param manga The manga object
-     */
-    data class ParsedManga(val fav: String?, val manga: SManga)
 
-    fun extendedGenericMangaParse(doc: Document)
-            = with(doc) {
-        //Parse mangas
-        val parsedMangas = select(".gtr0,.gtr1").map {
-            ParsedManga(
-                    fav = it.select(".itd .it3 > .i[id]").attr("title"),
-                    manga = SManga.create().apply {
-                        //Get title
-                        it.select(".itd .it5 a").apply {
-                            title = text()
-                            setUrlWithoutDomain(addParam(attr("href"), "nw", "always"))
-                        }
-                        //Get image
-                        it.select(".itd .it2").first().apply {
-                            children().first()?.let {
-                                thumbnail_url = it.attr("src")
-                            } ?: text().split("~").apply {
-                                thumbnail_url = "http://${this[1]}/${this[2]}"
-                            }
-                        }
-                    })
+    val initMetaRegex = """inits?~(?:ul\.)?(.*?)~(.*?)~""".toRegex()
 
-        }
-        //Add to page if required
-        val hasNextPage = select("a[onclick=return false]").last()?.text() == ">"
-        Pair(parsedMangas, hasNextPage)
+    fun parseInitsMeta(meta: String): String{
+        val match = initMetaRegex.find(meta)
+        return "https://" + match?.groupValues?.get(1) +"/"+ match?.groupValues?.get(2)
     }
 
-    /**
-     * Parse a list of galleries
-     */
-    fun genericMangaParse(response: Response)
-            = extendedGenericMangaParse(response.asJsoup()).let {
-        MangasPage(it.first.map { it.manga }, it.second)
+    private fun genericMangaParse(response: Response): MangasPage {
+        val doc = response.asJsoup()
+        val parsedMangas = doc.select("table.itg td.glname").map {
+            SManga.create().apply {
+                //Get title
+                it.select("a")?.first()?.apply {
+                    title = text()
+                    url = ExGalleryMetadata.normalizeUrl(attr("href"))
+                }
+                //Get image
+                it.parent().select(".glthumb")?.first().apply {
+                    thumbnail_url = this!!.select("img").first()?.attr("src")?.nullIfBlank()
+                            ?: parseInitsMeta(it.parent()
+                                    .select(".glthumb").first()
+                                    .childNode(0).toString())
+                }
+            }
+        }
+
+        //Add to page if required
+        val hasNextPage = doc.select("a[onclick=return false]").last()?.text() == ">"
+
+        return MangasPage(parsedMangas, hasNextPage)
     }
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>>
@@ -85,7 +80,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
      */
     private fun fetchChapterPage(chapter: SChapter, np: String,
                                  pastUrls: List<String> = emptyList()): Observable<List<String>> {
-        val urls = pastUrls.toMutableList()
+        val urls = ArrayList(pastUrls)
         return chapterPageCall(np).flatMap {
             val jsoup = it.asJsoup()
             urls += parseChapterPage(jsoup)
@@ -162,40 +157,49 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             thumbnailUrl = select("#gd1 div").attr("style").nullIfBlank()?.let {
                 it.substring(it.indexOf('(') + 1 until it.lastIndexOf(')'))
             }
-
-            genre = select(".ic").parents().attr("href").nullIfBlank()?.trim()?.substringAfterLast('/')
+            genre = select("#gdc div").text().nullIfBlank()?.trim()?.toLowerCase()
 
             uploader = select("#gdn").text().nullIfBlank()?.trim()
 
             //Parse the table
             select("#gdd tr").forEach {
-                val left = it.select(".gdt1").text().nullIfBlank()?.trim() ?: return@forEach
-                val right = it.select(".gdt2").text().nullIfBlank()?.trim() ?: return@forEach
-                ignore {
-                    when (left.removeSuffix(":")
-                            .toLowerCase()) {
-                        "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
-                        "visible" -> visible = right.nullIfBlank()
-                        "language" -> {
-                            language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
-                            translated = right.endsWith(TR_SUFFIX, true)
+                it.select(".gdt1")
+                        .text()
+                        .nullIfBlank()
+                        ?.trim()
+                        ?.let { left ->
+                            it.select(".gdt2")
+                                    .text()
+                                    .nullIfBlank()
+                                    ?.trim()
+                                    ?.let { right ->
+                                        ignore {
+                                            when (left.removeSuffix(":")
+                                                    .toLowerCase()) {
+                                                "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
+                                                "visible" -> visible = right.nullIfBlank()
+                                                "language" -> {
+                                                    language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
+                                                    translated = right.endsWith(TR_SUFFIX, true)
+                                                }
+                                                "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
+                                                "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
+                                                "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
+                                            }
+                                        }
+                                    }
                         }
-                        "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
-                        "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
-                        "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
-                    }
-                }
             }
 
             //Parse ratings
             ignore {
-                averageRating = getElementById("rating_label")
+                averageRating = select("#rating_label")
                         .text()
                         .removePrefix("Average:")
                         .trim()
                         .nullIfBlank()
                         ?.toDouble()
-                ratingCount = getElementById("rating_count")
+                ratingCount = select("#rating_count")
                         .text()
                         .trim()
                         .nullIfBlank()
@@ -237,7 +241,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         //TODO We cannot currently do this as page.url is immutable
         //Each press of the retry button will choose another server
         /*select("#loadfail").attr("onclick").nullIfBlank()?.let {
-            page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 .. it.lastIndexOf('\'') - 1))
+            page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 until it.lastIndexOf('\'')))
         }*/
         currentImage
     }!!
@@ -283,10 +287,12 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             .toString()
 
     override val client = network.client.newBuilder()
-            .addNetworkInterceptor { chain ->
+            .cookieJar(CookieJar.NO_COOKIES)
+            .addInterceptor { chain ->
                 val newReq = chain
                         .request()
                         .newBuilder()
+                        .removeHeader("Cookie")
                         .addHeader("Cookie", cookiesHeader)
                         .build()
 

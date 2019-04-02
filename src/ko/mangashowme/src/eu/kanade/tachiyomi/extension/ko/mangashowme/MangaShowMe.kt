@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  **/
 class MangaShowMe : ParsedHttpSource() {
     override val name = "MangaShow.Me"
-    override val baseUrl = "https://mangashow5.me"
+    override val baseUrl = "https://manamoa.net"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -33,30 +33,6 @@ class MangaShowMe : ParsedHttpSource() {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(ImageDecoderInterceptor())
-            .addInterceptor { chain ->
-                val req = chain.request()
-                var res: Response? = null
-
-                for (_i in 0..10) {
-                    try {
-                        res = chain.proceed(req)
-                    } catch (e: javax.net.ssl.SSLHandshakeException) {
-                        if (e.message.toString().contains("Connection reset by peer")) continue
-                    }
-                    break
-                }
-
-                res ?: chain.proceed(req)
-            }
-            .addInterceptor { chain ->
-                val response = chain.proceed(chain.request())
-                if (response.code() == 503) {
-                    val body = response.body().toString()
-                    if (body.contains("console.log(\"503\")") || body.contains("console.log('503')"))
-                        throw Exception("Try again.\nServer returns 503 Service Unavailable.")
-                }
-                response
-            }
             .build()!!
 
     //override fun popularMangaSelector() = "div.basic-post-gallery > div >  div.post-row"
@@ -68,7 +44,7 @@ class MangaShowMe : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.url = urlTitleEscape(linkElement.attr("href"))
-        manga.title = titleElement.text()
+        manga.title = titleElement.text().trim()
         manga.thumbnail_url = urlFinder(element.select(".img-wrap-back").attr("style"))
         return manga
     }
@@ -211,13 +187,6 @@ class MangaShowMe : ParsedHttpSource() {
 
             (0 until imageUrls.length())
                     .map { imageUrls.getString(it) }
-                    .map {
-                        val curr = ".mangashow5.me"
-                        it
-                                .replace(".mangashow.me", curr)
-                                .replace(".mangashow2.me", curr)
-                                .replace(".mangashow3.me", curr)
-                    }
                     .forEach { pages.add(Page(pages.size, "", decoder.request(it))) }
         } catch (e: Exception) {
             e.printStackTrace()

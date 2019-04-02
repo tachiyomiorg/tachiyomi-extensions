@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
-import org.json.JSONObject
+import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -189,7 +189,7 @@ class MangaPark : ParsedHttpSource() {
         val doc = document.toString()
         val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
         val pages = mutableListOf<Page>()
-        val imglist = JSONObject("""{"data": $obj}""").getJSONArray("data")
+        val imglist = JSONArray(obj)
         for (i in 0 until imglist.length()) {
             val item = imglist.getJSONObject(i)
             var page = item.getString("u")

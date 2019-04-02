@@ -18,6 +18,8 @@ import java.util.*
 
 open class FoolSlide(override val name: String, override val baseUrl: String, override val lang: String, val urlModifier: String = "") : ParsedHttpSource() {
 
+    protected open val dedupeLatestUpdates = true
+
     override val supportsLatest = true
 
     override fun popularMangaSelector() = "div.group"
@@ -30,9 +32,11 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
-        val mangas = mp.mangas.distinctBy { it.url }.filterNot { latestUpdatesUrls.contains(it.url) }
-        latestUpdatesUrls.addAll(mangas.map { it.url })
-        return MangasPage(mangas, mp.hasNextPage)
+        return if(dedupeLatestUpdates) {
+            val mangas = mp.mangas.distinctBy { it.url }.filterNot { latestUpdatesUrls.contains(it.url) }
+            latestUpdatesUrls.addAll(mangas.map { it.url })
+            MangasPage(mangas, mp.hasNextPage)
+        } else mp
     }
 
     override fun latestUpdatesSelector() = "div.group"
@@ -113,8 +117,10 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
     /**
      * Transform a GET request into a POST request that automatically authorizes all adult content
      */
-    private fun allowAdult(request: Request): Request {
-        return POST(request.url().toString(), body = FormBody.Builder()
+    private fun allowAdult(request: Request) = allowAdult(request.url().toString())
+
+    protected fun allowAdult(url: String): Request {
+        return POST(url, body = FormBody.Builder()
                 .add("adult", "true")
                 .build())
     }

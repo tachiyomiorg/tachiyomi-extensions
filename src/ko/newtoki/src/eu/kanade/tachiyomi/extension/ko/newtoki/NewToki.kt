@@ -18,28 +18,10 @@ import java.util.*
  **/
 class NewToki : ParsedHttpSource() {
     override val name = "NewToki"
-    override val baseUrl = "https://newtoki3.net"
+    override val baseUrl = "https://newtoki7.net"
     override val lang: String = "ko"
-
-    // Latest updates currently returns duplicate manga as it separates manga into chapters
-    override val supportsLatest = false
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-            .addInterceptor { chain ->
-                val req = chain.request()
-                var res: Response? = null
-
-                for (_i in 0..10) {
-                    try {
-                        res = chain.proceed(req)
-                    } catch (e: javax.net.ssl.SSLHandshakeException) {
-                        if (e.message!!.contains("Connection reset by peer")) continue
-                    }
-                    break
-                }
-
-                res ?: chain.proceed(req)
-            }
-            .build()!!
+    override val supportsLatest = true
+    override val client: OkHttpClient = network.cloudflareClient
 
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
@@ -192,12 +174,11 @@ class NewToki : ParsedHttpSource() {
     }
 
 
-    // Latest not supported
-    override fun latestUpdatesSelector() = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+    override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
 
 
     //We are able to get the image URL directly from the page list

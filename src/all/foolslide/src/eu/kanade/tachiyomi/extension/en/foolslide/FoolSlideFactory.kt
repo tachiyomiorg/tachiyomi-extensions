@@ -6,8 +6,7 @@ import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import okhttp3.Request
 import org.jsoup.nodes.Document
 
@@ -50,7 +49,8 @@ fun getAllFoolSlide(): List<Source> {
             EvilFlowers(),
             AkaiYuhiMunTeam(),
             LupiTeam(),
-            HotChocolateScans()
+            HotChocolateScans(),
+            HentaiCafe()
     )
 }
 
@@ -201,3 +201,4 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
         return manga
     }
 }
+

@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.all.ninehentai
 
-import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
@@ -14,7 +15,6 @@ import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.net.URLEncoder
 import java.util.*
 
 open class NineHentai : ParsedHttpSource() {
@@ -29,6 +29,8 @@ open class NineHentai : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    private val gson = Gson()
+
     override fun popularMangaRequest(page: Int): Request {
         return POST(baseUrl + SEARCH_URL, headers, buildRequestBody(page = page, sort = 1))
     }
@@ -41,105 +43,92 @@ open class NineHentai : ParsedHttpSource() {
         return client.newCall(popularMangaRequest(page))
                 .asObservableSuccess()
                 .map { response ->
-                    popularMangaParse(response)
+                    getMangaList(response, page)
                 }
-    }
-
-
-    override fun popularMangaParse(response: Response): MangasPage {
-        val list = getMangaList(response)
-        return MangasPage(list, list.isNotEmpty())
     }
 
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         return client.newCall(latestUpdatesRequest(page))
                 .asObservableSuccess()
                 .map { response ->
-                    latestUpdatesParse(response)
+                    getMangaList(response, page)
                 }
-    }
-
-    override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
-
-    private fun getMangaList(response: Response): List<SManga> {
-        val jsonData = response.body()!!.string()
-        val jsonObject = JsonParser().parse(jsonData).asJsonObject
-        val results = jsonObject.getAsJsonArray("results")
-        return parseSearch(results.toList())
-    }
-
-    private fun parseSearch(jsonArray: List<JsonElement>): List<SManga> {
-        val mutableList = mutableListOf<SManga>()
-        jsonArray.forEach { json ->
-            val manga = SManga.create()
-            val id = json["id"].string
-            manga.url = "$baseUrl/g/$id"
-            manga.title = json["title"].string
-            manga.thumbnail_url = json["image_server"].string + id + "/" + "cover.jpg"
-            mutableList.add(manga)
-        }
-        return mutableList
-    }
-
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return client.newCall(mangaDetailsRequest(manga))
-                .asObservableSuccess()
-                .map { response ->
-                    chapterListParse(response)
-                }
-    }
-
-    private fun getChapter(response: Response): SChapter {
-        val jsonData = response.body()!!.string()
-        val jsonObject = JsonParser().parse(jsonData).asJsonObject
-        val jsonArray = jsonObject.getAsJsonObject("results")
-
-        val sChapter = SChapter.create()
-
-        jsonArray.let { json ->
-            val id = json["id"].string
-            sChapter.url = "$baseUrl/g/$id"
-            sChapter.name = "chapter"
-            //api doesnt return date so setting to current date for now
-            sChapter.date_upload = Date().time
-        }
-        return sChapter
-
-    }
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return POST(baseUrl + SEARCH_URL, headers, buildRequestBody(query, page))
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
                 .map { response ->
-                    searchMangaParse(response)
+                    getMangaList(response, page)
                 }
     }
 
-    override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
-
-    override fun mangaDetailsParse(response: Response): SManga {
+    private fun getMangaList(response: Response, page: Int): MangasPage {
         val jsonData = response.body()!!.string()
         val jsonObject = JsonParser().parse(jsonData).asJsonObject
-        val results = jsonObject.getAsJsonObject("results")
-        return parseSearch(listOf(results))[0]
+        val totalPages = jsonObject["total_count"].int
+        val results = jsonObject["results"].array
+        return MangasPage(parseSearch(results.toList()), page < totalPages)
     }
 
-    override fun chapterListParse(response: Response): List<SChapter> = listOf(getChapter(response))
+    private fun parseSearch(jsonArray: List<JsonElement>): List<SManga> {
+        val mutableList = mutableListOf<SManga>()
+        jsonArray.forEach { json ->
+            val manga = SManga.create()
+            val gsonManga = gson.fromJson<Manga>(json)
+            manga.url = "/g/${gsonManga.id}"
+            manga.title = gsonManga.title
+            manga.thumbnail_url = gsonManga.image_server + gsonManga.id + "/cover.jpg"
+            manga.genre = gsonManga.tags.filter { it.type == 1 }.joinToString { it.name }
+            manga.artist = gsonManga.tags.firstOrNull { it.type == 4 }?.name
+            manga.initialized = true
+            mutableList.add(manga)
+        }
+        return mutableList
+    }
 
-    override fun pageListParse(document: Document) = throw Exception("Not used")
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        val chapter = SChapter.create()
+        val chapterId = manga.url.substringAfter("/g/").toInt()
+        chapter.url = "/g/$chapterId"
+        chapter.name = "chapter"
+        //api doesnt return date so setting to current date for now
+        chapter.date_upload = Date().time
 
-    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        val mangaId = chapter.url.substringAfter("/g/").toInt()
+        return Observable.just(listOf(chapter))
+    }
 
-        return client.newCall(POST(baseUrl + MANGA_URL, headers, buildIdBody(mangaId)))
-                .asObservableSuccess()
-                .map { response ->
-                    pageListParse(response)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val includedTags =  mutableListOf<Tag>()
+        val excludedTags = mutableListOf<Tag>()
+        var sort = 0
+        for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+            when(filter){
+                is GenreList -> {
+                    filter.state.forEach { f ->
+                        if (!f.isIgnored()) {
+                            if (f.isExcluded())
+                               excludedTags.add(f)
+                            else
+                               includedTags.add(f)
+                        }
+                    }
                 }
+                is Sorting -> {
+                    sort = filter.state!!.index
+                }
+            }
+        }
+        return POST(baseUrl + SEARCH_URL, headers, buildRequestBody(query, page, sort, includedTags, excludedTags))
+    }
+
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return Observable.just(manga)
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        val mangaId = chapter.url.substringAfter("/g/").toInt()
+        return POST(baseUrl + MANGA_URL, headers, buildIdBody(mangaId))
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -151,38 +140,53 @@ open class NineHentai : ParsedHttpSource() {
         var mangaId: String
         jsonArray.let { json ->
             mangaId = json["id"].string
-            imageUrl = json["image_server"].string + mangaId + "/"
+            imageUrl = json["image_server"].string + mangaId
             totalPages = json["total_page"].int
         }
         val pages = mutableListOf<Page>()
 
         for (i in 1..totalPages) {
-            pages.add(Page(pages.size, "", "$imageUrl$i.jpg"))
+            pages.add(Page(pages.size, "", "$imageUrl/$i.jpg"))
         }
 
         return pages
     }
 
-    private fun buildRequestBody(searchText: String = "", page: Int = 0, sort: Int = 0): RequestBody {
-        //in the future switch this to dtos and actually build the json.  This is just a work around for
-        //initial release, then you can have actual tag searching etc
-        val json = """{"search":{"text":"${URLEncoder.encode(searchText, "UTF-8")}","page":$page,"sort":$sort,"pages":{"range":[0,2000]},"tag":{"text":"","type":1,"tags":[],"items":{"included":[],"excluded":[]}}}}"""
+    private fun buildRequestBody(searchText: String = "", page: Int, sort: Int = 0, includedTags: MutableList<Tag> = arrayListOf(), excludedTags: MutableList<Tag> = arrayListOf()): RequestBody {
+        val json = gson.toJson(mapOf("search" to SearchRequest(text = searchText, page = page-1, sort = sort, tag = mapOf("items" to Items(includedTags, excludedTags)))))
         return RequestBody.create(MEDIA_TYPE, json)
     }
 
-    override fun mangaDetailsRequest(smanga: SManga): Request {
-        val id = smanga.url.substringAfter("/g/").toInt()
-        return POST(baseUrl + MANGA_URL, headers, buildIdBody(id))
+    private fun buildIdBody(id: Int): RequestBody {
+        return RequestBody.create(MEDIA_TYPE, gson.toJson(mapOf("id" to id)))
     }
 
-    private fun buildIdBody(id: Int): RequestBody {
-        val dto = eu.kanade.tachiyomi.extension.all.ninehentai.id(id)
-        return RequestBody.create(MEDIA_TYPE, Gson().toJson(dto))
-    }
+    private class GenreList(tags: List<Tag>) : Filter.Group<Tag>("Tags", tags)
+
+    private class Sorting : Filter.Sort("Sorting",
+            arrayOf("Newest", "Popular Rightnow", "Most Fapped", "Most Viewed", "By Title"),
+            Filter.Sort.Selection(1, false))
+
+    override fun getFilterList() = FilterList(
+            Sorting(),
+            GenreList(NHTags.getTagsList())
+    )
 
     override fun imageUrlParse(document: Document): String = ""
 
+    override fun chapterListRequest(manga: SManga): Request = throw Exception("Not Used")
+
+    override fun popularMangaParse(response: Response): MangasPage = throw Exception("Not Used")
+
+    override fun latestUpdatesParse(response: Response): MangasPage = throw Exception("Not Used")
+
+    override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not Used")
+
+    override fun chapterListParse(response: Response): List<SChapter> = throw Exception("Not Used")
+
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not used")
+
+    override fun pageListParse(document: Document) = throw Exception("Not used")
 
     override fun chapterListSelector(): String = throw Exception("Not used")
 
@@ -191,6 +195,8 @@ open class NineHentai : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = throw Exception("Not used")
 
     override fun latestUpdatesSelector(): String = throw Exception("Not used")
+
+    override fun mangaDetailsParse(response: Response): SManga = throw Exception("Not Used")
 
     override fun mangaDetailsParse(document: Document): SManga = throw Exception("Not used")
 

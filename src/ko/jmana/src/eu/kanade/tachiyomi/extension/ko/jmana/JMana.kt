@@ -16,21 +16,22 @@ import java.text.SimpleDateFormat
  **/
 class JMana : ParsedHttpSource() {
     override val name = "JMana"
-    override val baseUrl = "https://jmana5.com"
+    override val baseUrl = "https://mangahide.com"
     override val lang: String = "ko"
-
-    // Latest updates currently returns duplicate manga as it separates manga into chapters
-    override val supportsLatest = false
+    override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaSelector() = "div.conts > ul > li"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val linkElement = element.select("a")
-        val titleElement = element.select(".titBox .price").first()
+        val titleElement = element.select(".titBox > span").first()
+        val link = linkElement.attr("href")
+                .replace(" ", "%20")
+                .replace(Regex("/[0-9]+(?!.*?/)"), "")
 
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(linkElement.attr("href").replace(" ", "%20"))
+        manga.setUrlWithoutDomain(link)
         manga.title = titleElement.text()
         manga.thumbnail_url = baseUrl + element.select(".imgBox img").attr("src")
         return manga
@@ -39,7 +40,7 @@ class JMana : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "div.page > ul > li"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/frame/?page=${page - 1}")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic_main_frame?page=${page - 1}")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -62,7 +63,7 @@ class JMana : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/frame/?keyword=$query&page=${page - 1}")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/comic_main_frame?keyword=$query&page=${page - 1}")
 
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -128,12 +129,11 @@ class JMana : ParsedHttpSource() {
         return pages
     }
 
-    // Latest not supported
-    override fun latestUpdatesSelector() = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/frame")
+    override fun latestUpdatesNextPageSelector() = ""
 
 
     //We are able to get the image URL directly from the page list

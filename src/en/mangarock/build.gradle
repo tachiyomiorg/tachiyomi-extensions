@@ -5,8 +5,13 @@ ext {
     appName = 'Tachiyomi: Manga Rock'
     pkgNameSuffix = 'en.mangarock'
     extClass = '.MangaRock'
-    extVersionCode = 5
+    extVersionCode = 7
     libVersion = '1.0'
+}
+
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.8.5'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"

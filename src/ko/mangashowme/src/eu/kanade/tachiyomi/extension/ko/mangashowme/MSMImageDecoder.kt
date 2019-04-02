@@ -7,6 +7,7 @@ import android.graphics.Rect
 import eu.kanade.tachiyomi.network.GET
 import okhttp3.*
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.InputStream
 
 /*
@@ -51,7 +52,9 @@ internal class ImageDecoderInterceptor : Interceptor {
                 val chapter = reqUrl.queryParameter("ch")!!
                 val imageUrl = url.split("?").first()
 
-                val response = chain.proceed(GET("$imageUrl?v=2"))
+                val response = chain.proceed(GET("$imageUrl?quick"))
+                if (viewCnt.toInt() < 10) return response // Pass decoder if it's not scrambled.
+
                 val res = response.body()!!.byteStream().use {
                     decodeImageRequest(version, chapter, viewCnt, it)
                 }
@@ -60,7 +63,7 @@ internal class ImageDecoderInterceptor : Interceptor {
                 response.newBuilder().body(rb).build()
             } catch (e: Exception) {
                 e.printStackTrace()
-                chain.proceed(req)
+                throw IOException("Image decoder failure.", e)
             }
         } else {
             chain.proceed(req)

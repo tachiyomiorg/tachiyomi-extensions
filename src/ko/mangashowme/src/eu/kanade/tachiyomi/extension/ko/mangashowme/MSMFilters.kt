@@ -11,8 +11,7 @@ import okhttp3.Request
 private class TextField(name: String, val key: String) : Filter.Text(name)
 private class SearchCheckBox(val id: Int, name: String) : Filter.CheckBox(name)
 
-private class SearchFieldMatch : Filter.Select<String>("Search Match", arrayOf("Not Set", "AND", "OR"))
-private class SearchTagMatch : Filter.Select<String>("Tag Match", arrayOf("AND", "OR"))
+private class SearchMatch : Filter.Select<String>("Match", arrayOf("AND", "OR"))
 private class SearchGenresList(genres: List<SearchCheckBox>) : Filter.Group<SearchCheckBox>("Genres", genres)
 private class SearchNamingList : Filter.Select<String>("Naming", searchNaming())
 private class SearchStatusList : Filter.Select<String>("Status", searchStatus())
@@ -93,41 +92,22 @@ fun getFilters() = FilterList(
         SearchStatusList(),
         SearchGenresList(searchGenres()),
         Filter.Separator(),
-        SearchFieldMatch(),
-        SearchTagMatch(),
+        SearchMatch(),
         Filter.Separator(),
         TextField("Author/Artist (Exact Search)", "author")
 )
 
 fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: String, filters: FilterList): Request {
-    // normal search function.
-    fun normalSearch(state: Int = 0): Request {
-        val url = HttpUrl.parse("$baseUrl/bbs/search.php?url=$baseUrl/bbs/search.php")!!.newBuilder()
-
-        if (state > 0) {
-            url.addQueryParameter("sop", arrayOf("and", "or")[state - 1])
-        }
-
-        url.addQueryParameter("stx", query)
-
-        if (page > 1) {
-            url.addQueryParameter("page", "${page - 1}")
-        }
-
-        return GET(url.toString())
-    }
-
     var nameFilter: Int? = null
     var statusFilter: Int? = null
     val genresFilter = mutableListOf<String>()
-    var matchFieldFilter = 0
-    var matchTagFilter = 1
+    var matchFilter = 1
     var authorFilter: String? = null
 
     filters.forEach { filter ->
         when (filter) {
-            is SearchFieldMatch -> {
-                matchFieldFilter = filter.state
+            is SearchMatch -> {
+                matchFilter = filter.state
             }
 
             is TextField -> {
@@ -144,12 +124,6 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
 
     filters.forEach { filter ->
         when (filter) {
-            is SearchTagMatch -> {
-                if (filter.state > 0) {
-                    matchTagFilter = filter.state + 1
-                }
-            }
-
             is SearchNamingList -> {
                 if (filter.state > 0) {
                     nameFilter = filter.state - 1
@@ -172,17 +146,13 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
         }
     }
 
-    // If Query is over 2 length, just go to normal search
-    if (query.length > 1) {
-        return normalSearch(matchFieldFilter)
-    }
-
-    if (nameFilter == null && statusFilter == null && genresFilter.isEmpty()) {
+    if (query.isEmpty() && nameFilter == null && statusFilter == null && genresFilter.isEmpty()) {
         return GET("$baseUrl/bbs/page.php?hid=manga_list")
     }
 
     val url = HttpUrl.parse("$baseUrl/bbs/page.php?hid=manga_list")!!.newBuilder()
-    url.addQueryParameter("search_type", matchTagFilter.toString())
+    url.addQueryParameter("search_type", matchFilter.toString())
+    url.addQueryParameter("_0", query)
     url.addQueryParameter("_1", nameFilter?.toString() ?: "")
     url.addQueryParameter("_2", statusFilter?.toString() ?: "")
     url.addQueryParameter("_3", genresFilter.joinToString(","))

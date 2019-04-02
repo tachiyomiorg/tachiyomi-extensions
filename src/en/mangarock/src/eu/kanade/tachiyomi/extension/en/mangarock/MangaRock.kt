@@ -1,12 +1,24 @@
 package eu.kanade.tachiyomi.extension.en.mangarock
 
+import com.github.salomonbrys.kotson.jsonObject
+import com.github.salomonbrys.kotson.set
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.*
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.json.JSONObject
-import java.util.*
+import java.util.ArrayList
 import kotlin.experimental.and
 import kotlin.experimental.xor
 
@@ -64,7 +76,7 @@ class MangaRock : HttpSource() {
             var status = ""
             var rank = ""
             var orderBy = ""
-            var genres = ""
+            val genres = jsonObject()
             filters.forEach { filter ->
                 when (filter) {
                     is StatusFilter -> {
@@ -81,22 +93,27 @@ class MangaRock : HttpSource() {
                         orderBy = filter.toUriPart()
                     }
                     is GenreList -> {
-                        genres = filter.state
-                                .filter { genre -> genre.state != Filter.TriState.STATE_IGNORE }
-                                .map { genre ->
-                                    "\"${genre.id}\": ${if (genre.state == Filter.TriState.STATE_INCLUDE) "true" else "false"}"
-                                }
-                                .joinToString(",")
+                        filter.state
+                                .filter { it.state != Filter.TriState.STATE_IGNORE }
+                                .forEach { genres[it.id] = it.state == Filter.TriState.STATE_INCLUDE }
                     }
                 }
             }
 
-            val body = RequestBody.create(jsonType, "{\"status\":\"$status\",\"genres\":{$genres},\"rank\":\"$rank\",\"order\":\"$orderBy\"}")
+            val body = RequestBody.create(jsonType, jsonObject(
+                    "status" to status,
+                    "genres" to genres,
+                    "rank" to rank,
+                    "order" to orderBy
+            ).toString())
             return POST("$baseUrl/mrs_filter", headers, body)
         }
 
         // Regular search
-        val body = RequestBody.create(jsonType, "{\"type\":\"series\", \"keywords\":\"$query\"}")
+        val body = RequestBody.create(jsonType, jsonObject(
+                "type" to "series",
+                "keywords" to query
+        ).toString())
         return POST("$baseUrl/mrs_search", headers, body)
     }
 
@@ -143,7 +160,7 @@ class MangaRock : HttpSource() {
     }
 
     private fun sortByRank(arr: List<JSONObject>): List<JSONObject> {
-        return arr.sortedBy({ it.getInt("rank") })
+        return arr.sortedBy { it.getInt("rank") }
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
@@ -153,18 +170,23 @@ class MangaRock : HttpSource() {
         title = obj.getString("name")
         description = obj.getString("description")
 
-        val people = obj.getJSONArray("authors")
-        val authors = ArrayList<String>()
-        val artists = ArrayList<String>()
-        for (i in 0 until people.length()) {
-            val person = people.getJSONObject(i)
-            when (person.getString("role")) {
-                "art" -> artists.add(person.getString("name"))
-                "story" -> authors.add(person.getString("name"))
+        if (obj.isNull("authors")) {
+            artist = ""
+            author = ""
+        } else {
+            val people = obj.getJSONArray("authors")
+            val authors = ArrayList<String>()
+            val artists = ArrayList<String>()
+            for (i in 0 until people.length()) {
+                val person = people.getJSONObject(i)
+                when (person.getString("role")) {
+                    "art" -> artists.add(person.getString("name"))
+                    "story" -> authors.add(person.getString("name"))
+                }
             }
+            artist = artists.sorted().joinToString(", ")
+            author = authors.sorted().joinToString(", ")
         }
-        artist = artists.sorted().joinToString(", ")
-        author = authors.sorted().joinToString(", ")
 
         val categories = obj.getJSONArray("rich_categories")
         val genres = ArrayList<String>(categories.length())
