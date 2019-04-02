@@ -118,7 +118,7 @@ class TruyenTranhLH : HttpSource() {
         manga.description = document.select("h3:contains(Sơ lược) + p").text()
         manga.status = infoElement.select("a.btn.btn-xs.btn-success").last()?.text().orEmpty().let { parseStatus(it) }
         val imgUrl = document.select("img.thumbnail").first()?.attr("src")
-        if (imgUrl!!.startsWith("app/")) {
+        if (imgUrl!!.startsWith("/app/")) {
             manga.thumbnail_url = "$baseUrl/$imgUrl"
         } else {
             manga.thumbnail_url = imgUrl

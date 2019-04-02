@@ -44,7 +44,7 @@ class BlogTruyen : ParsedHttpSource() {
         val manga = SManga.create()
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
+            manga.title = it.text().trim()
         }
         return manga
     }
@@ -53,7 +53,7 @@ class BlogTruyen : ParsedHttpSource() {
         val manga = SManga.create()
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = element.select("img").first().attr("alt").toString()
+            manga.title = element.select("img").first().attr("alt").toString().trim()
         }
         return manga
     }
@@ -127,7 +127,7 @@ class BlogTruyen : ParsedHttpSource() {
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.attr("title")
+        chapter.name = urlElement.attr("title").trim()
         chapter.date_upload = element.select("span.publishedDate").first()?.text()?.let {
             SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ENGLISH).parse(it).time
         } ?: 0
