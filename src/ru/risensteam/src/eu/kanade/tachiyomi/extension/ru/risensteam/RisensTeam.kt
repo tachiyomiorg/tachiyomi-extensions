@@ -6,14 +6,19 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.MultipartBody
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import rx.Observable
 
 
 class RisensTeam : ParsedHttpSource() {
@@ -32,19 +37,28 @@ class RisensTeam : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/manga/page/$page/", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not Used")
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return Observable.just(MangasPage(listOf(), false))
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request{
+        return POST(baseUrl, headers, buildRequestBody(query, page))
     }
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not Used")
+    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not Used")
+
+    private fun buildRequestBody(query: String, page: Int): RequestBody{
+        return MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("do", "search")
+                .addFormDataPart("subaction", "search")
+                .addFormDataPart("story", query)
+                .addFormDataPart("catlist[]", "33")
+                .addFormDataPart("search_start", (page-1).toString())
+                .build()
+    }
 
     override fun popularMangaSelector() = ".mb-2:not([align])"
 
     override fun latestUpdatesSelector() = throw Exception("Not Used")
 
-    override fun searchMangaSelector() = throw Exception("Not Used")
+    override fun searchMangaSelector() = ".card.h-100"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -59,15 +73,21 @@ class RisensTeam : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Not Used")
 
-    override fun searchMangaFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        val coverElem = element.select(".card-img-top").first()
+        manga.thumbnail_url = coverElem.attr("src")
+        manga.setUrlWithoutDomain(coverElem.parent().attr("href"))
+        manga.title = coverElem.attr("alt").split('/').first().replace("(Манга)", "").trim()
+
+        return manga
+    }
 
     override fun popularMangaNextPageSelector() = "b-list-group-item.next > a"
 
     override fun latestUpdatesNextPageSelector() = throw Exception("Not Used")
 
-    override fun searchMangaNextPageSelector() = throw Exception("Not Used")
-
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -76,7 +96,7 @@ class RisensTeam : ParsedHttpSource() {
         manga.description = document.select(".news-body").text()
         manga.status = when(document.select("td:containsOwn(Состояние:) + td").first().ownText()){
             "Выход продолжается" -> SManga.ONGOING
-            "Выход завершён" -> SManga.COMPLETED
+            "Выход завершён", "Выход завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
         return manga
