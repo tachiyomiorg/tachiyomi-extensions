@@ -5,12 +5,11 @@ ext {
     appName = 'Tachiyomi: Manga Rock'
     pkgNameSuffix = 'en.mangarock'
     extClass = '.MangaRock'
-    extVersionCode = 7
-    libVersion = '1.0'
+    extVersionCode = 8
+    libVersion = '1.2'
 }
 
 dependencies {
-    compileOnly 'com.google.code.gson:gson:2.8.5'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
