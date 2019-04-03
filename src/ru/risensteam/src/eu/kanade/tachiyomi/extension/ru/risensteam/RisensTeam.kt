@@ -41,8 +41,6 @@ class RisensTeam : ParsedHttpSource() {
         return POST(baseUrl, headers, buildRequestBody(query, page))
     }
 
-    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not Used")
-
     private fun buildRequestBody(query: String, page: Int): RequestBody{
         return MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -55,8 +53,6 @@ class RisensTeam : ParsedHttpSource() {
     }
 
     override fun popularMangaSelector() = ".mb-2:not([align])"
-
-    override fun latestUpdatesSelector() = throw Exception("Not Used")
 
     override fun searchMangaSelector() = ".card.h-100"
 
@@ -71,8 +67,6 @@ class RisensTeam : ParsedHttpSource() {
         return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Not Used")
-
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         val coverElem = element.select(".card-img-top").first()
@@ -84,8 +78,6 @@ class RisensTeam : ParsedHttpSource() {
     }
 
     override fun popularMangaNextPageSelector() = "b-list-group-item.next > a"
-
-    override fun latestUpdatesNextPageSelector() = throw Exception("Not Used")
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
@@ -101,8 +93,6 @@ class RisensTeam : ParsedHttpSource() {
         }
         return manga
     }
-
-    override fun chapterListSelector() = ".related"
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
@@ -121,10 +111,6 @@ class RisensTeam : ParsedHttpSource() {
         return chapters.reversed()
     }
 
-    override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
-
-    override fun imageUrlParse(document: Document) = throw Exception("Not Used")
-
     override fun pageListParse(response: Response): List<Page> {
         val jsonData = response.body()!!.string()
         val jsonArray = gson.fromJson<List<String>>(jsonData)
@@ -134,6 +120,20 @@ class RisensTeam : ParsedHttpSource() {
         }
         return pages
     }
+
+    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not Used")
+
+    override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
+
+    override fun imageUrlParse(document: Document) = throw Exception("Not Used")
+
+    override fun chapterListSelector() = throw Exception("Not Used")
+
+    override fun latestUpdatesNextPageSelector() = throw Exception("Not Used")
+
+    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Not Used")
+
+    override fun latestUpdatesSelector() = throw Exception("Not Used")
 
     companion object {
         const val MANGA_API_URL = "/risensteam/api/manga.php?id="
