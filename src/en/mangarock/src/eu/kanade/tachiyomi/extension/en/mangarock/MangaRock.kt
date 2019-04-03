@@ -175,8 +175,14 @@ class MangaRock : HttpSource() {
     override fun chapterListRequest(manga: SManga) = getMangaApiRequest(manga)
 
     private fun getMangaApiRequest(manga: SManga): Request {
-        val oid = manga.url.substringAfterLast("/")
-        return GET("$apiUrl/info?oid=$oid", headers)
+        return if (manga.url.contains("manga")) {
+            // Entries with "real" URL
+            val oid = manga.url.substringAfterLast("/")
+            GET("$apiUrl/info?oid=$oid", headers)
+        } else {
+            // Older entries with API URL
+            GET(apiUrl + manga.url, headers)
+        }
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
