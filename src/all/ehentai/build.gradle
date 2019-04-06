@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: E-Hentai'
     pkgNameSuffix = 'all.ehentai'
     extClass = '.EHJapanese; .EHEnglish; .EHChinese; .EHDutch; .EHFrench; .EHGerman; .EHHungarian; .EHItalian; .EHKorean; .EHPolish; .EHPolish; .EHPortuguese; .EHRussian; .EHSpanish; .EHThai; .EHVietnamese; .EHSpeechless; .EHOther'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

@@ -28,29 +28,19 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
     override val supportsLatest = true
 
-
-    val initMetaRegex = """inits?~(?:ul\.)?(.*?)~(.*?)~""".toRegex()
-
-    fun parseInitsMeta(meta: String): String{
-        val match = initMetaRegex.find(meta)
-        return "https://" + match?.groupValues?.get(1) +"/"+ match?.groupValues?.get(2)
-    }
-
     private fun genericMangaParse(response: Response): MangasPage {
         val doc = response.asJsoup()
         val parsedMangas = doc.select("table.itg td.glname").map {
             SManga.create().apply {
                 //Get title
                 it.select("a")?.first()?.apply {
-                    title = text()
+                    title = this.select(".glink").text()
                     url = ExGalleryMetadata.normalizeUrl(attr("href"))
                 }
                 //Get image
-                it.parent().select(".glthumb")?.first().apply {
-                    thumbnail_url = this!!.select("img").first()?.attr("src")?.nullIfBlank()
-                            ?: parseInitsMeta(it.parent()
-                                    .select(".glthumb").first()
-                                    .childNode(0).toString())
+                it.parent().select(".glthumb img")?.first().apply {
+                    thumbnail_url = this?.attr("data-src")?.nullIfBlank()
+                            ?: this?.attr("src")
                 }
             }
         }
@@ -125,7 +115,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun searchMangaParse(response: Response) = genericMangaParse(response)
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
 
-    fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true)
+    private fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true)
             = GET(page?.let {
         addParam(url, "page", (it - 1).toString())
     } ?: url, additionalHeaders?.let {
@@ -235,7 +225,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             .asObservableSuccess()
             .map { realImageUrlParse(it, page) }!!
 
-    fun realImageUrlParse(response: Response, page: Page)
+    private fun realImageUrlParse(response: Response, page: Page)
             = with(response.asJsoup()) {
         val currentImage = getElementById("img").attr("src")
         //TODO We cannot currently do this as page.url is immutable
@@ -249,7 +239,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun imageUrlParse(response: Response)
             = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    val cookiesHeader by lazy {
+    private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
 
         //Setup settings
@@ -272,15 +262,15 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun headersBuilder()
             = super.headersBuilder().add("Cookie", cookiesHeader)!!
 
-    fun buildSettings(settings: List<String?>)
+    private fun buildSettings(settings: List<String?>)
             = settings.filterNotNull().joinToString(separator = "-")
 
-    fun buildCookies(cookies: Map<String, String>)
+    private fun buildCookies(cookies: Map<String, String>)
             = cookies.entries.map {
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
     }.joinToString(separator = "; ", postfix = ";")
 
-    fun addParam(url: String, param: String, value: String)
+    private fun addParam(url: String, param: String, value: String)
             = Uri.parse(url)
             .buildUpon()
             .appendQueryParameter(param, value)
@@ -357,7 +347,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     ))
 
     //map languages to their internal ids
-    val languageMappings = listOf(
+    private val languageMappings = listOf(
             Pair("japanese", listOf("0", "1024", "2048")),
             Pair("english", listOf("1", "1025", "2049")),
             Pair("chinese", listOf("10", "1034", "2058")),
