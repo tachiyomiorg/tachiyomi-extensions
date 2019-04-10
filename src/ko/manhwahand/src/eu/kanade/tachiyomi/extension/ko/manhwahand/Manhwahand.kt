@@ -122,7 +122,7 @@ class Manhwahand : ParsedHttpSource() {
         manga.genre =genres.joinToString(", ")
         manga.status = parseStatus(infoElement.select("div.post-status > div:nth-child(2)  div").text())
 
-        manga.description = document.select("div.description-summary")?.text()
+        manga.description = document.select("div.summary__content > p")?.text()
         manga.thumbnail_url = document.select("div.summary_image > a > img").attr("src")
 
         return manga
