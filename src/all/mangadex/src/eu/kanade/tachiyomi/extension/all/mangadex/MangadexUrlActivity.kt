@@ -1,8 +1,8 @@
-package mangadex
+package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 
@@ -22,14 +22,21 @@ class MangadexUrlActivity : Activity() {
         if (pathSegments != null && pathSegments.size > 1) {
             val titleid = pathSegments[1]
             val mainIntent = Intent().apply {
-                action = Intent.ACTION_VIEW
-                data = Uri.parse("tachiyomi://search/MangaDex/id:$titleid")
+                action = "eu.kanade.tachiyomi.SEARCH"
+                putExtra("query", "id:$titleid")
+                putExtra("filter", packageName)
             }
-            Log.v("...", "opening $mainIntent")
-            startActivity(mainIntent)
+
+            try {
+                startActivity(mainIntent)
+            } catch (e: ActivityNotFoundException) {
+                Log.e("MangadexUrlActivity", e.toString())
+            }
         } else {
-            Log.e("...", "could not parse uri from intent $intent")
+            Log.e("MangadexUrlActivity", "could not parse uri from intent $intent")
         }
+
         finish()
+        System.exit(0)
     }
 }

@@ -4,7 +4,7 @@
     <application>
 
         <activity
-            android:name="mangadex.MangadexUrlActivity"
+            android:name=".MangadexUrlActivity"
             android:theme="@android:style/Theme.NoDisplay"
             android:excludeFromRecents="true">
             <intent-filter>
