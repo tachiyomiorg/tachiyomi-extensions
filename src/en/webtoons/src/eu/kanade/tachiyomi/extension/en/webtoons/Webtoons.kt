@@ -125,7 +125,7 @@ class Webtoons : ParsedHttpSource() {
         manga.genre = detailElement.select(".genre").map { it.text() }.joinToString(", ")
         manga.description = infoElement.select("p.summary").text()
         manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
-        manga.thumbnail_url = discoverPic.select("img").not("[alt=Representative image").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
+        manga.thumbnail_url = discoverPic.select("img").not("[alt='Representative image']").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
         return manga
     }
 
