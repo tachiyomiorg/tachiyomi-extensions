@@ -9,6 +9,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
@@ -112,7 +113,11 @@ class Selfmanga : ParsedHttpSource() {
             chapter.name = urlText
         }
         chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
-            SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
+            try {
+                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
+            } catch (e: ParseException) {
+                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it).time
+            }
         } ?: 0
         return chapter
     }
