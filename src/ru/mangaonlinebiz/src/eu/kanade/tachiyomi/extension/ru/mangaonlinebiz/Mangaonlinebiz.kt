@@ -26,12 +26,28 @@ class MangaOnlineBiz : ParsedHttpSource() {
             GET("$baseUrl/genre/all/page/$page", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search-ajax/?query=$query", headers)
+        val url = if (query.isNotBlank()) {
+            "$baseUrl/search-ajax/?query=$query"
+        } else {
+            var ret = String()
+            (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+                when (filter) {
+                    is GenreList -> {
+                        ret = "$baseUrl/genre/${filter.values[filter.state].id}"
+                    }
+                }
+            }
+            ret
+        }
+        return GET(url, headers)
     }
 
     override fun popularMangaSelector() = "div.genres a.genre"
 
     override fun searchMangaParse(response: Response): MangasPage {
+        if (!response.request().url().toString().contains("search-ajax")) {
+            return popularMangaParse(response)
+        }
         val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val results = json.getAsJsonArray("results")
@@ -121,6 +137,67 @@ class MangaOnlineBiz : ParsedHttpSource() {
         }
         return resPages
     }
+
+    private class Genre(name: String, val id: String) : Filter.CheckBox(name) {
+        override fun toString(): String {
+            return name
+        }
+    }
+    private class GenreList(genres: Array<Genre>) : Filter.Select<Genre>("Genres", genres, 0)
+    override fun getFilterList() = FilterList(
+            GenreList(getGenreList())
+    )
+    /*  [...document.querySelectorAll(".categories .item")]
+    *     .map(el => `Genre("${el.textContent.trim()}", "${el.getAttribute('href')}")`).join(',\n')
+    *   on https://manga-online.biz/genre/all/
+    */
+    private fun getGenreList() = arrayOf(
+            Genre("Все", "all"),
+            Genre("боевик", "boevik"),
+            Genre("боевые искусства", "boevye_iskusstva"),
+            Genre("вампиры", "vampiry"),
+            Genre("гарем", "garem"),
+            Genre("гендерная интрига", "gendernaya_intriga"),
+            Genre("героическое фэнтези", "geroicheskoe_fehntezi"),
+            Genre("детектив", "detektiv"),
+            Genre("дзёсэй", "dzyosehj"),
+            Genre("додзинси", "dodzinsi"),
+            Genre("драма", "drama"),
+            Genre("игра", "igra"),
+            Genre("история", "istoriya"),
+            Genre("меха", "mekha"),
+            Genre("мистика", "mistika"),
+            Genre("научная фантастика", "nauchnaya_fantastika"),
+            Genre("повседневность", "povsednevnost"),
+            Genre("постапокалиптика", "postapokaliptika"),
+            Genre("приключения", "priklyucheniya"),
+            Genre("психология", "psihologiya"),
+            Genre("романтика", "romantika"),
+            Genre("самурайский боевик", "samurajskij_boevik"),
+            Genre("сверхъестественное", "sverhestestvennoe"),
+            Genre("сёдзё", "syodzyo"),
+            Genre("сёдзё-ай", "syodzyo-aj"),
+            Genre("сёнэн", "syonen"),
+            Genre("спорт", "sport"),
+            Genre("сэйнэн", "sejnen"),
+            Genre("трагедия", "tragediya"),
+            Genre("триллер", "triller"),
+            Genre("ужасы", "uzhasy"),
+            Genre("фантастика", "fantastika"),
+            Genre("фэнтези", "fentezi"),
+            Genre("школа", "shkola"),
+            Genre("этти", "etti"),
+            Genre("юри", "yuri"),
+            Genre("военный", "voennyj"),
+            Genre("жосей", "zhosej"),
+            Genre("магия", "magiya"),
+            Genre("полиция", "policiya"),
+            Genre("смена пола", "smena-pola"),
+            Genre("супер сила", "super-sila"),
+            Genre("эччи", "echchi"),
+            Genre("яой", "yaoj"),
+            Genre("сёнэн-ай", "syonen-aj")
+    )
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
