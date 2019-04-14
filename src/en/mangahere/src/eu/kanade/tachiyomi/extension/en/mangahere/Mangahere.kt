@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.mangahere
 
+import android.util.Log
+import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -14,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
+import kotlin.collections.ArrayList
 
 class Mangahere : ParsedHttpSource() {
 
@@ -45,215 +48,319 @@ class Mangahere : ParsedHttpSource() {
 
     override val client = super.client.newBuilder()
             .sslSocketFactory(sslContext.socketFactory, trustManager)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val newRequest = request.newBuilder()
+                        .addHeader("Cookie","isAdult=1")
+                        .build()
+                chain.proceed(newRequest)
+            }
             .build()
 
-    override fun popularMangaSelector() = "div.directory_list > ul > li"
+    override fun popularMangaSelector() = ".manga-list-1-list li"
 
-    override fun latestUpdatesSelector() = "div.directory_list > ul > li"
+    override fun latestUpdatesSelector() = ".manga-list-1-list li"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/directory/$page.htm?views.za", headers)
+        return GET("$baseUrl/directory/$page.htm", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/directory/$page.htm?last_chapter_time.za", headers)
+        return GET("$baseUrl/directory/$page.htm?latest", headers)
     }
 
     private fun mangaFromElement(query: String, element: Element): SManga {
         val manga = SManga.create()
-        element.select(query).first().let {
+        element.select(query)?.first()?.also {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = if (it.hasAttr("title")) it.attr("title") else if (it.hasAttr("rel")) it.attr("rel") else it.text()
+            manga.title = when {
+                it.hasAttr("title") -> it.attr("title")
+                it.hasAttr("rel") -> it.attr("rel")
+                else -> it.text()
+            }
         }
         return manga
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
-        return mangaFromElement("div.title > a", element)
+        val manga = SManga.create()
+
+        val titleElement = element.select("a").first()
+        manga.title = titleElement.attr("title")
+        manga.setUrlWithoutDomain(titleElement.attr("href"))
+        manga.thumbnail_url = element.select("img.manga-list-1-cover")
+                ?.first()?.attr("src")
+
+        return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         return popularMangaFromElement(element)
     }
 
-    override fun popularMangaNextPageSelector() = "div.next-page > a.next"
+    override fun popularMangaNextPageSelector() = "div.pager-list-left a:last-child"
 
-    override fun latestUpdatesNextPageSelector() = "div.next-page > a.next"
+    override fun latestUpdatesNextPageSelector() = "div.pager-list-left a:last-child"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search.php?name_method=cw&author_method=cw&artist_method=cw&advopts=1")!!.newBuilder().addQueryParameter("name", query)
-        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
-            when (filter) {
-                is Status -> url.addQueryParameter("is_completed", arrayOf("", "1", "0")[filter.state])
-                is GenreList -> filter.state.forEach { genre -> url.addQueryParameter(genre.id, genre.state.toString()) }
-                is TextField -> url.addQueryParameter(filter.key, filter.state)
-                is Type -> url.addQueryParameter("direction", arrayOf("", "rl", "lr")[filter.state])
-                is OrderBy -> {
-                    url.addQueryParameter("sort", arrayOf("name", "rating", "views", "total_chapters", "last_chapter_time")[filter.state!!.index])
-                    url.addQueryParameter("order", if (filter.state?.ascending == true) "az" else "za")
+        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+
+        filters.forEach {
+            when(it) {
+
+                is TypeList -> {
+                    url.addEncodedQueryParameter("type", types[it.values[it.state]].toString())
                 }
+                is CompletionList -> url.addEncodedQueryParameter("st", it.state.toString())
+                is GenreList -> {
+
+                    val genreFilter = filters.find { it is GenreList } as GenreList?
+                    val includeGenres = ArrayList<Int>()
+                    val excludeGenres = ArrayList<Int>()
+                    genreFilter?.state?.forEach { genre ->
+                        if (genre.isIncluded())
+                            includeGenres.add(genre.id)
+                        else if (genre.isExcluded())
+                            excludeGenres.add(genre.id)
+                    }
+
+                    url.addEncodedQueryParameter("genres", includeGenres.joinToString(","))
+                            .addEncodedQueryParameter("nogenres", excludeGenres.joinToString(","))
+                }
+
             }
         }
-        url.addQueryParameter("page", page.toString())
+
+        url.addEncodedQueryParameter("page", page.toString())
+                .addEncodedQueryParameter("title", query)
+                .addEncodedQueryParameter("sort", null)
+                .addEncodedQueryParameter("stype", 1.toString())
+                .addEncodedQueryParameter("name", null)
+                .addEncodedQueryParameter("author_method","cw")
+                .addEncodedQueryParameter("author", null)
+                .addEncodedQueryParameter("artist_method", "cw")
+                .addEncodedQueryParameter("artist", null)
+                .addEncodedQueryParameter("rating_method","eq")
+                .addEncodedQueryParameter("rating",null)
+                .addEncodedQueryParameter("released_method","eq")
+                .addEncodedQueryParameter("released", null)
+
         return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = "div.result_search > dl:has(dt)"
+    override fun searchMangaSelector() = ".manga-list-4-list > li"
 
     override fun searchMangaFromElement(element: Element): SManga {
-        return mangaFromElement("a.manga_info", element)
+        val manga = SManga.create()
+        val titleEl = element.select(".manga-list-4-item-title > a").first()
+        manga.setUrlWithoutDomain(titleEl?.attr("href") ?: "")
+        manga.title = titleEl?.attr("title") ?: ""
+        return manga
     }
 
-    override fun searchMangaNextPageSelector() = "div.next-page > a.next"
+    override fun searchMangaNextPageSelector() = "div.pager-list-left a:last-child"
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val detailElement = document.select(".manga_detail_top").first()
-        val infoElement = detailElement.select(".detail_topText").first()
-        val licensedElement = document.select(".mt10.color_ff00.mb10").first()
-
         val manga = SManga.create()
-        manga.author = infoElement.select("a[href*=author/]").first()?.text()
-        manga.artist = infoElement.select("a[href*=artist/]").first()?.text()
-        manga.genre = infoElement.select("li:eq(3)").first()?.text()?.substringAfter("Genre(s):")
-        manga.description = infoElement.select("#show").first()?.text()?.substringBeforeLast("Show less")
-        manga.thumbnail_url = detailElement.select("img.img").first()?.attr("src")
+        manga.author = document.select(".detail-info-right-say > a")?.first()?.text()
+        manga.artist = ""
+        manga.genre = document.select(".detail-info-right-tag-list > a")?.joinToString { it.text() }
+        manga.description = document.select(".fullcontent")?.first()?.text()
+        manga.thumbnail_url = document.select("img.detail-info-cover-img")?.first()
+                ?.attr("src")
 
-        if (licensedElement?.text()?.contains("licensed") == true) {
-            manga.status = SManga.LICENSED
-        } else {
-            manga.status = infoElement.select("li:eq(6)").first()?.text().orEmpty().let { parseStatus(it) }
+        document.select("span.detail-info-right-title-tip")?.first()?.text()?.also { statusText ->
+            if (statusText.contains("ongoing", true))
+                manga.status = SManga.ONGOING
+            else if(statusText.contains("completed ", true))
+                manga.status = SManga.COMPLETED
+            else
+                manga.status = SManga.UNKNOWN
         }
+
+        manga.status = SManga.ONGOING
 
         return manga
     }
 
-    private fun parseStatus(status: String) = when {
-        status.contains("Ongoing") -> SManga.ONGOING
-        status.contains("Completed") -> SManga.COMPLETED
-        else -> SManga.UNKNOWN
-    }
-
-    override fun chapterListSelector() = ".detail_list > ul:not([class]) > li"
+    override fun chapterListSelector() = "ul.detail-main-list > li"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val parentEl = element.select("span.left").first()
-
-        val urlElement = parentEl.select("a").first()
-
-        var volume = parentEl.select("span.mr6")?.first()?.text()?.trim() ?: ""
-        if (volume.length > 0) {
-            volume = " - " + volume
-        }
-
-        var title = parentEl?.textNodes()?.last()?.text()?.trim() ?: ""
-        if (title.length > 0) {
-            title = " - " + title
-        }
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.text() + volume + title
-        chapter.date_upload = element.select("span.right").first()?.text()?.let { parseChapterDate(it) } ?: 0
+        chapter.setUrlWithoutDomain(element.select("a").first().attr("href"))
+        chapter.name = element.select("a p.title3").first().text()
+        chapter.date_upload = element.select("a p.title2").first()?.text()?.let { parseChapterDate(it) } ?: 0
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long {
-        return if ("Today" in date) {
-            Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        } else if ("Yesterday" in date) {
-            Calendar.getInstance().apply {
-                add(Calendar.DATE, -1)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        } else {
-            try {
-                SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-            } catch (e: ParseException) {
-                0L
-            }
+        return try {
+            SimpleDateFormat("MMM dd,yyyy", Locale.ENGLISH).parse(date).time
+        } catch (e: ParseException) {
+            0L
         }
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val licensedError = document.select(".mangaread_error > .mt10").first()
-        if (licensedError != null) {
-            throw Exception(licensedError.text())
-        }
+
+        val html = document.html()
+        val link = document.location()
 
         val pages = mutableListOf<Page>()
-        document.select("select.wid60").first()?.getElementsByTag("option")?.forEach {
-            if (!it.attr("value").contains("featured.html")) {
-                pages.add(Page(pages.size, "http:" + it.attr("value")))
+
+        val duktape = Duktape.create()
+
+        var secretKey = extractSecretKey(html, duktape)
+
+        val chapterIdStartLoc =  html.indexOf("chapterid")
+        val chapterId = html.substring(
+                chapterIdStartLoc + 11,
+                html.indexOf(";", chapterIdStartLoc)).trim()
+
+        val chapterPagesElement = document.select(".pager-list-left > span").first()
+        val pagesLinksElements = chapterPagesElement.select("a")
+        val pagesNumber = pagesLinksElements.get(pagesLinksElements.size - 2).attr("data-page").toInt()
+
+        val pageBase = link.substring(0, link.lastIndexOf("/"))
+
+        for (i in 1..pagesNumber){
+
+            val pageLink = "${pageBase}/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
+
+            Log.d("syt0r", "image page link $pageLink")
+
+            var responseText = ""
+
+            for (tr in 1..3){
+
+                val request = Request.Builder()
+                        .url(pageLink)
+                        .addHeader("Referer",link)
+                        .addHeader("Accept","*/*")
+                        .addHeader("Accept-Language","en-US,en;q=0.9")
+                        .addHeader("Connection","keep-alive")
+                        .addHeader("Host","www.mangahere.cc")
+                        .addHeader("User-Agent", System.getProperty("http.agent") ?: "")
+                        .addHeader("X-Requested-With","XMLHttpRequest")
+                        .build()
+
+                val response = client.newCall(request).execute()
+                responseText = response.body()!!.string()
+
+                if (responseText.isNotEmpty())
+                    break
+                else
+                    secretKey = ""
+
+                Log.d("syt0r", "retry")
+
             }
+
+            Log.d("syt0r", "response script $responseText")
+
+            val deobfuscatedScript = duktape.evaluate(responseText.removePrefix("eval")).toString()
+
+            Log.d("syt0r", "deobfuscated script $deobfuscatedScript")
+
+            val baseLinkStartPos = deobfuscatedScript.indexOf("pix=") + 5
+            val baseLinkEndPos = deobfuscatedScript.indexOf(";", baseLinkStartPos) - 1
+            val baseLink = deobfuscatedScript.substring(baseLinkStartPos, baseLinkEndPos)
+
+            Log.d("syt0r", "base image link $baseLink")
+
+            val imageLinkStartPos = deobfuscatedScript.indexOf("pvalue=") + 9
+            val imageLinkEndPos = deobfuscatedScript.indexOf("\"", imageLinkStartPos)
+            val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
+
+            Log.d("syt0r", "image link $imageLink")
+
+            pages.add(Page(i, "", "http:$baseLink$imageLink"))
+
         }
-        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
+
+        duktape.close()
+
         return pages
+    }
+
+    private fun extractSecretKey(html: String, duktape: Duktape): String {
+
+        val secretKeyScriptLocation = html.indexOf("eval(function(p,a,c,k,e,d)")
+        val secretKeyScriptEndLocation = html.indexOf("</script>", secretKeyScriptLocation)
+        val secretKeyScript = html.substring(secretKeyScriptLocation, secretKeyScriptEndLocation).removePrefix("eval")
+
+        val secretKeyDeobfuscatedScript = duktape.evaluate(secretKeyScript).toString()
+
+        val secretKeyStartLoc = secretKeyDeobfuscatedScript.indexOf("'")
+        val secretKeyEndLoc = secretKeyDeobfuscatedScript.indexOf(";")
+
+        val secretKeyResultScript = secretKeyDeobfuscatedScript.substring(
+                secretKeyStartLoc, secretKeyEndLoc)
+
+        return duktape.evaluate(secretKeyResultScript).toString()
+
     }
 
     override fun imageUrlParse(document: Document) = document.getElementById("image").attr("src")
 
-    private class Status : Filter.TriState("Completed")
-    private class Genre(name: String, val id: String = "genres[$name]") : Filter.TriState(name)
-    private class TextField(name: String, val key: String) : Filter.Text(name)
-    private class Type : Filter.Select<String>("Type", arrayOf("Any", "Japanese Manga (read from right to left)", "Korean Manhwa (read from left to right)"))
-    private class OrderBy : Filter.Sort("Order by",
-            arrayOf("Series name", "Rating", "Views", "Total chapters", "Last chapter"),
-            Filter.Sort.Selection(2, false))
+    private class Genre(title: String, val id: Int) : Filter.TriState(title)
 
+    private class TypeList(types: Array<String>) : Filter.Select<String>("Type", types,0)
+    private class CompletionList(completions: Array<String>) : Filter.Select<String>("Completed series", completions,0)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            TextField("Author", "author"),
-            TextField("Artist", "artist"),
-            Type(),
-            Status(),
-            OrderBy(),
-            GenreList(getGenreList())
+            TypeList(types.keys.toList().sorted().toTypedArray()),
+            CompletionList(completions),
+            GenreList(genres)
     )
 
-    // [...document.querySelectorAll("select[id^='genres'")].map((el,i) => `Genre("${el.nextSibling.nextSibling.textContent.trim()}", "${el.getAttribute('name')}")`).join(',\n')
-    // http://www.mangahere.co/advsearch.htm
-    private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adventure"),
-            Genre("Comedy"),
-            Genre("Doujinshi"),
-            Genre("Drama"),
-            Genre("Ecchi"),
-            Genre("Fantasy"),
-            Genre("Gender Bender"),
-            Genre("Harem"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Josei"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Mecha"),
-            Genre("Mystery"),
-            Genre("One Shot"),
-            Genre("Psychological"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci-fi"),
-            Genre("Seinen"),
-            Genre("Shoujo"),
-            Genre("Shoujo Ai"),
-            Genre("Shounen"),
-            Genre("Shounen Ai"),
-            Genre("Slice of Life"),
-            Genre("Sports"),
-            Genre("Supernatural"),
-            Genre("Tragedy"),
-            Genre("Yaoi"),
-            Genre("Yuri")
+    private val types = hashMapOf(
+            "Japanese Manga" to 1,
+            "Korean Manhwa" to 2,
+            "Other Manga" to 4,
+            "Any" to 0
+    )
+
+    private val completions = arrayOf("Either","No","Yes")
+
+    private val genres = arrayListOf(
+            Genre("Action", 1),
+            Genre("Adventure", 2),
+            Genre("Comedy", 3),
+            Genre("Fantasy", 4),
+            Genre("Historical", 5),
+            Genre("Horror", 6),
+            Genre("Martial Arts", 7),
+            Genre("Mystery", 8),
+            Genre("Romance", 9),
+            Genre("Shounen Ai", 10),
+            Genre("Supernatural", 11),
+            Genre("Drama", 12),
+            Genre("Shounen", 13),
+            Genre("School Life", 14),
+            Genre("Shoujo", 15),
+            Genre("Gender Bender", 16),
+            Genre("Josei", 17),
+            Genre("Psychological", 18),
+            Genre("Seinen", 19),
+            Genre("Slice of Life", 20),
+            Genre("Sci-fi", 21),
+            Genre("Ecchi", 22),
+            Genre("Harem", 23),
+            Genre("Shoujo Ai", 24),
+            Genre("Yuri", 25),
+            Genre("Mature", 26),
+            Genre("Tragedy", 27),
+            Genre("Yaoi", 28),
+            Genre("Doujinshi", 29),
+            Genre("Sports", 30),
+            Genre("Adult", 31),
+            Genre("One Shot", 32),
+            Genre("Smut", 33),
+            Genre("Mecha", 34),
+            Genre("Shotacon", 35),
+            Genre("Lolicon", 36)
     )
 
 }

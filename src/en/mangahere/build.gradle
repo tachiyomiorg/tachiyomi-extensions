@@ -9,4 +9,8 @@ ext {
     libVersion = '1.2'
 }
 
+dependencies {
+    compileOnly project(':duktape-stub')
+}
+
 apply from: "$rootDir/common.gradle"
