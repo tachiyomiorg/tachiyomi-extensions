@@ -16,9 +16,7 @@ import java.util.*
 /**
  * NewToki Source
  **/
-class NewToki : ParsedHttpSource() {
-    override val name = "NewToki"
-    override val baseUrl = "https://newtoki7.net"
+open class NewToki(override val name: String, override val baseUrl: String, private val boardName: String) : ParsedHttpSource() {
     override val lang: String = "ko"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
@@ -39,7 +37,7 @@ class NewToki : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "ul.pagination > li:not(.disabled)"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic" + if (page > 1) "/p$page" else "")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/$boardName" + if (page > 1) "/p$page" else "")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -61,7 +59,7 @@ class NewToki : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/comic" + (if (page > 1) "/p$page" else "") + "?stx=$query")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/$boardName" + (if (page > 1) "/p$page" else "") + "?stx=$query")
 
 
     override fun mangaDetailsParse(document: Document): SManga {

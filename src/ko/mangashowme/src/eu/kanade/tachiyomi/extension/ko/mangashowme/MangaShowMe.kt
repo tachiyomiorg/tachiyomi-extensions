@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  **/
 class MangaShowMe : ParsedHttpSource() {
     override val name = "MangaShow.Me"
-    override val baseUrl = "https://manamoa.net"
+    override val baseUrl = "https://manamoa2.net"
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -33,9 +33,38 @@ class MangaShowMe : ParsedHttpSource() {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(ImageDecoderInterceptor())
+            .addInterceptor { chain ->
+                val req = chain.request()
+
+                // only for image Request
+                if (!req.url().host().contains("filecdn.xyz")) return@addInterceptor chain.proceed(req)
+
+                val secondUrl = req.header("SecondUrlToRequest")
+
+                fun get(flag: Int = 0): Request {
+                    val url = when (flag) {
+                        1 -> req.url().toString().replace("img.", "s3.")
+                        2 -> secondUrl!!
+                        else -> req.url().toString()
+                    }
+
+                    return req.newBuilder()!!.url(url)
+                            .removeHeader("ImageDecodeRequest")
+                            .removeHeader("SecondUrlToRequest")
+                            .build()!!
+                }
+
+                val res = chain.proceed(get())
+                val length = res.header("content-length")
+                if (length == null || length.toInt() < 50000) {
+                    val s3res = chain.proceed(get(1)) // s3
+                    if (!s3res.isSuccessful && secondUrl != null) {
+                        chain.proceed(get(2)) // secondUrl
+                    } else s3res
+                } else res
+            }
             .build()!!
 
-    //override fun popularMangaSelector() = "div.basic-post-gallery > div >  div.post-row"
     override fun popularMangaSelector() = "div.manga-list-gallery > div > div.post-row"
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -84,8 +113,8 @@ class MangaShowMe : ParsedHttpSource() {
         val publishTypeText = thumbnailElement.select("a.publish_type").text() ?: ""
         val authorText = thumbnailElement.select("a.author").text() ?: ""
         val mangaLike = info.select("div.recommend > i.fa").first().text() ?: "0"
-        val mangaChaptersLike = mangaElementsSum(document.select("div.addedAt i.fa.fa-thumbs-up > span"))
-        val mangaComments = mangaElementsSum(document.select("div.addedAt i.fa.fa-comment > span"))
+        val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
+        val mangaComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
         val genres = mutableListOf<String>()
         document.select("div.left-info > .manga-tags > a.tag").forEach {
             genres.add(it.text())
@@ -180,19 +209,58 @@ class MangaShowMe : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
 
         try {
-            val element = document.select("div.col-md-9.at-col.at-main script")
-            val imageUrl = element.html().substringAfter("var img_list = [").substringBefore("];")
+            val element = document.select("div.col-md-9.at-col.at-main script").html()
+            val imageUrl = element.substringAfter("var img_list = [").substringBefore("];")
             val imageUrls = JSONArray("[$imageUrl]")
-            val decoder = ImageDecoder("v1", element.html())
 
-            (0 until imageUrls.length())
-                    .map { imageUrls.getString(it) }
-                    .forEach { pages.add(Page(pages.size, "", decoder.request(it))) }
+            val imageUrl1 = element.substringAfter("var img_list1 = [").substringBefore("];")
+            val imageUrls1 = JSONArray("[$imageUrl1]")
+
+            val decoder = ImageDecoder(element)
+
+            if (imageUrls.length() != imageUrls1.length()) {
+                (0 until imageUrls.length())
+                        .map { imageUrls.getString(it) }
+                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
+            } else {
+                (0 until imageUrls.length())
+                        .map {
+                            imageUrls.getString(it) + try {
+                                "!!${imageUrls1.getString(it)}"
+                            } catch (_: Exception) {
+                                ""
+                            }
+                        }
+                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
         return pages
+    }
+
+    override fun imageRequest(page: Page): Request {
+        val requestHeaders = try {
+            val data = page.url.substringAfter("??", "")
+            val secondUrl = page.url.substringAfter("!!", "").substringBefore("??")
+
+            val builder = headers.newBuilder()!!
+
+            if (data.isNotBlank()) {
+                builder.add("ImageDecodeRequest", data)
+            }
+
+            if (secondUrl.isNotBlank()) {
+                builder.add("SecondUrlToRequest", secondUrl)
+            }
+
+            builder.build()!!
+        } catch (_: Exception) {
+            headers
+        }
+
+        return GET(page.imageUrl!!, requestHeaders)
     }
 
 

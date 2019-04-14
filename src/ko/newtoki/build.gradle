@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: NewToki'
     pkgNameSuffix = 'ko.newtoki'
-    extClass = '.NewToki'
-    extVersionCode = 6
+    extClass = '.NewTokiFactory'
+    extVersionCode = 7
     libVersion = '1.2'
 }
 

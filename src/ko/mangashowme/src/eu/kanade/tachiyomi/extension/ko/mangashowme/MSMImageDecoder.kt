@@ -4,8 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
-import eu.kanade.tachiyomi.network.GET
-import okhttp3.*
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -15,26 +17,15 @@ import java.io.InputStream
  *  It's not need now, but it remains in this code for sometime.
  */
 
-internal class ImageDecoder(private val version: String, scripts: String) {
-    private  val cnt = substringBetween(scripts, "var view_cnt = ", ";")
+internal class ImageDecoder(scripts: String) {
+    private val cnt = substringBetween(scripts, "var view_cnt = ", ";")
             .toIntOrNull() ?: 0
     private val chapter = substringBetween(scripts, "var chapter = ", ";")
             .toIntOrNull() ?: 0
 
     fun request(url: String): String {
-        return when (version) {
-            "v1" -> decodeVersion1ImageUrl(cnt, chapter, url)
-            else -> url
-        }
-    }
-
-    private fun decodeVersion1ImageUrl(cnt: Int, chapter: Int, url: String): String {
-        return HttpUrl.parse(url)!!.newBuilder()
-                .addQueryParameter("cnt", cnt.toString())
-                .addQueryParameter("ch", chapter.toString())
-                .addQueryParameter("ver", "v1")
-                .addQueryParameter("type", "ImageDecodeRequest")
-                .build()!!.toString()
+        if (cnt < 10) return url
+        return "$url??$chapter;$cnt"
     }
 }
 
@@ -42,21 +33,18 @@ internal class ImageDecoder(private val version: String, scripts: String) {
 internal class ImageDecoderInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val req = chain.request()
-        val url = req.url().toString()
-        return if (url.contains("ImageDecodeRequest")) {
+        val response = chain.proceed(req)
+
+        val decodeHeader = req.header("ImageDecodeRequest")
+
+        return if (decodeHeader != null) {
             try {
-                val reqUrl = HttpUrl.parse(url)!!
+                val s = decodeHeader.split(";").map { it.toInt() }
 
-                val viewCnt = reqUrl.queryParameter("cnt")!!
-                val version = reqUrl.queryParameter("ver")!!
-                val chapter = reqUrl.queryParameter("ch")!!
-                val imageUrl = url.split("?").first()
-
-                val response = chain.proceed(GET("$imageUrl?quick"))
-                if (viewCnt.toInt() < 10) return response // Pass decoder if it's not scrambled.
+                if (s[1] < 10) return response
 
                 val res = response.body()!!.byteStream().use {
-                    decodeImageRequest(version, chapter, viewCnt, it)
+                    decodeImageRequest(it, s[0], s[1])
                 }
 
                 val rb = ResponseBody.create(MediaType.parse("image/png"), res)
@@ -66,19 +54,28 @@ internal class ImageDecoderInterceptor : Interceptor {
                 throw IOException("Image decoder failure.", e)
             }
         } else {
-            chain.proceed(req)
+            response
         }
     }
 
+    private fun decodeImageRequest(img: InputStream, chapter: Int, view_cnt: Int): ByteArray {
+        val decoded = BitmapFactory.decodeStream(img)
+        val result = imageDecoder(decoded, chapter, view_cnt)
+
+        val output = ByteArrayOutputStream()
+        result.compress(Bitmap.CompressFormat.PNG, 100, output)
+        return output.toByteArray()
+    }
+
     /*
-     * `decodeV1ImageNative` is modified version of
+     * `imageDecoder` is modified version of
      *  https://github.com/junheah/MangaViewAndroid/blob/b69a4427258fe7fc5fb5363108572bbee0d65e94/app/src/main/java/ml/melun/mangaview/mangaview/Decoder.java#L6-L60
      *
      * MIT License
      *
      * Copyright (c) 2019 junheah
      */
-    private fun decodeV1ImageNative(input: Bitmap, chapter: Int, view_cnt: Int, half: Int = 0, _CX: Int = MangaShowMe.V1_CX, _CY: Int = MangaShowMe.V1_CY): Bitmap {
+    private fun imageDecoder(input: Bitmap, chapter: Int, view_cnt: Int, half: Int = 0, _CX: Int = MangaShowMe.V1_CX, _CY: Int = MangaShowMe.V1_CY): Bitmap {
         if (view_cnt == 0) return input
         val viewCnt = view_cnt / 10
         var CX = _CX
@@ -158,22 +155,6 @@ internal class ImageDecoderInterceptor : Interceptor {
         return (Math.floor(100 * (t - Math.floor(t))) +
                 Math.floor(1000 * (n - Math.floor(n))) +
                 Math.floor(10000 * (a - Math.floor(a)))).toInt()
-    }
-
-    private fun decodeImageRequest(version: String, chapter: String, view_cnt: String, img: InputStream): ByteArray {
-        return when (version) {
-            "v1" -> decodeV1Image(chapter, view_cnt, img)
-            else -> img.readBytes()
-        }
-    }
-
-    private fun decodeV1Image(chapter: String, view_cnt: String, img: InputStream): ByteArray {
-        val decoded = BitmapFactory.decodeStream(img)
-        val result = decodeV1ImageNative(decoded, chapter.toInt(), view_cnt.toInt())
-
-        val output = ByteArrayOutputStream()
-        result.compress(Bitmap.CompressFormat.PNG, 100, output)
-        return output.toByteArray()
     }
 }
 

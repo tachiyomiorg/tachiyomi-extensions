@@ -49,12 +49,8 @@ class JMana : ParsedHttpSource() {
             popularMangaFromElement(element)
         }
 
-        val hasNextPage = try {
-            val page = document.select(popularMangaNextPageSelector())
-            !page[page.size - 2].getElementsByTag("a").attr("href").isNullOrEmpty()
-        } catch (_: Exception) {
-            false
-        }
+        // Can not detect what page is last page but max mangas are 40.
+        val hasNextPage = mangas.size == 40
 
         return MangasPage(mangas, hasNextPage)
     }
@@ -130,10 +126,20 @@ class JMana : ParsedHttpSource() {
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/frame")
     override fun latestUpdatesNextPageSelector() = ""
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(popularMangaSelector()).map { element ->
+            popularMangaFromElement(element)
+        }
+
+        val hasNextPage = false
+
+        return MangasPage(mangas, hasNextPage)
+    }
 
 
     //We are able to get the image URL directly from the page list

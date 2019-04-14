@@ -43,7 +43,6 @@ private fun searchNaming() = arrayOf(
 
 private fun searchStatus() = arrayOf(
         "Not Set",
-        "미분류",
         "주간",
         "격주",
         "월간",
@@ -65,7 +64,6 @@ private fun searchGenres() = listOf(
         SearchCheckBox(0, "드라마"),
         SearchCheckBox(0, "라노벨"),
         SearchCheckBox(0, "러브코미디"),
-        SearchCheckBox(0, "로맨스"),
         SearchCheckBox(0, "먹방"),
         SearchCheckBox(0, "백합"),
         SearchCheckBox(0, "붕탁"),
@@ -76,7 +74,6 @@ private fun searchGenres() = listOf(
         SearchCheckBox(0, "애니화"),
         SearchCheckBox(0, "액션"),
         SearchCheckBox(0, "역사"),
-        SearchCheckBox(0, "요리"),
         SearchCheckBox(0, "음악"),
         SearchCheckBox(0, "이세계"),
         SearchCheckBox(0, "일상"),
@@ -94,7 +91,7 @@ fun getFilters() = FilterList(
         Filter.Separator(),
         SearchMatch(),
         Filter.Separator(),
-        TextField("Author/Artist (Exact Search)", "author")
+        TextField("Author/Artist (Exact search)", "author")
 )
 
 fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: String, filters: FilterList): Request {
@@ -107,7 +104,7 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
     filters.forEach { filter ->
         when (filter) {
             is SearchMatch -> {
-                matchFilter = filter.state
+                matchFilter = filter.state + 1
             }
 
             is TextField -> {
