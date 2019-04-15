@@ -140,15 +140,12 @@ class Mangahere : ParsedHttpSource() {
                 ?.attr("src")
 
         document.select("span.detail-info-right-title-tip")?.first()?.text()?.also { statusText ->
-            if (statusText.contains("ongoing", true))
-                manga.status = SManga.ONGOING
-            else if(statusText.contains("completed", true))
-                manga.status = SManga.COMPLETED
-            else
-                manga.status = SManga.UNKNOWN
+            when {
+                statusText.contains("ongoing", true) -> manga.status = SManga.ONGOING
+                statusText.contains("completed", true) -> manga.status = SManga.COMPLETED
+                else -> manga.status = SManga.UNKNOWN
+            }
         }
-
-        manga.status = SManga.ONGOING
 
         return manga
     }
