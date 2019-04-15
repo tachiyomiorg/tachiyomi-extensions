@@ -14,7 +14,7 @@ import kotlin.collections.ArrayList
 
 class Mangahere : ParsedHttpSource() {
 
-    override val id: Long = 3
+    override val id: Long = 2
 
     override val name = "Mangahere"
 
