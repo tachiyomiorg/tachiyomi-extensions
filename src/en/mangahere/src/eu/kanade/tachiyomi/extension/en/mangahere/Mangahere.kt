@@ -1,26 +1,20 @@
 package eu.kanade.tachiyomi.extension.en.mangahere
 
-import android.util.Log
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
-import okhttp3.Request
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 import kotlin.collections.ArrayList
 
 class Mangahere : ParsedHttpSource() {
 
-    override val id: Long = 2
+    override val id: Long = 3
 
     override val name = "Mangahere"
 
@@ -30,31 +24,20 @@ class Mangahere : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val trustManager = object : X509TrustManager {
-        override fun getAcceptedIssuers(): Array<X509Certificate> {
-            return emptyArray()
-        }
-
-        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
-        }
-
-        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
-        }
-    }
-
-    private val sslContext = SSLContext.getInstance("SSL").apply {
-        init(null, arrayOf(trustManager), SecureRandom())
-    }
-
     override val client = super.client.newBuilder()
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
-            .addInterceptor { chain ->
-                val request = chain.request()
-                val newRequest = request.newBuilder()
-                        .addHeader("Cookie","isAdult=1")
-                        .build()
-                chain.proceed(newRequest)
-            }
+            .cookieJar(object : CookieJar{
+                override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
+                override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
+                    return ArrayList<Cookie>().apply {
+                        add(Cookie.Builder()
+                                .domain("www.mangahere.cc")
+                                .path("/")
+                                .name("isAdult")
+                                .value("1")
+                                .build()) }
+                }
+
+            })
             .build()
 
     override fun popularMangaSelector() = ".manga-list-1-list li"
@@ -67,19 +50,6 @@ class Mangahere : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request {
         return GET("$baseUrl/directory/$page.htm?latest", headers)
-    }
-
-    private fun mangaFromElement(query: String, element: Element): SManga {
-        val manga = SManga.create()
-        element.select(query)?.first()?.also {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = when {
-                it.hasAttr("title") -> it.attr("title")
-                it.hasAttr("rel") -> it.attr("rel")
-                else -> it.text()
-            }
-        }
-        return manga
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -172,7 +142,7 @@ class Mangahere : ParsedHttpSource() {
         document.select("span.detail-info-right-title-tip")?.first()?.text()?.also { statusText ->
             if (statusText.contains("ongoing", true))
                 manga.status = SManga.ONGOING
-            else if(statusText.contains("completed ", true))
+            else if(statusText.contains("completed", true))
                 manga.status = SManga.COMPLETED
             else
                 manga.status = SManga.UNKNOWN
@@ -227,8 +197,6 @@ class Mangahere : ParsedHttpSource() {
 
             val pageLink = "${pageBase}/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
 
-            Log.d("syt0r", "image page link $pageLink")
-
             var responseText = ""
 
             for (tr in 1..3){
@@ -252,27 +220,17 @@ class Mangahere : ParsedHttpSource() {
                 else
                     secretKey = ""
 
-                Log.d("syt0r", "retry")
-
             }
 
-            Log.d("syt0r", "response script $responseText")
-
             val deobfuscatedScript = duktape.evaluate(responseText.removePrefix("eval")).toString()
-
-            Log.d("syt0r", "deobfuscated script $deobfuscatedScript")
 
             val baseLinkStartPos = deobfuscatedScript.indexOf("pix=") + 5
             val baseLinkEndPos = deobfuscatedScript.indexOf(";", baseLinkStartPos) - 1
             val baseLink = deobfuscatedScript.substring(baseLinkStartPos, baseLinkEndPos)
 
-            Log.d("syt0r", "base image link $baseLink")
-
             val imageLinkStartPos = deobfuscatedScript.indexOf("pvalue=") + 9
             val imageLinkEndPos = deobfuscatedScript.indexOf("\"", imageLinkStartPos)
             val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
-
-            Log.d("syt0r", "image link $imageLink")
 
             pages.add(Page(i, "", "http:$baseLink$imageLink"))
 
