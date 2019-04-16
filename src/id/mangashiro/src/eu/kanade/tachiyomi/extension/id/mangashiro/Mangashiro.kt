@@ -26,20 +26,14 @@ class Mangashiro : ParsedHttpSource() {
         return GET("$baseUrl/adv-search/page/$page/?order=update", headers)
     }
 
-    //    LIST SELECTOR
     override fun popularMangaSelector() = "div.utao"
-
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun searchMangaSelector() = popularMangaSelector()
 
-    //    ELEMENT
     override fun popularMangaFromElement(element: Element): SManga = searchMangaFromElement(element)
-
     override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
-
-    //    NEXT SELECTOR
+    
     override fun popularMangaNextPageSelector() = "div.pagination > a.next.page-numbers"
-
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
@@ -67,7 +61,6 @@ class Mangashiro : ParsedHttpSource() {
 
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
-//                is Status -> url.addQueryParameter("manga_status", arrayOf("", "completed", "ongoing")[filter.state])
                 is GenreList -> {
                     val genreInclude = mutableListOf<String>()
                     filter.state.forEach {
@@ -81,31 +74,16 @@ class Mangashiro : ParsedHttpSource() {
                         }
                     }
                 }
-                // is StatusList ->{
-                // val statuses = mutableListOf<String>()
-                // filter.state.forEach {
-                // if (it.state == 1) {
-                // statuses.add(it.id)
-                // }
-                // }
-                // if(statuses.isNotEmpty()){
-                // statuses.forEach{ status ->
-                // url.addQueryParameter("status[]", status)
-                // }
-                // }
-                // }
 
                 is SortBy -> {
                     orderBy = filter.toUriPart();
                     url.addQueryParameter("order", orderBy)
                 }
-                // is TextField -> url.addQueryParameter(filter.key, filter.state)
             }
         }
         return GET(url.toString(), headers)
     }
 
-    // max 200 results
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#content").first()
@@ -190,7 +168,6 @@ class Mangashiro : ParsedHttpSource() {
         return GET(page.imageUrl!!, imgHeader)
     }
 
-    //    private class Status : Filter.TriState("Completed")
     private class TextField(name: String, val key: String) : Filter.Text(name)
 
     private class SortBy : UriPartFilter("Sort by", arrayOf(
@@ -207,9 +184,6 @@ class Mangashiro : ParsedHttpSource() {
     private class StatusList(statuses: List<Status>) : Filter.Group<Status>("Status", statuses)
 
     override fun getFilterList() = FilterList(
-            //TextField("Title", "title"),
-            //TextField("Author", "author"),
-            //TextField("Year", "yearx"),
             Filter.Separator(),
             SortBy(),
             Filter.Separator(),
@@ -217,11 +191,6 @@ class Mangashiro : ParsedHttpSource() {
             GenreList(getGenreList())
     )
 
-    // private fun getStatusList() = listOf(
-    // Status("All",""),
-    // Status("Ongoing","Ongoing"),
-    // Status("Completed","Completed")
-    // )
     private fun getGenreList() = listOf(
             Genre("4-Koma", "4-koma"),
             Genre("4-Koma. Comedy", "4-koma-comedy"),
