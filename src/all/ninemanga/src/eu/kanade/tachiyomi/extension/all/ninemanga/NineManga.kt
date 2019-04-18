@@ -26,10 +26,6 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("dl.bookinfo").let {
-            /*Log.d("URL", it.select("dd > a.bookname").attr("href"))
-            Log.d("TITLE", it.select("dd > a.bookname").first().text())
-            Log.d("THUMBNAIL_URL", it.select("dt > a > img").attr("src"))*/
-
             setUrlWithoutDomain(it.select("dd > a.bookname").attr("href"))
             title = it.select("dd > a.bookname").first().text()
             thumbnail_url = it.select("dt > a > img").attr("src")
@@ -38,27 +34,22 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun latestUpdatesNextPageSelector() = "ul.pageList > li:last-child > a.l"
 
-    override fun popularMangaSelector(): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/category/index_$page.html", headers)
 
-    override fun popularMangaRequest(page: Int): Request {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun popularMangaSelector() = latestUpdatesSelector()
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
+
+    override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select("div.bookintro").let {
             thumbnail_url = document.select("a.bookface > img").attr("src")
-            genre = document.select("ul.message > li.genre").let {
-                it.select("a").text()
+            genre = document.select("li[itemprop=genre] > a").joinToString(", ") {
+                it.text()
             }
-            author = it.select("a.author").text()
-
-            //description = document.select("p.element-description")?.text()
+            author = it.select("a[itemprop=author]").text()
+            description = it.select("p[itemprop=description]").text()
             status = parseStatus(it.select("a.red").first().text().orEmpty())
 
         }
@@ -70,6 +61,14 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         else -> SManga.UNKNOWN
     }
 
+    override fun chapterListSelector(): String = "div.chapterbox"
+
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("img[src*=/final/]").mapIndexed { index, element ->
+            Page(index, "", baseUrl + element.attr("src"))
+        }
+    }
+
 
 
 
@@ -78,19 +77,7 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun chapterListSelector(): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     override fun imageUrlParse(document: Document): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun pageListParse(document: Document): List<Page> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun popularMangaNextPageSelector(): String? {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
