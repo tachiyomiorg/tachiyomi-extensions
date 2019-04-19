@@ -69,7 +69,10 @@ class Mangakakalot : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET(manga.url, headers)
+        if (manga.url.startsWith("http")) {
+            return GET(manga.url, headers)
+        }
+        return super.mangaDetailsRequest(manga)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -97,7 +100,10 @@ class Mangakakalot : ParsedHttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET(manga.url, headers)
+        if (manga.url.startsWith("http")) {
+            return GET(manga.url, headers)
+        }
+        return super.chapterListRequest(manga)
     }
 
     override fun chapterListSelector() = "div.chapter-list div.row"
@@ -144,7 +150,10 @@ class Mangakakalot : ParsedHttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET(chapter.url, headers)
+        if (chapter.url.startsWith("http")) {
+            return GET(chapter.url, headers)
+        }
+        return super.pageListRequest(chapter)
     }
 
     override fun pageListParse(document: Document): List<Page> {
