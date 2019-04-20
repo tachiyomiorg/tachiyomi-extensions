@@ -10,6 +10,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class Mangakakalot : ParsedHttpSource() {
 
@@ -38,7 +42,7 @@ class Mangakakalot : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("h3 a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.url = it.attr("href")
             manga.title = it.text()
         }
         manga.thumbnail_url = element.select("img").first().attr("src")
@@ -64,6 +68,13 @@ class Mangakakalot : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        if (manga.url.startsWith("http")) {
+            return GET(manga.url, headers)
+        }
+        return super.mangaDetailsRequest(manga)
+    }
+
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.manga-info-top").first()
 
@@ -88,15 +99,61 @@ class Mangakakalot : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    override fun chapterListRequest(manga: SManga): Request {
+        if (manga.url.startsWith("http")) {
+            return GET(manga.url, headers)
+        }
+        return super.chapterListRequest(manga)
+    }
+
     override fun chapterListSelector() = "div.chapter-list div.row"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
 
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
+        chapter.url = urlElement.attr("href")
         chapter.name = urlElement.text()
+        chapter.date_upload = parseChapterDate(element.select("span").last().text())
         return chapter
+    }
+
+    private fun parseChapterDate(date: String): Long {
+        if ("ago" in date) {
+            val value = date.split(' ')[0].toInt()
+
+            if ("min" in date) {
+                return Calendar.getInstance().apply {
+                    add(Calendar.MINUTE, value * -1)
+                }.timeInMillis
+            }
+
+            if ("hour" in date) {
+                return Calendar.getInstance().apply {
+                    add(Calendar.HOUR_OF_DAY, value * -1)
+                }.timeInMillis
+            }
+
+            if ("day" in date) {
+                return Calendar.getInstance().apply {
+                    add(Calendar.DATE, value * -1)
+                }.timeInMillis
+            }
+        }
+
+        try {
+            return SimpleDateFormat("MMM-dd-yy", Locale.ENGLISH).parse(date).time
+        } catch (e: ParseException) {
+        }
+
+        return 0L
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        if (chapter.url.startsWith("http")) {
+            return GET(chapter.url, headers)
+        }
+        return super.pageListRequest(chapter)
     }
 
     override fun pageListParse(document: Document): List<Page> {
