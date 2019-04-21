@@ -51,14 +51,19 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
                 it.text()
             }
             author = it.select("a[itemprop=author]").text()
-            description = it.select("p[itemprop=description]").text()
+            artist = ""
+            description = it.select("p[itemprop=description]").text().orEmpty()
             status = parseStatus(it.select("a.red").first().text().orEmpty())
         }
     }
 
-    private fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when { // TODO: agregar estados para cada idioma
         status.contains("En curso") -> SManga.ONGOING
+        status.contains("Ongoing") -> SManga.ONGOING
+
         status.contains("Completo") -> SManga.COMPLETED
+        status.contains("Completed") -> SManga.COMPLETED
+        status.contains("завершенный") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -86,8 +91,19 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
                 val timeAgo = Integer.parseInt(dateWords[0])
                 return Calendar.getInstance().apply {
                     when (dateWords[1]) {
-                        "minutos" -> Calendar.MINUTE
-                        "horas" -> Calendar.HOUR
+                        "minutos" -> Calendar.MINUTE // Español y Portugues
+                        "minutes" -> Calendar.MINUTE // Ingles
+                        "минут" -> Calendar.MINUTE // Ruso
+                        // Aleman
+                        "minuti" -> Calendar.MINUTE // Italiano
+
+                        "horas" -> Calendar.HOUR // Español
+                        "hours" -> Calendar.HOUR // Ingles
+                        "часа" -> Calendar.HOUR // Ruso
+                        "Stunden" -> Calendar.HOUR // Aleman - 2 palabras TODO: agregar condicion
+                        "ore" -> Calendar.HOUR // Italiano
+                        "hora" -> Calendar.HOUR // Portugues
+                        "heures" -> Calendar.HOUR // Portugues - 5 palabras TODO: agregar condicion
                         else -> null
                     }?.let {
                         add(it, -timeAgo)
