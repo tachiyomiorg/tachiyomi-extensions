@@ -1,24 +1,26 @@
 package eu.kanade.tachiyomi.extension.all.ninemanga
 
-import android.os.Build
-import android.util.Log
-import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.Headers
 import okhttp3.Request
-import okhttp3.Response
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import org.json.JSONArray
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
-import kotlin.collections.ArrayList
+import java.util.*
 
 open class NineManga(override val name: String, override val baseUrl: String, override val lang: String) : ParsedHttpSource() {
+
     override val supportsLatest: Boolean = true
+
+    private fun newHeaders() = super.headersBuilder()
+            .add("Accept-Language", "es-ES,es;q=0.9,en;q=0.8,gl;q=0.7")
+            .add("Host", baseUrl.substringAfterLast("/")) // like: es.ninemanga.com
+            .add("Connection", "keep-alive")
+            .add("Upgrade-Insecure-Requests", "1")
+            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+            .build()
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/category/updated_$page.html", headers)
 
@@ -26,7 +28,7 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("dl.bookinfo").let {
-            setUrlWithoutDomain(it.select("dd > a.bookname").attr("href"))
+            setUrlWithoutDomain(it.select("dd > a.bookname").attr("href") + "?waring=1") // To removes warning message and shows chapter list.
             title = it.select("dd > a.bookname").first().text()
             thumbnail_url = it.select("dt > a > img").attr("src")
         }
@@ -51,7 +53,6 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
             author = it.select("a[itemprop=author]").text()
             description = it.select("p[itemprop=description]").text()
             status = parseStatus(it.select("a.red").first().text().orEmpty())
-
         }
     }
 
@@ -61,39 +62,65 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector(): String = "div.chapterbox"
+    override fun chapterListSelector() = "ul.sub_vol_ul > li"
 
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select("img[src*=/final/]").mapIndexed { index, element ->
-            Page(index, "", baseUrl + element.attr("src"))
+    override fun chapterFromElement(element: Element) = SChapter.create().apply {
+        element.select("a.chapter_list_a").let {
+            name = it.text()
+            setUrlWithoutDomain(it.attr("href"))
+        }
+        date_upload = parseChapterDate(element.select("span").text())
+    }
+
+    private fun parseChapterDate(date: String): Long {
+        val dateWords = date.split(" ")
+
+        if (dateWords.size == 3) {
+            if(dateWords[1].contains(",")){
+                try {
+                    return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
+                } catch (e: ParseException) {
+                    return 0L
+                }
+            }else{
+                val timeAgo = Integer.parseInt(dateWords[0])
+                return Calendar.getInstance().apply {
+                    when (dateWords[1]) {
+                        "minutos" -> Calendar.MINUTE
+                        "horas" -> Calendar.HOUR
+                        else -> null
+                    }?.let {
+                        add(it, -timeAgo)
+                    }
+                }.timeInMillis
+            }
+        }
+        return 0L
+    }
+
+    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, newHeaders())
+
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        document.select("select#page").first().select("option").forEach {
+            add(Page(size, baseUrl + it.attr("value")))
         }
     }
 
+    override fun imageUrlRequest(page: Page) = GET(page.url, newHeaders())
 
-
-
-
-    override fun chapterFromElement(element: Element): SChapter {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun imageUrlParse(document: Document): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun searchMangaFromElement(element: Element): SManga {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun searchMangaNextPageSelector(): String? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun imageUrlParse(document: Document) = document.select("div.pic_box img.manga_pic").first().attr("src").orEmpty()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return GET("$baseUrl/search/?name_sel=&wd=$query&author_sel=&author=&artist_sel=&artist=&category_id=&out_category_id=&completed_series=&page=$page.html", headers)
     }
 
-    override fun searchMangaSelector(): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun searchMangaSelector() = popularMangaSelector()
+
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+
+    //TODO: Implement filters list.
+    // Array.from(document.querySelectorAll('.optionbox .typelist:nth-child(3) ul')).map(a => Array.from(a.querySelectorAll('li')).map(b => `Genre("${b.querySelector('label').innerText}", "${a.querySelector('li[cate_id]').getAttribute('cate_id')}")`)).join(',\n')
+    // http://es.ninemanga.com/search/?name_sel=contain&wd=&author_sel=contain&author=&artist_sel=contain&artist=&category_id=&out_category_id=&completed_series=either&type=high
 }
