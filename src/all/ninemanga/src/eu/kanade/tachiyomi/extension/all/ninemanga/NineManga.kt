@@ -57,20 +57,9 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         }
     }
 
-    private fun parseStatus(status: String) = when { // TODO: agregar estados para cada idioma
-        status.contains("En curso") -> SManga.ONGOING // ES
-        status.contains("Ongoing") -> SManga.ONGOING // EN
-        status.contains("Laufende") -> SManga.ONGOING // DE
-        status.contains("In corso") -> SManga.ONGOING // IT
-        status.contains("Em tradução") -> SManga.COMPLETED // BR
-        status.contains("En cours") -> SManga.COMPLETED // FR
-
-        status.contains("Completo") -> SManga.COMPLETED // ES & BR
-        status.contains("Completed") -> SManga.COMPLETED // EN
-        status.contains("завершенный") -> SManga.COMPLETED // RU
-        status.contains("Abgeschlossen") -> SManga.COMPLETED // DE
-        status.contains("Completato") -> SManga.COMPLETED // IT
-        status.contains("Complété") -> SManga.COMPLETED // FR
+    open fun parseStatus(status: String) = when {
+        status.contains("Ongoing") -> SManga.ONGOING
+        status.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -84,21 +73,9 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         date_upload = parseChapterDate(element.select("span").text())
     }
 
-    private fun parseChapterDate(date: String): Long {
+    open fun parseChapterDate(date: String): Long {
         val dateWords = date.split(" ")
-        var timeAgo = 0
 
-        if (dateWords.size == 2) { // Aleman
-            timeAgo = Integer.parseInt(dateWords[0])
-            return Calendar.getInstance().apply {
-                when (dateWords[1]) {
-                    "Stunden" -> Calendar.HOUR // Aleman - 2 palabras
-                    else -> null
-                }?.let {
-                    add(it, -timeAgo)
-                }
-            }.timeInMillis
-        }
         if (dateWords.size == 3) {
             if(dateWords[1].contains(",")){
                 try {
@@ -106,38 +83,18 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
                 } catch (e: ParseException) {
                     return 0L
                 }
-            }else{
-                timeAgo = Integer.parseInt(dateWords[0])
+            }else {
+                val timeAgo = Integer.parseInt(dateWords[0])
                 return Calendar.getInstance().apply {
                     when (dateWords[1]) {
-                        "minutos" -> Calendar.MINUTE // ES y BR
-                        "minutes" -> Calendar.MINUTE // EN
-                        "минут" -> Calendar.MINUTE // RU
-                        "minuti" -> Calendar.MINUTE // IR
-
-                        "horas" -> Calendar.HOUR // ES
-                        "hours" -> Calendar.HOUR // EN
-                        "часа" -> Calendar.HOUR // RU
-                        "ore" -> Calendar.HOUR // IR
-                        "hora" -> Calendar.HOUR // BR
+                        "minutes" -> Calendar.MINUTE
+                        "hours" -> Calendar.HOUR
                         else -> null
                     }?.let {
                         add(it, -timeAgo)
                     }
                 }.timeInMillis
             }
-        }
-        if(dateWords.size == 5) { // FR
-            timeAgo = Integer.parseInt(dateWords[3])
-            return Calendar.getInstance().apply {
-                when (dateWords[4]) {
-                    "minutes" -> Calendar.MINUTE
-                    "heures" -> Calendar.HOUR
-                    else -> null
-                }?.let {
-                    add(it, -timeAgo)
-                }
-            }.timeInMillis
         }
         return 0L
     }
