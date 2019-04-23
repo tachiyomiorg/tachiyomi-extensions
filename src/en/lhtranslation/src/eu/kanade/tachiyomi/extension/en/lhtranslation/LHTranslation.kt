@@ -120,7 +120,7 @@ class LHTranslation : ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[0].toInt()
         return when {
-            "minute(s) ago" in date -> Calendar.getInstance().apply {
+            "min(s) ago" in date -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
