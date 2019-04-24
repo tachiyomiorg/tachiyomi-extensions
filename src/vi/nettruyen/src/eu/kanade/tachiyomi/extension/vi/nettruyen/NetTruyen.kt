@@ -39,7 +39,6 @@ class NetTruyen : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title").replace("Truyện tranh", "").trim()
-//            manga.thumbnail_url = it.select("img").first()?.attr("src")
         }
         return manga
     }
@@ -60,7 +59,7 @@ class NetTruyen : ParsedHttpSource() {
                     url = if (filter.state == 0) url else
                         HttpUrl.parse(url.toString()
                                 .replace("tim-truyen?",
-                                        "tim-truyen/${getGenreList()[filter.state]}?"))!!
+                                        "tim-truyen/${getGenreList().map { it.first }[filter.state]}?"))!!
                                 .newBuilder()
                 }
                 is Status -> {
@@ -112,19 +111,19 @@ class NetTruyen : ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long {
         val dates: Calendar = Calendar.getInstance()
-        if (date.contains("/")){
-            return if (date.contains(":")){
+        if (date.contains("/")) {
+            return if (date.contains(":")) {
                 // Format eg 17:02 20/04
                 val dateDM = date.split(" ")[1].split("/")
                 dates.set(dates.get(Calendar.YEAR), dateDM[1].toInt(), dateDM[0].toInt())
                 dates.timeInMillis
-            }else{
+            } else {
                 // Format eg 18/11/17
                 val dateDMY = date.split("/")
-                dates.set(2000+ dateDMY[2].toInt(), dateDMY[1].toInt(), dateDMY[0].toInt())
+                dates.set(2000 + dateDMY[2].toInt(), dateDMY[1].toInt(), dateDMY[0].toInt())
                 dates.timeInMillis
             }
-        }else{
+        } else {
             // Format eg 1 ngày trước
             val dateWords: List<String> = date.split(" ")
             if (dateWords.size == 3) {
@@ -143,7 +142,6 @@ class NetTruyen : ParsedHttpSource() {
         return 0L
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
@@ -152,8 +150,6 @@ class NetTruyen : ParsedHttpSource() {
         }
         return pages
     }
-
-    override fun imageUrlRequest(page: Page) = GET(page.url)
 
     override fun imageUrlParse(document: Document) = ""
 
@@ -164,36 +160,61 @@ class NetTruyen : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
             Status(getStatusList()),
-            Genre(getGenreList())
+            Genre(getGenreList().map { it.second }.toTypedArray())
     )
 
     private fun getGenreList() = arrayOf(
-            "Tất cả",
-            "action", "adult",
-            "adventure", "anime",
-            "chuyen-sinh", "comedy",
-            "comic", "cooking",
-            "co-dai", "doujinshi",
-            "drama", "dam-my",
-            "ecchi", "fantasy",
-            "gender-bender", "harem",
-            "historical", "horror",
-            "josei", "live-action",
-            "manga", "manhua",
-            "manhwa", "martial-arts",
-            "mature", "mecha",
-            "mystery", "ngon-tinh",
-            "one-shot", "psychological",
-            "romance", "school-life",
-            "sci-fi", "seinen",
-            "shoujo", "shoujo-ai",
-            "shounen", "shounen-ai",
-            "slice-of-life", "smut",
-            "soft-yaoi", "soft-yuri",
-            "sports", "supernatural",
-            "thieu-nhi", "tragedy",
-            "trinh-tham", "truyen-scan",
-            "truyen-mau", "webtoon",
-            "xuyen-khong"
+            "tim-truyen" to "Tất cả",
+            "action" to "Action",
+            "adult" to "Adult",
+            "adventure" to "Adventure",
+            "anime" to "Anime",
+            "chuyen-sinh" to "Chuyển Sinh",
+            "comedy" to "Comedy",
+            "comic" to "Comic",
+            "cooking" to "Cooking",
+            "co-dai" to "Cổ Đại",
+            "doujinshi" to "Doujinshi",
+            "drama" to "Drama",
+            "dam-my" to "Đam Mỹ",
+            "ecchi" to "Ecchi",
+            "fantasy" to "Fantasy",
+            "gender-bender" to "Gender Bender",
+            "harem" to "Harem",
+            "historical" to "Historical",
+            "horror" to "Horror",
+            "josei" to "Josei",
+            "live-action" to "Live action",
+            "manga" to "Manga",
+            "manhua" to "Manhua",
+            "manhwa" to "Manhwa",
+            "martial-arts" to "Martial Arts",
+            "mature" to "Mature",
+            "mecha" to "Mecha",
+            "mystery" to "Mystery",
+            "ngon-tinh" to "Ngôn Tình",
+            "one-shot" to "One shot",
+            "psychological" to "Psychological",
+            "romance" to "Romance",
+            "school-life" to "School Life",
+            "sci-fi" to "Sci-fi",
+            "seinen" to "Seinen",
+            "shoujo" to "Shoujo",
+            "shoujo-ai" to "Shoujo Ai",
+            "shounen" to "Shounen",
+            "shounen-ai" to "Shounen Ai",
+            "slice-of-life" to "Slice of Life",
+            "smut" to "Smut",
+            "soft-yaoi" to "Soft Yaoi",
+            "soft-yuri" to "Soft Yuri",
+            "sports" to "Sports",
+            "supernatural" to "Supernatural",
+            "thieu-nhi" to "Thiếu Nhi",
+            "tragedy" to "Tragedy",
+            "trinh-tham" to "Trinh Thám",
+            "truyen-scan" to "Truyện scan",
+            "truyen-mau" to "Truyện Màu",
+            "webtoon" to "Webtoon",
+            "xuyen-khong" to "Xuyên Không"
     )
 }
