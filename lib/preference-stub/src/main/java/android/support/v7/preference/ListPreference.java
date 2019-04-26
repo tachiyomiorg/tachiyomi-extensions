@@ -12,27 +12,12 @@ public class ListPreference extends Preference {
         throw new RuntimeException("Stub!");
     }
 
-    public CharSequence getTitle() {
-        throw new RuntimeException("Stub!");
-
-    }
-
-    public void setTitle(CharSequence title) {
-        throw new RuntimeException("Stub!");
-    }
-
     public void setEntries(CharSequence[] entries) {
         throw new RuntimeException("Stub!");
     }
 
     public CharSequence[] getEntries() {
         throw new RuntimeException("Stub!");
-
-    }
-
-    public void setOnPreferenceChangeListener(OnPreferenceChangeListener onPreferenceChangeListener) {
-        throw new RuntimeException("Stub!");
-
     }
 
     public int findIndexOfValue(String value) {
@@ -56,14 +41,6 @@ public class ListPreference extends Preference {
     }
 
     public void setValue(String value) {
-        throw new RuntimeException("Stub!");
-    }
-
-    public void setSummary(CharSequence summary) {
-        throw new RuntimeException("Stub!");
-    }
-
-    public CharSequence getSummary() {
         throw new RuntimeException("Stub!");
     }
 }
