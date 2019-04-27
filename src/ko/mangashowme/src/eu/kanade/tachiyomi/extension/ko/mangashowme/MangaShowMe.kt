@@ -142,7 +142,7 @@ class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
         val mangaComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
         val genres = mutableListOf<String>()
-        document.select("div.left-info > .manga-tags > a.tag").forEach {
+        document.select("div.left-info div.information > .manga-tags > a.tag").forEach {
             genres.add(it.text())
         }
 
