@@ -265,7 +265,7 @@ class Dmzj : HttpSource() {
 
     //Headers
     override fun headersBuilder()
-            = super.headersBuilder().add("Referer", "https://manhua.dmzj.com")!!
+            = super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>,
                                      defaultValue: Int = 0) :

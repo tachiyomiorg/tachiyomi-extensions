@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: Dmzj'
     pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
-    extVersionCode = 4
-    libVersion = '1.0'
+    extVersionCode = 5
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
