@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Webtoons'
-    pkgNameSuffix = 'en.webtoons'
-    extClass = '.Webtoons'
-    extVersionCode = 6
+    appName = 'Tachiyomi: DoujinHentai'
+    pkgNameSuffix = 'es.doujinhentai'
+    extClass = '.DoujinHentai'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 

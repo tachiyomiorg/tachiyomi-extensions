@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.webtoons
+package eu.kanade.tachiyomi.extension.all.webtoons
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -9,16 +9,13 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
 import java.util.*
 
-class Webtoons : ParsedHttpSource() {
+abstract class Webtoons(override val lang: String) : ParsedHttpSource() {
 
     override val name = "Webtoons.com"
 
     override val baseUrl = "http://www.webtoons.com"
-
-    override val lang = "en"
 
     override val supportsLatest = true
 
@@ -45,7 +42,7 @@ class Webtoons : ParsedHttpSource() {
     override fun headersBuilder() = super.headersBuilder()
             .add("Referer", "http://www.webtoons.com/en/")
 
-    private val mobileHeaders = super.headersBuilder()
+    protected val mobileHeaders = super.headersBuilder()
             .add("Referer", "http://m.webtoons.com")
             .build()
 
@@ -135,28 +132,6 @@ class Webtoons : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "ul#_episodeList > li[id*=episode]"
-
-    override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a")
-
-        val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = element.select("a > div.row > div.info > p.sub_title > span.ellipsis").text()
-        val select = element.select("a > div.row > div.num")
-        if (select.isNotEmpty()) {
-            chapter.name += " Ch. " + select.text().substringAfter("#")
-        }
-        if (element.select(".ico_bgm").isNotEmpty()) {
-            chapter.name += " ♫"
-        }
-        chapter.date_upload = element.select("a > div.row > div.info > p.date").text()?.let { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(it).time } ?: 0
-        return chapter
-    }
-
-    override fun chapterListRequest(manga: SManga) = GET("http://m.webtoons.com" + manga.url, mobileHeaders)
-
-    override fun pageListParse(document: Document) = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
-
     override fun imageUrlParse(document: Document) = document.select("img").first().attr("src")
+
 }
