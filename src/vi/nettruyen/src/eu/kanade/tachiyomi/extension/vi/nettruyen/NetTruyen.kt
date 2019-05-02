@@ -116,12 +116,12 @@ class NetTruyen : ParsedHttpSource() {
             return if (date.contains(":")) {
                 // Format eg 17:02 20/04
                 val dateDM = date.split(" ")[1].split("/")
-                dates.set(dates.get(Calendar.YEAR), dateDM[1].toInt(), dateDM[0].toInt())
+                dates.set(dates.get(Calendar.YEAR), dateDM[1].toInt() - 1, dateDM[0].toInt())
                 dates.timeInMillis
             } else {
                 // Format eg 18/11/17
                 val dateDMY = date.split("/")
-                dates.set(2000 + dateDMY[2].toInt(), dateDMY[1].toInt(), dateDMY[0].toInt())
+                dates.set(2000 + dateDMY[2].toInt(), dateDMY[1].toInt() - 1, dateDMY[0].toInt())
                 dates.timeInMillis
             }
         } else {

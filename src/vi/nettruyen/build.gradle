@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: NetTruyen'
     pkgNameSuffix = 'vi.nettruyen'
     extClass = '.NetTruyen'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
