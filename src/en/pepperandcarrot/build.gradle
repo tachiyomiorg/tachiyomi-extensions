@@ -1,0 +1,18 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Pepper and Carrot'
+    pkgNameSuffix = 'en.pepperandcarrot'
+    extClass = '.PepperAndCarrot'
+    extVersionCode = 4
+    libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':duktape-stub')
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+}
+
+apply from: "$rootDir/common.gradle"
