@@ -203,21 +203,15 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
             val decoder = ImageDecoder(element)
 
-            if (imageUrls.length() != imageUrls1.length()) {
-                (0 until imageUrls.length())
-                        .map { imageUrls.getString(it) }
-                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
-            } else {
-                (0 until imageUrls1.length())
-                        .map {
-                            imageUrls1.getString(it) + try {
-                                "!!${imageUrls.getString(it)}?quick"
-                            } catch (_: Exception) {
-                                ""
-                            }
+            (0 until imageUrls.length())
+                    .map {
+                        imageUrls.getString(it) + try {
+                            "!!${imageUrls1.getString(it)}?quick"
+                        } catch (_: Exception) {
+                            ""
                         }
-                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
-            }
+                    }
+                    .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -9,47 +9,42 @@ internal class ImageUrlHandlerInterceptor : Interceptor {
         val req = chain.request()
 
         // only for image Request
-        val host = req.url().host()
-        val isFileCdn = !host.contains(".filecdn.xyz") || !host.contains("chickencdn.info")
-        if (!req.url().toString().endsWith("?quick")) return chain.proceed(req)
+        val httpUrl = req.url()
+        if (!httpUrl.toString().endsWith("?quick")) return chain.proceed(req)
 
         val secondUrl = req.header("SecondUrlToRequest")
 
-        fun get(flag: Int = 0): Request {
-            val url = if (isFileCdn) {
-                when (flag) {
-                    1 -> req.url().toString().replace("img.", "s3.")
-                    else -> req.url().toString()
-                }
-            } else {
-                when (flag) {
-                    1 -> secondUrl!!
-                    2 -> secondUrl!!.replace("img.", "s3.")
-                    else -> req.url().toString().substringBefore("?quick")
-                }
+        fun get(url: String): Response = when {
+            "filecdn.xyz" in url || "chickencdn.info" in url
+            -> ownCDNRequestHandler(chain, req, url)
+            else -> outsideRequestHandler(chain, req, url)
             }
 
-            return req.newBuilder()!!.url(url)
-                    .removeHeader("ImageDecodeRequest")
-                    .removeHeader("SecondUrlToRequest")
-                    .build()!!
-        }
+        val res = get(httpUrl.toString())
+        val length = res.header("content-length")
+        return if ((!res.isSuccessful || length == null || length.toInt() < 50000) && secondUrl != null) {
+            get(secondUrl)
+        } else res
+    }
 
-        val res = chain.proceed(get())
+    private fun ownCDNRequestHandler(chain: Interceptor.Chain, req: Request, url: String): Response {
+        val res = chain.proceed(beforeRequest(req, url))
+        val length = res.header("content-length")
 
-        return if (isFileCdn) {
-            val length = res.header("content-length")
-            if (length == null || length.toInt() < 50000) {
-                chain.proceed(get(1)) // s3
-            } else res
-        } else {
-            if (!res.isSuccessful && secondUrl != null) {
-                val fallbackRes = chain.proceed(get(1)) // img filecdn
-                val fallbackLength = fallbackRes.header("content-length")
-                if (fallbackLength == null || fallbackLength.toInt() < 50000) {
-                    chain.proceed(get(2)) // s3
-                } else fallbackRes
-            } else res
-        }
+        return if (!res.isSuccessful || length == null || length.toInt() < 50000) {
+            chain.proceed(beforeRequest(req, url.replace("img.", "s3."))) // s3
+        } else res
+    }
+
+    private fun outsideRequestHandler(chain: Interceptor.Chain, req: Request, url: String): Response {
+        val outUrl = url.substringBefore("?quick")
+        return chain.proceed(beforeRequest(req, outUrl))
+    }
+
+    private fun beforeRequest(req: Request, url: String): Request {
+        return req.newBuilder()!!.url(url)
+                .removeHeader("ImageDecodeRequest")
+                .removeHeader("SecondUrlToRequest")
+                .build()!!
     }
 }
