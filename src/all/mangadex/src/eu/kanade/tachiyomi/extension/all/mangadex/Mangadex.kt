@@ -4,16 +4,32 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import com.github.salomonbrys.kotson.*
+import com.github.salomonbrys.kotson.forEach
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.keys
+import com.github.salomonbrys.kotson.long
+import com.github.salomonbrys.kotson.nullString
+import com.github.salomonbrys.kotson.obj
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -21,8 +37,27 @@ import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.net.URLEncoder
-import java.util.*
+import java.util.Date
 import java.util.concurrent.TimeUnit
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.count
+import kotlin.collections.elementAt
+import kotlin.collections.filter
+import kotlin.collections.first
+import kotlin.collections.forEach
+import kotlin.collections.isNotEmpty
+import kotlin.collections.joinToString
+import kotlin.collections.listOf
+import kotlin.collections.map
+import kotlin.collections.mapNotNull
+import kotlin.collections.mutableListOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.plus
+import kotlin.collections.set
+import kotlin.collections.sortedWith
+import kotlin.collections.toMap
+import kotlin.collections.toTypedArray
 
 open class Mangadex(override val lang: String, private val internalLang: String, private val langCode: Int) : ConfigurableSource, ParsedHttpSource() {
 
@@ -44,10 +79,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addNetworkInterceptor { chain ->
+                val originalCookies = chain.request().header("Cookie") ?: ""
                 val newReq = chain
                         .request()
                         .newBuilder()
-                        .addHeader("Cookie", cookiesHeader(r18Toggle, langCode))
+                        .header("Cookie", "$originalCookies; ${cookiesHeader(r18Toggle, langCode)}")
                         .build()
                 chain.proceed(newReq)
             }.build()!!
@@ -72,11 +108,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     override fun latestUpdatesSelector() = "tr a.manga_title"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/titles/0/$page/", headers)
+        return GET("$baseUrl/titles/0/$page/", headersBuilder().build())
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/updates/$page", headers)
+        return GET("$baseUrl/updates/$page", headersBuilder().build())
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -262,7 +298,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             urlToUse += "&tags_exc=" + genresToExclude.joinToString(",")
         }
 
-        return GET(urlToUse, headers)
+        return GET(urlToUse, headersBuilder().build())
     }
 
     override fun searchMangaSelector() = "div.col-lg-6.border-bottom.pl-0.my-1"
