@@ -40,7 +40,7 @@ class JMana : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "div.page > ul > li"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic_main_frame?page=${page - 1}")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic_main_frame?tag=null&keyword=null&chosung=null&page=${page - 1}")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -59,33 +59,41 @@ class JMana : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/comic_main_frame?keyword=$query&page=${page - 1}")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/?tag=null&keyword=$query&chosung=null&page=${page - 1}")
 
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val info = document.select("div.leftM").first()
-        val authorText = info.select("div.comBtnArea a").text()
-        val titleDescription = info.select("li.row")
+        val descriptionElement = document.select(".media > .row > .media-body.col-9 > div")
+        val thumbnailUrl = document.select(".media > .row > .media-body.col-3 img.media-object-list").attr("src")
 
         val manga = SManga.create()
-        manga.title = titleDescription.first().text()
-        manga.description = titleDescription.last().text()
-        manga.author = authorText
+        descriptionElement
+                .map { it.text() }
+                .forEach { text ->
+                    when {
+                        DETAIL_TITLE in text -> manga.title = text.substringAfter(DETAIL_TITLE).trim()
+                        DETAIL_AUTHOR in text -> manga.author = text.substringAfter(DETAIL_AUTHOR).trim()
+                        DETAIL_GENRE in text -> manga.genre = text.substringAfter("장르 : [").substringBefore("]").trim()
+                        DETAIL_DESCRIPTION in text -> text.substringAfter(DETAIL_DESCRIPTION).trim()
+                    }
+                }
+        manga.thumbnail_url = thumbnailUrl
         manga.status = SManga.UNKNOWN
         return manga
     }
 
-    override fun chapterListSelector() = "div.contents > ul > li"
+    override fun chapterListSelector() = "div.section > .post > .post-content-list"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val linkElement = element.select("a")
+        val linkElement = element.select(".entry-title a")
         val rawName = linkElement.text()
+        val chapterUrl = "${linkElement.attr("href")}?viewstyle=list".replace("book/", "book_frame/")
 
         val chapter = SChapter.create()
-        chapter.url = linkElement.attr("href").replace("book/", "book_frame/")
+        chapter.url = chapterUrl
         chapter.chapter_number = parseChapterNumber(rawName)
         chapter.name = rawName.trim()
-        chapter.date_upload = parseChapterDate(element.select("ul > li:not(.fcR)").last().text())
+        chapter.date_upload = parseChapterDate(element.select("li.publish-date span").last().text())
         return chapter
     }
 
@@ -105,7 +113,7 @@ class JMana : ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy-MM-dd").parse(date).time
+            SimpleDateFormat("yyyy-MM-dd HH:mm").parse(date).time
         } catch (e: Exception) {
             e.printStackTrace()
             0
@@ -146,4 +154,11 @@ class JMana : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList()
+
+    companion object {
+        const val DETAIL_TITLE = "제목 : "
+        const val DETAIL_GENRE = "장르 : "
+        const val DETAIL_AUTHOR = "작가 : "
+        const val DETAIL_DESCRIPTION = "설명 : "
+    }
 }
