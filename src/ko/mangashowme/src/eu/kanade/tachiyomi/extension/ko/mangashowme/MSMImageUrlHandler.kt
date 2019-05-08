@@ -1,50 +1,57 @@
 package eu.kanade.tachiyomi.extension.ko.mangashowme
 
 import okhttp3.Interceptor
-import okhttp3.Request
 import okhttp3.Response
 
 internal class ImageUrlHandlerInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val req = chain.request()
+    override fun intercept(chain: Interceptor.Chain): Response = RequestHandler(chain).run()
+}
 
+private class RequestHandler(val chain: Interceptor.Chain) {
+    val req = chain.request()
+    val origUrl = req.url().toString()
+
+    fun run(): Response {
         // only for image Request
-        val httpUrl = req.url()
-        if (!httpUrl.toString().endsWith("?quick")) return chain.proceed(req)
+        if (req.header("ImageRequest") != "1") return chain.proceed(req)
 
         val secondUrl = req.header("SecondUrlToRequest")
 
-        fun get(url: String): Response = when {
-            "filecdn.xyz" in url || "chickencdn.info" in url
-            -> ownCDNRequestHandler(chain, req, url)
-            else -> outsideRequestHandler(chain, req, url)
-            }
-
-        val res = get(httpUrl.toString())
-        val length = res.header("content-length")
-        return if ((!res.isSuccessful || length == null || length.toInt() < 50000) && secondUrl != null) {
-            get(secondUrl)
+        val res = getRequest(origUrl)
+        return if (!isSuccess(res) && secondUrl != null) {
+            getRequest(secondUrl)
         } else res
     }
 
-    private fun ownCDNRequestHandler(chain: Interceptor.Chain, req: Request, url: String): Response {
-        val res = chain.proceed(beforeRequest(req, url))
-        val length = res.header("content-length")
+    private fun isSuccess(res: Response): Boolean {
+        val length = res.header("content-length")?.toInt() ?: 0
+        return !(!res.isSuccessful || length < 50000)
+    }
 
-        return if (!res.isSuccessful || length == null || length.toInt() < 50000) {
-            chain.proceed(beforeRequest(req, url.replace("img.", "s3."))) // s3
+    private fun getRequest(url: String): Response = when {
+        "filecdn.xyz" in url || "chickencdn.info" in url
+        -> ownCDNRequestHandler(url)
+        else -> outsideRequestHandler(url)
+    }
+
+    private fun ownCDNRequestHandler(url: String): Response {
+        val res = proceedRequest(url)
+        return if (!isSuccess(res)) {
+            proceedRequest(url.replace("img.", "s3.")) // s3
         } else res
     }
 
-    private fun outsideRequestHandler(chain: Interceptor.Chain, req: Request, url: String): Response {
+    private fun outsideRequestHandler(url: String): Response {
         val outUrl = url.substringBefore("?quick")
-        return chain.proceed(beforeRequest(req, outUrl))
+        return proceedRequest(outUrl)
     }
 
-    private fun beforeRequest(req: Request, url: String): Request {
-        return req.newBuilder()!!.url(url)
-                .removeHeader("ImageDecodeRequest")
-                .removeHeader("SecondUrlToRequest")
-                .build()!!
-    }
+    private fun proceedRequest(url: String): Response = chain.proceed(
+            req.newBuilder()!!
+                    .url(url)
+                    .removeHeader("ImageRequest")
+                    .removeHeader("ImageDecodeRequest")
+                    .removeHeader("SecondUrlToRequest")
+                    .build()!!
+    )
 }

@@ -237,7 +237,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             builder.build()!!
         } catch (_: Exception) {
             headers
-        }
+        }.newBuilder()!!.add("ImageRequest", "1").build()!!
 
         return GET(page.imageUrl!!, requestHeaders)
     }
