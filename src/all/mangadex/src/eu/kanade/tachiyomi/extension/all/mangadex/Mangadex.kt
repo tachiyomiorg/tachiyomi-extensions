@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.os.SystemClock
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.forEach
@@ -16,6 +15,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -28,7 +28,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -57,37 +56,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    private val requestsPerSecond = 4
-    private val lastRequests = ArrayList<Long>(requestsPerSecond)
-    private val rateLimitInterceptor = Interceptor {
-        synchronized(this) {
-            val now = SystemClock.elapsedRealtime()
-            val waitTime = if (lastRequests.size < requestsPerSecond) {
-                0
-            } else {
-                val oldestReq = lastRequests[0]
-                val newestReq = lastRequests[requestsPerSecond - 1]
-
-                if (newestReq - oldestReq > 1000) {
-                    0
-                } else {
-                    oldestReq + 1000 - now // Remaining time for the next second
-                }
-            }
-
-            if (lastRequests.size == requestsPerSecond) {
-                lastRequests.removeAt(0)
-            }
-            if (waitTime > 0) {
-                lastRequests.add(now + waitTime)
-                Thread.sleep(waitTime) // Sleep inside synchronized to pause queued requests
-            } else {
-                lastRequests.add(now)
-            }
-        }
-
-        it.proceed(it.request())
-    }
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
             .addNetworkInterceptor(rateLimitInterceptor)
