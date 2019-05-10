@@ -63,7 +63,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
     }
 
     private fun fetchChapterListPage(manga: SManga, page: Int): Observable<List<SChapter>> {
-        return client.newCall(chapterListRequest(manga, page))
+        return client.newCall(chapterPagedListRequest(manga, page))
                 .asObservableSuccess()
                 .map { response ->
                     chapterListParse(response)
@@ -71,10 +71,10 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return chapterListRequest(manga, 1)
+        return chapterPagedListRequest(manga, 1)
     }
 
-    private fun chapterListRequest(manga: SManga, page: Int): Request {
+    open fun chapterPagedListRequest(manga: SManga, page: Int): Request {
         return GET("$mobileUrl${manga.url}&page=$page", mobileHeaders)
     }
 
@@ -90,7 +90,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         return chapter
     }
 
-    private fun parseChapterNumber(name: String): Float {
+    protected fun parseChapterNumber(name: String): Float {
         try {
             if (name.contains("[단편]")) return 1f
             // `특별` means `Special`, so It can be buggy. so pad `편`(Chapter) to prevent false return
@@ -148,4 +148,23 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList()
+}
+
+abstract class NaverComicChallengeBase(mType: String) : NaverComicBase(mType) {
+    override fun popularMangaSelector() = ".weekchallengeBox tbody td:not([class])"
+    override fun popularMangaNextPageSelector(): String? = ".paginate .page_wrap a.next"
+    override fun popularMangaFromElement(element: Element): SManga {
+        val thumb = element.select("a img").first().attr("src")
+        val title = element.select(".challengeTitle a").first()
+
+        val manga = SManga.create()
+        manga.url = title.attr("href").substringBefore("&week")
+        manga.title = title.text().trim()
+        manga.thumbnail_url = thumb
+        return manga
+    }
+
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 }
