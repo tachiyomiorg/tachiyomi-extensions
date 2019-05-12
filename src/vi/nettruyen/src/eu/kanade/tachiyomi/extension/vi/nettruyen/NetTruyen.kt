@@ -1,10 +1,10 @@
 package eu.kanade.tachiyomi.extension.vi.nettruyen
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -20,7 +20,15 @@ class NetTruyen : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client = network.cloudflareClient.newBuilder().addInterceptor {
+        //Intercept any image requests and add a referer to them
+        //Enables bandwidth stealing feature
+        val request =
+                if (it.request().url().host().contains("cloud"))
+                    it.request().newBuilder().addHeader("Referer", baseUrl).build()
+                else it.request()
+        it.proceed(request)
+    }.build()!!
 
     override fun popularMangaSelector() = "#ctl00_divCenter div.items div.item"
 
@@ -39,7 +47,7 @@ class NetTruyen : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title").replace("Truyện tranh", "").trim()
-            manga.thumbnail_url = it.select("img").first()?.attr("src")
+            manga.thumbnail_url = it.select("img").first()?.attr("data-original")
         }
         return manga
     }
@@ -106,7 +114,8 @@ class NetTruyen : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
-        chapter.date_upload = element.select(".col-xs-4.text-center").last()?.text()?.let { parseChapterDate(it) } ?: 0
+        chapter.date_upload = element.select(".col-xs-4.text-center").last()?.text()?.let { parseChapterDate(it) }
+                ?: 0
         return chapter
     }
 
@@ -147,7 +156,7 @@ class NetTruyen : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select(".page-chapter img").forEach {
-            pages.add(Page(pages.size, "", it.attr("src")))
+            pages.add(Page(pages.size, "", it.attr("data-original")))
         }
         return pages
     }
