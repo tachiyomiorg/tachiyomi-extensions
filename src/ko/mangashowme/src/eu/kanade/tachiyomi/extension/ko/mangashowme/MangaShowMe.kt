@@ -1,7 +1,14 @@
 package eu.kanade.tachiyomi.extension.ko.mangashowme
 
 import android.annotation.SuppressLint
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.EditTextPreference
+import android.support.v7.preference.PreferenceScreen
+import android.widget.Toast
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
@@ -12,19 +19,26 @@ import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
- * MangaShow.Me Source
+ * ManaMoa Source
+ *
+ * Originally it was mangashow.me extension but they changed site structure widely.
+ * so I moved to new name for treating as new source.
+ *  Users who uses =<1.2.11 need to migrate sources. starts 1.2.12
  *
  * PS. There's no Popular section. It's just a list of manga. Also not latest updates.
  *     `manga_list` returns latest 'added' manga. not a chapter updates.
  **/
-class MangaShowMe : ParsedHttpSource() {
-    override val name = "MangaShow.Me"
-    override val baseUrl = "https://manamoa2.net"
+class ManaMoa : ConfigurableSource, ParsedHttpSource() {
+    override val name = "ManaMoa"
+    private val defaultBaseUrl = "https://manamoa3.net"
+    override val baseUrl by lazy { getPrefBaseUrl() }
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -33,36 +47,7 @@ class MangaShowMe : ParsedHttpSource() {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(ImageDecoderInterceptor())
-            .addInterceptor { chain ->
-                val req = chain.request()
-
-                // only for image Request
-                if (!req.url().host().contains("filecdn.xyz")) return@addInterceptor chain.proceed(req)
-
-                val secondUrl = req.header("SecondUrlToRequest")
-
-                fun get(flag: Int = 0): Request {
-                    val url = when (flag) {
-                        1 -> req.url().toString().replace("img.", "s3.")
-                        2 -> secondUrl!!
-                        else -> req.url().toString()
-                    }
-
-                    return req.newBuilder()!!.url(url)
-                            .removeHeader("ImageDecodeRequest")
-                            .removeHeader("SecondUrlToRequest")
-                            .build()!!
-                }
-
-                val res = chain.proceed(get())
-                val length = res.header("content-length")
-                if (length == null || length.toInt() < 50000) {
-                    val s3res = chain.proceed(get(1)) // s3
-                    if (!s3res.isSuccessful && secondUrl != null) {
-                        chain.proceed(get(2)) // secondUrl
-                    } else s3res
-                } else res
-            }
+            .addInterceptor(ImageUrlHandlerInterceptor())
             .build()!!
 
     override fun popularMangaSelector() = "div.manga-list-gallery > div > div.post-row"
@@ -72,7 +57,7 @@ class MangaShowMe : ParsedHttpSource() {
         val titleElement = element.select(".manga-subject > a").first()
 
         val manga = SManga.create()
-        manga.url = urlTitleEscape(linkElement.attr("href"))
+        manga.url = linkElement.attr("href")
         manga.title = titleElement.text().trim()
         manga.thumbnail_url = urlFinder(element.select(".img-wrap-back").attr("style"))
         return manga
@@ -116,7 +101,7 @@ class MangaShowMe : ParsedHttpSource() {
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
         val mangaComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
         val genres = mutableListOf<String>()
-        document.select("div.left-info > .manga-tags > a.tag").forEach {
+        document.select("div.left-info div.information > .manga-tags > a.tag").forEach {
             genres.add(it.text())
         }
 
@@ -218,21 +203,15 @@ class MangaShowMe : ParsedHttpSource() {
 
             val decoder = ImageDecoder(element)
 
-            if (imageUrls.length() != imageUrls1.length()) {
-                (0 until imageUrls.length())
-                        .map { imageUrls.getString(it) }
-                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
-            } else {
-                (0 until imageUrls.length())
-                        .map {
-                            imageUrls.getString(it) + try {
-                                "!!${imageUrls1.getString(it)}"
-                            } catch (_: Exception) {
-                                ""
-                            }
+            (0 until imageUrls.length())
+                    .map {
+                        imageUrls.getString(it) + try {
+                            "!!${imageUrls1.getString(it)}?quick"
+                        } catch (_: Exception) {
+                            ""
                         }
-                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
-            }
+                    }
+                    .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -258,7 +237,7 @@ class MangaShowMe : ParsedHttpSource() {
             builder.build()!!
         } catch (_: Exception) {
             headers
-        }
+        }.newBuilder()!!.add("ImageRequest", "1").build()!!
 
         return GET(page.imageUrl!!, requestHeaders)
     }
@@ -280,16 +259,44 @@ class MangaShowMe : ParsedHttpSource() {
         return style.substringAfter("background-image:url(").substringBefore(")")
     }
 
-    // Some title contains `&` and `#` which can cause a error.
-    private fun urlTitleEscape(title: String): String {
-        val url = title.split("&manga_name=")
-        return "${url[0]}&manga_name=" +
-                url[1].replace("&", "%26").replace("#", "%23")
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val baseUrlPref = EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(defaultBaseUrl)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $defaultBaseUrl"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
+    }
+
+    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)
 
     override fun getFilterList() = getFilters()
 
     companion object {
+        private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
+        private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
+        private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
+        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+
         internal const val V1_CX = 5
         internal const val V1_CY = 5
     }

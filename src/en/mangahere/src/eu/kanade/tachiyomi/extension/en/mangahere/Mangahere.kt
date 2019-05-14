@@ -161,11 +161,28 @@ class Mangahere : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return try {
-            SimpleDateFormat("MMM dd,yyyy", Locale.ENGLISH).parse(date).time
-        } catch (e: ParseException) {
-            0L
-        }
+        return if ("Today" in date || " ago" in date){
+            Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        } else if ("Yesterday" in date) {
+            Calendar.getInstance().apply {
+                add(Calendar.DATE, -1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        } else {
+            try {
+                SimpleDateFormat("MMM dd,yyyy", Locale.ENGLISH).parse(date).time
+            } catch (e: ParseException) {
+                0L
+            }
+			}
     }
 
     override fun pageListParse(document: Document): List<Page> {

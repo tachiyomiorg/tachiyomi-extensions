@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: NineManga'
+    pkgNameSuffix = "all.ninemanga"
+    extClass = '.NineMangaEs; .NineMangaBr; .NineMangaEn; .NineMangaRu; .NineMangaDe; .NineMangaIt; .NineMangaFr'
+    extVersionCode = 3
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

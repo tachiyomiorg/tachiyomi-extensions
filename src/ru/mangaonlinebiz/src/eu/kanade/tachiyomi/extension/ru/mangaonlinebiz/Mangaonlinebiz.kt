@@ -33,7 +33,7 @@ class MangaOnlineBiz : ParsedHttpSource() {
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is GenreList -> {
-                        ret = "$baseUrl/genre/${filter.values[filter.state].id}"
+                        ret = "$baseUrl/genre/${filter.values[filter.state].id}/page/$page"
                     }
                 }
             }
@@ -57,7 +57,13 @@ class MangaOnlineBiz : ParsedHttpSource() {
             val manga = SManga.create()
             manga.setUrlWithoutDomain(element.get("url").string)
             manga.title = element.get("title").string.split("/").first()
-            manga.thumbnail_url = baseUrl + element.get("image").string
+            val image = element.get("image").string
+            if (image.startsWith("http")) {
+                manga.thumbnail_url = image
+            } else {
+                manga.thumbnail_url = baseUrl + image
+            }
+
             mangas.add(manga)
         }
 
@@ -79,12 +85,11 @@ class MangaOnlineBiz : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not Used")
 
-    override fun popularMangaNextPageSelector() = "a.ui.button.next"
+    override fun popularMangaNextPageSelector() = "a.button.next"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaNextPageSelector() = throw Exception("Not Used")
-
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(".items .item").first()

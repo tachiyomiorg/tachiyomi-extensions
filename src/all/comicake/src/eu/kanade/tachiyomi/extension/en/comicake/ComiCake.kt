@@ -122,7 +122,7 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
     private fun parseChapterJson(obj: JSONObject) = SChapter.create().apply {
         name = obj.getString("title") // title will always have content, vs. name that's an optional field
         chapter_number = (obj.getInt("chapter") + (obj.getInt("subchapter") / 10.0)).toFloat()
-        date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").parse(obj.getString("published_at")).time
+        date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ").parse(obj.getString("published_at")).time
         // TODO scanlator field by adding team to expandable in CC (low priority given the use case of CC)
         url = obj.getString("manifest")
     }

@@ -1,16 +1,21 @@
 package eu.kanade.tachiyomi.extension.en.mangazuki
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class Mangazuki : ParsedHttpSource() {
 
@@ -58,12 +63,12 @@ class Mangazuki : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
+    // Search doesn't work on the site
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
-
     override fun searchMangaSelector() = throw Exception("Not used")
-
     override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not used")
-
     override fun searchMangaNextPageSelector() = throw Exception("Not used")
 
     override fun mangaDetailsParse(document: Document): SManga {

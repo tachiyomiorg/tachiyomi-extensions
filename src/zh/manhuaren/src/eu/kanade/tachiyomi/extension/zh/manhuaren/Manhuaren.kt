@@ -7,12 +7,15 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.HttpUrl
+import okhttp3.CacheControl
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit.MINUTES
 
 
 class Manhuaren : HttpSource() {
@@ -22,11 +25,39 @@ class Manhuaren : HttpSource() {
     override val baseUrl = "http://mangaapi.manhuaren.com"
 
     private val pageSize = 20
+    private val baseHttpUrl = HttpUrl.parse(baseUrl)!!
 
     private val c = "4e0a48e1c0b54041bce9c8f0e036124d"
+    private val cacheControl: CacheControl by lazy { CacheControl.Builder().maxAge(10, MINUTES).build() }
 
-    private fun myGet(url: String): Request {
-        return GET(url, headers)
+    private fun generateGSNHash(url: HttpUrl): String {
+        var s = c + "GET"
+        url.queryParameterNames().toSortedSet().forEach {
+            if (it != "gsn") {
+                s += it
+                s += urlEncode(url.queryParameterValues(it).get(0))
+            }
+        }
+        s += c
+        return hashString("MD5", s)
+    }
+
+    private fun myGet(url: HttpUrl): Request {
+        val now = DateFormat.format("yyyy-MM-dd+HH:mm:ss", Date()).toString()
+        val real_url = url.newBuilder()
+            .setQueryParameter("gsm", "md5")
+            .setQueryParameter("gft", "json")
+            .setQueryParameter("gts", now)
+            .setQueryParameter("gak", "android_manhuaren2")
+            .setQueryParameter("gat", "")
+            .setQueryParameter("gaui", "191909801")
+            .setQueryParameter("gui", "191909801")
+            .setQueryParameter("gut", "0")
+        return Request.Builder()
+            .url(real_url.setQueryParameter("gsn", generateGSNHash(real_url.build())).build())
+            .headers(headers)
+            .cacheControl(cacheControl)
+            .build()
     }
 
     override fun headersBuilder() = Headers.Builder().apply {
@@ -60,33 +91,6 @@ class Manhuaren : HttpSource() {
                 .replace("*", "%2A")
     }
 
-    private fun generateGSNHash(params: MutableMap<String, String>): String {
-        var s = c + "GET"
-        val keys = params.toSortedMap().keys
-        keys.forEach {
-            s += it
-            s += urlEncode(params[it])
-        }
-        s += c
-        return hashString("MD5", s)
-    }
-
-    private fun generateApiRequestUrl(path: String, params: MutableMap<String, String>): String {
-        val now = DateFormat.format("yyyy-MM-dd+HH:mm:ss", Date()).toString()
-
-        params["gsm"] = "md5"
-        params["gft"] = "json"
-        params["gts"] = now
-        params["gak"] = "android_manhuaren2"
-        params["gat"] = ""
-        params["gaui"] = "191909801"
-        params["gui"] = "191909801"
-        params["gut"] = "0"
-        params["gsn"] = generateGSNHash(params)
-        val queryString = params.map { (key, value) -> "$key=${urlEncode(value)}" }.joinToString("&")
-        return "$path?$queryString"
-    }
-
     private fun mangasFromJSONArray(arr: JSONArray): MangasPage {
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
@@ -101,10 +105,7 @@ class Manhuaren : HttpSource() {
                     0 -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
-                url = generateApiRequestUrl(
-                    "/v1/manga/getDetail",
-                    mutableMapOf("mangaId" to id.toString())
-                )
+                url = "/v1/manga/getDetail?mangaId=$id"
             })
         }
         return MangasPage(ret, arr.length() != 0)
@@ -117,25 +118,27 @@ class Manhuaren : HttpSource() {
     }
 
     override fun popularMangaRequest(page: Int): Request {
-        val params = mutableMapOf(
-            "subCategoryType" to "0",
-            "subCategoryId" to "0",
-            "start" to (pageSize * (page - 1)).toString(),
-            "limit" to pageSize.toString(),
-            "sort" to "0"
-        )
-        return myGet(baseUrl + generateApiRequestUrl("/v2/manga/getCategoryMangas", params))
+        val url = baseHttpUrl.newBuilder()
+            .addQueryParameter("subCategoryType", "0")
+            .addQueryParameter("subCategoryId", "0")
+            .addQueryParameter("start", (pageSize * (page - 1)).toString())
+            .addQueryParameter("limit", pageSize.toString())
+            .addQueryParameter("sort", "0")
+            .addPathSegments("/v2/manga/getCategoryMangas")
+            .build()
+        return myGet(url)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val params = mutableMapOf(
-            "subCategoryType" to "0",
-            "subCategoryId" to "0",
-            "start" to (pageSize * (page - 1)).toString(),
-            "limit" to pageSize.toString(),
-            "sort" to "1"
-        )
-        return myGet(baseUrl + generateApiRequestUrl("/v2/manga/getCategoryMangas", params))
+        val url = baseHttpUrl.newBuilder()
+            .addQueryParameter("subCategoryType", "0")
+            .addQueryParameter("subCategoryId", "0")
+            .addQueryParameter("start", (pageSize * (page - 1)).toString())
+            .addQueryParameter("limit", pageSize.toString())
+            .addQueryParameter("sort", "1")
+            .addPathSegments("/v2/manga/getCategoryMangas")
+            .build()
+        return myGet(url)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -147,30 +150,25 @@ class Manhuaren : HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        var url = baseHttpUrl.newBuilder()
+            .addQueryParameter("start", (pageSize * (page - 1)).toString())
+            .addQueryParameter("limit", pageSize.toString())
         if (query != "") {
-            return myGet(baseUrl + generateApiRequestUrl(
-                "/v1/search/getSearchManga",
-                mutableMapOf(
-                    "keywords" to query,
-                    "start" to (pageSize * (page - 1)).toString(),
-                    "limit" to pageSize.toString()
-                )
-            ))
+            url = url.addQueryParameter("keywords", query)
+                .addPathSegments("/v1/search/getSearchManga")
+            return myGet(url.build())
         }
-        val params = mutableMapOf(
-            "start" to (pageSize * (page - 1)).toString(),
-            "limit" to pageSize.toString()
-        )
         filters.forEach { filter ->
             when (filter) {
-                is SortFilter -> params["sort"] = filter.getId()
+                is SortFilter -> url = url.setQueryParameter("sort", filter.getId())
                 is CategoryFilter -> {
-                    params["subCategoryId"] = filter.getId()
-                    params["subCategoryType"] = filter.getType()
+                    url = url.setQueryParameter("subCategoryId", filter.getId())
+                        .setQueryParameter("subCategoryType", filter.getType())
                 }
             }
         }
-        return myGet(baseUrl + generateApiRequestUrl("/v2/manga/getCategoryMangas", params))
+        url = url.addPathSegments("/v2/manga/getCategoryMangas")
+        return myGet(url.build())
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -219,6 +217,12 @@ class Manhuaren : HttpSource() {
         description = obj.getString("mangaIntro")
     }
 
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return myGet(HttpUrl.parse(baseUrl + manga.url)!!)
+    }
+
+    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
+
     private fun getChapterName(type: String, name: String, title: String): String {
         return (if (type == "mangaEpisode") "[番外] " else "") + name + (if (title == "") "" else ": $title")
     }
@@ -232,15 +236,7 @@ class Manhuaren : HttpSource() {
                 name = getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
                 date_upload = dateFormat.parse(obj.getString("releaseTime")).time
                 chapter_number = obj.getInt("sectionSort").toFloat()
-                url = generateApiRequestUrl(
-                    "/v1/manga/getRead",
-                    mutableMapOf(
-                        "mangaSectionId" to obj.getInt("sectionId").toString(),
-                        "netType" to "4",
-                        "loadreal" to "1",
-                        "imageQuality" to "2"
-                    )
-                )
+                url = "/v1/manga/getRead?mangaSectionId=${obj.getInt("sectionId")}"
             })
         }
         return ret
@@ -269,6 +265,15 @@ class Manhuaren : HttpSource() {
             ret.add(Page(i, "$host${arr.getString(i)}$query", "$host${arr.getString(i)}$query"))
         }
         return ret
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        val url = HttpUrl.parse(baseUrl + chapter.url)!!.newBuilder()
+            .addQueryParameter("netType", "4")
+            .addQueryParameter("loadreal", "1")
+            .addQueryParameter("imageQuality", "2")
+            .build()
+        return myGet(url)
     }
 
     override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("This method should not be called!")
