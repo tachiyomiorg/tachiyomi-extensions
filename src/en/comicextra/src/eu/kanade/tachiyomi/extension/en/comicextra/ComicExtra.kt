@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.comicextra
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
