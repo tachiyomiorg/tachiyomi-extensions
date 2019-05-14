@@ -53,7 +53,9 @@ class Manhuadui : ParsedHttpSource() {
         element.select("a.comic_img").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.select("img").attr("alt").trim()
-            manga.thumbnail_url = it.select("img").attr("src").trim()
+            manga.thumbnail_url = if (it.select("img").attr("src").trim().indexOf("http") == -1)
+                "https:${it.select("img").attr("src").trim()}"
+            else it.select("img").attr("src").trim()
         }
         manga.author = element.select("span.comic_list_det > p").first()?.text()?.substring(3)
         return manga
