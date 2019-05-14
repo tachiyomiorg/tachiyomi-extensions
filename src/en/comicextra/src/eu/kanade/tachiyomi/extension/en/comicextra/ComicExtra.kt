@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.comicextra
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -52,6 +53,8 @@ class ComicExtra : ParsedHttpSource() {
 
     private fun fetchThumbnailURL(url: String) = client.newCall(GET(url, headers)).execute().asJsoup().select("div.movie-l-img > img").attr("src")
 
+    private fun fetchChaptersFromNav(url: String) = client.newCall(GET(url, headers)).execute().asJsoup().select(chapterListSelector())
+
     override fun popularMangaNextPageSelector() = "div.general-nav > a:contains(Next)"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
@@ -71,6 +74,7 @@ class ComicExtra : ParsedHttpSource() {
         manga.status = parseStatus(status)
         manga.author = document.select("dt:contains(Author:) + dd").text()
         manga.description = document.select("div#film-content").text()
+
         return manga
     }
 
@@ -78,6 +82,33 @@ class ComicExtra : ParsedHttpSource() {
         element.contains("Completed") -> SManga.COMPLETED
         element.contains("Ongoing") -> SManga.ONGOING
         else -> SManga.UNKNOWN
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+
+        val document = response.asJsoup()
+        val nav = document.getElementsByClass("general-nav").first()
+        val chapters = ArrayList<SChapter>()
+
+        document.select(chapterListSelector()).forEach {
+            chapters.add(chapterFromElement(it))
+        }
+
+        if (nav == null) {
+            return chapters
+        }
+
+        val links = nav.getElementsByTag("a")
+
+        links.forEach {
+            if (it.text() != "Next") {
+                fetchChaptersFromNav(it.attr("href")).forEach { page ->
+                    chapters.add(chapterFromElement(page))
+                }
+            }
+        }
+
+        return chapters
     }
 
     override fun chapterListSelector() = "table.table > tbody#list > tr:has(td)"
