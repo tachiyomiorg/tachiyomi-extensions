@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 import java.lang.UnsupportedOperationException
 import com.squareup.duktape.Duktape
 //import android.util.Base64
-import android.util.Log
+//import android.util.Log
 
 
 class Manhuadui : ParsedHttpSource() {
@@ -101,7 +101,7 @@ class Manhuadui : ParsedHttpSource() {
             it.evaluate(imgCode + """.join('|')""") as String
         }
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            Log.i("test", "img => ${imageServer[0]}/$imgPath$imgStr")
+            //Log.i("test", "img => ${imageServer[0]}/$imgPath$imgStr")
             Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
         }
     }
