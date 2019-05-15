@@ -73,9 +73,10 @@ internal class ImageDecoderInterceptor : Interceptor {
      *
      * MIT License
      *
+     *
      * Copyright (c) 2019 junheah
      */
-    private fun imageDecoder(input: Bitmap, chapter: Int, view_cnt: Int, half: Int = 0, _CX: Int = MangaShowMe.V1_CX, _CY: Int = MangaShowMe.V1_CY): Bitmap {
+    private fun imageDecoder(input: Bitmap, chapter: Int, view_cnt: Int, half: Int = 0, _CX: Int = ManaMoa.V1_CX, _CY: Int = ManaMoa.V1_CY): Bitmap {
         if (view_cnt == 0) return input
         val viewCnt = view_cnt / 10
         var CX = _CX

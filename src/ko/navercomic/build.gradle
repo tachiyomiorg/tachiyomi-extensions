@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ComicExtra'
-    pkgNameSuffix = 'en.comicextra'
-    extClass = '.ComicExtra'
-    extVersionCode = 3
+    appName = 'Tachiyomi: Naver Comic'
+    pkgNameSuffix = 'ko.navercomic'
+    extClass = '.NaverComicFactory'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
