@@ -6,9 +6,14 @@ import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
 import okhttp3.Request
+import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.spec.IvParameterSpec
+
 
 class NetTruyen : ParsedHttpSource() {
 
@@ -152,11 +157,51 @@ class NetTruyen : ParsedHttpSource() {
         return 0L
     }
 
+    private fun decrypt(strToDecrypt: String, secret: String): String? {
+        try {
+            val k = secret + "x77_x6E_x50_x"
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            val keyBytes = k.toByteArray()
+            val secretKeySpec = SecretKeySpec(keyBytes, "AES")
+            val ivParameterSpec = IvParameterSpec(keyBytes)
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec)
+            return String(cipher.doFinal(android.util.Base64.decode(strToDecrypt, android.util.Base64.DEFAULT)))
+        }catch (e: Exception){
+             Log.e("Decrypt", "Has error $e")
+        }
+        return "https://www.upsieutoc.com/images/2019/09/20/1c1b688884689165b.png"
+    }
+
+    private fun getEncryptedPage(document: Document): List<Page> {
+        val pages = mutableListOf<Page>()
+        val scriptTag = document.select("#ctl00_divCenter > div > .container script").html()
+        val keyIndex = scriptTag.indexOf("var k=") + 5
+        val listIndex = scriptTag.indexOf("var l=") + 5
+        val key = scriptTag.substring(keyIndex + 2, scriptTag.indexOf('"', keyIndex+2))
+        val list = scriptTag.substring(listIndex + 1, scriptTag.indexOf(";", listIndex))
+        val jsonList = JSONArray(list)
+
+        for (i in 0 until jsonList.length()) {
+            val imageUrl = decrypt(jsonList.getString(i), key)
+            val imageUri = if (imageUrl!!.startsWith("//")) "http:$imageUrl" else imageUrl
+            Log.d("Page:", imageUri)
+            pages.add(Page(pages.size, "", imageUri))
+        }
+        return pages
+    }
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select(".page-chapter img").forEach {
-            pages.add(Page(pages.size, "", it.attr("data-original")))
+            val imageUrl = it.attr("data-original")
+            if (imageUrl.contains("1c1b688884689165b.png")) {
+                return getEncryptedPage(document)
+            }
+        }
+
+        document.select(".page-chapter img").forEach {
+            val imageUrl = it.attr("data-original")
+            pages.add(Page(pages.size, "", if (imageUrl.startsWith("//")) "http:$imageUrl" else imageUrl))
         }
         return pages
     }
