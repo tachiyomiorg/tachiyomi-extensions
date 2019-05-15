@@ -156,7 +156,8 @@ class NetTruyen : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select(".page-chapter img").forEach {
-            pages.add(Page(pages.size, "", it.attr("data-original")))
+            val imageUrl = it.attr("data-original")
+            pages.add(Page(pages.size, "", if(imageUrl.startsWith("//")) "http:$imageUrl" else imageUrl ))
         }
         return pages
     }
