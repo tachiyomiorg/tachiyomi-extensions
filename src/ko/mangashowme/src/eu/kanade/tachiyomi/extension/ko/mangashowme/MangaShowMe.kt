@@ -26,13 +26,17 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
- * MangaShow.Me Source
+ * ManaMoa Source
+ *
+ * Originally it was mangashow.me extension but they changed site structure widely.
+ * so I moved to new name for treating as new source.
+ *  Users who uses =<1.2.11 need to migrate sources. starts 1.2.12
  *
  * PS. There's no Popular section. It's just a list of manga. Also not latest updates.
  *     `manga_list` returns latest 'added' manga. not a chapter updates.
  **/
-class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
-    override val name = "MangaShow.Me"
+class ManaMoa : ConfigurableSource, ParsedHttpSource() {
+    override val name = "ManaMoa"
     private val defaultBaseUrl = "https://manamoa3.net"
     override val baseUrl by lazy { getPrefBaseUrl() }
     override val lang: String = "ko"
@@ -43,52 +47,7 @@ class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(ImageDecoderInterceptor())
-            .addInterceptor { chain ->
-                val req = chain.request()
-
-                // only for image Request
-                val isFileCdn = !req.url().host().contains(".filecdn.xyz")
-                if (!req.url().toString().endsWith("?quick")) return@addInterceptor chain.proceed(req)
-
-                val secondUrl = req.header("SecondUrlToRequest")
-
-                fun get(flag: Int = 0): Request {
-                    val url = if (isFileCdn) {
-                        when (flag) {
-                            1 -> req.url().toString().replace("img.", "s3.")
-                            else -> req.url().toString()
-                        }
-                    } else {
-                        when (flag) {
-                            1 -> secondUrl!!
-                            2 -> secondUrl!!.replace("img.", "s3.")
-                            else -> req.url().toString().substringBefore("?quick")
-                        }
-                    }
-
-                    return req.newBuilder()!!.url(url)
-                            .removeHeader("ImageDecodeRequest")
-                            .removeHeader("SecondUrlToRequest")
-                            .build()!!
-                }
-
-                val res = chain.proceed(get())
-
-                if (isFileCdn) {
-                    val length = res.header("content-length")
-                    if (length == null || length.toInt() < 50000) {
-                        chain.proceed(get(1)) // s3
-                    } else res
-                } else {
-                    if (!res.isSuccessful && secondUrl != null) {
-                        val fallbackRes = chain.proceed(get(1)) // img filecdn
-                        val fallbackLength = fallbackRes.header("content-length")
-                        if (fallbackLength == null || fallbackLength.toInt() < 50000) {
-                            chain.proceed(get(2)) // s3
-                        } else fallbackRes
-                    } else res
-                }
-            }
+            .addInterceptor(ImageUrlHandlerInterceptor())
             .build()!!
 
     override fun popularMangaSelector() = "div.manga-list-gallery > div > div.post-row"
@@ -98,7 +57,7 @@ class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
         val titleElement = element.select(".manga-subject > a").first()
 
         val manga = SManga.create()
-        manga.url = urlTitleEscape(linkElement.attr("href"))
+        manga.url = linkElement.attr("href")
         manga.title = titleElement.text().trim()
         manga.thumbnail_url = urlFinder(element.select(".img-wrap-back").attr("style"))
         return manga
@@ -244,21 +203,15 @@ class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
 
             val decoder = ImageDecoder(element)
 
-            if (imageUrls.length() != imageUrls1.length()) {
-                (0 until imageUrls.length())
-                        .map { imageUrls.getString(it) }
-                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
-            } else {
-                (0 until imageUrls1.length())
-                        .map {
-                            imageUrls1.getString(it) + try {
-                                "!!${imageUrls.getString(it)}?quick"
-                            } catch (_: Exception) {
-                                ""
-                            }
+            (0 until imageUrls.length())
+                    .map {
+                        imageUrls.getString(it) + try {
+                            "!!${imageUrls1.getString(it)}?quick"
+                        } catch (_: Exception) {
+                            ""
                         }
-                        .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
-            }
+                    }
+                    .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -284,7 +237,7 @@ class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
             builder.build()!!
         } catch (_: Exception) {
             headers
-        }
+        }.newBuilder()!!.add("ImageRequest", "1").build()!!
 
         return GET(page.imageUrl!!, requestHeaders)
     }
@@ -305,14 +258,6 @@ class MangaShowMe : ConfigurableSource, ParsedHttpSource() {
         // return regex.find(style)!!.value
         return style.substringAfter("background-image:url(").substringBefore(")")
     }
-
-    // Some title contains `&` and `#` which can cause a error.
-    private fun urlTitleEscape(title: String): String {
-        val url = title.split("&manga_name=")
-        return "${url[0]}&manga_name=" +
-                url[1].replace("&", "%26").replace("#", "%23")
-    }
-
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
