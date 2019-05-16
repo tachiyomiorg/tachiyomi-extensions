@@ -7,9 +7,9 @@ import android.os.Bundle
 import android.util.Log
 
 /**
- * Springboard that accepts https://mangadex.com/title/xxx intents and redirects them to
- * the main tachiyomi process. The idea is to not install the intent filter unless
- * you have this extension installed, but still let the main tachiyomi app control
+ * Springboard that accepts https://mangadex.com/{title,manga}/xxx intents and redirects
+ * them to the main tachiyomi process. The idea is to not install the intent filter
+ * unless you have this extension installed, but still let the main tachiyomi app control
  * things.
  *
  * Main goal was to make it easier to open manga in Tachiyomi in spite of the DDoS blocking
@@ -20,9 +20,11 @@ class MangadexUrlActivity : Activity() {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
         if (pathSegments != null && pathSegments.size > 1) {
+            // val isChapter = (pathSegments[0] == "chapter")
             val titleid = pathSegments[1]
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
+                // putExtra("query", isChapter ? "cid:$titleId" : "id:$titleid")
                 putExtra("query", "id:$titleid")
                 putExtra("filter", packageName)
             }
