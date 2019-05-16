@@ -1,0 +1,314 @@
+syntax = "proto3";
+package mangaplus;
+option java_package = "jp.co.shueisha.mangaplus";
+option java_outer_classname = "MangaPlusProto";
+
+message Popup {
+	message AppDefault {
+		string image_url = 1;
+		TransitionAction action = 2;
+	}
+	message Button {
+		string text = 1;
+		TransitionAction action = 2;
+	}
+	message OSDefault {
+		string subject = 1;
+		string body = 2;
+		Button ok_button = 3;
+		Button neautral_button = 4;
+		Button cancel_button = 5;
+	}
+	OSDefault os_default = 1;
+	AppDefault app_default = 2;
+}
+message HomeView {
+	repeated Banner top_banners = 1;
+	repeated UpdatedTitleGroup groups = 2;
+	Popup popup = 9;
+}
+message Feedback {
+	enum ResponseType {
+		QUESTION = 0;
+		ANSWER = 1;
+	}
+	uint32 time_stamp = 1;
+	string body = 2;
+	ResponseType response_type = 3;
+}
+message FeedbackView {
+	repeated Feedback feedback_list = 1;
+}
+message RegistrationData {
+	string device_secret = 1;
+}
+message Sns {
+	string body = 1;
+	string url = 2;
+}
+message Chapter {
+	uint32 title_id = 1;
+	uint32 chapter_id = 2;
+	string name = 3;
+	string sub_title = 4;
+	string thumbnail_url = 5;
+	uint32 start_time_stamp = 6;
+	uint32 end_time_stamp = 7;
+	bool already_viewed = 8;
+	bool is_vertical_only = 9;
+}
+message AdNetwork {
+	message Facebook { string placementID = 1; }
+	message Admob { string unitID = 1; }
+	message Adsense { string unitID = 1; }
+	oneof Network {
+		Facebook facebook = 1;
+		Admob admob = 2;
+		Adsense adsense = 3;
+	}
+}
+message AdNetworkList {
+	repeated AdNetwork ad_networks = 1;
+}
+message Page {
+	enum PageType {
+		SINGLE = 0;
+		LEFT = 1;
+		RIGHT = 2;
+		DOUBLE = 3;
+	}
+	enum ChapterType {
+		LATEST = 0;
+		SEQUENCE = 1;
+		NOSEQUENCE = 2;
+	}
+	message BannerList {
+		string banner_title = 1;
+		repeated Banner banners = 2;
+	}
+	message MangaPage {
+		string image_url = 1;
+		uint32 width = 2;
+		uint32 height = 3;
+		PageType type = 4;
+		string encryption_key = 5;
+	}
+	message LastPage {
+		Chapter current_chapter = 1;
+		Chapter next_chapter = 2;
+		repeated Comment top_comments = 3;
+		bool is_subscribed = 4;
+		uint32 next_time_stamp = 5;
+		int32 chapter_type = 6;
+	}
+	oneof data {
+		MangaPage manga_page = 1;
+		BannerList banner_list = 2;
+		LastPage last_page = 3;
+		AdNetworkList advertisement = 4;
+	}
+}
+message MangaViewer {
+	repeated Page pages = 1;
+	uint32 chapter_id = 2;
+	repeated Chapter chapters = 3;
+	Sns sns = 4;
+	string title_name = 5;
+	string chapter_name = 6;
+	int32 number_of_comments = 7;
+	bool is_vertical_only = 8;
+	uint32 title_id = 9;
+	bool start_from_right = 10;
+}
+message Title {
+	enum Language {
+		ENGLISH = 0;
+		SPANISH = 1;
+	}
+	uint32 title_id = 1;
+	string name = 2;
+	string author = 3;
+	string portait_image_url = 4;
+	string landscape_image_url = 5;
+	uint32 view_count = 6;
+	Language language = 7;
+}
+message TitleDetailView {
+	enum Rating {
+		ALLAGE = 0;
+		TEEN = 1;
+		TEENPLUS = 2;
+		MATURE = 3;
+	}
+	enum UpdateTiming {
+		NOT_REGULARLY = 0;
+		MONDAY = 1;
+		TUESDAY = 2;
+		WEDNESDAY = 3;
+		THURSDAY = 4;
+		FRIDAY = 5;
+		SATURDAY = 6;
+		SUNDAY = 7;
+		DAY = 8;
+	}
+	Title title = 1;
+	string title_image_url = 2;
+	string overview = 3;
+	string background_image_url = 4;
+	uint32 next_time_stamp = 5;
+	UpdateTiming update_timing = 6;
+	string viewing_period_description = 7;
+	string non_appearance_info = 8;
+	repeated Chapter first_chapter_list = 9;
+	repeated Chapter last_chapter_list = 10;
+	repeated Banner banners = 11;
+	repeated Title recommended_title_list = 12;
+	Sns sns = 13;
+	bool is_simul_released = 14;
+	bool is_subscribed = 15;
+	Rating rating = 16;
+	bool chapters_descending = 17;
+	uint32 number_of_views = 18;
+}
+message UpdatedTitle {
+	Title title = 1;
+	uint32 chapter_id = 2;
+	string chapter_name = 3;
+	string chapter_sub_title = 4;
+	bool is_latest = 5;
+	bool is_vertical_only = 6;
+}
+message UpdateProfileResultView {
+	enum Result {
+		SUCCESS = 0;
+		DUPLICATED = 1;
+		NG_WORD = 2;
+	}
+	Result result = 1;
+}
+message UpdatedTitleGroup {
+	string group_name = 1;
+	repeated UpdatedTitle titles = 2;
+}
+message TransitionAction {
+	enum PresentationMethod {
+		PUSH = 0;
+		MODAL = 1;
+		EXTERNAL = 2;
+	}
+	PresentationMethod method = 1;
+	string url = 2;
+}
+message Banner {
+	string image_url = 1;
+	TransitionAction action = 2;
+	uint32 id = 3;
+}
+message WebHomeView {
+	repeated Banner top_banners = 1;
+	repeated UpdatedTitleGroup groups = 2;
+	repeated Title ranking = 3;
+}
+message TitleList {
+	string listName = 1;
+	repeated Title featured_titles = 2;
+}
+message FeaturedTitlesView {
+	Banner main_banner = 1;
+	Banner sub_banner_1 = 2;
+	Banner sub_banner_2 = 3;
+	message Contents {
+		oneof data {
+			Banner banner = 1;
+			TitleList title_list = 2;
+		}
+	}
+	repeated Contents contents = 4;
+}
+message ProfileSettingsView {
+	repeated CommentIcon icon_list = 1;
+	string user_name = 2;
+	CommentIcon my_icon = 3;
+}
+message Comment {
+	uint32 id = 1;
+	uint32 index = 2;
+	string user_name = 3;
+	string icon_url = 4;
+	bool is_my_comment = 6;
+	bool already_liked = 7;
+	uint32 number_of_likes = 9;
+	string body = 10;
+	uint32 created = 11;
+}
+message CommentIcon {
+	uint32 id = 1;
+	string image_url = 2;
+}
+message CommentListView {
+	repeated Comment comments = 1;
+	bool if_set_user_name = 2;
+}
+message InitialView {
+	bool gdpr_agreement_required = 1;
+	uint32 english_titles_count = 2;
+	uint32 spanish_titles_count = 3;
+}
+message SettingsView {
+	CommentIcon my_icon = 1;
+	string user_name = 2;
+	bool notice_of_news_and_events = 3;
+	bool notice_of_updates_of_subscribed_titles = 4;
+	uint32 english_titles_count = 5;
+	uint32 spanish_titles_count = 6;
+}
+message TitleRankingView { repeated Title titles = 1; }
+message AllTitlesView { repeated Title titles = 1; }
+message SubscribedTitlesView { repeated Title titles = 1; }
+message ServiceAnnouncement {
+	string title = 1;
+	string body = 2;
+	int32 date = 3;
+}
+message ServiceAnnouncementsView {
+	repeated ServiceAnnouncement service_announcements = 1;
+}
+message SuccessResult {
+	bool is_featured_updated = 1;
+	oneof data {
+		RegistrationData         registeration_data = 2;
+		HomeView                 home_view = 3;
+		FeaturedTitlesView       featured_titles_view = 4;
+		AllTitlesView            all_titles_view = 5;
+		TitleRankingView         title_ranking_view = 6;
+		SubscribedTitlesView     subscribed_titles_view = 7;
+		TitleDetailView          title_detail_view = 8;
+		CommentListView          comment_list_view = 9;
+		MangaViewer              manga_viewer = 10;
+		WebHomeView              web_home_view = 11;
+		SettingsView             settings_view = 12;
+		ProfileSettingsView      profile_settings_view = 13;
+		UpdateProfileResultView  update_profile_result_view = 14;
+		ServiceAnnouncementsView service_announcements_view = 15;
+		InitialView              initial_view = 16;
+		FeedbackView             feedback_view = 17;
+	}
+}
+message ErrorResult {
+	enum Action {
+		DEFAULT = 0;
+		UNAUTHORIZED = 1;
+		MAINTAINENCE = 2;
+		GEOIP_BLOCKING = 3;
+	}
+	Action action = 1;
+	Popup.OSDefault english_popup = 2;
+	Popup.OSDefault spanish_popup = 3;
+	string debug_info = 4;
+}
+message Response {
+	oneof data {
+		SuccessResult success = 1;
+		ErrorResult error = 2;
+	}
+}

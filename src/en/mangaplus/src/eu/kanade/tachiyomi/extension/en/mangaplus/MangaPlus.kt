@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.mangaplus
 
+// import jp.co.shueisha.mangaplus
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -16,7 +17,9 @@ import java.util.UUID.randomUUID
 class MangaPlus : HttpSource() {
     override val name = "Manga Plus by Shueisha"
 
-    override val baseUrl = "https://jumpg-webapi.tokyo-cdn.com/api"
+    val apiUrl = "https://jumpg-webapi.tokyo-cdn.com/api"
+
+    override val baseUrl = "https://mangaplus.shueisha.co.jp/"
 
     override val lang = "en"
 
@@ -51,7 +54,7 @@ class MangaPlus : HttpSource() {
     }.build()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/title_list/ranking", catalogHeaders)
+        return GET("$apiUrl/title_list/ranking", catalogHeaders)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -64,7 +67,7 @@ class MangaPlus : HttpSource() {
             SManga.create().apply {
                 title = it["name"].string
                 thumbnail_url = it["portraitImageUrl"].string
-                url = "#/titles/${it["titleId"].int}"
+                url = "/titles/${it["titleId"].int}"
             }
         }
 
@@ -72,7 +75,7 @@ class MangaPlus : HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/web/web_home?lang=eng", catalogHeaders)
+        return GET("$apiUrl/web/web_home?lang=eng", catalogHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -88,7 +91,7 @@ class MangaPlus : HttpSource() {
                     SManga.create().apply {
                         title = it["name"].string
                         thumbnail_url = it["portraitImageUrl"].string
-                        url = "#/titles/${it["titleId"].int}"
+                        url = "/titles/${it["titleId"].int}"
                     }
                 }
 
@@ -96,14 +99,29 @@ class MangaPlus : HttpSource() {
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return client.newCall(searchMangaRequest(page, query, filters))
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response -> 
+                    val details = mangaDetailsParse(response)
+                    details.url = "/titles/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
                 .map { searchMangaParse(it) }
                 .map { MangasPage(it.mangas.filter { m -> m.title.contains(query, true) }, it.hasNextPage) }
+        }
+    }
+
+    private fun searchMangaByIdRequest(mangaId: String): Request {
+        return GET("$apiUrl/title_detail?title_id=$mangaId", catalogHeaders)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/title_list/all", catalogHeaders)
+        return GET("$apiUrl/title_list/all", catalogHeaders)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -116,7 +134,7 @@ class MangaPlus : HttpSource() {
             SManga.create().apply {
                 title = it["name"].string
                 thumbnail_url = it["portraitImageUrl"].string
-                url = "#/titles/${it["titleId"].int}"
+                url = "/titles/${it["titleId"].int}"
             }
         }
 
@@ -125,7 +143,7 @@ class MangaPlus : HttpSource() {
 
     private fun titleDetailsRequest(manga: SManga): Request {
         val mangaId = manga.url.substringAfterLast("/")
-        return GET("$baseUrl/title_detail?title_id=$mangaId", catalogHeaders)
+        return GET("$apiUrl/title_detail?title_id=$mangaId", catalogHeaders)
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request = titleDetailsRequest(manga)
@@ -168,7 +186,7 @@ class MangaPlus : HttpSource() {
                         name = "${it["name"].string} - ${it["subTitle"].string}"
                         scanlator = "Shueisha"
                         date_upload = 1000L * it["startTimeStamp"].long
-                        url = "#/viewer/${it["chapterId"].int}"
+                        url = "/viewer/${it["chapterId"].int}"
                         chapter_number = it["name"].string.substringAfter("#").toFloatOrNull() ?: 0f
                     }
                 }
@@ -176,7 +194,7 @@ class MangaPlus : HttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val chapterId = chapter.url.substringAfterLast("/")
-        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", catalogHeaders)
+        return GET("$apiUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", catalogHeaders)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -254,11 +272,13 @@ class MangaPlus : HttpSource() {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
         private val JSON_PARSER by lazy { JsonParser() }
 
+        private const val PREFIX_ID_SEARCH = "id:"
+
         private const val IMAGE_DECRYPT_SRC = """
             function hex2bin(hex) {
                 return new Uint8Array(hex.match(/.{1,2}/g)
                         .map(function (x) { return parseInt(x, 16) }));
-            }
+            };
 
             function decode(encryptionKey, bytes) {
                 var keystream = hex2bin(encryptionKey);
@@ -270,7 +290,7 @@ class MangaPlus : HttpSource() {
                 }
 
                 return content;
-            }
+            };
 
             (function() {
                 var decoded = decode(ENCRYPTION_KEY, RESPONSE_BYTES);
@@ -288,104 +308,320 @@ class MangaPlus : HttpSource() {
                 throw new Error("Cannot find module: " + id);
             }
 
-            var protobuf = require("protobufjs");
 
-            var Root = protobuf.Root;
-            var Type = protobuf.Type;
-            var Field = protobuf.Field;
-
-            var Response = new Type("Response")
-                  .add(new Field("success", 1, "SuccessResult"))
-                  .add(new Field("error", 2, "ErrorResult"));
-
-            var ErrorResult = new Type("ErrorResult")
-                  .add(new Field("action", 1, "int32"))
-                  .add(new Field("englishPopup", 2, "Popup"))
-                  .add(new Field("spanishPopup", 3, "Popup"));
-
-            var SuccessResult = new Type("SuccessResult")
-                  .add(new Field("allTitlesView", 5, "AllTitlesView"))
-                  .add(new Field("titleRankingView", 6, "TitleRankingView"))
-                  .add(new Field("titleDetailView", 8, "TitleDetailView"))
-                  .add(new Field("mangaViewer", 10, "MangaViewer"))
-                  .add(new Field("webHomeView", 11, "WebHomeView"));
-
-            var TitleRankingView = new Type("TitleRankingView")
-                  .add(new Field("titles", 1, "Title", "repeated"));
-
-            var AllTitlesView = new Type("AllTitlesView")
-                  .add(new Field("titles", 1, "Title", "repeated"));
-
-            var WebHomeView = new Type("WebHomeView")
-                  .add(new Field("groups", 2, "UpdatedTitleGroup", "repeated"));
-
-            var TitleDetailView = new Type("TitleDetailView")
-                  .add(new Field("title", 1, "Title"))
-                  .add(new Field("overview", 3, "string"))
-                  .add(new Field("viewingPeriodDescription", 7, "string"))
-                  .add(new Field("firstChapterList", 9, "Chapter", "repeated"))
-                  .add(new Field("lastChapterList", 10, "Chapter", "repeated"))
-                  .add(new Field("chaptersDescending", 17, "bool"));
-
-            var MangaViewer = new Type("MangaViewer")
-                  .add(new Field("pages", 1, "Page", "repeated"));
-
-            var Title = new Type("Title")
-                  .add(new Field("titleId", 1, "uint32"))
-                  .add(new Field("name", 2, "string"))
-                  .add(new Field("author", 3, "string"))
-                  .add(new Field("portraitImageUrl", 4, "string"))
-                  .add(new Field("language", 7, "int32"));
-
-            var UpdatedTitleGroup = new Type("UpdatedTitleGroup")
-                  .add(new Field("groupName", 1, "string"))
-                  .add(new Field("titles", 2, "UpdatedTitle", "repeated"));
-
-            var UpdatedTitle = new Type("UpdatedTitle")
-                  .add(new Field("title", 1, "Title"))
-                  .add(new Field("chapterId", 2, "uint32"))
-                  .add(new Field("chapterName", 3, "string"))
-                  .add(new Field("chapterSubtitle", 4, "string"));
-
-            var Chapter = new Type("Chapter")
-                  .add(new Field("titleId", 1, "uint32"))
-                  .add(new Field("chapterId", 2, "uint32"))
-                  .add(new Field("name", 3, "string"))
-                  .add(new Field("subTitle", 4, "string", "optional"))
-                  .add(new Field("startTimeStamp", 6, "uint32"))
-                  .add(new Field("endTimeStamp", 7, "uint32"));
-
-            var Page = new Type("Page")
-                  .add(new Field("page", 1, "MangaPage"));
-
-            var MangaPage = new Type("MangaPage")
-                  .add(new Field("imageUrl", 1, "string"))
-                  .add(new Field("width", 2, "uint32"))
-                  .add(new Field("height", 3, "uint32"))
-                  .add(new Field("encryptionKey", 5, "string", "optional"));
-
-            var root = new Root()
-                  .define("mangaplus")
-                  .add(Response)
-                  .add(ErrorResult)
-                  .add(SuccessResult)
-                  .add(TitleRankingView)
-                  .add(AllTitlesView)
-                  .add(WebHomeView)
-                  .add(TitleDetailView)
-                  .add(MangaViewer)
-                  .add(Title)
-                  .add(UpdatedTitleGroup)
-                  .add(UpdatedTitle)
-                  .add(Chapter)
-                  .add(Page)
-                  .add(MangaPage);
+            var root = (protobuf.roots["default"] || (protobuf.roots["default"] = new protobuf.Root()))
+            .addJSON({
+            mangaplus: {
+                nested: {
+                Popup: {
+                    fields: {
+                    osDefault: { type: "OSDefault", id: 1 },
+                    appDefault: { type: "AppDefault", id: 2 } },
+                    nested: {
+                    AppDefault: {
+                        fields: {
+                        imageUrl: { type: "string", id: 1 },
+                        action: { type: "TransitionAction", id: 2 } } },
+                    Button: {
+                        fields: {
+                        text: { type: "string", id: 1 },
+                        action: { type: "TransitionAction", id: 2 } } },
+                    OSDefault: {
+                        fields: {
+                        subject: { type: "string", id: 1 },
+                        body: { type: "string", id: 2 },
+                        okButton: { type: "Button", id: 3 },
+                        neautralButton: { type: "Button", id: 4 },
+                        cancelButton: { type: "Button", id: 5 } } } } },
+                HomeView: {
+                    fields: {
+                    topBanners: { rule: "repeated", type: "Banner", id: 1 },
+                    groups: { rule: "repeated", type: "UpdatedTitleGroup", id: 2 },
+                    popup: { type: "Popup", id: 9 } } },
+                Feedback: {
+                    fields: {
+                    timeStamp: { type: "uint32", id: 1 },
+                    body: { type: "string", id: 2 },
+                    responseType: { type: "ResponseType", id: 3 } },
+                    nested: {
+                    ResponseType: {
+                        values: { QUESTION: 0, ANSWER: 1 } } } },
+                FeedbackView: {
+                    fields: {
+                    feedbackList: { rule: "repeated", type: "Feedback", id: 1 } } },
+                RegistrationData: {
+                    fields: {
+                    deviceSecret: { type: "string", id: 1 } } },
+                Sns: {
+                    fields: {
+                    body: { type: "string", id: 1 },
+                    url: { type: "string", id: 2 } } },
+                Chapter: {
+                    fields: {
+                    titleId: { type: "uint32", id: 1 },
+                    chapterId: { type: "uint32", id: 2 },
+                    name: { type: "string", id: 3 },
+                    subTitle: { type: "string", id: 4 },
+                    thumbnailUrl: { type: "string", id: 5 },
+                    startTimeStamp: { type: "uint32", id: 6 },
+                    endTimeStamp: { type: "uint32", id: 7 },
+                    alreadyViewed: { type: "bool", id: 8 },
+                    isVerticalOnly: { type: "bool", id: 9 } } },
+                AdNetwork: {
+                    oneofs: {
+                    Network: {
+                        oneof: [ "facebook", "admob", "adsense" ] } },
+                    fields: {
+                    facebook: { type: "Facebook", id: 1 },
+                    admob: { type: "Admob", id: 2 },
+                    adsense: { type: "Adsense", id: 3 } },
+                    nested: {
+                    Facebook: {
+                        fields: {
+                        placementID: { type: "string", id: 1 } } },
+                    Admob: {
+                        fields: {
+                        unitID: { type: "string", id: 1 } } },
+                    Adsense: {
+                        fields: {
+                        unitID: { type: "string", id: 1 } } } } },
+                AdNetworkList: {
+                    fields: {
+                    adNetworks: { rule: "repeated", type: "AdNetwork", id: 1 } } },
+                Page: {
+                    oneofs: {
+                    data: {
+                        oneof: [ "mangaPage", "bannerList", "lastPage", "advertisement" ] } },
+                    fields: {
+                    mangaPage: { type: "MangaPage", id: 1 },
+                    bannerList: { type: "BannerList", id: 2 },
+                    lastPage: { type: "LastPage", id: 3 },
+                    advertisement: { type: "AdNetworkList", id: 4 } },
+                    nested: {
+                    PageType: {
+                        values: { SINGLE: 0, LEFT: 1, RIGHT: 2, DOUBLE: 3 } },
+                    ChapterType: {
+                        values: { LATEST: 0, SEQUENCE: 1, NOSEQUENCE: 2 } },
+                    BannerList: {
+                        fields: {
+                        bannerTitle: { type: "string", id: 1 },
+                        banners: { rule: "repeated", type: "Banner", id: 2 } } },
+                    MangaPage: {
+                        fields: {
+                        imageUrl: { type: "string", id: 1 },
+                        width: { type: "uint32", id: 2 },
+                        height: { type: "uint32", id: 3 },
+                        type: { type: "PageType", id: 4 },
+                        encryptionKey: { type: "string", id: 5 } } },
+                    LastPage: {
+                        fields: {
+                        currentChapter: { type: "Chapter", id: 1 },
+                        nextChapter: { type: "Chapter", id: 2 },
+                        topComments: { rule: "repeated", type: "Comment", id: 3 },
+                        isSubscribed: { type: "bool", id: 4 },
+                        nextTimeStamp: { type: "uint32", id: 5 },
+                        chapterType: { type: "int32", id: 6 } } } } },
+                MangaViewer: {
+                    fields: {
+                    pages: { rule: "repeated", type: "Page", id: 1 },
+                    chapterId: { type: "uint32", id: 2 },
+                    chapters: { rule: "repeated", type: "Chapter", id: 3 },
+                    sns: { type: "Sns", id: 4 },
+                    titleName: { type: "string", id: 5 },
+                    chapterName: { type: "string", id: 6 },
+                    numberOfComments: { type: "int32", id: 7 },
+                    isVerticalOnly: { type: "bool", id: 8 },
+                    titleId: { type: "uint32", id: 9 },
+                    startFromRight: { type: "bool", id: 10 } } },
+                Title: {
+                    fields: {
+                    titleId: { type: "uint32", id: 1 },
+                    name: { type: "string", id: 2 },
+                    author: { type: "string", id: 3 },
+                    portaitImageUrl: { type: "string", id: 4 },
+                    landscapeImageUrl: { type: "string", id: 5 },
+                    viewCount: { type: "uint32", id: 6 },
+                    language: { type: "Language", id: 7 } },
+                    nested: {
+                    Language: {
+                        values: { ENGLISH: 0, SPANISH: 1 } } } },
+                TitleDetailView: {
+                    fields: {
+                    title: { type: "Title", id: 1 },
+                    titleImageUrl: { type: "string", id: 2 },
+                    overview: { type: "string", id: 3 },
+                    backgroundImageUrl: { type: "string", id: 4 },
+                    nextTimeStamp: { type: "uint32", id: 5 },
+                    updateTiming: { type: "UpdateTiming", id: 6 },
+                    viewingPeriodDescription: { type: "string", id: 7 },
+                    nonAppearanceInfo: { type: "string", id: 8 },
+                    firstChapterList: { rule: "repeated", type: "Chapter", id: 9 },
+                    lastChapterList: { rule: "repeated", type: "Chapter", id: 10 },
+                    banners: { rule: "repeated", type: "Banner", id: 11 },
+                    recommendedTitleList: { rule: "repeated", type: "Title", id: 12 },
+                    sns: { type: "Sns", id: 13 },
+                    isSimulReleased: { type: "bool", id: 14 },
+                    isSubscribed: { type: "bool", id: 15 },
+                    rating: { type: "Rating", id: 16 },
+                    chaptersDescending: { type: "bool", id: 17 },
+                    numberOfViews: { type: "uint32", id: 18 } },
+                    nested: {
+                    Rating: {
+                        values: { ALLAGE: 0, TEEN: 1, TEENPLUS: 2, MATURE: 3 } },
+                    UpdateTiming: {
+                        values: { NOT_REGULARLY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6, SUNDAY: 7, DAY: 8 } } } },
+                UpdatedTitle: {
+                    fields: {
+                    title: { type: "Title", id: 1 },
+                    chapterId: { type: "uint32", id: 2 },
+                    chapterName: { type: "string", id: 3 },
+                    chapterSubTitle: { type: "string", id: 4 },
+                    isLatest: { type: "bool", id: 5 },
+                    isVerticalOnly: { type: "bool", id: 6 } } },
+                UpdateProfileResultView: {
+                    fields: {
+                    result: { type: "Result", id: 1 } },
+                    nested: {
+                    Result: {
+                        values: { SUCCESS: 0, DUPLICATED: 1, NG_WORD: 2 } } } },
+                UpdatedTitleGroup: {
+                    fields: {
+                    groupName: { type: "string", id: 1 },
+                    titles: { rule: "repeated", type: "UpdatedTitle", id: 2 } } },
+                TransitionAction: {
+                    fields: {
+                    method: { type: "PresentationMethod", id: 1 },
+                    url: { type: "string", id: 2 } },
+                    nested: {
+                    PresentationMethod: {
+                        values: { PUSH: 0, MODAL: 1, EXTERNAL: 2 } } } },
+                Banner: {
+                    fields: {
+                    imageUrl: { type: "string", id: 1 },
+                    action: { type: "TransitionAction", id: 2 },
+                    id: { type: "uint32", id: 3 } } },
+                WebHomeView: {
+                    fields: {
+                    topBanners: { rule: "repeated", type: "Banner", id: 1 },
+                    groups: { rule: "repeated", type: "UpdatedTitleGroup", id: 2 },
+                    ranking: { rule: "repeated", type: "Title", id: 3 } } },
+                TitleList: {
+                    fields: {
+                    listName: { type: "string", id: 1 },
+                    featuredTitles: { rule: "repeated", type: "Title", id: 2 } } },
+                FeaturedTitlesView: {
+                    fields: {
+                    mainBanner: { type: "Banner", id: 1 },
+                    subBanner1: { type: "Banner", id: 2 },
+                    subBanner2: { type: "Banner", id: 3 },
+                    contents: { rule: "repeated", type: "Contents", id: 4 } },
+                    nested: {
+                    Contents: {
+                        oneofs: {
+                        data: {
+                            oneof: [ "banner", "titleList" ] } },
+                        fields: {
+                        banner: { type: "Banner", id: 1 },
+                        titleList: { type: "TitleList", id: 2 } } } } },
+                ProfileSettingsView: {
+                    fields: {
+                    iconList: { rule: "repeated", type: "CommentIcon", id: 1 },
+                    userName: { type: "string", id: 2 },
+                    myIcon: { type: "CommentIcon", id: 3 } } },
+                Comment: {
+                    fields: {
+                    id: { type: "uint32", id: 1 },
+                    index: { type: "uint32", id: 2 },
+                    userName: { type: "string", id: 3 },
+                    iconUrl: { type: "string", id: 4 },
+                    isMyComment: { type: "bool", id: 6 },
+                    alreadyLiked: { type: "bool", id: 7 },
+                    numberOfLikes: { type: "uint32", id: 9 },
+                    body: { type: "string", id: 10 },
+                    created: { type: "uint32", id: 11 } } },
+                CommentIcon: {
+                    fields: {
+                    id: { type: "uint32", id: 1 },
+                    imageUrl: { type: "string", id: 2 } } },
+                CommentListView: {
+                    fields: {
+                    comments: { rule: "repeated", type: "Comment", id: 1 },
+                    ifSetUserName: { type: "bool", id: 2 } } },
+                InitialView: {
+                    fields: {
+                    gdprAgreementRequired: { type: "bool", id: 1 },
+                    englishTitlesCount: { type: "uint32", id: 2 },
+                    spanishTitlesCount: { type: "uint32", id: 3 } } },
+                SettingsView: {
+                    fields: {
+                    myIcon: { type: "CommentIcon", id: 1 },
+                    userName: { type: "string", id: 2 },
+                    noticeOfNewsAndEvents: { type: "bool", id: 3 },
+                    noticeOfUpdatesOfSubscribedTitles: { type: "bool", id: 4 },
+                    englishTitlesCount: { type: "uint32", id: 5 },
+                    spanishTitlesCount: { type: "uint32", id: 6 } } },
+                TitleRankingView: {
+                    fields: {
+                    titles: { rule: "repeated", type: "Title", id: 1 } } },
+                AllTitlesView: {
+                    fields: {
+                    titles: { rule: "repeated", type: "Title", id: 1 } } },
+                SubscribedTitlesView: {
+                    fields: {
+                    titles: { rule: "repeated", type: "Title", id: 1 } } },
+                ServiceAnnouncement: {
+                    fields: {
+                    title: { type: "string", id: 1 },
+                    body: { type: "string", id: 2 },
+                    date: { type: "int32", id: 3 } } },
+                ServiceAnnouncementsView: {
+                    fields: {
+                    serviceAnnouncements: { rule: "repeated", type: "ServiceAnnouncement", id: 1 } } },
+                SuccessResult: {
+                    oneofs: {
+                    data: {
+                        oneof: [ "registerationData", "homeView", "featuredTitlesView", "allTitlesView", "titleRankingView", "subscribedTitlesView", "titleDetailView", "commentListView", "mangaViewer", "webHomeView", "settingsView", "profileSettingsView", "updateProfileResultView", "serviceAnnouncementsView", "initialView", "feedbackView" ] } },
+                    fields: {
+                    isFeaturedUpdated: { type: "bool", id: 1 },
+                    registerationData: { type: "RegistrationData", id: 2 },
+                    homeView: { type: "HomeView", id: 3 },
+                    featuredTitlesView: { type: "FeaturedTitlesView", id: 4 },
+                    allTitlesView: { type: "AllTitlesView", id: 5 },
+                    titleRankingView: { type: "TitleRankingView", id: 6 },
+                    subscribedTitlesView: { type: "SubscribedTitlesView", id: 7 },
+                    titleDetailView: { type: "TitleDetailView", id: 8 },
+                    commentListView: { type: "CommentListView", id: 9 },
+                    mangaViewer: { type: "MangaViewer", id: 10 },
+                    webHomeView: { type: "WebHomeView", id: 11 },
+                    settingsView: { type: "SettingsView", id: 12 },
+                    profileSettingsView: { type: "ProfileSettingsView", id: 13 },
+                    updateProfileResultView: { type: "UpdateProfileResultView", id: 14 },
+                    serviceAnnouncementsView: { type: "ServiceAnnouncementsView", id: 15 },
+                    initialView: { type: "InitialView", id: 16 },
+                    feedbackView: { type: "FeedbackView", id: 17 } } },
+                ErrorResult: {
+                    fields: {
+                    action: { type: "Action", id: 1 },
+                    englishPopup: { type: "Popup.OSDefault", id: 2 },
+                    spanishPopup: { type: "Popup.OSDefault", id: 3 },
+                    debugInfo: { type: "string", id: 4 } },
+                    nested: {
+                    Action: {
+                        values: { DEFAULT: 0, UNAUTHORIZED: 1, MAINTAINENCE: 2, GEOIP_BLOCKING: 3 } } } },
+                Response: {
+                    oneofs: {
+                    data: {
+                        oneof: [ "success", "error" ] } },
+                    fields: {
+                    success: { type: "SuccessResult", id: 1 },
+                    error: { type: "ErrorResult", id: 2 } } } } }
+            });
 
             function decode(arr) {
                 var Response = root.lookupType("Response");
                 var message = Response.decode(arr);
                 return Response.toObject(message);
-            }
+            };
 
             (function () {
                 return JSON.stringify(decode(BYTE_ARR)).replace(/\,\{\}/g, "");
