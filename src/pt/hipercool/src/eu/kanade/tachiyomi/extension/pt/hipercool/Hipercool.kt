@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.hipercool
 
-import android.util.Log
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -174,7 +173,6 @@ class Hipercool : HttpSource() {
         // Create the pages.
         for (i in 1..images) {
             val url = "$STATIC_URL/books/$bookSlug/$chapterSlug/$bookSlug-chapter-$chapterSlug-page-$i.jpg?revision=$revision"
-            Log.i("hipercool", url)
             pages += Page(i - 1, chapter.url, url)
         }
 
