@@ -26,12 +26,12 @@ class MangaPlusUrlActivity : Activity() {
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
                 if (isApi) {
-                    val realTitleId = titleid.removePrefix("title_detail?title_id=")
-                    putExtra("query", "id:$realTitleId")
+                    val realTitleid = titleid.removePrefix("title_detail?title_id=")
+                    putExtra("query", "id:$realTitleid")
                 } else if (isViewer) {
-                    putExtra("query", "cid:$titleId")
+                    putExtra("query", "cid:$titleid")
                 } else {
-                    putExtra("query", "id:$titleId")
+                    putExtra("query", "id:$titleid")
                 }
                 putExtra("filter", packageName)
             }
