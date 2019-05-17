@@ -112,12 +112,19 @@ class MangaPlus : HttpSource() {
                     .map { response ->
                         val result = response.asProto()
                         if (result["data"].string == "sucess") {
-                            fetchSearchManga(page, "id:${result["success"]["mangaViewer"]["titleId"].int}", filters)
+                            val titleId = result["success"]["mangaViewer"]["titleId"].string as String
+                            client.newCall(searchMangaByIdRequest(titleId))
+                            .asObservableSuccess()
+                            .map { response ->
+                                val details = mangaDetailsParse(response)
+                                details.url = "#/titles/$titleId"
+                                MangasPage(listOf(details), false)
+                            }
                         } else {
-                            MangasPage(emptyList(), false)
+                            Observable.from(MangasPage(emptyList(), false))
                         }
                     }
-                    .flatMap { mp -> mp }
+                    .flatMap { e -> e }
         } else {
             client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
