@@ -126,7 +126,7 @@ class Hipercool : HttpSource() {
         return SManga.create().apply {
             title = result["title"].string
             thumbnail_url = getThumbnailUrl(result["slug"].string, result["revision"].int)
-            description = result["synopsis"].string
+            description = result["synopsis"]?.string ?: ""
             artist = artists
             author = authors
             genre = tags
