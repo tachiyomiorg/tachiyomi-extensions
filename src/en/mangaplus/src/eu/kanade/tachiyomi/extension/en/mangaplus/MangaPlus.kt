@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.mangaplus
 
-// import jp.co.shueisha.mangaplus
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -17,9 +16,7 @@ import java.util.UUID.randomUUID
 class MangaPlus : HttpSource() {
     override val name = "Manga Plus by Shueisha"
 
-    val apiUrl = "https://jumpg-webapi.tokyo-cdn.com/api"
-
-    override val baseUrl = "https://mangaplus.shueisha.co.jp/"
+    override val baseUrl = "https://jumpg-webapi.tokyo-cdn.com/api"
 
     override val lang = "en"
 
@@ -54,7 +51,7 @@ class MangaPlus : HttpSource() {
     }.build()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$apiUrl/title_list/ranking", catalogHeaders)
+        return GET("$baseUrl/title_list/ranking", catalogHeaders)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -75,7 +72,7 @@ class MangaPlus : HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$apiUrl/web/web_home?lang=eng", catalogHeaders)
+        return GET("$baseUrl/web/web_home?lang=eng", catalogHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -117,11 +114,11 @@ class MangaPlus : HttpSource() {
     }
 
     private fun searchMangaByIdRequest(mangaId: String): Request {
-        return GET("$apiUrl/title_detail?title_id=$mangaId", catalogHeaders)
+        return GET("$baseUrl/title_detail?title_id=$mangaId", catalogHeaders)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$apiUrl/title_list/all", catalogHeaders)
+        return GET("$baseUrl/title_list/all", catalogHeaders)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -143,7 +140,7 @@ class MangaPlus : HttpSource() {
 
     private fun titleDetailsRequest(manga: SManga): Request {
         val mangaId = manga.url.substringAfterLast("/")
-        return GET("$apiUrl/title_detail?title_id=$mangaId", catalogHeaders)
+        return GET("$baseUrl/title_detail?title_id=$mangaId", catalogHeaders)
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request = titleDetailsRequest(manga)
@@ -194,7 +191,7 @@ class MangaPlus : HttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val chapterId = chapter.url.substringAfterLast("/")
-        return GET("$apiUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", catalogHeaders)
+        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", catalogHeaders)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -278,7 +275,7 @@ class MangaPlus : HttpSource() {
             function hex2bin(hex) {
                 return new Uint8Array(hex.match(/.{1,2}/g)
                         .map(function (x) { return parseInt(x, 16) }));
-            };
+            }
 
             function decode(encryptionKey, bytes) {
                 var keystream = hex2bin(encryptionKey);
@@ -290,12 +287,12 @@ class MangaPlus : HttpSource() {
                 }
 
                 return content;
-            };
+            }
 
             (function() {
                 var decoded = decode(ENCRYPTION_KEY, RESPONSE_BYTES);
                 return JSON.stringify([].slice.call(decoded));
-            })();
+            })()
             """
 
         private var PROTOBUFJS: String? = null
@@ -621,11 +618,11 @@ class MangaPlus : HttpSource() {
                 var Response = root.lookupType("Response");
                 var message = Response.decode(arr);
                 return Response.toObject(message);
-            };
+            }
 
             (function () {
                 return JSON.stringify(decode(BYTE_ARR)).replace(/\,\{\}/g, "");
-            })();
+            })()
             """
     }
 }
