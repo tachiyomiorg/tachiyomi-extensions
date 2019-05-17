@@ -179,7 +179,14 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     .map { response ->
                         val jsonData = response.body()!!.string()
                         val json = JsonParser().parse(jsonData).asJsonObject
-                        fetchSearchManga(page, "id:${json["manga_id"].string}", filters)
+                        val mangaId = json["manga_id"] as String
+                        client.newCall(searchMangaByIdRequest(mangaId))
+                            .asObservableSuccess()
+                            .map { response -> 
+                                val details = mangaDetailsParse(response)
+                                details.url = "/manga/$mangaId"
+                                MangasPage(listOf(details), false)
+                            }
                     }
                     .flatMap { mp -> mp }
         } else {
