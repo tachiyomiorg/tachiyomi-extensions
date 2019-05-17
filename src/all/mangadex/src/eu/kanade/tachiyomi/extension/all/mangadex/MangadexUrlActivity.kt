@@ -22,9 +22,14 @@ class MangadexUrlActivity : Activity() {
         if (pathSegments != null && pathSegments.size > 1) {
             val isChapter = (pathSegments[0] == "chapter")
             val titleid = pathSegments[1]
+            val query = if (isChapter) { 
+                "cid:$titleId"
+            } else { 
+                "id:$titleId"
+            }
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", isChapter ? "cid:$titleId" : "id:$titleid")
+                putExtra("query", query)
                 //putExtra("query", "id:$titleid")
                 putExtra("filter", packageName)
             }
