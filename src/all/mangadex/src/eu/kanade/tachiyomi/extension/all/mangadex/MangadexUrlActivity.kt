@@ -23,9 +23,9 @@ class MangadexUrlActivity : Activity() {
             val isChapter = (pathSegments[0] == "chapter")
             val titleid = pathSegments[1]
             val query = if (isChapter) { 
-                "cid:$titleId"
+                "cid:$titleid"
             } else { 
-                "id:$titleId"
+                "id:$titleid"
             }
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
