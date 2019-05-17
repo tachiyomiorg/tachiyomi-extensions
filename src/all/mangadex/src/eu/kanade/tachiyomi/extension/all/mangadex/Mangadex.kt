@@ -174,13 +174,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     }
         } else if (query.startsWith(PREFIX_CID_SEARCH)) {
             val realQuery = query.removePrefix(PREFIX_CID_SEARCH)
-            client.newCall(searchMangaByCidRequest(realQuery))
+            Observable.from(
+                client.newCall(searchMangaByCidRequest(realQuery))
                     .asObservableSuccess()
                     .map { response ->
                         val jsonData = response.body()!!.string()
                         val json = JsonParser().parse(jsonData).asJsonObject
                         fetchSearchManga(page, "id:${json["manga_id"].string}", filters)
                     }
+            )
         } else {
             getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                     .asObservableSuccess()
