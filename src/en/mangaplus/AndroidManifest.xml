@@ -18,11 +18,11 @@
                 <data
                     android:scheme="https"
                     android:host="mangaplus.shueisha.co.jp"
-                    android:pathPattern="/viewer/..*">
+                    android:pathPattern="/viewer/..*" />
                 <data
                     android:scheme="https"
                     android:host="jumpg-webapi.tokyo-cdn.com"
-                    android:pathPattern="/api/title_detail?title_id=..*">
+                    android:pathPattern="/api/title_detail?title_id=..*" />
             </intent-filter>
         </activity>
     </application>
