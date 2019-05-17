@@ -107,7 +107,8 @@ class MangaPlus : HttpSource() {
                 }
         } else if (query.startsWith(PREFIX_CID_SEARCH)) {
             val realQuery = query.removePrefix(PREFIX_CID_SEARCH)
-            client.newCall(searchMangaByCidRequest(realQuery))
+            Observable.from(
+                client.newCall(searchMangaByCidRequest(realQuery))
                     .asObservableSuccess()
                     .map { response ->
                         val result = response.asProto()
@@ -117,6 +118,7 @@ class MangaPlus : HttpSource() {
                             MangasPage(emptyList(), false)
                         }
                     }
+            )
         } else {
             client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
