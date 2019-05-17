@@ -200,7 +200,7 @@ class MangaPlus : HttpSource() {
                         name = "${it["name"].string} - ${it["subTitle"].string}"
                         scanlator = "Shueisha"
                         date_upload = 1000L * it["startTimeStamp"].long
-                        url = "/viewer/${it["chapterId"].int}"
+                        url = "#/viewer/${it["chapterId"].int}"
                         chapter_number = it["name"].string.substringAfter("#").toFloatOrNull() ?: 0f
                     }
                 }
@@ -640,7 +640,7 @@ class MangaPlus : HttpSource() {
 
             (function () {
                 return JSON.stringify(decode(BYTE_ARR)).replace(/\,\{\}/g, "");
-            })()
+            })();
             """
     }
 }
