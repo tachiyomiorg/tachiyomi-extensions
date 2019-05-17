@@ -21,10 +21,16 @@ class MangaPlusUrlActivity : Activity() {
         val pathSegments = intent?.data?.pathSegments
         if (pathSegments != null && pathSegments.size > 1) {
             val isViewer = (pathSegments[0] == "viewer")
+            val isApi = (pathSegments[0] == "api" && pathSegments[1].startsWith("title_detail?title_id="))
             val titleid = pathSegments[1]
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", isViewer ? "cid:$titleId" : "id:$titleid")
+                if (isApi) {
+                    val realTitleId = titleid.removePrefix("title_detail?title_id=")
+                    putExtra("query", "id:$realTitleId")
+                } else {
+                    putExtra("query", isViewer ? "cid:$titleId" : "id:$titleid")
+                }
                 putExtra("filter", packageName)
             }
 
