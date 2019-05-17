@@ -172,6 +172,15 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         details.url = "/title/$realQuery/"
                         MangasPage(listOf(details), false)
                     }
+        } else if (query.startsWith(PREFIX_CID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_CID_SEARCH)
+            client.newCall(searchMangaByCidRequest(realQuery))
+                    .asObservableSuccess()
+                    .map { response ->
+                        val jsonData = response.body()!!.string()
+                        val json = JsonParser().parse(jsonData).asJsonObject
+                        fetchSearchManga("id:${json["manga_id"].string}")
+                    }
         } else {
             getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                     .asObservableSuccess()
@@ -321,6 +330,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun searchMangaByIdRequest(id: String): Request {
         return GET(baseUrl + API_MANGA + id, headers)
+    }
+    private fun searchMangaByCidRequest(cid: String): Request {
+        return GET(baseUrl + API_CHAPTER + cid, headers)
     }
 
     private fun getMangaId(url: String): String {
@@ -687,6 +699,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val API_CHAPTER = "/api/chapter/"
 
         private const val PREFIX_ID_SEARCH = "id:"
+        private const val PREFIX_CID_SEARCH = "cid:"
 
         private val sortables = listOf(
                 Triple("Update date", 0, 1),
