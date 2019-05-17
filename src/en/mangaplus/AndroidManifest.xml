@@ -15,6 +15,10 @@
                     android:scheme="https"
                     android:host="mangaplus.shueisha.co.jp"
                     android:pathPattern="/titles/..*" />
+                <data
+                    android:scheme="https"
+                    android:host="mangaplus.shueisha.co.jp"
+                    android:pathPattern="/viewer/..*">
             </intent-filter>
         </activity>
     </application>

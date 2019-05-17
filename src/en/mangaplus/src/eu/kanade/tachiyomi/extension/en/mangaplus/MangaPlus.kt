@@ -105,6 +105,18 @@ class MangaPlus : HttpSource() {
                     details.url = "/titles/$realQuery"
                     MangasPage(listOf(details), false)
                 }
+        } else if (query.startsWith(PREFIX_CID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_CID_SEARCH)
+            client.newCall(searchMangaByCidRequest(realQuery))
+                    .asObservableSuccess()
+                    .map { response ->
+                        val result = response.asProto()
+                        if (result["data"].string == "sucess") {
+                            fetchSearchManga(page, "id:${result["success"]["mangaViewer"]["titleId"].int}", filters)
+                        } else {
+                            MangasPage(emptyList(), false)
+                        }
+                    }
         } else {
             client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
@@ -115,6 +127,10 @@ class MangaPlus : HttpSource() {
 
     private fun searchMangaByIdRequest(mangaId: String): Request {
         return GET("$baseUrl/title_detail?title_id=$mangaId", catalogHeaders)
+    }
+
+    private fun searchMangaByCidRequest(chapterId: String): Request {
+        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=low", catalogHeaders)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -270,6 +286,7 @@ class MangaPlus : HttpSource() {
         private val JSON_PARSER by lazy { JsonParser() }
 
         private const val PREFIX_ID_SEARCH = "id:"
+        private const val PREFIX_CID_SEARCH = "cid:"
 
         private const val IMAGE_DECRYPT_SRC = """
             function hex2bin(hex) {

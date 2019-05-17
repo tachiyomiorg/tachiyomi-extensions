@@ -20,10 +20,11 @@ class MangaPlusUrlActivity : Activity() {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
         if (pathSegments != null && pathSegments.size > 1) {
+            val isViewer = (pathSegments[0] == "viewer")
             val titleid = pathSegments[1]
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", "id:$titleid")
+                putExtra("query", isViewer ? "cid:$titleId" : "id:$titleid")
                 putExtra("filter", packageName)
             }
 
