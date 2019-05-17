@@ -121,7 +121,7 @@ class MangaPlus : HttpSource() {
                                 MangasPage(listOf(details), false)
                             }
                         } else {
-                            Observable.from(MangasPage(emptyList(), false))
+                            Observable.of(MangasPage(emptyList(), false))
                         }
                     }
                     .flatMap { e -> e }
