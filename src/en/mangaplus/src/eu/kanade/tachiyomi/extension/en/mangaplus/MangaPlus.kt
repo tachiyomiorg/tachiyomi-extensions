@@ -64,7 +64,7 @@ class MangaPlus : HttpSource() {
             SManga.create().apply {
                 title = it["name"].string
                 thumbnail_url = it["portraitImageUrl"].string
-                url = "/titles/${it["titleId"].int}"
+                url = "#/titles/${it["titleId"].int}"
             }
         }
 
@@ -88,7 +88,7 @@ class MangaPlus : HttpSource() {
                     SManga.create().apply {
                         title = it["name"].string
                         thumbnail_url = it["portraitImageUrl"].string
-                        url = "/titles/${it["titleId"].int}"
+                        url = "#/titles/${it["titleId"].int}"
                     }
                 }
 
@@ -102,7 +102,7 @@ class MangaPlus : HttpSource() {
                 .asObservableSuccess()
                 .map { response -> 
                     val details = mangaDetailsParse(response)
-                    details.url = "/titles/$realQuery"
+                    details.url = "#/titles/$realQuery"
                     MangasPage(listOf(details), false)
                 }
         } else if (query.startsWith(PREFIX_CID_SEARCH)) {
@@ -147,7 +147,7 @@ class MangaPlus : HttpSource() {
             SManga.create().apply {
                 title = it["name"].string
                 thumbnail_url = it["portraitImageUrl"].string
-                url = "/titles/${it["titleId"].int}"
+                url = "#/titles/${it["titleId"].int}"
             }
         }
 
