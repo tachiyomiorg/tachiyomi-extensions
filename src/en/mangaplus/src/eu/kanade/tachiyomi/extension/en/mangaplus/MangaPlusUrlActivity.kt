@@ -28,8 +28,10 @@ class MangaPlusUrlActivity : Activity() {
                 if (isApi) {
                     val realTitleId = titleid.removePrefix("title_detail?title_id=")
                     putExtra("query", "id:$realTitleId")
+                } else if (isViewer) {
+                    putExtra("query", "cid:$titleId")
                 } else {
-                    putExtra("query", isViewer ? "cid:$titleId" : "id:$titleid")
+                    putExtra("query", "id:$titleId")
                 }
                 putExtra("filter", packageName)
             }
