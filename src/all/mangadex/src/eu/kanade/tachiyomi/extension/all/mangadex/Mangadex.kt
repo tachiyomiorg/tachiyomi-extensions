@@ -116,7 +116,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return manga
     }
 
-    private fun modifyMangaUrl(url: String): String = url.substringBeforeLast("/") + "/"
+    private fun modifyMangaUrl(url: String): String = url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
 
     private fun formThumbUrl(mangaUrl: String): String {
         var ext = ".jpg"
@@ -169,7 +169,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     .asObservableSuccess()
                     .map { response ->
                         val details = mangaDetailsParse(response)
-                        details.url = "/title/$realQuery/"
+                        details.url = "/manga/$realQuery/"
                         MangasPage(listOf(details), false)
                     }
         } else if (query.startsWith(PREFIX_CID_SEARCH)) {
