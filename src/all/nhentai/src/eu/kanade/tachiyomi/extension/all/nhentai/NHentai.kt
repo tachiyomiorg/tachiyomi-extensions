@@ -41,7 +41,9 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("a > div").text().replace("\"", "").trim()
-        thumbnail_url = element.select(".cover img").attr("data-src")
+
+        val img = element.select(".cover img").first()
+        thumbnail_url = if (img.hasAttr("data-src")) img.absUrl("data-src") else img.absUrl("src")
     }
 
     override fun latestUpdatesNextPageSelector() = "#content > section.pagination > a.next"
