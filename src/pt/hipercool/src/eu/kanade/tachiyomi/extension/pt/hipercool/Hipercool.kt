@@ -40,7 +40,7 @@ class Hipercool : HttpSource() {
         return SManga.create().apply {
             title = book["title"].string
             thumbnail_url = getThumbnailUrl(bookSlug, bookRevision)
-            url = "$baseUrl/books/$bookSlug"
+            setUrlWithoutDomain("$baseUrl/books/$bookSlug")
         }
     }
 
@@ -63,7 +63,7 @@ class Hipercool : HttpSource() {
                 .map { latestMangaItemParse(it.obj) }
                 .distinctBy { it.title }
 
-        return MangasPage(latestMangas, true)
+        return MangasPage(latestMangas, result.size() == 40)
     }
 
     private fun latestMangaItemParse(obj: JsonObject): SManga = generalListMangaParse(obj)
@@ -94,7 +94,7 @@ class Hipercool : HttpSource() {
                 .map { searchMangaItemParse(it.obj) }
                 .distinctBy { it.title }
 
-        return MangasPage(searchMangas, true)
+        return MangasPage(searchMangas, result.size() == 40)
     }
 
     private fun searchMangaItemParse(obj: JsonObject): SManga = generalListMangaParse(obj)
@@ -157,7 +157,7 @@ class Hipercool : HttpSource() {
         val chapterSlug = obj["slug"].string
         val images = obj["images"].int
         val revision = book["revision"].int
-        url = "$baseUrl/books/$bookSlug/$chapterSlug?images=$images&revision=$revision"
+        setUrlWithoutDomain("$baseUrl/books/$bookSlug/$chapterSlug?images=$images&revision=$revision")
     }
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
@@ -172,7 +172,7 @@ class Hipercool : HttpSource() {
 
         // Create the pages.
         for (i in 1..images) {
-            val url = "$STATIC_URL/books/$bookSlug/$chapterSlug/$bookSlug-chapter-$chapterSlug-page-$i.jpg?revision=$revision"
+            val url = getPageUrl(bookSlug, chapterSlug, i, revision)
             pages += Page(i - 1, chapter.url, url)
         }
 
@@ -210,6 +210,9 @@ class Hipercool : HttpSource() {
 
     private fun getThumbnailUrl(bookSlug: String, revision: Int): String
         = "$STATIC_URL/books/$bookSlug/$bookSlug-cover.jpg?revision=$revision"
+        
+    private fun getPageUrl(bookSlug: String, chapterSlug: String, page: Int, revision: Int): String
+        = "$STATIC_URL/books/$bookSlug/$chapterSlug/$bookSlug-chapter-$chapterSlug-page-$page.jpg?revision=$revision"
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
