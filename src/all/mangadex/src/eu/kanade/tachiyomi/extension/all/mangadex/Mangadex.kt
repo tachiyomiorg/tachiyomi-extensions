@@ -176,7 +176,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             val realQuery = query.removePrefix(PREFIX_CID_SEARCH)
             client.newCall(searchMangaByCidRequest(realQuery))
                     .asObservableSuccess()
-                    .map { response ->
+                    .flatMap { response ->
                         val jsonData = response.body()!!.string()
                         val json = JsonParser().parse(jsonData).asJsonObject
                         val mangaId = json["manga_id"] as String
@@ -188,7 +188,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                                 MangasPage(listOf(details), false)
                             }
                     }
-                    .flatMap { mp -> mp }
         } else {
             getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                     .asObservableSuccess()
