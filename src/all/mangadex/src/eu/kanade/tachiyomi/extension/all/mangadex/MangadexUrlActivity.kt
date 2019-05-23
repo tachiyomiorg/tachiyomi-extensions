@@ -1,10 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-import android.app.Activity
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.os.Bundle
-import android.util.Log
+import eu.kanade.tachiyomi.lib.urlhandler.UrlHandlerActivity
 
 /**
  * Springboard that accepts https://mangadex.com/title/xxx intents and redirects them to
@@ -15,28 +11,11 @@ import android.util.Log
  * Main goal was to make it easier to open manga in Tachiyomi in spite of the DDoS blocking
  * the usual search screen from working.
  */
-class MangadexUrlActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val pathSegments = intent?.data?.pathSegments
-        if (pathSegments != null && pathSegments.size > 1) {
-            val titleid = pathSegments[1]
-            val mainIntent = Intent().apply {
-                action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", "id:$titleid")
-                putExtra("filter", packageName)
-            }
+class MangadexUrlActivity : UrlHandlerActivity() {
 
-            try {
-                startActivity(mainIntent)
-            } catch (e: ActivityNotFoundException) {
-                Log.e("MangadexUrlActivity", e.toString())
-            }
-        } else {
-            Log.e("MangadexUrlActivity", "could not parse uri from intent $intent")
-        }
-
-        finish()
-        System.exit(0)
+    override fun getQueryFromPathSegments(pathSegments: List<String>): String {
+        val id = pathSegments[1]
+        return "${Mangadex.PREFIX_ID_SEARCH}$id"
     }
+
 }
