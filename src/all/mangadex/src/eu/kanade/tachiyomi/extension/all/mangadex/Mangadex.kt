@@ -188,7 +188,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                                 MangasPage(listOf(details), false)
                             }
                     }
-                    .flatMap { mp -> mp }
         } else {
             getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                     .asObservableSuccess()
