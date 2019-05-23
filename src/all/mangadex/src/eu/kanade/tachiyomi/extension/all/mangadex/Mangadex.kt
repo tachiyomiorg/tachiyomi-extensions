@@ -182,7 +182,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         val mangaId = json["manga_id"] as String
                         client.newCall(searchMangaByIdRequest(mangaId))
                             .asObservableSuccess()
-                            .map { response -> 
+                            .flatMap { response -> 
                                 val details = mangaDetailsParse(response)
                                 details.url = "/manga/$mangaId"
                                 MangasPage(listOf(details), false)
