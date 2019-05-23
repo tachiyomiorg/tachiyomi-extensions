@@ -21,16 +21,15 @@ class MangadexUrlActivity : Activity() {
         val pathSegments = intent?.data?.pathSegments
         if (pathSegments != null && pathSegments.size > 1) {
             val isChapter = (pathSegments[0] == "chapter")
-            val titleid = pathSegments[1]
+            val id = pathSegments[1]
             val query = if (isChapter) { 
-                "cid:$titleid"
+                "cid:$id"
             } else { 
-                "id:$titleid"
+                "id:$id"
             }
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
                 putExtra("query", query)
-                //putExtra("query", "id:$titleid")
                 putExtra("filter", packageName)
             }
 
