@@ -5,12 +5,12 @@ ext {
     appName = 'Tachiyomi: NHentai'
     pkgNameSuffix = 'all.nhentai'
     extClass = '.NHEnglish; .NHJapanese; .NHChinese'
-    extVersionCode = 11
+    extVersionCode = 12
     libVersion = '1.2'
 }
 
 dependencies {
-    implementation project(':lib-urlhandler')
+    implementation project(':extension-lib')
 }
 
 apply from: "$rootDir/common.gradle"
