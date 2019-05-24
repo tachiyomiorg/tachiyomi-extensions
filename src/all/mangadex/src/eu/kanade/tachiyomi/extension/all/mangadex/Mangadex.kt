@@ -179,8 +179,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                     .flatMap { response ->
                         val jsonData = response.body()!!.string()
                         val json = JsonParser().parse(jsonData).asJsonObject
-                        val mangaId = json["manga_id"] as String
-                        client.newCall(searchMangaByIdRequest(mangaId))
+                        val mangaId = json["manga_id"] as Int
+                        client.newCall(searchMangaByIdRequest(mangaId.toString(10)))
                             .asObservableSuccess()
                             .map { response -> 
                                 val details = mangaDetailsParse(response)
