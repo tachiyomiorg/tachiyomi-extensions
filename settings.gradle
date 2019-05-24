@@ -8,6 +8,8 @@ new File(rootDir, "src").eachDir { dir ->
 include ':duktape-stub'
 include ':preference-stub'
 include ':lib-ratelimit'
+include ':lib-urlhandler'
 project(':duktape-stub').projectDir = new File("lib/duktape-stub")
 project(':preference-stub').projectDir = new File("lib/preference-stub")
 project(':lib-ratelimit').projectDir = new File("lib/ratelimit")
+project(':lib-urlhandler').projectDir = new File("lib/urlhandler")

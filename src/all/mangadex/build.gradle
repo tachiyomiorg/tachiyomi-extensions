@@ -5,12 +5,13 @@ ext {
     appName = 'Tachiyomi: MangaDex'
     pkgNameSuffix = 'all.mangadex'
     extClass = '.MangadexFactory'
-    extVersionCode = 57
+    extVersionCode = 58
     libVersion = '1.2'
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
+    implementation project(':lib-urlhandler')
     compileOnly project(':preference-stub')
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
