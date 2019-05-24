@@ -5,9 +5,12 @@ new File(rootDir, "src").eachDir { dir ->
         project(name).projectDir = new File("src/${dir.name}/${subdir.name}")
     }
 }
+
+include ':extension-lib'
+project(':extension-lib').projectDir = new File("lib/extension-lib")
+
 include ':duktape-stub'
-include ':preference-stub'
-include ':lib-ratelimit'
 project(':duktape-stub').projectDir = new File("lib/duktape-stub")
+
+include ':preference-stub'
 project(':preference-stub').projectDir = new File("lib/preference-stub")
-project(':lib-ratelimit').projectDir = new File("lib/ratelimit")

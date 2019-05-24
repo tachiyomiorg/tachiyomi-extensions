@@ -5,8 +5,12 @@ ext {
     appName = 'Tachiyomi: Readmanga'
     pkgNameSuffix = 'ru.readmanga'
     extClass = '.Readmanga'
-    extVersionCode = 9
+    extVersionCode = 11
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':extension-lib')
 }
 
 apply from: "$rootDir/common.gradle"
