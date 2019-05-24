@@ -705,8 +705,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
 
-        private const val PREFIX_ID_SEARCH = "id:"
-        private const val PREFIX_CID_SEARCH = "cid:"
+        const val PREFIX_ID_SEARCH = "id:"
+        const val PREFIX_CID_SEARCH = "cid:"
 
         private val sortables = listOf(
                 Triple("Update date", 0, 1),

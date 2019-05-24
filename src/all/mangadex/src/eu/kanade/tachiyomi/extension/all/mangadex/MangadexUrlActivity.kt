@@ -1,10 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-import android.app.Activity
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.os.Bundle
-import android.util.Log
+import eu.kanade.tachiyomi.lib.urlhandler.UrlHandlerActivity
 
 /**
  * Springboard that accepts https://mangadex.com/{title,manga}/xxx intents and redirects
@@ -15,34 +11,16 @@ import android.util.Log
  * Main goal was to make it easier to open manga in Tachiyomi in spite of the DDoS blocking
  * the usual search screen from working.
  */
-class MangadexUrlActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val pathSegments = intent?.data?.pathSegments
-        if (pathSegments != null && pathSegments.size > 1) {
-            val isChapter = (pathSegments[0] == "chapter")
-            val id = pathSegments[1]
-            val query = if (isChapter) { 
-                "cid:$id"
-            } else { 
-                "id:$id"
-            }
-            val mainIntent = Intent().apply {
-                action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", query)
-                putExtra("filter", packageName)
-            }
+class MangadexUrlActivity : UrlHandlerActivity() {
 
-            try {
-                startActivity(mainIntent)
-            } catch (e: ActivityNotFoundException) {
-                Log.e("MangadexUrlActivity", e.toString())
-            }
+    override fun getQueryFromPathSegments(pathSegments: List<String>): String {
+        val isChapter = (pathSegments[0] == "chapter")
+        val id = pathSegments[1]
+        return if (isChapter) { 
+            "${Mangadex.PREFIX_CID_SEARCH}$id" 
         } else {
-            Log.e("MangadexUrlActivity", "could not parse uri from intent $intent")
+            "${Mangadex.PREFIX_ID_SEARCH}$id"
         }
-
-        finish()
-        System.exit(0)
     }
+
 }
