@@ -172,22 +172,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                         details.url = "/manga/$realQuery/"
                         MangasPage(listOf(details), false)
                     }
-        } else if (query.startsWith(PREFIX_CID_SEARCH)) {
-            val realQuery = query.removePrefix(PREFIX_CID_SEARCH)
-            client.newCall(searchMangaByCidRequest(realQuery))
-                    .asObservableSuccess()
-                    .flatMap { resp ->
-                        val jsonData = resp.body()!!.string()
-                        val json = JsonParser().parse(jsonData).asJsonObject
-                        val mangaId = json.get("manga_id").int
-                        client.newCall(searchMangaByIdRequest(mangaId.toString(10)))
-                            .asObservableSuccess()
-                            .map { response -> 
-                                val details = mangaDetailsParse(response)
-                                details.url = "/manga/$mangaId"
-                                MangasPage(listOf(details), false)
-                            }
-                    }
         } else {
             getSearchClient(filters).newCall(searchMangaRequest(page, query, filters))
                     .asObservableSuccess()
@@ -337,9 +321,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun searchMangaByIdRequest(id: String): Request {
         return GET(baseUrl + API_MANGA + id, headers)
-    }
-    private fun searchMangaByCidRequest(cid: String): Request {
-        return GET(baseUrl + API_CHAPTER + cid, headers)
     }
 
     private fun getMangaId(url: String): String {
@@ -706,7 +687,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val API_CHAPTER = "/api/chapter/"
 
         const val PREFIX_ID_SEARCH = "id:"
-        const val PREFIX_CID_SEARCH = "cid:"
 
         private val sortables = listOf(
                 Triple("Update date", 0, 1),

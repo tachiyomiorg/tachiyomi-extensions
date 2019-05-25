@@ -14,13 +14,8 @@ import eu.kanade.tachiyomi.lib.urlhandler.UrlHandlerActivity
 class MangadexUrlActivity : UrlHandlerActivity() {
 
     override fun getQueryFromPathSegments(pathSegments: List<String>): String {
-        val isChapter = (pathSegments[0] == "chapter")
         val id = pathSegments[1]
-        return if (isChapter) { 
-            "${Mangadex.PREFIX_CID_SEARCH}$id" 
-        } else {
-            "${Mangadex.PREFIX_ID_SEARCH}$id"
-        }
+        return "${Mangadex.PREFIX_ID_SEARCH}$id"
     }
 
 }
