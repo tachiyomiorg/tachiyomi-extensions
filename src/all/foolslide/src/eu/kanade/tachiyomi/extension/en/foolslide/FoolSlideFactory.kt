@@ -99,7 +99,7 @@ class PinkFatale : FoolSlide("PinkFatale", "http://manga.pinkfatale.net", "en")
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.maos.ca", "en")
 
 // Has other languages too but it is difficult to differentiate between them
-class HatigarmScans : FoolSlide("Hatigarm Scans", "http://hatigarmscans.eu", "en", "/hs") {
+class HatigarmScans : FoolSlide("Hatigarm Scans", "http://hatigarmscans.net", "en", "/hs") {
     override fun chapterListSelector() = "div.list-group div.list-group-item:not(.active)"
 
     override val chapterDateSelector = "div.label"

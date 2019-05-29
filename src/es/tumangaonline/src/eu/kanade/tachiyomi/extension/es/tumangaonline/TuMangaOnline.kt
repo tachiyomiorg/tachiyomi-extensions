@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.tumangaonline
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
@@ -21,7 +22,10 @@ class TuMangaOnline : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+            .addNetworkInterceptor(rateLimitInterceptor)
             .connectTimeout(1, TimeUnit.MINUTES)
             .readTimeout(1, TimeUnit.MINUTES)
             .retryOnConnectionFailure(true)
