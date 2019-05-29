@@ -11,7 +11,18 @@ import eu.kanade.tachiyomi.lib.urlhandler.UrlHandlerActivity
  * Main goal was to make it easier to open manga in Tachiyomi in spite of the DDoS blocking
  * the usual search screen from working.
  */
-class MangadexUrlActivity : UrlHandlerActivity() {
+class MangadexUrlActivity : Activity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val pathSegments = intent?.data?.pathSegments
+        if (pathSegments != null && pathSegments.size > 1) {
+            val titleid = pathSegments[1]
+            val mainIntent = Intent().apply {
+                action = "eu.kanade.tachiyomi.SEARCH"
+                putExtra("query", "${Mangadex.PREFIX_ID_SEARCH}$titleid")
+                putExtra("filter", packageName)
+            }
 
     override fun getQueryFromPathSegments(pathSegments: List<String>): String {
         val isChapter = (pathSegments[0] == "chapter")
