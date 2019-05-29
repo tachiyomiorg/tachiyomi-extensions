@@ -1,17 +1,17 @@
 package eu.kanade.tachiyomi.extension.en.mangaplus
 
+import android.util.Log
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.*
 import rx.Observable
 import java.lang.Exception
-import java.util.UUID.randomUUID
+import java.util.UUID
 
 class MangaPlus : HttpSource() {
     override val name = "Manga Plus by Shueisha"
@@ -22,33 +22,37 @@ class MangaPlus : HttpSource() {
 
     override val supportsLatest = true
 
-    private val catalogHeaders = Headers.Builder().apply {
-        add("Origin", WEB_URL)
-        add("Referer", WEB_URL)
-        add("User-Agent", USER_AGENT)
-        add("SESSION-TOKEN", randomUUID().toString())
-    }.build()
+    private val catalogHeaders = Headers.Builder()
+            .apply {
+                add("Origin", WEB_URL)
+                add("Referer", WEB_URL)
+                add("User-Agent", USER_AGENT)
+                add("SESSION-TOKEN", UUID.randomUUID().toString())
+            }
+            .build()
 
-    override val client = network.client.newBuilder().addInterceptor {
-        var request = it.request()
+    override val client = network.client.newBuilder()
+            .addInterceptor {
+                var request = it.request()
 
-        if (!request.url().queryParameterNames().contains("encryptionKey")) {
-            return@addInterceptor it.proceed(request)
-        }
+                if (!request.url().queryParameterNames().contains("encryptionKey")) {
+                    return@addInterceptor it.proceed(request)
+                }
 
-        val encryptionKey = request.url().queryParameter("encryptionKey")!!
+                val encryptionKey = request.url().queryParameter("encryptionKey")!!
 
-        // Change the url and remove the encryptionKey to avoid detection.
-        val newUrl = request.url().newBuilder().removeAllQueryParameters("encryptionKey").build()
-        request = request.newBuilder().url(newUrl).build()
+                // Change the url and remove the encryptionKey to avoid detection.
+                val newUrl = request.url().newBuilder().removeAllQueryParameters("encryptionKey").build()
+                request = request.newBuilder().url(newUrl).build()
 
-        val response = it.proceed(request)
+                val response = it.proceed(request)
 
-        val image = decodeImage(encryptionKey, response.body()!!.bytes())
+                val image = decodeImage(encryptionKey, response.body()!!.bytes())
 
-        val body = ResponseBody.create(MediaType.parse("image/jpeg"), image)
-        response.newBuilder().body(body).build()
-    }.build()
+                val body = ResponseBody.create(MediaType.parse("image/jpeg"), image)
+                response.newBuilder().body(body).build()
+            }
+            .build()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/title_list/ranking", catalogHeaders)
@@ -60,13 +64,15 @@ class MangaPlus : HttpSource() {
         if (result["success"] == null)
             return MangasPage(emptyList(), false)
 
-        val mangas = result["success"]["titleRankingView"]["titles"].array.map {
-            SManga.create().apply {
-                title = it["name"].string
-                thumbnail_url = it["portraitImageUrl"].string
-                url = "#/titles/${it["titleId"].int}"
-            }
-        }
+        val mangas = result["success"]["titleRankingView"]["titles"].array
+                .filter { if (it.obj.has("language")) it["language"].int < 1 else true }
+                .map {
+                    SManga.create().apply {
+                        title = it["name"].string
+                        thumbnail_url = it["portraitImageUrl"].string
+                        url = "#/titles/${it["titleId"].int}"
+                    }
+                }
 
         return MangasPage(mangas, false)
     }
@@ -84,21 +90,21 @@ class MangaPlus : HttpSource() {
         val mangas = result["success"]["webHomeView"]["groups"].array
                 .flatMap { it["titles"].array }
                 .mapNotNull { it["title"].obj }
+                .filter { if (it.obj.has("language")) it["language"].int < 1 else true }
                 .map {
                     SManga.create().apply {
                         title = it["name"].string
-                        thumbnail_url = it["portraitImageUrl"].string
+                        thumbnail_url = removeDuration(it["portraitImageUrl"].string)
                         url = "#/titles/${it["titleId"].int}"
                     }
                 }
+                .distinctBy { it.title }
 
         return MangasPage(mangas, false)
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { searchMangaParse(it) }
+        return super.fetchSearchManga(page, query, filters)
                 .map { MangasPage(it.mangas.filter { m -> m.title.contains(query, true) }, it.hasNextPage) }
     }
 
@@ -112,13 +118,15 @@ class MangaPlus : HttpSource() {
         if (result["success"] == null)
             return MangasPage(emptyList(), false)
 
-        val mangas = result["success"]["allTitlesView"]["titles"].array.map {
-            SManga.create().apply {
-                title = it["name"].string
-                thumbnail_url = it["portraitImageUrl"].string
-                url = "#/titles/${it["titleId"].int}"
-            }
-        }
+        val mangas = result["success"]["allTitlesView"]["titles"].array
+                .filter { if (it.obj.has("language")) it["language"].int < 1 else true }
+                .map {
+                    SManga.create().apply {
+                        title = it["name"].string
+                        thumbnail_url = removeDuration(it["portraitImageUrl"].string)
+                        url = "#/titles/${it["titleId"].int}"
+                    }
+                }
 
         return MangasPage(mangas, false)
     }
@@ -134,7 +142,7 @@ class MangaPlus : HttpSource() {
         val result = response.asProto()
 
         if (result["success"] == null)
-            throw Exception("Some error happened when trying to obtain the title details.")
+            throw Exception(result["error"]["englishPopup"]["body"].string)
 
         val details = result["success"]["titleDetailView"].obj
         val title = details["title"].obj
@@ -144,6 +152,7 @@ class MangaPlus : HttpSource() {
             artist = title["author"].string
             description = details["overview"].string + "\n\n" + details["viewingPeriodDescription"].string
             status = SManga.ONGOING
+            thumbnail_url = removeDuration(title["portraitImageUrl"].string)
         }
     }
 
@@ -153,7 +162,7 @@ class MangaPlus : HttpSource() {
         val result = response.asProto()
 
         if (result["success"] == null)
-            return emptyList()
+            throw Exception(result["error"]["englishPopup"]["body"].string)
 
         val titleDetailView = result["success"]["titleDetailView"].obj
 
@@ -183,7 +192,7 @@ class MangaPlus : HttpSource() {
         val result = response.asProto()
 
         if (result["success"] == null)
-            return emptyList()
+            throw Exception(result["error"]["englishPopup"]["body"].string)
 
         return result["success"]["mangaViewer"]["pages"].array
                 .mapNotNull { it["page"].obj }
@@ -203,10 +212,13 @@ class MangaPlus : HttpSource() {
         val newHeaders = Headers.Builder().apply {
             add("Referer", WEB_URL)
             add("User-Agent", USER_AGENT)
-        }.build()
+        }
 
-        return GET(page.imageUrl!!, newHeaders)
+        return GET(page.imageUrl!!, newHeaders.build())
     }
+
+    // Maybe removing the duration parameter make the image accessible forever.
+    private fun removeDuration(url: String): String = url.substringBefore("&duration")
 
     private fun decodeImage(encryptionKey: String, image: ByteArray): ByteArray {
         val variablesSrc = """
@@ -293,6 +305,7 @@ class MangaPlus : HttpSource() {
             var Root = protobuf.Root;
             var Type = protobuf.Type;
             var Field = protobuf.Field;
+            var Enum = protobuf.Enum;
 
             var Response = new Type("Response")
                   .add(new Field("success", 1, "SuccessResult"))
@@ -302,6 +315,10 @@ class MangaPlus : HttpSource() {
                   .add(new Field("action", 1, "int32"))
                   .add(new Field("englishPopup", 2, "Popup"))
                   .add(new Field("spanishPopup", 3, "Popup"));
+
+            var Popup = new Type("Popup")
+                  .add(new Field("subject", 1, "string"))
+                  .add(new Field("body", 2, "string"));
 
             var SuccessResult = new Type("SuccessResult")
                   .add(new Field("allTitlesView", 5, "AllTitlesView"))
@@ -325,6 +342,7 @@ class MangaPlus : HttpSource() {
                   .add(new Field("viewingPeriodDescription", 7, "string"))
                   .add(new Field("firstChapterList", 9, "Chapter", "repeated"))
                   .add(new Field("lastChapterList", 10, "Chapter", "repeated"))
+                  .add(new Field("isSimulReleased", 14, "bool"))
                   .add(new Field("chaptersDescending", 17, "bool"));
 
             var MangaViewer = new Type("MangaViewer")
@@ -335,7 +353,11 @@ class MangaPlus : HttpSource() {
                   .add(new Field("name", 2, "string"))
                   .add(new Field("author", 3, "string"))
                   .add(new Field("portraitImageUrl", 4, "string"))
-                  .add(new Field("language", 7, "int32"));
+                  .add(new Field("landscapeImageUrl", 5, "string"))
+                  .add(new Field("viewCount", 6, "uint32"))
+                  .add(new Field("language", 7, "Language"));
+
+            var Language = new Enum("Language", {"english": 0, "spanish": 1});
 
             var UpdatedTitleGroup = new Type("UpdatedTitleGroup")
                   .add(new Field("groupName", 1, "string"))
@@ -368,6 +390,7 @@ class MangaPlus : HttpSource() {
                   .define("mangaplus")
                   .add(Response)
                   .add(ErrorResult)
+                  .add(Popup)
                   .add(SuccessResult)
                   .add(TitleRankingView)
                   .add(AllTitlesView)
@@ -375,6 +398,7 @@ class MangaPlus : HttpSource() {
                   .add(TitleDetailView)
                   .add(MangaViewer)
                   .add(Title)
+                  .add(Language)
                   .add(UpdatedTitleGroup)
                   .add(UpdatedTitle)
                   .add(Chapter)
