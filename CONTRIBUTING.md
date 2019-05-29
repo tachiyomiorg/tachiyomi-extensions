@@ -95,7 +95,29 @@ dependencies {
 
 ### Useful knowledge
 
-An extension should at least extend the [`ParsedHttpSource`](https://github.com/inorichi/tachiyomi-extensions-lib/blob/master/library/src/main/java/eu/kanade/tachiyomi/source/online/ParsedHttpSource.kt) class.
+- An extension should at least extend the [`ParsedHttpSource`](https://github.com/inorichi/tachiyomi-extensions-   lib/blob/master/library/src/main/java/eu/kanade/tachiyomi/source/online/ParsedHttpSource.kt) class.
+- Do not override id!!  it will auto generate based on the name of the extension and the language
+- set the thumbnail cover when possible.  when parsing the list of manga during latest, search, browse.  if not the site will get a new request for every manga that doesnt have a cover shown.  even if the user doesnt click into the manga.
+
+
+
+#### Flow of the extensions
+The structure for an extension is very strict.  In the future 1.x release this will be less strict but until then this has caused some issues when some sites don't quite fit the model.  There are required overrides but you can override the calling methods if you need more general control. This will go from highest level method to lowest level for browse/popular, it is the same but different method names for search and latest.
+##### Browse (Aka Popular Manga)
+fetchPopularManga (Optional to override)
+    - This method takes the results from a manga listing page and parses it.
+    - popularMangaRequest (Must be overridden)
+       - The GET/POST for the HTML Page of the manga listings  
+    - popularMangaParse (Optional to override)
+       - parses the manga listing page returns boolean if has another page, and the manga objects as MangasPage
+       - popularMangaSelector (must be overridden) - jsoup css selector to select the list of the manga
+       - popularMangaFromElement (must be overriden) - jsoup selectors to parse the individual manga html on the page (most sites this is just link, title, cover url)
+       - popularMangaNextPageSelector (must be overridden) - jsoup css selector to see if there is a another page after current            one
+       
+ This will provide the initial viewing once a user clicks into a manga you will need to override mangaDetailsParse and this is where you need to parse the actual manga site's manga page and parse the standard info (title, author, description etc etc)
+ 
+ ###### Note: 
+ Must be overriden are required to be overridden even if you override the parent method and its not being called anymore.  (for example i override popularMangaParse and dont need popularMangaNextPage selector  I would just override in the extension and throw a not used exception)
 
 
 ## Running
