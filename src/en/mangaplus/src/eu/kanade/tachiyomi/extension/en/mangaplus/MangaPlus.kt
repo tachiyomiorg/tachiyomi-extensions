@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.*
@@ -135,7 +136,17 @@ class MangaPlus : HttpSource() {
         return GET("$baseUrl/title_detail?title_id=$mangaId", catalogHeaders)
     }
 
-    override fun mangaDetailsRequest(manga: SManga): Request = titleDetailsRequest(manga)
+    // Workaround to allow "Open in browser" use the real URL.
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(titleDetailsRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    mangaDetailsParse(response).apply { initialized = true }
+                }
+    }
+
+    // Always returns the real URL for the "Open in browser".
+    override fun mangaDetailsRequest(manga: SManga): Request = GET(WEB_URL + manga.url, catalogHeaders)
 
     override fun mangaDetailsParse(response: Response): SManga {
         val result = response.asProto()
