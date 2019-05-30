@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.*
@@ -24,13 +25,10 @@ class Hipercool : HttpSource() {
 
     override val supportsLatest = true
 
-    private val catalogHeaders = Headers.Builder()
-            .apply {
-                add("User-Agent", USER_AGENT)
-                add("Referer", baseUrl)
-                add("X-Requested-With", "XMLHttpRequest")
-            }
-            .build()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+            .add("User-Agent", USER_AGENT)
+            .add("Referer", baseUrl)
+            .add("X-Requested-With", "XMLHttpRequest")
 
     private fun generalListMangaParse(obj: JsonObject): SManga {
         val book = obj["_book"].obj
@@ -50,7 +48,7 @@ class Hipercool : HttpSource() {
     override fun popularMangaParse(response: Response): MangasPage = latestUpdatesParse(response)
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/books/chapters?start=${(page - 1) * 40}&count=40", catalogHeaders)
+        return GET("$baseUrl/api/books/chapters?start=${(page - 1) * 40}&count=40", headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -81,7 +79,7 @@ class Hipercool : HttpSource() {
 
         val body = RequestBody.create(mediaType, json.toString())
 
-        return POST("$baseUrl/api/books/chapters/search", catalogHeaders, body)
+        return POST("$baseUrl/api/books/chapters/search", headers, body)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -99,10 +97,19 @@ class Hipercool : HttpSource() {
 
     private fun searchMangaItemParse(obj: JsonObject): SManga = generalListMangaParse(obj)
 
-    override fun mangaDetailsRequest(manga: SManga): Request {
+    // Workaround to allow "Open in browser" use the real URL.
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(mangaDetailsApiRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    mangaDetailsParse(response).apply { initialized = true }
+                }
+    }
+
+    private fun mangaDetailsApiRequest(manga: SManga): Request {
         val slug = manga.url.substringAfterLast("/")
 
-        return GET("$baseUrl/api/books/$slug", catalogHeaders)
+        return GET("$baseUrl/api/books/$slug", headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -134,7 +141,7 @@ class Hipercool : HttpSource() {
     }
 
     // Chapters are available in the same url of the manga details.
-    override fun chapterListRequest(manga: SManga): Request = mangaDetailsRequest(manga)
+    override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val result = response.asJsonObject()
