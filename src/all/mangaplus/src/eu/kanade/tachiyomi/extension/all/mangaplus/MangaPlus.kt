@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.mangaplus
+package eu.kanade.tachiyomi.extension.all.mangaplus
 
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonObject
@@ -13,25 +13,23 @@ import rx.Observable
 import java.lang.Exception
 import java.util.UUID
 
-class MangaPlus : HttpSource() {
+abstract class MangaPlus(override val lang: String,
+                         private val internalLang: String,
+                         private val langCode: Int) : HttpSource() {
+
     override val name = "Manga Plus by Shueisha"
 
     override val baseUrl = "https://jumpg-webapi.tokyo-cdn.com/api"
 
-    override val lang = "en"
-
     override val supportsLatest = true
 
-    private val catalogHeaders = Headers.Builder()
-            .apply {
-                add("Origin", WEB_URL)
-                add("Referer", WEB_URL)
-                add("User-Agent", USER_AGENT)
-                add("SESSION-TOKEN", UUID.randomUUID().toString())
-            }
-            .build()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+            .add("Origin", WEB_URL)
+            .add("Referer", WEB_URL)
+            .add("User-Agent", USER_AGENT)
+            .add("SESSION-TOKEN", UUID.randomUUID().toString())
 
-    override val client = network.client.newBuilder()
+    override val client: OkHttpClient = network.client.newBuilder()
             .addInterceptor {
                 var request = it.request()
 
@@ -55,7 +53,7 @@ class MangaPlus : HttpSource() {
             .build()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/title_list/ranking", catalogHeaders)
+        return GET("$baseUrl/title_list/ranking", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -65,11 +63,11 @@ class MangaPlus : HttpSource() {
             return MangasPage(emptyList(), false)
 
         val mangas = result["success"]["titleRankingView"]["titles"].array
-                .filter { if (it.obj.has("language")) it["language"].int < 1 else true }
+                .filter { it["language"].int == langCode }
                 .map {
                     SManga.create().apply {
                         title = it["name"].string
-                        thumbnail_url = it["portraitImageUrl"].string
+                        thumbnail_url = removeDuration(it["portraitImageUrl"].string)
                         url = "#/titles/${it["titleId"].int}"
                     }
                 }
@@ -78,7 +76,7 @@ class MangaPlus : HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/web/web_home?lang=eng", catalogHeaders)
+        return GET("$baseUrl/web/web_home?lang=$internalLang", headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -90,7 +88,7 @@ class MangaPlus : HttpSource() {
         val mangas = result["success"]["webHomeView"]["groups"].array
                 .flatMap { it["titles"].array }
                 .mapNotNull { it["title"].obj }
-                .filter { if (it.obj.has("language")) it["language"].int < 1 else true }
+                .filter { it["language"].int == langCode }
                 .map {
                     SManga.create().apply {
                         title = it["name"].string
@@ -109,7 +107,7 @@ class MangaPlus : HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/title_list/all", catalogHeaders)
+        return GET("$baseUrl/title_list/all", headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -119,7 +117,7 @@ class MangaPlus : HttpSource() {
             return MangasPage(emptyList(), false)
 
         val mangas = result["success"]["allTitlesView"]["titles"].array
-                .filter { if (it.obj.has("language")) it["language"].int < 1 else true }
+                .filter { it["language"].int == langCode }
                 .map {
                     SManga.create().apply {
                         title = it["name"].string
@@ -133,7 +131,7 @@ class MangaPlus : HttpSource() {
 
     private fun titleDetailsRequest(manga: SManga): Request {
         val mangaId = manga.url.substringAfterLast("/")
-        return GET("$baseUrl/title_detail?title_id=$mangaId", catalogHeaders)
+        return GET("$baseUrl/title_detail?title_id=$mangaId", headers)
     }
 
     // Workaround to allow "Open in browser" use the real URL.
@@ -146,13 +144,13 @@ class MangaPlus : HttpSource() {
     }
 
     // Always returns the real URL for the "Open in browser".
-    override fun mangaDetailsRequest(manga: SManga): Request = GET(WEB_URL + manga.url, catalogHeaders)
+    override fun mangaDetailsRequest(manga: SManga): Request = GET(WEB_URL + manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
         val result = response.asProto()
 
         if (result["success"] == null)
-            throw Exception(result["error"]["englishPopup"]["body"].string)
+            throw Exception(result["error"][mapLangToErrorProperty()]["body"].string)
 
         val details = result["success"]["titleDetailView"].obj
         val title = details["title"].obj
@@ -172,7 +170,7 @@ class MangaPlus : HttpSource() {
         val result = response.asProto()
 
         if (result["success"] == null)
-            throw Exception(result["error"]["englishPopup"]["body"].string)
+            throw Exception(result["error"][mapLangToErrorProperty()]["body"].string)
 
         val titleDetailView = result["success"]["titleDetailView"].obj
 
@@ -195,17 +193,17 @@ class MangaPlus : HttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val chapterId = chapter.url.substringAfterLast("/")
-        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", catalogHeaders)
+        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
         val result = response.asProto()
 
         if (result["success"] == null)
-            throw Exception(result["error"]["englishPopup"]["body"].string)
+            throw Exception(result["error"][mapLangToErrorProperty()]["body"].string)
 
         return result["success"]["mangaViewer"]["pages"].array
-                .mapNotNull { it["page"].obj }
+                .mapNotNull { it.obj["page"].nullObj }
                 .mapIndexed { i, page ->
                     val encryptionKey = if (page["encryptionKey"] == null) "" else "&encryptionKey=${page["encryptionKey"].string}"
                     Page(i, "", "${page["imageUrl"].string}$encryptionKey")
@@ -219,12 +217,17 @@ class MangaPlus : HttpSource() {
     override fun imageUrlParse(response: Response): String = ""
 
     override fun imageRequest(page: Page): Request {
-        val newHeaders = Headers.Builder().apply {
-            add("Referer", WEB_URL)
-            add("User-Agent", USER_AGENT)
-        }
+        val newHeaders = Headers.Builder()
+                .add("Referer", WEB_URL)
+                .add("User-Agent", USER_AGENT)
+                .build()
 
-        return GET(page.imageUrl!!, newHeaders.build())
+        return GET(page.imageUrl!!, newHeaders)
+    }
+
+    private fun mapLangToErrorProperty(): String = when (lang) {
+        "es" -> "spanishPopup"
+        else -> "englishPopup"
     }
 
     // Maybe removing the duration parameter make the image accessible forever.
@@ -316,26 +319,40 @@ class MangaPlus : HttpSource() {
             var Type = protobuf.Type;
             var Field = protobuf.Field;
             var Enum = protobuf.Enum;
+            var OneOf = protobuf.OneOf;
 
             var Response = new Type("Response")
-                  .add(new Field("success", 1, "SuccessResult"))
-                  .add(new Field("error", 2, "ErrorResult"));
+                  .add(
+                      new OneOf("data")
+                            .add(new Field("success", 1, "SuccessResult"))
+                            .add(new Field("error", 2, "ErrorResult"))
+                  );
 
             var ErrorResult = new Type("ErrorResult")
-                  .add(new Field("action", 1, "int32"))
+                  .add(new Field("action", 1, "Action"))
                   .add(new Field("englishPopup", 2, "Popup"))
                   .add(new Field("spanishPopup", 3, "Popup"));
+
+            var Action = new Enum("Action")
+                  .add("DEFAULT", 0)
+                  .add("UNAUTHORIZED", 1)
+                  .add("MAINTAINENCE", 2)
+                  .add("GEOIP_BLOCKING", 3);
 
             var Popup = new Type("Popup")
                   .add(new Field("subject", 1, "string"))
                   .add(new Field("body", 2, "string"));
 
             var SuccessResult = new Type("SuccessResult")
-                  .add(new Field("allTitlesView", 5, "AllTitlesView"))
-                  .add(new Field("titleRankingView", 6, "TitleRankingView"))
-                  .add(new Field("titleDetailView", 8, "TitleDetailView"))
-                  .add(new Field("mangaViewer", 10, "MangaViewer"))
-                  .add(new Field("webHomeView", 11, "WebHomeView"));
+                  .add(new Field("isFeaturedUpdated", 1, "bool"))
+                  .add(
+                      new OneOf("data")
+                            .add(new Field("allTitlesView", 5, "AllTitlesView"))
+                            .add(new Field("titleRankingView", 6, "TitleRankingView"))
+                            .add(new Field("titleDetailView", 8, "TitleDetailView"))
+                            .add(new Field("mangaViewer", 10, "MangaViewer"))
+                            .add(new Field("webHomeView", 11, "WebHomeView"))
+                  );
 
             var TitleRankingView = new Type("TitleRankingView")
                   .add(new Field("titles", 1, "Title", "repeated"));
@@ -348,12 +365,27 @@ class MangaPlus : HttpSource() {
 
             var TitleDetailView = new Type("TitleDetailView")
                   .add(new Field("title", 1, "Title"))
+                  .add(new Field("titleImageUrl", 2, "string"))
                   .add(new Field("overview", 3, "string"))
+                  .add(new Field("backgroundImageUrl", 4, "string"))
+                  .add(new Field("nextTimeStamp", 5, "uint32"))
+                  .add(new Field("updateTiming", 6, "UpdateTiming"))
                   .add(new Field("viewingPeriodDescription", 7, "string"))
                   .add(new Field("firstChapterList", 9, "Chapter", "repeated"))
                   .add(new Field("lastChapterList", 10, "Chapter", "repeated"))
                   .add(new Field("isSimulReleased", 14, "bool"))
                   .add(new Field("chaptersDescending", 17, "bool"));
+
+            var UpdateTiming = new Enum("UpdateTiming")
+                  .add("NOT_REGULARLY", 0)
+                  .add("MONDAY", 1)
+                  .add("TUESDAY", 2)
+                  .add("WEDNESDAY", 3)
+                  .add("THURSDAY", 4)
+                  .add("FRIDAY", 5)
+                  .add("SATURDAY", 6)
+                  .add("SUNDAY", 7)
+                  .add("DAY", 8);
 
             var MangaViewer = new Type("MangaViewer")
                   .add(new Field("pages", 1, "Page", "repeated"));
@@ -365,9 +397,11 @@ class MangaPlus : HttpSource() {
                   .add(new Field("portraitImageUrl", 4, "string"))
                   .add(new Field("landscapeImageUrl", 5, "string"))
                   .add(new Field("viewCount", 6, "uint32"))
-                  .add(new Field("language", 7, "Language"));
+                  .add(new Field("language", 7, "Language", {"default": 0}));
 
-            var Language = new Enum("Language", {"english": 0, "spanish": 1});
+            var Language = new Enum("Language")
+                  .add("ENGLISH", 0)
+                  .add("SPANISH", 1);
 
             var UpdatedTitleGroup = new Type("UpdatedTitleGroup")
                   .add(new Field("groupName", 1, "string"))
@@ -400,12 +434,14 @@ class MangaPlus : HttpSource() {
                   .define("mangaplus")
                   .add(Response)
                   .add(ErrorResult)
+                  .add(Action)
                   .add(Popup)
                   .add(SuccessResult)
                   .add(TitleRankingView)
                   .add(AllTitlesView)
                   .add(WebHomeView)
                   .add(TitleDetailView)
+                  .add(UpdateTiming)
                   .add(MangaViewer)
                   .add(Title)
                   .add(Language)
@@ -418,7 +454,7 @@ class MangaPlus : HttpSource() {
             function decode(arr) {
                 var Response = root.lookupType("Response");
                 var message = Response.decode(arr);
-                return Response.toObject(message);
+                return Response.toObject(message, {defaults: true});
             }
 
             (function () {

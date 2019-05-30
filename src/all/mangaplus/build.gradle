@@ -3,9 +3,9 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Manga Plus by Shueisha'
-    pkgNameSuffix = 'en.mangaplus'
-    extClass = '.MangaPlus'
-    extVersionCode = 3
+    pkgNameSuffix = 'all.mangaplus'
+    extClass = '.MangaPlusFactory'
+    extVersionCode = 4
     libVersion = '1.2'
 }
 
