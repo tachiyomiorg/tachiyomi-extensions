@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Manga Plus by Shueisha'
+    appName = 'Tachiyomi: MANGA Plus by Shueisha'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 4
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
