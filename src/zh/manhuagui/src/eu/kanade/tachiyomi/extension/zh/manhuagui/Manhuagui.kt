@@ -60,9 +60,9 @@ class Manhuagui : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        element.select("book-cover > a.cover > img").first().attr("src")
+        element.select("div.book-cover > a.bcover > img").first().attr("src")
 
-        element.select("book-detail").first().let {
+        element.select("div.book-detail").first().let {
             manga.url = it.select("dl > dt > a").first().attr("href")
             manga.title = it.select("dl > dt > a").first().attr("title").trim()
         }
