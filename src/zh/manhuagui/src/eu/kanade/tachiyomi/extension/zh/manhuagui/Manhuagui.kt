@@ -103,15 +103,15 @@ class Manhuagui : ParsedHttpSource() {
             //            Log.i("json", imgCode)
             it.evaluate(jsDecodeFunc + imgCode) as String
         }
-//        Log.i("jsonresult", imgArrStr)
+        Log.i("jsonresult", imgDecode)
 
         val re2 = Regex("""\{.*\}""")
-        val imgJsonStr = re2.find(imgDecode)?.groups?.get(1)?.value
+        val imgJsonStr = re2.find(imgDecode)?.groups?.get(0)?.value
         val imageJson: Comic = gson.fromJson(imgJsonStr, Comic::class.java)
 
         return imageJson.files!!.mapIndexed { i, imgStr ->
-            val imgurl = "$imageServer${imageJson.path}$imgStr?cid=${imageJson.cid}&md5=${imageJson.sl?.md5}"
-            Log.i("image", imgStr)
+            val imgurl = "${imageServer[0]}${imageJson.path}$imgStr?cid=${imageJson.cid}&md5=${imageJson.sl?.md5}"
+            Log.i("image", imgurl)
             Page(i, "", imgurl)
         }
     }
