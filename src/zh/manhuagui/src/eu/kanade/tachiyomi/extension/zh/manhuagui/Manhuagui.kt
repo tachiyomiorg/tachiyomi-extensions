@@ -1,138 +1,118 @@
 package eu.kanade.tachiyomi.extension.zh.manhuagui
 
+import android.util.Log
+import com.google.gson.Gson
+import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
-import com.squareup.duktape.Duktape
-import android.util.Base64
 
-// temp patch:
-// https://github.com/inorichi/tachiyomi/pull/2031
-
-import org.jsoup.Jsoup // import for patch
-
-fun asJsoup(response: Response, html: String? = null): Document {
-    return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request().url().toString())
-}
-
-fun bodyWithAutoCharset(response: Response, _charset: String? = null): String {
-    val htmlBytes: ByteArray = response.body()!!.bytes()
-    var c = _charset
-
-    if (c == null) {
-        var regexPat = Regex("""charset=(\w+)""")
-        val match = regexPat.find(String(htmlBytes))
-        c = match?.groups?.get(1)?.value
-    }
-
-    return String(htmlBytes, charset(c ?: "utf8"))
-}
-
-// patch finish
-
-fun ByteArray.toHexString() = joinToString("%") { "%02x".format(it) }
 
 class Manhuagui : ParsedHttpSource() {
 
-    override val name = "扑飞漫画"
-    override val baseUrl = "http://m.pufei.net"
+    override val name = "漫画柜"
+    override val baseUrl = "https://www.manhuagui.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = "http://res.img.pufei.net/"
+    val imageServer = arrayOf("https://i.hamreus.com")
 
-    override fun popularMangaSelector() = "ul#detail li"
+    private val gson = Gson()
 
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/list/view_p$page.html", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/list/update_p$page.html", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = HttpUrl.parse("https://www.manhuagui.com/s/${query}_p$page.html")?.newBuilder()
+        return GET(url.toString(), headers)
+    }
+
+    override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
+    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
+    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
+
+    override fun popularMangaSelector() = "ul#contList > li"
     override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun searchMangaSelector() = "div.book-result > ul > li"
+    override fun chapterListSelector() = "ul > li > a.status0"
+
+    override fun searchMangaNextPageSelector() = "a.prev"
+    override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
     override fun headersBuilder() = super.headersBuilder()
             .add("Referer", baseUrl)
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manhua/paihang.html", headers)
-
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manhua/update.html", headers)
-
-    private fun mangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("h3").text().trim()
-        }
-        return manga
-    }
-
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
-    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
-
-    override fun popularMangaNextPageSelector() = null
-
-    override fun latestUpdatesNextPageSelector() = null
-
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.book-detail")
-
+    private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.description = infoElement.select("div#bookIntro > p").text().trim()
-        manga.thumbnail_url = infoElement.select("div.thumb > img").first()?.attr("src")
-//        manga.author = infoElement.select("dd").first()?.text()
+        element.select("a.bcover").first().let {
+            manga.url = it.attr("href")
+            manga.title = it.attr("title").trim()
+            manga.thumbnail_url = it.select("img").first().attr("src")
+        }
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+    override fun searchMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
 
-    override fun searchMangaSelector() = "ul#detail > li"
+        element.select("book-cover > a.cover > img").first().attr("src")
 
-    private fun encodeGBK(str: String) = "%" + str.toByteArray(charset("gb2312")).toHexString()
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/e/search/?searchget=1&tbname=mh&show=title,player,playadmin,bieming,pinyin,playadmin&tempid=4&keyboard=" + encodeGBK(query))?.newBuilder()
-        return GET(url.toString(), headers)
-    }
-
-    override fun searchMangaParse(response: Response): MangasPage {
-//        val document = response.asJsoup()
-        val document = asJsoup(response)
-        val mangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
+        element.select("book-detail").first().let {
+            manga.url = it.select("dl > dt > a").first().attr("href")
+            manga.title = it.select("dl > dt > a").first().attr("title").trim()
         }
 
-        return MangasPage(mangas, false)
+        return manga
     }
 
-    override fun chapterListSelector() = "div.chapter-list > ul > li"
-
-    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a")
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.text().trim()
+        chapter.url = element.attr("href")
+        chapter.name = element.attr("title").trim()
         return chapter
     }
 
-    override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
+    override fun mangaDetailsParse(document: Document): SManga {
+        val infoElement = document.select("div.data")
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
+        val manga = SManga.create()
+        manga.description = document.select("div#intro-all").text().trim()
+//        manga.author = infoElement.select("p.dir").text().substring(3).trim()
+        return manga
+    }
+
+//    override fun chapterListParse(response: Response): List<SChapter> {
+//        return super.chapterListParse(response).asReversed()
+//    }
+
+    private val jsDecodeFunc = """
+        var LZString=(function(){var f=String.fromCharCode;var keyStrBase64="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";var baseReverseDic={};function getBaseValue(alphabet,character){if(!baseReverseDic[alphabet]){baseReverseDic[alphabet]={};for(var i=0;i<alphabet.length;i++){baseReverseDic[alphabet][alphabet.charAt(i)]=i}}return baseReverseDic[alphabet][character]}var LZString={decompressFromBase64:function(input){if(input==null)return"";if(input=="")return null;return LZString._0(input.length,32,function(index){return getBaseValue(keyStrBase64,input.charAt(index))})},_0:function(length,resetValue,getNextValue){var dictionary=[],next,enlargeIn=4,dictSize=4,numBits=3,entry="",result=[],i,w,bits,resb,maxpower,power,c,data={val:getNextValue(0),position:resetValue,index:1};for(i=0;i<3;i+=1){dictionary[i]=i}bits=0;maxpower=Math.pow(2,2);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}switch(next=bits){case 0:bits=0;maxpower=Math.pow(2,8);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}c=f(bits);break;case 1:bits=0;maxpower=Math.pow(2,16);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}c=f(bits);break;case 2:return""}dictionary[3]=c;w=c;result.push(c);while(true){if(data.index>length){return""}bits=0;maxpower=Math.pow(2,numBits);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}switch(c=bits){case 0:bits=0;maxpower=Math.pow(2,8);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;case 1:bits=0;maxpower=Math.pow(2,16);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;case 2:return result.join('')}if(enlargeIn==0){enlargeIn=Math.pow(2,numBits);numBits++}if(dictionary[c]){entry=dictionary[c]}else{if(c===dictSize){entry=w+w.charAt(0)}else{return null}}result.push(entry);dictionary[dictSize++]=w+entry.charAt(0);enlargeIn--;w=entry;if(enlargeIn==0){enlargeIn=Math.pow(2,numBits);numBits++}}}};return LZString})();String.prototype.splic=function(f){return LZString.decompressFromBase64(this).split(f)};
+    """
 
     override fun pageListParse(document: Document): List<Page> {
         val html = document.html()
-        val re = Regex("cp=\"(.*?)\"")
-        val imgbase64 = re.find(html)?.groups?.get(1)?.value
-        val imgCode = String(Base64.decode(imgbase64, Base64.DEFAULT))
-        val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode + """.join('|')""") as String
+        val re = Regex("""window\[".*?"\](\(.*\)\s*\{[\s\S]+\}\s*\(.*\))""")
+        val imgCode = re.find(html)?.groups?.get(1)?.value
+//        val imgCode = """'test'"""
+        val imgDecode = Duktape.create().use {
+            //            Log.i("json", imgCode)
+            it.evaluate(jsDecodeFunc + imgCode) as String
         }
-        return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            Page(i, "", imageServer + imgStr)
+//        Log.i("jsonresult", imgArrStr)
+
+        val re2 = Regex("""\{.*\}""")
+        val imgJsonStr = re2.find(imgDecode)?.groups?.get(1)?.value
+        val imageJson: Comic = gson.fromJson(imgJsonStr, Comic::class.java)
+
+        return imageJson.files!!.mapIndexed { i, imgStr ->
+            val imgurl = "$imageServer${imageJson.path}$imgStr?cid=${imageJson.cid}&md5=${imageJson.sl?.md5}"
+            Log.i("image", imgStr)
+            Page(i, "", imgurl)
         }
     }
 
@@ -147,52 +127,4 @@ class Manhuagui : ParsedHttpSource() {
     private fun getGenreList() = arrayOf(
             "All"
     )
-
-    // temp patch
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = asJsoup(response)
-
-        val mangas = document.select(latestUpdatesSelector()).map { element ->
-            latestUpdatesFromElement(element)
-        }
-
-        val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
-    }
-
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = asJsoup(response)
-
-        val mangas = document.select(popularMangaSelector()).map { element ->
-            popularMangaFromElement(element)
-        }
-
-        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
-    }
-
-    override fun mangaDetailsParse(response: Response): SManga {
-        return mangaDetailsParse(asJsoup(response))
-    }
-
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val document = asJsoup(response)
-        return document.select(chapterListSelector()).map { chapterFromElement(it) }
-    }
-
-    override fun pageListParse(response: Response): List<Page> {
-        return pageListParse(asJsoup(response))
-    }
-
-    override fun imageUrlParse(response: Response): String {
-        return imageUrlParse(asJsoup(response))
-    }
-    // patch finish
 }
-
