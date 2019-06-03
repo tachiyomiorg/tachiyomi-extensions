@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Build.VERSION
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -16,6 +17,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -59,7 +61,15 @@ open class MangAdventure(
         "$apiUrl/series/${Uri.parse(manga.url).lastPathSegment}/", headers
     )
 
-    override fun mangaDetailsRequest(manga: SManga) = chapterListRequest(manga)
+    // Workaround to allow "Open in browser" to use the real URL
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = client
+            .newCall(chapterListRequest(manga))
+            .asObservableSuccess().map { res ->
+                mangaDetailsParse(res).also { it.initialized = true }
+            }
+
+    // Return the real URL for "Open in browser"
+    override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
 
     override fun searchMangaRequest(page: Int, query: String,
                                     filters: FilterList): Request {
