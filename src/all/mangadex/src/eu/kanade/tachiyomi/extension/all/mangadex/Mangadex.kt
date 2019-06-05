@@ -470,7 +470,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun pageListRequest(chapter: SChapter): Request {
         val server = getServer()
-        GET("${chapter.url}?server=$server")
+        return GET("${chapter.url}?server=$server")
     }
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
