@@ -425,8 +425,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
         val chapter = SChapter.create()
-        val server = getServer()
-        chapter.url = API_CHAPTER + chapterId + "?server=" + server
+        chapter.url = API_CHAPTER + chapterId
         val chapterName = mutableListOf<String>()
         // Build chapter name
         if (chapterJson.get("volume").string.isNotBlank()) {
@@ -468,6 +467,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     }
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        val server = getServer()
+        GET("${chapter.url}?server=$server")
+    }
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
 
