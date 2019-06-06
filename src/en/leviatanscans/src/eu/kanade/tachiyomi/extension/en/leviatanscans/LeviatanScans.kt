@@ -160,7 +160,7 @@ open class LeviatanScans(
             "semana", "semanas" -> Calendar.WEEK_OF_MONTH
             "día", "días" -> Calendar.DAY_OF_MONTH
             "hora", "horas" -> Calendar.HOUR
-            "minuto", "minutos" -> Calendar.MINUTE
+            "min" -> Calendar.MINUTE
             "segundo", "segundos" -> Calendar.SECOND
             else -> return null
         }
