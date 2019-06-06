@@ -104,7 +104,7 @@ open class LeviatanScans(
         return manga
     }
 
-    override fun chapterListSelector() = "div.listing-chapters_wrap li.active li.wp-manga-chapter"
+    override fun chapterListSelector() = "div.listing-chapters_wrap li.wp-manga-chapter"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
