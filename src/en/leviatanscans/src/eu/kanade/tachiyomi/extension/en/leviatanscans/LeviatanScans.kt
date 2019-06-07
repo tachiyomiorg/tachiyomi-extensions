@@ -66,14 +66,41 @@ open class LeviatanScans(
 
     // Search Manga
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/?s=$query", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/page/$page/?s=$query&post_type=wp-manga", headers)
 
-    // Just presume the result is like the popular manga page.
-    // Actually it never finds a manga so I don't know how it should look like.
-    override fun searchMangaSelector() = "div.page-item-detail.manga"
+    override fun searchMangaSelector() = "div.c-tabs-item__content"
 
     override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
+        val manga = SManga.create()
+
+        with(element) {
+            select("div.post-title a").first()?.let {
+                manga.setUrlWithoutDomain(it.attr("href"))
+                manga.title = it.ownText()
+            }
+            select("img").first()?.let {
+                manga.thumbnail_url = it.absUrl(if(it.hasAttr("data-src")) "data-src" else "src")
+            }
+            select("div.mg_author div.summary-content a").first()?.let {
+                manga.author = it.text()
+            }
+            select("div.mg_artists div.summary-content a").first()?.let {
+                manga.artist = it.text()
+            }
+            select("div.mg_genres div.summary-content a").first()?.let {
+                manga.genre = it.text()
+            }
+            select("div.mg_status div.summary-content a").first()?.let {
+                manga.status = when(it.text()) {
+                    // I don't know what's the corresponding for COMPLETED and LICENSED
+                    // There's no support for "Canceled" or "On Hold"
+                    "OnGoing" -> SManga.ONGOING
+                    else -> SManga.UNKNOWN
+                }
+            }
+        }
+
+        return manga
     }
 
     override fun searchMangaNextPageSelector() = NO_SELECTOR
