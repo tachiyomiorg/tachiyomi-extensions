@@ -141,7 +141,9 @@ open class Madara(
 
         with(element) {
             select("a").first()?.let { urlElement ->
-                chapter.setUrlWithoutDomain(urlElement.attr("href") + "?style=list")
+                chapter.setUrlWithoutDomain(urlElement.attr("href").let {
+                    it + if(!it.endsWith("?style=list")) "?style=list" else ""
+                })
                 chapter.name = urlElement.text()
             }
 
