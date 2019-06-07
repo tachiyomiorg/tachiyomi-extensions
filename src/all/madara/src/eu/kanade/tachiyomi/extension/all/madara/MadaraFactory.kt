@@ -18,7 +18,7 @@ class MadaraFactory : SourceFactory {
 
 class LeviatanScans(lang: String) : Madara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))) {
     override fun popularMangaSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
-    override fun latestUpdatesSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
+    override fun latestUpdatesSelector() = if(lang == "en") "div.item__wrap:contains(Chapter)" else "div.item__wrap:contains(Capitulo)"
     // Workaround - it might give a 404 error
     override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(5) > div:nth-child(1) > div:nth-child(2)"
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
