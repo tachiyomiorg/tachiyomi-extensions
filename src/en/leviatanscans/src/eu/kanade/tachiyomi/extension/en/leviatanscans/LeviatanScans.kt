@@ -141,7 +141,7 @@ open class LeviatanScans(
 
         with(element) {
             select("a").first()?.let { urlElement ->
-                chapter.setUrlWithoutDomain(urlElement.attr("href"))
+                chapter.setUrlWithoutDomain(urlElement.attr("href") + "?style=list")
                 chapter.name = urlElement.text()
             }
 
@@ -206,8 +206,10 @@ open class LeviatanScans(
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.reading-content div.page-break.no-gaps").mapIndexed { index, element ->
-            Page(index, "", element.select("img").first()?.absUrl("src"))
+        return document.select("div.page-break").mapIndexed { index, element ->
+            Page(index, "", element.select("img").first()?.let{
+                it.absUrl(if(it.hasAttr("data-src")) "data-src" else "src")
+            })
         }
     }
 
