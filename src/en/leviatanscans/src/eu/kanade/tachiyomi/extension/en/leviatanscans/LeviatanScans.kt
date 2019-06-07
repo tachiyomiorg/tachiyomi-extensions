@@ -15,7 +15,8 @@ open class LeviatanScans(
         override val name: String,
         override val baseUrl: String,
         override val lang: String,
-        private val urlModifier: String = "/manga"
+        private val urlModifier: String = "/manga",
+        private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
 ) : ParsedHttpSource() {
 
     override val supportsLatest = true
@@ -166,37 +167,34 @@ open class LeviatanScans(
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
+        else if (lcDate.startsWith("today"))
+            return Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
 
-        return DATE_FORMAT.parseOrNull(date)?.time
+        return dateFormat.parseOrNull(date)?.time
     }
 
     // Parses dates in this form:
     // 21 horas ago
     private fun parseRelativeDate(date: String): Long? {
         val trimmedDate = date.split(" ")
-
         if (trimmedDate[2] != "ago") return null
-
         val number = trimmedDate[0].toIntOrNull() ?: return null
-        val unit = trimmedDate[1]
 
-        val now = Calendar.getInstance()
-
-        // Map Spanish unit to Java unit
-        val javaUnit = when (unit) {
-            "año", "años" -> Calendar.YEAR
-            "mes", "meses" -> Calendar.MONTH
-            "semana", "semanas" -> Calendar.WEEK_OF_MONTH
-            "día", "días" -> Calendar.DAY_OF_MONTH
-            "hora", "horas" -> Calendar.HOUR
-            "min" -> Calendar.MINUTE
-            "segundo", "segundos" -> Calendar.SECOND
+        // Map English/Spanish unit to Java unit
+        val javaUnit = when (trimmedDate[1].removeSuffix("s")) {
+            "día", "day" -> Calendar.DAY_OF_MONTH
+            "hora", "hour" -> Calendar.HOUR
+            "min", "minute" -> Calendar.MINUTE
+            "segundo", "second" -> Calendar.SECOND
             else -> return null
         }
 
-        now.add(javaUnit, -number)
-
-        return now.timeInMillis
+        return Calendar.getInstance().apply { add(javaUnit, -number) }.timeInMillis
     }
 
     private fun SimpleDateFormat.parseOrNull(string: String): Date? {
@@ -217,6 +215,5 @@ open class LeviatanScans(
 
     companion object {
         private const val NO_SELECTOR = "NoSelectorABCDEFGH" // I hope this doesn't match anything
-        private val DATE_FORMAT = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))
     }
 }
