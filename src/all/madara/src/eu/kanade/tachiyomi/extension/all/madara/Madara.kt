@@ -104,7 +104,7 @@ open class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = NO_SELECTOR
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     // Manga Details Parse
 
