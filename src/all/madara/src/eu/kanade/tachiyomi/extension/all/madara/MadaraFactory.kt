@@ -19,15 +19,25 @@ class MadaraFactory : SourceFactory {
 class LeviatanScans(lang: String) : Madara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))) {
     override fun popularMangaSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
     override fun latestUpdatesSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
+    // Workaround - it might give a 404 error
+    override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(5) > div:nth-child(1) > div:nth-child(2)"
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 }
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en") {
     override fun latestUpdatesSelector() = "div.page-item-detail"
+    // Workaround - it might give a 404 error
+    override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(6) > div:nth-child(1) > div:nth-child(2)"
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 }
 class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en", urlModifier = "/manhua") {
     override fun popularMangaNextPageSelector() = "div.nav-previous"
     override fun searchMangaNextPageSelector() = "div.nav-previous"
 }
-class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en", dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
+class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en", dateFormat = SimpleDateFormat("dd MMM yy", Locale.US)) {
+    // Workaround - it might give a 404 error
+    override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(6) > div:nth-child(1) > div:nth-child(2)"
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+}
 class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en") {
     override fun popularMangaNextPageSelector() = "div.nav-previous"
     override fun searchMangaNextPageSelector() = "div.nav-previous"
