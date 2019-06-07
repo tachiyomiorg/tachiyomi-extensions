@@ -22,7 +22,7 @@ open class LeviatanScans(
 
     // Popular Manga
 
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl$urlModifier", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl$urlModifier/page/$page", headers)
 
     override fun popularMangaSelector() = "div.page-item-detail"
 
