@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.leviatanscans
+package eu.kanade.tachiyomi.extension.all.madara
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -11,7 +11,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
-open class LeviatanScans(
+open class Madara(
         override val name: String,
         override val baseUrl: String,
         override val lang: String,
