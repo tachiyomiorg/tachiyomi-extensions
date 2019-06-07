@@ -24,10 +24,8 @@ class Manhuagui : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list/view_p$page.html", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/list/update_p$page.html", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("https://www.manhuagui.com/s/${query}_p$page.html")?.newBuilder()
-        return GET(url.toString(), headers)
-    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request
+            = GET("$baseUrl/s/${query}_p$page.html", headers)
 
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
     override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
@@ -78,8 +76,6 @@ class Manhuagui : ParsedHttpSource() {
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.data")
-
         val manga = SManga.create()
         manga.description = document.select("div#intro-all").text().trim()
         return manga
@@ -110,14 +106,4 @@ class Manhuagui : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
-
-    private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
-
-    override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
-    )
-
-    private fun getGenreList() = arrayOf(
-            "All"
-    )
 }
