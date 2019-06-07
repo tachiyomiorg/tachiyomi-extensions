@@ -14,14 +14,15 @@ import java.util.*
 open class LeviatanScans(
         override val name: String,
         override val baseUrl: String,
-        override val lang: String
+        override val lang: String,
+        private val urlModifier: String = "/manga"
 ) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
     // Popular Manga
 
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl$urlModifier", headers)
 
     override fun popularMangaSelector() = "div.page-item-detail"
 
