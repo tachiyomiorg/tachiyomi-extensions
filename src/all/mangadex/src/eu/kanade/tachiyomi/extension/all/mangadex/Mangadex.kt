@@ -547,7 +547,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(SERVER_PREF, index).commit()
+                preferences.edit().putString(SERVER_PREF, entryValues.get(index)).commit()
             }
         }
 
