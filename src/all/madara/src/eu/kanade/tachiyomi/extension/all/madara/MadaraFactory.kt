@@ -16,7 +16,10 @@ class MadaraFactory : SourceFactory {
     )
 }
 
-class LeviatanScans(lang: String) : Madara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES")))
+class LeviatanScans(lang: String) : Madara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))) {
+    override fun popularMangaSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
+    override fun latestUpdatesSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
+}
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en") {
     override fun latestUpdatesSelector() = "div.page-item-detail"
 }
