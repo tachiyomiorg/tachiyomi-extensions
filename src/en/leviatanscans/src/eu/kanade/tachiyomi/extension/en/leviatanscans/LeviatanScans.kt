@@ -37,7 +37,7 @@ open class LeviatanScans(
             }
 
             select("img").first()?.let {
-                manga.thumbnail_url = it.absUrl("data-src").replace("110x150", "193x278")
+                manga.thumbnail_url = it.absUrl(if(it.hasAttr("data-src")) "data-src" else "src")
             }
         }
 
@@ -98,7 +98,7 @@ open class LeviatanScans(
                 }
             }
             select("div.summary_image img").first()?.let {
-                manga.thumbnail_url = it.absUrl("data-src")
+                manga.thumbnail_url = it.absUrl(if(it.hasAttr("data-src")) "data-src" else "src")
             }
         }
 
