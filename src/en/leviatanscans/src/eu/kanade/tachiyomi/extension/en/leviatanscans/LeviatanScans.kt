@@ -32,7 +32,7 @@ open class LeviatanScans(
         val manga = SManga.create()
 
         with(element) {
-            select("div.post-title.font-title a").first()?.let {
+            select("div.post-title a").first()?.let {
                 manga.setUrlWithoutDomain(it.attr("href"))
                 manga.title = it.ownText()
             }
