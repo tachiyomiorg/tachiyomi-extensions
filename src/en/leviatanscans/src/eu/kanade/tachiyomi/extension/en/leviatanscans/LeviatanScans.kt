@@ -31,15 +31,16 @@ open class LeviatanScans(
         val manga = SManga.create()
 
         with(element) {
-            select("div.post-title.font-title a").first().let {
+            select("div.post-title.font-title a").first()?.let {
                 manga.setUrlWithoutDomain(it.attr("href"))
                 manga.title = it.ownText()
             }
 
             select("img").first()?.let {
-                manga.thumbnail_url = it.absUrl("src").replace("110x150", "193x278")
+                manga.thumbnail_url = it.absUrl("data-src").replace("110x150", "193x278")
             }
         }
+
         return manga
     }
 
@@ -97,7 +98,7 @@ open class LeviatanScans(
                 }
             }
             select("div.summary_image img").first()?.let {
-                manga.thumbnail_url = it.absUrl("src")
+                manga.thumbnail_url = it.absUrl("data-src")
             }
         }
 
