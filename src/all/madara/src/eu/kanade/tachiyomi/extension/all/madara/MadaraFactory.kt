@@ -1,7 +1,13 @@
 package eu.kanade.tachiyomi.extension.all.madara
 
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
+import eu.kanade.tachiyomi.source.model.FilterList
+import okhttp3.CacheControl
+import okhttp3.FormBody
+import okhttp3.Request
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -16,24 +22,69 @@ class MadaraFactory : SourceFactory {
     )
 }
 
-class LeviatanScans(lang: String) : Madara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))) {
+class LeviatanScans(lang: String) : LoadMadara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))) {
     override fun popularMangaSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
     override fun latestUpdatesSelector() = if(lang == "en") "div.item__wrap:contains(Chapter)" else "div.item__wrap:contains(Capitulo)"
-    // Workaround - it might give a 404 error
-    override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(5) > div:nth-child(1) > div:nth-child(2)"
 }
-class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en") {
+class Mangasushi : LoadMadara("Mangasushi", "https://mangasushi.net", "en") {
     override fun latestUpdatesSelector() = "div.page-item-detail"
-    // Workaround - it might give a 404 error
-    override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(6) > div:nth-child(1) > div:nth-child(2)"
 }
-class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en", urlModifier = "/manhua") {
+class NinjaScans : PageMadara("NinjaScans", "https://ninjascans.com", "en", urlModifier = "/manhua")
+class ReadManhua : LoadMadara("ReadManhua", "https://readmanhua.net", "en", dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
+class ZeroScans : PageMadara("ZeroScans", "https://zeroscans.com", "en")
+
+open class LoadMadara(
+        name: String,
+        baseUrl: String,
+        lang: String,
+        dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
+) : Madara(name, baseUrl, lang, dateFormat) {
+    override fun popularMangaRequest(page: Int): Request {
+        val form = FormBody.Builder().apply {
+            add("action", "madara_load_more")
+            add("page", (page-1).toString())
+            add("template", "madara-core/content/content-archive")
+            add("vars[manga_archives_item_layout]", "default")
+            add("vars[meta_key]", "_latest_update")
+            add("vars[order]", "desc")
+            add("vars[paged]", (page-1).toString())
+            add("vars[post_status]", "publish")
+            add("vars[post_type]", "wp-manga")
+            add("vars[sidebar]", "right")
+            add("vars[template]", "archive")
+        }
+        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
+    }
+
+    override fun popularMangaNextPageSelector(): String? = "body:not(:has(.no-posts))"
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val form = FormBody.Builder().apply {
+            add("action", "madara_load_more")
+            add("page", (page-1).toString())
+            add("template", "madara-core/content/content-search")
+            add("vars[s]", query)
+            add("vars[orderby]", "")
+            add("vars[paged]", (page-1).toString())
+            add("vars[template]", "search")
+            add("vars[post_type]", "wp-manga")
+            add("vars[post_status]", "publish")
+            add("vars[manga_archives_item_layout]", "default")
+        }
+        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
+    }
+}
+
+open class PageMadara(
+        name: String,
+        baseUrl: String,
+        lang: String,
+        private val urlModifier: String = "/manga",
+        dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
+) : Madara(name, baseUrl, lang, dateFormat) {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl$urlModifier/page/$page", headers)
     override fun popularMangaNextPageSelector() = "div.nav-previous"
-}
-class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en", dateFormat = SimpleDateFormat("dd MMM yy", Locale.US)) {
-    // Workaround - it might give a 404 error
-    override fun popularMangaNextPageSelector() = "div.page-listing-item:nth-child(6) > div:nth-child(1) > div:nth-child(2)"
-}
-class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en") {
-    override fun popularMangaNextPageSelector() = "div.nav-previous"
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/page/$page/?s=$query&post_type=wp-manga", headers)
+
 }

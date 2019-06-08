@@ -3,19 +3,17 @@ package eu.kanade.tachiyomi.extension.all.madara
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
-open class Madara(
+abstract class Madara(
         override val name: String,
         override val baseUrl: String,
         override val lang: String,
-        private val urlModifier: String = "/manga",
         private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
 ) : ParsedHttpSource() {
 
@@ -23,11 +21,7 @@ open class Madara(
 
     // Popular Manga
 
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl$urlModifier/page/$page", headers)
-
     override fun popularMangaSelector() = "div.page-item-detail"
-
-    override fun popularMangaNextPageSelector(): String? = null
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -66,8 +60,6 @@ open class Madara(
     }
 
     // Search Manga
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/page/$page/?s=$query&post_type=wp-manga", headers)
 
     override fun searchMangaSelector() = "div.c-tabs-item__content"
 
