@@ -23,8 +23,9 @@ class MadaraFactory : SourceFactory {
 }
 
 class LeviatanScans(lang: String) : LoadMadara("LeviatanScans", "https://leviatanscans.com", lang, dateFormat = SimpleDateFormat("MMMM dd, yy", Locale("es", "ES"))) {
-    override fun popularMangaSelector() = if(lang == "en") "div.page-item-detail:contains(Chapter)" else "div.page-item-detail:contains(Capitulo)"
-    override fun latestUpdatesSelector() = if(lang == "en") "div.item__wrap:contains(Chapter)" else "div.item__wrap:contains(Capitulo)"
+    override fun popularMangaSelector() = if(lang == "en") "div.page-item-detail:not(:contains(Capitulo))" else "div.page-item-detail:contains(Capitulo)"
+    override fun latestUpdatesSelector() = if(lang == "en") "div.item__wrap:not(:contains(Capitulo))" else "div.item__wrap:contains(Capitulo)"
+    override fun searchMangaSelector() = if(lang == "en") "div.c-tabs-item__content:not(:contains(Capitulo))" else "div.c-tabs-item__content:contains(Capitulo)"
 }
 class Mangasushi : LoadMadara("Mangasushi", "https://mangasushi.net", "en") {
     override fun latestUpdatesSelector() = "div.page-item-detail"
