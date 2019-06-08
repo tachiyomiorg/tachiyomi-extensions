@@ -547,7 +547,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-		val entry = entryValues.get(index) as String
+                val entry = entryValues.get(index) as String
                 preferences.edit().putString(SERVER_PREF, entry).commit()
             }
         }
@@ -559,7 +559,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
-    private fun getServer(): String = preferences.getString(SERVER_PREF, "")
+    private fun getServer(): String = preferences.getString(SERVER_PREF, "0")
 
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
