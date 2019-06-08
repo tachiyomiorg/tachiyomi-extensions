@@ -27,7 +27,7 @@ open class Madara(
 
     override fun popularMangaSelector() = "div.page-item-detail"
 
-    override fun popularMangaNextPageSelector() = NO_SELECTOR
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -52,7 +52,7 @@ open class Madara(
 
     override fun latestUpdatesSelector() = "div.item__wrap"
 
-    override fun latestUpdatesNextPageSelector() = NO_SELECTOR
+    override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
@@ -216,8 +216,4 @@ open class Madara(
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
-
-    companion object {
-        private const val NO_SELECTOR = "NoSelectorABCDEFGH" // I hope this doesn't match anything
-    }
 }
