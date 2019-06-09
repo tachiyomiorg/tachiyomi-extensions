@@ -5,11 +5,14 @@ ext {
     appName = 'Tachiyomi: Henchan'
     pkgNameSuffix = 'ru.henchan'
     extClass = '.Henchan'
-    extVersionCode = 9
+    extVersionCode = 10
     libVersion = '1.2'
 }
 dependencies {
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+
+    implementation project(':lib-ratelimit')
+
 }
 apply from: "$rootDir/common.gradle"
