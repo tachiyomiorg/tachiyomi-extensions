@@ -5,13 +5,12 @@ ext {
     appName = 'Tachiyomi: TuMangaOnline'
     pkgNameSuffix = 'es.tumangaonline'
     extClass = '.TuMangaOnline'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
-    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"

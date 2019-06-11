@@ -11,7 +11,6 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-import com.squareup.duktape.Duktape
 
 class TuMangaOnline : ParsedHttpSource() {
 
@@ -207,46 +206,17 @@ class TuMangaOnline : ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun pageListParse(response: Response): List<Page> {
-        val pages = mutableListOf<Page>()
-        val body = response.body()!!.string()
-        var images = ""
-        val script = """
-            function chapterInit(data) {
-               pipe = "|";
-               idsR = /img_[^\.^;]+\.src\s*=\s*"([^"]+)/gm;
-               idData = ""
-               do {
-                   m = idsR.exec(data);
-                   if (m) {
-                       idData = idData + pipe + m[1] ;
-                   }
-               } while (m);
-               return idData;
-            }
-        """
+    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
+        val body = response.asJsoup()
 
-        Duktape.create().use {
-            it.evaluate(script)
-
-            val chapterInit = it.get("chapterInit", JSIn::class.java)
-            images = chapterInit.call(true, body)
+        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
+            add(Page(size, "", it.attr("src")))
         }
-
-        images.split("|").forEachIndexed { index, element ->
-            if (element.isNotEmpty()) {
-                pages.add(Page(index, baseUrl, element))
-            }
-        }
-
-        return pages
     }
 
     override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
 
-    override fun imageUrlRequest(page: Page): Request {
-        return GET(page.url, headers)
-    }
+    override fun imageUrlRequest(page: Page) = GET(page.url, headers)
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
@@ -369,9 +339,4 @@ class TuMangaOnline : ParsedHttpSource() {
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
-    internal interface JSIn {
-        fun call(b: Boolean, data: String): String
-    }
-
 }
