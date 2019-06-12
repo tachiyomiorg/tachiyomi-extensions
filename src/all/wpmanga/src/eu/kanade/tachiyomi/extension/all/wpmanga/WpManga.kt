@@ -66,7 +66,7 @@ open class WpManga(override val name: String, override val baseUrl: String, over
             manga.title = it.text()
         }
         element.select("img").first()?.let {
-            manga.thumbnail_url = it.absUrl("src").substringBefore("?resize").substringBefore("?fit")
+            manga.thumbnail_url = if (!lazy) it.absUrl("src").substringBefore("?resize").substringBefore("?fit") else it.absUrl("data-src")
         }
 
         return manga
@@ -88,7 +88,9 @@ open class WpManga(override val name: String, override val baseUrl: String, over
         manga.genre = genres.joinToString(", ")
         manga.description = document.select("div.summary__content")?.first()?.text()
         manga.status = document.select("div.post-status div.post-content_item:contains(status) div.summary-content").first()?.text().orEmpty().let { parseStatus(it) }
-        manga.thumbnail_url = document.select("div.summary_image img")?.first()?.absUrl("src")?.substringBefore("?resize")?.substringBefore("?fit")
+        document.select("div.summary_image img")?.first()?.let{
+            manga.thumbnail_url = if (!lazy) it.absUrl("src").substringBefore("?resize").substringBefore("?fit") else it.absUrl("data-src")
+        }
         return manga
     }
 
@@ -99,7 +101,6 @@ open class WpManga(override val name: String, override val baseUrl: String, over
     }
 
     override fun chapterListSelector() = "div.listing-chapters_wrap li.wp-manga-chapter"
-
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
@@ -144,7 +145,9 @@ open class WpManga(override val name: String, override val baseUrl: String, over
         relativeDate?.timeInMillis?.let {
             return it
         }
-
+        if (lang == "es"){
+            return DATE_FORMAT_2.parse(date).time
+        }
         return DATE_FORMAT_1.parse(date).time
 
     }
@@ -186,7 +189,7 @@ open class WpManga(override val name: String, override val baseUrl: String, over
         val pages = mutableListOf<Page>()
         doc.forEach {
             // Create dummy element to resolve relative URL
-            val absUrl = it.select("img").attr("src")
+            val absUrl = if (!lazy) it.select("img").attr("src") else it.select("img").attr("data-src")
             pages.add(Page(pages.size, "", absUrl))
         }
         return pages
@@ -197,6 +200,7 @@ open class WpManga(override val name: String, override val baseUrl: String, over
     companion object {
 
         private val DATE_FORMAT_1 = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+        private val DATE_FORMAT_2 = SimpleDateFormat("MMM dd, yyyy", Locale("es", "ES"))
 
     }
 }
