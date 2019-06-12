@@ -27,7 +27,6 @@ fun getAllFoolSlide(): List<Source> {
             IskultripScans(),
             PinkFatale(),
             AnataNoMotokare(),
-            HatigarmScans(),
             DeathTollScans(),
             DKThias(),
             MangaichiScanlationDivision(),
@@ -97,23 +96,6 @@ class IskultripScans : FoolSlide("Iskultrip Scans", "http://www.maryfaye.net", "
 class PinkFatale : FoolSlide("PinkFatale", "http://manga.pinkfatale.net", "en")
 
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.maos.ca", "en")
-
-// Has other languages too but it is difficult to differentiate between them
-class HatigarmScans : FoolSlide("Hatigarm Scans", "http://hatigarmscans.net", "en", "/hs") {
-    override fun chapterListSelector() = "div.list-group div.list-group-item:not(.active)"
-
-    override val chapterDateSelector = "div.label"
-
-    override val chapterUrlSelector = ".title > a"
-
-    override fun popularMangaSelector() = ".well > a"
-
-    override fun latestUpdatesSelector() = "div.latest > div.row"
-
-    override val mangaDetailsInfoSelector = "div.col-md-9"
-
-    override val mangaDetailsThumbnailSelector = "div.thumb > img"
-}
 
 class DeathTollScans : FoolSlide("Death Toll Scans", "https://reader.deathtollscans.net", "en")
 

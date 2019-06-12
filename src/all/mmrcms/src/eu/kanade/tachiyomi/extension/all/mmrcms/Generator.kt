@@ -212,6 +212,7 @@ class Generator {
                 //Triple("en", "Read Manhua", "https://readmanhua.net"),
                 Triple("en", "Read Comics Online", "http://readcomicsonline.ru"),
                 Triple("en", "Fallen Angels", "http://manga.fascans.com"),
+                Triple("en", "Hatigarm Scans", "https://hatigarmscans.net"),
                 //Went offline
                 //Triple("en", "MangaRoot", "http://mangaroot.com"),
                 Triple("en", "Mangawww Reader", "http://mangawww.club"),
@@ -232,7 +233,6 @@ class Generator {
                 //Triple("en", "DB Manga", "http://dbmanga.com"),
                 //Went offline
                 //Triple("en", "Mangacox", "http://mangacox.com"),
-
                 //Went offline
                 //Triple("en", "GO Manhwa", "http://gomanhwa.xyz"
                 //Went offline
@@ -249,12 +249,13 @@ class Generator {
                 Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
                 //Went offline
                 //Triple("en", "Isekai Manga Reader", "https://isekaimanga.club"),
-                Triple("es", "My-mangas.com", "https://my-mangas.com"),
                 Triple("es", "SOS Scanlation", "https://sosscanlation.com"),
                 //Went offline
                 //Triple("fa", "TrinityReader", "http://trinityreader.pw"
-                Triple("fr", "Manga-LEL", "https://www.manga-lel.com"),
-                Triple("fr", "Manga Etonnia", "https://www.etonnia.com"),
+                //Went offline
+                //Triple("fr", "Manga-LEL", "https://www.manga-lel.com"),
+                //Went offline
+                //Triple("fr", "Manga Etonnia", "https://www.etonnia.com"),
                 Triple("fr", "Scan FR", "http://www.scan-fr.io"),
                 Triple("fr", "Scan VF", "https://www.scan-vf.co"),
                 //Went offline
@@ -316,7 +317,8 @@ class Generator {
                 //Blocks bots (like this one)
                 //Triple("tr", "Epikmanga", "http://www.epikmanga.com"),
                 //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
-                Triple("other", "HentaiShark", "https://www.hentaishark.com"))
+                Triple("other", "HentaiShark", "https://www.hentaishark.com"),
+                Triple("es", "MangaCasa", "https://mangacasa.com"))
 
         val relativePath = System.getProperty("user.dir") + "/src/all/mmrcms/src/eu/kanade/tachiyomi/extension/all/mmrcms/GeneratedSources.kt"
         val relativePathTest = System.getProperty("user.dir") + "/src/all/mmrcms/TestGeneratedSources.kt"
