@@ -13,24 +13,33 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-open class WpManga(override val name: String, override val baseUrl: String, override val lang: String) : ParsedHttpSource() {
+open class WpManga(override val name: String, override val baseUrl: String, override val lang: String, val lazy: Boolean = false, val latest: Boolean = true) : ParsedHttpSource() {
 
-    override val supportsLatest = false
+    override val supportsLatest = latest
+
+    override fun latestUpdatesNextPageSelector(): String? = null
+
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        element.select(".slider__content").select("a").first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = it.text()
+        }
+        element.select("img").first()?.let {
+            manga.thumbnail_url = if (!lazy) it.absUrl("src").substringBefore("?resize").substringBefore("?fit") else it.absUrl("data-src")
+        }
+        return manga
+    }
+
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/", headers)
+
+    override fun latestUpdatesSelector(): String = ".item__wrap"
 
     override fun popularMangaSelector() = "div[id^=manga-item]"
 
-    override fun popularMangaRequest(page: Int): Request = GET(baseUrl, headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=alphabet", headers)
 
-    override fun latestUpdatesNextPageSelector(): String? = throw Exception("Not used")
-
-    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Not used")
-
-    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
-
-    override fun latestUpdatesSelector(): String = throw Exception("Not used")
-
-    override fun popularMangaNextPageSelector() = null
-
+    override fun popularMangaNextPageSelector() = ".nav-previous"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -39,11 +48,10 @@ open class WpManga(override val name: String, override val baseUrl: String, over
             manga.title = it.attr("title")
         }
         element.select("img").first()?.let {
-            manga.thumbnail_url = it.absUrl("src").substringBefore("?resize").substringBefore("?fit")
+            manga.thumbnail_url = if (!lazy) it.absUrl("src").substringBefore("?resize").substringBefore("?fit") else it.absUrl("data-src")
         }
         return manga
     }
-
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return GET("$baseUrl/?s=$query&post_type=wp-manga", headers)

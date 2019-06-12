@@ -9,12 +9,19 @@ class WpMangaFactory : SourceFactory {
 
 fun getAllWpManga(): List<Source> {
     return listOf(
-            TrashScanlations(),
-            ZeroScans()
+            ZeroScans(),
+            MangaSushi(),
+            LeviatanScans()
     )
 }
 
-class TrashScanlations : WpManga("Trash Scanlations", "https://trashscanlations.com/", "en")
-
 class ZeroScans : WpManga("Zero Scans", "https://zeroscans.com/", "en")
 
+class MangaSushi : WpManga("Manga Sushi", "https://mangasushi.net/", "en", true, false){
+    override fun popularMangaNextPageSelector() = ".load-title"
+}
+
+class LeviatanScans : WpManga("Leviatan Scans", "https://leviatanscans.com/", "es")
+
+//Dead Sites
+//class TrashScanlations : WpManga("Trash Scanlations", "https://trashscanlations.com/", "en")
