@@ -21,10 +21,9 @@ class MangaHost : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val catalogHeaders = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36")
-        add("Referer", baseUrl)
-    }.build()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", USER_AGENT)
+        .add("Referer", baseUrl)
 
     private fun mangaFromElement(element: Element, lazy: Boolean = true): SManga = SManga.create().apply {
         title = element.attr("title").replace(LANG_REGEX.toRegex(), "")
@@ -33,64 +32,54 @@ class MangaHost : ParsedHttpSource() {
         setUrlWithoutDomain(element.attr("href"))
     }
 
-    override fun popularMangaSelector(): String = "div.thumbnail div a.pull-left"
-
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "/page/$page" else ""
-        return GET("$baseUrl/mangas/mais-visualizados$pageStr", catalogHeaders)
+        return GET("$baseUrl/mangas/mais-visualizados$pageStr", headers)
     }
+
+    override fun popularMangaSelector(): String = "div.thumbnail div a.pull-left"
 
     override fun popularMangaFromElement(element: Element): SManga = mangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "div.wp-pagenavi:has(a.nextpostslink)"
 
-    override fun latestUpdatesSelector() = "table.table-lancamentos > tbody > tr > td:eq(0) > a"
-
     override fun latestUpdatesRequest(page: Int): Request {
         val pageStr = if (page != 1) "/page/$page" else ""
-        return GET("$baseUrl/lancamentos$pageStr", catalogHeaders)
+        return GET("$baseUrl/lancamentos$pageStr", headers)
     }
+
+    override fun latestUpdatesSelector() = "table.table-lancamentos > tbody > tr > td:eq(0) > a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = mangaFromElement(element, false)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        // The site sometimes recognize it's a crawler and return only a
-        // manga called "Robot" if the "find/$query" is used directly.
-       return GET("$baseUrl/find/?this=$query", catalogHeaders)
+        val url = HttpUrl.parse("$baseUrl/find/")!!.newBuilder()
+            .addQueryParameter("this", query)
+
+       return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
 
     override fun searchMangaFromElement(element: Element): SManga = mangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#page > section > div > div.pull-left")
 
-        val manga = SManga.create()
-
-        val author = infoElement.select("li:contains(Autor:)").text()
-        manga.author = removeLabel(author)
-
-        val artist = infoElement.select("li:contains(Desenho (Art):)").text()
-        manga.artist = removeLabel(artist)
-
-        val genre = infoElement.select("li:contains(Categoria(s):)").text()
-        manga.genre = removeLabel(genre)
-
-        // Some mangas like Shingeki no Kyojin have some links in description.
-        manga.description = infoElement.select("article").first()
-                ?.text()?.substringBefore("Relacionados:")
-
-        manga.status = infoElement.select("li:contains(Status:)").text()
-                .orEmpty().let { parseStatus(it) }
-
-        manga.thumbnail_url = document.select("div#page > section > div > img.thumbnail").attr("src")
-
-        return manga
+        return SManga.create().apply {
+            author = removeLabel(infoElement.select("li:contains(Autor:)").text())
+            artist = removeLabel(infoElement.select("li:contains(Desenho (Art):)").text())
+            genre = removeLabel(infoElement.select("li:contains(Categoria(s):)").text())
+            description = infoElement.select("article").first()?.text()
+                ?.substringBefore("Relacionados:")
+            status = parseStatus(infoElement.select("li:contains(Status:)").text().orEmpty())
+            thumbnail_url = document.select("div#page > section > div > img.thumbnail")
+                .attr("src")
+        }
     }
 
     private fun parseStatus(status: String) = when {
@@ -98,8 +87,6 @@ class MangaHost : ParsedHttpSource() {
         status.contains("Completo") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
-
-    private fun removeLabel(text: String?): String = text!!.substringAfter(":")
 
     override fun chapterListSelector(): String
             = "ul.list_chapters li a," +
@@ -143,7 +130,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         // Just to prevent the detection of the crawler.
-        val newHeader = catalogHeaders.newBuilder()
+        val newHeader = headersBuilder()
                 .set("Referer", "$baseUrl${chapter.url}".substringBeforeLast("/"))
                 .build()
 
@@ -151,19 +138,32 @@ class MangaHost : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        var documentStr = document.toString()
-        var images = documentStr.substringAfter(SCRIPT_BEGIN).substringBefore(SCRIPT_END)
-                .replace(SCRIPT_REGEX.toRegex(), "")
+        val documentStr = document.toString()
+        val images = documentStr.substringAfter(SCRIPT_BEGIN).substringBefore(SCRIPT_END)
+            .replace(SCRIPT_REGEX.toRegex(), "")
 
-        var newDocument = Jsoup.parse(images)
+        val newDocument = Jsoup.parse(images)
+        val referer = document.select("link[rel='canonical']").first()
 
         return newDocument.select("a img")
-                .mapIndexed { i, el -> Page(i, "", el.attr("src")) }
+            .mapIndexed { i, el -> Page(i, referer.attr("href"), el.attr("src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""
 
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", page.url)
+            .build()
+
+        return GET(page.imageUrl!!, newHeaders)
+    }
+
+    private fun removeLabel(text: String?): String = text!!.substringAfter(":")
+
     companion object {
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+
         private const val LANG_REGEX = "( )?\\((PT-)?BR\\)"
         private const val IMAGE_REGEX = "_(small|medium)\\."
 
@@ -172,6 +172,6 @@ class MangaHost : ParsedHttpSource() {
 
         private const val SCRIPT_BEGIN = "var images = ["
         private const val SCRIPT_END = "];"
-        private const val SCRIPT_REGEX = "\"|,"
+        private const val SCRIPT_REGEX = "[\",]"
     }
 }
