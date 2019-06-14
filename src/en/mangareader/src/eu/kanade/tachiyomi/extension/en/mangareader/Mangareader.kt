@@ -84,7 +84,7 @@ class Mangareader : ParsedHttpSource() {
         val manga = SManga.create()
         manga.title = infoElement.select("h1").text()
         manga.author = infoElement.select("td.propertytitle:containsOwn(author) + td").text()
-        manga.author = infoElement.select("td.propertytitle:containsOwn(artist) + td").text()
+        manga.artist = infoElement.select("td.propertytitle:containsOwn(artist) + td").text()
         val status = infoElement.select("td.propertytitle:containsOwn(status) + td").text()
         manga.status = parseStatus(status)
         manga.genre = infoElement.select("td.propertytitle:containsOwn(genre) + td").text()
