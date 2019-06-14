@@ -34,6 +34,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         val item = element.select("a.manga-list-item__content").first()
         val manga = SManga.create()
         manga.thumbnail_url = item.attr("data-src")
+            .replace("cover_thumb", "cover_250x350")
         manga.setUrlWithoutDomain(item.attr("href"))
         manga.title = item.select("h3.manga-list-item__name").first().text()
         return manga
@@ -102,6 +103,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         val img = link.select("img").first()
         val manga = SManga.create()
         manga.thumbnail_url = img.attr("data-src")
+            .replace("cover_thumb", "cover_250x350")
         manga.setUrlWithoutDomain(link.attr("href"))
         manga.title = img.attr("alt")
         return manga
