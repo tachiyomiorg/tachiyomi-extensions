@@ -10,11 +10,11 @@ import okhttp3.OkHttpClient
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
+import android.util.Base64.decode as base64Decode
 
 
 open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : ParsedHttpSource() {
@@ -24,6 +24,8 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    private val jsonParser = JsonParser()
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/manga-list?dir=desc&page=$page&sort=views", headers)
@@ -79,16 +81,31 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val chapInfo = document
+            .select("script:containsData(window.__info)")
+            .first()
+            .html()
+            .replace("window.__info = ", "")
+            .replace(";", "")
+
+        val chapInfoJson = jsonParser.parse(chapInfo).obj
+
+        // Get pages
+        val baseStr = document.select("span.pp")
+            .first()
+            .html()
+            .replace("<!--", "")
+            .replace("-->", "")
+            .trim()
+
+        val decodedArr = base64Decode(baseStr, android.util.Base64.DEFAULT)
+        val pagesJson = jsonParser.parse(String(decodedArr)).array
+
         val pages = mutableListOf<Page>()
-        // Parse script
-        val script = document.select("script:containsData(window.__info)").first().html()
-        val json: String = script.replace("window.__info = ", "")
-        val chapterInfo = JSONObject(json)
-        val pagesJson = chapterInfo.getJSONArray("pages")
-        for (i in 0..(pagesJson.length() - 1)) {
-            val page = pagesJson.getJSONObject(i)
-            pages.add(Page(page.getInt("page_slug"), "", staticUrl + chapterInfo.getString("imgUrl") + page.getString("page_image")))
+        pagesJson.forEach { page ->
+            pages.add(Page(page["p"].int, "", staticUrl + chapInfoJson["imgUrl"].string + page["u"].string))
         }
+
         return pages
     }
 
@@ -162,7 +179,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
             val popup = client.newCall(
                     GET("https://mangalib.me/search?query=$searchRequest", headers = popupSearchHeaders)
             ).execute().body()!!.string()
-            val jsonList = JsonParser().parse(popup).asJsonArray
+            val jsonList = jsonParser.parse(popup).asJsonArray
             jsonList.forEach {
                 val element = it.asJsonObject
                 val manga = SManga.create()
