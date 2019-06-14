@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.OkHttpClient
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -21,6 +22,8 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/manga-list?dir=desc&page=$page&sort=views", headers)
