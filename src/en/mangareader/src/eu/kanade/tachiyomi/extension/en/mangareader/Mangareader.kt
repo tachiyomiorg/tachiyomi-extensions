@@ -119,16 +119,18 @@ class Mangareader : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        val chapterUrl = baseUrl + document.select("select#pageMenu option").attr("value") + "/"
-        document.select("select#pageMenu").text().split(" ").forEach { //  For each page #
-            val request = client.newCall(GET("$chapterUrl$it", headers))  //  Request each page
-            pages.add(Page(pages.size, "", getImage(request.execute())))
+        val chapterUrl = document.select("select#pageMenu option").attr("value") + "/"
+        document.select("select#pageMenu").text().split(" ").forEach {
+            pages.add(Page(pages.size, "$chapterUrl$it"))
         }
         return pages
     }
 
-    //  Get the image from the requested page
-    private fun getImage (response: Response): String {
+    // Get the page
+    override fun imageUrlRequest(page: Page) = GET("$baseUrl" + page.url)
+
+   //  Get the image from the requested page
+    override fun imageUrlParse (response: Response): String {
         val document = response.asJsoup()
         return document.select("a img").attr("src")
     }
