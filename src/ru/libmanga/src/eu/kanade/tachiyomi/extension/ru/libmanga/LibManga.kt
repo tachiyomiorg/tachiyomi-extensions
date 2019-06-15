@@ -171,6 +171,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     override fun searchMangaParse(response: Response): MangasPage {
         val searchRequest = response.request().url().queryParameter("name")
         val mangas = mutableListOf<SManga>()
+
         if (!searchRequest.isNullOrEmpty()) {
             val popupSearchHeaders = headers
                     .newBuilder()
@@ -180,21 +181,21 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
             // +200ms
             val popup = client.newCall(
-                    GET("https://mangalib.me/search?query=$searchRequest", headers = popupSearchHeaders)
-            ).execute().body()!!.string()
-            val jsonList = jsonParser.parse(popup).asJsonArray
+                    GET("https://mangalib.me/search?query=$searchRequest", headers = popupSearchHeaders))
+                .execute().body()!!.string()
+
+            val jsonList = jsonParser.parse(popup).array
             jsonList.forEach {
-                val element = it.asJsonObject
                 val manga = SManga.create()
-                manga.setUrlWithoutDomain("/" + element.get("slug").string)
-                manga.description = element.get("summary").nullString
-                manga.author = element.get("author").nullString
-                manga.title = element.get("name").string
-                val status = element.get("status_id").int
-                manga.status = if (status > 2) 2 else status
+                manga.setUrlWithoutDomain("/" + it["slug"].string)
+                manga.title = it["name"].string
+                manga.thumbnail_url = baseUrl + "/uploads/" +
+                    if (it["cover"].nullInt != null)
+                        "cover/" + it["slug"].string + "/cover/cover_250x350.jpg"
+                    else
+                        "no-image.png"
                 mangas.add(manga)
             }
-
         }
         val document = response.asJsoup()
 
@@ -206,7 +207,6 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         mangas.addAll(searchedMangas.filter { search ->
             mangas.find { search.title == it.title } == null
         })
-
 
         val hasNextPage = searchMangaNextPageSelector().let { selector ->
             document.select(selector).first()
