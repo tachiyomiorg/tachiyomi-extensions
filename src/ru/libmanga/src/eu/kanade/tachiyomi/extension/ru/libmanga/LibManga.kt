@@ -28,17 +28,16 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     private val jsonParser = JsonParser()
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/manga-list?dir=desc&page=$page&sort=views", headers)
+            GET("$baseUrl/manga-list?dir=desc&sort=views&page=$page", headers)
 
-    override fun popularMangaSelector() = "div.manga-list-item"
+    override fun popularMangaSelector() = "div.manga-block-item"
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val item = element.select("a.manga-list-item__content").first()
+        val item = element.select("a.manga-block-item__content").first()
         val manga = SManga.create()
         manga.thumbnail_url = item.attr("data-src")
-            .replace("cover_thumb", "cover_250x350")
         manga.setUrlWithoutDomain(item.attr("href"))
-        manga.title = item.select("h3.manga-list-item__name").first().text()
+        manga.title = item.select("h3.manga-block-item__name").first().text()
         return manga
     }
 
@@ -51,7 +50,12 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
         manga.artist = body.select(".info-list__row:nth-child(3) > a").text()
-        manga.status = when (body.select(".info-list__row:nth-child(4) > span").text()) {
+        manga.status = when (
+            body.select(".info-list__row:has(strong:contains(Перевод))")
+                .first()
+                .select("span.m-label_info")
+                .text())
+        {
             "продолжается" -> SManga.ONGOING
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
@@ -162,7 +166,6 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         }
         return GET(url.toString(), headers)
     }
-
 
     // Hack search method to add some results from search popup
     override fun searchMangaParse(response: Response): MangasPage {
