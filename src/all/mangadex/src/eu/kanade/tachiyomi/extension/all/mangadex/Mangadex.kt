@@ -79,7 +79,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             }.build()!!
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi "+ System.getProperty("http.agent"))
+        add("User-Agent", getUserAgentPrefix() + System.getProperty("http.agent"))
     }
 
     private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
@@ -551,15 +551,31 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 preferences.edit().putString(SERVER_PREF, entry).commit()
             }
         }
+        val userAgentPref = ListPreference(screen.context).apply {
+            key = UA_PREF_Title
+            title = UA_PREF_Title
+            entries = arrayOf("Use Tachiyomi", "Use System")
+            entryValues = arrayOf("Tachiyomi ", "")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val prefix = entryValues.get(index) as String
+                preferences.edit().putString(UA_PREF, prefix).commit()
+            }
+        }
 
         screen.addPreference(myPref)
         screen.addPreference(thumbsPref)
         screen.addPreference(serverPref)
+        screen.addPreference(userAgentPref)
     }
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
     private fun getServer(): String = preferences.getString(SERVER_PREF, "0")
+    private fun getUserAgentPrefix(): String = preferences.getString(UA_PREF, "Tachiyomi ")
 
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
@@ -706,6 +722,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
         private const val SERVER_PREF_Title = "Image server"
         private const val SERVER_PREF = "imageServer"
+
+        private const val UA_PREF_Title = "User-Agent"
+        private const val UA_PREF = "userAgent"
+
+        private const val USE_SYSTEM_USER_AGENT = 1
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
