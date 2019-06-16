@@ -1,23 +1,23 @@
 package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import com.github.salomonbrys.kotson.*
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.OkHttpClient
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
+import okhttp3.*
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Base64.decode as base64Decode
+import rx.Observable
 
 
-open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : ParsedHttpSource() {
+open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : HttpSource() {
 
     override val lang = "ru"
 
@@ -27,23 +27,86 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
     private val jsonParser = JsonParser()
 
-    override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/manga-list?dir=desc&sort=views&page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
-    override fun popularMangaSelector() = "div.manga-block-item"
+    private val latestUpdatesSelector = "div.updates__left"
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        val item = element.select("a.manga-block-item__content").first()
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val elements = response.asJsoup().select(latestUpdatesSelector)
+        val latestMangas =  elements?.map { latestUpdatesFromElement(it) }
+        if (latestMangas != null)
+            return MangasPage(latestMangas,false) // TODO: use API
+        return MangasPage(emptyList(), false)
+    }
+
+    private fun latestUpdatesFromElement(element: Element): SManga {
+        val link = element.select("a").first()
+        val img = link.select("img").first()
         val manga = SManga.create()
-        manga.thumbnail_url = item.attr("data-src")
-        manga.setUrlWithoutDomain(item.attr("href"))
-        manga.title = item.select("h3.manga-block-item__name").first().text()
+        manga.thumbnail_url = img.attr("data-src")
+            .replace("cover_thumb", "cover_250x350")
+        manga.setUrlWithoutDomain(link.attr("href"))
+        manga.title = img.attr("alt")
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = "a[rel=\"next\"]"
+    private var csrfToken: String = ""
 
-    override fun mangaDetailsParse(document: Document): SManga {
+    private fun catalogHeaders() = Headers.Builder()
+        .apply {
+            add("Accept", "application/json, text/plain, */*")
+            add("X-Requested-With", "XMLHttpRequest")
+            add("x-csrf-token", csrfToken)
+        }
+        .build()
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/login", headers)
+
+    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        if (csrfToken.isEmpty()) {
+            return client.newCall(popularMangaRequest(page))
+                .asObservableSuccess()
+                .flatMap { response ->
+                    // Obtain token
+                    val resBody = response.body()!!.string()
+                    csrfToken = "_token\" content=\"(.*)\"".toRegex().find(resBody)!!.groups[1]!!.value
+                    return@flatMap fetchPopularMangaFromApi(page)
+                }
+        }
+        return fetchPopularMangaFromApi(page)
+    }
+
+    private fun fetchPopularMangaFromApi(page : Int): Observable<MangasPage> {
+        return client.newCall(POST("$baseUrl/filterlist?dir=desc&sort=views&page=$page", catalogHeaders()))
+            .asObservableSuccess()
+            .map { response ->
+                popularMangaParse(response)
+            }
+    }
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val resBody = response.body()!!.string()
+        val result = jsonParser.parse(resBody).obj
+        val items = result["items"]
+        val popularMangas = items["data"].nullArray?.map { popularMangaFromElement(it) }
+
+        if (popularMangas != null) {
+            val hasNextPage = items["next_page_url"].nullString != null
+            return MangasPage(popularMangas, hasNextPage)
+        }
+        return MangasPage(emptyList(), false)
+    }
+
+    private fun popularMangaFromElement(el: JsonElement) = SManga.create().apply {
+        title = el["name"].string
+        thumbnail_url = "$baseUrl/uploads/" + if (el["cover"].nullInt != null)
+            "cover/${el["slug"].string}/cover/cover_250x350.jpg" else
+            "no-image.png"
+        url = "/" + el["slug"].string
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        val document = response.asJsoup()
         val body = document.select("div.section__body").first()
         val manga = SManga.create()
         manga.title = body.select(".manga__title").text()
@@ -65,9 +128,15 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         return manga
     }
 
-    override fun chapterListSelector() = "div.chapter-item"
+    private val chapterListSelector = "div.chapter-item"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val elements = response.asJsoup().select(chapterListSelector)
+        val chapters = elements?.map { chapterFromElement(it) }
+        return chapters ?: emptyList()
+    }
+
+    private fun chapterFromElement(element: Element): SChapter {
         val chapterLink = element.select("div.chapter-item__name > a").first()
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(chapterLink.attr("href"))
@@ -84,7 +153,8 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         }
     }
 
-    override fun pageListParse(document: Document): List<Page> {
+    override fun pageListParse(response: Response): List<Page> {
+        val document = response.asJsoup()
         val chapInfo = document
             .select("script:containsData(window.__info)")
             .first()
@@ -113,31 +183,10 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = ""
-
-    override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
-
-    override fun latestUpdatesSelector() = "div.updates__left"
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        val link = element.select("a").first()
-        val img = link.select("img").first()
-        val manga = SManga.create()
-        manga.thumbnail_url = img.attr("data-src")
-            .replace("cover_thumb", "cover_250x350")
-        manga.setUrlWithoutDomain(link.attr("href"))
-        manga.title = img.attr("alt")
-        return manga
-    }
-
-    override fun latestUpdatesNextPageSelector(): String? = null
-
-    override fun searchMangaSelector() = popularMangaSelector()
-
-    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun imageUrlParse(response: Response): String = ""
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga-list?page=$page")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/filterlist?page=$page")!!.newBuilder()
         if (query.isNotEmpty()) {
             url.addQueryParameter("name", query)
         }
@@ -164,7 +213,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
                 }
             }
         }
-        return GET(url.toString(), headers)
+        return POST(url.toString(), catalogHeaders())
     }
 
     // Hack search method to add some results from search popup
@@ -181,41 +230,23 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
             // +200ms
             val popup = client.newCall(
-                    GET("https://mangalib.me/search?query=$searchRequest", headers = popupSearchHeaders))
+                    GET("$baseUrl/search?query=$searchRequest", popupSearchHeaders))
                 .execute().body()!!.string()
 
             val jsonList = jsonParser.parse(popup).array
             jsonList.forEach {
-                val manga = SManga.create()
-                manga.setUrlWithoutDomain("/" + it["slug"].string)
-                manga.title = it["name"].string
-                manga.thumbnail_url = baseUrl + "/uploads/" +
-                    if (it["cover"].nullInt != null)
-                        "cover/" + it["slug"].string + "/cover/cover_250x350.jpg"
-                    else
-                        "no-image.png"
-                mangas.add(manga)
+                mangas.add(popularMangaFromElement(it))
             }
         }
-        val document = response.asJsoup()
-
-        val searchedMangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
-        }
+        val searchedMangas = popularMangaParse(response)
 
         // Filtered out what find in popup search
-        mangas.addAll(searchedMangas.filter { search ->
+        mangas.addAll(searchedMangas.mangas.filter { search ->
             mangas.find { search.title == it.title } == null
         })
 
-        val hasNextPage = searchMangaNextPageSelector().let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, searchedMangas.hasNextPage)
     }
-
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
 
