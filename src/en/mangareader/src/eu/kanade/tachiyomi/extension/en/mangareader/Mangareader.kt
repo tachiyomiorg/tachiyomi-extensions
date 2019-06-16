@@ -10,6 +10,7 @@ import org.jsoup.nodes.Element
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Response
 import java.text.SimpleDateFormat
+import java.util.*
 
 
 class Mangareader : ParsedHttpSource() {
@@ -113,7 +114,7 @@ class Mangareader : ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("MM/dd/yyyy").parse(date).time
+        return SimpleDateFormat("MM/dd/yyyy", Locale.US).parse(date).time
     }
 
     override fun pageListParse(document: Document): List<Page> {
