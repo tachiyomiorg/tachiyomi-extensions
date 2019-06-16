@@ -255,15 +255,15 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     private class GenreList(genres: List<SearchFilter>) : Filter.Group<SearchFilter>("Жанры", genres)
 
     override fun getFilterList() = FilterList(
-            CategoryList(getCategoryList()),
-            StatusList(getStatusList()),
-            GenreList(getGenreList()),
-            OrderBy()
+        CategoryList(getCategoryList()),
+        StatusList(getStatusList()),
+        GenreList(getGenreList()),
+        OrderBy()
     )
 
     private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
-            Filter.Sort.Selection(0, false))
+        arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
+        Filter.Sort.Selection(0, false))
 
     /*
     * Use console
@@ -271,13 +271,13 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getCategoryList() = listOf(
-            SearchFilter("Манга", "1"),
-            SearchFilter("OEL-манга", "4"),
-            SearchFilter("Манхва", "5"),
-            SearchFilter("Маньхуа", "6"),
-            SearchFilter("Сингл", "7"),
-            SearchFilter("Руманга", "8"),
-            SearchFilter("Комикс западный", "9")
+        SearchFilter("Манга", "1"),
+        SearchFilter("OEL-манга", "4"),
+        SearchFilter("Манхва", "5"),
+        SearchFilter("Маньхуа", "6"),
+        SearchFilter("Сингл", "7"),
+        SearchFilter("Руманга", "8"),
+        SearchFilter("Комикс западный", "9")
     )
 
     /*
@@ -286,9 +286,9 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getStatusList() = listOf(
-            SearchFilter("Продолжается", "1"),
-            SearchFilter("Завершен", "2"),
-            SearchFilter("Заморожен", "3")
+        SearchFilter("Продолжается", "1"),
+        SearchFilter("Завершен", "2"),
+        SearchFilter("Заморожен", "3")
     )
 
     /*
@@ -297,51 +297,51 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getGenreList() = listOf(
-            SearchFilter("арт", "32"),
-            SearchFilter("бара", "33"),
-            SearchFilter("боевик", "34"),
-            SearchFilter("боевые искусства", "35"),
-            SearchFilter("вампиры", "36"),
-            SearchFilter("гарем", "37"),
-            SearchFilter("гендерная интрига", "38"),
-            SearchFilter("героическое фэнтези", "39"),
-            SearchFilter("детектив", "40"),
-            SearchFilter("дзёсэй", "41"),
-            SearchFilter("додзинси", "42"),
-            SearchFilter("драма", "43"),
-            SearchFilter("игра", "44"),
-            SearchFilter("история", "45"),
-            SearchFilter("киберпанк", "46"),
-            SearchFilter("комедия", "47"),
-            SearchFilter("махо-сёдзё", "48"),
-            SearchFilter("меха", "49"),
-            SearchFilter("мистика", "50"),
-            SearchFilter("научная фантастика", "51"),
-            SearchFilter("повседневность", "52"),
-            SearchFilter("постапокалиптика", "53"),
-            SearchFilter("приключения", "54"),
-            SearchFilter("психология", "55"),
-            SearchFilter("романтика", "56"),
-            SearchFilter("самурайский боевик", "57"),
-            SearchFilter("сверхъестественное", "58"),
-            SearchFilter("сёдзё", "59"),
-            SearchFilter("сёдзё-ай", "60"),
-            SearchFilter("сёнэн", "61"),
-            SearchFilter("сёнэн-ай", "62"),
-            SearchFilter("спорт", "63"),
-            SearchFilter("сэйнэн", "64"),
-            SearchFilter("трагедия", "65"),
-            SearchFilter("триллер", "66"),
-            SearchFilter("ужасы", "67"),
-            SearchFilter("фантастика", "68"),
-            SearchFilter("фэнтези", "69"),
-            SearchFilter("школа", "70"),
-            SearchFilter("эротика", "71"),
-            SearchFilter("этти", "72"),
-            SearchFilter("юри", "73"),
-            SearchFilter("яой", "74"),
-            SearchFilter("ёнкома", "75"),
-            SearchFilter("кодомо", "76"),
-            SearchFilter("омегаверс", "77")
+        SearchFilter("арт", "32"),
+        SearchFilter("боевик", "34"),
+        SearchFilter("боевые искусства", "35"),
+        SearchFilter("вампиры", "36"),
+        SearchFilter("веб", "78"),
+        SearchFilter("гарем", "37"),
+        SearchFilter("гендерная интрига", "38"),
+        SearchFilter("героическое фэнтези", "39"),
+        SearchFilter("детектив", "40"),
+        SearchFilter("дзёсэй", "41"),
+        SearchFilter("додзинси", "42"),
+        SearchFilter("драма", "43"),
+        SearchFilter("ёнкома", "75"),
+        SearchFilter("игра", "44"),
+        SearchFilter("история", "45"),
+        SearchFilter("киберпанк", "46"),
+        SearchFilter("кодомо", "76"),
+        SearchFilter("комедия", "47"),
+        SearchFilter("махо-сёдзё", "48"),
+        SearchFilter("меха", "49"),
+        SearchFilter("мистика", "50"),
+        SearchFilter("научная фантастика", "51"),
+        SearchFilter("омегаверс", "77"),
+        SearchFilter("повседневность", "52"),
+        SearchFilter("постапокалиптика", "53"),
+        SearchFilter("приключения", "54"),
+        SearchFilter("психология", "55"),
+        SearchFilter("романтика", "56"),
+        SearchFilter("самурайский боевик", "57"),
+        SearchFilter("сверхъестественное", "58"),
+        SearchFilter("сёдзё", "59"),
+        SearchFilter("сёдзё-ай", "60"),
+        SearchFilter("сёнэн", "61"),
+        SearchFilter("сёнэн-ай", "62"),
+        SearchFilter("спорт", "63"),
+        SearchFilter("сэйнэн", "64"),
+        SearchFilter("трагедия", "65"),
+        SearchFilter("триллер", "66"),
+        SearchFilter("ужасы", "67"),
+        SearchFilter("фантастика", "68"),
+        SearchFilter("фэнтези", "69"),
+        SearchFilter("школа", "70"),
+        SearchFilter("эротика", "71"),
+        SearchFilter("этти", "72"),
+        SearchFilter("юри", "73"),
+        SearchFilter("яой", "74")
     )
 }
