@@ -726,8 +726,6 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val UA_PREF_Title = "User-Agent"
         private const val UA_PREF = "userAgent"
 
-        private const val USE_SYSTEM_USER_AGENT = 1
-
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
 
