@@ -86,7 +86,7 @@ class PsychoPlay : ParsedHttpSource() {
 
     companion object {
         val dateFormat by lazy {
-            SimpleDateFormat("MMM d, yyyy")
+            SimpleDateFormat("MMM d, yyyy", Locale.US)
         }
     }
 
