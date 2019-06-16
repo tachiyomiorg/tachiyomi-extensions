@@ -115,7 +115,7 @@ class Mangatown : ParsedHttpSource() {
             "Today" -> return Calendar.getInstance().apply{}.timeInMillis
             "Yesterday" -> return Calendar.getInstance().apply{add(Calendar.DAY_OF_MONTH, -1)}.timeInMillis
             else -> {
-                return SimpleDateFormat("MMM d, yyyy").parse(date).time
+                return SimpleDateFormat("MMM d, yyyy", Locale.US).parse(date).time
             }
         }
     }
