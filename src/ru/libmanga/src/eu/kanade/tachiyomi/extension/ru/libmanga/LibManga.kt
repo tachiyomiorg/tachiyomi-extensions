@@ -209,7 +209,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
                 }
                 is OrderBy -> {
                     url.addQueryParameter("dir", if (filter.state!!.ascending) "asc" else "desc")
-                    url.addQueryParameter("sort", arrayOf("rate", "name", "views", "created_at")[filter.state!!.index])
+                    url.addQueryParameter("sort", arrayOf("rate", "name", "views", "created_at", "chap_count")[filter.state!!.index])
                 }
             }
         }
@@ -262,7 +262,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     )
 
     private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Рейтинг", "Имя", "Просмотры", "Дата"),
+            arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
             Filter.Sort.Selection(0, false))
 
     /*
