@@ -149,8 +149,7 @@ class AnimaRegia : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = document.select("div.viewer-cnt img.img-responsive")
 
-        return pages
-            .mapIndexed { i, element -> Page(i, "", element.absUrl("data-src"))}
+        return pages.mapIndexed { i, element -> Page(i, "", element.absUrl("data-src"))}
     }
 
     override fun imageUrlParse(document: Document) = ""
