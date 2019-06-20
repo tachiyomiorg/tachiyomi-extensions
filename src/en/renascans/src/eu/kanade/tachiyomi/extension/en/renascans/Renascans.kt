@@ -15,7 +15,7 @@ import java.util.*
 
 class Renascans : ParsedHttpSource() {
 
-    override val name = "Renascans"
+    override val name = "Mangasail"
 
     override val baseUrl = "https://renascans.com"
 
@@ -62,7 +62,7 @@ class Renascans : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    // source doesn't have its own search function, doing it locally
+    // source returns JSON data, doing a local search instead
     // need some variables accessible by multiple search functions
     private var searchQuery = ""
     private var searchPage = 1
@@ -125,7 +125,7 @@ class Renascans : ParsedHttpSource() {
         val manga = SManga.create()
         manga.title = infoElement.select("h2").first().text()
         manga.author = infoElement.select("dt:contains(author) + dd").text()
-        manga.artist = infoElement.select("dt:contains(arist) + dd").text()
+        manga.artist = infoElement.select("dt:contains(artist) + dd").text()
         manga.genre = infoElement.select("dt:contains(categories) + dd").text()
         val status = infoElement.select("dt:contains(status) + dd").text()
         manga.status = parseStatus(status)
@@ -159,7 +159,6 @@ class Renascans : ParsedHttpSource() {
         }
     }
 
-    // If the date string contains the word "on" simply dateformat it, otherwise send it off to parse relatively
     private fun parseChapterDate(string: String): Long? {
             return dateFormat.parse(string.substringAfter("on ")).time
     }
