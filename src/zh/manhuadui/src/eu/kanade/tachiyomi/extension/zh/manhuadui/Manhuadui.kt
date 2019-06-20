@@ -1,5 +1,8 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadui
 
+//import android.util.Base64.NO_WRAP
+//import java.util.*
+import android.util.Base64
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -9,6 +12,9 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 //import android.util.Base64
 //import android.util.Log
@@ -91,13 +97,40 @@ class Manhuadui : ParsedHttpSource() {
         return super.chapterListParse(response).asReversed()
     }
 
+    // ref: https://jueyue.iteye.com/blog/1830792
+    fun decryptAES(value: String, key: String, iv: String): String? {
+        try {
+            val secretKey = SecretKeySpec(key.toByteArray(), "AES")
+            val iv = IvParameterSpec(iv.toByteArray())
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, iv)
+
+            val code = Base64.decode(value, Base64.NO_WRAP)
+
+            return String(cipher.doFinal(code))
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return null
+    }
+
+    fun decrypt(code : String):String?{
+        val key = "123456781234567G"
+        val iv = "ABCDEF1G34123412"
+
+        return decryptAES(code, key, iv)
+    }
+
     override fun pageListParse(document: Document): List<Page> {
         val html = document.html()
-        val re = Regex("var chapterImages =(.*?);")
-        val imgCode = re.find(html)?.groups?.get(1)?.value
+        val re = Regex("""var chapterImages =\s*"(.*?)";""")
+        val imgCodeStr = re.find(html)?.groups?.get(1)?.value
+        val imgCode = decrypt(imgCodeStr!!)
         val imgPath = Regex("""var chapterPath =\s*"(.*?)";""").find(html)?.groups?.get(1)?.value
         val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode + """.join('|')""") as String
+            it.evaluate(imgCode!! + """.join('|')""") as String
         }
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
             //Log.i("test", "img => ${imageServer[0]}/$imgPath$imgStr")
