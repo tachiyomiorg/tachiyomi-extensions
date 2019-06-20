@@ -1,16 +1,15 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadui
 
+import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
-import com.squareup.duktape.Duktape
+
 //import android.util.Base64
 //import android.util.Log
 
@@ -33,7 +32,7 @@ class Manhuadui : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", baseUrl)
+        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
@@ -111,11 +110,11 @@ class Manhuadui : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
-            "All"
+        "All"
     )
 
 
