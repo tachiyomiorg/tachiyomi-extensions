@@ -52,7 +52,6 @@ class Renascans : ParsedHttpSource() {
         element.select("h3 a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
-            manga.thumbnail_url = element.select("img").first().attr("src")
         }
         manga.thumbnail_url = element.select("img").first().attr("src")
         return manga
