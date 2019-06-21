@@ -22,8 +22,8 @@ class HanhanKuman : ParsedHttpSource() {
     override val supportsLatest = true
     val imageServer = arrayOf("https://res.333dm.com", "https://res02.333dm.com")
 
-    override fun popularMangaSelector() = "li.list-comic"
-    override fun searchMangaSelector() = popularMangaSelector()
+    override fun popularMangaSelector() = ".cTopComicList > div.cComicItem"
+    override fun searchMangaSelector() = ".cComicList > li"
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun chapterListSelector() = "ul#chapter-list-1 > li"
 
@@ -49,25 +49,23 @@ class HanhanKuman : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a.comic_img").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("img").attr("alt").trim()
-            manga.thumbnail_url = if (it.select("img").attr("src").trim().indexOf("http") == -1)
-                "https:${it.select("img").attr("src").trim()}"
-            else it.select("img").attr("src").trim()
-        }
-        manga.author = element.select("span.comic_list_det > p").first()?.text()?.substring(3)
+
+        manga.url = element.select("a").first()!!.attr("href")
+        manga.title = element.select("span.cComicTitle").text().trim()
+        manga.author = element.select("span.cComicAuthor").first()?.text()?.trim()
+        manga.thumbnail_url = element.select("div.cListSlt > a > img").attr("src")
+        manga.description = element.select(".cComicMemo").text().trim()
+
         return manga
     }
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a.image-link").first().let {
+        element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title").trim()
             manga.thumbnail_url = it.select("img").attr("src").trim()
         }
-        manga.author = element.select("p.auth").text().trim()
         return manga
     }
 
