@@ -17,7 +17,7 @@ import javax.crypto.spec.SecretKeySpec
 class HanhanKuman : ParsedHttpSource() {
 
     override val name = "汗汗酷漫"
-    override val baseUrl = "http://www.hhimm.com/"
+    override val baseUrl = "http://www.hhimm.com"
     override val lang = "zh"
     override val supportsLatest = true
     val imageServer = arrayOf("https://res.333dm.com", "https://res02.333dm.com")
@@ -34,10 +34,10 @@ class HanhanKuman : ParsedHttpSource() {
     override fun headersBuilder() = super.headersBuilder()
         .add("Referer", baseUrl)
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/top/hotrating.aspx", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/top/newrating.aspx", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/comic/?act=search&st=$query")?.newBuilder()
         return GET(url.toString(), headers)
     }
 
