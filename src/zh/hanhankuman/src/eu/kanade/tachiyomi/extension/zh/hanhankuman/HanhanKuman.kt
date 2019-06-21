@@ -1,18 +1,14 @@
 package eu.kanade.tachiyomi.extension.zh.hanhankuman
 
-import android.util.Base64
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class HanhanKuman : ParsedHttpSource() {
 
@@ -20,12 +16,11 @@ class HanhanKuman : ParsedHttpSource() {
     override val baseUrl = "http://www.hhimm.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = arrayOf("https://res.333dm.com", "https://res02.333dm.com")
 
     override fun popularMangaSelector() = ".cTopComicList > div.cComicItem"
     override fun searchMangaSelector() = ".cComicList > li"
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "ul#chapter-list-1 > li"
+    override fun chapterListSelector() = "ul.cVolUl > li"
 
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
@@ -43,6 +38,7 @@ class HanhanKuman : ParsedHttpSource() {
 
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
     override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
+
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
@@ -70,67 +66,99 @@ class HanhanKuman : ParsedHttpSource() {
     }
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a")
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.attr("title").trim()
+
+        element.select("a").let {
+            chapter.setUrlWithoutDomain(it.attr("href"))
+            chapter.name = it.attr("title").trim()
+        }
+
         return chapter
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.description = document.select("p.comic_deCon_d").text().trim()
-        manga.thumbnail_url = document.select("div.comic_i_img > img").attr("src")
+//        manga.description = document.select("p.comic_deCon_d").text().trim()
+//        manga.thumbnail_url = document.select("div.comic_i_img > img").attr("src")
         return manga
     }
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        return super.chapterListParse(response).asReversed()
+    override fun pageListParse(response: Response): List<Page> {
+        val url = response.request().url().url().toString()
+
+        val re = Regex(""".*\/(.*?)\/\d+\.html\?s=(\d+)""")
+
+        val matches = re.find(url)?.groups
+        val pathId = matches!!.get(1)!!.value
+        val pathS = matches!!.get(2)!!.value
+
+        return pageListParse(response.asJsoup(), pathId, pathS)
     }
 
-    // ref: https://jueyue.iteye.com/blog/1830792
-    fun decryptAES(value: String, key: String, iv: String): String? {
-        try {
-            val secretKey = SecretKeySpec(key.toByteArray(), "AES")
-            val iv = IvParameterSpec(iv.toByteArray())
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, iv)
+    override fun pageListParse(document: Document):List<Page> = listOf()
 
-            val code = Base64.decode(value, Base64.NO_WRAP)
-
-            return String(cipher.doFinal(code))
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return null
-    }
-
-    fun decrypt(code: String): String? {
-        val key = "123456781234567G"
-        val iv = "ABCDEF1G34123412"
-
-        return decryptAES(code, key, iv)
-    }
-
-    override fun pageListParse(document: Document): List<Page> {
-        val html = document.html()
-        val re = Regex("""var chapterImages =\s*"(.*?)";""")
-        val imgCodeStr = re.find(html)?.groups?.get(1)?.value
-        val imgCode = decrypt(imgCodeStr!!)
-        val imgPath = Regex("""var chapterPath =\s*"(.*?)";""").find(html)?.groups?.get(1)?.value
-        val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode!! + """.join('|')""") as String
-        }
-        return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            //Log.i("test", "img => ${imageServer[0]}/$imgPath$imgStr")
-            Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
+    fun pageListParse(document: Document, id: String, s: String): List<Page> {
+        return document.select("#iPageHtm > a").mapIndexed { i, _ ->
+            Page(i, String.format("http://www.hhimm.com/%s/%d.html?s=%s&d=0", id, i + 1, s), "")
         }
     }
 
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document): String {
+        // get img key
+        val imgEleIds = arrayOf("img1021", "img2391", "img7652", "imgCurr")
+        var imgKey: String? = null
+        for (i in imgEleIds.indices) {
+            imgKey = document.select("#" + imgEleIds[i]).attr("name")
+            if (imgKey != "") break
+        }
+
+        val servers = document.select("#hdDomain").attr("value").split("|")
+
+        //img key decode
+        return if (imgKey != "") {
+            servers[0] + unsuan(imgKey!!)
+        } else ""
+    }
+
+    //https://stackoverflow.com/questions/2946067/what-is-the-java-equivalent-to-javascripts-string-fromcharcode
+    fun fromCharCode(vararg codePoints: Int): String {
+        return String(codePoints, 0, codePoints.size)
+    }
+
+    private fun unsuan(s: String): String {
+        var s = s
+        val sw = "44123.com|hhcool.com|hhimm.com"
+        val su = "www.hhimm.com"
+        var b = false
+
+        for (i in 0 until sw.split("|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray().size) {
+            if (su.indexOf(sw.split("|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[i]) > -1) {
+                b = true
+                break
+            }
+        }
+        if (!b)
+            return ""
+
+        val x = s.substring(s.length - 1)
+        val w = "abcdefghijklmnopqrstuvwxyz"
+        val xi = w.indexOf(x) + 1
+        val sk = s.substring(s.length - xi - 12, s.length - xi - 1)
+        s = s.substring(0, s.length - xi - 12)
+        val k = sk.substring(0, sk.length - 1)
+        val f = sk.substring(sk.length - 1)
+
+        for (i in 0 until k.length) {
+            s = s.replace(k.substring(i, i + 1), Integer.toString(i))
+        }
+        val ss = s.split(f.toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        s = ""
+        for (i in ss.indices) {
+            s += fromCharCode(Integer.parseInt(ss[i]))
+        }
+        return s
+    }
+
 
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
