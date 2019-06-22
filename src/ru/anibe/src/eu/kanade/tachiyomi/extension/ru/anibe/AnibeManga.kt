@@ -1,20 +1,16 @@
-package eu.kanade.tachiyomi.extension.ru.selfmanga
+package eu.kanade.tachiyomi.extension.ru.anibe
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import java.text.ParseException
-import java.text.SimpleDateFormat
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.*
-import java.util.regex.Pattern
 
-class Selfmanga : ParsedHttpSource() {
+class AnibeManga : ParsedHttpSource() {
 
     override val name = "Anibe!Manga"
 
@@ -33,7 +29,7 @@ class Selfmanga : ParsedHttpSource() {
         val arr = JSONArray(json)
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
-            var obj = arr.getJSONObject(i)
+            val obj = arr.getJSONObject(i)
             ret.add(SManga.create().apply {
                 mangaFromJSON(obj, false)
             })
@@ -49,7 +45,7 @@ class Selfmanga : ParsedHttpSource() {
         description = obj.getString("description")
         genre = if (chapter) {
             val jsonArray = obj.getJSONArray("genres")
-            var genreList = kotlin.collections.mutableListOf<String>()
+            val genreList = kotlin.collections.mutableListOf<String>()
             for (i in 0 until jsonArray.length()) {
                 genreList.add(jsonArray.getJSONObject(i).getString("russian"))
             }
@@ -75,13 +71,13 @@ class Selfmanga : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var url = "$baseUrl/posts?limit=20&page=$page"
-        var types = mutableListOf<Type>()
-        var genres = mutableListOf<Genre>()
+        val types = mutableListOf<Type>()
+        val genres = mutableListOf<Genre>()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is OrderBy -> url += "&sort=" + arrayOf("-rating", "-updateAt", "+title")[filter.state]
                 is TypeList -> filter.state.forEach { type -> if (type.state) types.add(type) }
-                is GenreList -> filter.state.forEach {genre -> if (genre.state) genres.add(genre) }
+                is GenreList -> filter.state.forEach { genre -> if (genre.state) genres.add(genre) }
             }
         }
 
