@@ -3,10 +3,10 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Anibe!Manga'
-    pkgNameSuffix = 'ru.anibe.manga'
-    extClass = '.Anibe!Manga'
+    pkgNameSuffix = 'ru.anibe'
+    extClass = '.AnibeManga'
     extVersionCode = 4
-    libVersion = '1.2'
+    libVersion = '1.0'
 }
 
 apply from: "$rootDir/common.gradle"
