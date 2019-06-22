@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: mangásPROJECT'
     pkgNameSuffix = 'pt.mangasproject'
-    extClass = '.MangasProject'
-    extVersionCode = 3
+    extClass = '.MangasProjectFactory'
+    extVersionCode = 4
     libVersion = '1.2'
 }
 
