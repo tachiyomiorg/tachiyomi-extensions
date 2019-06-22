@@ -273,7 +273,6 @@ abstract class MangasProject(override val name: String,
         val readerSrc = document.select("script[src*=\"reader.min.js\"]")
             ?.attr("src") ?: ""
 
-
         val token = TOKEN_REGEX.find(readerSrc)?.groupValues?.get(1) ?: ""
 
         if (token.isEmpty())
