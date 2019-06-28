@@ -184,14 +184,6 @@
     "version": "1.2.3"
   },
   {
-    "name": "Tachiyomi: Mangacow",
-    "pkg": "eu.kanade.tachiyomi.extension.en.mangacow",
-    "apk": "tachiyomi-en.mangacow-v1.0.1.apk",
-    "lang": "en",
-    "code": 1,
-    "version": "1.0.1"
-  },
-  {
     "name": "Tachiyomi: Mangaeden",
     "pkg": "eu.kanade.tachiyomi.extension.en.mangaeden",
     "apk": "tachiyomi-en.mangaeden-v1.0.2.apk",
@@ -200,28 +192,12 @@
     "version": "1.0.2"
   },
   {
-    "name": "Tachiyomi: Mangafox",
-    "pkg": "eu.kanade.tachiyomi.extension.en.mangafox",
-    "apk": "tachiyomi-en.mangafox-v1.2.3.apk",
-    "lang": "en",
-    "code": 3,
-    "version": "1.2.3"
-  },
-  {
     "name": "Tachiyomi: Mangafree",
     "pkg": "eu.kanade.tachiyomi.extension.en.mangafree",
     "apk": "tachiyomi-en.mangafree-v1.2.3.apk",
     "lang": "en",
     "code": 3,
     "version": "1.2.3"
-  },
-  {
-    "name": "Tachiyomi: Mangago",
-    "pkg": "eu.kanade.tachiyomi.extension.en.mangago",
-    "apk": "tachiyomi-en.mangago-v1.2.7.apk",
-    "lang": "en",
-    "code": 7,
-    "version": "1.2.7"
   },
   {
     "name": "Tachiyomi: Mangahasu",
@@ -272,14 +248,6 @@
     "version": "1.2.9"
   },
   {
-    "name": "Tachiyomi: Manga Plus by Shueisha",
-    "pkg": "eu.kanade.tachiyomi.extension.en.mangaplus",
-    "apk": "tachiyomi-en.mangaplus-v1.2.4.apk",
-    "lang": "en",
-    "code": 4,
-    "version": "1.2.4"
-  },
-  {
     "name": "Tachiyomi: Mangareader",
     "pkg": "eu.kanade.tachiyomi.extension.en.mangareader",
     "apk": "tachiyomi-en.mangareader-v1.2.2.apk",
@@ -326,14 +294,6 @@
     "lang": "en",
     "code": 5,
     "version": "1.0.5"
-  },
-  {
-    "name": "Tachiyomi: Manhwahentai",
-    "pkg": "eu.kanade.tachiyomi.extension.en.manhwahentai",
-    "apk": "tachiyomi-en.manhwahentai-v1.2.2.apk",
-    "lang": "en",
-    "code": 2,
-    "version": "1.2.2"
   },
   {
     "name": "Tachiyomi: MerakiScans",
