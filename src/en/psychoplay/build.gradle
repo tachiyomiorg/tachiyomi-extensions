@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: PsychoPlay'
     pkgNameSuffix = 'en.psychoplay'
     extClass = '.PsychoPlay'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
