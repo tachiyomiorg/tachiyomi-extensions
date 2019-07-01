@@ -97,6 +97,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun latestUpdatesSelector() = "tr a.manga_title"
 
+    // url matches default SortFilter selection (Rating Descending)
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/titles/7/$page/", headersBuilder().build())
     }
@@ -574,9 +575,10 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private class TagInclusionMode : Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
     private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
 
+    // default selection (Rating Descending) matches popularMangaRequest url
     class SortFilter : Filter.Sort("Sort",
             sortables.map { it.first }.toTypedArray(),
-            Filter.Sort.Selection(0, true))
+            Filter.Sort.Selection(3, false))
 
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
 
