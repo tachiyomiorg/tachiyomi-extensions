@@ -99,12 +99,13 @@ class Mangasail : ParsedHttpSource() {
     private fun getNodeDetail(node: String, field:String): String {
         val requestUrl = "$baseUrl/sites/all/modules/authcache/modules/authcache_p13n/frontcontroller/authcache.php?a[field][0]=$node:full:en&r=asm/field/node/$field&o[q]=node/$node"
         val call = client.newCall(GET(requestUrl, headers)).execute()
+        val gson = Gson()
         if (call.isSuccessful) {
             when (field) {
-                "field_image2" -> return Gson().fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString.substringAfter("src=\"").substringBefore("\"")
-                "field_status", "field_author", "field_artist" -> return Gson().fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString.substringAfter("even\">").substringBefore("</div>")
-                "body" -> return parse(Gson().fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString, baseUrl).select("p").text().substringAfter("summary: ")
-                "field_genres" -> return parse(Gson().fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString, baseUrl).select("a").text()
+                "field_image2" -> return gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString.substringAfter("src=\"").substringBefore("\"")
+                "field_status", "field_author", "field_artist" -> return gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString.substringAfter("even\">").substringBefore("</div>")
+                "body" -> return parse(gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString, baseUrl).select("p").text().substringAfter("summary: ")
+                "field_genres" -> return parse(gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString, baseUrl).select("a").text()
             }
         }
             return ""
