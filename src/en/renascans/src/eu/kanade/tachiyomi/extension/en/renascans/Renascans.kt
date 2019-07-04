@@ -3,19 +3,20 @@ package eu.kanade.tachiyomi.extension.en.renascans
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
 import java.text.SimpleDateFormat
 import java.util.*
+import com.github.salomonbrys.kotson.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 
 class Renascans : ParsedHttpSource() {
 
-    override val name = "Mangasail"
+    override val name = "Renascence Scans (Renascans)"
 
     override val baseUrl = "https://renascans.com"
 
@@ -61,62 +62,29 @@ class Renascans : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    // source returns JSON data, doing a local search instead
-    // need some variables accessible by multiple search functions
-    private var searchQuery = ""
-    private var searchPage = 1
-    private var nextPageSelectorElement = Elements()
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (page == 1) searchPage = 1
-        searchQuery = query.toLowerCase()
-        return GET("$baseUrl/manga-list?page=$page")
+        return GET("$baseUrl/search?query=$query")
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
         val searchMatches = mutableListOf<SManga>()
-        val document = response.asJsoup()
-        searchMatches.addAll(getMatchesFrom(document))
 
-        /* call another function if there's more pages to search
-           not doing it this way can lead to a false "no results found"
-           if no matches are found on the first page but there are matches
-           on subsequent pages */
-        nextPageSelectorElement = document.select(searchMangaNextPageSelector())
-        while (nextPageSelectorElement.hasText()) {
-            searchMatches.addAll(searchMorePages())
+        val array = Gson().fromJson<JsonObject>(response.body()!!.string())["suggestions"].asJsonArray
+        for (i in 0 until array.size()) {
+            val manga = SManga.create()
+            manga.title = array[i]["value"].asString
+            manga.url = "/manga/" + array[i]["data"].asString
+            manga.thumbnail_url = "$baseUrl/uploads/manga/" + array[i]["data"].asString + "/cover/cover_250x350"
+            searchMatches.add(manga)
         }
-
         return MangasPage(searchMatches, false)
-    }
-
-    // search the given document for matches
-    private fun getMatchesFrom(document: Document): MutableList<SManga> {
-        val searchMatches = mutableListOf<SManga>()
-        document.select(searchMangaSelector()).forEach {
-            if (it.text().toLowerCase().contains(searchQuery)) {
-                searchMatches.add(searchMangaFromElement(it))
-            }
-        }
-        return searchMatches
-    }
-
-    // search additional pages if called
-    private fun searchMorePages(): MutableList<SManga> {
-        searchPage++
-        val nextPage = client.newCall(GET("$baseUrl/manga-list?page=$searchPage", headers)).execute().asJsoup()
-        val searchMatches = mutableListOf<SManga>()
-        searchMatches.addAll(getMatchesFrom(nextPage))
-        nextPageSelectorElement = nextPage.select(searchMangaNextPageSelector())
-
-        return searchMatches
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = "None"
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.row")
