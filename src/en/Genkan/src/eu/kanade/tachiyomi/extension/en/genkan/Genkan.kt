@@ -32,8 +32,29 @@ abstract class Genkan(
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
+    // Track manga in latest updates page
+    private val latestUpdatesTitles = mutableListOf<String>()
+
     override fun latestUpdatesRequest(page: Int): Request {
+            if (page == 1) latestUpdatesTitles.clear()
             return GET("$baseUrl/latest?page=$page")
+    }
+
+    // To prevent dupes
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val latestManga = mutableListOf<SManga>()
+        val document = response.asJsoup()
+
+        document.select(latestUpdatesSelector()).forEach { element ->
+            latestUpdatesFromElement(element).let { manga ->
+                if (manga.title !in latestUpdatesTitles) {
+                    latestManga.add(manga)
+                    latestUpdatesTitles.add(manga.title)
+                }
+            }
+        }
+
+        return MangasPage(latestManga, document.select(latestUpdatesNextPageSelector()).hasText())
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
