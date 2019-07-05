@@ -33,7 +33,7 @@ abstract class Genkan(
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     // Track manga in latest updates page
-    private val latestUpdatesTitles = mutableListOf<String>()
+    private val latestUpdatesTitles = mutableSetOf<String>()
 
     override fun latestUpdatesRequest(page: Int): Request {
             if (page == 1) latestUpdatesTitles.clear()
@@ -73,7 +73,7 @@ abstract class Genkan(
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    // Didn't see a search function on PsychoPlay's website when I updated this extension; so searching locally
+    // Sources' websites don't appear to have a search function; so searching locally
     private var searchQuery = ""
     private var searchPage = 1
     private var nextPageSelectorElement = Elements()
