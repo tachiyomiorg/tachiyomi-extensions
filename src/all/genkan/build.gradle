@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Genkan (multiple sources)'
-    pkgNameSuffix = 'en.genkan'
+    pkgNameSuffix = 'all.genkan'
     extClass = '.GenkanFactory'
     extVersionCode = 1
     libVersion = '1.2'

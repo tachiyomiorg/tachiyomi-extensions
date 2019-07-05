@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.genkan
+package eu.kanade.tachiyomi.extension.all.genkan
 
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory

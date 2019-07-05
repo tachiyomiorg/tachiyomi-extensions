@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.genkan
+package eu.kanade.tachiyomi.extension.all.genkan
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
