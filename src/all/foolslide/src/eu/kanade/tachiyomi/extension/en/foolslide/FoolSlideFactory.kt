@@ -32,13 +32,11 @@ fun getAllFoolSlide(): List<Source> {
         AjiaNoScantrad(),
         OneTimeScans(),
         TsubasaSociety(),
-        Helheim(),
         MangaScouts(),
         StormInHeaven(),
         Lilyreader(),
         MidnightHaven(),
         Russification(),
-        NieznaniReader(),
         EvilFlowers(),
         AkaiYuhiMunTeam(),
         LupiTeam(),
@@ -106,8 +104,6 @@ class OneTimeScans : FoolSlide("One Time Scans", "https://otscans.com", "en", "/
 
 class TsubasaSociety : FoolSlide("Tsubasa Society", "https://www.tsubasasociety.com", "en", "/reader/master/Xreader")
 
-class Helheim : FoolSlide("Helheim", "http://helheim.pl", "pl", "/reader")
-
 class MangaScouts : FoolSlide("MangaScouts", "http://onlinereader.mangascouts.org", "de")
 
 class StormInHeaven : FoolSlide("Storm in Heaven", "http://www.storm-in-heaven.net", "it", "/reader-sih")
@@ -117,8 +113,6 @@ class Lilyreader : FoolSlide("Lilyreader", "https://manga.smuglo.li", "en")
 class MidnightHaven : FoolSlide("Midnight Haven", "http://midnighthaven.shounen-ai.net", "en", "/reader")
 
 class Russification : FoolSlide("Русификация", "https://rusmanga.ru", "ru")
-
-class NieznaniReader : FoolSlide("Nieznani", "http://reader.nieznani.mynindo.pl", "pl")
 
 class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
 
