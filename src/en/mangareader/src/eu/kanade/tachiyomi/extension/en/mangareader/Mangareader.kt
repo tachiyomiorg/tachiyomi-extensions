@@ -31,17 +31,44 @@ class Mangareader : ParsedHttpSource() {
         if (page == 1) {
             return GET("$baseUrl/popular/")
         } else {
-            return GET("$baseUrl/popular/$page")
+            return GET("$baseUrl/popular/$nextPageNumber")
         }
     }
 
-    override fun latestUpdatesSelector() = "tr.c2"
+    // Site's page numbering is weird, have to do some work to get the right page number for additional requests
+    private var nextPageNumber = ""
+    val nextPageSelector = "div#sp a:contains(>)"
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        nextPageNumber = document.select(nextPageSelector).attr("href")
+            .substringAfterLast("/").substringBefore("\"")
+
+        val manga = mutableListOf<SManga>()
+        document.select(popularMangaSelector()).map{manga.add(popularMangaFromElement(it))}
+
+        return MangasPage(manga, document.select(nextPageSelector).hasText())
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        nextPageNumber = document.select(nextPageSelector).attr("href")
+            .substringAfterLast("/").substringBefore("\"")
+
+        val manga = mutableListOf<SManga>()
+        document.select(latestUpdatesSelector()).map{manga.add(latestUpdatesFromElement(it))}
+
+        return MangasPage(manga, document.select(nextPageSelector).hasText())
+    }
+
+    override fun latestUpdatesSelector() = "tr.c3"
 
     override fun latestUpdatesRequest(page: Int): Request {
         if (page == 1) {
             return GET("$baseUrl/latest/")
         } else {
-            return GET("$baseUrl/latest/$page")
+            return GET("$baseUrl/latest/$nextPageNumber")
         }
     }
 
@@ -64,14 +91,19 @@ class Mangareader : ParsedHttpSource() {
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = "div#sp a"
+    override fun popularMangaNextPageSelector() = "Not using this"
 
-    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector() = "Not using this"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/search/?w=$query&p"
-        return GET(url, headers)
+        if (page==1) {
+            return GET("$baseUrl/search/?w=$query&p", headers)
+        } else {
+            return GET("$baseUrl/search/?w=$query&p=$nextPageNumber", headers)
+        }
     }
+
+    override fun searchMangaParse(response: Response) = popularMangaParse(response)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -101,15 +133,18 @@ class Mangareader : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    // Site orders chapters oldest to newest, reverse that to be in line with most other sources
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return super.chapterListParse(response).reversed()
+    }
+
     override fun chapterListSelector() = "div#chapterlist tr:gt(0)"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a").first()
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = element.select("td:lt(1)").text()
-        chapter.date_upload = parseDate(element.select("td:matches(^\\d{1,2}\\/\\d{1,2}\\/\\d{4}\$)").text())
+        chapter.url = element.select("a").attr("href")
+        chapter.name = element.select("td:has(a)").text()
+        chapter.date_upload = parseDate(element.select("td:has(a) + td").text())
         return chapter
     }
 
@@ -136,7 +171,7 @@ class Mangareader : ParsedHttpSource() {
         return document.select("a img").attr("src")
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("No used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
 
