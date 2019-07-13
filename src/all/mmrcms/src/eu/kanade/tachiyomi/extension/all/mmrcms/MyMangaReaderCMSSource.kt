@@ -106,6 +106,9 @@ class MyMangaReaderCMSSource(override val lang: String,
             if (url.endsWith("no-image.png")) {
                 return "$baseUrl/uploads/manga/${mangaUrl?.substringAfterLast('/')}/cover/cover_250x350.jpg"
             }
+            if (url.startsWith("/uploads/")) {
+                return "$baseUrl$url"
+            }
             return url
         }
         return ""
