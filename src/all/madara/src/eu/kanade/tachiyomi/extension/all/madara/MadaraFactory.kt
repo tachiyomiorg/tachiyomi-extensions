@@ -31,7 +31,8 @@ class MadaraFactory : SourceFactory {
         MangazukiClub(),
         FirstKissManga(),
         Mangalike(),
-        MangaSY()
+        MangaSY(),
+        ManwhaClub()
     )
 }
 
@@ -63,3 +64,4 @@ class MangazukiClub : Madara("MangazukiClub", "https://mangazuki.club/", "ko")
 class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en")
 class Mangalike : Madara("Mangalike", "https://mangalike.net/", "en")
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en")
+class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en")
