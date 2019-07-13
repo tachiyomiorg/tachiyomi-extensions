@@ -62,7 +62,7 @@ open class Madara(
         return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
     }
 
-    override fun popularMangaNextPageSelector(): String? = "body:not(:has(.no-posts))"
+    override fun popularMangaNextPageSelector(): String? = searchMangaNextPageSelector()
 
     // Latest Updates
 
@@ -91,7 +91,7 @@ open class Madara(
         return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
     }
 
-    override fun latestUpdatesNextPageSelector(): String? = "body:not(:has(.no-posts))"
+    override fun latestUpdatesNextPageSelector(): String? = searchMangaNextPageSelector()
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
@@ -135,7 +135,7 @@ open class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = "body:not(:has(.no-posts))"
 
     // Manga Details Parse
 
@@ -164,6 +164,7 @@ open class Madara(
                 manga.status = when(it.text()) {
                     // I don't know what's the corresponding for COMPLETED and LICENSED
                     // There's no support for "Canceled" or "On Hold"
+                    "Completed" -> SManga.COMPLETED
                     "OnGoing", "Продолжается", "Updating" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
