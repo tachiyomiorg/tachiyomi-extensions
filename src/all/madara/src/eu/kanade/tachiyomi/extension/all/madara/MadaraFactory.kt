@@ -41,7 +41,8 @@ class MadaraFactory : SourceFactory {
         ManwhaClub(),
         WuxiaWorld(),
         YoManga(),
-        ManyToon()
+        ManyToon(),
+        ChibiManga()
     )
 }
 
@@ -84,3 +85,4 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
 }
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en")
 class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en")
+class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en")
