@@ -28,7 +28,10 @@ class MadaraFactory : SourceFactory {
         ZManga(),
         MangazukiMe(),
         MangazukiOnline(),
-        MangazukiClub()
+        MangazukiClub(),
+        FirstKissManga(),
+        Mangalike(),
+        MangaSY()
     )
 }
 
@@ -57,5 +60,6 @@ class ZManga : Madara("ZManga", "https://zmanga.org/", "es")
 class MangazukiMe : Madara("MangazukiMe", "https://mangazuki.me/", "en")
 class MangazukiOnline : Madara("MangazukiOnline", "https://www.mangazuki.online/", "en")
 class MangazukiClub : Madara("MangazukiClub", "https://mangazuki.club/", "ko")
-
-
+class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en")
+class Mangalike : Madara("Mangalike", "https://mangalike.net/", "en")
+class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en")
