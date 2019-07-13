@@ -25,7 +25,10 @@ class MadaraFactory : SourceFactory {
         TritiniaScans(),
         TsubakiNoScan(),
         YokaiJump(),
-        ZManga()
+        ZManga(),
+        MangazukiMe(),
+        MangazukiOnline(),
+        MangazukiClub()
     )
 }
 
@@ -51,3 +54,8 @@ class TritiniaScans : Madara("Tritinia Scans", "http://tritiniascans.ml/", "en")
 class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/", "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 class ZManga : Madara("ZManga", "https://zmanga.org/", "es")
+class MangazukiMe : Madara("MangazukiMe", "https://mangazuki.me/", "en")
+class MangazukiOnline : Madara("MangazukiOnline", "https://www.mangazuki.online/", "en")
+class MangazukiClub : Madara("MangazukiClub", "https://mangazuki.club/", "ko")
+
+
