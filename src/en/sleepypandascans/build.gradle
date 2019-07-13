@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Sleepy Panda Scans'
+    pkgNameSuffix = 'en.sleepypandascans'
+    extClass = '.SleepyPandaScans'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"
