@@ -152,9 +152,13 @@ open class Madara(
             select("div.artist-content").first()?.let {
                 manga.artist = it.text()
             }
-            select("div.description-summary div.summary__content p").let {
-                manga.description = it.joinToString(separator = "\n\n") { p ->
-                    p.text().replace("<br>", "\n")
+            select("div.description-summary div.summary__content").let {
+                if (it.select("p").text().isNotEmpty()) {
+                    manga.description = it.select("p").joinToString(separator = "\n\n") { p ->
+                        p.text().replace("<br>", "\n")
+                    }
+                } else {
+                    manga.description = it.text()
                 }
             }
             select("div.summary_image img").first()?.let {
@@ -181,14 +185,20 @@ open class Madara(
 
         with(element) {
             select("a").first()?.let { urlElement ->
-                chapter.setUrlWithoutDomain(urlElement.attr("href").let {
-                    it + if(!it.endsWith("?style=list")) "?style=list" else ""
+                chapter.setUrlWithoutDomain(urlElement.attr("abs:href").let {
+                    it.substringBefore("?style=paged") + if(!it.endsWith("?style=list")) "?style=list" else ""
                 })
                 chapter.name = urlElement.text()
             }
 
-            select("span.chapter-release-date i").first()?.let {
-                chapter.date_upload = parseChapterDate(it.text()) ?: 0
+            // For when source's chapter date is a graphic representing "new" instead of text
+            if (select("img").attr("alt").isNotBlank()) {
+                chapter.date_upload = parseRelativeDate(select("img").attr("alt")) ?: 0
+            } else {
+            // For a chapter date that's text
+                select("span.chapter-release-date i").first()?.let {
+                    chapter.date_upload = parseChapterDate(it.text()) ?: 0
+                }
             }
         }
 
@@ -227,10 +237,10 @@ open class Madara(
         if (trimmedDate[2] != "ago") return null
         val number = trimmedDate[0].toIntOrNull() ?: return null
 
-        // Map English/Spanish unit to Java unit
+        // Map English and other language units to Java units
         val javaUnit = when (trimmedDate[1].removeSuffix("s")) {
-            "día", "day" -> Calendar.DAY_OF_MONTH
-            "hora", "hour" -> Calendar.HOUR
+            "jour", "día", "day" -> Calendar.DAY_OF_MONTH
+            "heure", "hora", "hour" -> Calendar.HOUR
             "min", "minute" -> Calendar.MINUTE
             "segundo", "second" -> Calendar.SECOND
             else -> return null
@@ -247,8 +257,10 @@ open class Madara(
         }
     }
 
+    open val pageListParseSelector = "div.page-break"
+
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.page-break").mapIndexed { index, element ->
+        return document.select(pageListParseSelector).mapIndexed { index, element ->
             Page(index, "", element.select("img").first()?.let{
                 it.absUrl(if(it.hasAttr("data-src")) "data-src" else "src")
             })
