@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.*
 import okhttp3.Request
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = getAllFoolSlide()
@@ -42,7 +43,8 @@ fun getAllFoolSlide(): List<Source> {
         LupiTeam(),
         HentaiCafe(),
         ShoujoSense(),
-        TheCatScans()
+        TheCatScans(),
+        ShoujoHearts()
     )
 }
 
@@ -139,5 +141,22 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
 
         return manga
     }
+
 }
+
+class ShoujoHearts : FoolSlide("ShoujoHearts", "http://shoujohearts.com", "en", "/reader") {
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+
+        element.select("a[title]").first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = it.text()
+        }
+        element.select("img").first()?.let {
+            manga.thumbnail_url = it.absUrl("src")
+        }
+        return manga
+    }
+}
+
 
