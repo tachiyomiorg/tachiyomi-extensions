@@ -11,10 +11,10 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Base64.decode as base64Decode
-import rx.Observable
 
 
 open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : HttpSource() {
@@ -186,6 +186,11 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     override fun imageUrlParse(response: Response): String = ""
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (csrfToken.isEmpty()) {
+            val tokenResponse = client.newCall(popularMangaRequest(page)).execute()
+            val resBody = tokenResponse.body()!!.string()
+            csrfToken = "_token\" content=\"(.*)\"".toRegex().find(resBody)!!.groups[1]!!.value
+        }
         val url = HttpUrl.parse("$baseUrl/filterlist?page=$page")!!.newBuilder()
         if (query.isNotEmpty()) {
             url.addQueryParameter("name", query)
@@ -263,7 +268,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
     private class OrderBy : Filter.Sort("Сортировка",
         arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
-        Filter.Sort.Selection(0, false))
+        Selection(0, false))
 
     /*
     * Use console
