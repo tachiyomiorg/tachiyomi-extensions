@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.valhallascans
+package eu.kanade.tachiyomi.extension.all.mangacards
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -14,13 +14,11 @@ import okhttp3.Response
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ValhallaScans : ParsedHttpSource() {
-
-    override val name = "Valhalla Scans"
-
-    override val baseUrl = "https://valhallascans.com"
-
-    override val lang = "en"
+abstract class MangaCards (
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String
+) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
@@ -87,9 +85,9 @@ class ValhallaScans : ParsedHttpSource() {
 
     // Search
 
-    /* Sources' websites isn't able to search the whole catalog at once, instead we'd have to
+    /* Source websites aren't able to search their whole catalog at once, instead we'd have to
        do separate searches for ongoing, hiatus, dropped, and completed and then combine those results.
-       Since the catalog is small, it seems easier to do the search client-side */
+       Since their catalogs are small, it seems easier to do the search client-side */
     private var searchQuery = ""
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -99,9 +97,7 @@ class ValhallaScans : ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         val searchMatches = mutableListOf<SManga>()
-        val document = response.asJsoup()
-
-        document.select(searchMangaSelector())
+        response.asJsoup().select(searchMangaSelector())
             .filter { it.text().toLowerCase().contains(searchQuery) }
             .map { searchMatches.add(searchMangaFromElement(it)) }
 
@@ -135,7 +131,7 @@ class ValhallaScans : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    // Chapter
+    // Chapters
 
     override fun chapterListSelector() = "div.row:has(.col-8)"
 

@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Valhalla Scans'
-    pkgNameSuffix = 'en.valhallascans'
-    extClass = '.ValhallaScans'
+    appName = 'Tachiyomi: MangaCards (Valhalla, NANI?)'
+    pkgNameSuffix = 'all.mangacards'
+    extClass = '.MangaCardsFactory'
     extVersionCode = 1
     libVersion = '1.2'
 }
