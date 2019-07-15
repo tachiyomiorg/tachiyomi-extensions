@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.zinnes
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -103,14 +102,10 @@ class Zinnes : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val id = ID_REGEX.find(document.toString())!!.groupValues[1]
 
-        val ls = FILES_REGEX.find(document.toString())!!.groupValues[1]
+        return FILES_REGEX.find(document.toString())!!.groupValues[1]
             .replace("\"", "")
             .split(",")
             .mapIndexed { i, img -> Page(i, "", "$baseUrl/servidor/titulos/comics/$id/$img") }
-
-        Log.d("zinnes", ls.joinToString { it.imageUrl ?: "" } )
-
-        return ls
     }
 
     override fun imageUrlParse(document: Document) = ""
