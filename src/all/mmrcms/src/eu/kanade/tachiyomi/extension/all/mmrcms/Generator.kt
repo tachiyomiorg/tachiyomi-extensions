@@ -226,6 +226,10 @@ class Generator {
             Triple("ru", "Anigai clan", "http://anigai.ru"),
             Triple("tr", "MangaHanta", "http://mangahanta.com"),
             Triple("vi", "Fallen Angels Scans", "http://truyen.fascans.com"),
+            Triple("es", "LeoManga", "https://leomanga.me"),
+            Triple("es", "submanga", "https://submanga.online"),
+            Triple("es", "Mangadoor", "https://mangadoor.com"),
+            Triple("es", "Mangas.pw", "https://mangas.pw"),
             //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             //Now uses wpmanga

@@ -73,12 +73,13 @@ class MyMangaReaderCMSSource(override val lang: String,
     private fun internalMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        return MangasPage(document.select("div[class^=col-sm]").map {
+        return MangasPage(document.select("div[class^=col-sm], div.col-xs-6").map {
             SManga.create().apply {
                 val urlElement = it.getElementsByClass("chart-title")
                 if (urlElement.size == 0) {
                     url = getUrlWithoutBaseUrl(it.select("a").attr("href"))
                     title = it.select("div.caption").text()
+                    (it.select("div.caption div").text()).let { if (it.isNotEmpty()) title = title.substringBefore(it)} // For submanga and to not break hentaishark
                 } else {
                     url = getUrlWithoutBaseUrl(urlElement.attr("href"))
                     title = urlElement.text().trim()
@@ -142,61 +143,46 @@ class MyMangaReaderCMSSource(override val lang: String,
         thumbnail_url = coverGuess(document.select(".row .img-responsive").attr("src"), document.location())
         description = document.select(".row .well p").text().trim()
 
+        val detailAuthor = setOf<String>("author(s)","autor(es)","auteur(s)","著作","yazar(lar)","mangaka(lar)","pengarang/penulis","pengarang","penulis","autor","المؤلف","перевод")
+        val detailArtist = setOf<String>("artist(s)","artiste(s)","sanatçi(lar)","artista(s)","artist(s)/ilustrator","الرسام","seniman")
+        val detailGenre = setOf<String>("categories","categorías","catégories","ジャンル","kategoriler","categorias","kategorie","التصنيفات","жанр","kategori" )
+        val detailStatus = setOf<String>("status","statut","estado","状態","durum","الحالة","статус")
+        val detailStatusComplete = setOf<String>("complete","مكتملة","complet","completo")
+        val detailStatusOngoing = setOf<String>("ongoing","مستمرة","en cours","em lançamento")
+        val detailDescription = setOf<String>("description","resumen")
+
         var cur: String? = null
         for (element in document.select(".row .dl-horizontal").select("dt,dd")) {
             when (element.tagName()) {
                 "dt" -> cur = element.text().trim().toLowerCase()
                 "dd" -> when (cur) {
-                    "author(s)",
-                    "autor(es)",
-                    "auteur(s)",
-                    "著作",
-                    "yazar(lar)",
-                    "mangaka(lar)",
-                    "pengarang/penulis",
-                    "pengarang",
-                    "penulis",
-                    "autor",
-                    "المؤلف",
-                    "перевод" -> author = element.text()
-
-                    "artist(s)",
-                    "artiste(s)",
-                    "sanatçi(lar)",
-                    "artista(s)",
-                    "artist(s)/ilustrator",
-                    "الرسام",
-                    "seniman" -> artist = element.text()
-
-                    "categories",
-                    "categorías",
-                    "catégories",
-                    "ジャンル",
-                    "kategoriler",
-                    "categorias",
-                    "kategorie",
-                    "التصنيفات",
-                    "жанр",
-                    "kategori" -> genre = element.getElementsByTag("a").joinToString {
+                    in detailAuthor -> author = element.text()
+                    in detailArtist -> artist = element.text()
+                    in detailGenre-> genre = element.getElementsByTag("a").joinToString {
                         it.text().trim()
                     }
-
-                    "status",
-                    "statut",
-                    "estado",
-                    "状態",
-                    "durum",
-                    "الحالة",
-                    "статус" -> status = when (element.text().trim().toLowerCase()) {
-                        "complete",
-                        "مكتملة",
-                        "complet" -> SManga.COMPLETED
-                        "ongoing",
-                        "مستمرة",
-                        "en cours" -> SManga.ONGOING
+                    in detailStatus -> status = when (element.text().trim().toLowerCase()) {
+                        in detailStatusComplete -> SManga.COMPLETED
+                        in detailStatusOngoing -> SManga.ONGOING
                         else -> SManga.UNKNOWN
                     }
                 }
+            }
+        }
+        // When details are in a .panel instead of .row
+        for (element in document.select("div.panel span.list-group-item ")) {
+            when (element.select("b").text().toLowerCase().substringBefore(":")) {
+                in detailAuthor -> author = element.select("b + a").text()
+                in detailArtist -> artist = element.select("b + a").text()
+                in detailGenre -> genre = element.getElementsByTag("a").joinToString {
+                    it.text().trim()
+                }
+                in detailStatus -> status = when (element.select("b + span.label").text().toLowerCase()) {
+                    in detailStatusComplete -> SManga.COMPLETED
+                    in detailStatusOngoing -> SManga.ONGOING
+                    else -> SManga.UNKNOWN
+                }
+                in detailDescription -> description = element.ownText()
             }
         }
     }
@@ -216,7 +202,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each chapter.
      */
-    fun chapterListSelector() = "ul[class^=chapters] > li:not(.btn)"
+    fun chapterListSelector() = "ul[class^=chapters] > li:not(.btn), table.table tr"
     //Some websites add characters after "chapters" thus the need of checking classes that starts with "chapters"
 
     /**
@@ -225,40 +211,59 @@ class MyMangaReaderCMSSource(override val lang: String,
      * @param element an element obtained from [chapterListSelector].
      */
     private fun nullableChapterFromElement(element: Element): SChapter? {
-        val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
-        //Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
-        val url = titleWrapper.getElementsByTag("a").attr("href")
-
-        // Ensure chapter actually links to a manga
-        // Some websites use the chapters box to link to post announcements
-        // The check is skipped if mangas are stored in the root of the website (ex '/one-piece' without a segment like '/manga/one-piece')
-        if (itemUrlPath!=null&& !Uri.parse(url).pathSegments.firstOrNull().equals(itemUrlPath, true)) {
-            return null
-        }
-
         val chapter = SChapter.create()
 
-        chapter.url = getUrlWithoutBaseUrl(url)
-        chapter.name = titleWrapper.text()
+        try {
+            val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
+            //Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
+            val url = titleWrapper.getElementsByTag("a").attr("href")
 
-        // Parse date
-        val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
-        val formattedDate = try {
+            // Ensure chapter actually links to a manga
+            // Some websites use the chapters box to link to post announcements
+            // The check is skipped if mangas are stored in the root of the website (ex '/one-piece' without a segment like '/manga/one-piece')
+            if (itemUrlPath != null && !Uri.parse(url).pathSegments.firstOrNull().equals(itemUrlPath, true)) {
+                return null
+            }
+
+            chapter.url = getUrlWithoutBaseUrl(url)
+            chapter.name = titleWrapper.text()
+
+            // Parse date
+            val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
+            chapter.date_upload = parseDate(dateText)
+
+            return chapter
+        } catch (e: NullPointerException) {
+            // For chapter list in a table
+            if (element.select("td").hasText()) {
+                element.select("td a").let {
+                    chapter.setUrlWithoutDomain(it.attr("href"))
+                    chapter.name = it.text()
+                }
+                val tableDateText = element.select("td + td").text()
+                chapter.date_upload = parseDate(tableDateText)
+
+                return chapter
+            }
+        }
+
+        return null
+    }
+
+    private fun parseDate (dateText: String): Long {
+        return try {
             DATE_FORMAT.parse(dateText).time
         } catch (e: ParseException) {
             0L
         }
-        chapter.date_upload = formattedDate
-
-        return chapter
     }
 
     override fun pageListParse(response: Response) = response.asJsoup().select("#all > .img-responsive")
             .mapIndexed { i, e ->
-                var url = e.attr("data-src")
+                var url = e.attr("abs:data-src")
 
                 if (url.isBlank()) {
-                    url = e.attr("src")
+                    url = e.attr("abs:src")
                 }
 
                 url = url.trim()
