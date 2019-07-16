@@ -182,7 +182,7 @@ abstract class Genkan(
                 "week" -> calendar.apply{add(Calendar.WEEK_OF_MONTH, -trimmedDate[0].toInt())}
                 "day" -> calendar.apply{add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt())}
                 "hour" -> calendar.apply{add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt())}
-                "minute" -> calendar.apply{add(Calendar.MONTH, -trimmedDate[0].toInt())}
+                "minute" -> calendar.apply{add(Calendar.MINUTE, -trimmedDate[0].toInt())}
                 "second" -> calendar.apply{add(Calendar.SECOND, 0)}
             }
 
