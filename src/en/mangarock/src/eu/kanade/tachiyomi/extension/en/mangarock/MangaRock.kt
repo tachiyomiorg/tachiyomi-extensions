@@ -240,7 +240,7 @@ class MangaRock : HttpSource() {
             chapters.add(SChapter.create().apply {
                 name = chapter.getString("name")
                 date_upload = chapter.getString("updatedAt").toLong() * 1000
-                url = "/pages?oid=${chapter.getString("oid")}"
+                url = "/pagesv2?oid=${chapter.getString("oid")}"
             })
         }
         return chapters
@@ -252,7 +252,7 @@ class MangaRock : HttpSource() {
         val obj = JSONObject(response.body()!!.string()).getJSONArray("data")
         val pages = ArrayList<Page>()
         for (i in 0 until obj.length()) {
-            pages.add(Page(i, "", obj.getString(i)))
+            pages.add(Page(i, "", obj.getJSONObject(i).getString("url")))
         }
         return pages
     }
