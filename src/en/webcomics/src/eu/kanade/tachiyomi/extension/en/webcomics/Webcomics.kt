@@ -123,9 +123,12 @@ class Webcomics : ParsedHttpSource() {
         } else {
             val chapters = mutableListOf<SChapter>()
             for (i in 1..20)
-            document.select("${chapterListSelector()}:nth-child($i)").map{
-                chapters.add(chapterFromElement(it))
-            }
+                document.select("${chapterListSelector()}:nth-child($i)").map { chapters.add(chapterFromElement(it)) }
+            // Add a chapter notifying the user of the situation
+            val lockedNotification = SChapter.create()
+            lockedNotification.name = "[Attention] Additional chapters are restricted by the source to their own app"
+            lockedNotification.url = "wiki.html"
+            chapters.add(lockedNotification)
             return chapters.reversed()
         }
     }
