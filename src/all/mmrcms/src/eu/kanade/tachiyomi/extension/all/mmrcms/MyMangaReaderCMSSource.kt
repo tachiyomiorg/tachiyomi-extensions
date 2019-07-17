@@ -16,6 +16,7 @@ import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import android.util.Base64
 
 class MyMangaReaderCMSSource(override val lang: String,
                              override val name: String,
@@ -79,7 +80,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                 if (urlElement.size == 0) {
                     url = getUrlWithoutBaseUrl(it.select("a").attr("href"))
                     title = it.select("div.caption").text()
-                    (it.select("div.caption div").text()).let { if (it.isNotEmpty()) title = title.substringBefore(it)} // For submanga and to not break hentaishark
+                    it.select("div.caption div").text().let { if (it.isNotEmpty()) title = title.substringBefore(it)} // To clean submanga's titles without breaking hentaishark's
                 } else {
                     url = getUrlWithoutBaseUrl(urlElement.attr("href"))
                     title = urlElement.text().trim()
@@ -267,6 +268,14 @@ class MyMangaReaderCMSSource(override val lang: String,
                 }
 
                 url = url.trim()
+
+                // Mangas.pw encodes some of their urls, decode them
+                if (url.contains("mangas.pw") && url.contains("img.php")) {
+                    url = url.substringAfter("i=")
+                    repeat (5) {
+                        url = Base64.decode(url, Base64.DEFAULT).toString(Charsets.UTF_8).substringBefore("=")
+                    }
+                }
 
                 Page(i, url, url)
             }
