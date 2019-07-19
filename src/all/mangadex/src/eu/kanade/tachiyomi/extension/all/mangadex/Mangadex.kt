@@ -421,7 +421,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
             }
         }
-        return chapters
+
+        if (chapters.isEmpty()) {
+            throw Exception("Chapters is empty or there are no chapters in your selected language")
+        } else {
+            return chapters
+        }
     }
 
     private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
