@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.merakiscans
+package eu.kanade.tachiyomi.extension.en.manmanga
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -13,10 +13,10 @@ import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 
-class MerakiScans : ParsedHttpSource() {
+class ManManga : ParsedHttpSource() {
     override val name = "Man Manga"
 
-    override val baseUrl = "https://m.manmanga.com/"
+    override val baseUrl = "https://m.manmanga.com"
 
     override val lang = "en"
 
@@ -31,46 +31,56 @@ class MerakiScans : ParsedHttpSource() {
     }
 
 
-    override fun popularMangaSelector() = "#all > #listitem > a"
+    override fun popularMangaSelector() = "#scrollBox > #scrollContent > li > a"
 
-    override fun latestUpdatesSelector() = "#mangalisthome > #mangalistitem > #mangaitem > #manganame > a"
+    override fun latestUpdatesSelector() = popularMangaSelector()
+
+    override fun searchMangaSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/manga", headers)
+        = GET("$baseUrl/category?sort=hot", headers)
 
     override fun latestUpdatesRequest(page: Int)
-        = GET("$baseUrl", headers)
+        = GET("$baseUrl/category?sort=new", headers)
 
-    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        title = element.select("h1.title").text().trim()
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
+        = GET("$baseUrl/search?keyword=$query", headers)
+
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        element.select("li > a").first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = element.select("div.text > h4").text()
+        }
+        return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        title = element.text().trim()
+//    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+//        setUrlWithoutDomain(element.attr("href"))
+//        title = element.select("div.text > h4").text().trim()
+//    }
+
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaFromElement(element: Element) : SManga {
+        val manga = SManga.create()
+        element.select("li > a").first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = element.select("div.text > div.name > h4").text()
+        }
+        return manga
     }
 
     override fun popularMangaNextPageSelector() = null
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
-            = GET("$baseUrl/manga", headers)
-
-    override fun searchMangaSelector() = popularMangaSelector()
-
-    //This makes it so that if somebody searches for "views" it lists everything, also includes #'s.
-    private fun searchMangaSelector(query: String) = "#all > #listitem > a:contains($query)"
-
-    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
-
     override fun searchMangaNextPageSelector() = null
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(searchMangaSelector(query)).map { element ->
+        val mangas = document.select(searchMangaSelector()).map { element ->
             searchMangaFromElement(element)
         }
 
@@ -90,17 +100,19 @@ class MerakiScans : ParsedHttpSource() {
     }
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply{
-        val infoElement = document.select("#content2")
-        author = infoElement.select("#detail_list > li:nth-child(5)").text().replace("Author:","").trim()
-        artist = infoElement.select("#detail_list > li:nth-child(7)").text().replace("Artist:","").trim()
-        genre = infoElement.select("#detail_list > li:nth-child(11) > a").map {
+        val basicInfoElement = document.select("div.pro-box > div.relative-box")
+        val moreInfoElement = document.select("div.about")
+        val getThumbnailUrl = basicInfoElement.select("div.bg-box > div.bg").attr("style")
+
+        author = moreInfoElement.select("div.types > div.author").text().replace("Author:","").trim()
+        genre = basicInfoElement.select("div.info > div.tags > span").map {
             it.text().trim()
         }.joinToString(", ")
-        status = infoElement.select("#detail_list > li:nth-child(9)").text().replace("Status:","").trim().let {
+        status = moreInfoElement.select("div.types > div.type").text().replace("Status:","").trim().let {
             parseStatus(it)
         }
-        description = infoElement.select("#detail_list > span").text().trim()
-        thumbnail_url = "$baseUrl" + infoElement.select("#info > #image > #cover_img").attr("src")
+        description = moreInfoElement.select("div.synopsis > div.text > div.inner-text").text().trim()
+        thumbnail_url = getThumbnailUrl.substring( getThumbnailUrl.indexOf("https://"), getThumbnailUrl.indexOf(")") )
     }
 
     private fun parseStatus(status: String) = when {
@@ -119,31 +131,26 @@ class MerakiScans : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "#chapter_table > tbody > #chapter-head"
+    override fun chapterListSelector() = "div.chapter-list > dd > ul > li"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.attr("data-href"))
-        name = element.select("td:nth-child(1)").text().trim()
-        date_upload = element.select("td:nth-child(2)").text().trim().let { parseChapterDate(it) }
-    }
-
-    private fun parseChapterDate(date: String): Long {
-        return try {
-            dateFormat.parse(date.replace(Regex("(st|nd|rd|th)"), "")).time
-        } catch (e: ParseException) {
-            0L
-        }
+        setUrlWithoutDomain(element.attr("data-num"))
+        name = element.select("a").attr("alt").trim()
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val doc = document.toString()
-        val imgarray = doc.substringAfter("var images = [").substringBefore("];").split(",").map { it.replace("\"","") }
-        val mangaslug = doc.substringAfter("var manga_slug = \"").substringBefore("\";")
-        val chapnum = doc.substringAfter("var viewschapter = \"").substringBefore("\";")
         val pages = mutableListOf<Page>()
-        //$it
-        imgarray.forEach {
-            pages.add(Page(pages.size, "", "$baseUrl/manga/$mangaslug/$chapnum/$it"))
+
+        if(document.select("ul.img-list > li.unloaded > img").toString().isNotEmpty()) {
+            document.select("ul.img-list > li.unloaded > img").forEach {
+                val imgUrl = it.attr("data-src")
+                pages.add(Page(pages.size, "", "$imgUrl"))
+            }
+        } else  {
+            document.select("ul.img-list > li.loaded > img").forEach {
+                val imgUrl = it.attr("data-src")
+                pages.add(Page(pages.size, "", "$imgUrl"))
+            }
         }
         return pages
     }
