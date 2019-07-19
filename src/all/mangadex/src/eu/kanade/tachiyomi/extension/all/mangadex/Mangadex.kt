@@ -211,13 +211,25 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is Demographic -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("demo_id", filter.state.toString())
+                    val DemographicToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.isIncluded()) {
+                            DemographicToInclude.add(content.id)
+                        }
+                    }
+                    if (DemographicToInclude.isNotEmpty()) {
+                        url.addQueryParameter("demos", DemographicToInclude.joinToString(","))
                     }
                 }
                 is PublicationStatus -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("status_id", filter.state.toString())
+                    val PublicationToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.isIncluded()) {
+                            PublicationToInclude.add(content.id)
+                        }
+                    }
+                    if (PublicationToInclude.isNotEmpty()) {
+                        url.addQueryParameter("statuses", PublicationToInclude.joinToString(","))
                     }
                 }
                 is OriginalLanguage -> {
@@ -562,15 +574,29 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
     private fun getServer(): String = preferences.getString(SERVER_PREF, "0")
 
-
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Tag(val id: String, name: String) : Filter.TriState(name)
+    private class Demographic(demographics: List<Tag>) : Filter.Group<Tag>("Demographic", demographics)
+    private class PublicationStatus(publications: List<Tag>) : Filter.Group<Tag>("Publication", publications)
     private class ContentList(contents: List<Tag>) : Filter.Group<Tag>("Content", contents)
     private class FormatList(formats: List<Tag>) : Filter.Group<Tag>("Format", formats)
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
-    private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
-    private class PublicationStatus : Filter.Select<String>("Publication status", arrayOf("All", "Ongoing", "Completed", "Cancelled", "Hiatus"))
+
+    private fun getDemographic() = listOf(
+            Tag("1", "Shounen"),
+            Tag("2", "Shoujo"),
+            Tag("3", "Seinen"),
+            Tag("4", "Josei")
+    ).sortedWith(compareBy { it.name })
+
+    private fun getPublicationStatus() = listOf(
+            Tag("1", "Ongoing"),
+            Tag("2", "Completed"),
+            Tag("3", "Cancelled"),
+            Tag("4", "Hiatus")
+    ).sortedWith(compareBy { it.name })
+
     private class ThemeList(themes: List<Tag>) : Filter.Group<Tag>("Themes", themes)
     private class TagInclusionMode : Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
     private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
@@ -587,8 +613,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             TextField("Artist", "artist"),
             R18(),
             SortFilter(),
-            Demographic(),
-            PublicationStatus(),
+            Demographic(getDemographic()),
+            PublicationStatus(getPublicationStatus()),
             OriginalLanguage(),
             ContentList(getContentList()),
             FormatList(getFormatList()),
