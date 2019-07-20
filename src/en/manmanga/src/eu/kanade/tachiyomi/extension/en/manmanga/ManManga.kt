@@ -91,7 +91,7 @@ class ManManga : ParsedHttpSource() {
         val moreInfoElement = document.select("div.about")
         val getThumbnailUrl = basicInfoElement.select("div.bg-box > div.bg").attr("style")
 
-        author = moreInfoElement.select("div.types > div.author").text().replace("Author:","").trim()
+        author = moreInfoElement.select("div.types > p.author").text().replace("Author:","").trim()
         genre = basicInfoElement.select("div.info > div.tags > span").map {
             it.text().trim()
         }.joinToString(", ")
@@ -99,7 +99,7 @@ class ManManga : ParsedHttpSource() {
             parseStatus(it)
         }
         description = moreInfoElement.select("div.synopsis > div.text > div.inner-text").text().trim()
-        thumbnail_url = getThumbnailUrl.substring( getThumbnailUrl.indexOf("https://"), getThumbnailUrl.indexOf(")") )
+        thumbnail_url = getThumbnailUrl.substring( getThumbnailUrl.indexOf("https://"), getThumbnailUrl.indexOf("')") )
     }
 
     private fun parseStatus(status: String) = when {
@@ -118,11 +118,11 @@ class ManManga : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "div.chapter-list > dd > ul > li"
+    override fun chapterListSelector() = "dl.chapter-list > dd > ul > li > a"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.attr("data-num"))
-        name = element.select("a").attr("alt").trim()
+        setUrlWithoutDomain(element.attr("href"))
+        name = element.attr("alt").trim()
     }
 
     override fun pageListParse(document: Document): List<Page> {
