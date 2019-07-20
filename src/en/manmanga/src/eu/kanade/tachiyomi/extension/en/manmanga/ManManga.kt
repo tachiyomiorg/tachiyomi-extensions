@@ -58,13 +58,13 @@ class ManManga : ParsedHttpSource() {
         title = element.select("div.text > div.name > h4").text().trim()
     }
 
-    override fun popularMangaNextPageSelector() = null
+    override fun popularMangaNextPageSelector() = ".mescroll-upward .mescroll-hardware [style*=visible]"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    private fun searchMangaParse(response: Response, query: String): MangasPage {
+    override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
         val mangas = document.select(searchMangaSelector()).map { element ->
@@ -82,23 +82,21 @@ class ManManga : ParsedHttpSource() {
         return client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
                 .map { response ->
-                    searchMangaParse(response, query)
+                    searchMangaParse(response)
                 }
     }
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply{
-        val basicInfoElement = document.select("div.pro-box > div.relative-box")
-        val moreInfoElement = document.select("div.about")
-        val getThumbnailUrl = basicInfoElement.select("div.bg-box > div.bg").attr("style")
+        val getThumbnailUrl = document.select(".bg-box .bg").attr("style")
 
-        author = moreInfoElement.select("div.types > p.author").text().replace("Author:","").trim()
-        genre = basicInfoElement.select("div.info > div.tags > span").map {
+        author = document.select(".author").text().replace("Author：","").trim()
+        genre = document.select("span").map {
             it.text().trim()
         }.joinToString(", ")
-        status = moreInfoElement.select("div.types > div.type").text().replace("Status:","").trim().let {
+        status = document.select(".type").text().replace("Status：","").trim().let {
             parseStatus(it)
         }
-        description = moreInfoElement.select("div.synopsis > div.text > div.inner-text").text().trim()
+        description = document.select(".inner-text").text().trim()
         thumbnail_url = getThumbnailUrl.substring( getThumbnailUrl.indexOf("https://"), getThumbnailUrl.indexOf("')") )
     }
 
