@@ -46,29 +46,16 @@ class ManManga : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
         = GET("$baseUrl/search?keyword=$query", headers)
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("li > a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = element.select("div.text > h4").text()
-        }
-        return manga
+    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+        setUrlWithoutDomain(element.attr("href"))
+        title = element.select("div.text > h4").text().trim()
     }
-
-//    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-//        setUrlWithoutDomain(element.attr("href"))
-//        title = element.select("div.text > h4").text().trim()
-//    }
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaFromElement(element: Element) : SManga {
-        val manga = SManga.create()
-        element.select("li > a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = element.select("div.text > div.name > h4").text()
-        }
-        return manga
+    override fun searchMangaFromElement(element: Element) = SManga.create().apply {
+        setUrlWithoutDomain(element.attr("href"))
+        title = element.select("div.text > div.name > h4").text().trim()
     }
 
     override fun popularMangaNextPageSelector() = null
