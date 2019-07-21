@@ -32,39 +32,39 @@ open class Guya() : HttpSource() {
         return GET("$baseUrl/api/get_all_series")
     }
 
-    // Gets the request object from the request
+    // Gets the response object from the request
     override fun popularMangaParse(response: Response): MangasPage {
         val res = response.body()!!.string()
         return parseManga(res)
     }
 
+    // Overridden to use our overload
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/#" + manga.title))
+        updateScanlators()
+        return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/"))
                 .asObservableSuccess()
                 .map {response ->
-                    mangaDetailsParse(response)
+                    mangaDetailsParse(response, manga)
                 }
     }
 
     // Called when the series is loaded, or when opening in browser
     override fun mangaDetailsRequest(manga: SManga): Request {
-        updateScanlators()
-        // We store the metadata of the series we're interested in at the end
         return GET("$baseUrl/reader/series/" + manga.url)
     }
 
-    // Called after the request from mangaDetailsRequest is done
+    // Stub
     override fun mangaDetailsParse(response: Response): SManga {
-        // I'm not proud of this hack
+        throw Exception("Unused")
+    }
+
+    private fun mangaDetailsParse(response: Response, manga: SManga): SManga {
         val res = response.body()!!.string()
-        // We pull this metadata from the request URL
-        val series = response.toString().substring(response.toString().lastIndexOf("#") + 1, response.toString().length - 1)
-        return parseMangaFromJson(JSONObject(res).getJSONObject(series), series)
+        return parseMangaFromJson(JSONObject(res).getJSONObject(manga.title), manga.title)
     }
 
     // Gets the chapter list based on the series being viewed
     override fun chapterListRequest(manga: SManga): Request {
-        updateScanlators()
         return GET("$baseUrl/api/series/" + manga.url)
     }
 
@@ -74,23 +74,37 @@ open class Guya() : HttpSource() {
         return parseChapterList(res)
     }
 
-    // This is called from the chapter.url, so we're getting all the pages anyway
-    override fun pageListParse(response: Response): List<Page> {
-        // Same hack to grab the metadata of our chapter
-        val parser = response.toString()
-            .substring(response.toString().lastIndexOf("#") + 1, response.toString().length - 1)
-            .split("/")
+    // Overridden fetch so that we use our overloaded method instead
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        updateScanlators()
+        return clientBuilder().newCall(pageListRequest(chapter))
+            .asObservableSuccess()
+            .map { response ->
+                pageListParse(response, chapter)
+            }
+    }
 
+    // Stub
+    override fun pageListParse(response: Response): List<Page> {
+        throw Exception("Unused")
+    }
+
+    private fun pageListParse(response: Response, chapter: SChapter): List<Page> {
         val res = response.body()!!.string()
 
         val json = JSONObject(res)
-        val pages = json.getJSONObject("chapters").getJSONObject(parser[0]).getJSONObject("groups")
+        val chapterNum = chapter.name.split(" - ")[0]
+        val pages = json.getJSONObject("chapters")
+            .getJSONObject(chapterNum)
+            .getJSONObject("groups")
         val metadata = JSONObject()
 
-        metadata.put("chapter", parser[0])
-        metadata.put("scanlator", parser[1])
+        metadata.put("chapter", chapterNum)
+        metadata.put("scanlator", getIdFromScanlatorName(chapter.scanlator.toString()))
         metadata.put("slug", json.getString("slug"))
-        metadata.put("folder", json.getJSONObject("chapters").getJSONObject(parser[0]).getString("folder"))
+        metadata.put("folder", json.getJSONObject("chapters")
+            .getJSONObject(chapterNum)
+            .getString("folder"))
 
         return parsePageFromJson(pages, metadata)
     }
@@ -149,10 +163,9 @@ open class Guya() : HttpSource() {
         // Get the scanlator info based on group ranking; do it first since we need it later
         val firstGroupId = json.getJSONObject("groups").keys().next()
         chapter.scanlator = SCANLATORS[firstGroupId]
-        chapter.name = (if (num.toFloat() % 1.0 == 0.0) num.toInt() else num.toFloat()).toString() +
-                " - " + json.getString("title")
+        chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
-        chapter.url = "/api/series/$slug/#$num/$firstGroupId"
+        chapter.url = "/api/series/$slug/$num/1"
 
         return chapter
     }
@@ -170,6 +183,17 @@ open class Guya() : HttpSource() {
         }
 
         return pageArray
+    }
+
+    private fun getIdFromScanlatorName(scanlator: String): String {
+        val keys = SCANLATORS.keys
+
+        for (key in keys) {
+            if (SCANLATORS[key].equals(scanlator)) {
+                return key
+            }
+        }
+        throw Exception("Cannot find scanlator group!")
     }
 
     private fun pageBuilder(slug: String, folder: String, filename: String, groupId: String): String {
