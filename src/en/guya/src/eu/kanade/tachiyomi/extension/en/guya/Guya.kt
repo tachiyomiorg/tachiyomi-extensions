@@ -47,17 +47,17 @@ open class Guya() : ConfigurableSource, HttpSource() {
     // Gets the response object from the request
     override fun popularMangaParse(response: Response): MangasPage {
         val res = response.body()!!.string()
-        return parseManga(res)
+        return parseManga(JSONObject(res))
     }
 
     // Overridden to use our overload
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         updateScanlators()
         return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/"))
-                .asObservableSuccess()
-                .map {response ->
-                    mangaDetailsParse(response, manga)
-                }
+            .asObservableSuccess()
+            .map {response ->
+                mangaDetailsParse(response, manga)
+            }
     }
 
     // Called when the series is loaded, or when opening in browser
@@ -121,10 +121,43 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return parsePageFromJson(pages, metadata)
     }
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return GET("$baseUrl/api/get_all_series")
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        throw Exception("Unused.")
+    }
+
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        val res = response.body()!!.string()
+        var json = JSONObject(res)
+        val truncatedJSON = JSONObject()
+
+        val iter = json.keys()
+
+        while (iter.hasNext()) {
+            val candidate = iter.next()
+            if (candidate.contains(query.toRegex(RegexOption.IGNORE_CASE))) {
+                truncatedJSON.put(candidate, json.get(candidate))
+            }
+        }
+
+        return parseManga(truncatedJSON)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val preference = ListPreference(screen.context).apply {
-            key = "Prefer TLs from.."
-            title = "Prefer TLs from.."
+            key = "preferred_scanlator"
+            title = "Preferred scanlator"
             var scanlators = arrayOf<String>()
             var scanlatorsIndex = arrayOf<String>()
             for (key in SCANLATORS.keys) {
@@ -166,15 +199,14 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     // Helper function to get all the listings
-    private fun parseManga(payload: String) : MangasPage {
-        val response = JSONObject(payload)
+    private fun parseManga(payload: JSONObject) : MangasPage {
         val mangas = ArrayList<SManga>()
 
-        val iter = response.keys()
+        val iter = payload.keys()
 
         while (iter.hasNext()) {
             val series = iter.next()
-            val json = response.getJSONObject(series)
+            val json = payload.getJSONObject(series)
             val manga = parseMangaFromJson(json, series)
             mangas.add(manga)
         }
@@ -252,41 +284,27 @@ open class Guya() : ConfigurableSource, HttpSource() {
     private fun updateScanlators() {
         if (SCANLATORS.isEmpty()) {
             clientBuilder().newCall(GET("$baseUrl/api/get_all_groups")).enqueue(
-                    object: Callback {
-                        override fun onResponse(call: Call, response: Response) {
-                            val json = JSONObject(response.body()!!.string())
-                            val iter = json.keys()
-                            while (iter.hasNext()) {
-                                val scanId = iter.next()
-                                SCANLATORS[scanId] = json.getString(scanId)
-                            }
+                object: Callback {
+                    override fun onResponse(call: Call, response: Response) {
+                        val json = JSONObject(response.body()!!.string())
+                        val iter = json.keys()
+                        while (iter.hasNext()) {
+                            val scanId = iter.next()
+                            SCANLATORS[scanId] = json.getString(scanId)
                         }
-                        override fun onFailure(call: Call, e: IOException) {}
                     }
+                    override fun onFailure(call: Call, e: IOException) {}
+                }
             )
         }
     }
 
     private fun clientBuilder(): OkHttpClient = network.cloudflareClient.newBuilder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .addNetworkInterceptor { chain ->
-                val newReq = chain
-                        .request()
-                        .newBuilder()
-                        .build()
-                chain.proceed(newReq)
-            }.build()!!
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()!!
 
     // ----------------- Things we aren't supporting -----------------
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        throw Exception("Searching isn't supported.")
-    }
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        throw Exception("Searching isn't supported.")
-    }
 
     override fun imageUrlParse(response: Response): String {
         throw Exception("imageUrlParse not supported.")
