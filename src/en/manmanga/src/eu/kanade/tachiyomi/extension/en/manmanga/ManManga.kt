@@ -38,13 +38,13 @@ class ManManga : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/category?sort=hot", headers)
+        = GET("$baseUrl/category?sort=hot&page=$page", headers)
 
     override fun latestUpdatesRequest(page: Int)
-        = GET("$baseUrl/category?sort=new", headers)
+        = GET("$baseUrl/category?sort=new&page=$page", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
-        = GET("$baseUrl/search?keyword=$query", headers)
+        = GET("$baseUrl/search?keyword=$query&page=$page", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
