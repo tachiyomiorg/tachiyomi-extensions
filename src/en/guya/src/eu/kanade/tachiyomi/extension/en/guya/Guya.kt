@@ -1,18 +1,25 @@
 package eu.kanade.tachiyomi.extension.en.guya
 
+import android.app.Application
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import okhttp3.*
 import org.json.JSONObject
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
-open class Guya() : HttpSource() {
+open class Guya() : ConfigurableSource, HttpSource() {
 
     override val name = "Guya"
     override val baseUrl = "https://guya.moe"
@@ -20,6 +27,11 @@ open class Guya() : HttpSource() {
     override val lang = "en"
 
     private val SCANLATORS = HashMap<String, String>()
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+    private val SCANLATOR_PREFERENCE = "SCANLATOR_PREFERENCE"
 
     init {
         // Update the scanlator list if we need to on initialization
@@ -109,6 +121,31 @@ open class Guya() : HttpSource() {
         return parsePageFromJson(pages, metadata)
     }
 
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val preference = ListPreference(screen.context).apply {
+            key = "Prefer TLs from.."
+            title = "Prefer TLs from.."
+            var scanlators = arrayOf<String>()
+            var scanlatorsIndex = arrayOf<String>()
+            for (key in SCANLATORS.keys) {
+                scanlators += SCANLATORS[key].toString()
+                scanlatorsIndex += key
+            }
+            entries = scanlators
+            entryValues = scanlatorsIndex
+            summary = "%s"
+            this.setDefaultValue(1)
+
+            setOnPreferenceChangeListener{_, newValue ->
+                val selected = newValue.toString()
+                val index = (this.findIndexOfValue(selected) + 1).toString()
+                preferences.edit().putString(SCANLATOR_PREFERENCE, index).commit()
+            }
+        }
+
+        screen.addPreference(preference)
+    }
+
     // ------------- Helpers and whatnot ---------------
 
     private fun parseChapterList(payload: String): List<SChapter> {
@@ -161,7 +198,7 @@ open class Guya() : HttpSource() {
         val chapter = SChapter.create()
 
         // Get the scanlator info based on group ranking; do it first since we need it later
-        val firstGroupId = json.getJSONObject("groups").keys().next()
+        val firstGroupId = getBestScanlator(json.getJSONObject("groups"))
         chapter.scanlator = SCANLATORS[firstGroupId]
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
@@ -194,6 +231,16 @@ open class Guya() : HttpSource() {
             }
         }
         throw Exception("Cannot find scanlator group!")
+    }
+
+    private fun getBestScanlator(json: JSONObject): String {
+        val preferred = preferences.getString(SCANLATOR_PREFERENCE, null)
+
+        return if (preferred != null && json.has(preferred)) {
+            preferred
+        } else {
+            json.keys().next()
+        }
     }
 
     private fun pageBuilder(slug: String, folder: String, filename: String, groupId: String): String {
