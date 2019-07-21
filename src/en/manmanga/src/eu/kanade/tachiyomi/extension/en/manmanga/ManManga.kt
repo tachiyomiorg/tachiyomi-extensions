@@ -90,7 +90,7 @@ class ManManga : ParsedHttpSource() {
         val getThumbnailUrl = document.select(".bg-box .bg").attr("style")
 
         author = document.select(".author").text().replace("Author：","").trim()
-        genre = document.select("span").map {
+        genre = document.select(".tags span").map {
             it.text().trim()
         }.joinToString(", ")
         status = document.select(".type").text().replace("Status：","").trim().let {
