@@ -26,21 +26,16 @@ open class Guya() : ConfigurableSource, HttpSource() {
     override val supportsLatest = false
     override val lang = "en"
 
-    private val SCANLATORS = HashMap<String, String>()
+    private val Scanlators: ScanlatorStore = ScanlatorStore()
 
+    // Preferences confirguration
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
     private val SCANLATOR_PREFERENCE = "SCANLATOR_PREFERENCE"
 
-    init {
-        // Update the scanlator list if we need to on initialization
-        updateScanlators()
-    }
-
     // Request builder for the "browse" page of the manga
     override fun popularMangaRequest(page: Int): Request {
-        updateScanlators()
         return GET("$baseUrl/api/get_all_series")
     }
 
@@ -52,7 +47,6 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Overridden to use our overload
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        updateScanlators()
         return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/"))
             .asObservableSuccess()
             .map {response ->
@@ -88,7 +82,6 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Overridden fetch so that we use our overloaded method instead
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        updateScanlators()
         return clientBuilder().newCall(pageListRequest(chapter))
             .asObservableSuccess()
             .map { response ->
@@ -112,7 +105,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         val metadata = JSONObject()
 
         metadata.put("chapter", chapterNum)
-        metadata.put("scanlator", getIdFromScanlatorName(chapter.scanlator.toString()))
+        metadata.put("scanlator", Scanlators.getKeyFromValue(chapter.scanlator.toString()))
         metadata.put("slug", json.getString("slug"))
         metadata.put("folder", json.getJSONObject("chapters")
             .getJSONObject(chapterNum)
@@ -160,8 +153,8 @@ open class Guya() : ConfigurableSource, HttpSource() {
             title = "Preferred scanlator"
             var scanlators = arrayOf<String>()
             var scanlatorsIndex = arrayOf<String>()
-            for (key in SCANLATORS.keys) {
-                scanlators += SCANLATORS[key].toString()
+            for (key in Scanlators.keys()) {
+                scanlators += Scanlators.getValueFromKey(key)
                 scanlatorsIndex += key
             }
             entries = scanlators
@@ -231,7 +224,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
         // Get the scanlator info based on group ranking; do it first since we need it later
         val firstGroupId = getBestScanlator(json.getJSONObject("groups"))
-        chapter.scanlator = SCANLATORS[firstGroupId]
+        chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
         chapter.url = "/api/series/$slug/$num/1"
@@ -254,17 +247,6 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return pageArray
     }
 
-    private fun getIdFromScanlatorName(scanlator: String): String {
-        val keys = SCANLATORS.keys
-
-        for (key in keys) {
-            if (SCANLATORS[key].equals(scanlator)) {
-                return key
-            }
-        }
-        throw Exception("Cannot find scanlator group!")
-    }
-
     private fun getBestScanlator(json: JSONObject): String {
         val preferred = preferences.getString(SCANLATOR_PREFERENCE, null)
 
@@ -279,30 +261,63 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return "$baseUrl/media/manga/$slug/chapters/$folder/$groupId/$filename"
     }
 
-    // Called on every other request function to make sure we
-    // have the most up to date scanlator array
-    private fun updateScanlators() {
-        if (SCANLATORS.isEmpty()) {
-            clientBuilder().newCall(GET("$baseUrl/api/get_all_groups")).enqueue(
-                object: Callback {
-                    override fun onResponse(call: Call, response: Response) {
-                        val json = JSONObject(response.body()!!.string())
-                        val iter = json.keys()
-                        while (iter.hasNext()) {
-                            val scanId = iter.next()
-                            SCANLATORS[scanId] = json.getString(scanId)
-                        }
-                    }
-                    override fun onFailure(call: Call, e: IOException) {}
-                }
-            )
-        }
-    }
-
     private fun clientBuilder(): OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()!!
+
+    inner class ScanlatorStore {
+        private val scanlatorMap = HashMap<String, String>()
+        private var polling = false
+
+        init {
+            update()
+        }
+
+        fun getKeyFromValue(value: String): String {
+            update()
+            for (key in scanlatorMap.keys) {
+                if (scanlatorMap[key].equals(value)) {
+                    return key
+                }
+            }
+
+            throw Exception("Cannot find scanlator group!")
+        }
+
+        fun getValueFromKey(key: String): String {
+            update()
+            return if (!scanlatorMap[key].isNullOrEmpty())
+                scanlatorMap[key].toString() else "No info"
+        }
+
+        fun keys(): MutableSet<String> {
+            update()
+            return scanlatorMap.keys
+        }
+
+        private fun update() {
+            if (scanlatorMap.isEmpty() && !polling) {
+                polling = true
+                clientBuilder().newCall(GET("$baseUrl/api/get_all_groups")).enqueue(
+                    object: Callback {
+                        override fun onResponse(call: Call, response: Response) {
+                            val json = JSONObject(response.body()!!.string())
+                            val iter = json.keys()
+                            while (iter.hasNext()) {
+                                val scanId = iter.next()
+                                scanlatorMap[scanId] = json.getString(scanId)
+                            }
+                            polling = false
+                        }
+                        override fun onFailure(call: Call, e: IOException) {
+                            polling = false
+                        }
+                    }
+                )
+            }
+        }
+    }
 
     // ----------------- Things we aren't supporting -----------------
 
