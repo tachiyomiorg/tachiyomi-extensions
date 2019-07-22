@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.nodes.Element
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -39,7 +40,8 @@ class MadaraFactory : SourceFactory {
         WuxiaWorld(),
         YoManga(),
         ManyToon(),
-        ChibiManga()
+        ChibiManga(),
+        ZinManga()
     )
 }
 
@@ -86,11 +88,36 @@ class Kanjiku : Madara("Kanjiku", "https://kanjiku.net/", "de", dateFormat = Sim
 class KomikGo : Madara("KomikGo", "https://komikgo.com/", "id")
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
 class TritiniaScans : Madara("Tritinia Scans", "http://tritiniascans.ml/", "en") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/index-m_orderby=views.html", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/index-m_orderby=latest.html", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/index.html?s=$query", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?m_orderby=latest", headers)
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun popularMangaNextPageSelector(): String? = null
+
+    // Source's search seems broken (doesn't return results)
+    private var searchQuery = ""
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        searchQuery = query.toLowerCase()
+        return popularMangaRequest(1)
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val searchMatches = mutableListOf<SManga>()
+        val document = response.asJsoup()
+
+        document.select(searchMangaSelector())
+            .filter { it.text().toLowerCase().contains(searchQuery) }
+            .map { searchMatches.add(searchMangaFromElement(it)) }
+
+        return MangasPage(searchMatches, false)
+    }
+
+    override fun searchMangaSelector() = popularMangaSelector()
+
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = "Not needed"
+
 }
 class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/", "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
@@ -132,3 +159,4 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en")
 class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en")
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en")
+class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en")
