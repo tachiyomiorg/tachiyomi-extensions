@@ -58,7 +58,7 @@ class ManManga : ParsedHttpSource() {
         title = element.select("div.text > div.name > h4").text().trim()
     }
 
-    override fun popularMangaNextPageSelector() = ".mescroll-upward .mescroll-hardware [style*=visible]"
+    override fun popularMangaNextPageSelector() = "script:containsData(next_page_url):not(:containsData(false))"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
