@@ -107,13 +107,7 @@ class ManManga : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var response = response
-        val chapters = mutableListOf<SChapter>()
-        val document = response.asJsoup()
-        document.select(chapterListSelector()).forEach {
-            chapters.add(chapterFromElement(it))
-        }
-        return chapters
+        return super.chapterListParse(response).reversed()
     }
 
     override fun chapterListSelector() = "dl.chapter-list > dd > ul > li > a"
