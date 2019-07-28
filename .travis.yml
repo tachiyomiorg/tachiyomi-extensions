@@ -9,6 +9,7 @@ android:
   - extra-android-support
   licenses:
   - android-sdk-license-.+
+  - android-sdk-preview-license-.+
 before_install:
 - yes | sdkmanager "platforms;android-27" # workaround for accepting the license
 - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then

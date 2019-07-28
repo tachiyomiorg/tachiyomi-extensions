@@ -36,7 +36,7 @@ android {
         versionName "$libVersion.$extVersionCode"
         setProperty("archivesBaseName", "tachiyomi-$pkgNameSuffix-v$versionName")
         manifestPlaceholders = [
-                appName: appName,
+                appName : appName,
                 extClass: extClass,
         ]
     }
@@ -49,7 +49,14 @@ repositories {
 dependencies {
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compileOnly "eu.kanade.tachiyomi:extensions-library:$libVersion"
+
+    //https://github.com/square/okhttp/blob/master/CHANGELOG.md
     compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
+
+    //https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0
+    //https://github.com/ReactiveX/RxJava/blob/2.x/CHANGES.md
     compileOnly 'io.reactivex:rxjava:1.3.6'
+
+    //https://github.com/jhy/jsoup/blob/master/CHANGES
     compileOnly 'org.jsoup:jsoup:1.10.2'
 }

@@ -8,14 +8,6 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionCode 1
-        versionName '1.0.0'
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-        }
     }
 }
 
@@ -25,5 +17,7 @@ repositories {
 
 dependencies {
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    //https://github.com/square/okhttp/blob/master/CHANGELOG.md
     compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
 }
