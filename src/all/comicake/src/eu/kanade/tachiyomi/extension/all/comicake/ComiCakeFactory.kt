@@ -9,8 +9,8 @@ class ComiCakeFactory : SourceFactory {
 
 fun getAllComiCake(): List<Source> {
     return listOf(
-        WhimSubs(),
-        ChampionScans()
+            WhimSubs(),
+            ChampionScans()
     )
 }
 
