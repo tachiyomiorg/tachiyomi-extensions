@@ -63,7 +63,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
         }
 
         filters.findInstance<ArtistFilter>()?.let { f ->
-            if(f.state.isNotBlank()) {
+            if (f.state.isNotBlank()) {
                 requireNoUrl()
                 url = "/artist/${f.state
                         .trim()
@@ -72,19 +72,19 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
             }
         }
         filters.findInstance<BookFilter>()?.let { f ->
-            if(f.state) {
+            if (f.state) {
                 requireNoUrl()
                 url = "/category/book/"
             }
         }
         filters.findInstance<TagFilter>()?.let { f ->
-            if(f.state != 0) {
+            if (f.state != 0) {
                 requireNoUrl()
                 url = "/tag/${f.values[f.state].name}/"
             }
         }
 
-        if(query.isNotBlank()) {
+        if (query.isNotBlank()) {
             requireNoUrl()
             url = "/"
             queryString = "s=" + URLEncoder.encode(query, "UTF-8")
@@ -97,8 +97,8 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
 
     private fun pagedRequest(url: String, page: Int, queryString: String? = null): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) url else "${url}page/$page/"
-        return GET(if(queryString != null) "$builtUrl?$queryString" else builtUrl)
+        val builtUrl = if (page == 1) url else "${url}page/$page/"
+        return GET(if (queryString != null) "$builtUrl?$queryString" else builtUrl)
     }
 
     override fun searchMangaParse(response: Response) = latestUpdatesParse(response)
@@ -106,7 +106,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
                 .asObservable().doOnNext { response ->
-                    if(!response.isSuccessful) {
+                    if (!response.isSuccessful) {
                         response.close()
                         // Better error message for invalid artist
                         if (response.code() == 404
@@ -132,7 +132,6 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
     class ArtistFilter : Filter.Text("Artist (must be exact match)")
     class BookFilter : Filter.CheckBox("Show books only", false)
     class TagFilter : Filter.Select<Tag>("Tag", arrayOf(
-            Tag("all", "All"),
             Tag("ahegao", "Ahegao"),
             Tag("anal", "Anal"),
             Tag("big-ass", "Big ass"),
@@ -155,9 +154,9 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
             Tag("group", "Group"),
             Tag("hairy", "Hairy"),
             Tag("handjob", "Handjob"),
+            Tag("heart-pupils", "Heart pupils"),
             Tag("housewife", "Housewife"),
             Tag("incest", "Incest"),
-            Tag("large-breast", "Large breast"),
             Tag("lingerie", "Lingerie"),
             Tag("loli", "Loli"),
             Tag("masturbation", "Masturbation"),
@@ -167,7 +166,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
             Tag("pettanko", "Pettanko"),
             Tag("rape", "Rape"),
             Tag("schoolgirl", "Schoolgirl"),
-            Tag("sex-toys", "Sex Toys"),
+            Tag("sex-toys", "Sex toys"),
             Tag("shota", "Shota"),
             Tag("socks", "Socks"),
             Tag("stocking", "Stocking"),
@@ -175,11 +174,12 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
             Tag("swimsuit", "Swimsuit"),
             Tag("teacher", "Teacher"),
             Tag("tsundere", "Tsundere"),
-            Tag("uncensored", "uncensored"),
+            Tag("uncensored", "Uncensored"),
             Tag("vanilla", "Vanilla"),
-            Tag("x-ray", "X-ray")
+            Tag("x-ray", "X-Ray")
     ))
-    class Tag(val name: String, val displayName: String) {
+
+    class Tag(val name: String, private val displayName: String) {
         override fun toString() = displayName
     }
 
