@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# set -e
+set -e
 
 TOOLS="$(ls -d ${ANDROID_HOME}/build-tools/* | tail -1)"
 
