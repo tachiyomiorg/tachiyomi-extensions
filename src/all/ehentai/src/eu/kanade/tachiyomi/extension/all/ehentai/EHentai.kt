@@ -3,24 +3,15 @@ package eu.kanade.tachiyomi.extension.all.ehentai
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.CacheControl
-import okhttp3.CookieJar
-import okhttp3.Headers
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
 
-open class EHentai(override val lang: String, val ehLang: String) : HttpSource() {
+open class EHentai(override val lang: String, private val ehLang: String) : HttpSource() {
 
     override val name = "E-Hentai"
 
@@ -51,15 +42,13 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         return MangasPage(parsedMangas, hasNextPage)
     }
 
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>>
-            = Observable.just(listOf(SChapter.create().apply {
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = Observable.just(listOf(SChapter.create().apply {
         url = manga.url
         name = "Chapter"
         chapter_number = 1f
     }))
 
-    override fun fetchPageList(chapter: SChapter)
-            = fetchChapterPage(chapter, "$baseUrl/${chapter.url}").map {
+    override fun fetchPageList(chapter: SChapter) = fetchChapterPage(chapter, "$baseUrl/${chapter.url}").map {
         it.mapIndexed { i, s ->
             Page(i, s)
         }
@@ -80,8 +69,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         }
     }
 
-    private fun parseChapterPage(response: Element)
-            = with(response) {
+    private fun parseChapterPage(response: Element) = with(response) {
         select(".gdtm a").map {
             Pair(it.child(0).attr("alt").toInt(), it.attr("href"))
         }.sortedBy(Pair<Int, String>::first).map { it.second }
@@ -90,8 +78,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     private fun chapterPageCall(np: String) = client.newCall(chapterPageRequest(np)).asObservableSuccess()
     private fun chapterPageRequest(np: String) = exGet(np, null, headers)
 
-    private fun nextPageUrl(element: Element)
-            = element.select("a[onclick=return false]").last()?.let {
+    private fun nextPageUrl(element: Element) = element.select("a[onclick=return false]").last()?.let {
         if (it.text() == ">") it.attr("href") else null
     }
 
@@ -115,8 +102,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun searchMangaParse(response: Response) = genericMangaParse(response)
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
 
-    private fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true)
-            = GET(page?.let {
+    private fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true) = GET(page?.let {
         addParam(url, "page", (it - 1).toString())
     } ?: url, additionalHeaders?.let {
         val headers = headers.newBuilder()
@@ -204,7 +190,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
                     Tag(it.text().trim(),
                             it.hasClass("gtl"))
                 }
-                tags.put(namespace, currentTags)
+                tags[namespace] = currentTags
             }
 
             //Copy metadata to manga
@@ -214,19 +200,15 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         }
     }
 
-    override fun chapterListParse(response: Response)
-            = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun chapterListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    override fun pageListParse(response: Response)
-            = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun pageListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    override fun fetchImageUrl(page: Page)
-            = client.newCall(imageUrlRequest(page))
+    override fun fetchImageUrl(page: Page) = client.newCall(imageUrlRequest(page))
             .asObservableSuccess()
             .map { realImageUrlParse(it, page) }!!
 
-    private fun realImageUrlParse(response: Response, page: Page)
-            = with(response.asJsoup()) {
+    private fun realImageUrlParse(response: Response, page: Page) = with(response.asJsoup()) {
         val currentImage = getElementById("img").attr("src")
         //TODO We cannot currently do this as page.url is immutable
         //Each press of the retry button will choose another server
@@ -236,8 +218,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         currentImage
     }!!
 
-    override fun imageUrlParse(response: Response)
-            = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
     private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
@@ -253,25 +234,21 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
                 .flatMap { it.second }
                 .joinToString("x")
 
-        cookies.put("uconfig", buildSettings(settings))
+        cookies["uconfig"] = buildSettings(settings)
 
         buildCookies(cookies)
     }
 
     //Headers
-    override fun headersBuilder()
-            = super.headersBuilder().add("Cookie", cookiesHeader)!!
+    override fun headersBuilder() = super.headersBuilder().add("Cookie", cookiesHeader)!!
 
-    private fun buildSettings(settings: List<String?>)
-            = settings.filterNotNull().joinToString(separator = "-")
+    private fun buildSettings(settings: List<String?>) = settings.filterNotNull().joinToString(separator = "-")
 
-    private fun buildCookies(cookies: Map<String, String>)
-            = cookies.entries.map {
+    private fun buildCookies(cookies: Map<String, String>) = cookies.entries.joinToString(separator = "; ", postfix = ";") {
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
-    }.joinToString(separator = "; ", postfix = ";")
+    }
 
-    private fun addParam(url: String, param: String, value: String)
-            = Uri.parse(url)
+    private fun addParam(url: String, param: String, value: String) = Uri.parse(url)
             .buildUpon()
             .appendQueryParameter(param, value)
             .toString()
@@ -295,9 +272,9 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             AdvancedGroup()
     )
 
-    class GenreOption(name: String, val genreId: String) : Filter.CheckBox(name, false), UriFilter {
+    class GenreOption(name: String, private val genreId: String) : Filter.CheckBox(name, false), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            builder.appendQueryParameter("f_" + genreId, if (state) "1" else "0")
+            builder.appendQueryParameter("f_$genreId", if (state) "1" else "0")
         }
     }
 
@@ -314,7 +291,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             GenreOption("Misc", "misc")
     ))
 
-    class AdvancedOption(name: String, val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
+    class AdvancedOption(name: String, private val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if (state)
                 builder.appendQueryParameter(param, "on")
@@ -329,7 +306,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             "5 stars"
     )), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            if (state > 0) builder.appendQueryParameter("f_srdd", Integer.toString(state + 1))
+            if (state > 0) builder.appendQueryParameter("f_srdd", (state + 1).toString())
         }
     }
 

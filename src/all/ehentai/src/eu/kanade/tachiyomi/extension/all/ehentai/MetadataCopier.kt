@@ -37,8 +37,8 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     manga.status = SManga.COMPLETED
     title?.let { t ->
         if (ONGOING_SUFFIX.any {
-            t.endsWith(it, ignoreCase = true)
-        }) manga.status = SManga.ONGOING
+                    t.endsWith(it, ignoreCase = true)
+                }) manga.status = SManga.ONGOING
     }
 
     //Build a nice looking description out of what we know
@@ -71,8 +71,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
             .joinToString(separator = "\n")
 }
 
-private fun buildTagsDescription(metadata: ExGalleryMetadata)
-        = StringBuilder("Tags:\n").apply {
+private fun buildTagsDescription(metadata: ExGalleryMetadata) = StringBuilder("Tags:\n").apply {
     //BiConsumer only available in Java 8, we have to use destructuring here
     metadata.tags.forEach { (namespace, tags) ->
         if (tags.isNotEmpty()) {
