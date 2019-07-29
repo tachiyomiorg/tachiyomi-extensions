@@ -10,6 +10,7 @@ import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 open class Mangatensei(override val lang: String, private val Mtlang: String) : ParsedHttpSource() {
 
@@ -19,7 +20,10 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override fun latestUpdatesRequest(page: Int):  Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
