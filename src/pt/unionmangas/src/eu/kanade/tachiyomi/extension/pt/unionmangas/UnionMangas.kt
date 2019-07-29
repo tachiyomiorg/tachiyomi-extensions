@@ -29,23 +29,20 @@ class UnionMangas : ParsedHttpSource() {
 
     // Sometimes the site is very slow.
     override val client =
-            network.client.newBuilder()
-                    .connectTimeout(3, TimeUnit.MINUTES)
-                    .readTimeout(3, TimeUnit.MINUTES)
-                    .writeTimeout(3, TimeUnit.MINUTES)
-                    .build()
-
-    private val catalogHeaders = Headers.Builder()
-            .apply {
-                add("User-Agent", USER_AGENT)
-                add("Origin", baseUrl)
-                add("Referer", "$baseUrl/ini")
-            }
+        network.cloudflareClient.newBuilder()
+            .connectTimeout(3, TimeUnit.MINUTES)
+            .readTimeout(3, TimeUnit.MINUTES)
+            .writeTimeout(3, TimeUnit.MINUTES)
             .build()
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", USER_AGENT)
+        .add("Origin", baseUrl)
+        .add("Referer", "$baseUrl/ne")
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "/$page" else ""
-        return GET("$baseUrl/lista-mangas/visualizacoes$pageStr", catalogHeaders)
+        return GET("$baseUrl/lista-mangas/visualizacoes$pageStr", headers)
     }
 
     override fun popularMangaSelector(): String = "div.bloco-manga"
@@ -60,37 +57,35 @@ class UnionMangas : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request {
         val form = FormBody.Builder()
-                .add("pagina", page.toString())
-                .build()
+            .add("pagina", page.toString())
+            .build()
 
-        val newHeaders = catalogHeaders.newBuilder()
-                .set("X-Requested-With", "XMLHttpRequest")
-                .build()
+        val newHeaders = headers.newBuilder()
+            .set("X-Requested-With", "XMLHttpRequest")
+            .build()
 
         return POST("$baseUrl/assets/noticias.php", newHeaders, form)
     }
 
     override fun latestUpdatesSelector() = "div.row[style] div.col-md-12[style]"
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
+    override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         val infoElement = element.select("a.link-titulo")
 
-        return SManga.create().apply {
-            title = removeLanguage(infoElement.last().text())
-            thumbnail_url = infoElement.first()?.select("img")?.attr("src")
-            setUrlWithoutDomain(infoElement.last().attr("href"))
-        }
+        title = removeLanguage(infoElement.last().text())
+        thumbnail_url = infoElement.first()?.select("img")?.attr("src")
+        setUrlWithoutDomain(infoElement.last().attr("href"))
     }
 
     override fun latestUpdatesNextPageSelector() = "div#linha-botao-mais"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val newHeaders = catalogHeaders.newBuilder()
-                .set("X-Requested-With", "XMLHttpRequest")
-                .build()
+        val newHeaders = headers.newBuilder()
+            .set("X-Requested-With", "XMLHttpRequest")
+            .build()
 
         val url = HttpUrl.parse("$baseUrl/assets/busca.php")!!.newBuilder()
-                .addQueryParameter("q", query)
+            .addQueryParameter("q", query)
 
         return GET(url.toString(), newHeaders)
     }
@@ -109,7 +104,7 @@ class UnionMangas : ParsedHttpSource() {
         setUrlWithoutDomain("$baseUrl/manga/${obj["url"].string}")
     }
 
-    override fun mangaDetailsRequest(manga: SManga): Request = GET(baseUrl + manga.url, catalogHeaders)
+    override fun mangaDetailsRequest(manga: SManga): Request = GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.tamanho-bloco-perfil").first()
@@ -138,30 +133,28 @@ class UnionMangas : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListRequest(manga: SManga): Request = GET(baseUrl + manga.url, catalogHeaders)
+    override fun chapterListRequest(manga: SManga): Request = GET(baseUrl + manga.url, headers)
 
     override fun chapterListSelector() = "div.row.lancamento-linha"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val firstColumn = element.select("div.col-md-6:eq(0)")
         val secondColumn = element.select("div.col-md-6:eq(1)")
 
-        return SChapter.create().apply {
-            name = firstColumn.select("a").first().text()
-            scanlator = secondColumn?.text()
-            date_upload = parseChapterDate(firstColumn.select("span").last()!!.text())
-            setUrlWithoutDomain(firstColumn.select("a").first().attr("href"))
-        }
+        name = firstColumn.select("a").first().text()
+        scanlator = secondColumn?.text()
+        date_upload = parseChapterDate(firstColumn.select("span").last()!!.text())
+        setUrlWithoutDomain(firstColumn.select("a").first().attr("href"))
     }
 
-    override fun pageListRequest(chapter: SChapter): Request = GET(baseUrl + chapter.url, catalogHeaders)
+    override fun pageListRequest(chapter: SChapter): Request = GET(baseUrl + chapter.url, headers)
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = document.select("img.img-responsive.img-manga")
 
         return pages
-                .filter { it.attr("src").contains("leitor") }
-                .mapIndexed { i, element -> Page(i, "", element.absUrl("src"))}
+            .filter { it.attr("src").contains("leitor") }
+            .mapIndexed { i, element -> Page(i, "", element.absUrl("src"))}
     }
 
     override fun imageUrlParse(document: Document) = ""
