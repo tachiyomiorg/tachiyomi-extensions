@@ -8,6 +8,7 @@ import java.util.*
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
@@ -148,7 +149,122 @@ class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en") {
 }
 class Mangalike : Madara("Mangalike", "https://mangalike.net/", "en")
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en")
-class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en")
+class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en") {
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = HttpUrl.parse("$baseUrl/page/$page/")!!.newBuilder()
+        url.addQueryParameter("s", query)
+        url.addQueryParameter("post_type", "wp-manga")
+        filters.forEach { filter ->
+            when (filter) {
+                is AuthorFilter -> {
+                    if(filter.state.isNotBlank()) {
+                        url.addQueryParameter("author", filter.state)
+                    }
+                }
+                is ArtistFilter -> {
+                    if(filter.state.isNotBlank()) {
+                        url.addQueryParameter("artist", filter.state)
+                    }
+                }
+                is YearFilter -> {
+                    if(filter.state.isNotBlank()) {
+                        url.addQueryParameter("release", filter.state)
+                    }
+                }
+                is StatusFilter -> {
+                    filter.state.forEach {
+                        if (it.state) {
+                            url.addQueryParameter("status[]", it.id)
+                        }
+                    }
+                }
+                is GenreFilter -> {
+                    filter.state.forEach {
+                        if (it.state) {
+                            url.addQueryParameter("genre[]", it.id)
+                        }
+                    }
+                }
+                is OrderByFilter -> {
+                    if(filter.state != 0) {
+                        url.addQueryParameter("m_orderby", filter.toUriPart())
+                    }
+                }
+            }
+        }
+        return GET(url.build().toString(), headers)
+    }
+
+    override fun searchMangaNextPageSelector() = "div.nav-previous a"
+
+    private class AuthorFilter : Filter.Text("Author")
+    private class ArtistFilter : Filter.Text("Artist")
+    private class YearFilter : Filter.Text("Year of Released")
+    private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
+    private class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
+    private class OrderByFilter : UriPartFilter("Order By", arrayOf(
+            Pair("<select>", ""),
+            Pair("Latest", "latest"),
+            Pair("A-Z", "alphabet"),
+            Pair("Rating", "rating"),
+            Pair("Trending", "trending"),
+            Pair("Most Views", "views"),
+            Pair("New", "new-manga")
+    ))
+
+    override fun getFilterList() = FilterList(
+            AuthorFilter(),
+            ArtistFilter(),
+            YearFilter(),
+            StatusFilter(getStatusList()),
+            GenreFilter(getGenreList()),
+            OrderByFilter()
+    )
+
+    private fun getStatusList() = listOf(
+            Tag("end" , "Completed"),
+            Tag("on-going" , "Ongoing"),
+            Tag("canceled" , "Canceled"),
+            Tag("on-hold" , "On Hold")
+    )
+
+    private fun getGenreList() = listOf(
+            Tag("action" , "Action"),
+            Tag("adventure" , "Adventure"),
+            Tag("comedy" , "Comedy"),
+            Tag("drama" , "Drama"),
+            Tag("fantasy" , "Fantasy"),
+            Tag("gender-bender" , "Gender bender"),
+            Tag("gossip" , "Gossip"),
+            Tag("harem" , "Harem"),
+            Tag("historical" , "Historical"),
+            Tag("horror" , "Horror"),
+            Tag("incest" , "Incest"),
+            Tag("martial-arts" , "Martial arts"),
+            Tag("mecha" , "Mecha"),
+            Tag("medical" , "Medical"),
+            Tag("mystery" , "Mystery"),
+            Tag("one-shot" , "One shot"),
+            Tag("psychological" , "Psychological"),
+            Tag("romance" , "Romance"),
+            Tag("school-life" , "School LIfe"),
+            Tag("sci-fi" , "Sci Fi"),
+            Tag("slice-of-life" , "Slice of Life"),
+            Tag("smut" , "Smut"),
+            Tag("sports" , "Sports"),
+            Tag("supernatural" , "Supernatural"),
+            Tag("tragedy" , "Tragedy"),
+            Tag("yaoi" , "Yaoi"),
+            Tag("yuri" , "Yuri")
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    private class Tag(val id: String, name: String) : Filter.CheckBox(name)
+}
 class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomics/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomics/page/$page/?m_orderby=latest", headers)
