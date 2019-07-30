@@ -254,10 +254,13 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         val pages = mutableListOf<Page>()
         val script = document.select("script").html()
             .substringAfter("var images = ").substringBefore(";")
-        val imgList = JSONObject(script)
+        val imgJson = JSONObject(script)
+        val imgNames = imgJson.names()
 
-        for( i in 1 until imgList.length() + 1) {
-            pages.add(Page(i - 1, "", imgList.getString("$i")))
+        for( i in 0 until imgNames.length()) {
+            val imgKey = imgNames.getString(i)
+            val imgUrl = imgJson.getString(imgKey)
+            pages.add(Page(i, "", imgUrl))
         }
 
         return pages
