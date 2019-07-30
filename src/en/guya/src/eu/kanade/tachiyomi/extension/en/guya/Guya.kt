@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
+import eu.kanade.tachiyomi.extension.BuildConfig
 import okhttp3.*
 import org.json.JSONObject
 import rx.Observable
@@ -26,6 +27,10 @@ open class Guya() : ConfigurableSource, HttpSource() {
     override val supportsLatest = false
     override val lang = "en"
 
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Tachiyomi/${BuildConfig.VERSION_NAME}")
+    }
+
     private val Scanlators: ScanlatorStore = ScanlatorStore()
 
     // Preferences confirguration
@@ -36,7 +41,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Request builder for the "browse" page of the manga
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/get_all_series")
+        return GET("$baseUrl/api/get_all_series/", headers)
     }
 
     // Gets the response object from the request
@@ -47,7 +52,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Overridden to use our overload
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/"))
+        return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/", headers))
             .asObservableSuccess()
             .map {response ->
                 mangaDetailsParse(response, manga)
@@ -56,7 +61,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Called when the series is loaded, or when opening in browser
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/reader/series/" + manga.url)
+        return GET("$baseUrl/reader/series/" + manga.url + "/", headers)
     }
 
     // Stub
@@ -71,7 +76,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Gets the chapter list based on the series being viewed
     override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/series/" + manga.url)
+        return GET("$baseUrl/api/series/" + manga.url + "/", headers)
     }
 
     // Called after the request
@@ -123,7 +128,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/api/get_all_series")
+        return GET("$baseUrl/api/get_all_series/", headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -132,7 +137,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
         val res = response.body()!!.string()
-        var json = JSONObject(res)
+        val json = JSONObject(res)
         val truncatedJSON = JSONObject()
 
         val iter = json.keys()
@@ -299,7 +304,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         private fun update() {
             if (scanlatorMap.isEmpty() && !polling) {
                 polling = true
-                clientBuilder().newCall(GET("$baseUrl/api/get_all_groups")).enqueue(
+                clientBuilder().newCall(GET("$baseUrl/api/get_all_groups/", headers)).enqueue(
                     object: Callback {
                         override fun onResponse(call: Call, response: Response) {
                             val json = JSONObject(response.body()!!.string())
