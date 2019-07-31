@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 
@@ -15,7 +16,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     override val name = "MyReadingManga"
 
-    override val baseUrl = "https://myreadingmanga.info"
+    override val baseUrl = "https://myreadingmanga.info/"
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
             .connectTimeout(1, TimeUnit.MINUTES)
@@ -65,13 +66,22 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        /* Old search code:
         val uri = Uri.parse("$baseUrl/search/").buildUpon()
         uri.appendQueryParameter("search", query)
+        return GET(uri.toString())
+        */
+        val query2 = URLEncoder.encode(query, "UTF-8")
+        val uri = Uri.parse("$baseUrl/search/").buildUpon()
+                uri.appendEncodedPath(query2)
+                uri.appendPath("page")
+                uri.appendPath("$page")
         return GET(uri.toString())
     }
 
 
     override fun searchMangaParse(response: Response): MangasPage {
+        /* Old Parse Code:
         val document = response.asJsoup()
 
         val elements = document.select(searchMangaSelector())
@@ -83,11 +93,29 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         }
 
         return MangasPage(mangas, false)
+        */
+        val document = response.asJsoup()
+
+        val mangas = mutableListOf<SManga>()
+        val list  = document.select(popularMangaSelector()).filter { element ->
+            val select = element.select("a[rel=bookmark]")
+            select.text().contains("[$lang", true)
+        }
+        for (element in list) {
+            mangas.add(popularMangaFromElement(element))
+
+        }
+
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
     }
 
-    override fun searchMangaSelector() = "div.results-by-facets div[id*=res]"
+    override fun searchMangaSelector() = "article" //"div.results-by-facets div[id*=res]"
 
-    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img").first())
+    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a[rel]").first(), element.select("a.entry-image-link img").first()) //buildManga(element.select("a").first(), element.select("img").first())
 
     private fun buildManga(titleElement: Element, thumbnailElement: Element): SManga {
         val manga = SManga.create()
