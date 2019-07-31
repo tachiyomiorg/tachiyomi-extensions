@@ -1,18 +1,18 @@
 package eu.kanade.tachiyomi.extension.all.madara
 
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
-import eu.kanade.tachiyomi.source.model.FilterList
-import okhttp3.CacheControl
-import okhttp3.FormBody
-import okhttp3.Request
-import eu.kanade.tachiyomi.network.POST
+import java.util.concurrent.TimeUnit
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import rx.Observable
 
 open class Madara(
         override val name: String,
@@ -20,6 +20,11 @@ open class Madara(
         override val lang: String,
         private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
 ) : ParsedHttpSource() {
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override val supportsLatest = true
 
@@ -62,11 +67,11 @@ open class Madara(
         return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
     }
 
-    override fun popularMangaNextPageSelector(): String? = searchMangaNextPageSelector()
+    override fun popularMangaNextPageSelector(): String? = "body:not(:has(.no-posts))"
 
     // Latest Updates
 
-    override fun latestUpdatesSelector() = "div.page-item-detail"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         // Even if it's different from the popular manga's list, the relevant classes are the same
@@ -91,7 +96,7 @@ open class Madara(
         return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
     }
 
-    override fun latestUpdatesNextPageSelector(): String? = searchMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
@@ -99,23 +104,97 @@ open class Madara(
         return MangasPage(mangas, mp.hasNextPage)
     }
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservable().doOnNext { response ->
+                if(!response.isSuccessful) {
+                    response.close()
+                    // Error message for exceeding last page
+                    if (response.code() == 404)
+                        error("Already on the Last Page!")
+                    else throw Exception("HTTP error ${response.code()}")
+                }
+            }
+            .map { response ->
+                searchMangaParse(response)
+            }
+    }
+
     // Search Manga
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val form = FormBody.Builder().apply {
-            add("action", "madara_load_more")
-            add("page", (page-1).toString())
-            add("template", "madara-core/content/content-search")
-            add("vars[s]", query)
-            add("vars[orderby]", "")
-            add("vars[paged]", (page-1).toString())
-            add("vars[template]", "search")
-            add("vars[post_type]", "wp-manga")
-            add("vars[post_status]", "publish")
-            add("vars[manga_archives_item_layout]", "default")
+        val url = HttpUrl.parse("$baseUrl/page/$page/")!!.newBuilder()
+        url.addQueryParameter("s", query)
+        url.addQueryParameter("post_type", "wp-manga")
+        filters.forEach { filter ->
+            when (filter) {
+                is AuthorFilter -> {
+                    if(filter.state.isNotBlank()) {
+                        url.addQueryParameter("author", filter.state)
+                    }
+                }
+                is ArtistFilter -> {
+                    if(filter.state.isNotBlank()) {
+                        url.addQueryParameter("artist", filter.state)
+                    }
+                }
+                is YearFilter -> {
+                    if(filter.state.isNotBlank()) {
+                        url.addQueryParameter("release", filter.state)
+                    }
+                }
+                is StatusFilter -> {
+                    filter.state.forEach {
+                        if (it.state) {
+                            url.addQueryParameter("status[]", it.id)
+                        }
+                    }
+                }
+                is OrderByFilter -> {
+                    if(filter.state != 0) {
+                        url.addQueryParameter("m_orderby", filter.toUriPart())
+                    }
+                }
+            }
         }
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
+        return GET(url.build().toString(), headers)
     }
+
+    private class AuthorFilter : Filter.Text("Author")
+    private class ArtistFilter : Filter.Text("Artist")
+    private class YearFilter : Filter.Text("Year of Released")
+    private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
+    private class OrderByFilter : UriPartFilter("Order By", arrayOf(
+            Pair("<select>", ""),
+            Pair("Latest", "latest"),
+            Pair("A-Z", "alphabet"),
+            Pair("Rating", "rating"),
+            Pair("Trending", "trending"),
+            Pair("Most Views", "views"),
+            Pair("New", "new-manga")
+    ))
+
+    override fun getFilterList() = FilterList(
+            AuthorFilter(),
+            ArtistFilter(),
+            YearFilter(),
+            StatusFilter(getStatusList()),
+            OrderByFilter()
+    )
+
+    private fun getStatusList() = listOf(
+            Tag("end" , "Completed"),
+            Tag("on-going" , "Ongoing"),
+            Tag("canceled" , "Canceled"),
+            Tag("on-hold" , "On Hold")
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    open class Tag(val id: String, name: String) : Filter.CheckBox(name)
 
     override fun searchMangaSelector() = "div.c-tabs-item__content"
 
@@ -135,7 +214,7 @@ open class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = "body:not(:has(.no-posts))"
+    override fun searchMangaNextPageSelector() = "div.nav-previous"
 
     // Manga Details Parse
 
@@ -173,21 +252,27 @@ open class Madara(
                     else -> SManga.UNKNOWN
                 }
             }
+            val genres = mutableListOf<String>()
+            select("div.genres-content a").forEach { element ->
+                val genre = element.text()
+                genres.add(genre)
+            }
+            manga.genre = genres.joinToString(", ")
         }
 
         return manga
     }
 
-    override fun chapterListSelector() = "div.listing-chapters_wrap li.wp-manga-chapter"
+    override fun chapterListSelector() = "li.wp-manga-chapter"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
         with(element) {
             select("a").first()?.let { urlElement ->
-                chapter.setUrlWithoutDomain(urlElement.attr("abs:href").let {
+                chapter.url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if(!it.endsWith("?style=list")) "?style=list" else ""
-                })
+                }
                 chapter.name = urlElement.text()
             }
 
@@ -195,7 +280,7 @@ open class Madara(
             if (select("img").attr("alt").isNotBlank()) {
                 chapter.date_upload = parseRelativeDate(select("img").attr("alt")) ?: 0
             } else {
-            // For a chapter date that's text
+                // For a chapter date that's text
                 select("span.chapter-release-date i").first()?.let {
                     chapter.date_upload = parseChapterDate(it.text()) ?: 0
                 }
@@ -255,6 +340,13 @@ open class Madara(
         } catch (e: ParseException) {
             null
         }
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        if (chapter.url.startsWith("http")) {
+            return GET(chapter.url, headers)
+        }
+        return super.pageListRequest(chapter)
     }
 
     open val pageListParseSelector = "div.page-break"
