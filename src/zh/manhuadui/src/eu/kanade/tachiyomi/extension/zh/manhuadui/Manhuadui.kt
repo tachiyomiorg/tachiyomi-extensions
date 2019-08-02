@@ -26,7 +26,7 @@ class Manhuadui : ParsedHttpSource() {
     override val baseUrl = "https://www.manhuadui.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = arrayOf("https://res.333dm.com", "https://res02.333dm.com")
+    val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
 
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
