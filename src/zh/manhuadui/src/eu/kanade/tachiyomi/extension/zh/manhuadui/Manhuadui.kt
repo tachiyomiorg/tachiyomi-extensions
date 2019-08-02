@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.extension.zh.manhuadui
 //import android.util.Base64.NO_WRAP
 //import java.util.*
 import android.util.Base64
-import android.util.Log
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
