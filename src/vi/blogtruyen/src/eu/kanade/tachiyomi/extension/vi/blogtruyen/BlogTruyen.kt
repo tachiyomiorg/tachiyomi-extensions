@@ -138,11 +138,16 @@ class BlogTruyen : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        var i = 0
-        document.select("article#content > img").forEach {
-            pages.add(Page(i++, "", it.attr("src")))
+        val pageUrl = document.select("link[rel=canonical]").attr("href")
+        document.select("article#content > img").forEachIndexed { i, e ->
+            pages.add(Page(i, pageUrl, e.attr("src")))
         }
         return pages
+    }
+
+    override fun imageRequest(page: Page): Request {
+        val imgHeaders = headersBuilder().add("Referer", page.url).build()
+        return GET(page.imageUrl!!, imgHeaders)
     }
 
     override fun imageUrlRequest(page: Page) = GET(page.url)

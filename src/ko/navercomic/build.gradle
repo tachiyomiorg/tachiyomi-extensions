@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Naver Comic'
     pkgNameSuffix = 'ko.navercomic'
     extClass = '.NaverComicFactory'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

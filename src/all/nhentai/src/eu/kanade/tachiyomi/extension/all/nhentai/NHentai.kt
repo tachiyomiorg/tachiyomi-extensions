@@ -6,7 +6,9 @@ import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getGroups
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTags
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTime
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -19,6 +21,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 open class NHentai(override val lang: String, private val nhLang: String) : ParsedHttpSource() {
 
@@ -41,7 +44,9 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("a > div").text().replace("\"", "").trim()
-        thumbnail_url = element.select(".cover img").attr("data-src")
+
+        val img = element.select(".cover img").first()
+        thumbnail_url = if (img.hasAttr("data-src")) img.absUrl("data-src") else img.absUrl("src")
     }
 
     override fun latestUpdatesNextPageSelector() = "#content > section.pagination > a.next"
@@ -53,6 +58,17 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun popularMangaSelector() = latestUpdatesSelector()
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val id = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(searchMangaByIdRequest(id))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByIdParse(response, id) }
+        } else {
+            return super.fetchSearchManga(page, query, filters)
+        }
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
@@ -66,6 +82,14 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
         }
 
         return GET(url.build().toString(), headers)
+    }
+
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/g/$id", headers)
+
+    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
+        val details = mangaDetailsParse(response)
+        details.url = "/g/$id/"
+        return MangasPage(listOf(details), false)
     }
 
     override fun searchMangaFromElement(element: Element) = latestUpdatesFromElement(element)
@@ -119,5 +143,9 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
     override fun getFilterList(): FilterList = FilterList(SortFilter())
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+
+    companion object {
+        const val PREFIX_ID_SEARCH = "id:"
+    }
 
 }

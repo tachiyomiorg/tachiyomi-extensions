@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.henchan
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.string
@@ -10,6 +11,7 @@ import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -22,13 +24,19 @@ class Henchan : ParsedHttpSource() {
 
     override val name = "Henchan"
 
-    override val baseUrl = "http://henchan.me"
+    override val baseUrl = "http://h-chan.me"
 
-    private val exhentaiBaseUrl = "http://exhentaidono.me"
+    private val exhentaiBaseUrl = "http://exhentai-dono.me"
 
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addNetworkInterceptor(rateLimitInterceptor).build()
+
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/mostfavorites&sort=manga?offset=${20 * (page - 1)}", headers)

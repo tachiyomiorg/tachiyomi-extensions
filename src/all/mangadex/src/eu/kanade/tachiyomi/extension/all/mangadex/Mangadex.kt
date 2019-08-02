@@ -97,8 +97,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun latestUpdatesSelector() = "tr a.manga_title"
 
+    // url matches default SortFilter selection (Rating Descending)
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/titles/0/$page/", headersBuilder().build())
+        return GET("$baseUrl/titles/7/$page/", headersBuilder().build())
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -210,13 +211,25 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is Demographic -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("demo_id", filter.state.toString())
+                    val DemographicToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.isIncluded()) {
+                            DemographicToInclude.add(content.id)
+                        }
+                    }
+                    if (DemographicToInclude.isNotEmpty()) {
+                        url.addQueryParameter("demos", DemographicToInclude.joinToString(","))
                     }
                 }
                 is PublicationStatus -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("status_id", filter.state.toString())
+                    val PublicationToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.isIncluded()) {
+                            PublicationToInclude.add(content.id)
+                        }
+                    }
+                    if (PublicationToInclude.isNotEmpty()) {
+                        url.addQueryParameter("statuses", PublicationToInclude.joinToString(","))
                     }
                 }
                 is OriginalLanguage -> {
@@ -468,6 +481,11 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
 
+    override fun pageListRequest(chapter: SChapter): Request {
+        val server = getServer()
+        return GET("$baseUrl${chapter.url}?server=$server")
+    }
+
     override fun pageListParse(document: Document) = throw Exception("Not used")
 
     override fun pageListParse(response: Response): List<Page> {
@@ -532,30 +550,61 @@ open class Mangadex(override val lang: String, private val internalLang: String,
                 preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
             }
         }
+        val serverPref = ListPreference(screen.context).apply {
+            key = SERVER_PREF_Title
+            title = SERVER_PREF_Title
+            entries = arrayOf("Auto", "North America", "North America 2", "Europe", "Europe 2", "Rest of the World")
+            entryValues = arrayOf("0", "na", "na2", "eu", "eu2", "row")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SERVER_PREF, entry).commit()
+            }
+        }
 
         screen.addPreference(myPref)
         screen.addPreference(thumbsPref)
+        screen.addPreference(serverPref)
     }
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
-
+    private fun getServer(): String = preferences.getString(SERVER_PREF, "0")
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Tag(val id: String, name: String) : Filter.TriState(name)
+    private class Demographic(demographics: List<Tag>) : Filter.Group<Tag>("Demographic", demographics)
+    private class PublicationStatus(publications: List<Tag>) : Filter.Group<Tag>("Publication", publications)
     private class ContentList(contents: List<Tag>) : Filter.Group<Tag>("Content", contents)
     private class FormatList(formats: List<Tag>) : Filter.Group<Tag>("Format", formats)
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
-    private class Demographic : Filter.Select<String>("Demographic", arrayOf("All", "Shounen", "Shoujo", "Seinen", "Josei"))
-    private class PublicationStatus : Filter.Select<String>("Publication status", arrayOf("All", "Ongoing", "Completed", "Cancelled", "Hiatus"))
+
+    private fun getDemographic() = listOf(
+            Tag("1", "Shounen"),
+            Tag("2", "Shoujo"),
+            Tag("3", "Seinen"),
+            Tag("4", "Josei")
+    ).sortedWith(compareBy { it.name })
+
+    private fun getPublicationStatus() = listOf(
+            Tag("1", "Ongoing"),
+            Tag("2", "Completed"),
+            Tag("3", "Cancelled"),
+            Tag("4", "Hiatus")
+    ).sortedWith(compareBy { it.name })
+
     private class ThemeList(themes: List<Tag>) : Filter.Group<Tag>("Themes", themes)
     private class TagInclusionMode : Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
     private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
 
+    // default selection (Rating Descending) matches popularMangaRequest url
     class SortFilter : Filter.Sort("Sort",
             sortables.map { it.first }.toTypedArray(),
-            Filter.Sort.Selection(0, true))
+            Filter.Sort.Selection(3, false))
 
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
 
@@ -564,8 +613,8 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             TextField("Artist", "artist"),
             R18(),
             SortFilter(),
-            Demographic(),
-            PublicationStatus(),
+            Demographic(getDemographic()),
+            PublicationStatus(getPublicationStatus()),
             OriginalLanguage(),
             ContentList(getContentList()),
             FormatList(getFormatList()),
@@ -683,10 +732,13 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         private const val SHOW_THUMBNAIL_PREF_Title = "Default thumbnail quality"
         private const val SHOW_THUMBNAIL_PREF = "showThumbnailDefault"
 
+        private const val SERVER_PREF_Title = "Image server"
+        private const val SERVER_PREF = "imageServer"
+
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
 
-        private const val PREFIX_ID_SEARCH = "id:"
+        const val PREFIX_ID_SEARCH = "id:"
 
         private val sortables = listOf(
                 Triple("Update date", 0, 1),

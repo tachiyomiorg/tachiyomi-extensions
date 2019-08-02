@@ -4,6 +4,7 @@ import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -146,6 +147,11 @@ class Mangahere : ParsedHttpSource() {
                 else -> manga.status = SManga.UNKNOWN
             }
         }
+
+        // Get a chapter, check if the manga is licensed.
+        val aChapterURL = chapterFromElement(document.select(chapterListSelector()).first()).url
+        val aChapterDocument = client.newCall(GET("$baseUrl$aChapterURL", headers)).execute().asJsoup()
+        if (aChapterDocument.select("p.detail-block-content").hasText()) manga.status = SManga.LICENSED
 
         return manga
     }

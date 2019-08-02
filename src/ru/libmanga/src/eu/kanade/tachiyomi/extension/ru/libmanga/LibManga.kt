@@ -1,51 +1,124 @@
 package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import com.github.salomonbrys.kotson.*
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
-import org.json.JSONObject
-import org.jsoup.nodes.Document
+import okhttp3.*
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.*
+import android.util.Base64.decode as base64Decode
 
 
-open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : ParsedHttpSource() {
+open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : HttpSource() {
 
     override val lang = "ru"
 
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/manga-list?dir=desc&page=$page&sort=views", headers)
+    override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "div.manga-list-item"
+    private val jsonParser = JsonParser()
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        val item = element.select("a.manga-list-item__content").first()
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
+
+    private val latestUpdatesSelector = "div.updates__left"
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val elements = response.asJsoup().select(latestUpdatesSelector)
+        val latestMangas =  elements?.map { latestUpdatesFromElement(it) }
+        if (latestMangas != null)
+            return MangasPage(latestMangas,false) // TODO: use API
+        return MangasPage(emptyList(), false)
+    }
+
+    private fun latestUpdatesFromElement(element: Element): SManga {
+        val link = element.select("a").first()
+        val img = link.select("img").first()
         val manga = SManga.create()
-        manga.thumbnail_url = item.attr("data-src")
-        manga.setUrlWithoutDomain(item.attr("href"))
-        manga.title = item.select("h3.manga-list-item__name").first().text()
+        manga.thumbnail_url = img.attr("data-src")
+            .replace("cover_thumb", "cover_250x350")
+        manga.setUrlWithoutDomain(link.attr("href"))
+        manga.title = img.attr("alt")
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = "a[rel=\"next\"]"
+    private var csrfToken: String = ""
 
-    override fun mangaDetailsParse(document: Document): SManga {
+    private fun catalogHeaders() = Headers.Builder()
+        .apply {
+            add("Accept", "application/json, text/plain, */*")
+            add("X-Requested-With", "XMLHttpRequest")
+            add("x-csrf-token", csrfToken)
+        }
+        .build()
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/login", headers)
+
+    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        if (csrfToken.isEmpty()) {
+            return client.newCall(popularMangaRequest(page))
+                .asObservableSuccess()
+                .flatMap { response ->
+                    // Obtain token
+                    val resBody = response.body()!!.string()
+                    csrfToken = "_token\" content=\"(.*)\"".toRegex().find(resBody)!!.groups[1]!!.value
+                    return@flatMap fetchPopularMangaFromApi(page)
+                }
+        }
+        return fetchPopularMangaFromApi(page)
+    }
+
+    private fun fetchPopularMangaFromApi(page : Int): Observable<MangasPage> {
+        return client.newCall(POST("$baseUrl/filterlist?dir=desc&sort=views&page=$page", catalogHeaders()))
+            .asObservableSuccess()
+            .map { response ->
+                popularMangaParse(response)
+            }
+    }
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val resBody = response.body()!!.string()
+        val result = jsonParser.parse(resBody).obj
+        val items = result["items"]
+        val popularMangas = items["data"].nullArray?.map { popularMangaFromElement(it) }
+
+        if (popularMangas != null) {
+            val hasNextPage = items["next_page_url"].nullString != null
+            return MangasPage(popularMangas, hasNextPage)
+        }
+        return MangasPage(emptyList(), false)
+    }
+
+    private fun popularMangaFromElement(el: JsonElement) = SManga.create().apply {
+        title = el["name"].string
+        thumbnail_url = "$baseUrl/uploads/" + if (el["cover"].nullInt != null)
+            "cover/${el["slug"].string}/cover/cover_250x350.jpg" else
+            "no-image.png"
+        url = "/" + el["slug"].string
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        val document = response.asJsoup()
         val body = document.select("div.section__body").first()
         val manga = SManga.create()
         manga.title = body.select(".manga__title").text()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
         manga.artist = body.select(".info-list__row:nth-child(3) > a").text()
-        manga.status = when (body.select(".info-list__row:nth-child(4) > span").text()) {
+        manga.status = when (
+            body.select(".info-list__row:has(strong:contains(Перевод))")
+                .first()
+                .select("span.m-label_info")
+                .text())
+        {
             "продолжается" -> SManga.ONGOING
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
@@ -55,9 +128,15 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         return manga
     }
 
-    override fun chapterListSelector() = "div.chapter-item"
+    private val chapterListSelector = "div.chapter-item"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val elements = response.asJsoup().select(chapterListSelector)
+        val chapters = elements?.map { chapterFromElement(it) }
+        return chapters ?: emptyList()
+    }
+
+    private fun chapterFromElement(element: Element): SChapter {
         val chapterLink = element.select("div.chapter-item__name > a").first()
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(chapterLink.attr("href"))
@@ -74,44 +153,45 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         }
     }
 
-    override fun pageListParse(document: Document): List<Page> {
+    override fun pageListParse(response: Response): List<Page> {
+        val document = response.asJsoup()
+        val chapInfo = document
+            .select("script:containsData(window.__info)")
+            .first()
+            .html()
+            .replace("window.__info = ", "")
+            .replace(";", "")
+
+        val chapInfoJson = jsonParser.parse(chapInfo).obj
+
+        // Get pages
+        val baseStr = document.select("span.pp")
+            .first()
+            .html()
+            .replace("<!--", "")
+            .replace("-->", "")
+            .trim()
+
+        val decodedArr = base64Decode(baseStr, android.util.Base64.DEFAULT)
+        val pagesJson = jsonParser.parse(String(decodedArr)).array
+
         val pages = mutableListOf<Page>()
-        // Parse script
-        val script = document.select("script:containsData(window.__info)").first().html()
-        val json: String = script.replace("window.__info = ", "")
-        val chapterInfo = JSONObject(json)
-        val pagesJson = chapterInfo.getJSONArray("pages")
-        for (i in 0..(pagesJson.length() - 1)) {
-            val page = pagesJson.getJSONObject(i)
-            pages.add(Page(page.getInt("page_slug"), "", staticUrl + chapterInfo.getString("imgUrl") + page.getString("page_image")))
+        pagesJson.forEach { page ->
+            pages.add(Page(page["p"].int, "", staticUrl + chapInfoJson["imgUrl"].string + page["u"].string))
         }
+
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = ""
-
-    override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
-
-    override fun latestUpdatesSelector() = "div.updates__left"
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        val link = element.select("a").first()
-        val img = link.select("img").first()
-        val manga = SManga.create()
-        manga.thumbnail_url = img.attr("data-src")
-        manga.setUrlWithoutDomain(link.attr("href"))
-        manga.title = img.attr("alt")
-        return manga
-    }
-
-    override fun latestUpdatesNextPageSelector(): String? = null
-
-    override fun searchMangaSelector() = popularMangaSelector()
-
-    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun imageUrlParse(response: Response): String = ""
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga-list?page=$page")!!.newBuilder()
+        if (csrfToken.isEmpty()) {
+            val tokenResponse = client.newCall(popularMangaRequest(page)).execute()
+            val resBody = tokenResponse.body()!!.string()
+            csrfToken = "_token\" content=\"(.*)\"".toRegex().find(resBody)!!.groups[1]!!.value
+        }
+        val url = HttpUrl.parse("$baseUrl/filterlist?page=$page")!!.newBuilder()
         if (query.isNotEmpty()) {
             url.addQueryParameter("name", query)
         }
@@ -134,18 +214,18 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
                 }
                 is OrderBy -> {
                     url.addQueryParameter("dir", if (filter.state!!.ascending) "asc" else "desc")
-                    url.addQueryParameter("sort", arrayOf("rate", "name", "views", "created_at")[filter.state!!.index])
+                    url.addQueryParameter("sort", arrayOf("rate", "name", "views", "created_at", "chap_count")[filter.state!!.index])
                 }
             }
         }
-        return GET(url.toString(), headers)
+        return POST(url.toString(), catalogHeaders())
     }
-
 
     // Hack search method to add some results from search popup
     override fun searchMangaParse(response: Response): MangasPage {
         val searchRequest = response.request().url().queryParameter("name")
         val mangas = mutableListOf<SManga>()
+
         if (!searchRequest.isNullOrEmpty()) {
             val popupSearchHeaders = headers
                     .newBuilder()
@@ -155,42 +235,23 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
             // +200ms
             val popup = client.newCall(
-                    GET("https://mangalib.me/search?query=$searchRequest", headers = popupSearchHeaders)
-            ).execute().body()!!.string()
-            val jsonList = JsonParser().parse(popup).asJsonArray
+                    GET("$baseUrl/search?query=$searchRequest", popupSearchHeaders))
+                .execute().body()!!.string()
+
+            val jsonList = jsonParser.parse(popup).array
             jsonList.forEach {
-                val element = it.asJsonObject
-                val manga = SManga.create()
-                manga.setUrlWithoutDomain("/" + element.get("slug").string)
-                manga.description = element.get("summary").nullString
-                manga.author = element.get("author").nullString
-                manga.title = element.get("name").string
-                val status = element.get("status_id").int
-                manga.status = if (status > 2) 2 else status
-                mangas.add(manga)
+                mangas.add(popularMangaFromElement(it))
             }
-
         }
-        val document = response.asJsoup()
-
-        val searchedMangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
-        }
+        val searchedMangas = popularMangaParse(response)
 
         // Filtered out what find in popup search
-        mangas.addAll(searchedMangas.filter { search ->
+        mangas.addAll(searchedMangas.mangas.filter { search ->
             mangas.find { search.title == it.title } == null
         })
 
-
-        val hasNextPage = searchMangaNextPageSelector().let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, searchedMangas.hasNextPage)
     }
-
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
 
@@ -199,15 +260,15 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     private class GenreList(genres: List<SearchFilter>) : Filter.Group<SearchFilter>("Жанры", genres)
 
     override fun getFilterList() = FilterList(
-            CategoryList(getCategoryList()),
-            StatusList(getStatusList()),
-            GenreList(getGenreList()),
-            OrderBy()
+        CategoryList(getCategoryList()),
+        StatusList(getStatusList()),
+        GenreList(getGenreList()),
+        OrderBy()
     )
 
     private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Рейтинг", "Имя", "Просмотры", "Дата"),
-            Filter.Sort.Selection(0, false))
+        arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
+        Selection(0, false))
 
     /*
     * Use console
@@ -215,13 +276,13 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getCategoryList() = listOf(
-            SearchFilter("Манга", "1"),
-            SearchFilter("OEL-манга", "4"),
-            SearchFilter("Манхва", "5"),
-            SearchFilter("Маньхуа", "6"),
-            SearchFilter("Сингл", "7"),
-            SearchFilter("Руманга", "8"),
-            SearchFilter("Комикс западный", "9")
+        SearchFilter("Манга", "1"),
+        SearchFilter("OEL-манга", "4"),
+        SearchFilter("Манхва", "5"),
+        SearchFilter("Маньхуа", "6"),
+        SearchFilter("Сингл", "7"),
+        SearchFilter("Руманга", "8"),
+        SearchFilter("Комикс западный", "9")
     )
 
     /*
@@ -230,9 +291,9 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getStatusList() = listOf(
-            SearchFilter("Продолжается", "1"),
-            SearchFilter("Завершен", "2"),
-            SearchFilter("Заморожен", "3")
+        SearchFilter("Продолжается", "1"),
+        SearchFilter("Завершен", "2"),
+        SearchFilter("Заморожен", "3")
     )
 
     /*
@@ -241,51 +302,51 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
     * on /manga-list
     */
     private fun getGenreList() = listOf(
-            SearchFilter("арт", "32"),
-            SearchFilter("бара", "33"),
-            SearchFilter("боевик", "34"),
-            SearchFilter("боевые искусства", "35"),
-            SearchFilter("вампиры", "36"),
-            SearchFilter("гарем", "37"),
-            SearchFilter("гендерная интрига", "38"),
-            SearchFilter("героическое фэнтези", "39"),
-            SearchFilter("детектив", "40"),
-            SearchFilter("дзёсэй", "41"),
-            SearchFilter("додзинси", "42"),
-            SearchFilter("драма", "43"),
-            SearchFilter("игра", "44"),
-            SearchFilter("история", "45"),
-            SearchFilter("киберпанк", "46"),
-            SearchFilter("комедия", "47"),
-            SearchFilter("махо-сёдзё", "48"),
-            SearchFilter("меха", "49"),
-            SearchFilter("мистика", "50"),
-            SearchFilter("научная фантастика", "51"),
-            SearchFilter("повседневность", "52"),
-            SearchFilter("постапокалиптика", "53"),
-            SearchFilter("приключения", "54"),
-            SearchFilter("психология", "55"),
-            SearchFilter("романтика", "56"),
-            SearchFilter("самурайский боевик", "57"),
-            SearchFilter("сверхъестественное", "58"),
-            SearchFilter("сёдзё", "59"),
-            SearchFilter("сёдзё-ай", "60"),
-            SearchFilter("сёнэн", "61"),
-            SearchFilter("сёнэн-ай", "62"),
-            SearchFilter("спорт", "63"),
-            SearchFilter("сэйнэн", "64"),
-            SearchFilter("трагедия", "65"),
-            SearchFilter("триллер", "66"),
-            SearchFilter("ужасы", "67"),
-            SearchFilter("фантастика", "68"),
-            SearchFilter("фэнтези", "69"),
-            SearchFilter("школа", "70"),
-            SearchFilter("эротика", "71"),
-            SearchFilter("этти", "72"),
-            SearchFilter("юри", "73"),
-            SearchFilter("яой", "74"),
-            SearchFilter("ёнкома", "75"),
-            SearchFilter("кодомо", "76"),
-            SearchFilter("омегаверс", "77")
+        SearchFilter("арт", "32"),
+        SearchFilter("боевик", "34"),
+        SearchFilter("боевые искусства", "35"),
+        SearchFilter("вампиры", "36"),
+        SearchFilter("веб", "78"),
+        SearchFilter("гарем", "37"),
+        SearchFilter("гендерная интрига", "38"),
+        SearchFilter("героическое фэнтези", "39"),
+        SearchFilter("детектив", "40"),
+        SearchFilter("дзёсэй", "41"),
+        SearchFilter("додзинси", "42"),
+        SearchFilter("драма", "43"),
+        SearchFilter("ёнкома", "75"),
+        SearchFilter("игра", "44"),
+        SearchFilter("история", "45"),
+        SearchFilter("киберпанк", "46"),
+        SearchFilter("кодомо", "76"),
+        SearchFilter("комедия", "47"),
+        SearchFilter("махо-сёдзё", "48"),
+        SearchFilter("меха", "49"),
+        SearchFilter("мистика", "50"),
+        SearchFilter("научная фантастика", "51"),
+        SearchFilter("омегаверс", "77"),
+        SearchFilter("повседневность", "52"),
+        SearchFilter("постапокалиптика", "53"),
+        SearchFilter("приключения", "54"),
+        SearchFilter("психология", "55"),
+        SearchFilter("романтика", "56"),
+        SearchFilter("самурайский боевик", "57"),
+        SearchFilter("сверхъестественное", "58"),
+        SearchFilter("сёдзё", "59"),
+        SearchFilter("сёдзё-ай", "60"),
+        SearchFilter("сёнэн", "61"),
+        SearchFilter("сёнэн-ай", "62"),
+        SearchFilter("спорт", "63"),
+        SearchFilter("сэйнэн", "64"),
+        SearchFilter("трагедия", "65"),
+        SearchFilter("триллер", "66"),
+        SearchFilter("ужасы", "67"),
+        SearchFilter("фантастика", "68"),
+        SearchFilter("фэнтези", "69"),
+        SearchFilter("школа", "70"),
+        SearchFilter("эротика", "71"),
+        SearchFilter("этти", "72"),
+        SearchFilter("юри", "73"),
+        SearchFilter("яой", "74")
     )
 }

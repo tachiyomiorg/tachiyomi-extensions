@@ -16,6 +16,7 @@ import android.util.Log
  * the usual search screen from working.
  */
 class MangadexUrlActivity : Activity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
@@ -23,7 +24,7 @@ class MangadexUrlActivity : Activity() {
             val titleid = pathSegments[1]
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", "id:$titleid")
+                putExtra("query", "${Mangadex.PREFIX_ID_SEARCH}$titleid")
                 putExtra("filter", packageName)
             }
 
@@ -39,4 +40,5 @@ class MangadexUrlActivity : Activity() {
         finish()
         System.exit(0)
     }
+
 }

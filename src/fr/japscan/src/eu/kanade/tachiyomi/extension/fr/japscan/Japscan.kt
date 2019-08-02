@@ -187,7 +187,7 @@ class Japscan : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))
-        val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_']").isNullOrEmpty()) "&decodeImage" else ""
+        val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_U']").isNullOrEmpty()) "&decodeImage" else ""
 
         document.select("select#pages").first()?.select("option")?.forEach {
             pages.add(Page(pages.size, "", "${imagePath?.groupValues?.get(1)}${it.attr("data-img")}$imageScrambled"))

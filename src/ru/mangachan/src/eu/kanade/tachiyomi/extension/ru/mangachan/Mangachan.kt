@@ -1,9 +1,11 @@
 package eu.kanade.tachiyomi.extension.ru.mangachan
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -17,11 +19,17 @@ class Mangachan : ParsedHttpSource() {
 
     override val name = "Mangachan"
 
-    override val baseUrl = "http://mangachan.me"
+    override val baseUrl = "https://manga-chan.me"
 
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addNetworkInterceptor(rateLimitInterceptor).build()
+
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)

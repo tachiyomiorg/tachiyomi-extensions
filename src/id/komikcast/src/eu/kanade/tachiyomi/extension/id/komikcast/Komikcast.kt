@@ -99,7 +99,7 @@ class Komikcast : ParsedHttpSource() {
         }
         manga.genre = genres.joinToString(", ")
         manga.status = parseStatus(infoElement.select(".spe > span:nth-child(2)").text())
-        manga.description = document.select("div.desc div p:nth-child(1)")?.text()
+        manga.description = document.select("div[^itemprop]").last().text()
         manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
 
         return manga
