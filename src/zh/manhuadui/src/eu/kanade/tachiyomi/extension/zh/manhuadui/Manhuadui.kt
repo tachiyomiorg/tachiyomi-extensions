@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.zh.manhuadui
 //import android.util.Base64.NO_WRAP
 //import java.util.*
 import android.util.Base64
+import android.util.Log
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -43,8 +44,18 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
-        return GET(url.toString(), headers)
+        if (query != "") {
+            val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
+            return GET(url.toString(), headers)
+        } else {
+            var params = filters.map {
+                if (it is UriPartFilter) {
+                    it.toUriPart()
+                } else ""
+            }.filter { it != "" }.joinToString("-")
+            val url = HttpUrl.parse("$baseUrl/list/$params/$page/")?.newBuilder()
+            return GET(url.toString(), headers)
+        }
     }
 
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
@@ -68,12 +79,22 @@ class Manhuadui : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a.image-link").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.attr("title").trim()
-            manga.thumbnail_url = it.select("img").attr("src").trim()
+        val els = element.select("a.image-link")
+        if (els.size == 0) {
+            element.select("li.list-comic").first().let {
+                manga.setUrlWithoutDomain(it.select("a").attr("href"))
+                manga.title = it.select("span").attr("title").trim()
+                manga.thumbnail_url = it.select("a > img").attr("src").trim()
+                manga.author = it.select("span > p").first().text().split("：")[1].trim()
+            }
+        } else {
+            element.select("a.image-link").first().let {
+                manga.setUrlWithoutDomain(it.attr("href"))
+                manga.title = it.attr("title").trim()
+                manga.thumbnail_url = it.select("img").attr("src").trim()
+            }
+            manga.author = element.select("p.auth").text().trim()
         }
-        manga.author = element.select("p.auth").text().trim()
         return manga
     }
 
@@ -140,16 +161,53 @@ class Manhuadui : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
-    private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
-
     override fun getFilterList() = FilterList(
-        GenreFilter(getGenreList())
+        CategoryGroup(),
+        RegionGroup(),
+        GenreGroup(),
+        ProgressGroup()
     )
 
-    private fun getGenreList() = arrayOf(
-        "All"
-    )
+    private class CategoryGroup : UriPartFilter("按类型", arrayOf(
+        Pair("全部", ""),
+        Pair("儿童漫画", "ertong"),
+        Pair("少年漫画", "shaonian"),
+        Pair("少女漫画", "shaonv"),
+        Pair("青年漫画", "qingnian")
+    ))
 
+    private class ProgressGroup : UriPartFilter("按进度", arrayOf(
+        Pair("全部", ""),
+        Pair("已完结", "wanjie"),
+        Pair("连载中", "lianzai")
+    ))
 
+    private class RegionGroup : UriPartFilter("按地区", arrayOf(
+        Pair("全部", ""),
+        Pair("日本", "riben"),
+        Pair("大陆", "dalu"),
+        Pair("香港", "hongkong"),
+        Pair("台湾", "taiwan"),
+        Pair("欧美", "oumei"),
+        Pair("韩国", "hanguo"),
+        Pair("其他", "qita")
+    ))
+
+    private class GenreGroup : UriPartFilter("按剧情", arrayOf(
+        Pair("全部", ""),
+        Pair("热血", "rexue"),
+        Pair("冒险", "maoxian"),
+        Pair("玄幻", "xuanhuan"),
+        Pair("搞笑", "gaoxiao"),
+        Pair("恋爱", "lianai"),
+        Pair("宠物", "chongwu"),
+        Pair("新作", "xinzuo")
+    ))
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>,
+                                     defaultValue: Int = 0) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
+        open fun toUriPart() = vals[state].second
+    }
 }
 
