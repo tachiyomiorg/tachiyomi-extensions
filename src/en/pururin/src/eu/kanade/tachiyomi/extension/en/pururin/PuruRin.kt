@@ -36,10 +36,6 @@ class PuruRin : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-//        val url = element.attr("href")
-//        val title = element.select("div.title").text()
-//        val thumbnail = element.select("img.card-img-top").attr("data-src")
-
         manga.url = element.attr("href")
         manga.title = element.select("div.title").text()
         manga.thumbnail_url = "https:" + element.select("img.card-img-top").attr("data-src")
@@ -48,8 +44,6 @@ class PuruRin : ParsedHttpSource() {
     }
 
     override fun latestUpdatesNextPageSelector() = "ul.pagination a.page-link[rel=next]"
-
-    //TODO IMPLEMENT WHATS NEXT
 
 
     override fun mangaDetailsRequest(manga: SManga): Request {
@@ -122,7 +116,6 @@ class PuruRin : ParsedHttpSource() {
 
     //TODO Make it work for collections
     override fun chapterFromElement(element: Element): SChapter {
-//        val urlElement = element.select("div.gallery-action a")
 
         val chapter = SChapter.create()
 
