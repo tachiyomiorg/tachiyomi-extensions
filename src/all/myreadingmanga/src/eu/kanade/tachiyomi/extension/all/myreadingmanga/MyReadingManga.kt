@@ -66,11 +66,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        /* Old search code:
-        val uri = Uri.parse("$baseUrl/search/").buildUpon()
-        uri.appendQueryParameter("search", query)
-        return GET(uri.toString())
-        */
+
         val query2 = URLEncoder.encode(query, "UTF-8")
         val uri = Uri.parse("$baseUrl/search/").buildUpon()
                 uri.appendEncodedPath(query2)
@@ -81,19 +77,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
 
     override fun searchMangaParse(response: Response): MangasPage {
-        /* Old Parse Code:
-        val document = response.asJsoup()
-
-        val elements = document.select(searchMangaSelector())
-        var mangas = mutableListOf<SManga>()
-        for (element in elements) {
-            if (element.text().contains("[$lang", true)) {
-                mangas.add(searchMangaFromElement(element))
-            }
-        }
-
-        return MangasPage(mangas, false)
-        */
         val document = response.asJsoup()
 
         val mangas = mutableListOf<SManga>()
@@ -113,10 +96,9 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return MangasPage(mangas, hasNextPage)
     }
 
-    override fun searchMangaSelector() = "article" //"div.results-by-facets div[id*=res]"
+    override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a[rel]").first(), element.select("a.entry-image-link img").first()) //buildManga(element.select("a").first(), element.select("img").first())
-
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     private fun buildManga(titleElement: Element, thumbnailElement: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
