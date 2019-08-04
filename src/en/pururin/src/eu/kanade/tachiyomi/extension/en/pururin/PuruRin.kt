@@ -10,7 +10,7 @@ import org.jsoup.nodes.Element
 import java.net.URLEncoder
 
 
-class PuruRin : ParsedHttpSource() {
+class Pururin : ParsedHttpSource() {
 
     private fun pagedRequest(url: String, page: Int, queryString: String? = null): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
@@ -18,7 +18,7 @@ class PuruRin : ParsedHttpSource() {
         return GET(if (queryString != null) "$url$queryString" else builtUrl)
     }
 
-    override val name = "PuruRin"
+    override val name = "Pururin"
 
     override val baseUrl = "https://pururin.io"
 
@@ -167,12 +167,8 @@ class PuruRin : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var url: String? = null
         var queryString: String? = null
-        fun requireNoUrl() = require(url == null && queryString == null) {
-            "[ROBLOX OOF SOUND]"
-        }
 
         if (query.isNotBlank()) {
-            requireNoUrl()
             url = "/search?"
             queryString = "q=" + URLEncoder.encode(query, "UTF-8")
         }

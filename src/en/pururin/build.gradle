@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: Pururin'
     pkgNameSuffix = 'en.pururin'
-    extClass = '.PuruRin'
-    extVersionCode = 2
+    extClass = '.Pururin'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
