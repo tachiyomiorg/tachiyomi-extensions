@@ -31,21 +31,6 @@ class HeavenManga : ParsedHttpSource() {
             .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
     }
 
-    private fun getBuilder(url: String): String {
-        val req = Request.Builder()
-            .headers(headersBuilder()
-                .add("Cache-mode", "no-cache")
-                .build())
-            .url(url)
-            .build()
-
-        return client.newCall(req)
-            .execute()
-            .request()
-            .url()
-            .toString()
-    }
-
 
     override fun popularMangaSelector() = ".top.clearfix .ranking"
 
@@ -73,31 +58,36 @@ class HeavenManga : ParsedHttpSource() {
 
         // Filter
         if(query.isBlank()) {
-            (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+            var url = ""
+            filters.forEach { filter ->
                 when(filter) {
                     is GenreFilter -> {
-                        return GET(baseUrl + filter.toUriPart(), headers)
+                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
+                            url = baseUrl + filter.toUriPart()
+                            return GET(url, headers)
+                        }
                     }
                     is AlphabeticoFilter -> {
-                        return GET(baseUrl + filter.toUriPart(), headers)
+                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
+                            url = baseUrl + filter.toUriPart()
+                            return GET(url, headers)
+                        }
+                    }
+                    is ListaCompletasFilter -> {
+                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
+                            url = filter.toUriPart()
+                            return GET(url, headers)
+                        }
                     }
                 }
             }
+
         }
 
         return GET(search_url, headers)
     }
 
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
-
-//    override fun pageListRequest(chapter: SChapter): Request {
-//        val url = pageUrl(baseUrl + chapter.url)
-//        val newUrl = getBuilder(baseUrl + url)
-//        Log.d("pageListRequest: url-> ", "$url\n")
-//        Log.d("       newUrl-> ", "$newUrl\n")
-//        Log.d("       chapter.url-> ", "$chapter.url\n")
-//        return GET(url, headers)
-//    }
 
     // get contents of a url
     private fun getUrlContents(url: String): Document = Jsoup.connect(url).timeout(0).get()
@@ -141,15 +131,11 @@ class HeavenManga : ParsedHttpSource() {
         val url = urlElement.attr("href")
 
         val chapter = SChapter.create()
+        Log.d("HM: chapUrl->", chapter.setUrlWithoutDomain(url).toString())
         chapter.setUrlWithoutDomain(url)
         chapter.name = urlElement.text()
         chapter.date_upload = parseChapterDate(date.toString())
         return chapter
-    }
-
-    private fun pageUrl(leerUrl: String): String {
-        val element = getUrlContents(leerUrl)
-        return element.select(chapterPageSelector()).attr("href")
     }
 
 
@@ -173,7 +159,6 @@ class HeavenManga : ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).parse(date).time
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var response = response
         val chapters = mutableListOf<SChapter>()
         val document = response.asJsoup()
         document.select(chapterListSelector()).forEach {
@@ -182,34 +167,25 @@ class HeavenManga : ParsedHttpSource() {
         return chapters
     }
 
-//    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
-//        val body = response.asJsoup()
-//        val imgUrl = body.select("#p").first().attr("src")
-//
-//        body.select(".chaptercontrols > select").first().getElementsByTag("option").forEach {
-//            add(Page(size, it.attr("value"), "$imgUrl"))
-//        }
-//    }
 
-
-    override fun imageUrlParse(document: Document) = document.select("#p").attr("src")
+    override fun imageUrlParse(document: Document) = document.select("#p").attr("src").toString()
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val leerUrl = document.select(chapterPageSelector()).attr("href")
         val urlElement = getUrlContents(leerUrl)
-        urlElement.select("option").forEach {
+        urlElement.body().select("option").forEach {
             pages.add(Page(pages.size, it.attr("value")))
-            Log.d("pageListParse: urlVal->", baseUrl + it.attr("value") + "\n")
         }
-        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
+        pages.getOrNull(0)?.imageUrl = imageUrlParse(urlElement)
 
         return pages
     }
 
-    // TODO: learn how to deal with filtering genres
-    // Array.from(document.querySelectorAll('.categorias a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
-    // on http://heavenmanga.com/top/
+    /**
+     * Array.from(document.querySelectorAll('.categorias a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
+     * on http://heavenmanga.com/top/
+     * */
     private class GenreFilter : UriPartFilter("Géneros", arrayOf(
         Pair("Todo", ""),
         Pair("Accion", "/genero/accion.html"),
@@ -297,10 +273,12 @@ class HeavenManga : ParsedHttpSource() {
         Pair("Yuri", "/genero/yuri.html")
     ))
 
-    // Array.from(document.querySelectorAll('.letras a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
-    // on http://heavenmanga.com/top/
+    /**
+     * Array.from(document.querySelectorAll('.letras a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
+     * on http://heavenmanga.com/top/
+     * */
     private class AlphabeticoFilter : UriPartFilter("Alfabético", arrayOf(
-//        Pair("Todo", ""),
+        Pair("Todo", ""),
         Pair("A", "/letra/a.html"),
         Pair("B", "/letra/b.html"),
         Pair("C", "/letra/c.html"),
@@ -330,9 +308,23 @@ class HeavenManga : ParsedHttpSource() {
         Pair("0-9", "/letra/0-9.html")
     ))
 
+    /**
+     * Array.from(document.querySelectorAll('#t li a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
+     * on http://heavenmanga.com/top/
+     * */
+    private class ListaCompletasFilter: UriPartFilter("Lista Completa", arrayOf(
+        Pair("Todo", ""),
+        Pair("Lista Comis", "http://heavenmanga.com/comic/"),
+        Pair("Lista Novelas", "http://heavenmanga.com/novela/"),
+        Pair("Lista Adulto", "http://heavenmanga.com/adulto/")
+    ))
+
     override fun getFilterList() = FilterList(
+        // Search and filter don't work at the same time
+        Filter.Header("NOTE: Ignored if using text search!"),
         GenreFilter(),
-        AlphabeticoFilter()
+        AlphabeticoFilter(),
+        ListaCompletasFilter()
     )
 
 
