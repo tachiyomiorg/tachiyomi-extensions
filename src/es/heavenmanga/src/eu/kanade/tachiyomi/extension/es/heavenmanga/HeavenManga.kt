@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.es.heavenmanga
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -33,7 +34,6 @@ class HeavenManga : ParsedHttpSource() {
     private fun getBuilder(url: String): String {
         val req = Request.Builder()
             .headers(headersBuilder()
-//                .add("Referer", "$baseUrl/library/manga/")
                 .add("Cache-mode", "no-cache")
                 .build())
             .url(url)
@@ -50,8 +50,6 @@ class HeavenManga : ParsedHttpSource() {
     override fun popularMangaSelector() = ".top.clearfix .ranking"
 
     override fun latestUpdatesSelector() = "#container .ultimos_epis .not"
-
-    private fun latestUpdatesListSelector() = "#container .ultimos_epis .not"
 
     override fun searchMangaSelector() = ".top.clearfix .cont_manga"
 
@@ -70,27 +68,39 @@ class HeavenManga : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/", headers)
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
-        = GET("$baseUrl/buscar/$query.html", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val search_url = "$baseUrl/buscar/$query.html"
+
+        // Filter
+        if(query.isBlank()) {
+            (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+                when(filter) {
+                    is GenreFilter -> {
+                        return GET(baseUrl + filter.toUriPart(), headers)
+                    }
+                    is AlphabeticoFilter -> {
+                        return GET(baseUrl + filter.toUriPart(), headers)
+                    }
+                }
+            }
+        }
+
+        return GET(search_url, headers)
+    }
 
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
 
 //    override fun pageListRequest(chapter: SChapter): Request {
-//        val url = getBuilder(chapter.url)
-//        val request: Request = Request.Builder()
-//            .url(url)
-//            .build()
-//        val response: Response = client.newCall(request).execute()
-//        val element = response.asJsoup()
-//        val newUrl = element.select(chapterPageSelector()).attr("href")
-//
-//        return GET(newUrl, headers)
+//        val url = pageUrl(baseUrl + chapter.url)
+//        val newUrl = getBuilder(baseUrl + url)
+//        Log.d("pageListRequest: url-> ", "$url\n")
+//        Log.d("       newUrl-> ", "$newUrl\n")
+//        Log.d("       chapter.url-> ", "$chapter.url\n")
+//        return GET(url, headers)
 //    }
 
     // get contents of a url
     private fun getUrlContents(url: String): Document = Jsoup.connect(url).timeout(0).get()
-
-
 
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
@@ -131,14 +141,14 @@ class HeavenManga : ParsedHttpSource() {
         val url = urlElement.attr("href")
 
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(url)//chapterUrl(url))
+        chapter.setUrlWithoutDomain(url)
         chapter.name = urlElement.text()
         chapter.date_upload = parseChapterDate(date.toString())
         return chapter
     }
 
-    private fun chapterUrl(pageUrl: String): String {
-        val element = getUrlContents(pageUrl)
+    private fun pageUrl(leerUrl: String): String {
+        val element = getUrlContents(leerUrl)
         return element.select(chapterPageSelector()).attr("href")
     }
 
@@ -172,101 +182,163 @@ class HeavenManga : ParsedHttpSource() {
         return chapters
     }
 
-    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
-        val body = response.asJsoup()
-        val imgUrl = body.select("#p").first().attr("src")
-
-        body.select(".chaptercontrols > select").first().getElementsByTag("option").forEach {
-            add(Page(size, it.attr("value"), "$imgUrl"))
-        }
-    }
-
-
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
-
-    override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
-
-//    override fun pageListParse(document: Document): List<Page> {
-//        val pages = mutableListOf<Page>()
-//        document.select(".chaptercontrols > select").first().getElementsByTag("option").forEach {
-//            pages.add(Page(pages.size, it.attr("value")))
+//    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
+//        val body = response.asJsoup()
+//        val imgUrl = body.select("#p").first().attr("src")
+//
+//        body.select(".chaptercontrols > select").first().getElementsByTag("option").forEach {
+//            add(Page(size, it.attr("value"), "$imgUrl"))
 //        }
-//        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
-//        return pages
 //    }
 
+
+    override fun imageUrlParse(document: Document) = document.select("#p").attr("src")
+
+    override fun pageListParse(document: Document): List<Page> {
+        val pages = mutableListOf<Page>()
+        val leerUrl = document.select(chapterPageSelector()).attr("href")
+        val urlElement = getUrlContents(leerUrl)
+        urlElement.select("option").forEach {
+            pages.add(Page(pages.size, it.attr("value")))
+            Log.d("pageListParse: urlVal->", baseUrl + it.attr("value") + "\n")
+        }
+        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
+
+        return pages
+    }
+
     // TODO: learn how to deal with filtering genres
-    private class Genre(name: String,  val id: String = name.replace(' ', '+')) : Filter.CheckBox(name)
-
-    override fun getFilterList() = FilterList()
-
-    // Array.from(document.querySelectorAll('.categorias a font font')).map(a => `Genre("${a.textContent}")`).join(',\n')
+    // Array.from(document.querySelectorAll('.categorias a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
     // on http://heavenmanga.com/top/
-    private fun getGenreList() = listOf(
-        Genre("Action "),
-        Genre("Adult "),
-        Genre("Adventure "),
-        Genre("Martial Arts "),
-        Genre("acontesimientos of Life "),
-        Genre("Bakunyuu "),
-        Genre("Sci-fi "),
-        Genre("Comic "),
-        Genre("Combat "),
-        Genre("Comedy "),
-        Genre("Cooking "),
-        Genre("Cotidiano "),
-        Genre("Schoolgirls "),
-        Genre("critical social "),
-        Genre("science fiction "),
-        Genre("gender change "),
-        Genre("things in life "),
-        Genre("Drama "),
-        Genre("Sport "),
-        Genre("Doujinshi "),
-        Genre("Offender "),
-        Genre("Ecchi "),
-        Genre("School "),
-        Genre("Erotico "),
-        Genre("School "),
-        Genre(" Lifestyle "),
-        Genre("Fantasia "),
-        Genre("Fragments of Life "),
-        Genre("Gore "),
-        Genre("Gender Bender "),
-        Genre("Humor "),
-        Genre("Harem "),
-        Genre("Haren "),
-        Genre("Hentai "),
-        Genre("Horror "),
-        Genre("Psychological "),
-        Genre("Romance "),
-        Genre("Life Counts "),
-        Genre("Smut "),
-        Genre("Shojo "),
-        Genre("Shonen "),
-        Genre("Seinen "),
-        Genre("Shoujo "),
-        Genre("Shounen "),
-        Genre("Suspense "),
-        Genre("School Life "),
-        Genre("Supernatural"),
-        Genre(" SuperHeroes "),
-        Genre("Supernatural "),
-        Genre("Slice of Life "),
-        Genre("Super Powers "),
-        Genre("Terror "),
-        Genre("Tournament "),
-        Genre("Tragedy "),
-        Genre("Transexual "),
-        Genre("Life "),
-        Genre("Vampires "),
-        Genre("Violence "),
-        Genre("Past Life "),
-        Genre("Daily Life "),
-        Genre("Life of school"),
-        Genre("Webtoon "),
-        Genre("Webtoons "),
-        Genre("Yaoi "),
-        Genre("Yuri")
+    private class GenreFilter : UriPartFilter("Géneros", arrayOf(
+        Pair("Todo", ""),
+        Pair("Accion", "/genero/accion.html"),
+        Pair("Adulto", "/genero/adulto.html"),
+        Pair("Aventura", "/genero/aventura.html"),
+        Pair("Artes Marciales", "/genero/artes+marciales.html"),
+        Pair("Acontesimientos de la Vida", "/genero/acontesimientos+de+la+vida.html"),
+        Pair("Bakunyuu", "/genero/bakunyuu.html"),
+        Pair("Sci-fi", "/genero/sci-fi.html"),
+        Pair("Comic", "/genero/comic.html"),
+        Pair("Combate", "/genero/combate.html"),
+        Pair("Comedia", "/genero/comedia.html"),
+        Pair("Cooking", "/genero/cooking.html"),
+        Pair("Cotidiano", "/genero/cotidiano.html"),
+        Pair("Colegialas", "/genero/colegialas.html"),
+        Pair("Critica social", "/genero/critica+social.html"),
+        Pair("Ciencia ficcion", "/genero/ciencia+ficcion.html"),
+        Pair("Cambio de genero", "/genero/cambio+de+genero.html"),
+        Pair("Cosas de la Vida", "/genero/cosas+de+la+vida.html"),
+        Pair("Drama", "/genero/drama.html"),
+        Pair("Deporte", "/genero/deporte.html"),
+        Pair("Doujinshi", "/genero/doujinshi.html"),
+        Pair("Delincuentes", "/genero/delincuentes.html"),
+        Pair("Ecchi", "/genero/ecchi.html"),
+        Pair("Escolar", "/genero/escolar.html"),
+        Pair("Erotico", "/genero/erotico.html"),
+        Pair("Escuela", "/genero/escuela.html"),
+        Pair("Estilo de Vida", "/genero/estilo+de+vida.html"),
+        Pair("Fantasia", "/genero/fantasia.html"),
+        Pair("Fragmentos de la Vida", "/genero/fragmentos+de+la+vida.html"),
+        Pair("Gore", "/genero/gore.html"),
+        Pair("Gender Bender", "/genero/gender+bender.html"),
+        Pair("Humor", "/genero/humor.html"),
+        Pair("Harem", "/genero/harem.html"),
+        Pair("Haren", "/genero/haren.html"),
+        Pair("Hentai", "/genero/hentai.html"),
+        Pair("Horror", "/genero/horror.html"),
+        Pair("Historico", "/genero/historico.html"),
+        Pair("Josei", "/genero/josei.html"),
+        Pair("Loli", "/genero/loli.html"),
+        Pair("Light", "/genero/light.html"),
+        Pair("Lucha Libre", "/genero/lucha+libre.html"),
+        Pair("Manga", "/genero/manga.html"),
+        Pair("Mecha", "/genero/mecha.html"),
+        Pair("Magia", "/genero/magia.html"),
+        Pair("Maduro", "/genero/maduro.html"),
+        Pair("Manhwa", "/genero/manhwa.html"),
+        Pair("Manwha", "/genero/manwha.html"),
+        Pair("Mature", "/genero/mature.html"),
+        Pair("Misterio", "/genero/misterio.html"),
+        Pair("Mutantes", "/genero/mutantes.html"),
+        Pair("Novela", "/genero/novela.html"),
+        Pair("Orgia", "/genero/orgia.html"),
+        Pair("OneShot", "/genero/oneshot.html"),
+        Pair("OneShots", "/genero/oneshots.html"),
+        Pair("Psicologico", "/genero/psicologico.html"),
+        Pair("Romance", "/genero/romance.html"),
+        Pair("Recuentos de la vida", "/genero/recuentos+de+la+vida.html"),
+        Pair("Smut", "/genero/smut.html"),
+        Pair("Shojo", "/genero/shojo.html"),
+        Pair("Shonen", "/genero/shonen.html"),
+        Pair("Seinen", "/genero/seinen.html"),
+        Pair("Shoujo", "/genero/shoujo.html"),
+        Pair("Shounen", "/genero/shounen.html"),
+        Pair("Suspenso", "/genero/suspenso.html"),
+        Pair("School Life", "/genero/school+life.html"),
+        Pair("Sobrenatural", "/genero/sobrenatural.html"),
+        Pair("SuperHeroes", "/genero/superheroes.html"),
+        Pair("Supernatural", "/genero/supernatural.html"),
+        Pair("Slice of Life", "/genero/slice+of+life.html"),
+        Pair("Super Poderes", "/genero/ssuper+poderes.html"),
+        Pair("Terror", "/genero/terror.html"),
+        Pair("Torneo", "/genero/torneo.html"),
+        Pair("Tragedia", "/genero/tragedia.html"),
+        Pair("Transexual", "/genero/transexual.html"),
+        Pair("Vida", "/genero/vida.html"),
+        Pair("Vampiros", "/genero/vampiros.html"),
+        Pair("Violencia", "/genero/violencia.html"),
+        Pair("Vida Pasada", "/genero/vida+pasada.html"),
+        Pair("Vida Cotidiana", "/genero/vida+cotidiana.html"),
+        Pair("Vida de Escuela", "/genero/vida+de+escuela.html"),
+        Pair("Webtoon", "/genero/webtoon.html"),
+        Pair("Webtoons", "/genero/webtoons.html"),
+        Pair("Yaoi", "/genero/yaoi.html"),
+        Pair("Yuri", "/genero/yuri.html")
+    ))
+
+    // Array.from(document.querySelectorAll('.letras a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
+    // on http://heavenmanga.com/top/
+    private class AlphabeticoFilter : UriPartFilter("Alfabético", arrayOf(
+//        Pair("Todo", ""),
+        Pair("A", "/letra/a.html"),
+        Pair("B", "/letra/b.html"),
+        Pair("C", "/letra/c.html"),
+        Pair("D", "/letra/d.html"),
+        Pair("E", "/letra/e.html"),
+        Pair("F", "/letra/f.html"),
+        Pair("G", "/letra/g.html"),
+        Pair("H", "/letra/h.html"),
+        Pair("I", "/letra/i.html"),
+        Pair("J", "/letra/j.html"),
+        Pair("K", "/letra/k.html"),
+        Pair("L", "/letra/l.html"),
+        Pair("M", "/letra/m.html"),
+        Pair("N", "/letra/n.html"),
+        Pair("O", "/letra/o.html"),
+        Pair("P", "/letra/p.html"),
+        Pair("Q", "/letra/q.html"),
+        Pair("R", "/letra/r.html"),
+        Pair("S", "/letra/s.html"),
+        Pair("T", "/letra/t.html"),
+        Pair("U", "/letra/u.html"),
+        Pair("V", "/letra/v.html"),
+        Pair("W", "/letra/w.html"),
+        Pair("X", "/letra/x.html"),
+        Pair("Y", "/letra/y.html"),
+        Pair("Z", "/letra/z.html"),
+        Pair("0-9", "/letra/0-9.html")
+    ))
+
+    override fun getFilterList() = FilterList(
+        GenreFilter(),
+        AlphabeticoFilter()
     )
+
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+    
 }
