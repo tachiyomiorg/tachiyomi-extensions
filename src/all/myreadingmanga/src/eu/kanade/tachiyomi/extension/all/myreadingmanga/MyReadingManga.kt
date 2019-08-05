@@ -124,7 +124,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
         manga.genre = glist.joinToString(", ")
         manga.description = document.select("h1").text() + "\n" + document.select(".info-class").text()
-        val mstatus = document.select("a[href*=status]").first().text()
+        val mstatus = document.select("a[href*=status]")?.first()?.text()
         when (mstatus) {
             "Ongoing" -> manga.status = SManga.ONGOING
             "Completed" -> manga.status = SManga.COMPLETED
