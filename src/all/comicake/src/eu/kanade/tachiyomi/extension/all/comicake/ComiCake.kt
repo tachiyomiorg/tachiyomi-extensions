@@ -2,21 +2,24 @@ package eu.kanade.tachiyomi.extension.all.comicake
 
 import android.os.Build
 import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
-import eu.kanade.tachiyomi.network.GET
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
-import kotlin.collections.ArrayList
 
 const val COMICAKE_DEFAULT_API_ENDPOINT = "/api" // Highly unlikely to change
 const val COMICAKE_DEFAULT_READER_ENDPOINT = "/r" // Can change based on CC config
 
-open class ComiCake(override val name: String, override val baseUrl: String, override val lang: String, val readerEndpoint: String = COMICAKE_DEFAULT_READER_ENDPOINT, val apiEndpoint: String = COMICAKE_DEFAULT_API_ENDPOINT) : HttpSource() {
+open class ComiCake(override val name: String,
+                    final override val baseUrl: String,
+                    override val lang: String,
+                    readerEndpoint: String = COMICAKE_DEFAULT_READER_ENDPOINT,
+                    apiEndpoint: String = COMICAKE_DEFAULT_API_ENDPOINT) : HttpSource() {
     override val versionId = 1
     override val supportsLatest = true
     private val readerBase = baseUrl + readerEndpoint
@@ -40,18 +43,18 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
         return getMangasPageFromComicsResponse(res)
     }
 
-    private fun getMangasPageFromComicsResponse(json: String, nested: Boolean = false) : MangasPage {
-        var response = JSONObject(json)
-        var results = response.getJSONArray("results")
+    private fun getMangasPageFromComicsResponse(json: String, nested: Boolean = false): MangasPage {
+        val response = JSONObject(json)
+        val results = response.getJSONArray("results")
         val mangas = ArrayList<SManga>()
-        val ids = mutableListOf<Int>();
+        val ids = mutableListOf<Int>()
 
         for (i in 0 until results.length()) {
             val obj = results.getJSONObject(i)
-            if(nested) {
-                val nestedComic = obj.getJSONObject("comic");
+            if (nested) {
+                val nestedComic = obj.getJSONObject("comic")
                 val id = nestedComic.getInt("id")
-                if(ids.contains(id))
+                if (ids.contains(id))
                     continue
                 ids.add(id)
                 val manga = SManga.create()
@@ -60,13 +63,13 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
                 mangas.add(manga)
             } else {
                 val id = obj.getInt("id")
-                if(ids.contains(id))
+                if (ids.contains(id))
                     continue
                 ids.add(id)
                 mangas.add(parseComicJson(obj))
             }
         }
-        return MangasPage(mangas, if (response.getString("next").isNullOrEmpty() || response.getString("next") == "null") false else true)
+        return MangasPage(mangas, !(response.getString("next").isNullOrEmpty() || response.getString("next") == "null"))
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
@@ -78,11 +81,11 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
         return parseComicJson(comicJson, true)
     }
 
-    private fun parseComicJson(obj: JSONObject, human: Boolean = false) =  SManga.create().apply {
-        if(human) {
-            url = "$readerBase/series/${obj.getString("slug")}/"
+    private fun parseComicJson(obj: JSONObject, human: Boolean = false) = SManga.create().apply {
+        url = if (human) {
+            "$readerBase/series/${obj.getString("slug")}/"
         } else {
-            url = obj.getInt("id").toString() // Yeah, I know... Feel free to improve on this
+            obj.getInt("id").toString() // Yeah, I know... Feel free to improve on this
         }
         title = obj.getString("name")
         thumbnail_url = obj.getString("cover")
@@ -93,9 +96,9 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
         status = SManga.UNKNOWN
     }
 
-    private fun parseListNames(arr: JSONArray) : String {
-        var hold = ArrayList<String>(arr.length())
-        for(i in 0 until arr.length())
+    private fun parseListNames(arr: JSONArray): String {
+        val hold = ArrayList<String>(arr.length())
+        for (i in 0 until arr.length())
             hold.add(arr.getJSONObject(i).getString("name"))
         return hold.sorted().joinToString(", ")
     }
@@ -133,7 +136,7 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapterJson = JSONObject(response.body()!!.string())
-        var results = chapterJson.getJSONArray("results")
+        val results = chapterJson.getJSONArray("results")
         val ret = ArrayList<SChapter>()
         for (i in 0 until results.length()) {
             ret.add(parseChapterJson(results.getJSONObject(i)))
@@ -144,9 +147,9 @@ open class ComiCake(override val name: String, override val baseUrl: String, ove
     override fun pageListParse(response: Response): List<Page> {
         val webPub = JSONObject(response.body()!!.string())
         val readingOrder = webPub.getJSONArray("readingOrder")
-        val ret = ArrayList<Page>();
+        val ret = ArrayList<Page>()
         for (i in 0 until readingOrder.length()) {
-            var pageUrl = readingOrder.getJSONObject(i).getString("href")
+            val pageUrl = readingOrder.getJSONObject(i).getString("href")
             ret.add(Page(i, "", pageUrl))
         }
         return ret

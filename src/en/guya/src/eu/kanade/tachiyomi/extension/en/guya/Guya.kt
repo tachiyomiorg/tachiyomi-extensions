@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import android.content.SharedPreferences
+import android.os.Build
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.extension.BuildConfig
@@ -28,7 +29,10 @@ open class Guya() : ConfigurableSource, HttpSource() {
     override val lang = "en"
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi/${BuildConfig.VERSION_NAME}")
+        add("User-Agent","(Android ${Build.VERSION.RELEASE}; " +
+            "${Build.MANUFACTURER} ${Build.MODEL}) " +
+            "Tachiyomi/${BuildConfig.VERSION_NAME} " +
+            Build.ID)
     }
 
     private val Scanlators: ScanlatorStore = ScanlatorStore()
@@ -61,7 +65,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Called when the series is loaded, or when opening in browser
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/reader/series/" + manga.url + "/", headers)
+        return GET("$baseUrl/reader/series/${manga.url}/", headers)
     }
 
     // Stub
@@ -76,7 +80,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     // Gets the chapter list based on the series being viewed
     override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/series/" + manga.url + "/", headers)
+        return GET("$baseUrl/api/series/${manga.url}/", headers)
     }
 
     // Called after the request
@@ -92,6 +96,10 @@ open class Guya() : ConfigurableSource, HttpSource() {
             .map { response ->
                 pageListParse(response, chapter)
             }
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET("$baseUrl/api/series/${chapter.url.split("/")[0]}/", headers)
     }
 
     // Stub
@@ -164,7 +172,13 @@ open class Guya() : ConfigurableSource, HttpSource() {
             }
             entries = scanlators
             entryValues = scanlatorsIndex
-            summary = "%s"
+            summary = "Current: %s\n\n" +
+                "This setting sets the scanlation group to prioritize " +
+                "on chapter refresh/update. It will get the next available if " +
+                "your preferred scanlator isn't an option (yet)." +
+                "\nNOTE: If you've already downloaded a chapter and the pages aren't updating, " +
+                "clear your chapter cache under Settings > Advanced > Clear chapter cache."
+
             this.setDefaultValue(1)
 
             setOnPreferenceChangeListener{_, newValue ->
@@ -232,7 +246,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
-        chapter.url = "/api/series/$slug/$num/1"
+        chapter.url = "$slug/$num/1"
 
         return chapter
     }

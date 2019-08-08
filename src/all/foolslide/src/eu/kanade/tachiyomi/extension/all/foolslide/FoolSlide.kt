@@ -16,7 +16,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-open class FoolSlide(override val name: String, override val baseUrl: String, override val lang: String, val urlModifier: String = "") : ParsedHttpSource() {
+open class FoolSlide(override val name: String,
+                     override val baseUrl: String,
+                     override val lang: String,
+                     val urlModifier: String = "") : ParsedHttpSource() {
 
     protected open val dedupeLatestUpdates = true
 
@@ -32,7 +35,7 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
-        return if(dedupeLatestUpdates) {
+        return if (dedupeLatestUpdates) {
             val mangas = mp.mangas.distinctBy { it.url }.filterNot { latestUpdatesUrls.contains(it.url) }
             latestUpdatesUrls.addAll(mangas.map { it.url })
             MangasPage(mangas, mp.hasNextPage)
@@ -96,8 +99,7 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
 
     override fun searchMangaNextPageSelector() = "a:has(span.next)"
 
-    override fun mangaDetailsRequest(manga: SManga)
-        = allowAdult(super.mangaDetailsRequest(manga))
+    override fun mangaDetailsRequest(manga: SManga) = allowAdult(super.mangaDetailsRequest(manga))
 
     open val mangaDetailsInfoSelector = "div.info"
     open val mangaDetailsThumbnailSelector = "div.thumbnail img"
@@ -119,14 +121,13 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
      */
     private fun allowAdult(request: Request) = allowAdult(request.url().toString())
 
-    protected fun allowAdult(url: String): Request {
+    private fun allowAdult(url: String): Request {
         return POST(url, body = FormBody.Builder()
                 .add("adult", "true")
                 .build())
     }
 
-    override fun chapterListRequest(manga: SManga)
-        = allowAdult(super.chapterListRequest(manga))
+    override fun chapterListRequest(manga: SManga) = allowAdult(super.chapterListRequest(manga))
 
     override fun chapterListSelector() = "div.group div.element, div.list div.element"
 
@@ -140,7 +141,8 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
-        chapter.date_upload = dateElement.text()?.let { parseChapterDate(it.substringAfter(", ")) } ?: 0
+        chapter.date_upload = dateElement.text()?.let { parseChapterDate(it.substringAfter(", ")) }
+                ?: 0
         return chapter
     }
 
@@ -172,18 +174,18 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
 
         var result = DATE_FORMAT_1.parseOrNull(date)
 
-        for(dateFormat in DATE_FORMATS_WITH_ORDINAL_SUFFIXES) {
+        for (dateFormat in DATE_FORMATS_WITH_ORDINAL_SUFFIXES) {
             if (result == null)
                 result = dateFormat.parseOrNull(date)
             else
                 break
         }
 
-        for(dateFormat in DATE_FORMATS_WITH_ORDINAL_SUFFIXES_NO_YEAR) {
+        for (dateFormat in DATE_FORMATS_WITH_ORDINAL_SUFFIXES_NO_YEAR) {
             if (result == null) {
                 result = dateFormat.parseOrNull(date)
 
-                if(result != null) {
+                if (result != null) {
                     // Result parsed but no year, copy current year over
                     result = Calendar.getInstance().apply {
                         time = result
@@ -230,13 +232,12 @@ open class FoolSlide(override val name: String, override val baseUrl: String, ov
     private fun SimpleDateFormat.parseOrNull(string: String): Date? {
         return try {
             parse(string)
-        } catch(e: ParseException) {
+        } catch (e: ParseException) {
             null
         }
     }
 
-    override fun pageListRequest(chapter: SChapter)
-            = allowAdult(super.pageListRequest(chapter))
+    override fun pageListRequest(chapter: SChapter) = allowAdult(super.pageListRequest(chapter))
 
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
