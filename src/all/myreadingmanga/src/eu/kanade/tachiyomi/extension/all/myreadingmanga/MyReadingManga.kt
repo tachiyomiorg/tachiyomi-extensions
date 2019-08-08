@@ -132,21 +132,20 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     override fun chapterListSelector() = ".entry-pagination a"
 
-
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val chapters = mutableListOf<SChapter>()
 
         val date = parseDate(document.select(".entry-time").attr("datetime").substringBefore("T"))
-        val ch1name = document.select(".chapter-class a")?.first()?.text()?.capitalize() ?:"Chapter 1"
+        val chfirstname = document.select(".chapter-class a")?.first()?.text()?.capitalize() ?:"Ch. 1"
         //create first chapter since its on main manga page
-        chapters.add(createChapter("1", document.baseUri(), date, ch1name))
+        chapters.add(createChapter("1", document.baseUri(), date, chfirstname))
         //see if there are multiple chapters or not
         document.select(chapterListSelector())?.let { it ->
             it.forEach {
                 if (!it.text().contains("Next »", true)) {
                     val pageNumber = it.text()
-                    val chname = document.select(".chapter-class a[href$=/$pageNumber/]")?.text()?.capitalize()
+                    val chname = document.select(".chapter-class a[href$=/$pageNumber/]").text().ifEmpty { "Ch. $pageNumber" }.capitalize()
                     chapters.add(createChapter(it.text(), document.baseUri(), date, chname))
                 }
             }
@@ -160,10 +159,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return SimpleDateFormat("yyyy-MM-dd").parse(date).time
     }
 
-    private fun createChapter(pageNumber: String, mangaUrl: String, date: Long, chname: String?): SChapter {
+    private fun createChapter(pageNumber: String, mangaUrl: String, date: Long, chname: String): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain("$mangaUrl/$pageNumber")
-        chapter.name = chname ?:"Chapter $pageNumber"
+        chapter.name = chname
         chapter.date_upload = date
         return chapter
     }
