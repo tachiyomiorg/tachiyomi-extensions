@@ -117,7 +117,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(")
     private fun cleanAuthor(title: String) = title.substringAfter("[").substringBefore("]")
 
-
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         manga.author = cleanAuthor(document.select("h1").text())
@@ -125,13 +124,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
         manga.genre = glist.joinToString(", ")
         manga.description = document.select("h1").text() + "\n" + document.select(".info-class")?.text()
-        val mstatus = document.select("a[href*=status]")?.first()?.text()
-        when (mstatus) {
-            "Ongoing" -> manga.status = SManga.ONGOING
-            "Completed" -> manga.status = SManga.COMPLETED
-            else -> { // Note the block
-                manga.status = SManga.UNKNOWN
-            }
+        manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
+            "Ongoing" -> SManga.ONGOING
+            "Completed" -> SManga.COMPLETED
+            else -> SManga.UNKNOWN
         }
         return manga
     }
