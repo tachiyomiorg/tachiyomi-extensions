@@ -69,32 +69,14 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
         val query2 = URLEncoder.encode(query, "UTF-8")
         val uri = Uri.parse("$baseUrl/search/").buildUpon()
-                uri.appendEncodedPath(query2)
-                uri.appendPath("page")
-                uri.appendPath("$page")
+                .appendEncodedPath(query2)
+                .appendPath("page")
+                .appendPath("$page")
         return GET(uri.toString())
     }
 
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        val mangas = mutableListOf<SManga>()
-        val list  = document.select(popularMangaSelector()).filter { element ->
-            val select = element.select("a[rel=bookmark]")
-            select.text().contains("[$lang", true)
-        }
-        for (element in list) {
-            mangas.add(popularMangaFromElement(element))
-
-        }
-
-        val hasNextPage = popularMangaNextPageSelector().let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
-    }
+    override fun searchMangaParse(response: Response) = popularMangaParse(response)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
