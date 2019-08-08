@@ -7,7 +7,6 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import okhttp3.Response
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import org.jsoup.nodes.Element
@@ -54,34 +53,35 @@ class HeavenManga : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val search_url = "$baseUrl/buscar/$query.html"
+        val search_url = "$baseUrl/buscar/$query"
 
         // Filter
         if(query.isBlank()) {
-            var url = ""
+            val ext = ".html"
+            var name = ""
             filters.forEach { filter ->
                 when(filter) {
                     is GenreFilter -> {
                         if(filter.toUriPart().isNotBlank() && filter.state != 0) {
-                            url = baseUrl + filter.toUriPart()
-                            return GET(url, headers)
+                            name = filter.toUriPart()
+                            return GET("$baseUrl/genero/$name$ext", headers)
                         }
                     }
                     is AlphabeticoFilter -> {
                         if(filter.toUriPart().isNotBlank() && filter.state != 0) {
-                            url = baseUrl + filter.toUriPart()
-                            return GET(url, headers)
+                            name = filter.toUriPart()
+                            return GET("$baseUrl/letra/$name$ext", headers)
                         }
                     }
                     is ListaCompletasFilter -> {
                         if(filter.toUriPart().isNotBlank() && filter.state != 0) {
-                            url = filter.toUriPart()
-                            return GET(url, headers)
+                            name = filter.toUriPart()
+                            return GET("$baseUrl/$name/", headers)
                         }
                     }
                 }
             }
-
+    
         }
 
         return GET(search_url, headers)
@@ -90,7 +90,7 @@ class HeavenManga : ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
 
     // get contents of a url
-    private fun getUrlContents(url: String): Document = Jsoup.connect(url).timeout(0).get()
+    private fun getUrlContents(url: String): Document = client.newCall(GET(url, headers)).execute().asJsoup()
 
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
@@ -131,7 +131,6 @@ class HeavenManga : ParsedHttpSource() {
         val url = urlElement.attr("href")
 
         val chapter = SChapter.create()
-        Log.d("HM: chapUrl->", chapter.setUrlWithoutDomain(url).toString())
         chapter.setUrlWithoutDomain(url)
         chapter.name = urlElement.text()
         chapter.date_upload = parseChapterDate(date.toString())
@@ -188,89 +187,89 @@ class HeavenManga : ParsedHttpSource() {
      * */
     private class GenreFilter : UriPartFilter("Géneros", arrayOf(
         Pair("Todo", ""),
-        Pair("Accion", "/genero/accion.html"),
-        Pair("Adulto", "/genero/adulto.html"),
-        Pair("Aventura", "/genero/aventura.html"),
-        Pair("Artes Marciales", "/genero/artes+marciales.html"),
-        Pair("Acontesimientos de la Vida", "/genero/acontesimientos+de+la+vida.html"),
-        Pair("Bakunyuu", "/genero/bakunyuu.html"),
-        Pair("Sci-fi", "/genero/sci-fi.html"),
-        Pair("Comic", "/genero/comic.html"),
-        Pair("Combate", "/genero/combate.html"),
-        Pair("Comedia", "/genero/comedia.html"),
-        Pair("Cooking", "/genero/cooking.html"),
-        Pair("Cotidiano", "/genero/cotidiano.html"),
-        Pair("Colegialas", "/genero/colegialas.html"),
-        Pair("Critica social", "/genero/critica+social.html"),
-        Pair("Ciencia ficcion", "/genero/ciencia+ficcion.html"),
-        Pair("Cambio de genero", "/genero/cambio+de+genero.html"),
-        Pair("Cosas de la Vida", "/genero/cosas+de+la+vida.html"),
-        Pair("Drama", "/genero/drama.html"),
-        Pair("Deporte", "/genero/deporte.html"),
-        Pair("Doujinshi", "/genero/doujinshi.html"),
-        Pair("Delincuentes", "/genero/delincuentes.html"),
-        Pair("Ecchi", "/genero/ecchi.html"),
-        Pair("Escolar", "/genero/escolar.html"),
-        Pair("Erotico", "/genero/erotico.html"),
-        Pair("Escuela", "/genero/escuela.html"),
-        Pair("Estilo de Vida", "/genero/estilo+de+vida.html"),
-        Pair("Fantasia", "/genero/fantasia.html"),
-        Pair("Fragmentos de la Vida", "/genero/fragmentos+de+la+vida.html"),
-        Pair("Gore", "/genero/gore.html"),
-        Pair("Gender Bender", "/genero/gender+bender.html"),
-        Pair("Humor", "/genero/humor.html"),
-        Pair("Harem", "/genero/harem.html"),
-        Pair("Haren", "/genero/haren.html"),
-        Pair("Hentai", "/genero/hentai.html"),
-        Pair("Horror", "/genero/horror.html"),
-        Pair("Historico", "/genero/historico.html"),
-        Pair("Josei", "/genero/josei.html"),
-        Pair("Loli", "/genero/loli.html"),
-        Pair("Light", "/genero/light.html"),
-        Pair("Lucha Libre", "/genero/lucha+libre.html"),
-        Pair("Manga", "/genero/manga.html"),
-        Pair("Mecha", "/genero/mecha.html"),
-        Pair("Magia", "/genero/magia.html"),
-        Pair("Maduro", "/genero/maduro.html"),
-        Pair("Manhwa", "/genero/manhwa.html"),
-        Pair("Manwha", "/genero/manwha.html"),
-        Pair("Mature", "/genero/mature.html"),
-        Pair("Misterio", "/genero/misterio.html"),
-        Pair("Mutantes", "/genero/mutantes.html"),
-        Pair("Novela", "/genero/novela.html"),
-        Pair("Orgia", "/genero/orgia.html"),
-        Pair("OneShot", "/genero/oneshot.html"),
-        Pair("OneShots", "/genero/oneshots.html"),
-        Pair("Psicologico", "/genero/psicologico.html"),
-        Pair("Romance", "/genero/romance.html"),
-        Pair("Recuentos de la vida", "/genero/recuentos+de+la+vida.html"),
-        Pair("Smut", "/genero/smut.html"),
-        Pair("Shojo", "/genero/shojo.html"),
-        Pair("Shonen", "/genero/shonen.html"),
-        Pair("Seinen", "/genero/seinen.html"),
-        Pair("Shoujo", "/genero/shoujo.html"),
-        Pair("Shounen", "/genero/shounen.html"),
-        Pair("Suspenso", "/genero/suspenso.html"),
-        Pair("School Life", "/genero/school+life.html"),
-        Pair("Sobrenatural", "/genero/sobrenatural.html"),
-        Pair("SuperHeroes", "/genero/superheroes.html"),
-        Pair("Supernatural", "/genero/supernatural.html"),
-        Pair("Slice of Life", "/genero/slice+of+life.html"),
-        Pair("Super Poderes", "/genero/ssuper+poderes.html"),
-        Pair("Terror", "/genero/terror.html"),
-        Pair("Torneo", "/genero/torneo.html"),
-        Pair("Tragedia", "/genero/tragedia.html"),
-        Pair("Transexual", "/genero/transexual.html"),
-        Pair("Vida", "/genero/vida.html"),
-        Pair("Vampiros", "/genero/vampiros.html"),
-        Pair("Violencia", "/genero/violencia.html"),
-        Pair("Vida Pasada", "/genero/vida+pasada.html"),
-        Pair("Vida Cotidiana", "/genero/vida+cotidiana.html"),
-        Pair("Vida de Escuela", "/genero/vida+de+escuela.html"),
-        Pair("Webtoon", "/genero/webtoon.html"),
-        Pair("Webtoons", "/genero/webtoons.html"),
-        Pair("Yaoi", "/genero/yaoi.html"),
-        Pair("Yuri", "/genero/yuri.html")
+        Pair("Accion", "accion"),
+        Pair("Adulto", "adulto"),
+        Pair("Aventura", "aventura"),
+        Pair("Artes Marciales", "artes+marciales"),
+        Pair("Acontesimientos de la Vida", "acontesimientos+de+la+vida"),
+        Pair("Bakunyuu", "bakunyuu"),
+        Pair("Sci-fi", "sci-fi"),
+        Pair("Comic", "comic"),
+        Pair("Combate", "combate"),
+        Pair("Comedia", "comedia"),
+        Pair("Cooking", "cooking"),
+        Pair("Cotidiano", "cotidiano"),
+        Pair("Colegialas", "colegialas"),
+        Pair("Critica social", "critica+social"),
+        Pair("Ciencia ficcion", "ciencia+ficcion"),
+        Pair("Cambio de genero", "cambio+de+genero"),
+        Pair("Cosas de la Vida", "cosas+de+la+vida"),
+        Pair("Drama", "drama"),
+        Pair("Deporte", "deporte"),
+        Pair("Doujinshi", "doujinshi"),
+        Pair("Delincuentes", "delincuentes"),
+        Pair("Ecchi", "ecchi"),
+        Pair("Escolar", "escolar"),
+        Pair("Erotico", "erotico"),
+        Pair("Escuela", "escuela"),
+        Pair("Estilo de Vida", "estilo+de+vida"),
+        Pair("Fantasia", "fantasia"),
+        Pair("Fragmentos de la Vida", "fragmentos+de+la+vida"),
+        Pair("Gore", "gore"),
+        Pair("Gender Bender", "gender+bender"),
+        Pair("Humor", "humor"),
+        Pair("Harem", "harem"),
+        Pair("Haren", "haren"),
+        Pair("Hentai", "hentai"),
+        Pair("Horror", "horror"),
+        Pair("Historico", "historico"),
+        Pair("Josei", "josei"),
+        Pair("Loli", "loli"),
+        Pair("Light", "light"),
+        Pair("Lucha Libre", "lucha+libre"),
+        Pair("Manga", "manga"),
+        Pair("Mecha", "mecha"),
+        Pair("Magia", "magia"),
+        Pair("Maduro", "maduro"),
+        Pair("Manhwa", "manhwa"),
+        Pair("Manwha", "manwha"),
+        Pair("Mature", "mature"),
+        Pair("Misterio", "misterio"),
+        Pair("Mutantes", "mutantes"),
+        Pair("Novela", "novela"),
+        Pair("Orgia", "orgia"),
+        Pair("OneShot", "oneshot"),
+        Pair("OneShots", "oneshots"),
+        Pair("Psicologico", "psicologico"),
+        Pair("Romance", "romance"),
+        Pair("Recuentos de la vida", "recuentos+de+la+vida"),
+        Pair("Smut", "smut"),
+        Pair("Shojo", "shojo"),
+        Pair("Shonen", "shonen"),
+        Pair("Seinen", "seinen"),
+        Pair("Shoujo", "shoujo"),
+        Pair("Shounen", "shounen"),
+        Pair("Suspenso", "suspenso"),
+        Pair("School Life", "school+life"),
+        Pair("Sobrenatural", "sobrenatural"),
+        Pair("SuperHeroes", "superheroes"),
+        Pair("Supernatural", "supernatural"),
+        Pair("Slice of Life", "slice+of+life"),
+        Pair("Super Poderes", "ssuper+poderes"),
+        Pair("Terror", "terror"),
+        Pair("Torneo", "torneo"),
+        Pair("Tragedia", "tragedia"),
+        Pair("Transexual", "transexual"),
+        Pair("Vida", "vida"),
+        Pair("Vampiros", "vampiros"),
+        Pair("Violencia", "violencia"),
+        Pair("Vida Pasada", "vida+pasada"),
+        Pair("Vida Cotidiana", "vida+cotidiana"),
+        Pair("Vida de Escuela", "vida+de+escuela"),
+        Pair("Webtoon", "webtoon"),
+        Pair("Webtoons", "webtoons"),
+        Pair("Yaoi", "yaoi"),
+        Pair("Yuri", "yuri")
     ))
 
     /**
@@ -279,33 +278,33 @@ class HeavenManga : ParsedHttpSource() {
      * */
     private class AlphabeticoFilter : UriPartFilter("Alfabético", arrayOf(
         Pair("Todo", ""),
-        Pair("A", "/letra/a.html"),
-        Pair("B", "/letra/b.html"),
-        Pair("C", "/letra/c.html"),
-        Pair("D", "/letra/d.html"),
-        Pair("E", "/letra/e.html"),
-        Pair("F", "/letra/f.html"),
-        Pair("G", "/letra/g.html"),
-        Pair("H", "/letra/h.html"),
-        Pair("I", "/letra/i.html"),
-        Pair("J", "/letra/j.html"),
-        Pair("K", "/letra/k.html"),
-        Pair("L", "/letra/l.html"),
-        Pair("M", "/letra/m.html"),
-        Pair("N", "/letra/n.html"),
-        Pair("O", "/letra/o.html"),
-        Pair("P", "/letra/p.html"),
-        Pair("Q", "/letra/q.html"),
-        Pair("R", "/letra/r.html"),
-        Pair("S", "/letra/s.html"),
-        Pair("T", "/letra/t.html"),
-        Pair("U", "/letra/u.html"),
-        Pair("V", "/letra/v.html"),
-        Pair("W", "/letra/w.html"),
-        Pair("X", "/letra/x.html"),
-        Pair("Y", "/letra/y.html"),
-        Pair("Z", "/letra/z.html"),
-        Pair("0-9", "/letra/0-9.html")
+        Pair("A", "a"),
+        Pair("B", "b"),
+        Pair("C", "c"),
+        Pair("D", "d"),
+        Pair("E", "e"),
+        Pair("F", "f"),
+        Pair("G", "g"),
+        Pair("H", "h"),
+        Pair("I", "i"),
+        Pair("J", "j"),
+        Pair("K", "k"),
+        Pair("L", "l"),
+        Pair("M", "m"),
+        Pair("N", "n"),
+        Pair("O", "o"),
+        Pair("P", "p"),
+        Pair("Q", "q"),
+        Pair("R", "r"),
+        Pair("S", "s"),
+        Pair("T", "t"),
+        Pair("U", "u"),
+        Pair("V", "v"),
+        Pair("W", "w"),
+        Pair("X", "x"),
+        Pair("Y", "y"),
+        Pair("Z", "z"),
+        Pair("0-9", "0-9")
     ))
 
     /**
@@ -314,9 +313,9 @@ class HeavenManga : ParsedHttpSource() {
      * */
     private class ListaCompletasFilter: UriPartFilter("Lista Completa", arrayOf(
         Pair("Todo", ""),
-        Pair("Lista Comis", "http://heavenmanga.com/comic/"),
-        Pair("Lista Novelas", "http://heavenmanga.com/novela/"),
-        Pair("Lista Adulto", "http://heavenmanga.com/adulto/")
+        Pair("Lista Comis", "comic"),
+        Pair("Lista Novelas", "novela"),
+        Pair("Lista Adulto", "adulto")
     ))
 
     override fun getFilterList() = FilterList(
