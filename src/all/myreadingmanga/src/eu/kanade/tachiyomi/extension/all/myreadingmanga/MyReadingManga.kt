@@ -137,7 +137,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val chapters = mutableListOf<SChapter>()
 
         val date = parseDate(document.select(".entry-time").attr("datetime").substringBefore("T"))
-        val chfirstname = document.select(".chapter-class a")?.first()?.text()?.capitalize() ?:"Ch. 1"
+        val mangaUrl = document.baseUri()
+        val chfirstname = document.select(".chapter-class a[href*=$mangaUrl]")?.first()?.text()?.ifEmpty { "Ch. 1" }?.capitalize() ?:"Ch. 1"
         //create first chapter since its on main manga page
         chapters.add(createChapter("1", document.baseUri(), date, chfirstname))
         //see if there are multiple chapters or not
