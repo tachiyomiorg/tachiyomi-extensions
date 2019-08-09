@@ -44,7 +44,7 @@ fun getAllFoolSlide(): List<Source> {
             HentaiCafe(),
             ShoujoSense(),
             TheCatScans(),
-            ShoujoHearts()
+            ShoujoHearts(),
             ZandynoFansub()
     )
 }
