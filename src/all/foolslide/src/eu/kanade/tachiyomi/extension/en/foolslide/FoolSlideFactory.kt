@@ -45,6 +45,7 @@ fun getAllFoolSlide(): List<Source> {
         ShoujoSense(),
         TheCatScans(),
         ShoujoHearts()
+        ZandynoFansub()
     )
 }
 
@@ -158,5 +159,8 @@ class ShoujoHearts : FoolSlide("ShoujoHearts", "http://shoujohearts.com", "en", 
         return manga
     }
 }
+
+class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
+
 
 
