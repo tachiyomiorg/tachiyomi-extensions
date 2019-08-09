@@ -6,7 +6,8 @@ import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -17,34 +18,33 @@ class FoolSlideFactory : SourceFactory {
 
 fun getAllFoolSlide(): List<Source> {
     return listOf(
-        JaminisBox(),
-        HelveticaScans(),
-        SenseScans(),
-        KireiCake(),
-        SilentSky(),
-        Mangatellers(),
-        IskultripScans(),
-        AnataNoMotokare(),
-        DeathTollScans(),
-        DKThias(),
-        WorldThree(),
-        DokiFansubs(),
-        YuriIsm(),
-        AjiaNoScantrad(),
-        OneTimeScans(),
-        TsubasaSociety(),
-        MangaScouts(),
-        StormInHeaven(),
-        Lilyreader(),
-        MidnightHaven(),
-        Russification(),
-        EvilFlowers(),
-        AkaiYuhiMunTeam(),
-        LupiTeam(),
-        HentaiCafe(),
-        ShoujoSense(),
-        TheCatScans(),
-        ShoujoHearts()
+            JaminisBox(),
+            HelveticaScans(),
+            SenseScans(),
+            KireiCake(),
+            SilentSky(),
+            Mangatellers(),
+            IskultripScans(),
+            AnataNoMotokare(),
+            DeathTollScans(),
+            DKThias(),
+            WorldThree(),
+            DokiFansubs(),
+            YuriIsm(),
+            AjiaNoScantrad(),
+            OneTimeScans(),
+            TsubasaSociety(),
+            MangaScouts(),
+            StormInHeaven(),
+            Lilyreader(),
+            Russification(),
+            EvilFlowers(),
+            AkaiYuhiMunTeam(),
+            LupiTeam(),
+            HentaiCafe(),
+            ShoujoSense(),
+            TheCatScans(),
+            ShoujoHearts()
     )
 }
 
@@ -74,7 +74,7 @@ class SenseScans : FoolSlide("Sense-Scans", "https://sensescans.com", "en", "/re
 
 class KireiCake : FoolSlide("Kirei Cake", "https://reader.kireicake.com", "en")
 
-class SilentSky : FoolSlide("Silent Sky", "http://reader.silentsky-scans.net", "en")
+class SilentSky : FoolSlide("Silent Sky", "https://reader.silentsky-scans.net", "en")
 
 class Mangatellers : FoolSlide("Mangatellers", "http://www.mangatellers.gr", "en", "/reader/reader") {
     override fun popularMangaRequest(page: Int): Request {
@@ -108,11 +108,9 @@ class TsubasaSociety : FoolSlide("Tsubasa Society", "https://www.tsubasasociety.
 
 class MangaScouts : FoolSlide("MangaScouts", "http://onlinereader.mangascouts.org", "de")
 
-class StormInHeaven : FoolSlide("Storm in Heaven", "http://www.storm-in-heaven.net", "it", "/reader-sih")
+class StormInHeaven : FoolSlide("Storm in Heaven", "https://www.storm-in-heaven.net", "it", "/reader-sih")
 
 class Lilyreader : FoolSlide("Lilyreader", "https://manga.smuglo.li", "en")
-
-class MidnightHaven : FoolSlide("Midnight Haven", "http://midnighthaven.shounen-ai.net", "en", "/reader")
 
 class Russification : FoolSlide("Русификация", "https://rusmanga.ru", "ru")
 
@@ -158,5 +156,3 @@ class ShoujoHearts : FoolSlide("ShoujoHearts", "http://shoujohearts.com", "en", 
         return manga
     }
 }
-
-

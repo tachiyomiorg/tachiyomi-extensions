@@ -115,18 +115,20 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     //cleans up the name removing author and language from the title
     private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(")
-
+    private fun cleanAuthor(title: String) = title.substringAfter("[").substringBefore("]")
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.author = document.select(".entry-content p")?.find { it ->
-            it.text().contains("artist", true) || it.text().contains("author", true)
-        }?.text()?.substringAfter(":")
-
+        manga.author = cleanAuthor(document.select("h1").text())
+        manga.artist = cleanAuthor(document.select("h1").text())
         val glist = document.select(".entry-header p a[href*=genre]").map { it -> it.text() }
         manga.genre = glist.joinToString(", ")
-        manga.description = document.select("h1").text() + "\n" + (document.select(".entry-content blockquote")?.first()?.text() ?: "")
-        manga.status = SManga.UNKNOWN
+        manga.description = document.select("h1").text() + "\n" + document.select(".info-class")?.text()
+        manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
+            "Ongoing" -> SManga.ONGOING
+            "Completed" -> SManga.COMPLETED
+            else -> SManga.UNKNOWN
+        }
         return manga
     }
 

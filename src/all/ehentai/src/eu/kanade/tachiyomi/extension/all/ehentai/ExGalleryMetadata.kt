@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.ehentai;
+package eu.kanade.tachiyomi.extension.all.ehentai
 
 import android.net.Uri
 
@@ -32,25 +32,21 @@ class ExGalleryMetadata {
     val tags: MutableMap<String, List<Tag>> = mutableMapOf()
 
     companion object {
-        private fun splitGalleryUrl(url: String)
-                = url.let {
+        private fun splitGalleryUrl(url: String) = url.let {
             //Only parse URL if is full URL
-            val pathSegments = if(it.startsWith("http"))
+            val pathSegments = if (it.startsWith("http"))
                 Uri.parse(it).pathSegments
             else
                 it.split('/')
             pathSegments.filterNot(String::isNullOrBlank)
         }
 
-        fun galleryId(url: String) = splitGalleryUrl(url)[1]
+        private fun galleryId(url: String) = splitGalleryUrl(url)[1]
 
-        fun galleryToken(url: String) =
-                splitGalleryUrl(url)[2]
+        private fun galleryToken(url: String) = splitGalleryUrl(url)[2]
 
-        fun normalizeUrl(id: String, token: String)
-                = "/g/$id/$token/?nw=always"
+        private fun normalizeUrl(id: String, token: String) = "/g/$id/$token/?nw=always"
 
-        fun normalizeUrl(url: String)
-                = normalizeUrl(galleryId(url), galleryToken(url))
+        fun normalizeUrl(url: String) = normalizeUrl(galleryId(url), galleryToken(url))
     }
 }

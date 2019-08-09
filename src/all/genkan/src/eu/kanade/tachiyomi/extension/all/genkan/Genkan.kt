@@ -14,9 +14,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 abstract class Genkan(
-    override val name: String,
-    override val baseUrl: String,
-    override val lang: String
+        override val name: String,
+        final override val baseUrl: String,
+        override val lang: String
 ) : ParsedHttpSource() {
 
     override val supportsLatest = true
@@ -27,7 +27,7 @@ abstract class Genkan(
 
     private val popularMangaUrl = "$baseUrl/comics?page=" // Search is also based off this val
     override fun popularMangaRequest(page: Int): Request {
-            return GET("$popularMangaUrl$page")
+        return GET("$popularMangaUrl$page")
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -36,8 +36,8 @@ abstract class Genkan(
     private val latestUpdatesTitles = mutableSetOf<String>()
 
     override fun latestUpdatesRequest(page: Int): Request {
-            if (page == 1) latestUpdatesTitles.clear()
-            return GET("$baseUrl/latest?page=$page")
+        if (page == 1) latestUpdatesTitles.clear()
+        return GET("$baseUrl/latest?page=$page")
     }
 
     // To prevent dupes
@@ -165,10 +165,10 @@ abstract class Genkan(
 
     // If the date string contains the word "ago" send it off for relative date parsing otherwise use dateFormat
     private fun parseChapterDate(string: String): Long? {
-        if ("ago" in string) {
-            return parseRelativeDate(string) ?: 0
+        return if ("ago" in string) {
+            parseRelativeDate(string) ?: 0
         } else {
-            return dateFormat.parse(string).time
+            dateFormat.parse(string).time
         }
     }
 
@@ -177,14 +177,14 @@ abstract class Genkan(
         val trimmedDate = date.substringBefore(" ago").removeSuffix("s").split(" ")
 
         val calendar = Calendar.getInstance()
-            when (trimmedDate[1]){
-                "month" -> calendar.apply{add(Calendar.MONTH, -trimmedDate[0].toInt())}
-                "week" -> calendar.apply{add(Calendar.WEEK_OF_MONTH, -trimmedDate[0].toInt())}
-                "day" -> calendar.apply{add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt())}
-                "hour" -> calendar.apply{add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt())}
-                "minute" -> calendar.apply{add(Calendar.MINUTE, -trimmedDate[0].toInt())}
-                "second" -> calendar.apply{add(Calendar.SECOND, 0)}
-            }
+        when (trimmedDate[1]) {
+            "month" -> calendar.apply { add(Calendar.MONTH, -trimmedDate[0].toInt()) }
+            "week" -> calendar.apply { add(Calendar.WEEK_OF_MONTH, -trimmedDate[0].toInt()) }
+            "day" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }
+            "hour" -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }
+            "minute" -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }
+            "second" -> calendar.apply { add(Calendar.SECOND, 0) }
+        }
 
         return calendar.timeInMillis
     }
@@ -192,10 +192,10 @@ abstract class Genkan(
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-       val allImages = document.select("div#pages-container + script").first().data()
-            .substringAfter("[").substringBefore("];")
-            .replace(Regex("""["\\]"""), "")
-            .split(",")
+        val allImages = document.select("div#pages-container + script").first().data()
+                .substringAfter("[").substringBefore("];")
+                .replace(Regex("""["\\]"""), "")
+                .split(",")
 
         for (i in 0 until allImages.size) {
             pages.add(Page(i, "", allImages[i]))
@@ -207,5 +207,4 @@ abstract class Genkan(
     override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }
