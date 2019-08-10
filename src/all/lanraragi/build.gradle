@@ -1,0 +1,21 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: LANraragi'
+    pkgNameSuffix = 'all.lanraragi'
+    extClass = '.LANraragiFactory'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':preference-stub')
+
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
+
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+}
+
+apply from: "$rootDir/common.gradle"
