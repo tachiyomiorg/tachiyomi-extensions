@@ -10,10 +10,10 @@ class ComiCakeFactory : SourceFactory {
 fun getAllComiCake(): List<Source> {
     return listOf(
             WhimSubs(),
-            ChampionScans()
+            PTScans()
     )
 }
 
 class WhimSubs : ComiCake("WhimSubs", "https://whimsubs.xyz", "en")
 
-class ChampionScans : ComiCake("Champion Scans", "https://reader.championscans.com", "en", "/")
+class PTScans : ComiCake("ProjectTime Scans", "https://read.ptscans.com", "en", "/")
