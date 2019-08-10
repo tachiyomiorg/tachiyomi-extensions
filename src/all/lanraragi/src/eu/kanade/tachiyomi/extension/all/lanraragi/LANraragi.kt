@@ -134,77 +134,57 @@ open class LANraragi(override val lang: String) : ConfigurableSource, HttpSource
         val queries = response.request().url().queryParameter("query")?.trim()?.split(Regex(" (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"))
 
         archives.forEach archiveForEach@{ a ->
-            val shortTags = ArrayList<String>()
-            val longTags = HashMap<String, ArrayList<String>>()
+            val shortTags = HashSet<String>()
+            val longTags = HashMap<String, HashSet<String>>()
 
             val tags = a.tags.trim().split(Regex(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"))
             tags.forEach { t ->
                 if(t.isNotEmpty()) {
                     val split = t.trim().trim('"').split(':', limit = 2)
                     if (split.size > 1) {
-                        val parent = split[0]
-                        val child = split[1]
+                        val parent = split[0].toLowerCase()
+                        val child = split[1].toLowerCase()
 
                         shortTags.add(child)
                         if(!longTags.containsKey(parent)) {
-                            longTags[parent] = ArrayList()
+                            longTags[parent] = HashSet()
                         }
                         longTags[parent]!!.add(child)
                     } else {
-                        val child = split[0]
+                        val child = split[0].toLowerCase()
                         shortTags.add(child)
                     }
                 }
             }
 
             var tagsMatched = true
-            var excludedTag = false
             var titleMatched = false
             queries?.forEach queryForEach@{ q ->
                 if(q.isNotEmpty()) {
-                    val exclusionMode = q.startsWith('-')
                     val split = q.trim().trimStart('-').trim('"').split(':', limit = 2)
 
                     if (split.size > 1) {
-                        val parent = split[0]
-                        val child = split[1]
+                        val parent = split[0].toLowerCase()
+                        val child = split[1].toLowerCase()
 
-                        run loop@{
-                            longTags[parent]?.forEach { t ->
-                                if(t.equals(child, true)) {
-                                    if(exclusionMode) {
-                                        excludedTag = true
-                                    }
-                                    return@loop
-                                }
-                            }
-
+                        if(!longTags[parent]?.contains(child)!!) {
                             tagsMatched = false
                         }
                     } else {
-                        val child = split[0]
+                        val child = split[0].toLowerCase()
 
-                        run loop@{
-                            shortTags.forEach { t ->
-                                if(t.equals(child, true)) {
-                                    if(exclusionMode) {
-                                        excludedTag = true
-                                    }
-                                    return@loop
-                                }
-                            }
-
+                        if(!shortTags.contains(child)) {
                             tagsMatched = false
                         }
                     }
 
-                    if (!exclusionMode && a.title.contains(q, true)) {
+                    if (a.title.contains(q, true)) {
                         titleMatched = true
                     }
                 }
             }
 
-            if(queries == null || ((tagsMatched || titleMatched) && !excludedTag)) {
+            if(queries == null || tagsMatched || titleMatched) {
                 mangas.add(SManga.create().apply {
                     url = "/api/extract?id=${a.arcid}"
                     title = a.title
