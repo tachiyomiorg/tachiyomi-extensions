@@ -2,18 +2,20 @@ package eu.kanade.tachiyomi.extension.ko.navercomic
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import rx.Observable
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() {
     override val lang: String = "ko"
@@ -23,70 +25,53 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
     override val client: OkHttpClient = network.client
 
     private val mobileHeaders = super.headersBuilder()
-            .add("Referer", mobileUrl)
-            .build()
+        .add("Referer", mobileUrl)
+        .build()
 
     override fun searchMangaSelector() = ".resultList > li h5 > a"
     override fun searchMangaNextPageSelector() = ".paginate a.next"
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("search.nhn?m=$mType&keyword=$query&type=title&page=$page")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/search.nhn?m=$mType&keyword=$query&type=title&page=$page")
     override fun searchMangaFromElement(element: Element): SManga {
-        val url = element.attr("href").substringBefore("&week").substringBefore("&listPage=")
         val manga = SManga.create()
-        manga.url = url
+        manga.url = element.attr("href").substringBefore("&week").substringBefore("&listPage=")
         manga.title = element.text().trim()
         return manga
     }
 
-    override fun chapterListSelector() = "#ct > .toon_lst.lst2 > li > div a"
+    override fun chapterListSelector() = "div#ct > ul.section_episode_list li.item"
 
-    // Need to override because the chapter list is paginated.
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = fetchChapterList(manga, 1)
+    // Chapter list is paginated, use mobile version of site for speed and data savings
+    override fun chapterListRequest(manga: SManga) = chapterListRequest(manga.url, 1)
 
-    private fun fetchChapterList(manga: SManga, page: Int,
-                                 pastChapters: List<SChapter> = emptyList()): Observable<List<SChapter>> {
-        val chapters = pastChapters.toMutableList()
-        fun isSamePage(list: List<SChapter>): Boolean = try {
-            chapters.last().url == list.last().url
-        } catch (_: Exception) {
-            false
+    private fun chapterListRequest(mangaUrl: String, page: Int): Request {
+        return GET("$mobileUrl$mangaUrl&page=$page", mobileHeaders)
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        var document = response.asJsoup()
+        val chapters = mutableListOf<SChapter>()
+        document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+        var nextPage = 2
+        while (document.select(paginationNextPageSelector).isNotEmpty()) {
+            document.select(paginationNextPageSelector).let {
+                document = client.newCall(chapterListRequest(it.attr("href"), nextPage)).execute().asJsoup()
+                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+                nextPage++
+            }
         }
-
-        return fetchChapterListPage(manga, page)
-                .flatMap {
-                    if (isSamePage(it)) {
-                        Observable.just(chapters)
-                    } else {
-                        chapters += it
-                        fetchChapterList(manga, page + 1, chapters)
-                    }
-                }
+        return chapters
     }
 
-    private fun fetchChapterListPage(manga: SManga, page: Int): Observable<List<SChapter>> {
-        return client.newCall(chapterPagedListRequest(manga, page))
-                .asObservableSuccess()
-                .map { response ->
-                    chapterListParse(response)
-                }
-    }
-
-    override fun chapterListRequest(manga: SManga): Request {
-        return chapterPagedListRequest(manga, 1)
-    }
-
-    open fun chapterPagedListRequest(manga: SManga, page: Int): Request {
-        return GET("$mobileUrl${manga.url}&page=$page", mobileHeaders)
-    }
+    open val paginationNextPageSelector = "a.btn_next:not(.disabled)"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val rawName = element.select(".toon_name > strong").last().ownText()
-        val url = element.attr("href").substringBefore("&week").substringBefore("&listPage")
-
         val chapter = SChapter.create()
-        chapter.url = url
+        val rawName = element.select("span.name").text()
+        chapter.url = element.select("a").attr("href")
         chapter.chapter_number = parseChapterNumber(rawName)
         chapter.name = rawName
-        chapter.date_upload = parseChapterDate(element.select(".toon_detail_info .if1").last().text().trim())
+        chapter.date_upload = parseChapterDate(element.select("span.date").text().trim())
+
         return chapter
     }
 
@@ -106,11 +91,14 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
 
     @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
-        return try {
-            SimpleDateFormat("YY.MM.dd").parse(date).time
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
+        return if (date.contains(":")) { Calendar.getInstance().timeInMillis
+        } else {
+            return try {
+                SimpleDateFormat("yy.MM.dd", Locale.KOREA).parse(date).time
+            } catch (e: Exception) {
+                e.printStackTrace()
+                0
+            }
         }
     }
 
@@ -121,11 +109,10 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         val manga = SManga.create()
         manga.title = titleElement.first().ownText().trim()
         manga.author = titleElement.select("span").text().trim()
-        manga.description = document.select(".comicinfo > p").text().trim()
+        manga.description = document.select("div.detail p").text().trim()
         manga.thumbnail_url = element.select(".thumb > a > img").last().attr("src")
         return manga
     }
-
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()

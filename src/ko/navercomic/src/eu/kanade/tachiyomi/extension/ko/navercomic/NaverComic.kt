@@ -4,9 +4,12 @@ import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.Request
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Response
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class NaverWebtoon : NaverComicBase("webtoon") {
     override val name = "Naver Webtoon"
@@ -34,41 +37,58 @@ class NaverWebtoon : NaverComicBase("webtoon") {
 class NaverBestChallenge : NaverComicChallengeBase("bestChallenge") {
     override val name = "Naver Webtoon Best Challenge"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/genre/$mType.nhn")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/genre/$mType.nhn?m=main&order=StarScore")
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/genre/$mType.nhn?m=main&order=Update")
 }
 
 class NaverChallenge : NaverComicChallengeBase("challenge") {
     override val name = "Naver Webtoon Challenge"
+
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/genre/$mType.nhn")
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/genre/$mType.nhn?m=list&order=Update")
 
-    // Need to override again because there's no mobile page.
-    override fun chapterPagedListRequest(manga: SManga, page: Int): Request {
-        return GET("$baseUrl${manga.url}&page=$page")
+    // Chapter list is paginated, but there are no mobile pages to work with
+    override fun chapterListRequest(manga: SManga) = GET("$baseUrl${manga.url}", headers)
+
+    override fun chapterListSelector() = "tbody tr:not([class])"
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        var document = response.asJsoup()
+        val chapters = mutableListOf<SChapter>()
+        document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+        while (document.select(paginationNextPageSelector).hasText()) {
+            document.select(paginationNextPageSelector).let {
+                document = client.newCall(GET(it.attr("abs:href"))).execute().asJsoup()
+                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+            }
+        }
+        return chapters
     }
 
-    override fun chapterListSelector() = ".viewList > tbody > tr:not([class])"
+    override val paginationNextPageSelector = "div.paginate a.next"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val nameElement = element.select("td.title > a").first()
-        val rawName = nameElement.text().trim()
-
         val chapter = SChapter.create()
-        chapter.url = nameElement.attr("src")
-        chapter.chapter_number = parseChapterNumber(rawName)
-        chapter.name = rawName
-        chapter.date_upload = parseChapterDate(element.select("td.num").last().text().trim())
+        element.select("td + td a").let {
+            val rawName = it.text()
+            chapter.url = it.attr("href")
+            chapter.chapter_number = parseChapterNumber(rawName)
+            chapter.name = rawName
+            chapter.date_upload = parseChapterDate(element.select("td.num").text().trim())
+        }
         return chapter
     }
 
     @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
-        return try {
-            SimpleDateFormat("yyyy.MM.dd").parse(date).time
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
+        return if (date.contains(":")) { Calendar.getInstance().timeInMillis
+        } else {
+            return try {
+                SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).parse(date).time
+            } catch (e: Exception) {
+                e.printStackTrace()
+                0
+            }
         }
     }
 }

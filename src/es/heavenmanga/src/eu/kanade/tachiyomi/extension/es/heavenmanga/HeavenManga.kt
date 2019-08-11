@@ -142,8 +142,6 @@ class HeavenManga : ParsedHttpSource() {
         return chapter
     }
 
-
-
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
             .asObservableSuccess()
@@ -174,7 +172,6 @@ class HeavenManga : ParsedHttpSource() {
 
         return MangasPage(mangas, hasNextPage)
     }
-
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select(".left.home").let {
             val genres = it.select(".sinopsis a")?.map {
