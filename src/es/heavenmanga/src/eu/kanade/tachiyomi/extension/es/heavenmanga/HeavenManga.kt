@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.es.heavenmanga
 
 import android.util.Log
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
@@ -10,6 +11,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -36,6 +38,8 @@ class HeavenManga : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "#container .ultimos_epis .not"
 
     override fun searchMangaSelector() = ".top.clearfix .cont_manga"
+    private fun novelaFilterSelector() = ".lstsradd"
+    private fun comicFilterSelector() = "section#related"
 
     override fun chapterListSelector() = "#mamain ul li"
 
@@ -45,7 +49,7 @@ class HeavenManga : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = "li:contains(Siguiente):not([id=inactive])"
 
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/top/", headers)
@@ -53,7 +57,7 @@ class HeavenManga : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val search_url = "$baseUrl/buscar/$query"
+        val search_url = "$baseUrl/buscar/$query.html"
 
         // Filter
         if(query.isBlank()) {
@@ -116,10 +120,11 @@ class HeavenManga : ParsedHttpSource() {
     }
 
     override fun searchMangaFromElement(element: Element) = SManga.create().apply {
+        val figure = element.select("figure").attr("style")
         element.select("a").let {
             setUrlWithoutDomain(it.attr("href"))
-            title = it.select("header").text()
-            thumbnail_url = it.select("img").attr("src")
+            title = if(element.hasClass("titnom")) element.select(".titnom").text() else it.select("header").text()
+            thumbnail_url = if(element.select("figure").hasAttr("style")) figure.substring(figure.indexOf("http"), figure.indexOf(")") ) else it.select("img").attr("src")
         }
     }
 
@@ -137,6 +142,38 @@ class HeavenManga : ParsedHttpSource() {
         return chapter
     }
 
+
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response)
+            }
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        var el: String
+
+        if(document.select(novelaFilterSelector()).first() != null) {
+            el = novelaFilterSelector()
+        } else if (document.select(comicFilterSelector()).first() != null) {
+            el = comicFilterSelector()
+        } else {
+            el = searchMangaSelector()
+        }
+
+        val mangas = document.select(el).map { element ->
+            searchMangaFromElement(element)
+        }
+
+        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
 
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select(".left.home").let {
@@ -320,7 +357,9 @@ class HeavenManga : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
         // Search and filter don't work at the same time
-        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Header("NOTA: Los filtros se ignoran si se utiliza la búsqueda de texto."),
+        Filter.Header("Sólo se puede utilizar un filtro a la vez."),
+        Filter.Separator(),
         GenreFilter(),
         AlphabeticoFilter(),
         ListaCompletasFilter()
