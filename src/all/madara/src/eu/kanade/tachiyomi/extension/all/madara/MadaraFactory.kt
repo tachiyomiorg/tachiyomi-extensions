@@ -41,7 +41,7 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ManyToon(),
         ChibiManga(),
-        Toomics.me(),
+        ToomicsMe(),
         ZinManga()
     )
 }
