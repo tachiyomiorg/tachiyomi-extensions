@@ -41,6 +41,7 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ManyToon(),
         ChibiManga(),
+        Toomics.me(),
         ZinManga()
     )
 }
@@ -149,6 +150,9 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+}
+class Toomics.me : Madara("Toomics.me", "https://toomics.me/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
