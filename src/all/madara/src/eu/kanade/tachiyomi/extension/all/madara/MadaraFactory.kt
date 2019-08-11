@@ -152,7 +152,7 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
-class Toomics.me : Madara("Toomics.me", "https://toomics.me/", "en") {
+class ToomicsMe : Madara("Toomics.me", "https://toomics.me/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
