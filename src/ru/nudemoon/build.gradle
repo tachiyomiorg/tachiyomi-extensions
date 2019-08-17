@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Nude-Moon'
     pkgNameSuffix = 'ru.nudemoon'
     extClass = '.Nudemoon'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
