@@ -9,6 +9,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 
 class CloneManga : ParsedHttpSource() {
@@ -87,6 +88,11 @@ class CloneManga : ParsedHttpSource() {
             .select("img").first().absUrl("src")
         // List of pages will always contain only one page
         return listOf(Page(1, "", imgAbsoluteUrl))
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList):
+        Observable<MangasPage> {
+        return Observable.empty()
     }
 
     override fun imageUrlParse(document: Document): String { throw Exception("Not used") }
