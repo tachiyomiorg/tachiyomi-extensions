@@ -15,7 +15,7 @@ import java.util.*
 
 abstract class Genkan(
         override val name: String,
-        final override val baseUrl: String,
+        override val baseUrl: String,
         override val lang: String
 ) : ParsedHttpSource() {
 
@@ -25,14 +25,13 @@ abstract class Genkan(
 
     override fun popularMangaSelector() = "div.list-item"
 
-    private val popularMangaUrl = "$baseUrl/comics?page=" // Search is also based off this val
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$popularMangaUrl$page")
+        return GET("$baseUrl/comics?page=$page")
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    // Track manga in latest updates page
+    // Track which manga titles have been added to latestUpdates's MangasPage
     private val latestUpdatesTitles = mutableSetOf<String>()
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -40,7 +39,7 @@ abstract class Genkan(
         return GET("$baseUrl/latest?page=$page")
     }
 
-    // To prevent dupes
+    // To prevent dupes, only add manga to MangasPage if its title is not one we've added already
     override fun latestUpdatesParse(response: Response): MangasPage {
         val latestManga = mutableListOf<SManga>()
         val document = response.asJsoup()
@@ -73,54 +72,10 @@ abstract class Genkan(
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    // Sources' websites don't appear to have a search function; so searching locally
-    private var searchQuery = ""
-    private var searchPage = 1
-    private var nextPageSelectorElement = Elements()
+    // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (page == 1) searchPage = 1
-        searchQuery = query.toLowerCase()
-        return GET("$popularMangaUrl$page")
-    }
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        val searchMatches = mutableListOf<SManga>()
-        val document = response.asJsoup()
-        searchMatches.addAll(getMatchesFrom(document))
-
-        /* call another function if there's more pages to search
-           not doing it this way can lead to a false "no results found"
-           if no matches are found on the first page but there are matches
-           on subsequent pages */
-        nextPageSelectorElement = document.select(searchMangaNextPageSelector())
-        while (nextPageSelectorElement.hasText()) {
-            searchMatches.addAll(searchMorePages())
-        }
-
-        return MangasPage(searchMatches, false)
-    }
-
-    // search the given document for matches
-    private fun getMatchesFrom(document: Document): MutableList<SManga> {
-        val searchMatches = mutableListOf<SManga>()
-        document.select(searchMangaSelector()).forEach {
-            if (it.text().toLowerCase().contains(searchQuery)) {
-                searchMatches.add(searchMangaFromElement(it))
-            }
-        }
-        return searchMatches
-    }
-
-    // search additional pages if called
-    private fun searchMorePages(): MutableList<SManga> {
-        searchPage++
-        val nextPage = client.newCall(GET("$popularMangaUrl$searchPage", headers)).execute().asJsoup()
-        val searchMatches = mutableListOf<SManga>()
-        searchMatches.addAll(getMatchesFrom(nextPage))
-        nextPageSelectorElement = nextPage.select(searchMangaNextPageSelector())
-
-        return searchMatches
+        return GET("$baseUrl/comics?query=$query")
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -208,3 +163,68 @@ abstract class Genkan(
 
     override fun getFilterList() = FilterList()
 }
+
+// For sites using the older Genkan CMS that didn't have a search function
+
+abstract class GenkanOriginal(
+        override val name: String,
+        override val baseUrl: String,
+        override val lang: String
+) : Genkan(name, baseUrl, lang) {
+
+    private var searchQuery = ""
+    private var searchPage = 1
+    private var nextPageSelectorElement = Elements()
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (page == 1) searchPage = 1
+        searchQuery = query.toLowerCase()
+        return popularMangaRequest(page)
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val searchMatches = mutableListOf<SManga>()
+        val document = response.asJsoup()
+        searchMatches.addAll(getMatchesFrom(document))
+
+        /* call another function if there's more pages to search
+           not doing it this way can lead to a false "no results found"
+           if no matches are found on the first page but there are matcheszz
+           on subsequent pages */
+        nextPageSelectorElement = document.select(searchMangaNextPageSelector())
+        while (nextPageSelectorElement.hasText()) {
+            searchMatches.addAll(searchMorePages())
+        }
+
+        return MangasPage(searchMatches, false)
+    }
+
+    // search the given document for matches
+    private fun getMatchesFrom(document: Document): MutableList<SManga> {
+        val searchMatches = mutableListOf<SManga>()
+        document.select(searchMangaSelector())
+            .filter { it.text().toLowerCase().contains(searchQuery) }
+            .map { searchMatches.add(searchMangaFromElement(it)) }
+
+        return searchMatches
+    }
+
+    // search additional pages if called
+    private fun searchMorePages(): MutableList<SManga> {
+        searchPage++
+        val nextPage =  client.newCall(popularMangaRequest(searchPage)).execute().asJsoup()
+        val searchMatches = mutableListOf<SManga>()
+        searchMatches.addAll(getMatchesFrom(nextPage))
+        nextPageSelectorElement = nextPage.select(searchMangaNextPageSelector())
+
+        return searchMatches
+    }
+
+    override fun searchMangaSelector() = popularMangaSelector()
+
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+
+}
+
