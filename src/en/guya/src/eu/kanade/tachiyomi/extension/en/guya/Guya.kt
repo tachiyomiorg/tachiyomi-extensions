@@ -28,6 +28,8 @@ open class Guya() : ConfigurableSource, HttpSource() {
     override val supportsLatest = false
     override val lang = "en"
 
+    private val scanlatorCacheUrl = "https://raw.githubusercontent.com/appu1232/guyamoe/master/api/data_cache/all_groups.json"
+
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent","(Android ${Build.VERSION.RELEASE}; " +
             "${Build.MANUFACTURER} ${Build.MODEL}) " +
@@ -164,27 +166,22 @@ open class Guya() : ConfigurableSource, HttpSource() {
         val preference = ListPreference(screen.context).apply {
             key = "preferred_scanlator"
             title = "Preferred scanlator"
-            var scanlators = arrayOf<String>()
-            var scanlatorsIndex = arrayOf<String>()
+            entries = arrayOf<String>()
+            entryValues = arrayOf<String>()
             for (key in Scanlators.keys()) {
-                scanlators += Scanlators.getValueFromKey(key)
-                scanlatorsIndex += key
+                entries += Scanlators.getValueFromKey(key)
+                entryValues += key
             }
-            entries = scanlators
-            entryValues = scanlatorsIndex
             summary = "Current: %s\n\n" +
                 "This setting sets the scanlation group to prioritize " +
                 "on chapter refresh/update. It will get the next available if " +
-                "your preferred scanlator isn't an option (yet)." +
-                "\nNOTE: If you've already downloaded a chapter and the pages aren't updating, " +
-                "clear your chapter cache under Settings > Advanced > Clear chapter cache."
+                "your preferred scanlator isn't an option (yet)."
 
             this.setDefaultValue(1)
 
             setOnPreferenceChangeListener{_, newValue ->
                 val selected = newValue.toString()
-                val index = (this.findIndexOfValue(selected) + 1).toString()
-                preferences.edit().putString(SCANLATOR_PREFERENCE, index).commit()
+                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
             }
         }
 
@@ -246,7 +243,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
-        chapter.url = "$slug/$num/1"
+        chapter.url = "$slug/$num/$firstGroupId"
 
         return chapter
     }
@@ -318,7 +315,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         private fun update() {
             if (scanlatorMap.isEmpty() && !polling) {
                 polling = true
-                clientBuilder().newCall(GET("$baseUrl/api/get_all_groups/", headers)).enqueue(
+                clientBuilder().newCall(GET(scanlatorCacheUrl, headers)).enqueue(
                     object: Callback {
                         override fun onResponse(call: Call, response: Response) {
                             val json = JSONObject(response.body()!!.string())
