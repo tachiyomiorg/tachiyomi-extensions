@@ -297,14 +297,15 @@ open class Guya() : ConfigurableSource, HttpSource() {
                     return key
                 }
             }
-
-            throw Exception("Cannot find scanlator group!")
+            // Fall back to value as key if endpoint fails
+            return value
         }
 
         fun getValueFromKey(key: String): String {
             update()
+            // Fallback to key as value if endpoint fails
             return if (!scanlatorMap[key].isNullOrEmpty())
-                scanlatorMap[key].toString() else "No info"
+                scanlatorMap[key].toString() else key
         }
 
         fun keys(): MutableSet<String> {
@@ -318,11 +319,15 @@ open class Guya() : ConfigurableSource, HttpSource() {
                 clientBuilder().newCall(GET(scanlatorCacheUrl, headers)).enqueue(
                     object: Callback {
                         override fun onResponse(call: Call, response: Response) {
-                            val json = JSONObject(response.body()!!.string())
-                            val iter = json.keys()
-                            while (iter.hasNext()) {
-                                val scanId = iter.next()
-                                scanlatorMap[scanId] = json.getString(scanId)
+                            try {
+                                val json = JSONObject(response.body()!!.string())
+                                val iter = json.keys()
+                                while (iter.hasNext()) {
+                                    val scanId = iter.next()
+                                    scanlatorMap[scanId] = json.getString(scanId)
+                                }
+                            } catch (e: Exception) {
+                                // ScanlatorStore will fall back to using keys until update() succeeds
                             }
                             polling = false
                         }
