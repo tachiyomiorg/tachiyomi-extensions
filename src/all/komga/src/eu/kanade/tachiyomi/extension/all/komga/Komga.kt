@@ -8,6 +8,7 @@ import android.widget.Toast
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.SerieDto
 import eu.kanade.tachiyomi.network.GET
@@ -22,77 +23,74 @@ import java.util.concurrent.TimeUnit
 
 open class Komga : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/api/v1/series", headers)
+        GET("$baseUrl/api/v1/series?page=${page - 1}", headers)
 
-    override fun popularMangaParse(response: Response): MangasPage {
-        val series = Gson().fromJson<PageWrapperDto<SerieDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<SerieDto>>() {}.type)
-        val mangas = series.content.map {
-            SManga.create().apply {
-                title = it.name
-                artist = "Unknown"
-                author = "Unknown"
-                url = "/api/v1/series/${it.id}"
-                description = "No description"
-                status = SManga.UNKNOWN
-                initialized = true
-            }
-        }
-        return MangasPage(mangas, false)
-    }
+    override fun popularMangaParse(response: Response): MangasPage =
+        processSeriePage(response)
 
     override fun latestUpdatesRequest(page: Int): Request =
-        popularMangaRequest(page)
+        GET("$baseUrl/api/v1/series/latest?page=${page - 1}", headers)
 
     override fun latestUpdatesParse(response: Response): MangasPage =
-        popularMangaParse(response)
+        processSeriePage(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        popularMangaRequest(page)
+        GET("$baseUrl/api/v1/series?search=$query&page=${page - 1}", headers)
 
     override fun searchMangaParse(response: Response): MangasPage =
-        popularMangaParse(response)
+        processSeriePage(response)
+
+    override fun mangaDetailsRequest(manga: SManga): Request =
+        GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
         val serie = Gson().fromJson(response.body()?.charStream(), SerieDto::class.java)
-        return SManga.create().apply {
-            title = serie.name
-            artist = "Unknown"
-            author = "Unknown"
-            url = "/api/v1/series/${serie.id}"
-            description = "No description"
-            status = SManga.UNKNOWN
-            initialized = true
-        }
+        return serie.toSManga()
     }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books?sort=name,desc", headers)
+        GET("$baseUrl${manga.url}/books", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val books = Gson().fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<BookDto>>() {}.type)
-        return books.content.map {
+        val page = Gson().fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<BookDto>>() {}.type)
+        return page.content.mapIndexed { i, book ->
             SChapter.create().apply {
-                chapter_number = (books.content.indexOf(it) + 1).toFloat()
-                name = it.name
-                url = "/api/v1/series/1/books/${it.id}"
-                date_upload = Date().time
+                chapter_number = (i + 1).toFloat()
+                name = book.name
+                url = "${response.request().url()}/${book.id}"
+                date_upload = Date().time //no date provided by API for now
             }
-        }
+        }.sortedByDescending { it.chapter_number }
     }
 
     override fun pageListRequest(chapter: SChapter): Request =
-        GET("$baseUrl${chapter.url}/pages")
+        GET("${chapter.url}/pages")
 
-    override fun pageListParse(response: Response): List<Page> =
-        emptyList()
-
-    override fun imageUrlParse(response: Response): String {
-        return "https://images.pexels.com/photos/67636/rose-blue-flower-rose-blooms-67636.jpeg"
+    override fun pageListParse(response: Response): List<Page> {
+        val pages = Gson().fromJson<List<PageDto>>(response.body()?.charStream(), object : TypeToken<List<PageDto>>() {}.type)
+        return pages.map {
+            val url = "${response.request().url()}/${it.number}"
+            Page(
+                index = it.number - 1,
+                url = url,
+                imageUrl = url
+            )
+        }
     }
+
+    private fun processSeriePage(response: Response): MangasPage {
+        val page = Gson().fromJson<PageWrapperDto<SerieDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<SerieDto>>() {}.type)
+        val mangas = page.content.map {
+            it.toSManga()
+        }
+        return MangasPage(mangas, !page.last)
+    }
+
+    override fun imageUrlParse(response: Response): String = ""
 
     override val name = "Komga"
     override val lang = "en"
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     override val baseUrl by lazy { getPrefBaseUrl() }
     private val username by lazy { getPrefUsername() }
@@ -105,6 +103,18 @@ open class Komga : ConfigurableSource, HttpSource() {
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+
+    private fun SerieDto.toSManga(): SManga =
+        SManga.create().apply {
+            title = this@toSManga.name
+            artist = "Unknown"
+            author = "Unknown"
+            url = "/api/v1/series/${this@toSManga.id}"
+            description = "No description"
+            thumbnail_url = "$baseUrl/api/v1/series/${this@toSManga.id}/thumbnail"
+            status = SManga.UNKNOWN
+            initialized = true
+        }
 
     private fun clientBuilder(): OkHttpClient = network.client.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
