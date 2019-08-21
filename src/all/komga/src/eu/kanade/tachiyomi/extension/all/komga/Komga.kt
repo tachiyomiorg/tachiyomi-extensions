@@ -197,10 +197,10 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     companion object {
         private const val ADDRESS_TITLE = "Address"
-        private const val ADDRESS_DEFAULT = "http://192.168.1.156:8080"
+        private const val ADDRESS_DEFAULT = ""
         private const val USERNAME_TITLE = "Username"
-        private const val USERNAME_DEFAULT = "user"
+        private const val USERNAME_DEFAULT = ""
         private const val PASSWORD_TITLE = "Password"
-        private const val PASSWORD_DEFAULT = "user"
+        private const val PASSWORD_DEFAULT = ""
     }
 }
