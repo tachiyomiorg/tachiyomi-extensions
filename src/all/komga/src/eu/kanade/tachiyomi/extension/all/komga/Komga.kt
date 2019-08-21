@@ -18,7 +18,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.*
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.util.*
+import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 
 open class Komga : ConfigurableSource, HttpSource() {
@@ -49,16 +49,19 @@ open class Komga : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books", headers)
+        GET("$baseUrl${manga.url}/books?size=1000", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = Gson().fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<BookDto>>() {}.type)
         return page.content.mapIndexed { i, book ->
+
+            val newUrl = response.request().url().newBuilder()
+                .removeAllQueryParameters("size").build().toString()
             SChapter.create().apply {
                 chapter_number = (i + 1).toFloat()
                 name = book.name
-                url = "${response.request().url()}/${book.id}"
-                date_upload = Date().time //no date provided by API for now
+                url = "$newUrl/${book.id}"
+                date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S").parse(book.lastModified).time
             }
         }.sortedByDescending { it.chapter_number }
     }
@@ -86,24 +89,6 @@ open class Komga : ConfigurableSource, HttpSource() {
         return MangasPage(mangas, !page.last)
     }
 
-    override fun imageUrlParse(response: Response): String = ""
-
-    override val name = "Komga"
-    override val lang = "en"
-    override val supportsLatest = true
-
-    override val baseUrl by lazy { getPrefBaseUrl() }
-    private val username by lazy { getPrefUsername() }
-    private val password by lazy { getPrefPassword() }
-
-    override fun headersBuilder(): Headers.Builder =
-        Headers.Builder()
-            .add("Authorization", Credentials.basic(username, password))
-
-    private val preferences: SharedPreferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
     private fun SerieDto.toSManga(): SManga =
         SManga.create().apply {
             title = this@toSManga.name
@@ -115,6 +100,24 @@ open class Komga : ConfigurableSource, HttpSource() {
             status = SManga.UNKNOWN
             initialized = true
         }
+
+    override fun imageUrlParse(response: Response): String = ""
+    override val name = "Komga"
+    override val lang = "en"
+
+    override val supportsLatest = true
+    override val baseUrl by lazy { getPrefBaseUrl() }
+    private val username by lazy { getPrefUsername() }
+
+    private val password by lazy { getPrefPassword() }
+
+    override fun headersBuilder(): Headers.Builder =
+        Headers.Builder()
+            .add("Authorization", Credentials.basic(username, password))
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     private fun clientBuilder(): OkHttpClient = network.client.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
