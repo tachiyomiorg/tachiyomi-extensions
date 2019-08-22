@@ -57,7 +57,7 @@ class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en")
-class IsekaiScanCom : Madara("IsekaiScan.com", "http://isekaiscan.com/", "en")
+class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com/", "en")
 class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com/", "en")
 class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru/", "ru",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
