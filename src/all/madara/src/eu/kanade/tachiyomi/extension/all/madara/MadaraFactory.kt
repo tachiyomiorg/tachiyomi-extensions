@@ -162,7 +162,7 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
-class ManhwahentaiSite : Madara("Manhwahentai.site", "https://manhwahentai.site/", "en")
+class ManhwahentaiSite : Madara("Manhwahentai.site", "https://manhwahentai.site/", "en",
     dateFormat = SimpleDateFormat("dd'th' MMMM yyyy", Locale.US)) {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
