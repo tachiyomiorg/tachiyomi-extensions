@@ -12,6 +12,7 @@ import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.extension.BuildConfig
 import okhttp3.*
+import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
 import uy.kohesive.injekt.Injekt
@@ -191,6 +192,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     // ------------- Helpers and whatnot ---------------
 
     private fun parseChapterList(payload: String): List<SChapter> {
+        val SORT_KEY = "preferred_sort"
         val response = JSONObject(payload)
         val chapters = response.getJSONObject("chapters")
 
@@ -201,7 +203,11 @@ open class Guya() : ConfigurableSource, HttpSource() {
         while (iter.hasNext()) {
             val chapter = iter.next()
             val chapterObj = chapters.getJSONObject(chapter)
-            chapterList.add(parseChapterFromJson(chapterObj, chapter, response.getString("slug")))
+            var preferredSort = response.getJSONArray(SORT_KEY)
+            if (chapterObj.has(SORT_KEY)) {
+                preferredSort = chapterObj.getJSONArray(SORT_KEY)
+            }
+            chapterList.add(parseChapterFromJson(chapterObj, chapter, preferredSort, response.getString("slug")))
         }
 
         return chapterList.reversed()
@@ -235,11 +241,11 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return manga
     }
 
-    private fun parseChapterFromJson(json: JSONObject, num: String, slug: String): SChapter {
+    private fun parseChapterFromJson(json: JSONObject, num: String, sort: JSONArray, slug: String): SChapter {
         val chapter = SChapter.create()
 
         // Get the scanlator info based on group ranking; do it first since we need it later
-        val firstGroupId = getBestScanlator(json.getJSONObject("groups"))
+        val firstGroupId = getBestScanlator(json.getJSONObject("groups"), sort)
         chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
@@ -263,13 +269,19 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return pageArray
     }
 
-    private fun getBestScanlator(json: JSONObject): String {
+    private fun getBestScanlator(json: JSONObject, sort: JSONArray): String {
         val preferred = preferences.getString(SCANLATOR_PREFERENCE, null)
 
-        return if (preferred != null && json.has(preferred)) {
-            preferred
+        if (preferred != null && json.has(preferred)) {
+            return preferred
         } else {
-            json.keys().next()
+            for (i in 0 until sort.length()) {
+                if (json.has(sort.get(i).toString())) {
+                    return sort.get(i).toString()
+                }
+            }
+            // If all fails, fall-back to the next available key
+            return json.keys().next()
         }
     }
 
