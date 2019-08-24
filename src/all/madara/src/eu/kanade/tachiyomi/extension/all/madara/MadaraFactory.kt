@@ -43,7 +43,7 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ManyToon(),
         ChibiManga(),
-        ToomicsMe(),
+        ManhwahentaiSite(),
         ZinManga()
     )
 }
@@ -162,7 +162,8 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
-class ToomicsMe : Madara("Toomics.me", "https://toomics.me/", "en") {
+class ManhwahentaiSite : Madara("Manhwahentai.site", "https://manhwahentai.site/", "en")
+    dateFormat = SimpleDateFormat("dd'th' MMMM yyyy", Locale.US)) {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
