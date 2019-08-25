@@ -5,8 +5,10 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Response
@@ -41,6 +43,7 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ManyToon(),
         ChibiManga(),
+        ManhwahentaiSite(),
         ZinManga()
     )
 }
@@ -54,7 +57,7 @@ class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en")
-class IsekaiScanCom : Madara("IsekaiScan.com", "http://isekaiscan.com/", "en")
+class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com/", "en")
 class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com/", "en")
 class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru/", "ru",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
@@ -126,6 +129,14 @@ class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club/", "ko"
 class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en") {
     override val pageListParseSelector = "div.reading-content img"
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+    private val cdnUrl = "cdn.1stkissmanga.com"
+    override fun imageRequest(page: Page): Request {
+        val cdnHeaders = Headers.Builder().apply {
+            add("Referer", baseUrl)
+            add("Host", cdnUrl)
+        }.build()
+        return if (page.imageUrl!!.contains(cdnUrl)) GET(page.imageUrl!!, cdnHeaders) else GET(page.imageUrl!!, headers)
+    }
 }
 class Mangalike : Madara("Mangalike", "https://mangalike.net/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
@@ -149,6 +160,10 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+}
+class ManhwahentaiSite : Madara("Manhwahentai.site", "https://manhwahentai.site/", "en",
+    dateFormat = SimpleDateFormat("dd'th' MMMM yyyy", Locale.US)) {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {

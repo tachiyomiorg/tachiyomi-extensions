@@ -31,7 +31,7 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "ul#chapter-list-1 > li"
+    override fun chapterListSelector() = "ul#chapter-list-1 > li, ul#chapter-list-4 > li"
 
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()

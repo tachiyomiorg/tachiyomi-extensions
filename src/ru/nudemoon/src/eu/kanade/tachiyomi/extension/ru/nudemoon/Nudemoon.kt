@@ -74,7 +74,7 @@ class Nudemoon : ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun popularMangaSelector() = "table[cellspacing=\"2\"].news_pic2"
+    override fun popularMangaSelector() = "tr[valign=top]"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
@@ -83,12 +83,11 @@ class Nudemoon : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        val thumbnailElem = element.select("img.news_pic2").first()
-        val parentElem = thumbnailElem.parent()
-
-        manga.thumbnail_url = baseUrl + thumbnailElem.attr("src")
-        manga.title = parentElem.attr("title")
-        manga.setUrlWithoutDomain(parentElem.attr("href"))
+        manga.thumbnail_url = element.select("img.news_pic3").attr("abs:src")
+        element.select("a:has(h2)").let{
+            manga.title = it.text()
+            manga.setUrlWithoutDomain(it.attr("href"))
+        }
 
         return manga
     }
@@ -138,7 +137,7 @@ class Nudemoon : ParsedHttpSource() {
         //Order chapters by its number 'cause on the site they are in random order
         return document.select(chapterListSelector()).sortedByDescending {
             val regex = "#(\\d+)".toRegex()
-            val chapterName = it.select("img.news_pic2").first().parent().attr("title")
+            val chapterName = it.select("img.news_pic3").first().parent().attr("title")
             regex.find(chapterName)?.groupValues?.get(1)?.toInt() ?: 0
         }.map { chapterFromElement(it) }
     }
@@ -146,7 +145,7 @@ class Nudemoon : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
-        val infoElem = element.select("img.news_pic2").first().parent()
+        val infoElem = element.select("img.news_pic3").first().parent()
         val chapterName = infoElem.attr("title")
         var chapterUrl = infoElem.attr("href")
         if(!chapterUrl.contains("-online")) {

@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: ComiCake'
     pkgNameSuffix = 'all.comicake'
     extClass = '.ComiCakeFactory'
-    extVersionCode = 4
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
