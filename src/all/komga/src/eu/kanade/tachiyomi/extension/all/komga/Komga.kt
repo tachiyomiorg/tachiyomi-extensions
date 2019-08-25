@@ -19,6 +19,7 @@ import okhttp3.*
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 open class Komga : ConfigurableSource, HttpSource() {
@@ -61,7 +62,7 @@ open class Komga : ConfigurableSource, HttpSource() {
                 chapter_number = (i + 1).toFloat()
                 name = book.name
                 url = "$newUrl/${book.id}"
-                date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S").parse(book.lastModified).time
+                date_upload = parseDate(book.lastModified)
             }
         }.sortedByDescending { it.chapter_number }
     }
@@ -99,6 +100,21 @@ open class Komga : ConfigurableSource, HttpSource() {
             thumbnail_url = "$baseUrl/api/v1/series/${this@toSManga.id}/thumbnail"
             status = SManga.UNKNOWN
             initialized = true
+        }
+
+    private fun parseDate(date: String?): Long =
+        if (date == null)
+            Date().time
+        else {
+            try {
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date).time
+            } catch (ex: Exception) {
+                try {
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S", Locale.US).parse(date).time
+                } catch (ex: Exception) {
+                    Date().time
+                }
+            }
         }
 
     override fun imageUrlParse(response: Response): String = ""
