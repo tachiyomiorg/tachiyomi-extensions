@@ -153,7 +153,7 @@ abstract class MangaCards (
         val body = FormBody.Builder()
             .add("mode", "Webtoon")
             .build()
-        return POST("$baseUrl/${chapter.url}", headers, body)
+        return POST("$baseUrl${chapter.url}", headers, body)
     }
 
     override fun pageListParse(document: Document): List<Page> {
