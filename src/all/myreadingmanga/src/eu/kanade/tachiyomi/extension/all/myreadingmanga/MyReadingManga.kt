@@ -68,10 +68,19 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
 
         val query2 = URLEncoder.encode(query, "UTF-8")
-        val uri = Uri.parse("$baseUrl/search/").buildUpon()
+        val uri = if (query.isNotBlank()) {
+            Uri.parse("$baseUrl/search/").buildUpon()
                 .appendEncodedPath(query2)
-                .appendPath("page")
-                .appendPath("$page")
+        } else {
+            val uri = Uri.parse("$baseUrl/").buildUpon()
+            //Append uri filters
+            filters.forEach {
+                if (it is UriFilter)
+                    it.addToUri(uri)
+            }
+            uri
+        }
+        uri.appendPath("page").appendPath("$page")
         return GET(uri.toString(), headers)
     }
 
