@@ -151,7 +151,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("MMM dd, yyyy").parse(date).time
+        return SimpleDateFormat("MMM dd, yyyy", Locale.US ).parse(date).time
     }
 
     private fun createChapter(pageNumber: String, mangaUrl: String, date: Long, chname: String): SChapter {
