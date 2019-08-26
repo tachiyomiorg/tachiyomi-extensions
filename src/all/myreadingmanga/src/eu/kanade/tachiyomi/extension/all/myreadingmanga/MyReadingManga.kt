@@ -72,7 +72,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                 .appendEncodedPath(query2)
                 .appendPath("page")
                 .appendPath("$page")
-        return GET(uri.toString())
+        return GET(uri.toString(), headers)
     }
 
 
