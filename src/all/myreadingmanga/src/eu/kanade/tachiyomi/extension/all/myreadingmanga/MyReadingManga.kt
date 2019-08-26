@@ -181,4 +181,61 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
+    //Begin Filter Code
+    override fun getFilterList() = FilterList(
+        //MRM does not support genre filtering and text search at the same time
+        Filter.Header("NOTE: Ignored if using text search!"),
+        GenreFilter()
+    )
+
+    private class GenreFilter : UriSelectFilter("Genre", "genre", arrayOf(
+        Pair("", "Any"),
+        Pair("action", "Action"),
+        Pair("bara", "Bara/ Muscle"),
+        Pair("comedy","Comedy"),
+        Pair("drama","Drama"),
+        Pair("fantasy","Fantasy"),
+        Pair("furry","Furry"),
+        Pair("gender-bender","Gender bender"),
+        Pair("hentai","HET (heterosexual)/ Hentai"),
+        Pair("historical","Historical"),
+        Pair("horror","Horror"),
+        Pair("mystery","Mystery"),
+        Pair("omegaverse","Omegaverse"),
+        Pair("romance","Romance"),
+        Pair("school-life","School"),
+        Pair("sci-fi","Sci-fi"),
+        Pair("shota","Shota"),
+        Pair("shounen-ai","Shounen Ai"),
+        Pair("slice-of-life","Slice of Life"),
+        Pair("sports","Sports"),
+        Pair("supernatural","Supernatural"),
+        Pair("tragedy","Tragedy"),
+        Pair("yaoi","Yaoi")
+    ))
+
+    /**
+     * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
+     * If an entry is selected it is appended as a query parameter onto the end of the URI.
+     * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
+     */
+    //vals: <name, display>
+    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+                                       val firstIsUnspecified: Boolean = true,
+                                       defaultValue: Int = 0) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+        override fun addToUri(uri: Uri.Builder) {
+            if (state != 0 || !firstIsUnspecified)
+                uri.appendPath(uriParam)
+                    .appendPath(vals[state].first)
+        }
+    }
+
+    /**
+     * Represents a filter that is able to modify a URI.
+     */
+    private interface UriFilter {
+        fun addToUri(uri: Uri.Builder)
+    }
+    
 }
