@@ -191,37 +191,23 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
     //Begin Filter Code
-    override fun getFilterList() = FilterList(
-        //MRM does not support genre filtering and text search at the same time
-        Filter.Header("NOTE: Ignored if using text search!"),
-        GenreFilter()
-    )
+    override fun getFilterList(): FilterList {
+        val filterList = FilterList(
+            //MRM does not support genre filtering and text search at the same time
+            Filter.Header("NOTE: Filters are ignored if using text search."),
+            Filter.Header("Only one filter can be used at a time."),
+            GenreFilter(),
+            TagFilter(),
+            CatFilter()
+        )
+        return filterList
+    }
 
-    private class GenreFilter : UriSelectFilter("Genre", "genre", arrayOf(
-        Pair("", "Any"),
-        Pair("action", "Action"),
-        Pair("bara", "Bara/ Muscle"),
-        Pair("comedy","Comedy"),
-        Pair("drama","Drama"),
-        Pair("fantasy","Fantasy"),
-        Pair("furry","Furry"),
-        Pair("gender-bender","Gender bender"),
-        Pair("hentai","HET (heterosexual)/ Hentai"),
-        Pair("historical","Historical"),
-        Pair("horror","Horror"),
-        Pair("mystery","Mystery"),
-        Pair("omegaverse","Omegaverse"),
-        Pair("romance","Romance"),
-        Pair("school-life","School"),
-        Pair("sci-fi","Sci-fi"),
-        Pair("shota","Shota"),
-        Pair("shounen-ai","Shounen Ai"),
-        Pair("slice-of-life","Slice of Life"),
-        Pair("sports","Sports"),
-        Pair("supernatural","Supernatural"),
-        Pair("tragedy","Tragedy"),
-        Pair("yaoi","Yaoi")
-    ))
+    private class GenreFilter() : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("","Any"),*GENRES))
+    private class TagFilter() : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("","Any"),*POPTAG))
+    private class CatFilter() : UriSelectFilterQuery("Categories", "cat", arrayOf(Pair("","Any"),*CATID))
+
+
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
@@ -229,7 +215,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
     //vals: <name, display>
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+    private open class UriSelectFilterPath(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
                                        defaultValue: Int = 0) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
@@ -239,12 +225,28 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                     .appendPath(vals[state].first)
         }
     }
+    private open class UriSelectFilterQuery(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+                                       val firstIsUnspecified: Boolean = true,
+                                       defaultValue: Int = 0) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+        override fun addToUri(uri: Uri.Builder) {
+            if (state != 0 || !firstIsUnspecified)
+                uri.appendQueryParameter(uriParam, vals[state].first)
+        }
+    }
 
     /**
      * Represents a filter that is able to modify a URI.
      */
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
+    }
+    companion object {
+        private val baseUrl = "https://myreadingmanga.info"
+        private val GENRES = Jsoup.connect("$baseUrl").get().select(".tagcloud a[href*=/genre/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
+        private val POPTAG = Jsoup.connect("$baseUrl").get().select(".tagcloud a[href*=/tag/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
+        private val CATID = Jsoup.connect("$baseUrl").get().select(".level-0").map { Pair(it.attr("value"), it.text().substringBefore("&"))}.toTypedArray()
+
     }
     
 }
