@@ -243,11 +243,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         fun addToUri(uri: Uri.Builder)
     }
     companion object {
-        private val baseUrl = "https://myreadingmanga.info"
-        private val GENRES = Jsoup.connect("$baseUrl").get().select(".tagcloud a[href*=/genre/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
-        private val POPTAG = Jsoup.connect("$baseUrl").get().select(".tagcloud a[href*=/tag/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
-        private val CATID = Jsoup.connect("$baseUrl").get().select(".level-0").map { Pair(it.attr("value"), it.text().substringBefore("&"))}.toTypedArray()
-
+        private val document = Jsoup.connect("https://myreadingmanga.info").get()
+        private val GENRES = document.select(".tagcloud a[href*=/genre/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
+        private val POPTAG = document.select(".tagcloud a[href*=/tag/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
+        private val CATID = document.select(".level-0").map { Pair(it.attr("value"), it.text())}.toTypedArray()
     }
     
 }
