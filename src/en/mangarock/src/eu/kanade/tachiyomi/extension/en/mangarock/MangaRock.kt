@@ -12,12 +12,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.*
 import org.json.JSONObject
 import rx.Observable
 import java.util.ArrayList
@@ -39,6 +34,9 @@ class MangaRock : HttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Origin", "https://mangarock.com")
 
     // Handles the page decoding
     override val client: OkHttpClient = super.client.newBuilder().addInterceptor(fun(chain): Response {
