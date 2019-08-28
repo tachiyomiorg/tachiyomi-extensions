@@ -5,8 +5,8 @@ import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
+import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
@@ -45,7 +45,7 @@ open class Komga : ConfigurableSource, HttpSource() {
         GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val serie = Gson().fromJson(response.body()?.charStream(), SerieDto::class.java)
+        val serie = gson.fromJson<SerieDto>(response.body()?.charStream()!!)
         return serie.toSManga()
     }
 
@@ -53,15 +53,15 @@ open class Komga : ConfigurableSource, HttpSource() {
         GET("$baseUrl${manga.url}/books?size=1000", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val page = Gson().fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<BookDto>>() {}.type)
-        return page.content.mapIndexed { i, book ->
+        val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
+        val chapterListUrl = response.request().url().newBuilder()
+            .removeAllQueryParameters("size").build().toString()
 
-            val newUrl = response.request().url().newBuilder()
-                .removeAllQueryParameters("size").build().toString()
+        return page.content.mapIndexed { i, book ->
             SChapter.create().apply {
                 chapter_number = (i + 1).toFloat()
                 name = book.name
-                url = "$newUrl/${book.id}"
+                url = "$chapterListUrl/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
         }.sortedByDescending { it.chapter_number }
@@ -71,19 +71,18 @@ open class Komga : ConfigurableSource, HttpSource() {
         GET("${chapter.url}/pages")
 
     override fun pageListParse(response: Response): List<Page> {
-        val pages = Gson().fromJson<List<PageDto>>(response.body()?.charStream(), object : TypeToken<List<PageDto>>() {}.type)
+        val pages = gson.fromJson<List<PageDto>>(response.body()?.charStream()!!)
         return pages.map {
             val url = "${response.request().url()}/${it.number}"
             Page(
                 index = it.number - 1,
-                url = url,
                 imageUrl = url
             )
         }
     }
 
     private fun processSeriePage(response: Response): MangasPage {
-        val page = Gson().fromJson<PageWrapperDto<SerieDto>>(response.body()?.charStream(), object : TypeToken<PageWrapperDto<SerieDto>>() {}.type)
+        val page = gson.fromJson<PageWrapperDto<SerieDto>>(response.body()?.charStream()!!)
         val mangas = page.content.map {
             it.toSManga()
         }
@@ -93,13 +92,9 @@ open class Komga : ConfigurableSource, HttpSource() {
     private fun SerieDto.toSManga(): SManga =
         SManga.create().apply {
             title = this@toSManga.name
-            artist = "Unknown"
-            author = "Unknown"
             url = "/api/v1/series/${this@toSManga.id}"
-            description = "No description"
             thumbnail_url = "$baseUrl/api/v1/series/${this@toSManga.id}/thumbnail"
             status = SManga.UNKNOWN
-            initialized = true
         }
 
     private fun parseDate(date: String?): Long =
@@ -118,14 +113,16 @@ open class Komga : ConfigurableSource, HttpSource() {
         }
 
     override fun imageUrlParse(response: Response): String = ""
+
     override val name = "Komga"
     override val lang = "en"
 
     override val supportsLatest = true
     override val baseUrl by lazy { getPrefBaseUrl() }
     private val username by lazy { getPrefUsername() }
-
     private val password by lazy { getPrefPassword() }
+
+    private val gson by lazy { Gson() }
 
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
@@ -142,18 +139,23 @@ open class Komga : ConfigurableSource, HttpSource() {
         .build()!!
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
+        screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+    }
 
-        val baseUrlPref = EditTextPreference(screen.context).apply {
-            key = ADDRESS_TITLE
-            title = ADDRESS_TITLE
-            summary = baseUrl
-            this.setDefaultValue(ADDRESS_DEFAULT)
-            dialogTitle = ADDRESS_TITLE
+    private fun PreferenceScreen.editTextPreference(title: String, default: String, value: String): EditTextPreference {
+        return EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
-                    val res = preferences.edit().putString(ADDRESS_TITLE, newValue as String).commit()
-                    Toast.makeText(screen.context, "Restart Tachiyomi to apply new setting."
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
                         , Toast.LENGTH_LONG).show()
                     res
                 } catch (e: Exception) {
@@ -162,52 +164,6 @@ open class Komga : ConfigurableSource, HttpSource() {
                 }
             }
         }
-
-        screen.addPreference(baseUrlPref)
-
-        val usernamePref = EditTextPreference(screen.context).apply {
-            key = USERNAME_TITLE
-            title = USERNAME_TITLE
-            summary = username
-            this.setDefaultValue(USERNAME_DEFAULT)
-            dialogTitle = USERNAME_TITLE
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(USERNAME_TITLE, newValue as String).commit()
-                    Toast.makeText(screen.context, "Restart Tachiyomi to apply new setting."
-                        , Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(usernamePref)
-
-        val passwordPref = EditTextPreference(screen.context).apply {
-            key = PASSWORD_TITLE
-            title = PASSWORD_TITLE
-            summary = password
-            this.setDefaultValue(PASSWORD_DEFAULT)
-            dialogTitle = PASSWORD_TITLE
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(PASSWORD_TITLE, newValue as String).commit()
-                    Toast.makeText(screen.context, "Restart Tachiyomi to apply new setting."
-                        , Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(passwordPref)
     }
 
     private fun getPrefBaseUrl(): String = preferences.getString(ADDRESS_TITLE, ADDRESS_DEFAULT)!!
