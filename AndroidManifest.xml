@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="eu.kanade.tachiyomi.extension">
 
-    <uses-feature android:name="tachiyomi.extension" />
+    <uses-feature android:name="tachiyomi.extension" android:required="false"/>
 
     <application android:icon="@mipmap/ic_launcher" android:allowBackup="false" android:label="${appName}">
 
