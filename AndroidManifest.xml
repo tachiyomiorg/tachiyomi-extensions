@@ -4,7 +4,7 @@
 
     <uses-feature android:name="tachiyomi.extension" android:required="false"/>
 
-    <application android:icon="@mipmap/ic_launcher" android:allowBackup="false" android:label="${appName}">
+    <application android:icon="@mipmap/ic_launcher" android:label="${appName}">
 
         <meta-data android:name="tachiyomi.extension.class" android:value="${extClass}" />
 
