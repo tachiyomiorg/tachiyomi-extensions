@@ -1,16 +1,16 @@
 package eu.kanade.tachiyomi.extension.es.tumangaonline
 
+import okhttp3.*
+import java.util.*
+import org.jsoup.nodes.Element
+import org.jsoup.nodes.Document
+import java.text.SimpleDateFormat
+import java.util.concurrent.TimeUnit
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.TimeUnit
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 
 class TuMangaOnline : ParsedHttpSource() {
 
@@ -71,7 +71,6 @@ class TuMangaOnline : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("div.upload-file-row > a").let {
-            //Log.d("NEW_URL", getBuilder(it.attr("href")))
             setUrlWithoutDomain(it.attr("href"))
             title = it.select("div.thumbnail-title > h4.text-truncate").text()
             thumbnail_url = it.select("div.thumbnail > style").toString().substringAfter("url('").substringBefore("');")
