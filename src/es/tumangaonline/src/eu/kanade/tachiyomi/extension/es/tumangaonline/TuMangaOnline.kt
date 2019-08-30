@@ -25,8 +25,7 @@ class TuMangaOnline : ParsedHttpSource() {
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor)
-        .connectTimeout(1, TimeUnit.MINUTES)
+        .addNetworkInterceptor(rateLimitInterceptor).connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .retryOnConnectionFailure(true)
         .followRedirects(true)
@@ -35,31 +34,32 @@ class TuMangaOnline : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
             .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+            .add("Referer", "$baseUrl/")
+            .add("Cache-mode", "no-cache")
     }
 
     private fun getBuilder(url: String): String {
-        val req = Request.Builder()
-            .headers(headersBuilder()
-                .add("Referer", "$baseUrl/library/manga/")
-                .add("Cache-mode", "no-cache")
-                .build())
-            .url(url)
-            .build()
+       val req = Request.Builder()
+           .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
+           .url(url)
+           .build()
 
-        return client.newCall(req)
-            .execute()
-            .request()
-            .url()
-            .toString()
-    }
+       return client.newCall(req)
+           .execute()
+           .request()
+           .url()
+           .toString()
+   }
 
     override fun popularMangaSelector() = "div.element"
 
-    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesSelector() = "div.upload-file-row"
+    //override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&type=&filter_by=title&page=$page", headers)
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&type=&filter_by=title&page=$page", headers)
+    //override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&type=&filter_by=title&page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/?page=$page&uploads_mode=thumbnail#latest_uploads", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         element.select("div.element > a").let {
@@ -69,7 +69,14 @@ class TuMangaOnline : ParsedHttpSource() {
         }
     }
 
-    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
+        element.select("div.upload-file-row > a").let {
+            //Log.d("NEW_URL", getBuilder(it.attr("href")))
+            setUrlWithoutDomain(it.attr("href"))
+            title = it.select("div.thumbnail-title > h4.text-truncate").text()
+            thumbnail_url = it.select("div.thumbnail > style").toString().substringAfter("url('").substringBefore("');")
+        }
+    }
 
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select("h5.card-title").let {
