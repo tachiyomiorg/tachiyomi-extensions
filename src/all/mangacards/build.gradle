@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: MangaCards (Valhalla, NANI?)'
     pkgNameSuffix = 'all.mangacards'
     extClass = '.MangaCardsFactory'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
