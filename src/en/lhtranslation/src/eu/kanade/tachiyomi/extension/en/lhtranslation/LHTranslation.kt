@@ -3,9 +3,11 @@ package eu.kanade.tachiyomi.extension.en.lhtranslation
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
@@ -24,7 +26,9 @@ class LHTranslation : ParsedHttpSource() {
             GET("$baseUrl/manga-list.html?listType=pagination&page=$page&artist=&author=&group=&m_status=&name=&genre=&ungenre=&sort=views&sort_type=DESC", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga-list.html?")!!.newBuilder().addQueryParameter("name", query)
+        val url = HttpUrl.parse("$baseUrl/manga-list.html?")!!.newBuilder()
+            .addQueryParameter("name", query)
+            .addQueryParameter("page", page.toString())
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Status -> {
@@ -52,6 +56,27 @@ class LHTranslation : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request =
             GET("$baseUrl/manga-list.html?listType=pagination&page=$page&artist=&author=&group=&m_status=&name=&genre=&sort=last_update&sort_type=DESC")
 
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        val mangas = mutableListOf<SManga>()
+        var hasNextPage = true
+
+        document.select(popularMangaSelector()).forEach{ mangas.add(popularMangaFromElement(it)) }
+
+        // check if there's a next page
+        document.select(popularMangaNextPageSelector()).first().text().let {
+            val currentPage = it.substringAfter("Page ").substringBefore(" ")
+            val lastPage = it.substringAfterLast(" ")
+            if (currentPage == lastPage) hasNextPage = false
+        }
+
+        return MangasPage(mangas, hasNextPage)
+    }
+
+    override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
+
+    override fun searchMangaParse(response: Response) = popularMangaParse(response)
+
     override fun popularMangaSelector() = "div.media"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -72,7 +97,7 @@ class LHTranslation : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "a:contains(»)"
+    override fun popularMangaNextPageSelector() = "div.col-lg-9 button.btn-info"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
