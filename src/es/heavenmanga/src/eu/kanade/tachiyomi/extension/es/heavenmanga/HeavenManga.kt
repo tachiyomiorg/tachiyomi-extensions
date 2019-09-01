@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.es.heavenmanga
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
@@ -32,13 +31,14 @@ class HeavenManga : ParsedHttpSource() {
             .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
     }
 
-
-    override fun popularMangaSelector() = ".top.clearfix .ranking"
+    override fun popularMangaSelector() = "li.ranking"
 
     override fun latestUpdatesSelector() = "#container .ultimos_epis .not"
 
     override fun searchMangaSelector() = ".top.clearfix .cont_manga"
+
     private fun novelaFilterSelector() = ".lstsradd"
+
     private fun comicFilterSelector() = "section#related"
 
     override fun chapterListSelector() = "#mamain ul li"
@@ -51,10 +51,36 @@ class HeavenManga : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = "li:contains(Siguiente):not([id=inactive])"
 
-
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/top/", headers)
 
+    override fun popularMangaParse(response: Response): MangasPage {
+        val mangas = mutableListOf<SManga>()
+        val document = response.asJsoup()
+
+        document.select(popularMangaSelector()).map{ mangas.add(popularMangaFromElement(it)) }
+
+        return MangasPage(mangas, false)
+    }
+
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/", headers)
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val mangas = mutableListOf<SManga>()
+        val document = response.asJsoup()
+        val checkList = mutableListOf<String>()
+
+        // Fewer duplicates makes for a better user experience and fewer Requests to make
+        document.select(latestUpdatesSelector()).forEach{ e ->
+            e.select("a").attr("href").substringBeforeLast("-").let { urlPart ->
+                if (urlPart !in checkList) {
+                    mangas.add(latestUpdatesFromElement(e))
+                    checkList.add(urlPart)
+                }
+            }
+        }
+
+        return MangasPage(mangas, false)
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val search_url = "$baseUrl/buscar/$query.html"
@@ -96,17 +122,14 @@ class HeavenManga : ParsedHttpSource() {
     // get contents of a url
     private fun getUrlContents(url: String): Document = client.newCall(GET(url, headers)).execute().asJsoup()
 
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
 
-    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        element.select("a").let {
-            setUrlWithoutDomain(it.attr("href"))
-            val allElements: Elements = it.select(".box .tit")
-            //get all elements under .box .tit
-            for (e: Element in allElements) {
-                title = e.childNode(0).toString() //the title
-            }
-            thumbnail_url = it.select(".box img").attr("src")
-        }
+        manga.setUrlWithoutDomain(element.select("a").attr("href"))
+        manga.title = element.select("div.tit").first().ownText()
+        manga.thumbnail_url = element.select("img").attr("src")
+
+        return manga
     }
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
@@ -152,7 +175,7 @@ class HeavenManga : ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
-        var el: String
+        val el: String
 
         if(document.select(novelaFilterSelector()).first() != null) {
             el = novelaFilterSelector()
@@ -172,6 +195,7 @@ class HeavenManga : ParsedHttpSource() {
 
         return MangasPage(mangas, hasNextPage)
     }
+
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select(".left.home").let {
             val genres = it.select(".sinopsis a")?.map {
@@ -200,17 +224,16 @@ class HeavenManga : ParsedHttpSource() {
         return chapters
     }
 
-
-    override fun imageUrlParse(document: Document) = document.select("#p").attr("src").toString()
+    override fun imageUrlParse(document: Document) = ""
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val leerUrl = document.select(chapterPageSelector()).attr("href")
         val urlElement = getUrlContents(leerUrl)
-        urlElement.body().select("option").forEach {
-            pages.add(Page(pages.size, it.attr("value")))
-        }
-        pages.getOrNull(0)?.imageUrl = imageUrlParse(urlElement)
+
+        urlElement.select("script:containsData(pUrl)").first().data()
+            .substringAfter("pUrl=[").substringBefore("\"},];").split("\"},")
+            .forEach{ pages.add(Page(pages.size, "", it.substringAfterLast("\""))) }
 
         return pages
     }
