@@ -73,7 +73,12 @@ open class Komga : ConfigurableSource, HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val pages = gson.fromJson<List<PageDto>>(response.body()?.charStream()!!)
         return pages.map {
-            val url = "${response.request().url()}/${it.number}"
+            val url = "${response.request().url()}/${it.number}" +
+                if (!supportedImageTypes.contains(it.mediaType)) {
+                    "?convert=png"
+                } else {
+                    ""
+                }
             Page(
                 index = it.number - 1,
                 imageUrl = url
@@ -177,5 +182,7 @@ open class Komga : ConfigurableSource, HttpSource() {
         private const val USERNAME_DEFAULT = ""
         private const val PASSWORD_TITLE = "Password"
         private const val PASSWORD_DEFAULT = ""
+
+        private val supportedImageTypes = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
     }
 }

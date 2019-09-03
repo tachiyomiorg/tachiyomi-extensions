@@ -20,5 +20,6 @@ data class BookMetadataDto(
 
 data class PageDto(
     val number: Int,
-    val fileName: String
+    val fileName: String,
+    val mediaType: String
 )
