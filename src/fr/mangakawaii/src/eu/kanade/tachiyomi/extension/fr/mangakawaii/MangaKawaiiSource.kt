@@ -213,7 +213,7 @@ class MangaKawaiiSource : HttpSource() {
         return chapter
     }
 
-    override fun pageListParse(response: Response) = response.asJsoup().select("#all > .img-responsive")
+    override fun pageListParse(response: Response) = response.asJsoup().select(".img-responsive:not(#ImgPage)")
             .mapIndexed { i, e ->
                 var url = e.attr("data-src")
 
