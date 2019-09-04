@@ -12,7 +12,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.*
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.json.JSONObject
 import rx.Observable
 import java.util.ArrayList
@@ -34,9 +39,6 @@ class MangaRock : HttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
-
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("Origin", "https://mangarock.com")
 
     // Handles the page decoding
     override val client: OkHttpClient = super.client.newBuilder().addInterceptor(fun(chain): Response {
@@ -186,11 +188,11 @@ class MangaRock : HttpSource() {
     private fun getMangaApiRequest(manga: SManga): Request {
         // Handle older entries with API URL ("/info?oid=mrs-series-...")
         if (manga.url.startsWith("/info")) {
-            return GET("$apiUrl${manga.url}&country=", headers)
+            return GET("$apiUrl${manga.url}&Country=", headers)
         }
 
         val oid = manga.url.substringAfterLast("/")
-        return GET("$apiUrl/info?oid=$oid&country=", headers)
+        return GET("$apiUrl/info?oid=$oid&Country=", headers)
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
