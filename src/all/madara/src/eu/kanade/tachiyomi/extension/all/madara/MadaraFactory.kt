@@ -36,7 +36,7 @@ class MadaraFactory : SourceFactory {
         MangazukiClubJP(),
         MangazukiClubKO(),
         FirstKissManga(),
-        Mangalike(),
+        MangaKomi(),
         MangaSY(),
         ManwhaClub(),
         WuxiaWorld(),
@@ -138,7 +138,7 @@ class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en") {
         return if (page.imageUrl!!.contains(cdnUrl)) GET(page.imageUrl!!, cdnHeaders) else GET(page.imageUrl!!, headers)
     }
 }
-class Mangalike : Madara("Mangalike", "https://mangalike.net/", "en") {
+class MangaKomi : Madara("MangaKomi", "https://mangakomi.com/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en") {
