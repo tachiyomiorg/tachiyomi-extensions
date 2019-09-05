@@ -17,7 +17,7 @@ class Heavenmanga : ParsedHttpSource() {
 
     override val name = "Heaven Manga"
 
-    override val baseUrl = "http://heavenmanga.vip"
+    override val baseUrl = "http://ww2.heavenmanga.org"
 
     override val lang = "en"
 
@@ -40,14 +40,9 @@ class Heavenmanga : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-
     // popular
     override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/manga-list/")
-        } else {
-            return GET("$baseUrl/manga-list/page-$page")
-        }
+        return GET("$baseUrl/manga-list/page-$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -60,20 +55,12 @@ class Heavenmanga : ParsedHttpSource() {
         return manga
     }
 
-
-
     // latest
     override fun latestUpdatesRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/latest-update/")
-        } else {
-            return GET("$baseUrl/latest-update/page-$page")
-        }
+        return GET("$baseUrl/latest-update/page-$page", headers)
     }
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
-
-
 
     // search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -166,7 +153,7 @@ class Heavenmanga : ParsedHttpSource() {
             document.select(chapterListSelector()).map{allChapters.add(chapterFromElement(it))}
             // Chapter dates
             document.select("div.chapter-date").forEach {
-                allChapters[dateIndex].date_upload = parseDate(it.text())
+                if (it.hasText()) allChapters[dateIndex].date_upload = parseDate(it.text())
                 dateIndex++
             }
             // Next page of chapters
