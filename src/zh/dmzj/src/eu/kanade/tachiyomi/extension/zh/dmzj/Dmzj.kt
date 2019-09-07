@@ -7,20 +7,18 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Request
 import okhttp3.Response
 import java.util.*
-import kotlin.text.Regex
+import org.json.JSONArray
+import org.json.JSONObject
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 /**
  * Dmzj source
  */
 
 class Dmzj : HttpSource() {
     override val lang = "zh"
-    private val TAG: String = "Dmzj"
     override val supportsLatest = true
     override val name = "动漫之家"
-    override val baseUrl = "http://v2.api.dmzj.com"
+    override val baseUrl = "http://v3api.dmzj.com"
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
         "http:$url"
@@ -36,34 +34,30 @@ class Dmzj : HttpSource() {
                             "Tachiyomi/1.0")
             .build()!!
 
-    private fun mangaFromJSON1(json: String): MangasPage {
+    // for simple searches (query only, no filters)
+    private fun simpleSearchJsonParse(json: String): MangasPage {
         val arr = JSONArray(json)
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
-            var obj = arr.getJSONObject(i)
-            var cid = obj.getString("id")
+            val obj = arr.getJSONObject(i)
+            val cid = obj.getString("id")
             ret.add(SManga.create().apply {
-                title = obj.getString("name")
-                thumbnail_url = cleanUrl(obj.getString("cover"))
-                author = obj.optString("authors")
-                status = when(obj.getString("status_tag_id")) {
-                    "2310" -> SManga.COMPLETED
-                    "2309" -> SManga.ONGOING
-                    else -> SManga.UNKNOWN
-                }
-                description = obj.getString("description")
-                url = "/comic/$cid.json"
+                title = obj.getString("comic_name")
+                thumbnail_url = cleanUrl(obj.getString("comic_cover"))
+                author = obj.optString("comic_author")
+                url = "/comic/comic_$cid.json"
             })
         }
         return MangasPage(ret, false)
     }
 
-    private fun mangaFromJSON2(json: String): MangasPage {
+    // for popular, latest, and filtered search
+    private fun mangaFromJSON(json: String): MangasPage {
         val arr = JSONArray(json)
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
-            var obj = arr.getJSONObject(i)
-            var cid = obj.getString("id")
+            val obj = arr.getJSONObject(i)
+            val cid = obj.getString("id")
             ret.add(SManga.create().apply {
                 title = obj.getString("title")
                 thumbnail_url = obj.getString("cover")
@@ -73,7 +67,7 @@ class Dmzj : HttpSource() {
                     "连载中" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
-                url = "/comic/$cid.json"
+                url = "/comic/comic_$cid.json"
             })
         }
         return MangasPage(ret, arr.length() != 0)
@@ -109,13 +103,12 @@ class Dmzj : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
-        val r = Regex("g_search_data = (.*)")
-        val m = r.find(res)
-        if (m != null) {
-            return mangaFromJSON1(m.groupValues.get(1))
+        val body = response.body()!!.string()
+
+        return if (body.contains("g_search_data")) {
+            simpleSearchJsonParse(body.substringAfter("=").trim().removeSuffix(";"))
         } else {
-            return mangaFromJSON2(res)
+            mangaFromJSON(body)
         }
     }
 
@@ -126,7 +119,7 @@ class Dmzj : HttpSource() {
         thumbnail_url = obj.getString("cover")
 
         var arr = obj.getJSONArray("authors")
-        var tmparr = ArrayList<String>(arr.length())
+        val tmparr = ArrayList<String>(arr.length())
         for (i in 0 until arr.length()) {
             tmparr.add(arr.getJSONObject(i).getString("tag_name"))
         }

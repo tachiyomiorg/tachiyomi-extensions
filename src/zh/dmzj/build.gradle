@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Dmzj'
     pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
