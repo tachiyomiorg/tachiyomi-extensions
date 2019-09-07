@@ -6,7 +6,7 @@ ext {
     pkgNameSuffix = 'it.perveden'
     extClass = '.Perveden'
     extVersionCode = 2
-    libVersion = '1.0'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

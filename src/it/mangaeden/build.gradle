@@ -6,7 +6,7 @@ ext {
     pkgNameSuffix = 'it.mangaeden'
     extClass = '.Mangaeden'
     extVersionCode = 2
-    libVersion = '1.0'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
