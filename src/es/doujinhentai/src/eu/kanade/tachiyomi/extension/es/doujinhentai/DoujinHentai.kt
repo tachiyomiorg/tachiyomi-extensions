@@ -11,13 +11,14 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class DoujinHentai : ParsedHttpSource() {
+
     override val baseUrl = "https://doujinhentai.net"
 
     override val lang = "es"
 
     override val name = "DoujinHentai"
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/lista-manga-hentai?orderby=views&page=$page", headers)
 
@@ -35,13 +36,13 @@ class DoujinHentai : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "a[rel=next]"
 
-    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesRequest(page: Int)= GET("$baseUrl/lista-manga-hentai?orderby=last&page=$page", headers)
 
-    override fun latestUpdatesSelector(): String  = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector(): String = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div.tab-summary").let {
@@ -81,12 +82,13 @@ class DoujinHentai : ParsedHttpSource() {
         val dateWords = date.split(" ")
 
         if (dateWords.size == 3) {
-            try {
-                return SimpleDateFormat("d MMM. yyyy", Locale.ENGLISH).parse(date).time
+            return try {
+                SimpleDateFormat("d MMM. yyyy", Locale.ENGLISH).parse(date).time
             } catch (e: ParseException) {
-                return 0L
+                0L
             }
         }
+
         return 0L
     }
 
@@ -102,7 +104,7 @@ class DoujinHentai : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/search?query=$query", headers)
 
-    override fun searchMangaSelector() = "div.c-tabs-item"
+    override fun searchMangaSelector() = ".c-tabs-item__content .c-tabs-item__content"
 
     override fun searchMangaFromElement(element: Element) = SManga.create().apply {
         thumbnail_url = element.select("div.tab-thumb.c-image-hover > a > img").attr("data-src")
@@ -110,5 +112,6 @@ class DoujinHentai : ParsedHttpSource() {
         title = element.select("div.tab-thumb.c-image-hover > a").attr("title")
     }
 
-    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+    override fun searchMangaNextPageSelector() = "#not_actually_used"
+
 }
