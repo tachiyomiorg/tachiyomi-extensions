@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.mangakakalot
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
@@ -56,10 +61,9 @@ class Mangakakalot : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        // Site ignores everything after the first word
-        val substringBefore = query.replace(" ", "_").replace(",", "_").replace(":", "_")
         val url = HttpUrl.parse("$baseUrl/manga_list")!!.newBuilder()
         url.addQueryParameter("page", page.toString())
+
         filters.forEach { filter ->
             when (filter) {
                 is SortFilter -> {
@@ -73,9 +77,11 @@ class Mangakakalot : ParsedHttpSource() {
                 }
             }
         }
-        return if(query.isNotBlank()) {
-            GET("$baseUrl/search/$substringBefore?page=$page")
-        } else GET(url.build().toString(), headers)    }
+
+        return if (query.isNotBlank()) {
+            GET("$baseUrl/search/${normalizeSearchQuery(query)}?page=$page")
+        } else GET(url.build().toString(), headers)
+    }
 
     override fun searchMangaSelector() = ".panel_story_list .story_item"
 
@@ -198,6 +204,22 @@ class Mangakakalot : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("No used")
+
+    // Based on change_alias JS function from website
+    private fun normalizeSearchQuery(query: String): String {
+        var str = query.toLowerCase()
+        str = str.replace("à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ".toRegex(), "a")
+        str = str.replace("è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ".toRegex(), "e")
+        str = str.replace("ì|í|ị|ỉ|ĩ".toRegex(), "i")
+        str = str.replace("ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ".toRegex(), "o")
+        str = str.replace("ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ".toRegex(), "u")
+        str = str.replace("ỳ|ý|ỵ|ỷ|ỹ".toRegex(), "y")
+        str = str.replace("đ".toRegex(), "d")
+        str = str.replace("""!|@|%|\^|\*|\(|\)|\+|=|<|>|\?|/|,|\.|:|;|'| |"|&|#|\[|]|~|-|$|_""".toRegex(), "_")
+        str = str.replace("_+_".toRegex(), "_")
+        str = str.replace("""^_+|_+$""".toRegex(), "")
+        return str
+    }
 
     override fun getFilterList() = FilterList(
             Filter.Header("NOTE: Ignored if using text search!"),
