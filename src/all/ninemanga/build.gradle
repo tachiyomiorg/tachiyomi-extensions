@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: NineManga'
     pkgNameSuffix = "all.ninemanga"
     extClass = '.NineMangaEs; .NineMangaBr; .NineMangaEn; .NineMangaRu; .NineMangaDe; .NineMangaIt; .NineMangaFr'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

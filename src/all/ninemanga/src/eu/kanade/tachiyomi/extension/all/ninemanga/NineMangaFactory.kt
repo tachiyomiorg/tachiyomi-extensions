@@ -468,7 +468,7 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
         val dateWords = date.split(" ")
 
         if (dateWords.size == 3) {
-            if(!dateWords[1].contains(",")){
+            if(dateWords[1].contains(",")){
                 try {
                     return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
                 } catch (e: ParseException) {
