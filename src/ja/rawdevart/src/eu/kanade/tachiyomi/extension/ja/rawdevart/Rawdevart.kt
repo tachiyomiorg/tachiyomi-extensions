@@ -32,9 +32,7 @@ class Rawdevart : ParsedHttpSource() {
         val item = element.select("a.head")
         manga.setUrlWithoutDomain(item.attr("href"))
         manga.title = item.text()
-        manga.thumbnail_url = if (element.select("img").attr("data-src").contains("http"))
-            element.select("img").attr("data-src").replace("\\s".toRegex(), "") else
-            baseUrl + element.select("img").attr("data-src")
+        manga.thumbnail_url = element.select("img").attr("abs:src")
 
         return manga
     }
@@ -154,9 +152,7 @@ class Rawdevart : ParsedHttpSource() {
         manga.genre = genres.joinToString(", ")
         manga.description = infoElement.select("div.description").text()
             .substringAfter("Description ")
-        manga.thumbnail_url = if (infoElement.select("img.not-lazy").attr("data-src").contains("http"))
-            infoElement.select("img.not-lazy").attr("data-src") else
-            baseUrl + infoElement.select("img.not-lazy").attr("data-src")
+        manga.thumbnail_url =infoElement.select("img.img-fluid.not-lazy").attr("abs:src")
 
         return manga
     }
@@ -195,7 +191,7 @@ class Rawdevart : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(element.select("div.rounded-0 a").attr("href"))
+        chapter.setUrlWithoutDomain(element.select("a").attr("href"))
         chapter.name = element.select("div.rounded-0 span.text-truncate").text()
         chapter.date_upload = element.select("span.mr-2").text().let {
             try {
@@ -213,22 +209,11 @@ class Rawdevart : ParsedHttpSource() {
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        if (chapter.url.startsWith("http")) {
-            return GET(chapter.url, headers)
-        }
-        return super.pageListRequest(chapter)
-    }
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val script = document.select("script").html()
-        val url = script.substringAfter("const pages = [").substringBefore(",]")
-            .replace(Regex("""["\\]"""), "")
-            .split(",")
 
-        for (i in 0 until url.size) {
-            pages.add(Page(i, "", url[i]))
+        document.select("img.img-fluid.not-lazy").forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.attr("abs:data-src")))
         }
 
         return pages
