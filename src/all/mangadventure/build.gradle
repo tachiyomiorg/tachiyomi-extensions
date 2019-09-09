@@ -5,10 +5,8 @@ ext {
     appName = 'Tachiyomi: MangAdventure'
     pkgNameSuffix = 'all.mangadventure'
     extClass = '.MangAdventureFactory'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
-
-
