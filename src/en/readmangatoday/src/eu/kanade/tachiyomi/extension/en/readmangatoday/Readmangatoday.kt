@@ -26,11 +26,13 @@ class Readmangatoday : ParsedHttpSource() {
     override val client: OkHttpClient get() = network.cloudflareClient
 
     /**
-     * Search only returns data with this set
+     * Search only returns data with user-agent and x-requeted-with set
+     * Referer needed due to some chapters linking images from other domains
      */
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
         add("X-Requested-With", "XMLHttpRequest")
+        add("Referer", baseUrl)
     }
 
     override fun popularMangaRequest(page: Int): Request {
