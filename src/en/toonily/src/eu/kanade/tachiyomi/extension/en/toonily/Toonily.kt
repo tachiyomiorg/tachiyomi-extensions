@@ -51,20 +51,22 @@ class Toonily: ParsedHttpSource() {
         url.addQueryParameter("post_type","wp-manga")
         val pattern = "\\s+".toRegex()
         val q = query.replace(pattern, "+")
-        if(query.length > 0){
+        if(query.isNotEmpty()){
             url.addQueryParameter("s", q)
         }else{
             url.addQueryParameter("s", "")
         }
 
         var orderBy = ""
+        var condFilter = ""
+        var adultFilter = ""
 
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> {
                     val genreInclude = mutableListOf<String>()
                     filter.state.forEach {
-                        if (it.state == 1) {
+                        if (it.state) {
                             genreInclude.add(it.id)
                         }
                     }
@@ -77,7 +79,7 @@ class Toonily: ParsedHttpSource() {
                 is StatusList ->{
                     val statuses = mutableListOf<String>()
                     filter.state.forEach {
-                        if (it.state == 1) {
+                        if (it.state) {
                             statuses.add(it.id)
                         }
                     }
@@ -89,8 +91,16 @@ class Toonily: ParsedHttpSource() {
                 }
 
                 is SortBy -> {
-                    orderBy = filter.toUriPart();
+                    orderBy = filter.toUriPart()
                     url.addQueryParameter("m_orderby",orderBy)
+                }
+                is CondFilter -> {
+                    condFilter = filter.toUriPart()
+                    url.addQueryParameter("op",condFilter)
+                }
+                is AdultFilter -> {
+                    adultFilter = filter.toUriPart()
+                    url.addQueryParameter("adult",adultFilter)
                 }
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
             }
@@ -178,37 +188,57 @@ class Toonily: ParsedHttpSource() {
             Pair("Most View", "views"),
             Pair("New", "new-manga")
     ))
-    private class Genre(name: String, val id: String = name) : Filter.TriState(name)
+    private class CondFilter : UriPartFilter("Genres condition", arrayOf(
+        Pair("OR (having one of selected genres)", ""),
+        Pair("AND (having all selected genres)", "1")
+    ))
+    private class AdultFilter : UriPartFilter("Adult content", arrayOf(
+        Pair("All", ""),
+        Pair("None adult content", "0"),
+        Pair("Only adult content", "1")
+    ))
+    private class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
-    private class Status(name: String, val id: String = name) : Filter.TriState(name)
+    private class Status(name: String, val id: String = name) : Filter.CheckBox(name)
     private class StatusList(statuses: List<Status>) : Filter.Group<Status>("Status", statuses)
 
     override fun getFilterList() = FilterList(
-//            TextField("Judul", "title"),
+            //TextField("Judul", "title"),
             TextField("Author", "author"),
             TextField("Artist", "artist"),
             TextField("Year", "release"),
             SortBy(),
+            CondFilter(),
+            AdultFilter(),
             StatusList(getStatusList()),
             GenreList(getGenreList())
     )
     private fun getStatusList() = listOf(
-                Status("Completed","complete"),
+            Status("Completed","end"),
             Status("Ongoing","on-going"),
             Status("Canceled","canceled"),
             Status("Onhold","on-hold")
     )
     private fun getGenreList() = listOf(
-            Genre("Action","action-webtoon"),
-            Genre("Adventure","adventure-webtoon"),
-            Genre("Comedy","comedy-webtoon"),
-            Genre("Drama","drama-webtoon"),
-            Genre("Fantasy","fantasy-webtoon"),
-            Genre("Harem","harem-webtoon"),
-            Genre("Romance","romance-webtoon"),
-            Genre("School LIfe","school-life-webtoon"),
-            Genre("Sci Fi","scifi-webtoon"),
-            Genre("Supernatural","supernatural-webtoon")
+            Genre("Action", "action-webtoon"),
+            Genre("Adventure", "adventure-webtoon"),
+            Genre("Comedy", "comedy-webtoon"),
+            Genre("Drama", "drama-webtoon"),
+            Genre("Fantasy", "fantasy-webtoon"),
+            Genre("Harem", "harem-webtoon"),
+            Genre("Horror", "horror-webtoon"),
+            Genre("Mature", "mature-webtoon"),
+            Genre("Mystery", "mystery-webtoon"),
+            Genre("Psychological", "psychological-webtoon"),
+            Genre("Romance", "romance-webtoon"),
+            Genre("School life", "school-life-webtoon"),
+            Genre("Sci-Fi", "scifi-webtoon"),
+            Genre("Seinen", "seinen-webtoon"),
+            Genre("Shounen", "shounen-webtoon"),
+            Genre("Supernatural", "supernatural-webtoon"),
+            Genre("Thriller", "thriller-webtoon"),
+            Genre("Yaoi", "yaoi-webtoon"),
+            Genre("Yuri", "yuri-webtoon")
     )
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
             Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
