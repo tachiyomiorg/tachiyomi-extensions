@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Genkan (multiple sources)'
     pkgNameSuffix = 'all.genkan'
     extClass = '.GenkanFactory'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
