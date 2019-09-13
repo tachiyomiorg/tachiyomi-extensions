@@ -2,10 +2,10 @@
 
 Before you start, please note that the ability to use following technologies is **required** and it's not possible for us to teach you any of them.
 
-* Kotlin
-* JSoup
-* HTML
-* CSS selectors
+* [Kotlin](https://kotlinlang.org/)
+* [JSoup](https://jsoup.org/)
+* [HTML](https://developer.mozilla.org/en-US/docs/Web/HTML)
+* [CSS selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
 
 
 ## Writing an extension
