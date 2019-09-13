@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: Mangaeden'
     pkgNameSuffix = 'en.mangaeden'
     extClass = '.Mangaeden'
-    extVersionCode = 1
-    libVersion = '1.0'
+    extVersionCode = 2
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

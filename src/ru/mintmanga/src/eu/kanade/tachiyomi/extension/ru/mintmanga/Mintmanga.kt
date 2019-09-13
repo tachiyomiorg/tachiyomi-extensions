@@ -1,14 +1,13 @@
 package eu.kanade.tachiyomi.extension.ru.mintmanga
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
@@ -24,6 +23,11 @@ class Mintmanga : ParsedHttpSource() {
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
+
+    override val client: OkHttpClient = network.client.newBuilder()
+            .addNetworkInterceptor(rateLimitInterceptor).build()
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
@@ -86,21 +90,32 @@ class Mintmanga : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.author = infoElement.select("span.elem_author").first()?.text()
+        manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().replace(" ,", ",")
         manga.description = infoElement.select("div.manga-description").text()
-        manga.status = parseStatus(infoElement.html())
+        manga.status = parseStatus(infoElement)
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga
     }
 
-    private fun parseStatus(element: String): Int = when {
-        element.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
-        element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
-        element.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
-        else -> SManga.UNKNOWN
+    private fun parseStatus(element: Element): Int {
+        val hiddenWarningMessage = element.select("span.hide > h3").first()
+        val html = element.html()
+        return if (hiddenWarningMessage != null) {
+            when {
+                html.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
+                html.contains("<h1 class=\"names\"> Сингл") || html.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
+        } else {
+            when {
+                html.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
+                else -> SManga.UNKNOWN
+            }
+        }
     }
 
-    override fun chapterListSelector() = "div.chapters-link tbody tr"
+    override fun chapterListSelector() = "div.chapters-link > table > tbody > tr:has(td > a)"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
@@ -114,7 +129,11 @@ class Mintmanga : ParsedHttpSource() {
             chapter.name = urlText
         }
         chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
-            SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
+            try {
+                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it).time
+            } catch (e: ParseException) {
+                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
+            }
         } ?: 0
         return chapter
     }

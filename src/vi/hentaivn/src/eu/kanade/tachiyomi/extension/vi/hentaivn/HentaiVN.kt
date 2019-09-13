@@ -81,7 +81,19 @@ class HentaiVN : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun pageListParse(document: Document) = document.select("#image > img").mapIndexed { i, element -> Page(i, "", element.attr("src")) }
+    override fun pageListParse(document: Document): List<Page> {
+        val pages = mutableListOf<Page>()
+        val pageUrl = document.select("link[rel=canonical]").attr("href")
+        document.select("#image > img").forEachIndexed { i, e ->
+            pages.add(Page(i, pageUrl, e.attr("src")))
+        }
+        return pages
+    }
+
+    override fun imageRequest(page: Page): Request {
+        val imgHeaders = headersBuilder().add("Referer", page.url).build()
+        return GET(page.imageUrl!!, imgHeaders)
+    }
 
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 

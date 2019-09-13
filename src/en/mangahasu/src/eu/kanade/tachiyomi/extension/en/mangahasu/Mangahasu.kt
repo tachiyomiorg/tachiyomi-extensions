@@ -49,9 +49,9 @@ class Mangahasu: ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga =
             popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "a.Tiếp"
+    override fun popularMangaNextPageSelector() = "a[title = Tiếp]"
 
-    override fun latestUpdatesNextPageSelector() = "a.Tiếp"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return GET("$baseUrl/advanced-search.html?keyword=$query&author=&artist=&status=&typeid=&page=$page")

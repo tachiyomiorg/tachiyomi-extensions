@@ -2,61 +2,57 @@ package eu.kanade.tachiyomi.extension.en.mangapark
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
+import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
-
-/**
- * MangaPark source
- */
+import java.util.Calendar
+import java.util.Locale
 
 class MangaPark : ParsedHttpSource() {
+
     override val lang = "en"
 
     override val supportsLatest = true
     override val name = "MangaPark"
-    override val baseUrl = "https://mangapark.me"
+    override val baseUrl = "https://mangapark.net"
 
-    private val directorySelector = ".item"
+    private val directorySelector = ".ls1 .item"
     private val directoryUrl = "/genre"
     private val directoryNextPageSelector = ".paging.full > li:last-child > a"
 
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
-    override fun popularMangaSelector() = directorySelector
-
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
         "http:$url"
     else url
 
-    private fun mangaFromElement(element: Element) = SManga.create().apply {
-        val coverElement = element.getElementsByClass("cover").first()
-        url = coverElement.attr("href")
 
-        title = coverElement.attr("title")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views_a")
 
-    }
+    override fun popularMangaSelector() = directorySelector
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = directoryNextPageSelector
 
-    override fun searchMangaSelector() = ".item"
 
-    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
-
-    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
-
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?update")
 
     override fun latestUpdatesSelector() = directorySelector
 
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
+
+    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
@@ -69,7 +65,18 @@ class MangaPark : ParsedHttpSource() {
         return GET(uri.toString())
     }
 
-    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+    override fun searchMangaSelector() = ".item"
+
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
+
+    private fun mangaFromElement(element: Element) = SManga.create().apply {
+        val coverElement = element.getElementsByClass("cover").first()
+        url = coverElement.attr("href")
+        title = coverElement.attr("title")
+    }
+
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val coverElement = document.select(".cover > img").first()
@@ -103,8 +110,6 @@ class MangaPark : ParsedHttpSource() {
         description = document.getElementsByClass("summary").text().trim()
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?latest")
-
     //TODO MangaPark has "versioning"
     //TODO Previously we just use the version that is expanded by default however this caused an issue when a manga didnt have an expanded version
     //TODO if we just choose one to expand it will cause potential missing chapters
@@ -112,13 +117,10 @@ class MangaPark : ParsedHttpSource() {
     //TODO Maybe make it possible for users to view the other versions as well?
     override fun chapterListSelector() = ".stream .volume .chapter li"
 
-
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        url = element.select("em > a").last().attr("href")
-
-        name = element.select("li span").first().text()
-
-        date_upload = parseDate(element.getElementsByTag("i").text().trim())
+        url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
+        name = element.select(".tit > a").first().text()
+        date_upload = parseDate(element.select(".time").first().text().trim())
     }
 
     private fun parseDate(date: String): Long {
@@ -158,7 +160,10 @@ class MangaPark : ParsedHttpSource() {
 
         if (trimmedDate[2] != "ago") return 0
 
-        val number = trimmedDate[0].toIntOrNull() ?: return 0
+        val number = when (trimmedDate[0]) {
+            "a" -> 1
+            else -> trimmedDate[0].toIntOrNull() ?: return 0
+        }
         val unit = trimmedDate[1].removeSuffix("s") //Remove 's' suffix
 
         val now = Calendar.getInstance()
@@ -180,14 +185,24 @@ class MangaPark : ParsedHttpSource() {
         return now.timeInMillis
     }
 
-    override fun pageListParse(document: Document)
-            = document.getElementsByClass("img").map {
-        Page(it.attr("i").toInt() - 1, "", cleanUrl(it.attr("src")))
+    override fun pageListParse(document: Document): List<Page> {
+        val doc = document.toString()
+        val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
+        val pages = mutableListOf<Page>()
+        val imglist = JSONArray(obj)
+        for (i in 0 until imglist.length()) {
+            val item = imglist.getJSONObject(i)
+            var page = item.getString("u")
+            if (page.startsWith("//")) {
+                page = "https:$page"
+            }
+            pages.add(Page(i, "", page))
+        }
+        return pages
     }
 
     //Unused, we can get image urls directly from the chapter page
-    override fun imageUrlParse(document: Document)
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
             AuthorArtistText(),
@@ -225,46 +240,95 @@ class MangaPark : ParsedHttpSource() {
     private class GenreGroup : Filter.Group<GenreFilter>("Genres", listOf(
             GenreFilter("4-koma", "4 koma"),
             GenreFilter("action", "Action"),
+            GenreFilter("adaptation", "Adaptation"),
             GenreFilter("adult", "Adult"),
             GenreFilter("adventure", "Adventure"),
+            GenreFilter("aliens", "Aliens"),
+            GenreFilter("animals", "Animals"),
+            GenreFilter("anthology", "Anthology"),
             GenreFilter("award-winning", "Award winning"),
             GenreFilter("comedy", "Comedy"),
             GenreFilter("cooking", "Cooking"),
+            GenreFilter("crime", "Crime"),
+            GenreFilter("crossdressing", "Crossdressing"),
+            GenreFilter("delinquents", "Delinquents"),
             GenreFilter("demons", "Demons"),
             GenreFilter("doujinshi", "Doujinshi"),
             GenreFilter("drama", "Drama"),
             GenreFilter("ecchi", "Ecchi"),
             GenreFilter("fantasy", "Fantasy"),
+            GenreFilter("full-color", "Full color"),
+            GenreFilter("game", "Game"),
             GenreFilter("gender-bender", "Gender bender"),
+            GenreFilter("genderswap", "Genderswap"),
+            GenreFilter("ghosts", "Ghosts"),
+            GenreFilter("gore", "Gore"),
+            GenreFilter("gossip", "Gossip"),
+            GenreFilter("gyaru", "Gyaru"),
             GenreFilter("harem", "Harem"),
             GenreFilter("historical", "Historical"),
             GenreFilter("horror", "Horror"),
+            GenreFilter("incest", "Incest"),
+            GenreFilter("isekai", "Isekai"),
             GenreFilter("josei", "Josei"),
+            GenreFilter("kids", "Kids"),
+            GenreFilter("loli", "Loli"),
+            GenreFilter("lolicon", "Lolicon"),
+            GenreFilter("long-strip", "Long strip"),
             GenreFilter("magic", "Magic"),
+            GenreFilter("magical-girls", "Magical girls"),
+            GenreFilter("manhwa", "Manhwa"),
             GenreFilter("martial-arts", "Martial arts"),
             GenreFilter("mature", "Mature"),
             GenreFilter("mecha", "Mecha"),
             GenreFilter("medical", "Medical"),
+            GenreFilter("military", "Military"),
+            GenreFilter("monster-girls", "Monster girls"),
+            GenreFilter("monsters", "Monsters"),
             GenreFilter("music", "Music"),
             GenreFilter("mystery", "Mystery"),
+            GenreFilter("office-workers", "Office workers"),
+            GenreFilter("official-colored", "Official colored"),
             GenreFilter("one-shot", "One shot"),
+            GenreFilter("parody", "Parody"),
+            GenreFilter("philosophical", "Philosophical"),
+            GenreFilter("police", "Police"),
+            GenreFilter("post-apocalyptic", "Post apocalyptic"),
             GenreFilter("psychological", "Psychological"),
+            GenreFilter("reincarnation", "Reincarnation"),
+            GenreFilter("reverse-harem", "Reverse harem"),
             GenreFilter("romance", "Romance"),
             GenreFilter("school-life", "School life"),
             GenreFilter("sci-fi", "Sci fi"),
             GenreFilter("seinen", "Seinen"),
+            GenreFilter("shota", "Shota"),
+            GenreFilter("shotacon", "Shotacon"),
             GenreFilter("shoujo", "Shoujo"),
             GenreFilter("shoujo-ai", "Shoujo ai"),
             GenreFilter("shounen", "Shounen"),
             GenreFilter("shounen-ai", "Shounen ai"),
             GenreFilter("slice-of-life", "Slice of life"),
             GenreFilter("smut", "Smut"),
+            GenreFilter("space", "Space"),
             GenreFilter("sports", "Sports"),
+            GenreFilter("super-power", "Super power"),
+            GenreFilter("superhero", "Superhero"),
             GenreFilter("supernatural", "Supernatural"),
+            GenreFilter("survival", "Survival"),
+            GenreFilter("suspense", "Suspense"),
+            GenreFilter("thriller", "Thriller"),
+            GenreFilter("time-travel", "Time travel"),
             GenreFilter("tragedy", "Tragedy"),
+            GenreFilter("user-created", "User created"),
+            GenreFilter("vampire", "Vampire"),
+            GenreFilter("vampires", "Vampires"),
+            GenreFilter("video-games", "Video games"),
+            GenreFilter("web-comic", "Web comic"),
             GenreFilter("webtoon", "Webtoon"),
+            GenreFilter("wuxia", "Wuxia"),
             GenreFilter("yaoi", "Yaoi"),
-            GenreFilter("yuri", "Yuri")
+            GenreFilter("yuri", "Yuri"),
+            GenreFilter("zombies", "Zombies")
     )), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter("genres", state.filter { it.isIncluded() }.map { it.uriParam }.joinToString(","))
@@ -354,4 +418,5 @@ class MangaPark : ParsedHttpSource() {
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
     }
+
 }

@@ -1,19 +1,17 @@
 package eu.kanade.tachiyomi.extension.pt.mangasproject
 
-import com.github.salomonbrys.kotson.nullString
+import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.obj
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.FormBody
-import okhttp3.Headers
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
+import org.jsoup.nodes.Element
 import rx.Observable
 import java.lang.Exception
 import java.text.ParseException
@@ -21,294 +19,289 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class MangasProject : HttpSource() {
-  override val name = "mangásPROJECT"
+abstract class MangasProject(override val name: String,
+                    override val baseUrl: String) : HttpSource() {
+    override val lang = "pt"
 
-  override val baseUrl = "https://leitor.net"
+    override val supportsLatest = true
 
-  override val lang = "pt"
+    // Sometimes the site is slow.
+    override val client = network.client.newBuilder()
+        .connectTimeout(1, TimeUnit.MINUTES)
+        .readTimeout(1, TimeUnit.MINUTES)
+        .writeTimeout(1, TimeUnit.MINUTES)
+        .addInterceptor { pageListIntercept(it) }
+        .build()
 
-  override val supportsLatest = true
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", USER_AGENT)
+        .add("Referer", baseUrl)
+        .add("X-Requested-With", "XMLHttpRequest")
 
-  // Sometimes the site is slow.
-  override val client = network.client.newBuilder()
-          .connectTimeout(1, TimeUnit.MINUTES)
-          .readTimeout(1, TimeUnit.MINUTES)
-          .writeTimeout(1, TimeUnit.MINUTES)
-          .build()!!
-
-  private val catalogHeaders = Headers.Builder().apply {
-    add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36")
-    add("Host", "leitor.net")
-    // The API doesn't return the result if this header isn't sent.
-    add("X-Requested-With", "XMLHttpRequest")
-  }.build()
-
-  override fun popularMangaRequest(page: Int): Request {
-    return GET("$baseUrl/home/most_read?page=$page", catalogHeaders)
-  }
-
-  override fun popularMangaParse(response: Response): MangasPage {
-    val result = jsonParser.parse(response.body()!!.string()).obj
-
-    // If "most_read" have boolean false value, then it doesn't have next page.
-    if (!result["most_read"]!!.isJsonArray)
-      return MangasPage(emptyList(), false)
-
-    val popularMangas = result.getAsJsonArray("most_read")?.map {
-      popularMangaItemParse(it.obj)
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/home/most_read?page=$page", headers)
     }
 
-    val hasNextPage = response.request().url().queryParameter("page")!!.toInt() < 10
+    override fun popularMangaParse(response: Response): MangasPage {
+        val result = response.asJsonObject()
 
-    if (popularMangas != null)
-      return MangasPage(popularMangas, hasNextPage)
+        // If "most_read" have boolean false value, then it doesn't have next page.
+        if (!result["most_read"]!!.isJsonArray)
+            return MangasPage(emptyList(), false)
 
-    return MangasPage(emptyList(), false)
-  }
+        val popularMangas = result["most_read"].array
+            .map { popularMangaItemParse(it.obj) }
 
-  private fun popularMangaItemParse(obj: JsonObject) = SManga.create().apply {
-    title = obj["serie_name"].nullString ?: ""
-    thumbnail_url = obj["cover"].nullString
-    url = obj["link"].nullString ?: ""
-  }
+        val page = response.request().url().queryParameter("page")!!.toInt()
 
-  override fun latestUpdatesRequest(page: Int): Request {
-    return GET("$baseUrl/home/releases?page=$page", catalogHeaders)
-  }
-
-  override fun latestUpdatesParse(response: Response): MangasPage {
-    if (response.code() == 500)
-      return MangasPage(emptyList(), false)
-
-    val result = jsonParser.parse(response.body()!!.string()).obj
-
-    val latestMangas = result.getAsJsonArray("releases")?.map {
-      latestMangaItemParse(it.obj)
+        return MangasPage(popularMangas, page < 10)
     }
 
-    val hasNextPage = response.request().url().queryParameter("page")!!.toInt() < 5
-
-    if (latestMangas != null)
-      return MangasPage(latestMangas, hasNextPage)
-
-    return MangasPage(emptyList(), false)
-  }
-
-  private fun latestMangaItemParse(obj: JsonObject) = SManga.create().apply {
-    title = obj["name"].nullString ?: ""
-    thumbnail_url = obj["image"].nullString
-    url = obj["link"].nullString ?: ""
-  }
-
-  override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-    val form = FormBody.Builder().apply {
-      add("search", query)
+    private fun popularMangaItemParse(obj: JsonObject) = SManga.create().apply {
+        title = obj["serie_name"].string
+        thumbnail_url = obj["cover"].string
+        url = obj["link"].string
     }
 
-    return POST("$baseUrl/lib/search/series.json", catalogHeaders, form.build())
-  }
-
-  override fun searchMangaParse(response: Response): MangasPage {
-    val result = jsonParser.parse(response.body()!!.string()).obj
-
-    // If "series" have boolean false value, then it doesn't have results.
-    if (!result["series"]!!.isJsonArray)
-      return MangasPage(emptyList(), false)
-
-    val searchMangas = result.getAsJsonArray("series")?.map {
-      searchMangaItemParse(it.obj)
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET("$baseUrl/home/releases?page=$page", headers)
     }
 
-    if (searchMangas != null)
-      return MangasPage(searchMangas, false)
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        if (response.code() == 500)
+            return MangasPage(emptyList(), false)
 
-    return MangasPage(emptyList(), false)
-  }
+        val result = response.asJsonObject()
 
-  private fun searchMangaItemParse(obj: JsonObject) = SManga.create().apply {
-    title = obj["name"].nullString ?: ""
-    thumbnail_url = obj["cover"].nullString
-    url = obj["link"].nullString ?: ""
-    author = obj["author"].nullString
-    artist = obj["artist"].nullString
-  }
+        val latestMangas = result["releases"].array
+            .map { latestMangaItemParse(it.obj) }
 
-  override fun mangaDetailsParse(response: Response): SManga {
-    val document = response.asJsoup()
-    val isCompleted = document.select("div#series-data span.series-author i.complete-series").first() != null
-    val cGenre = document.select("div#series-data ul.tags li").joinToString { it!!.text() }
+        val page = response.request().url().queryParameter("page")!!.toInt()
 
-    val seriesAuthor = if (isCompleted) {
-      document.select("div#series-data span.series-author").first()!!.nextSibling().toString().substringBeforeLast("+")
-    } else {
-      document.select("div#series-data span.series-author").first()!!.text().substringBeforeLast("+")
+        return MangasPage(latestMangas, page < 5)
     }
 
-    val authors = seriesAuthor.split("&")
+    private fun latestMangaItemParse(obj: JsonObject) = SManga.create().apply {
+        title = obj["name"].string
+        thumbnail_url = obj["image"].string
+        url = obj["link"].string
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val form = FormBody.Builder()
+            .add("search", query)
+            .build()
+
+        return POST("$baseUrl/lib/search/series.json", headers, form)
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val result = response.asJsonObject()
+
+        // If "series" have boolean false value, then it doesn't have results.
+        if (!result["series"]!!.isJsonArray)
+            return MangasPage(emptyList(), false)
+
+        val searchMangas = result["series"].array
+            .map { searchMangaItemParse(it.obj) }
+
+        return MangasPage(searchMangas, false)
+    }
+
+    private fun searchMangaItemParse(obj: JsonObject) = SManga.create().apply {
+        title = obj["name"].string
+        thumbnail_url = obj["cover"].string
+        url = obj["link"].string
+        author = obj["author"].string
+        artist = obj["artist"].string
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        val newHeaders = Headers.Builder()
+            .add("User-Agent", USER_AGENT)
+            .add("Referer", baseUrl)
+            .build()
+
+        return GET(baseUrl + manga.url, newHeaders)
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        val document = response.asJsoup()
+
+        val seriesData = document.select("#series-data")
+
+        val isCompleted = seriesData.select("span.series-author i.complete-series").first() != null
+
+        // Check if the manga was removed by the publisher.
+        val seriesBlocked = document.select("div.series-blocked-img").first()
+
+        val seriesAuthors = document.select("div#series-data span.series-author").text()
+            .substringAfter("Completo")
+            .substringBefore("+")
+            .split("&")
             .map { it.trim() }
 
-    val cAuthor = authors.filter { !it.contains("(Arte)") }
-            .map { author ->
-              if (author.contains(", ")) {
-                val authorSplit = author.split(", ")
-                authorSplit[1] + " " + authorSplit[0]
-              } else {
-                author
-              }
+        val seriesAuthor = seriesAuthors
+            .filter { !it.contains("(Arte)") }
+            .joinToString("; ") {
+                it.split(", ")
+                    .reversed()
+                    .joinToString(" ")
             }
 
-    val cArtist = authors.filter { it.contains("(Arte)") }
-            .map { it.replace("\\(Arte\\)".toRegex(), "").trim() }
-            .map { author ->
-              if (author.contains(", ")) {
-                val authorSplit = author.split(", ")
-                authorSplit[1] + " " + authorSplit[0]
-              } else {
-                author
-              }
-            }
+        return SManga.create().apply {
+            thumbnail_url = seriesData.select("div.series-img > div.cover > img").attr("src")
+            description = seriesData.select("span.series-desc").text()
 
-    // Check if the manga was removed by the publisher.
-    val cStatus = if (document.select("div.series-blocked-img").first() == null) {
-      if (isCompleted) SManga.COMPLETED else SManga.ONGOING
-    } else {
-      SManga.LICENSED
+            status = parseStatus(seriesBlocked, isCompleted)
+            author = seriesAuthor
+            artist = seriesAuthors.filter { it.contains("(Arte)") }
+                .map { it.replace("\\(Arte\\)".toRegex(), "").trim() }
+                .joinToString("; ") {
+                    it.split(", ")
+                        .reversed()
+                        .joinToString(" ")
+                }
+                .ifEmpty { seriesAuthor }
+            genre = seriesData.select("div#series-data ul.tags li")
+                .joinToString { it.text() }
+        }
     }
 
-    return SManga.create().apply {
-      genre = cGenre
-      status = cStatus
-      description = document.select("div#series-data span.series-desc").first()?.text()
-      author = cAuthor.joinToString("; ")
-      artist = if (cArtist.isEmpty()) cAuthor.joinToString("; ") else cArtist.joinToString("; ")
+    private fun parseStatus(seriesBlocked: Element?, isCompleted: Boolean) = when {
+        seriesBlocked != null -> SManga.LICENSED
+        isCompleted -> SManga.COMPLETED
+        else -> SManga.ONGOING
     }
-  }
 
-  // Need to override because the chapter API is paginated.
-  // Adapted from:
-  // https://stackoverflow.com/questions/35254323/rxjs-observable-pagination
-  // https://stackoverflow.com/questions/40529232/angular-2-http-observables-and-recursive-requests
-  override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-    return if (manga.status != SManga.LICENSED) {
-      fetchChapterList(manga, 1)
-    } else {
-      Observable.error(Exception("Licensed - No chapters to show"))
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        if (manga.status != SManga.LICENSED)
+            return super.fetchChapterList(manga)
+
+        return Observable.error(Exception("Mangá licenciado e removido pela editora."))
     }
-  }
 
-  private fun fetchChapterList(manga: SManga, page: Int,
-                               pastChapters: List<SChapter> = emptyList()): Observable<List<SChapter>> {
-    val chapters = pastChapters.toMutableList()
-    return fetchChapterListPage(manga, page)
-            .flatMap {
-              chapters += it
-              if (it.isEmpty()) {
-                Observable.just(chapters)
-              } else {
-                fetchChapterList(manga, page + 1, chapters)
-              }
-            }
-  }
+    override fun chapterListRequest(manga: SManga): Request {
+        val id = manga.url.substringAfterLast("/")
 
-  private fun fetchChapterListPage(manga: SManga, page: Int): Observable<List<SChapter>> {
-    return client.newCall(chapterListRequest(manga, page))
-            .asObservableSuccess()
-            .map { response ->
-              chapterListParse(response)
-            }
-  }
-
-  override fun chapterListRequest(manga: SManga): Request {
-    return chapterListRequest(manga, 1)
-  }
-
-  private fun chapterListRequest(manga: SManga, page: Int): Request {
-    val id = manga.url.substringAfterLast("/")
-    return GET("$baseUrl/series/chapters_list.json?page=$page&id_serie=$id", catalogHeaders)
-  }
-
-  override fun chapterListParse(response: Response): List<SChapter> {
-    val result = jsonParser.parse(response.body()!!.string()).obj
-
-    if (!result["chapters"]!!.isJsonArray)
-      return emptyList()
-
-    return result.getAsJsonArray("chapters")?.map {
-      chapterListItemParse(it.obj)
-    } ?: emptyList()
-  }
-
-  private fun chapterListItemParse(obj: JsonObject): SChapter {
-    val scan = obj["releases"]!!.asJsonObject!!.entrySet().first().value.obj
-    val cName = obj["chapter_name"]!!.asString
-
-    return SChapter.create().apply {
-      name = if (cName == "") "Capítulo " + obj["number"]!!.asString else cName
-      date_upload = parseChapterDate(obj["date"].nullString)
-      scanlator = scan["scanlators"]!!.asJsonArray.get(0)!!.asJsonObject["name"].nullString
-      url = scan["link"]!!.nullString ?: ""
-      chapter_number = obj["number"]!!.asString.toFloatOrNull() ?: "1".toFloat()
+        return chapterListRequestPaginated(manga.url, id, 1)
     }
-  }
 
-  private fun parseChapterDate(date: String?) : Long {
-    return try {
-      SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date).time
-    } catch (e: ParseException) {
-      0L
+    private fun chapterListRequestPaginated(mangaUrl: String, id: String, page: Int): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", baseUrl + mangaUrl)
+            .build()
+
+        return GET("$baseUrl/series/chapters_list.json?page=$page&id_serie=$id", newHeaders)
     }
-  }
 
-  override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-    return client.newCall(pageListRequest(chapter))
-            .asObservableSuccess()
-            .flatMap { response ->
-              val token = getReaderToken(response)
-              return@flatMap if (token == "")
-                Observable.error(Exception("Licensed - No chapter to show"))
-              else fetchPageListApi(chapter, token)
-            }
-  }
+    override fun chapterListParse(response: Response): List<SChapter> {
+        var result = response.asJsonObject()
 
-  private fun fetchPageListApi(chapter: SChapter, token: String): Observable<List<Page>> {
-    val id = "\\/(\\d+)\\/capitulo".toRegex().find(chapter.url)?.groupValues?.get(1) ?: ""
-    return client.newCall(pageListApiRequest(id, token))
-            .asObservableSuccess()
-            .map { response ->
-              pageListParse(response)
-            }
-  }
+        if (!result["chapters"]!!.isJsonArray)
+            return emptyList()
 
-  private fun pageListApiRequest(id: String, token: String): Request {
-    return GET("$baseUrl/leitor/pages/$id.json?key=$token", catalogHeaders)
-  }
+        val mangaUrl = response.request().header("Referer")!!
+        val mangaId = mangaUrl.substringAfterLast("/")
+        var page = 1
 
-  override fun pageListParse(response: Response): List<Page> {
-    val result = jsonParser.parse(response.body()!!.string()).obj
+        val chapters = mutableListOf<SChapter>()
 
-    return result["images"]!!.asJsonArray
-            .mapIndexed { i, obj ->
-              Page(i, obj.asString, obj.asString)
-            }
-  }
+        while (result["chapters"]!!.isJsonArray) {
+            chapters += result["chapters"].array
+                .map { chapterListItemParse(it.obj) }
+                .toMutableList()
 
-  override fun fetchImageUrl(page: Page): Observable<String> {
-    return Observable.just(page.imageUrl!!)
-  }
+            val newRequest = chapterListRequestPaginated(mangaUrl, mangaId, ++page)
+            result = client.newCall(newRequest).execute().asJsonObject()
+        }
 
-  override fun imageUrlParse(response: Response): String = ""
-
-  private fun getReaderToken(response: Response): String {
-    val document = response.asJsoup()
-    // The pages API needs the token provided in the reader script.
-    val scriptSrc = document.select("script[src*=\"reader.min.js\"]")?.first()?.attr("src") ?: ""
-    return "token=(.*)&id".toRegex().find(scriptSrc)?.groupValues?.get(1) ?: ""
-  }
-
-  companion object {
-    val jsonParser by lazy {
-      JsonParser()
+        return chapters
     }
-  }
+
+    private fun chapterListItemParse(obj: JsonObject): SChapter {
+        val scan = obj["releases"].obj.entrySet().first().value.obj
+        val chapterName = obj["chapter_name"]!!.string
+
+        return SChapter.create().apply {
+            name = "Cap. ${obj["number"].string}" + (if (chapterName == "") "" else " - $chapterName")
+            date_upload = parseChapterDate(obj["date_created"].string.substringBefore("T"))
+            scanlator = scan["scanlators"]!!.array
+                .joinToString { it.obj["name"].string }
+            url = scan["link"].string
+            chapter_number = obj["number"].string.toFloatOrNull() ?: 0f
+        }
+    }
+
+    private fun parseChapterDate(date: String?) : Long {
+        return try {
+            SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).parse(date).time
+        } catch (e: ParseException) {
+            0L
+        }
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        val newHeaders = Headers.Builder()
+            .add("User-Agent", USER_AGENT)
+            .add("Referer", baseUrl + chapter.url)
+            .build()
+
+        return GET(baseUrl + chapter.url, newHeaders)
+    }
+
+    private fun pageListApiRequest(chapterUrl: String, token: String): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", chapterUrl)
+            .build()
+
+        val id = chapterUrl
+            .substringBeforeLast("/")
+            .substringAfterLast("/")
+
+        return GET("$baseUrl/leitor/pages/$id.json?key=$token", newHeaders)
+    }
+
+    private fun pageListIntercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val result = chain.proceed(request)
+
+        if (!request.url().toString().contains("capitulo-"))
+            return result
+
+        val document = result.asJsoup()
+        val readerSrc = document.select("script[src*=\"reader.min.js\"]")
+            ?.attr("src") ?: ""
+
+        val token = TOKEN_REGEX.find(readerSrc)?.groupValues?.get(1) ?: ""
+
+        if (token.isEmpty())
+            throw Exception("Mangá licenciado e removido pela editora.")
+
+        return chain.proceed(pageListApiRequest(request.url().toString(), token))
+    }
+
+    override fun pageListParse(response: Response): List<Page> {
+        val result = response.asJsonObject()
+
+        return result["images"].array
+            .filter { it.string.startsWith("http") }
+            .mapIndexed { i, obj -> Page(i, "", obj.string)}
+    }
+
+    override fun fetchImageUrl(page: Page): Observable<String> {
+        return Observable.just(page.imageUrl!!)
+    }
+
+    override fun imageUrlParse(response: Response): String = ""
+
+    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
+
+    companion object {
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+
+        private val TOKEN_REGEX = "token=(.*)&id".toRegex()
+
+        private val JSON_PARSER by lazy { JsonParser() }
+    }
 }

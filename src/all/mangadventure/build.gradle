@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: MangAdventure'
+    pkgNameSuffix = 'all.mangadventure'
+    extClass = '.MangAdventureFactory'
+    extVersionCode = 3
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

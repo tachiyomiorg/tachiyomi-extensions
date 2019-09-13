@@ -4,9 +4,9 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: E-Hentai'
     pkgNameSuffix = 'all.ehentai'
-    extClass = '.EHJapanese; .EHEnglish; .EHChinese; .EHDutch; .EHFrench; .EHGerman; .EHHungarian; .EHItalian; .EHKorean; .EHPolish; .EHPolish; .EHPortuguese; .EHRussian; .EHSpanish; .EHThai; .EHVietnamese; .EHSpeechless; .EHOther'
-    extVersionCode = 1
-    libVersion = '1.0'
+    extClass = '.EHJapanese; .EHEnglish; .EHChinese; .EHDutch; .EHFrench; .EHGerman; .EHHungarian; .EHItalian; .EHKorean; .EHPolish; .EHPortuguese; .EHRussian; .EHSpanish; .EHThai; .EHVietnamese; .EHSpeechless; .EHOther'
+    extVersionCode = 6
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

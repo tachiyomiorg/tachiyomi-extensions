@@ -26,11 +26,13 @@ class Readmangatoday : ParsedHttpSource() {
     override val client: OkHttpClient get() = network.cloudflareClient
 
     /**
-     * Search only returns data with this set
+     * Search only returns data with user-agent and x-requeted-with set
+     * Referer needed due to some chapters linking images from other domains
      */
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
         add("X-Requested-With", "XMLHttpRequest")
+        add("Referer", baseUrl)
     }
 
     override fun popularMangaRequest(page: Int): Request {
@@ -51,6 +53,7 @@ class Readmangatoday : ParsedHttpSource() {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
         }
+        manga.thumbnail_url = element.select("img").attr("src")
         return manga
     }
 
@@ -105,7 +108,7 @@ class Readmangatoday : ParsedHttpSource() {
         manga.status = detailElement.select("dl.dl-horizontal > dd:eq(3)").first()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = detailElement.select("img.img-responsive").first()?.attr("src")
 
-        var genres = mutableListOf<String>()
+        val genres = mutableListOf<String>()
         genreElement?.forEach { genres.add(it.text()) }
         manga.genre = genres.joinToString(", ")
 
@@ -135,38 +138,43 @@ class Readmangatoday : ParsedHttpSource() {
 
         if (dateWords.size == 3) {
             val timeAgo = Integer.parseInt(dateWords[0])
-            val date: Calendar = Calendar.getInstance()
+            val calendar = Calendar.getInstance()
 
             if (dateWords[1].contains("Minute")) {
-                date.add(Calendar.MINUTE, -timeAgo)
+                calendar.add(Calendar.MINUTE, -timeAgo)
             } else if (dateWords[1].contains("Hour")) {
-                date.add(Calendar.HOUR_OF_DAY, -timeAgo)
+                calendar.add(Calendar.HOUR_OF_DAY, -timeAgo)
             } else if (dateWords[1].contains("Day")) {
-                date.add(Calendar.DAY_OF_YEAR, -timeAgo)
+                calendar.add(Calendar.DAY_OF_YEAR, -timeAgo)
             } else if (dateWords[1].contains("Week")) {
-                date.add(Calendar.WEEK_OF_YEAR, -timeAgo)
+                calendar.add(Calendar.WEEK_OF_YEAR, -timeAgo)
             } else if (dateWords[1].contains("Month")) {
-                date.add(Calendar.MONTH, -timeAgo)
+                calendar.add(Calendar.MONTH, -timeAgo)
             } else if (dateWords[1].contains("Year")) {
-                date.add(Calendar.YEAR, -timeAgo)
+                calendar.add(Calendar.YEAR, -timeAgo)
             }
 
-            return date.timeInMillis
+            return calendar.timeInMillis
         }
 
         return 0L
     }
 
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET("$baseUrl/${chapter.url}/all-pages", headers)
+    }
+
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        document.select("ul.list-switcher-2 > li > select.jump-menu").first().getElementsByTag("option").forEach {
-            pages.add(Page(pages.size, it.attr("value")))
+
+        document.select("div.content-list img").forEachIndexed{ i, img ->
+            pages.add(Page(i, "", img.attr("abs:src")))
         }
-        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
+
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = document.select("#chapter_img").first().attr("src")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class Status : Filter.TriState("Completed")
     private class Genre(name: String, val id: Int) : Filter.TriState(name)

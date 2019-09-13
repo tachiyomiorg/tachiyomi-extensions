@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Naver Comic'
+    pkgNameSuffix = 'ko.navercomic'
+    extClass = '.NaverComicFactory'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

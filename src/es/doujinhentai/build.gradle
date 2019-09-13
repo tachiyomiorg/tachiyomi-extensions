@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: DoujinHentai'
+    pkgNameSuffix = 'es.doujinhentai'
+    extClass = '.DoujinHentai'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

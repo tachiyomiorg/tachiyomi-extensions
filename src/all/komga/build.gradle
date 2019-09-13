@@ -1,0 +1,19 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Komga'
+    pkgNameSuffix = 'all.komga'
+    extClass = '.Komga'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':preference-stub')
+    compileOnly 'com.google.code.gson:gson:2.8.5'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
+}
+
+apply from: "$rootDir/common.gradle"

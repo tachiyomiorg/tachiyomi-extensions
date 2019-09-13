@@ -25,7 +25,6 @@ class Manganelo : ParsedHttpSource() {
     override fun popularMangaSelector() = "div.truyen-list > div.list-truyen-item-wrap"
 
     override fun popularMangaRequest(page: Int): Request {
-
         return GET("$baseUrl/manga_list?type=topview&category=all&state=all&page=$page")
     }
 
@@ -33,16 +32,6 @@ class Manganelo : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request {
         return GET("$baseUrl/manga_list?type=latest&category=all&state=all&page=$page")
-    }
-
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        val mangas = document.select(latestUpdatesSelector()).map { element ->
-            latestUpdatesFromElement(element)
-        }
-
-        return MangasPage(mangas, hasNextPage(document))
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -55,74 +44,36 @@ class Manganelo : ParsedHttpSource() {
         return manga
     }
 
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        val mangas = document.select(popularMangaSelector()).map { element ->
-            popularMangaFromElement(element)
-        }
-
-        return MangasPage(mangas, hasNextPage(document))
-    }
-
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+    override fun popularMangaNextPageSelector() = "a.page_select + a:not(.page_last)"
 
-    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //site ignore everything after the first word
+        // Site ignores everything after the first word
         val substringBefore = query.replace(" ", "_").replace(",", "_").replace(":", "_")
-        val url = "$baseUrl/search/$substringBefore/$page"
+        val url = "$baseUrl/search/$substringBefore?page=$page"
         return GET(url, headers)
     }
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
+    override fun searchMangaSelector() = ".panel_story_list .story_item"
 
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-        val mangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
-        }
-
-        return MangasPage(mangas, false)
-    }
-
-    private fun hasNextPage(document: Document): Boolean {
-
-        val currentPage = document.select("div.group-page a.pageselect").first().text()
-        val lastPage = document.select("div.group-page a.page.page-blue")[1].text().substringAfter("Last(").substringBefore(")")
-
-        return currentPage != lastPage
-    }
-
-
-    override fun searchMangaSelector() = "div.daily-update-item"
-
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("a").first()?.let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        return manga
-    }
-
-    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.manga-info-top").first()
 
-
         val manga = SManga.create()
         manga.title = infoElement.select("h1").first().text()
-        manga.author = infoElement.select("div.manga-info-top li").find { it -> it.text().startsWith("Author") }?.text()?.substringAfter(") :")
-        val status = infoElement.select("div.manga-info-top li").find { it -> it.text().startsWith("Status") }?.text()?.substringAfter("Status :")
+        manga.author = infoElement.select("div.manga-info-top li").find { it.text().startsWith("Author") }?.text()?.substringAfter(") :")
+        val status = infoElement.select("div.manga-info-top li").find { it.text().startsWith("Status") }?.text()?.substringAfter("Status :")
         manga.status = parseStatus(status)
 
         val genres = mutableListOf<String>()
-        infoElement.select("div.manga-info-top li").find { it -> it.text().startsWith("Genres :") }?.select("a")?.forEach { it -> genres.add(it.text()) }
+        infoElement.select("div.manga-info-top li").find { it.text().startsWith("Genres :") }?.select("a")?.forEach { genres.add(it.text()) }
         manga.genre = genres.joinToString()
         manga.description = document.select("div#noidungm").text()
         manga.thumbnail_url = document.select("div.manga-info-pic").first().select("img").first().attr("src")
@@ -148,7 +99,6 @@ class Manganelo : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-
         val pages = mutableListOf<Page>()
 
         document.select("div#vungdoc img")?.forEach {

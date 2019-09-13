@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Nude-Moon'
+    pkgNameSuffix = 'ru.nudemoon'
+    extClass = '.Nudemoon'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

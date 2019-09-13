@@ -5,8 +5,12 @@ ext {
     appName = 'Tachiyomi: Mangachan'
     pkgNameSuffix = 'ru.mangachan'
     extClass = '.Mangachan'
-    extVersionCode = 6
+    extVersionCode = 8
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

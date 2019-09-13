@@ -1,10 +1,13 @@
 package eu.kanade.tachiyomi.extension.en.mangasee
 
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
-import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -18,7 +21,7 @@ class Mangasee : ParsedHttpSource() {
 
     override val name = "Mangasee"
 
-    override val baseUrl = "http://mangaseeonline.us"
+    override val baseUrl = "https://mangaseeonline.us"
 
     override val lang = "en"
 
@@ -28,16 +31,11 @@ class Mangasee : ParsedHttpSource() {
 
     private val indexPattern = Pattern.compile("-index-(.*?)-")
 
-    private val catalogHeaders = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-        add("Host", "mangaseeonline.us")
-    }.build()
-
     override fun popularMangaSelector() = "div.requested > div.row"
 
     override fun popularMangaRequest(page: Int): Request {
         val (body, requestUrl) = convertQueryToPost(page, "$baseUrl/search/request.php?sortBy=popularity&sortOrder=descending")
-        return POST(requestUrl, catalogHeaders, body.build())
+        return POST(requestUrl, headers, body.build())
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -55,7 +53,7 @@ class Mangasee : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search/request.php")!!.newBuilder()
-        if (!query.isEmpty()) url.addQueryParameter("keyword", query)
+        if (query.isNotEmpty()) url.addQueryParameter("keyword", query)
         val genres = mutableListOf<String>()
         val genresNo = mutableListOf<String>()
         for (filter in if (filters.isEmpty()) getFilterList() else filters) {
@@ -80,7 +78,7 @@ class Mangasee : ParsedHttpSource() {
         if (genresNo.isNotEmpty()) url.addQueryParameter("genreNo", genresNo.joinToString(","))
 
         val (body, requestUrl) = convertQueryToPost(page, url.toString())
-        return POST(requestUrl, catalogHeaders, body.build())
+        return POST(requestUrl, headers, body.build())
     }
 
     private fun convertQueryToPost(page: Int, url: String): Pair<FormBody.Builder, String> {
@@ -170,7 +168,7 @@ class Mangasee : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request {
         val url = "$baseUrl/home/latest.request.php"
         val (body, requestUrl) = convertQueryToPost(page, url)
-        return POST(requestUrl, catalogHeaders, body.build())
+        return POST(requestUrl, headers, body.build())
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
@@ -205,8 +203,8 @@ class Mangasee : ParsedHttpSource() {
             GenreList(getGenreList())
     )
 
-    // [...document.querySelectorAll("label.triStateCheckBox input")].map(el => `Filter("${el.getAttribute('name')}", "${el.nextSibling.textContent.trim()}")`).join(',\n')
-    // http://mangasee.co/advanced-search/
+    // [...document.querySelectorAll(".genres .list-group-item")].map(el => `Genre("${el.getAttribute('value')}")`).join(',\n')
+    // https://mangaseeonline.us/search/
     private fun getGenreList() = listOf(
             Genre("Action"),
             Genre("Adult"),
@@ -221,6 +219,7 @@ class Mangasee : ParsedHttpSource() {
             Genre("Hentai"),
             Genre("Historical"),
             Genre("Horror"),
+            Genre("Isekai"),
             Genre("Josei"),
             Genre("Lolicon"),
             Genre("Martial Arts"),
@@ -232,6 +231,7 @@ class Mangasee : ParsedHttpSource() {
             Genre("School Life"),
             Genre("Sci-fi"),
             Genre("Seinen"),
+            Genre("Seinen  Supernatural"),
             Genre("Shotacon"),
             Genre("Shoujo"),
             Genre("Shoujo Ai"),
@@ -239,6 +239,7 @@ class Mangasee : ParsedHttpSource() {
             Genre("Shounen Ai"),
             Genre("Slice of Life"),
             Genre("Smut"),
+            Genre("Sport"),
             Genre("Sports"),
             Genre("Supernatural"),
             Genre("Tragedy"),
