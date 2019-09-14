@@ -21,7 +21,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override val name = "Union Mangás"
 
-    override val baseUrl = "https://unionmangas.top"
+    override val baseUrl = "https://unionleitor.top"
 
     override val lang = "pt"
 
