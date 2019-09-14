@@ -9,6 +9,7 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
+import android.util.Base64
 
 class Rawlh : ParsedHttpSource() {
 
@@ -149,10 +150,16 @@ class Rawlh : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val key = document.select("script:containsData(atob)").html().
+            substringAfter("var imgSrc = $(this).attr('").substringBefore("');")
         val pages = mutableListOf<Page>()
         document.select("img.chapter-img").forEach {
-            val url = it.attr("src")
-            if (url != "") {
+            val encodedUrl = it.attr(key)
+            if (encodedUrl != "") {
+                val decodedUrl = Base64.decode(encodedUrl,Base64.DEFAULT)
+                pages.add(Page(pages.size, "", String(decodedUrl)))
+            }else{
+                val url = it.attr("src")
                 pages.add(Page(pages.size, "", url))
             }
         }
