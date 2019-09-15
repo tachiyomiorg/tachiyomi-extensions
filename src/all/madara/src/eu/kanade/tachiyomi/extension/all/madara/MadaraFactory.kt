@@ -43,8 +43,9 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ManyToon(),
         ChibiManga(),
-        ManhwahentaiSite(),
-        ZinManga()
+        ToomicsMe(),
+        ZinManga(),
+        ManwahhentaiMe()
     )
 }
 
@@ -150,7 +151,6 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomics/page/$page/?m_orderby=latest", headers)
     override fun popularMangaSelector() = "div.page-item-detail"
     override fun latestUpdatesSelector() = "div.page-item-detail"
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
     override fun getFilterList() = FilterList()
 }
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en") {
@@ -162,10 +162,10 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
-class ManhwahentaiSite : Madara("Manhwahentai.site", "https://manhwahentai.site/", "en",
-    dateFormat = SimpleDateFormat("dd'th' MMMM yyyy", Locale.US)) {
+class ToomicsMe : Madara("Toomics.me", "https://app.toomics.me/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
+class ManwahhentaiMe : Madara("Manwahhentai.me", "https://manhwahentai.me", "en")
