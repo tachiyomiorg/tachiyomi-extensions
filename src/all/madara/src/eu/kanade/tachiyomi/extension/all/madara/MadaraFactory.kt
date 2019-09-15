@@ -45,7 +45,7 @@ class MadaraFactory : SourceFactory {
         ChibiManga(),
         ToomicsMe(),
         ZinManga(),
-        ManwahhentaiMe()
+        ManwahentaiMe()
     )
 }
 
@@ -168,4 +168,4 @@ class ToomicsMe : Madara("Toomics.me", "https://app.toomics.me/", "en") {
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
-class ManwahhentaiMe : Madara("Manwahhentai.me", "https://manhwahentai.me", "en")
+class ManwahentaiMe : Madara("Manwahentai.me", "https://manhwahentai.me", "en")
