@@ -191,24 +191,28 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
-    //Begin Filter Code
+    //Filter Parsing, grabs home page as document and filters out Genres, Popular Tags, and Catagorys
+    private val filterdoc = OkHttpClient().newCall(GET("$baseUrl", headers)).execute().asJsoup()
+    private val genresarray = filterdoc.select(".tagcloud a[href*=/genre/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
+    private val poptagarray = filterdoc.select(".tagcloud a[href*=/tag/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
+    private val cattagarray = filterdoc.select(".level-0").map { Pair(it.attr("value"), it.text())}.toTypedArray()
+    
+    //Generates the filter lists for app
     override fun getFilterList(): FilterList {
         val filterList = FilterList(
             //MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
-            GenreFilter(),
-            TagFilter(),
-            CatFilter()
+            GenreFilter(genresarray),
+            TagFilter(poptagarray),
+            CatFilter(cattagarray)
         )
         return filterList
     }
 
-    private class GenreFilter() : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("","Any"),*GENRES))
-    private class TagFilter() : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("","Any"),*POPTAG))
-    private class CatFilter() : UriSelectFilterQuery("Categories", "cat", arrayOf(Pair("","Any"),*CATID))
-
-
+    private class GenreFilter(GENRES: Array<Pair<String, String>>) : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("","Any"),*GENRES))
+    private class TagFilter(POPTAG: Array<Pair<String, String>>) : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("","Any"),*POPTAG))
+    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterQuery("Categories", "cat", arrayOf(Pair("","Any"), *CATID))
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
@@ -241,12 +245,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
      */
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
-    }
-    companion object {
-        private val document = Jsoup.connect("https://myreadingmanga.info").get()
-        private val GENRES = document.select(".tagcloud a[href*=/genre/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
-        private val POPTAG = document.select(".tagcloud a[href*=/tag/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
-        private val CATID = document.select(".level-0").map { Pair(it.attr("value"), it.text())}.toTypedArray()
     }
     
 }
