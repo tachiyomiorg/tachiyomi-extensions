@@ -9,7 +9,7 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 
-open class WebtoonsDefault(override val lang: String) : Webtoons(lang) {
+open class WebtoonsDefault(override val lang: String, override val langCode: String = lang) : Webtoons(lang, langCode) {
 
     override fun chapterListSelector() = "ul#_episodeList > li[id*=episode]"
 
@@ -26,8 +26,12 @@ open class WebtoonsDefault(override val lang: String) : Webtoons(lang) {
         if (element.select(".ico_bgm").isNotEmpty()) {
             chapter.name += " ♫"
         }
-        chapter.date_upload = element.select("a > div.row > div.info > p.date").text()?.let { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(it).time } ?: 0
+        chapter.date_upload = element.select("a > div.row > div.info > p.date").text()?.let { chapterParseDate(it) } ?: 0
         return chapter
+    }
+
+    open fun chapterParseDate(date: String): Long {
+        return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
     }
 
     override fun chapterListRequest(manga: SManga) = GET("http://m.webtoons.com" + manga.url, mobileHeaders)
