@@ -120,7 +120,8 @@ class GoldenMangas : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = document.select("div.col-sm-12[id^='capitulos_images'] img[pag]")
+        val chapImages = document.select("div.col-sm-12[id^='capitulos_images']").first()
+        val pages = chapImages.select("img[pag]")
 
         return pages
             .mapIndexed { i, element -> Page(i, "", baseUrl + element.attr("src"))}
