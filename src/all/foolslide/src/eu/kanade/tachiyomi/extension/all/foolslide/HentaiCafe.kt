@@ -20,8 +20,12 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         val urlElement = element.select(".entry-thumb").first()
-        setUrlWithoutDomain(urlElement.attr("href"))
-        thumbnail_url = urlElement.child(0).attr("src")
+        if (urlElement != null) {
+            setUrlWithoutDomain(urlElement.attr("href"))
+            thumbnail_url = urlElement.child(0).attr("src")
+        } else {
+            setUrlWithoutDomain(element.select(".entry-title a").attr("href"))
+        }
         title = element.select(".entry-title").text().trim()
     }
 
@@ -35,13 +39,17 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
         title = document.select(".entry-title").text()
         val contentElement = document.select(".entry-content").first()
         thumbnail_url = contentElement.child(0).child(0).attr("src")
-
-        fun filterableTagsOfType(type: String) = contentElement.select("a")
-                .filter { "$baseUrl/$type/" in it.attr("href") }
-                .joinToString { it.text() }
-
-        genre = filterableTagsOfType("tag")
-        artist = filterableTagsOfType("artist")
+        val genres = mutableListOf<String>()
+        document.select(".content a[rel=tag]").forEach { element ->
+            if (!element.attr("href").contains("artist"))
+                genres.add(element.text())
+            else {
+                artist = element.text()
+                author = element.text()
+            }
+        }
+        status = SManga.COMPLETED
+        genre = genres.joinToString(", ")
     }
 
     // Note that the reader URL cannot be deduced from the manga URL all the time which is why
@@ -51,7 +59,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
             SChapter.create().apply {
                 setUrlWithoutDomain(response.asJsoup().select("[title=Read]").attr("href"))
                 name = "Chapter"
-                chapter_number = 0.0f
+                chapter_number = 1f
             }
     )
 
