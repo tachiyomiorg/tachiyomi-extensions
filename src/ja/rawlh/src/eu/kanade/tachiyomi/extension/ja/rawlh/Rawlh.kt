@@ -9,7 +9,6 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
-import android.util.Base64
 
 class Rawlh : ParsedHttpSource() {
 
@@ -82,11 +81,17 @@ class Rawlh : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         val infoElement = document.select("div.row").first()
-        manga.author = infoElement.select("small a.btn.btn-xs.btn-info").first()?.text()
-        manga.genre = infoElement.select("ul.manga-info li:nth-child(3) small").first()?.text()
-        manga.status = parseStatus(infoElement.select("a.btn.btn-xs.btn-success").first().text())
+        val genres = mutableListOf<String>()
+        infoElement.select("li:contains(genre) a").forEach { element ->
+            val genre = element.text()
+            genres.add(genre)
+        }
 
-        manga.description = document.select("div.row > p").first()?.text()
+        manga.author = infoElement.select("li:contains(author) a").text()
+        manga.genre = genres.joinToString(", ")
+        manga.status = parseStatus(infoElement.select("li:contains(status) a").first().text())
+
+        manga.description = document.select("div.row:contains(description) > p").text()
         val imgUrl = document.select("img.thumbnail").first()?.attr("src")
         if (imgUrl!!.startsWith("app/")) {
             manga.thumbnail_url = "$baseUrl/$imgUrl"
@@ -98,7 +103,7 @@ class Rawlh : ParsedHttpSource() {
 
     private fun parseStatus(element: String): Int = when {
         element.contains("Completed") -> SManga.COMPLETED
-        element.contains("Ongoing") -> SManga.ONGOING
+        element.contains("On Going") -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }
 
@@ -150,17 +155,14 @@ class Rawlh : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val key = document.select("script:containsData(atob)").html().
-            substringAfter("var imgSrc = $(this).attr('").substringBefore("');")
         val pages = mutableListOf<Page>()
         document.select("img.chapter-img").forEach {
-            val encodedUrl = it.attr(key)
-            if (encodedUrl != "") {
-                val decodedUrl = Base64.decode(encodedUrl,Base64.DEFAULT)
-                pages.add(Page(pages.size, "", String(decodedUrl)))
+            val dataSrc = it.attr("data-src")
+            if (dataSrc != "") {
+                pages.add(Page(pages.size, "", dataSrc))
             }else{
-                val url = it.attr("src")
-                pages.add(Page(pages.size, "", url))
+                val src = it.attr("src")
+                pages.add(Page(pages.size, "", src))
             }
         }
         return pages
@@ -178,7 +180,7 @@ class Rawlh : ParsedHttpSource() {
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
-    private class Genre(name: String, val id: String = name.replace(' ', '+')) : Filter.TriState(name)
+    private class Genre(name: String) : Filter.TriState(name)
 
     // TODO: Country
     override fun getFilterList() = FilterList(

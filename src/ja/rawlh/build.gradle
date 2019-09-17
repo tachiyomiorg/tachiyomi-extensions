@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: RawLH'
     pkgNameSuffix = 'ja.rawlh'
     extClass = '.Rawlh'
-    extVersionCode = 10
+    extVersionCode = 11
     libVersion = '1.2'
 }
 
