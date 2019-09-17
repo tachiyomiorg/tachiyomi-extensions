@@ -10,7 +10,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
 
-open class WebtoonsTranslate(override val lang: String, private val langCode: String) : Webtoons(lang) {
+open class WebtoonsTranslate(override val lang: String, private val translationLangCode: String) : Webtoons(lang) {
 
     private val apiBaseUrl = "https://global.apis.naver.com"
 
@@ -29,7 +29,7 @@ open class WebtoonsTranslate(override val lang: String, private val langCode: St
         val titleRegex = Regex("title_?[nN]o=([0-9]*)")
         val titleNo = titleRegex.find(original)!!.groupValues[1].toInt()
 
-        val chapterUrl = String.format("$apiBaseUrl$chapterListUrlPattern", titleNo, langCode)
+        val chapterUrl = String.format("$apiBaseUrl$chapterListUrlPattern", titleNo, translationLangCode)
         return GET(chapterUrl, headers)
     }
 
