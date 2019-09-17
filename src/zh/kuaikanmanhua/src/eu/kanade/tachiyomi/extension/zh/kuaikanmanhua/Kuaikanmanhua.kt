@@ -20,7 +20,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
 
     override val baseUrl = "https://www.kuaikanmanhua.com"
 
-    override val lang = "en"
+    override val lang = "zh"
 
     override val supportsLatest = true
 
@@ -176,12 +176,12 @@ class Kuaikanmanhua : ParsedHttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Header("注意：不影響按標題搜索"),
         StatusFilter(),
         GenreFilter()
     )
 
-    private class GenreFilter: UriPartFilter("Genre", arrayOf(
+    private class GenreFilter: UriPartFilter("题材", arrayOf(
         Pair("全部","0"),
         Pair("恋爱", "20"),
         Pair("古风", "46"),
@@ -205,7 +205,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
         Pair("投稿", "76")
     ))
 
-    private class StatusFilter: UriPartFilter("Status", arrayOf(
+    private class StatusFilter: UriPartFilter("类别", arrayOf(
         Pair("全部", "1"),
         Pair("连载中", "2"),
         Pair("已完结", "3")
