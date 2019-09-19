@@ -111,20 +111,30 @@ class Tsumino: ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapterList = mutableListOf<SChapter>()
         val document = response.asJsoup()
-        val chapter = SChapter.create().apply {
-            name = "Chapter"
-            scanlator = getGroups(document)
-            chapter_number = 1f
-            date_upload = getDate(document)
-            setUrlWithoutDomain(response.request().url().encodedPath().replace("entry", "Read/Index"))
+        val collection = document.select(chapterListSelector())
+        if (collection.isNotEmpty()) {
+            return collection.map { element ->
+                SChapter.create().apply {
+                    name = element.text()
+                    scanlator = getGroups(document)
+                    setUrlWithoutDomain(element.attr("href").
+                        replace("entry", "Read/Index"))
+                }
+            }.reversed()
+        } else {
+            val chapter = SChapter.create().apply {
+                name = "Chapter"
+                scanlator = getGroups(document)
+                chapter_number = 1f
+                setUrlWithoutDomain(response.request().url().encodedPath().
+                    replace("entry", "Read/Index"))
+            }
+            chapterList.add(chapter)
+            return chapterList
         }
-
-        chapterList.add(chapter)
-
-        return chapterList
     }
 
-    override fun chapterListSelector() = "Not needed"
+    override fun chapterListSelector() = ".book-collection-table a"
 
     override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Not used")
 
