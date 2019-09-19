@@ -144,15 +144,39 @@ class Toonily: ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
-        chapter.date_upload = element.select("span.chapter-release-date i").last()?.text()?.let {
-            try {
-                SimpleDateFormat("MMMM dd, yyyy", Locale.US).parse(it).time
-            } catch (e: ParseException) {
-                SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(it).time
-            }
-
-        } ?: 0
+        val new = element.select(".c-new-tag img").attr("alt")
+        if (new.isNotEmpty())
+            chapter.date_upload = parseChapterDate(new)
+        else {
+            chapter.date_upload = element.select("span.chapter-release-date i").last()?.text()?.let {
+                try {
+                    SimpleDateFormat("MMMM dd, yyyy", Locale.US).parse(it).time
+                } catch (e: ParseException) {
+                    SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(it).time
+                }
+            } ?: 0
+        }
         return chapter
+    }
+
+
+    private fun parseChapterDate(date: String): Long {
+        val value = date.split(' ')[0].toInt()
+
+        return when {
+            "mins" in date -> Calendar.getInstance().apply {
+                add(Calendar.MINUTE, value * -1)
+            }.timeInMillis
+            "hours" in date -> Calendar.getInstance().apply {
+                add(Calendar.HOUR_OF_DAY, value * -1)
+            }.timeInMillis
+            "days" in date -> Calendar.getInstance().apply {
+                add(Calendar.DATE, value * -1)
+            }.timeInMillis
+            else -> {
+                return 0
+            }
+        }
     }
 
     override fun prepareNewChapter(chapter: SChapter, manga: SManga) {
