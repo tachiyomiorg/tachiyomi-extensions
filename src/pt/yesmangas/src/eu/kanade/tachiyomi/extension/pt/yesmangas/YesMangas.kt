@@ -7,6 +7,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -16,53 +18,56 @@ class YesMangas : ParsedHttpSource() {
 
     override val name = "YES Mangás"
 
-    override val baseUrl = "https://yesmangasbr.com"
+    override val baseUrl = "https://yesmangas1.com"
 
     override val lang = "pt"
 
     override val supportsLatest = true
 
-    private val catalogHeaders = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-        add("Host", "yesmangasbr.com")
-        add("Referer", baseUrl)
-    }.build()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", USER_AGENT)
+        .add("Origin", baseUrl)
+        .add("Referer", baseUrl)
 
-    override fun popularMangaRequest(page: Int): Request = GET(baseUrl, catalogHeaders)
+    override fun popularMangaRequest(page: Int): Request = GET(baseUrl, headers)
 
     override fun popularMangaSelector(): String = "div#destaques div.three.columns a.img"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.attr("title").replace(LANG_REGEX.toRegex(), "")
+        title = element.attr("title").replace(LANG_REGEX, "")
         thumbnail_url = element.select("img").attr("data-path")
-                .replace("xmedium", "xlarge")
+            .replace("xmedium", "xlarge")
         url = element.attr("href")
     }
 
     override fun popularMangaNextPageSelector(): String? = null
 
-    override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, catalogHeaders)
+    override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
 
     override fun latestUpdatesSelector(): String = "div#lancamentos table.u-full-width tbody tr td:eq(0) a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.attr("title").replace(LANG_REGEX.toRegex(), "")
+        title = element.attr("title").replace(LANG_REGEX, "")
         thumbnail_url = element.select("img").attr("data-path")
-                .replace("medium", "xlarge")
+            .replace("xmedium", "xlarge")
         setUrlWithoutDomain(element.attr("href"))
     }
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query", catalogHeaders)
+        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+            .addQueryParameter("q", query)
+
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector(): String = "tbody#leituras tr td:eq(0) a"
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("img").attr("alt").replace(LANG_REGEX.toRegex(), "")
-        thumbnail_url = element.select("img").attr("data-path").replace("medium", "xlarge")
+        title = element.select("img").attr("alt").replace(LANG_REGEX, "")
+        thumbnail_url = element.select("img").attr("data-path")
+            .replace("medium", "xlarge")
         setUrlWithoutDomain(element.attr("href"))
     }
 
@@ -70,20 +75,21 @@ class YesMangas : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         var container = document.select("div#descricao")
-        var status = container.select("ul li:contains(Status)")
-        var author = container.select("ul li:contains(Autor)")
-        var artist = container.select("ul li:contains(Desenho)")
+        var statusEl = container.select("ul li:contains(Status)")
+        var authorEl = container.select("ul li:contains(Autor)")
+        var artistEl = container.select("ul li:contains(Desenho)")
+        var genresEl = container.select("ul li:contains(Categorias)")
         var synopsis = container.select("article")
 
         return SManga.create().apply {
-            this.status = parseStatus(removeLabel(status.text()))
-            this.author = removeLabel(author.text())
-            this.artist = removeLabel(artist.text())
+            status = parseStatus(removeLabel(statusEl.text()))
+            author = removeLabel(authorEl.text())
+            artist = removeLabel(artistEl.text())
             description = synopsis.text().substringBefore("Relacionados")
+            genre = removeLabel(genresEl.text())
+            thumbnail_url = container.select("img").first().attr("data-path")
         }
     }
-
-    private fun removeLabel(info: String) = info.substringAfter(":")
 
     private fun parseStatus(status: String) = when {
         status.contains("Completo") -> SManga.COMPLETED
@@ -112,8 +118,12 @@ class YesMangas : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = ""
 
+    private fun removeLabel(info: String) = info.substringAfter(":")
+
     companion object {
-        private const val LANG_REGEX = "( )?\\((PT-)?BR\\)"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
+
         private const val SCRIPT_BEGIN = "var images = ["
         private const val SCRIPT_END = "];"
         private const val SCRIPT_REGEX = "\"|,"
