@@ -120,18 +120,11 @@ class Tsumino: ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.book-page-container")
         val manga = SManga.create()
-        val genres = mutableListOf<String>()
-
-        infoElement.select("#Tag a").forEach { element ->
-            val genre = element.text()
-            genres.add(genre)
-        }
 
         manga.title = infoElement.select("#Title").text()
         manga.artist = getArtists(document)
         manga.author = manga.artist
         manga.status = SManga.COMPLETED
-        manga.genre = genres.joinToString(", ")
         manga.thumbnail_url = infoElement.select("img").attr("src")
         manga.description = getDesc(document)
 
