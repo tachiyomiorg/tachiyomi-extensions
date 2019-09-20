@@ -31,9 +31,9 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.parser.Parser
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -374,13 +374,18 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         return manga
     }
 
-    // Remove bbcode tags as well as parses any html characters in description or chapter name to actual characters for example &hearts will show a heart
-    private fun cleanString(description: String): String {
-        return Jsoup.parseBodyFragment(description
-                .replace("[list]", "")
-                .replace("[/list]", "")
-                .replace("[*]", "")
-                .replace("""\[(\w+)[^\]]*](.*?)\[/\1]""".toRegex(), "$2")).text()
+    // Remove bbcode tags as well as parses any html characters in description or chapter name to actual characters for example &hearts; will show ♥
+    private fun cleanString(string: String): String {
+        val bbRegex = """\[(\w+)[^]]*](.*?)\[/\1]""".toRegex()
+        var intermediate = string
+            .replace("[list]", "")
+            .replace("[/list]", "")
+            .replace("[*]", "")
+        // Recursively remove nested bbcode
+        while (bbRegex.containsMatchIn(intermediate)) {
+            intermediate = intermediate.replace(bbRegex, "$2")
+        }
+        return Parser.unescapeEntities(intermediate, false)
     }
 
     override fun mangaDetailsParse(document: Document) = throw Exception("Not Used")
