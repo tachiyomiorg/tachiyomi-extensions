@@ -5,9 +5,9 @@ import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getArtists
-import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getDate
+import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getCollection
+import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getChapter
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getDesc
-import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getGroups
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -109,28 +109,12 @@ class Tsumino: ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterList = mutableListOf<SChapter>()
         val document = response.asJsoup()
         val collection = document.select(chapterListSelector())
-        if (collection.isNotEmpty()) {
-            return collection.map { element ->
-                SChapter.create().apply {
-                    name = element.text()
-                    scanlator = getGroups(document)
-                    setUrlWithoutDomain(element.attr("href").
-                        replace("entry", "Read/Index"))
-                }
-            }.reversed()
+        return if (collection.isNotEmpty()) {
+            getCollection(document, chapterListSelector())
         } else {
-            val chapter = SChapter.create().apply {
-                name = "Chapter"
-                scanlator = getGroups(document)
-                chapter_number = 1f
-                setUrlWithoutDomain(response.request().url().encodedPath().
-                    replace("entry", "Read/Index"))
-            }
-            chapterList.add(chapter)
-            return chapterList
+            getChapter(document, response)
         }
     }
 
