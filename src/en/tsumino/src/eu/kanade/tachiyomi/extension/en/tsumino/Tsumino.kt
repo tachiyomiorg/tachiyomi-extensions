@@ -9,9 +9,11 @@ import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getCollec
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getChapter
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getDesc
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -22,7 +24,7 @@ class Tsumino: ParsedHttpSource() {
 
     override val name = "Tsumino"
 
-    override val baseUrl = "https://tsumino.com"
+    override val baseUrl = "https://www.tsumino.com"
 
     override val lang = "en"
 
@@ -38,8 +40,8 @@ class Tsumino: ParsedHttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage {
     val allManga = mutableListOf<SManga>()
-        val jsonManga = gson.fromJson<JsonObject>(response.body()!!.string())["data"].asJsonArray
-
+        val body = response.body()!!.string()
+        val jsonManga = gson.fromJson<JsonObject>(body)["data"].asJsonArray
         for (i in 0 until jsonManga.size()) {
             val manga = SManga.create()
             manga.url = "/entry/" + jsonManga[i]["entry"]["id"].asString
@@ -48,7 +50,11 @@ class Tsumino: ParsedHttpSource() {
             allManga.add(manga)
         }
 
-        return MangasPage(allManga, true)
+        val currentPage = gson.fromJson<JsonObject>(body)["pageNumber"].asString
+        val totalPage = gson.fromJson<JsonObject>(body)["pageCount"].asString
+        val hasNextPage = currentPage.toInt() != totalPage.toInt()
+
+        return MangasPage(allManga, hasNextPage)
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = throw  UnsupportedOperationException("Not used")
@@ -65,8 +71,38 @@ class Tsumino: ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        throw  UnsupportedOperationException("Not implemented yet")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        // Taken from github.com/NerdNumber9/TachiyomiEH
+        val f = filters + getFilterList()
+        val advSearch = f.filterIsInstance<AdvSearchEntryFilter>().flatMap { filter ->
+            val splitState = filter.state.split(",").map(String::trim).filterNot(String::isBlank)
+            splitState.map {
+                AdvSearchEntry(filter.type, it.removePrefix("-"), it.startsWith("-"))
+            }
+        }
+        val body = FormBody.Builder()
+            .add("PageNumber", page.toString())
+            .add("Text", query)
+            .add("Sort", SortType.values()[f.filterIsInstance<SortFilter>().first().state].name)
+            .add("List", "0")
+            .add("Length", LengthType.values()[f.filterIsInstance<LengthFilter>().first().state].id.toString())
+            .add("MinimumRating", f.filterIsInstance<MinimumRatingFilter>().first().state.toString())
+            .apply {
+                advSearch.forEachIndexed { index, entry ->
+                    add("Tags[$index][Type]", entry.type.toString())
+                    add("Tags[$index][Text]", entry.text)
+                    add("Tags[$index][Exclude]", entry.exclude.toString())
+                }
+
+                if(f.filterIsInstance<ExcludeParodiesFilter>().first().state)
+                    add("Exclude[]", "6")
+            }
+            .build()
+
+        return POST("$baseUrl/Search/Operate/", headers, body)
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage = latestUpdatesParse(response)
 
     override fun searchMangaSelector() = latestUpdatesSelector()
 
@@ -147,5 +183,60 @@ class Tsumino: ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
 
-    override fun getFilterList() = FilterList()
+    data class AdvSearchEntry(val type: Int, val text: String, val exclude: Boolean)
+
+    override fun getFilterList() = FilterList(
+            Filter.Header("Separate tags with commas (,)"),
+            Filter.Header("Prepend with dash (-) to exclude"),
+            TagFilter(),
+            CategoryFilter(),
+            CollectionFilter(),
+            GroupFilter(),
+            ArtistFilter(),
+            ParodyFilter(),
+            CharactersFilter(),
+            UploaderFilter(),
+
+            Filter.Separator(),
+
+            SortFilter(),
+            LengthFilter(),
+            MinimumRatingFilter(),
+            ExcludeParodiesFilter()
+    )
+
+    class TagFilter : AdvSearchEntryFilter("Tags", 1)
+    class CategoryFilter : AdvSearchEntryFilter("Categories", 2)
+    class CollectionFilter : AdvSearchEntryFilter("Collections", 3)
+    class GroupFilter : AdvSearchEntryFilter("Groups", 4)
+    class ArtistFilter : AdvSearchEntryFilter("Artists", 5)
+    class ParodyFilter : AdvSearchEntryFilter("Parodies", 6)
+    class CharactersFilter : AdvSearchEntryFilter("Characters", 7)
+    class UploaderFilter : AdvSearchEntryFilter("Uploaders", 8)
+    open class AdvSearchEntryFilter(name: String, val type: Int) : Filter.Text(name)
+
+    class SortFilter : Filter.Select<SortType>("Sort by", SortType.values())
+    class LengthFilter : Filter.Select<LengthType>("Length", LengthType.values())
+    class MinimumRatingFilter : Filter.Select<String>("Minimum rating", (0 .. 5).map { "$it stars" }.toTypedArray())
+    class ExcludeParodiesFilter : Filter.CheckBox("Exclude parodies")
+
+    enum class SortType {
+        Newest,
+        Oldest,
+        Alphabetical,
+        Rating,
+        Pages,
+        Views,
+        Random,
+        Comments,
+        Popularity
+    }
+
+    enum class LengthType(val id: Int) {
+        Any(0),
+        Short(1),
+        Medium(2),
+        Long(3)
+    }
+
 }
