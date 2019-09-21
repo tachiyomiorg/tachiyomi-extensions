@@ -4,9 +4,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.*
@@ -71,7 +69,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = null
+    override fun popularMangaNextPageSelector() : String? = null
 
     override fun latestUpdatesNextPageSelector() = null
 
