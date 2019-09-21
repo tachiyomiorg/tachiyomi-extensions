@@ -103,7 +103,7 @@ class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide"
 
 class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr", "fr", "/reader")
 
-class OneTimeScans : FoolSlide("One Time Scans", "https://otscans.com", "en", "/foolslide")
+class OneTimeScans : FoolSlide("One Time Scans", "https://reader.otscans.com", "en")
 
 class TsubasaSociety : FoolSlide("Tsubasa Society", "https://www.tsubasasociety.com", "en", "/reader/master/Xreader")
 
