@@ -73,7 +73,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
         filters.findInstance<ArtistFilter>()?.let { f ->
             if (f.state.isNotBlank()) {
                 requireNoUrl()
-                url = "/artist/${f.state
+                url = "/hc.fyi/artist/${f.state
                         .trim()
                         .toLowerCase()
                         .replace(ARTIST_INVALID_CHAR_REGEX, "-")}/"
@@ -82,13 +82,13 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
         filters.findInstance<BookFilter>()?.let { f ->
             if (f.state) {
                 requireNoUrl()
-                url = "/category/book/"
+                url = "/hc.fyi/category/book/"
             }
         }
         filters.findInstance<TagFilter>()?.let { f ->
             if (f.state != 0) {
                 requireNoUrl()
-                url = "/tag/${f.values[f.state].name}/"
+                url = "/hc.fyi/tag/${f.values[f.state].name}/"
             }
         }
 
@@ -140,6 +140,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
     class ArtistFilter : Filter.Text("Artist (must be exact match)")
     class BookFilter : Filter.CheckBox("Show books only", false)
     class TagFilter : Filter.Select<Tag>("Tag", arrayOf(
+            Tag("", "<select>"),
             Tag("ahegao", "Ahegao"),
             Tag("anal", "Anal"),
             Tag("big-ass", "Big ass"),
