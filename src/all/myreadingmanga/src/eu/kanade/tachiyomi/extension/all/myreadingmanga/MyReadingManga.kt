@@ -37,9 +37,11 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
 
+    private var openbrowse : String? = null // Int a string to test if user opened "Browse" or not. 
+    
     override fun popularMangaParse(response: Response): MangasPage {
+        openbrowse = "true" // If parsing popular manga, usesr has entered catalogue browse
         val document = response.asJsoup()
-
         val mangas = mutableListOf<SManga>()
         val list  = document.select(popularMangaSelector()).filter { element ->
             val select = element.select("a[rel=bookmark]")
@@ -130,6 +132,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             "Completed" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
+        // Set first image as thumbnail only if user has not entered from catalog section. 
+        if (openbrowse.isNullOrBlank()) manga.thumbnail_url =  document.select("img[data-lazy-src]:not([width='120']):not([data-original-width='300'])")?.first()?.attr("data-lazy-src")
         return manga
     }
 
