@@ -142,15 +142,16 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val date = parseDate(document.select(".entry-time").text())
         val mangaUrl = document.baseUri()
         val chfirstname = document.select(".chapter-class a[href*=$mangaUrl]")?.first()?.text()?.ifEmpty { "Ch. 1" }?.capitalize() ?:"Ch. 1"
+        val scangroup= document.select(".entry-terms a[href*=group]")?.first()?.text()
         //create first chapter since its on main manga page
-        chapters.add(createChapter("1", document.baseUri(), date, chfirstname))
+        chapters.add(createChapter("1", document.baseUri(), date, chfirstname, scangroup))
         //see if there are multiple chapters or not
         document.select(chapterListSelector())?.let { it ->
             it.forEach {
                 if (!it.text().contains("Next »", true)) {
                     val pageNumber = it.text()
                     val chname = document.select(".chapter-class a[href$=/$pageNumber/]")?.text()?.ifEmpty { "Ch. $pageNumber" }?.capitalize() ?:"Ch. $pageNumber"
-                    chapters.add(createChapter(it.text(), document.baseUri(), date, chname))
+                    chapters.add(createChapter(it.text(), document.baseUri(), date, chname, scangroup))
                 }
             }
         }
@@ -163,11 +164,12 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return SimpleDateFormat("MMM dd, yyyy", Locale.US ).parse(date).time
     }
 
-    private fun createChapter(pageNumber: String, mangaUrl: String, date: Long, chname: String): SChapter {
+    private fun createChapter(pageNumber: String, mangaUrl: String, date: Long, chname: String, scangroup: String?): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain("$mangaUrl/$pageNumber")
         chapter.name = chname
         chapter.date_upload = date
+        chapter.scanlator = scangroup
         return chapter
     }
 
