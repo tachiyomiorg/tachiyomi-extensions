@@ -41,7 +41,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
-    
+
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
         val mangas = mutableListOf<SManga>()
@@ -144,7 +144,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             "Completed" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        // Set first image as thumbnail only if user has not entered from catalog section. 
         if (reststatus != null ) {} else {manga.thumbnail_url=thumbnailUrl} //Sets the thumbnail when logged in to API
         return manga
     }
