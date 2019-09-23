@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.extension.all.myreadingmanga
 import android.net.Uri
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.nullObj
+import com.github.salomonbrys.kotson.obj
+import com.github.salomonbrys.kotson.string
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -36,11 +40,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
-
-    private var openbrowse : String? = null // Int a string to test if user opened "Browse" or not. 
     
     override fun popularMangaParse(response: Response): MangasPage {
-        openbrowse = "true" // If parsing popular manga, usesr has entered catalogue browse
         val document = response.asJsoup()
         val mangas = mutableListOf<SManga>()
         val list  = document.select(popularMangaSelector()).filter { element ->
@@ -121,6 +122,16 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private fun cleanAuthor(title: String) = title.substringAfter("[").substringBefore("]")
 
     override fun mangaDetailsParse(document: Document): SManga {
+        val postid = document.select("article[class*=post-]").attr("class").substringBefore(" ").substringAfter("-") //Finds post ID for API lookup
+        val mrmjson = client.newCall(GET("$baseUrl/wp-json/wp/v2/posts/$postid?_embed", headers)).execute() //Wordpress API lookup
+        val jsonData = mrmjson.body()!!.string() //Convert Responce to string?
+        val json = JsonParser().parse(jsonData).asJsonObject //Convert string to Json Object?
+        var thumbnailUrl :String? = "" // Int varable
+        val reststatus = json["data"].nullObj //MRM throws error 401 for API if not logged in as user
+        if (reststatus != null ) {} else { //Only look for embedded data when logged in. If not, throws error that json[embedded] is not found
+            val mediaobj = json["_embedded"]["wp:featuredmedia"][0].obj //Somehow limited where a retreive object is unable to follow a retreive arrary
+            thumbnailUrl = mediaobj["source_url"].string
+        }
         val manga = SManga.create()
         manga.author = cleanAuthor(document.select("h1").text())
         manga.artist = cleanAuthor(document.select("h1").text())
@@ -133,7 +144,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             else -> SManga.UNKNOWN
         }
         // Set first image as thumbnail only if user has not entered from catalog section. 
-        if (openbrowse.isNullOrBlank()) manga.thumbnail_url =  document.select("img[data-lazy-src]:not([width='120']):not([data-original-width='300'])")?.first()?.attr("data-lazy-src")
+        if (reststatus != null ) {} else {manga.thumbnail_url=thumbnailUrl} //Sets the thumbnail when logged in to API
         return manga
     }
 
