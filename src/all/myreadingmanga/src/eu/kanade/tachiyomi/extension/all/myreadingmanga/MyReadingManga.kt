@@ -9,6 +9,7 @@ import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.io.IOException
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -213,10 +214,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
     //Filter Parsing, grabs home page as document and filters out Genres, Popular Tags, and Catagorys
-    private val filterdoc = OkHttpClient().newCall(GET("$baseUrl", headers)).execute().asJsoup()
-    private val genresarray = filterdoc.select(".tagcloud a[href*=/genre/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
-    private val poptagarray = filterdoc.select(".tagcloud a[href*=/tag/]").map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}.toTypedArray()
-    private val cattagarray = filterdoc.select(".level-0").map { Pair(it.attr("value"), it.text())}.toTypedArray()
+    private val filterdoc:Document? = try { OkHttpClient().newCall(GET("$baseUrl", headers)).execute().asJsoup() } catch (e: IOException) {null}
+    private val genresarray = filterdoc?.select(".tagcloud a[href*=/genre/]")?.map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}?.toTypedArray() ?: arrayOf(Pair("","Error getting filters, try restarting app"))
+    private val poptagarray = filterdoc?.select(".tagcloud a[href*=/tag/]")?.map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}?.toTypedArray() ?: arrayOf(Pair("","Error getting filters, try restarting app"))
+    private val cattagarray = filterdoc?.select(".level-0")?.map { Pair(it.attr("value"), it.text())}?.toTypedArray() ?: arrayOf(Pair("","Error getting filters, try restarting app"))
     
     //Generates the filter lists for app
     override fun getFilterList(): FilterList {
