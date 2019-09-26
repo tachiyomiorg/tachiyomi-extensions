@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.HttpUrl
 import okhttp3.Request
 
-private const val baseDomain = "newtoki12"
+private const val baseDomain = "newtoki26"
 
 class NewTokiFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
