@@ -18,7 +18,7 @@ abstract class ToomicsGlobal(private val siteLang: String,
                              override val lang: String = siteLang,
                              displayName: String = "") : ParsedHttpSource() {
 
-    override val name = "Toomics" + (if (displayName.isNotEmpty()) " ($displayName)" else "")
+    override val name = "Toomics (Only free chapters)" + (if (displayName.isNotEmpty()) " ($displayName)" else "")
 
     override val baseUrl = "https://global.toomics.com"
 
@@ -28,11 +28,11 @@ abstract class ToomicsGlobal(private val siteLang: String,
         .add("Referer", "$baseUrl/$siteLang")
         .add("User-Agent", USER_AGENT)
 
-    // ToomicsGlobal does not have a popular list, so use recommended instead.
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/$siteLang", headers)
+        return GET("$baseUrl/$siteLang/index/set_display/?display=A&return=/$siteLang", headers)
     }
 
+    // ToomicsGlobal does not have a popular list, so use recommended instead.
     override fun popularMangaSelector(): String = "div.section_most div.list_wrap ul.slick_item li div a"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
@@ -44,10 +44,10 @@ abstract class ToomicsGlobal(private val siteLang: String,
     override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/$siteLang/webtoon/ongoing_all", headers)
+        return GET("$baseUrl/$siteLang/index/set_display/?display=A&return=/$siteLang", headers)
     }
 
-    override fun latestUpdatesSelector(): String = "div.allday_wrap ul.allday.active li div.visual a"
+    override fun latestUpdatesSelector(): String = "div#section_todayup div.list_wrap ul.slick_item li div a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
@@ -92,7 +92,7 @@ abstract class ToomicsGlobal(private val siteLang: String,
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return super.fetchChapterList(manga)
-            .map { it.reversed() }
+            .map { it.reversed().filter { c -> !c.url.startsWith("VIP") } }
     }
 
     override fun chapterListSelector(): String = "section.ep-body ol.list-ep li.normal_ep a"
@@ -100,11 +100,9 @@ abstract class ToomicsGlobal(private val siteLang: String,
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val num = element.select("div.cell-num span.num").text()
         val isVip = element.attr("onclick").contains("login")
-        val type = element.select("div.cell-coin > span").first().ownText()
         val numText = if (num.isNotEmpty()) "$num - " else ""
-        val vipText = if (isVip) "[$type] " else ""
 
-        name = numText + vipText + element.select("div.cell-title strong.tit").first().ownText()
+        name = numText + element.select("div.cell-title strong.tit").first().ownText()
         chapter_number = num.toFloatOrNull() ?: 0f
         date_upload = parseChapterDate(element.select("div.cell-time time").text()!!)
         scanlator = "Toomics"
@@ -112,13 +110,6 @@ abstract class ToomicsGlobal(private val siteLang: String,
             element.attr("onclick")
                 .substringAfter("'/$siteLang")
                 .substringBefore("'")
-    }
-
-    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        if (chapter.url.startsWith("VIP"))
-            return Observable.error(Exception("Non-free chapter."))
-
-        return super.fetchPageList(chapter)
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
