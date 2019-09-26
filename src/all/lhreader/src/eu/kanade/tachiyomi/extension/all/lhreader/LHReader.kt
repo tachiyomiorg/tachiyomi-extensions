@@ -1,14 +1,12 @@
 package eu.kanade.tachiyomi.extension.all.lhreader
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
-import java.text.SimpleDateFormat
 import java.util.*
 
 abstract class LHReader (
@@ -24,11 +22,15 @@ abstract class LHReader (
         add("Referer", baseUrl)
     }
 
+    open val requestPath = "manga-list.html"
+
+
+
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/manga-list.html?listType=pagination&page=$page&artist=&author=&group=&m_status=&name=&genre=&ungenre=&sort=views&sort_type=DESC", headers)
+        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=views&sort_type=DESC", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga-list.html?")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/$requestPath?")!!.newBuilder()
             .addQueryParameter("name", query)
             .addQueryParameter("page", page.toString())
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
@@ -56,7 +58,7 @@ abstract class LHReader (
     }
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/manga-list.html?listType=pagination&page=$page&artist=&author=&group=&m_status=&name=&genre=&sort=last_update&sort_type=DESC")
+        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=last_update&sort_type=DESC")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -66,9 +68,9 @@ abstract class LHReader (
         document.select(popularMangaSelector()).forEach{ mangas.add(popularMangaFromElement(it)) }
 
         // check if there's a next page
-        document.select(popularMangaNextPageSelector()).first().text().let {
-            val currentPage = it.substringAfter("Page ").substringBefore(" ")
-            val lastPage = it.substringAfterLast(" ")
+        document.select(popularMangaNextPageSelector()).first().text().split(" ").let {
+            val currentPage = it[1]
+            val lastPage = it[3]
             if (currentPage == lastPage) hasNextPage = false
         }
 
@@ -87,11 +89,19 @@ abstract class LHReader (
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("h3 a").first().let {
+
+        element.select("h3 a").let {
             manga.setUrlWithoutDomain(it.attr("abs:href"))
             manga.title = it.text()
         }
-        manga.thumbnail_url = element.select("img").attr("abs:src")
+        manga.thumbnail_url = element.select("img").let{
+            if (it.hasAttr("src")) {
+                it.attr("abs:src")
+            } else {
+                it.attr("abs:data-original")
+            }
+        }
+
         return manga
     }
 
@@ -100,81 +110,81 @@ abstract class LHReader (
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
+    // selects an element with text "x of y pages"
     override fun popularMangaNextPageSelector() = "div.col-lg-9 button.btn-info"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
+    //TODO better description selector
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         val infoElement = document.select("div.row").first()
-        val genres = infoElement.select("ul.manga-info li:nth-child(5) small a")?.map {
-            it.text()
-        }
-        manga.author = infoElement.select("small a.btn.btn-xs.btn-info").first()?.text()
-        manga.genre = genres?.joinToString(", ")
-        manga.status = parseStatus(infoElement.select("a.btn.btn-xs.btn-success").first().text())
 
-        manga.description = document.select("div.row:has(h3:contains(description)) p")?.text()?.trim()
-        val imgUrl = document.select("img.thumbnail").first()?.attr("abs:src")
-        if (imgUrl!!.startsWith("app/")) {
-            manga.thumbnail_url = "$baseUrl/$imgUrl"
-        } else {
-            manga.thumbnail_url = imgUrl
-        }
+        manga.author = infoElement.select("small a.btn.btn-xs.btn-info").first()?.text()
+        manga.genre = infoElement.select("ul.manga-info li:nth-child(5) small a")?.text()?.replace(" ", ", ")
+        manga.status = parseStatus(infoElement.select("a.btn.btn-xs.btn-success").first().text().toLowerCase(Locale.getDefault()))
+        manga.description = document.select("div.row:has(h3:contains(description)) p, div.detail p")?.text()?.trim()
+        manga.thumbnail_url = infoElement.select("img.thumbnail").attr("abs:src")
+
         return manga
     }
 
-    private fun parseStatus(element: String): Int = when {
-        element.contains("Completed") -> SManga.COMPLETED
-        element.contains("Ongoing") -> SManga.ONGOING
+    //TODO other languages
+    fun parseStatus(element: String): Int = when (element) {
+        "completed", "chưa hoàn thành" -> SManga.COMPLETED
+        "ongoing", "đã hoàn thành" -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }
 
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
 
+    open val timeElementSelector = "time"
+
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
-        element.select("a").let{
+        element.select("a").first().let{
             chapter.setUrlWithoutDomain(it.attr("abs:href"))
             chapter.name = it.text()
         }
-        chapter.date_upload = parseChapterDate(element.select("time").text())
+        chapter.date_upload = parseChapterDate(element.select(timeElementSelector).text())
 
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[0].toInt()
-        return when {
-            "min(s) ago" in date -> Calendar.getInstance().apply {
+
+        // languages: en, vi //TODO more languages
+        return when (date.split(' ')[1].substringBefore("(").removeSuffix("s")) {
+            "min", "minute", "phút" -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "hour(s) ago" in date -> Calendar.getInstance().apply {
+            "hour", "giờ" -> Calendar.getInstance().apply {
                 add(Calendar.HOUR_OF_DAY, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "day(s) ago" in date -> Calendar.getInstance().apply {
+            "day", "ngày" -> Calendar.getInstance().apply {
                 add(Calendar.DATE, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "week(s) ago" in date -> Calendar.getInstance().apply {
+            "week", "tuần" -> Calendar.getInstance().apply {
                 add(Calendar.DATE, value * 7 * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "month(s) ago" in date -> Calendar.getInstance().apply {
+            "month", "tháng" -> Calendar.getInstance().apply {
                 add(Calendar.MONTH, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            "year(s) ago" in date -> Calendar.getInstance().apply {
+            "year", "năm" -> Calendar.getInstance().apply {
                 add(Calendar.YEAR, value * -1)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
@@ -187,23 +197,14 @@ abstract class LHReader (
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        document.select(".chapter-img").forEach {
-            val url = it.attr("src")
-            if (url != "") {
-                pages.add(Page(pages.size, "", url))
-            }
+
+        document.select("img.chapter-img").forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.attr("abs:data-src").let{ if (it.isNotEmpty()) it else img.attr("abs:src") }))
         }
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = ""
-
-    override fun imageRequest(page: Page): Request {
-        val imgHeader = Headers.Builder().apply {
-            add("Referer", baseUrl)
-        }.build()
-        return GET(page.imageUrl!!, imgHeader)
-    }
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
