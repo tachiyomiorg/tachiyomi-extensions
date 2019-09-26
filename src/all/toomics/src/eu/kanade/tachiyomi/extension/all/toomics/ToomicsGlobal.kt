@@ -8,13 +8,12 @@ import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLDecoder
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
 
 abstract class ToomicsGlobal(private val siteLang: String,
-                             private val dateFormat: String,
-                             private val locale: Locale,
+                             private val dateFormat: SimpleDateFormat,
                              override val lang: String = siteLang,
                              displayName: String = "") : ParsedHttpSource() {
 
@@ -71,7 +70,11 @@ abstract class ToomicsGlobal(private val siteLang: String,
         title = element.select("div.search_box dl dt span.title").text()
         thumbnail_url = element.select("div.search_box p.img img").attr("src")
 
-        val toonId = element.attr("href")
+        // When the family mode is off, the url is encoded and is available in the onclick.
+        val toonId = element.attr("onclick")
+            .substringAfter("Base.setDisplay('A', '")
+            .substringBefore("'")
+            .let { URLDecoder.decode(it, "UTF-8") }
             .substringAfter("?toon=")
             .substringBefore("&")
         url = "/$siteLang/webtoon/episode/toon/$toonId"
@@ -92,24 +95,22 @@ abstract class ToomicsGlobal(private val siteLang: String,
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return super.fetchChapterList(manga)
-            .map { it.reversed().filter { c -> !c.url.startsWith("VIP") } }
+            .map { it.reversed() }
     }
 
-    override fun chapterListSelector(): String = "section.ep-body ol.list-ep li.normal_ep a"
+    override fun chapterListSelector(): String = "section.ep-body ol.list-ep li.normal_ep a:not([onclick*='login'])"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val num = element.select("div.cell-num span.num").text()
-        val isVip = element.attr("onclick").contains("login")
         val numText = if (num.isNotEmpty()) "$num - " else ""
 
         name = numText + element.select("div.cell-title strong.tit").first().ownText()
         chapter_number = num.toFloatOrNull() ?: 0f
         date_upload = parseChapterDate(element.select("div.cell-time time").text()!!)
         scanlator = "Toomics"
-        url = (if (isVip) "VIP:" else "") + "/$siteLang" +
-            element.attr("onclick")
-                .substringAfter("'/$siteLang")
-                .substringBefore("'")
+        url = "/$siteLang" + element.attr("onclick")
+            .substringAfter("'/$siteLang")
+            .substringBefore("'")
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -140,7 +141,7 @@ abstract class ToomicsGlobal(private val siteLang: String,
 
     private fun parseChapterDate(date: String) : Long {
         return try {
-            SimpleDateFormat(dateFormat, locale).parse(date).time
+            dateFormat.parse(date).time
         } catch (e: ParseException) {
             0L
         }
