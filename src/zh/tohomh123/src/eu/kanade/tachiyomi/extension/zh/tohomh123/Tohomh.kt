@@ -131,7 +131,7 @@ class Tohomh : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val script = document.select("script:containsData(did)").first().data()
+        val script = document.select("script:containsData(imgDomain)").first().data()
         val did = script.substringAfter("did=").substringBefore(";")
         val sid = script.substringAfter("sid=").substringBefore(";")
         val lastPage = script.substringAfter("pcount =").substringBefore(";").trim().toInt()
