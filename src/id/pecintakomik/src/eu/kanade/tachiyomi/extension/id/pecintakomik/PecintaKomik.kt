@@ -204,7 +204,7 @@ class PecintaKomik : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select("div#readerarea img").forEach {
-            val url = it.attr("src")
+            val url = it.attr("data-src")
             if (url != "") {
                 pages.add(Page(pages.size, "", url))
             }
