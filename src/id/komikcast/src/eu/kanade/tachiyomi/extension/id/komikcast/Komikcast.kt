@@ -1,11 +1,15 @@
 package eu.kanade.tachiyomi.extension.id.komikcast
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import eu.kanade.tachiyomi.source.model.*
 import java.util.*
 
 class Komikcast : ParsedHttpSource() {
@@ -186,8 +190,9 @@ class Komikcast : ParsedHttpSource() {
         var i = 0
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
-            i++
-            if (url.length != 0) {
+            if (url.length > 0) {
+                i++
+                Log.i("KOMIKCAST:page-$i", "url: $url")
                 pages.add(Page(i, "", url))
             }
         }
@@ -197,90 +202,105 @@ class Komikcast : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        val imgHeader = Headers.Builder().apply {
-            add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.1.1; en-gb; Build/KLP) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30")
+        var headers = Headers.Builder()
+        headers.apply {
             add("Referer", baseUrl)
-        }.build()
-        return GET(page.imageUrl!!, imgHeader)
+            add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")
+        }
+
+        if (page.imageUrl!!.contains("i0.wp.com")) {
+            headers.apply {
+                add("Accept-Language", "en-US,en;q=0.9,id;q=0.8,ms;q=0.7,su;q=0.6,la;q=0.5")
+                add("Cache-Control", "no-cache")
+                add("Connection", "keep-alive")
+                add("DNT", "1")
+                add("Accept-Encoding", "gzip, deflate")
+                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+                add("Host", "i0.wp.com")
+                add("Pragma", "no-cache")
+                add("Upgrade-Insecure-Requests", "1")
+            }
+        }
+        return GET(page.imageUrl!!, headers.build())
     }
 
     private class SortBy : UriPartFilter("Sort by", arrayOf(
-            Pair("Default", ""),
-            Pair("A-Z", "title"),
-            Pair("Z-A", "titlereverse"),
-            Pair("Latest Update", "update"),
-            Pair("Latest Added", "latest"),
-            Pair("Popular", "popular")
+        Pair("Default", ""),
+        Pair("A-Z", "title"),
+        Pair("Z-A", "titlereverse"),
+        Pair("Latest Update", "update"),
+        Pair("Latest Added", "latest"),
+        Pair("Popular", "popular")
     ))
 
     private class Status : UriPartFilter("Status", arrayOf(
-            Pair("All", ""),
-            Pair("Ongoing", "Ongoing"),
-            Pair("Completed", "Completed")
+        Pair("All", ""),
+        Pair("Ongoing", "Ongoing"),
+        Pair("Completed", "Completed")
     ))
 
     private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            SortBy(),
-            Filter.Separator(),
-            Status(),
-            Filter.Separator(),
-            GenreList(getGenreList())
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        SortBy(),
+        Filter.Separator(),
+        Status(),
+        Filter.Separator(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("4-Koma", "4-koma"),
-            Genre("Action", "action"),
-            Genre("Adventure", "adventure"),
-            Genre("Comedy", "comedy"),
-            Genre("Cooking", "cooking"),
-            Genre("Demons", "demons"),
-            Genre("Drama", "drama"),
-            Genre("Ecchi", "ecchi"),
-            Genre("Fantasy", "fantasy"),
-            Genre("Game", "game"),
-            Genre("Gender Bender", "gender-bender"),
-            Genre("Harem", "harem"),
-            Genre("Historical", "historical"),
-            Genre("Horror", "horror"),
-            Genre("Isekai ", "isekai"),
-            Genre("Josei", "josei"),
-            Genre("Magic", "magic"),
-            Genre("Martial Arts", "martial-arts"),
-            Genre("Mature", "mature"),
-            Genre("Mecha", "mecha"),
-            Genre("Medical", "medical"),
-            Genre("Military", "military"),
-            Genre("Mistery", "mistery"),
-            Genre("Music", "music"),
-            Genre("Mystery", "mystery"),
-            Genre("Psychological", "psychological"),
-            Genre("Romance", "romance"),
-            Genre("School", "school"),
-            Genre("School Life", "school-life"),
-            Genre("Sci-Fi", "sci-fi"),
-            Genre("Seinen", "seinen"),
-            Genre("Shoujo", "shoujo"),
-            Genre("Shoujo Ai", "shoujo-ai"),
-            Genre("Shounen", "shounen"),
-            Genre("Shounen Ai", "shounen-ai"),
-            Genre("Slice of Life", "slice-of-life"),
-            Genre("Sports", "sports"),
-            Genre("Super Power", "super-power"),
-            Genre("Supernatural", "supernatural"),
-            Genre("Thriller", "thriller"),
-            Genre("Tragedy", "tragedy"),
-            Genre("Vampire", "vampire"),
-            Genre("Webtoons", "webtoons"),
-            Genre("Yuri", "yuri")
+        Genre("4-Koma", "4-koma"),
+        Genre("Action", "action"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Cooking", "cooking"),
+        Genre("Demons", "demons"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai ", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Magic", "magic"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Medical", "medical"),
+        Genre("Military", "military"),
+        Genre("Mistery", "mistery"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("School", "school"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-Fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yuri", "yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 }
