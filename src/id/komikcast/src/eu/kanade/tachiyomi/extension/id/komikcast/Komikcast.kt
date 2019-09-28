@@ -205,15 +205,7 @@ class Komikcast : ParsedHttpSource() {
 
         if (page.imageUrl!!.contains("i0.wp.com")) {
             headers.apply {
-                add("Accept-Language", "en-US,en;q=0.9,id;q=0.8,ms;q=0.7,su;q=0.6,la;q=0.5")
-                add("Cache-Control", "no-cache")
-                add("Connection", "keep-alive")
-                add("DNT", "1")
-                add("Accept-Encoding", "gzip, deflate")
                 add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
-                add("Host", "i0.wp.com")
-                add("Pragma", "no-cache")
-                add("Upgrade-Insecure-Requests", "1")
             }
         }
         return GET(page.imageUrl!!, headers.build())
