@@ -240,7 +240,7 @@ abstract class LHReader (
 
     // [...document.querySelectorAll("div.panel-body a")].map((el,i) => `Genre("${el.innerText.trim()}")`).join(',\n')
     //  on https://lhtranslation.net/search
-    private fun getGenreList() = listOf(
+    open fun getGenreList() = listOf(
         Genre("Action"),
         Genre("18+"),
         Genre("Adult"),
