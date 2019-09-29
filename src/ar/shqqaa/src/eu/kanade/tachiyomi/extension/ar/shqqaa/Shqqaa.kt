@@ -7,6 +7,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class Shqqaa : ParsedHttpSource() {
 
@@ -59,6 +60,8 @@ class Shqqaa : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = null
 
     // Search
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
 
     override fun searchMangaSelector(): String = throw Exception("Not Used")
