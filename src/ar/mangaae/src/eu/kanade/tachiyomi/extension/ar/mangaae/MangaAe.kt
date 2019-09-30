@@ -125,7 +125,7 @@ class MangaAe : ParsedHttpSource() {
     // Pages
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        document.select("div#showchaptercontainer img").forEach {
+        document.select("div#showchaptercontainer img")?.forEach {
             pages.add(Page(pages.size, "", it.attr("src")))
         }
         return pages
