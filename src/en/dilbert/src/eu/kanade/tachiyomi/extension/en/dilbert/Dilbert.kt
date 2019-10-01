@@ -2,16 +2,17 @@ package eu.kanade.tachiyomi.extension.en.dilbert
 
 import android.os.Build.VERSION
 import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import okhttp3.Headers
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.util.Calendar
-import java.text.SimpleDateFormat
 
 class Dilbert : ParsedHttpSource() {
 
@@ -22,6 +23,9 @@ class Dilbert : ParsedHttpSource() {
     override val lang = "en"
 
     override val supportsLatest = false
+
+    override val client = network.client.newBuilder()
+        .addNetworkInterceptor(RateLimitInterceptor(4)).build()
 
     private val userAgent = "Mozilla/5.0 " +
         "(Android ${VERSION.RELEASE}; Mobile) " +
@@ -79,15 +83,11 @@ class Dilbert : ParsedHttpSource() {
             res.asJsoup().select(".comic-item").takeIf { it.size > 0 }?.let {
                 chapters.addAll(it.map(::chapterFromElement))
             } ?: break
-            try {
-                Thread.sleep(250) // throttle requests to avoid getting blocked
-            } catch(ex: InterruptedException) {
-                throw Exception(ex.message ?: "Interrupted")
-            }
         }
-        return Observable.just(chapters
-            .sortedByDescending(SChapter::date_upload)
-            .mapIndexed { i, ch -> ch.apply { chapter_number = i + 1f } }
+        return Observable.just(
+            chapters.sortedBy(SChapter::date_upload).mapIndexed {
+                i, ch -> ch.apply { chapter_number = i + 1f }
+            }.reversed()
         )
     }
 
