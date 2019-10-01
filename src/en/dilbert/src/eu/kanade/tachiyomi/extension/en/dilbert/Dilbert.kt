@@ -5,9 +5,8 @@ import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -28,49 +27,68 @@ class Dilbert : ParsedHttpSource() {
         "(Android ${VERSION.RELEASE}; Mobile) " +
         "Tachiyomi/${BuildConfig.VERSION_NAME}"
 
+    private val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
+    private val dateFormat = SimpleDateFormat("EEEE MMMM dd, yyyy")
+
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", userAgent)
         add("Referer", baseUrl)
     }
 
     override fun fetchPopularManga(page: Int) = Observable.just(
-        MangasPage(listOf(SManga.create().apply {
-            url = baseUrl
-            title = name
-            status = SManga.ONGOING
-            artist = "Scott Adams"
-            author = "Scott Adams"
-            description = """
-            A satirical comic strip featuring Dilbert, a competent, but seldom recognized engineer.
-
-            NOTE: there are over 11000 chapters so the first load may take a while.
-            """.trimIndent()
-            thumbnail_url = "https://dilbert.com/assets/favicon/favicon-196x196-cf4d86b485e628a034ab8b961c1c3520b5969252400a80b9eed544d99403e037.png"
-        }), false)
+        MangasPage((currentYear downTo 1989).map {
+            SManga.create().apply {
+                url = "?$it"
+                title = "$name ($it)"
+                artist = "Scott Adams"
+                author = "Scott Adams"
+                status = if (it < currentYear) SManga.COMPLETED else SManga.ONGOING
+                description = """
+                A satirical comic strip featuring Dilbert, a competent, but seldom recognized engineer.
+                (This entry includes all the chapters published in $it.)
+                """.trimIndent()
+                thumbnail_url = "https://dilbert.com/assets/favicon/favicon-196x196-cf4d86b485e628a034ab8b961c1c3520b5969252400a80b9eed544d99403e037.png"
+            }
+        }, false)
     )
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList) =
-        fetchPopularManga(page)
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList) = fetchPopularManga(page)
 
-    override fun fetchMangaDetails(manga: SManga) = Observable.just(manga)
+    override fun fetchMangaDetails(manga: SManga) =
+        Observable.just(manga.apply { initialized = true })
 
-    // this sucks but it's the only way to avoid sending thousands of requests
+    private fun chapterListRequest(manga: SManga, page: Int = 1) =
+        GET("$baseUrl/search_results?sort=date_asc&year=${manga.year}&page=$page", headers)
+
+    override fun chapterFromElement(element: Element) = SChapter.create().apply {
+        val date = element.first(".comic-title-date").text()
+        url = element.first(".img-comic-link").attr("href")
+        name = element.first(".comic-title-name").text().ifBlank { date }
+        date_upload = dateFormat.parse(date).time
+    }
+
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        val now = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, 1) }
-        val start = Calendar.getInstance().apply { set(1989, 3, 16) }
-        val shortFormat = SimpleDateFormat("yyyy-MM-dd")
-        val longFormat = SimpleDateFormat("EEEE MMMM dd, yyyy")
-        val result = ArrayList<SChapter>(now - start)
-        while(start.before(now)) {
-            result.add(SChapter.create().apply {
-                url = "$baseUrl/strip/${shortFormat.format(start.time)}"
-                chapter_number = result.size + 1f
-                name = longFormat.format(start.time)
-                date_upload = start.timeInMillis
-            })
-            start.add(Calendar.DAY_OF_MONTH, 1)
+        val chapters = mutableListOf<SChapter>()
+        for (page in 1..37) {
+            val res = client.newCall(chapterListRequest(manga, page)).execute()
+            if (!res.isSuccessful) {
+                res.close()
+                throw Exception("HTTP error ${res.code()}")
+            }
+            res.asJsoup().select(".comic-item").takeIf { it.size > 0 }?.let {
+                chapters.addAll(it.map(::chapterFromElement))
+            } ?: break
+            try {
+                Thread.sleep(250) // throttle requests to avoid getting blocked
+            } catch(ex: InterruptedException) {
+                throw Exception(ex.message ?: "Interrupted")
+            }
         }
-        return Observable.just(result.sortedByDescending(SChapter::chapter_number))
+        return Observable.just(chapters
+            .sortedByDescending(SChapter::date_upload)
+            .mapIndexed { i, ch -> ch.apply { chapter_number = i + 1f } }
+        )
     }
 
     override fun fetchPageList(chapter: SChapter) =
@@ -78,12 +96,13 @@ class Dilbert : ParsedHttpSource() {
 
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
 
-    // the src doesn't contain the protocol
     override fun imageUrlParse(document: Document) =
-        "https:" + document.select(".img-comic").attr("src")
+        "https:" + document.first(".img-comic").attr("src")
 
-    operator fun Calendar.minus(other: Calendar) =
-        Math.ceil((this.timeInMillis - other.timeInMillis) / 8.64e7).toInt()
+    private val SManga.year: Int
+        get() = url.substringAfterLast('?').toInt()
+
+    private fun Element.first(selector: String) = select(selector).first()
 
     override fun popularMangaSelector() = ""
 
@@ -124,8 +143,5 @@ class Dilbert : ParsedHttpSource() {
         throw UnsupportedOperationException("This method should not be called!")
 
     override fun latestUpdatesFromElement(element: Element) =
-        throw UnsupportedOperationException("This method should not be called!")
-
-    override fun chapterFromElement(element: Element) =
         throw UnsupportedOperationException("This method should not be called!")
 }
