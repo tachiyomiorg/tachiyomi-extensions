@@ -62,7 +62,7 @@ abstract class Genkan(
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
         }
-        manga.thumbnail_url = element.select("a.media-content").first().attr("style").substringAfter("(").substringBefore(")")
+        manga.thumbnail_url = styleToUrl(element.select("a.media-content").first())
         return manga
     }
 
@@ -84,6 +84,13 @@ abstract class Genkan(
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
+    // Details
+
+    private fun styleToUrl(element: Element): String {
+        return element.attr("style").substringAfter("(").substringBefore(")")
+            .let{ if (it.startsWith("http")) it else baseUrl + it }
+    }
+
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#content").first()
 
@@ -91,7 +98,7 @@ abstract class Genkan(
         manga.title = infoElement.select("h5").first().text()
 
         manga.description = document.select("div.col-lg-9").text().substringAfter("Description ").substringBefore(" Volume")
-        manga.thumbnail_url = document.select("div.media a").first().attr("style").substringAfter("(").substringBefore(")")
+        manga.thumbnail_url = styleToUrl(document.select("div.media a").first())
         return manga
     }
 
@@ -160,6 +167,10 @@ abstract class Genkan(
     }
 
     override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+
+    override fun imageRequest(page: Page): Request {
+        return if (page.imageUrl!!.startsWith("http")) GET(page.imageUrl!!, headers) else GET(baseUrl + page.imageUrl!!, headers)
+    }
 
     override fun getFilterList() = FilterList()
 }
