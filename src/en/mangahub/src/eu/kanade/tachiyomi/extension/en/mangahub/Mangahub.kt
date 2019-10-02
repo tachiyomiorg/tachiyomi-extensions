@@ -1,10 +1,8 @@
 package eu.kanade.tachiyomi.extension.en.mangahub
 
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -12,11 +10,8 @@ import java.net.URL
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 class Mangahub : ParsedHttpSource() {
-
-    override val id: Long = 2
 
     override val name = "Mangahub"
 
@@ -28,7 +23,7 @@ class Mangahub : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "#mangalist div.media-manga.media"
 
-    override fun latestUpdatesSelector() = "#mangalist div.media-manga.media"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/popular/page/$page", headers)
