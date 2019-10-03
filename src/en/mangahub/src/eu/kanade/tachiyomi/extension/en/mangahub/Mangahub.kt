@@ -81,7 +81,12 @@ class Mangahub : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(URL(element.attr("href")).path)
-        chapter.name = element.select("span._8Qtbo span._2IG5P").first().text().replaceFirst("-", "").trim()
+
+        val titleHeader = element.select(".text-secondary").first()
+        val number = titleHeader.select("._3D1SJ").first().text()
+        val title = titleHeader.select("._2IG5P").first().text()
+
+        chapter.name = "$number $title"
         chapter.date_upload = element.select("small.UovLc").first()?.text()?.let { parseChapterDate(it) } ?: 0
         return chapter
     }
