@@ -32,31 +32,7 @@ class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
         else -> SManga.UNKNOWN
     }
 
-    override fun parseChapterDate(date: String): Long {
-        val dateWords = date.split(" ")
-
-        if (dateWords.size == 3) {
-            if(dateWords[1].contains(",")){
-                try {
-                    return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-                } catch (e: ParseException) {
-                    return 0L
-                }
-            }else{
-                val timeAgo = Integer.parseInt(dateWords[0])
-                return Calendar.getInstance().apply {
-                    when (dateWords[1]) {
-                        "minutos" -> Calendar.MINUTE
-                        "horas" -> Calendar.HOUR
-                        else -> null
-                    }?.let {
-                        add(it, -timeAgo)
-                    }
-                }.timeInMillis
-            }
-        }
-        return 0L
-    }
+    override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
     // http://es.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
@@ -200,31 +176,7 @@ class NineMangaBr : NineManga("NineMangaBr", "http://br.ninemanga.com", "pt") {
         else -> SManga.UNKNOWN
     }
 
-    override fun parseChapterDate(date: String): Long {
-        val dateWords = date.split(" ")
-
-        if (dateWords.size == 3) {
-            if(dateWords[1].contains(",")){
-                try {
-                    return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-                } catch (e: ParseException) {
-                    return 0L
-                }
-            }else{
-                val timeAgo = Integer.parseInt(dateWords[0])
-                return Calendar.getInstance().apply {
-                    when (dateWords[1]) {
-                        "minutos" -> Calendar.MINUTE
-                        "hora" -> Calendar.HOUR
-                        else -> null
-                    }?.let {
-                        add(it, -timeAgo)
-                    }
-                }.timeInMillis
-            }
-        }
-        return 0L
-    }
+    override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
     // http://br.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
@@ -302,31 +254,7 @@ class NineMangaRu : NineManga("NineMangaRu", "http://ru.ninemanga.com", "ru") {
         else -> SManga.UNKNOWN
     }
 
-    override fun parseChapterDate(date: String): Long {
-        val dateWords = date.split(" ")
-
-        if (dateWords.size == 3) {
-            if(dateWords[1].contains(",")){
-                try {
-                    return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-                } catch (e: ParseException) {
-                    return 0L
-                }
-            }else{
-                val timeAgo = Integer.parseInt(dateWords[0])
-                return Calendar.getInstance().apply {
-                    when (dateWords[1]) {
-                        "минут" -> Calendar.MINUTE
-                        "часа" -> Calendar.HOUR
-                        else -> null
-                    }?.let {
-                        add(it, -timeAgo)
-                    }
-                }.timeInMillis
-            }
-        }
-        return 0L
-    }
+    override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
     // http://ru.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
@@ -385,29 +313,7 @@ class NineMangaDe : NineManga("NineMangaDe", "http://de.ninemanga.com", "de") {
         else -> SManga.UNKNOWN
     }
 
-    override fun parseChapterDate(date: String): Long {
-        val dateWords = date.split(" ")
-
-        if (dateWords.size == 3) {
-            try {
-                return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-            } catch (e: ParseException) {
-                return 0L
-            }
-        }
-        else if (dateWords.size == 2) { // Aleman
-            val timeAgo = Integer.parseInt(dateWords[0])
-            return Calendar.getInstance().apply {
-                when (dateWords[1]) {
-                    "Stunden" -> Calendar.HOUR // Aleman - 2 palabras
-                    else -> null
-                }?.let {
-                    add(it, -timeAgo)
-                }
-            }.timeInMillis
-        }
-        return 0L
-    }
+    override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
     // http://de.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
@@ -464,31 +370,7 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
         else -> SManga.UNKNOWN
     }
 
-    override fun parseChapterDate(date: String): Long {
-        val dateWords = date.split(" ")
-
-        if (dateWords.size == 3) {
-            if(dateWords[1].contains(",")){
-                try {
-                    return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-                } catch (e: ParseException) {
-                    return 0L
-                }
-            }else{
-                val timeAgo = Integer.parseInt(dateWords[0])
-                return Calendar.getInstance().apply {
-                    when (dateWords[1]) {
-                        "minuti" -> Calendar.MINUTE
-                        "ore" -> Calendar.HOUR
-                        else -> null
-                    }?.let {
-                        add(it, -timeAgo)
-                    }
-                }.timeInMillis
-            }
-        }
-        return 0L
-    }
+    override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
     // http://it.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
@@ -554,31 +436,7 @@ class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
         else -> SManga.UNKNOWN
     }
 
-    override fun parseChapterDate(date: String): Long {
-        val dateWords = date.split(" ")
-
-        if (dateWords.size == 3) {
-            try {
-                return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-            } catch (e: ParseException) {
-                return 0L
-            }
-        }
-
-        else if(dateWords.size == 5) {
-            val timeAgo = Integer.parseInt(dateWords[3])
-            return Calendar.getInstance().apply {
-                when (dateWords[4]) {
-                    "minutes" -> Calendar.MINUTE
-                    "heures" -> Calendar.HOUR
-                    else -> null
-                }?.let {
-                    add(it, -timeAgo)
-                }
-            }.timeInMillis
-        }
-        return 0L
-    }
+    override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
     // http://fr.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
@@ -869,3 +727,43 @@ class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
     )
 }
 
+
+fun parseChapterDateByLang(date: String): Long {
+    val dateWords = date.split(" ")
+
+    if (dateWords.size == 3) {
+        if(dateWords[1].contains(",")){
+            try {
+                return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
+            } catch (e: ParseException) {
+                return 0L
+            }
+        }else{
+            val timeAgo = Integer.parseInt(dateWords[0])
+            return Calendar.getInstance().apply {
+                when (dateWords[1]) {
+                    "minutos" -> Calendar.MINUTE // ES
+                    "horas" -> Calendar.HOUR
+
+                    //"minutos" -> Calendar.MINUTE // BR
+                    "hora" -> Calendar.HOUR
+
+                    "минут" -> Calendar.MINUTE // RU
+                    "часа" -> Calendar.HOUR
+
+                    "Stunden" -> Calendar.HOUR // DE
+
+                    "minuti" -> Calendar.MINUTE // IT
+                    "ore" -> Calendar.HOUR
+
+                    "minutes" -> Calendar.MINUTE // FR
+                    "heures" -> Calendar.HOUR
+                    else -> null
+                }?.let {
+                    add(it, -timeAgo)
+                }
+            }.timeInMillis
+        }
+    }
+    return 0L
+}
