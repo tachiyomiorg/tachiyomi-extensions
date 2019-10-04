@@ -26,7 +26,7 @@ abstract class Genkan(
     override fun popularMangaSelector() = "div.list-item"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/comics?page=$page")
+        return GET("$baseUrl/comics?page=$page", headers)
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -36,7 +36,7 @@ abstract class Genkan(
 
     override fun latestUpdatesRequest(page: Int): Request {
         if (page == 1) latestUpdatesTitles.clear()
-        return GET("$baseUrl/latest?page=$page")
+        return GET("$baseUrl/latest?page=$page", headers)
     }
 
     // To prevent dupes, only add manga to MangasPage if its title is not one we've added already
@@ -75,7 +75,7 @@ abstract class Genkan(
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/comics?query=$query")
+        return GET("$baseUrl/comics?query=$query", headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()

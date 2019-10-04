@@ -27,10 +27,10 @@ class Mangahasu: ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/directory.html?page=$page")
+            GET("$baseUrl/directory.html?page=$page", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/latest-releases.html?page=$page")
+            GET("$baseUrl/latest-releases.html?page=$page", headers)
 
     override fun popularMangaSelector() = "div.div_item"
 
@@ -54,7 +54,7 @@ class Mangahasu: ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/advanced-search.html?keyword=$query&author=&artist=&status=&typeid=&page=$page")
+        return GET("$baseUrl/advanced-search.html?keyword=$query&author=&artist=&status=&typeid=&page=$page", headers)
     }
 
     override fun searchMangaSelector() =
@@ -124,8 +124,7 @@ class Mangahasu: ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        val imgHeader = Headers.Builder().apply {
-            add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        val imgHeader = headers.newBuilder().apply {
             add("Referer", baseUrl)
         }.build()
         return GET(page.imageUrl!!, imgHeader)
