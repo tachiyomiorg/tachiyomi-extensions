@@ -43,7 +43,6 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ManyToon(),
         ChibiManga(),
-        ToomicsMe(),
         ZinManga(),
         ManwahentaiMe(),
         Manga3asq()
@@ -148,11 +147,9 @@ class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en") {
 }
 class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en")
 class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomics/page/$page/?m_orderby=views", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomics/page/$page/?m_orderby=latest", headers)
-    override fun popularMangaSelector() = "div.page-item-detail"
-    override fun latestUpdatesSelector() = "div.page-item-detail"
-    override fun getFilterList() = FilterList()
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/comics/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/comics/page/$page/?m_orderby=latest", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
 }
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
@@ -161,9 +158,6 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
-class ToomicsMe : Madara("Toomics.me", "https://app.toomics.me/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
