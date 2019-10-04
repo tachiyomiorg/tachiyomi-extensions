@@ -30,7 +30,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    override val name: String = "MangaLib"
+    override val name: String = "Mangalib"
 
     override val lang = "ru"
 
