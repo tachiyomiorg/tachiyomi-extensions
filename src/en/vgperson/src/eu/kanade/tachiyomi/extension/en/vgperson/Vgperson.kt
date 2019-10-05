@@ -99,13 +99,13 @@ class Vgperson : ParsedHttpSource() {
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList):
         Observable<MangasPage> = Observable.empty()
 
-    // get known manga covers from MU
+    // get known manga covers from imgur
     private fun getCover(title: String) = when (title) {
-            "The Festive Monster's Cheerful Failure" -> "i249734.png"
-            "Azure and Claude" -> "i278720.jpg"
-            "Three Days of Happiness" -> "i282757.jpg"
+            "The Festive Monster's Cheerful Failure" -> "kEK10GL.png"
+            "Azure and Claude" -> "buXnlmh.jpg"
+            "Three Days of Happiness" -> "kL5dvnp.jpg"
             else -> null
-        }?.let { "https://www.mangaupdates.com/image/$it" }
+        }?.let { "http://i.imgur.com/$it" }
 
     override fun latestUpdatesSelector() = ""
 
