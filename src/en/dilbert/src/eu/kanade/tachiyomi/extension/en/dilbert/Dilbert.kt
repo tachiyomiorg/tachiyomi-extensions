@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import okhttp3.Headers
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -31,17 +32,16 @@ class Dilbert : ParsedHttpSource() {
         "(Android ${VERSION.RELEASE}; Mobile) " +
         "Tachiyomi/${BuildConfig.VERSION_NAME}"
 
-    private val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-
-    private val dateFormat = SimpleDateFormat("EEEE MMMM dd, yyyy")
+    private val dateFormat = SimpleDateFormat("EEEE MMMM dd, yyyy", Locale.US)
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", userAgent)
         add("Referer", baseUrl)
     }
 
-    override fun fetchPopularManga(page: Int) = Observable.just(
-        MangasPage((currentYear downTo 1989).map {
+    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        return Observable.just(MangasPage((currentYear downTo 1989).map {
             SManga.create().apply {
                 url = "?$it"
                 title = "$name ($it)"
@@ -54,8 +54,8 @@ class Dilbert : ParsedHttpSource() {
                 """.trimIndent()
                 thumbnail_url = "https://dilbert.com/assets/favicon/favicon-196x196-cf4d86b485e628a034ab8b961c1c3520b5969252400a80b9eed544d99403e037.png"
             }
-        }, false)
-    )
+        }, false))
+    }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList) = fetchPopularManga(page)
 
@@ -74,16 +74,18 @@ class Dilbert : ParsedHttpSource() {
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         val chapters = mutableListOf<SChapter>()
-        for (page in 1..37) {
+        fun getChapters(page: Int = 1): Document {
             val res = client.newCall(chapterListRequest(manga, page)).execute()
             if (!res.isSuccessful) {
                 res.close()
                 throw Exception("HTTP error ${res.code()}")
             }
-            res.asJsoup().select(".comic-item").takeIf { it.size > 0 }?.let {
-                chapters.addAll(it.map(::chapterFromElement))
-            } ?: break
+            return res.asJsoup().also {
+                chapters.addAll(it.select(".comic-item").map(::chapterFromElement))
+            }
         }
+        val pages = getChapters().first(".pagination > li:nth-last-child(2) > a").text().toInt()
+        for (page in 2..pages) getChapters(page)
         return Observable.just(
             chapters.sortedBy(SChapter::date_upload).mapIndexed {
                 i, ch -> ch.apply { chapter_number = i + 1f }
