@@ -2,7 +2,9 @@ package eu.kanade.tachiyomi.extension.all.ninemanga
 
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
+import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
+import okhttp3.Request
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -26,6 +28,11 @@ fun getAllNineManga(): List<Source> {
 class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en")
 
 class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
+    // ES, FR, RU don't return results for searches with an apostrophe
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
+    }
+
     override fun parseStatus(status: String) = when {
         status.contains("En curso") -> SManga.ONGOING
         status.contains("Completado") -> SManga.COMPLETED
@@ -248,6 +255,11 @@ class NineMangaBr : NineManga("NineMangaBr", "http://br.ninemanga.com", "pt") {
 }
 
 class NineMangaRu : NineManga("NineMangaRu", "http://ru.ninemanga.com", "ru") {
+    // ES, FR, RU don't return results for searches with an apostrophe
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
+    }
+
     override fun parseStatus(status: String) = when {
         // No Ongoing status
         status.contains("завершенный") -> SManga.COMPLETED
@@ -430,6 +442,11 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
 }
 
 class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
+    // ES, FR, RU don't return results for searches with an apostrophe
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
+    }
+
     override fun parseStatus(status: String) = when {
         status.contains("En cours") -> SManga.ONGOING
         status.contains("Complété") -> SManga.COMPLETED
