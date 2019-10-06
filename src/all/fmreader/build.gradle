@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: LHReader (multiple aggregators)'
-    pkgNameSuffix = 'all.lhreader'
-    extClass = '.LHReaderFactory'
+    appName = 'Tachiyomi: FMReader (multiple aggregators)'
+    pkgNameSuffix = 'all.fmreader'
+    extClass = '.FMReaderFactory'
     extVersionCode = 1
     libVersion = '1.2'
 }

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.lhreader
+package eu.kanade.tachiyomi.extension.all.fmreader
 
 // For sites based on the Flat-Manga CMS
 
@@ -11,13 +11,15 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import java.util.*
 
-abstract class LHReader (
+abstract class FMReader (
     override val name: String,
     override val baseUrl: String,
     override val lang: String
 ) : ParsedHttpSource() {
 
     override val supportsLatest = true
+
+    override val client: OkHttpClient = network.cloudflareClient
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64) Gecko/20100101 Firefox/69.0")
@@ -69,12 +71,15 @@ abstract class LHReader (
     override fun latestUpdatesRequest(page: Int): Request =
         GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=last_update&sort_type=DESC")
 
+    // for sources that don't have the "page x of y" element
+    fun defaultMangaParse(response: Response): MangasPage = super.popularMangaParse(response)
+
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
         val mangas = mutableListOf<SManga>()
         var hasNextPage = true
 
-        document.select(popularMangaSelector()).forEach{ mangas.add(popularMangaFromElement(it)) }
+        document.select(popularMangaSelector()).map{ mangas.add(popularMangaFromElement(it)) }
 
         // check if there's a next page
         document.select(popularMangaNextPageSelector()).first().text().split(" ").let {
@@ -130,10 +135,10 @@ abstract class LHReader (
         val manga = SManga.create()
         val infoElement = document.select("div.row").first()
 
-        manga.author = infoElement.select("li a.btn-info")?.text()
-        manga.genre = infoElement.select("li a.btn-danger")?.text()?.replace(" ", ", ")
-        manga.status = parseStatus(infoElement.select("li a.btn-success").first().text().toLowerCase(Locale.getDefault()))
-        manga.description = document.select("div.row ~ div.row p")?.text()?.trim()
+        manga.author = infoElement.select("li a.btn-info").text()
+        manga.genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
+        manga.status = parseStatus(infoElement.select("li a.btn-success").first().text().toLowerCase())
+        manga.description = document.select("div.row ~ div.row p").text().trim()
         manga.thumbnail_url = infoElement.select("img.thumbnail").attr("abs:src")
 
         return manga
@@ -146,12 +151,11 @@ abstract class LHReader (
         else -> SManga.UNKNOWN
     }
 
-
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
 
     open val chapterUrlSelector = "a"
 
-    open val timeElementSelector = "time"
+    open val chapterTimeSelector = "time"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -160,7 +164,7 @@ abstract class LHReader (
             chapter.setUrlWithoutDomain(it.attr("abs:href"))
             chapter.name = it.text()
         }
-        chapter.date_upload = element.select(timeElementSelector).let{ if(it.hasText()) parseChapterDate(it.text()) else 0 }
+        chapter.date_upload = element.select(chapterTimeSelector).let{ if(it.hasText()) parseChapterDate(it.text()) else 0 }
 
         return chapter
     }
@@ -169,13 +173,20 @@ abstract class LHReader (
     open val dateValueIndex = 0
 
     // gets the unit of time (day, week hour) from "1 day ago"
-    open val dateWhenIndex = 1
+    open val dateWordIndex = 1
 
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[dateValueIndex].toInt()
+        val dateWord = date.split(' ')[dateWordIndex].let{
+            if (it.contains("(")) {
+                it.substringBefore("(")
+            } else {
+                it.substringBefore("s")
+            }
+        }
 
         // languages: en, vi, es, tr
-        return when (date.split(' ')[dateWhenIndex].substringBefore("(")) {
+        return when (dateWord) {
             "min", "minute", "phút", "minuto", "dakika" -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
                 set(Calendar.SECOND, 0)
@@ -229,7 +240,7 @@ abstract class LHReader (
     class Genre(name: String, val id: String = name.replace(' ', '+')) : Filter.TriState(name)
     private class SortBy : Filter.Sort("Sorted By", arrayOf("A-Z", "Most vỉews", "Last updated"), Selection(1, false))
 
-    // TODO: Country
+    // TODO: Country (leftover from original LHTranslation)
     override fun getFilterList() = FilterList(
         TextField("Author", "author"),
         TextField("Group", "group"),
