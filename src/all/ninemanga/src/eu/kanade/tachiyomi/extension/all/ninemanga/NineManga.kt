@@ -25,14 +25,14 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/list/New-Update/", headers) // "$baseUrl/category/updated_$page.html"
 
-    override fun latestUpdatesSelector() = "ul.direlist > li"
+    override fun latestUpdatesSelector() = "dl.bookinfo"
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        element.select("dl.bookinfo").let {
-            setUrlWithoutDomain(it.select("dd > a.bookname").attr("href") + "?waring=1") // To removes warning message and shows chapter list.
-            title = it.select("dd > a.bookname").first().text()
-            thumbnail_url = it.select("dt > a > img").attr("src")
+        element.select("a.bookname").let {
+            url = it.attr("href").substringAfter(baseUrl)
+            title = it.text()
         }
+        thumbnail_url = element.select("img").attr("abs:src")
     }
 
     override fun latestUpdatesNextPageSelector() = "ul.pageList > li:last-child > a.l"
@@ -47,14 +47,12 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select("div.bookintro").let {
-            thumbnail_url = document.select("a.bookface > img").attr("src")
-            genre = document.select("li[itemprop=genre] > a").joinToString(", ") {
-                it.text()
-            }
-            author = it.select("a[itemprop=author]").text()
-            artist = ""
-            description = it.select("p[itemprop=description]").text().orEmpty()
-            status = parseStatus(it.select("a.red").first().text().orEmpty())
+            title = it.select("li > span:not([class])").text()
+            genre = it.select("li[itemprop=genre] a").joinToString { e -> e.text() }
+            author = it.select("li a[itemprop=author]").text()
+            status = parseStatus(it.select("li a.red").first().text())
+            description = it.select("p[itemprop=description]").text()
+            thumbnail_url = it.select("img[itemprop=image]").attr("abs:src")
         }
     }
 
@@ -64,12 +62,16 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         else -> SManga.UNKNOWN
     }
 
+    override fun chapterListRequest(manga: SManga): Request {
+        return GET(baseUrl + manga.url + "?waring=1", headers) // Bypasses adult content warning
+    }
+
     override fun chapterListSelector() = "ul.sub_vol_ul > li"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         element.select("a.chapter_list_a").let {
             name = it.text()
-            setUrlWithoutDomain(it.attr("href"))
+            url = it.attr("href").substringAfter(baseUrl).replace("%20", " ")
         }
         date_upload = parseChapterDate(element.select("span").text())
     }
