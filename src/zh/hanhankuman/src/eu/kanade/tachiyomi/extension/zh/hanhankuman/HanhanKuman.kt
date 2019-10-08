@@ -49,7 +49,7 @@ class HanhanKuman : ParsedHttpSource() {
         manga.url = element.select("a").first()!!.attr("href")
         manga.title = element.select("span.cComicTitle").text().trim()
         manga.author = element.select("span.cComicAuthor").first()?.text()?.trim()
-        manga.thumbnail_url = element.select("div.cListSlt > a > img").attr("src")
+        manga.thumbnail_url = element.select("div.cListSlt > a > img").attr("abs:src")
         manga.description = element.select(".cComicMemo").text().trim()
 
         return manga
@@ -60,7 +60,7 @@ class HanhanKuman : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title").trim()
-            manga.thumbnail_url = it.select("img").attr("src").trim()
+            manga.thumbnail_url = it.select("img").attr("abs:src").trim()
         }
         return manga
     }
