@@ -84,7 +84,7 @@ class HanhanKuman : ParsedHttpSource() {
         manga.thumbnail_url = document.select("img[src*=comicui]").attr("src")
         manga.status = when (document.select("li:contains(状态)").text()?.substringAfterLast(":")?.trim()) {
             "连载" -> SManga.ONGOING
-            //"" -> SManga.COMPLETED
+            "完结" -> SManga.COMPLETED
             //"" -> SManga.LICENSED
             else -> SManga.UNKNOWN
         }
