@@ -78,8 +78,16 @@ class HanhanKuman : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-//        manga.description = document.select("p.comic_deCon_d").text().trim()
-//        manga.thumbnail_url = document.select("div.comic_i_img > img").attr("src")
+        manga.author = document.select("li:contains(作者)").text()?.substringAfterLast(":")?.trim()
+        manga.artist = document.select("li:contains(作者)").text()?.substringAfterLast(":")?.trim()
+        manga.description = document.select("li:contains(简介)").text().substringAfterLast(":").trim()
+        manga.thumbnail_url = document.select("img[src*=comicui]").attr("src")
+        manga.status = when (document.select("li:contains(状态)").text()?.substringAfterLast(":")?.trim()) {
+            "连载" -> SManga.ONGOING
+            //"" -> SManga.COMPLETED
+            //"" -> SManga.LICENSED
+            else -> SManga.UNKNOWN
+        }
         return manga
     }
 
