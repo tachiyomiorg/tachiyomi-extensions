@@ -19,8 +19,8 @@ class boommanga : ParsedHttpSource() {
     override val lang = "en"
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/category?sort=heat", headers)
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/category?sort=new", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/category?sort=heat&page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/category?sort=new&page=$page", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search?keyword=$query")?.newBuilder()
         return GET(url.toString(), headers)
@@ -31,7 +31,7 @@ class boommanga : ParsedHttpSource() {
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun chapterListSelector() = ".chapters > li"
 
-    override fun searchMangaNextPageSelector() = "li.not used"
+    override fun searchMangaNextPageSelector() = "script:containsData(next_page_url):not(:containsData(false))"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
