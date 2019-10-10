@@ -101,7 +101,8 @@ class KomikGo : Madara("KomikGo", "https://komikgo.com/", "id") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
-class TritiniaScans : Madara("Tritinia Scans", "http://tritiniascans.ml/", "en") {
+class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?m_orderby=latest", headers)
     override fun latestUpdatesNextPageSelector(): String? = null
