@@ -78,6 +78,7 @@ abstract class MangaCards (
             manga.url = it.attr("href")
             manga.title = it.text()
         }
+        manga.thumbnail_url = element.select("img.rounded.w-100").attr("abs:src")
         return manga
     }
 
