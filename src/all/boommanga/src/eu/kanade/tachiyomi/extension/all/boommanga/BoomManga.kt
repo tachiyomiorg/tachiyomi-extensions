@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.boommanga
+package eu.kanade.tachiyomi.extension.all.boommanga
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
