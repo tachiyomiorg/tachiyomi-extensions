@@ -7,15 +7,15 @@ import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
-import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.SerieDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.*
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.*
+import rx.Single
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
@@ -35,8 +35,27 @@ open class Komga : ConfigurableSource, HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage =
         processSeriePage(response)
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        GET("$baseUrl/api/v1/series?search=$query&page=${page - 1}", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = HttpUrl.parse("$baseUrl/api/v1/series?search=$query&page=${page - 1}")!!.newBuilder()
+
+        filters.forEach { filter ->
+            when (filter) {
+                is LibraryGroup -> {
+                    val libraryToInclude = mutableListOf<Long>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            libraryToInclude.add(content.id)
+                        }
+                    }
+                    if (libraryToInclude.isNotEmpty()) {
+                        url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
+                    }
+                }
+            }
+        }
+
+        return GET(url.toString(), headers)
+    }
 
     override fun searchMangaParse(response: Response): MangasPage =
         processSeriePage(response)
@@ -45,8 +64,8 @@ open class Komga : ConfigurableSource, HttpSource() {
         GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val serie = gson.fromJson<SerieDto>(response.body()?.charStream()!!)
-        return serie.toSManga()
+        val series = gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
+        return series.toSManga()
     }
 
     override fun chapterListRequest(manga: SManga): Request =
@@ -87,14 +106,14 @@ open class Komga : ConfigurableSource, HttpSource() {
     }
 
     private fun processSeriePage(response: Response): MangasPage {
-        val page = gson.fromJson<PageWrapperDto<SerieDto>>(response.body()?.charStream()!!)
+        val page = gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)
         val mangas = page.content.map {
             it.toSManga()
         }
         return MangasPage(mangas, !page.last)
     }
 
-    private fun SerieDto.toSManga(): SManga =
+    private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
             title = this@toSManga.name
             url = "/api/v1/series/${this@toSManga.id}"
@@ -118,6 +137,33 @@ open class Komga : ConfigurableSource, HttpSource() {
         }
 
     override fun imageUrlParse(response: Response): String = ""
+
+    private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
+    private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
+
+    override fun getFilterList(): FilterList =
+        FilterList(
+            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name })
+        )
+
+    private var libraries = emptyList<LibraryDto>()
+
+
+    init {
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                libraries = try {
+                    gson.fromJson(it.body()?.charStream()!!)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }, {})
+
+    }
 
     override val name = "Komga"
     override val lang = "en"
