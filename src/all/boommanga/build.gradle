@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: BoomManga, ManManga, TwinsComics'
-    pkgNameSuffix = 'en.boommanga'
+    pkgNameSuffix = 'all.boommanga'
     extClass = '.BoomMangaFactory'
     extVersionCode = 1
     libVersion = '1.2'
