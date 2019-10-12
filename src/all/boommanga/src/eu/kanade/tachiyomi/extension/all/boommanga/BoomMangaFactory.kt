@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.boommanga
+package eu.kanade.tachiyomi.extension.all.boommanga
 
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
