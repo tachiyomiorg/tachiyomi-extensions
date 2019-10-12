@@ -150,7 +150,7 @@ class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en")
 class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=latest", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query webcomic", filters)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
 }
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
