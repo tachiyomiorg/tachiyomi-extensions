@@ -63,7 +63,7 @@ class ManMangazh: BoomManga("ManManga", "https://m.manmanga.com/cn", "zh"){
     }
 }
 
-class TwinsComicszh: BoomManga("TwinsComics", "https://m.twinscomics.com/zh", "zh"){
+class TwinsComicszh: BoomManga("TwinsComics", "https://m.twinscomics.com/cn", "zh"){
     override fun nameselector(element: Element) = element.select("a").attr("alt")
     override fun authorget(document: Document) = document.select(".author").text().substringAfter("：").trim()
     override fun thumbnailget(document: Document) = document.select(".bg-box .bg").attr("style").substringAfter("'").substringBefore("'")
