@@ -188,7 +188,7 @@ class Manhuaren : HttpSource() {
         obj.optString("mangaCoverimageUrl").let {
             if (it != "") { thumbnail_url = it }
         }
-        if (thumbnail_url == "") {
+        if (thumbnail_url == "" || thumbnail_url == "http://mhfm5.tel.cdndm5.com/tag/category/nopic.jpg") {
             obj.optString("mangaPicimageUrl").let {
                 if (it != "") { thumbnail_url = it }
             }
