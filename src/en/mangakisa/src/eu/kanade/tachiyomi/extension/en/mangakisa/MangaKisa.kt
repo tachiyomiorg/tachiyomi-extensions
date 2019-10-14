@@ -25,7 +25,7 @@ class MangaKisa : ParsedHttpSource() {
 
     override fun popularMangaSelector() = ".an"
     override fun latestUpdatesSelector() = ".episode-box-2"
-    override fun searchMangaSelector() = "a.an"
+    override fun searchMangaSelector() = "div.iepbox a.an"
     override fun chapterListSelector() = ".infoepbox > a"
 
     override fun popularMangaNextPageSelector() = "div:containsOwn(Next Page >)"
