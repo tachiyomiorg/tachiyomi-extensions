@@ -24,7 +24,7 @@ class MangaKisa : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-    override fun popularMangaSelector() = ".an"
+    override fun popularMangaSelector() = "div.listanimes a.an"
     override fun latestUpdatesSelector() = ".episode-box-2"
     override fun searchMangaSelector() = "div.iepbox a.an"
     override fun chapterListSelector() = ".infoepbox > a"
