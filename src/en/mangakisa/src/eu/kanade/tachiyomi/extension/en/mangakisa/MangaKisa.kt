@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -77,7 +78,27 @@ class MangaKisa : ParsedHttpSource() {
         chapter.setUrlWithoutDomain("/" + element.select("a").attr("href"))
         chapter.chapter_number = element.select("[class*=infoept2] > div").text().toFloat()
         chapter.name = "Chapter " + element.select("[class*=infoept2] > div").text().trim()
+        chapter.date_upload = parseRelativeDate(element.select("[class*=infoept3] > div").text()) ?:0
         return chapter
+    }
+
+    private fun parseRelativeDate(date: String): Long? {
+        val trimmedDate = date.split(" ")
+        if (trimmedDate[2] != "ago") return null
+        val number = trimmedDate[0].toIntOrNull() ?: return null
+
+        // Map English and other language units to Java units
+        val javaUnit = when (trimmedDate[1].removeSuffix("s")) {
+            "year" -> Calendar.YEAR
+            "month" -> Calendar.MONTH
+            "day" -> Calendar.DAY_OF_MONTH
+            "hr" -> Calendar.HOUR
+            "min" -> Calendar.MINUTE
+            "second" -> Calendar.SECOND
+            else -> return null
+        }
+
+        return Calendar.getInstance().apply { add(javaUnit, -number) }.timeInMillis
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
