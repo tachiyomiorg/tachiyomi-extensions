@@ -38,7 +38,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/ne")
+        .add("Referer", "$baseUrl/home-nn")
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "/$page" else ""
