@@ -54,7 +54,7 @@ data class TitleDetailView(
     @SerialId(2) val titleImageUrl: String,
     @SerialId(3) val overview: String,
     @SerialId(4) val backgroundImageUrl: String,
-    @SerialId(5) val nextTimeStamp: Int,
+    @Optional @SerialId(5) val nextTimeStamp: Int = 0,
     @Optional @SerialId(6) val updateTiming: UpdateTiming? = UpdateTiming.DAY,
     @Optional @SerialId(7) val viewingPeriodDescription: String = "",
     @SerialId(9) val firstChapterList: List<Chapter> = emptyList(),
