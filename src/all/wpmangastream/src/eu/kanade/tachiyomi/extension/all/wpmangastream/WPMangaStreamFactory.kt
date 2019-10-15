@@ -29,10 +29,10 @@ class WPMangaStreamFactory : SourceFactory {
     )
 }
 
-class Kiryuu : WPMangaStream("Kiryuu", "https://kiryuu.co", "id")
-class KomikAV : WPMangaStream("Komik AV", "https://komikav.com", "id")
-class KomikStation : WPMangaStream("Komik Station", "https://komikstation.com", "id")
-class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
+class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id")
+class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id")
+class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
+class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikcast.com", "id") {
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/daftar-komik/page/$page/?order=popular", headers)
     }
@@ -179,7 +179,7 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         GenreListFilter(getGenreList())
     )
 }
-class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
+class WestManga : WPMangaStream("West Manga (WP Manga Stream)", "https://westmanga.info", "id") {
     override fun popularMangaRequest(page: Int): Request {
         val url = if (page == 1) "$baseUrl/manga-list/?popular" else "$baseUrl/manga-list/page/$page/?popular"
         return GET(url, headers)
@@ -338,7 +338,7 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
         GenreListFilter()
     )
 }
-class KomikGo : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
+class KomikGo : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com", "id") {
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/page/$page?s&post_type=wp-manga&m_orderby=views", headers)
@@ -608,7 +608,7 @@ class KomikGo : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
         Genre("Yuri", "yuri")
     )
 }
-class KomikIndo : WPMangaStream("Komik Indo", "https://www.komikindo.web.id", "id") {
+class KomikIndo : WPMangaStream("Komik Indo (WP Manga Stream)", "https://www.komikindo.web.id", "id") {
 
     override fun popularMangaRequest(page: Int): Request {
         val url = if (page == 1) baseUrl else "$baseUrl/page/$page"
@@ -773,7 +773,7 @@ class KomikIndo : WPMangaStream("Komik Indo", "https://www.komikindo.web.id", "i
         fun toUriPart() = vals[state].second
     }
 }
-class MaidManga : WPMangaStream("Maid Manga", "https://www.maid.my.id", "id") {
+class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.maid.my.id", "id") {
     override fun latestUpdatesSelector() = "h2:contains(Update Chapter) + div.row div.col-12"
     override fun latestUpdatesRequest(page: Int): Request {
         val builtUrl = if (page == 1) baseUrl else "$baseUrl/page/$page/"
