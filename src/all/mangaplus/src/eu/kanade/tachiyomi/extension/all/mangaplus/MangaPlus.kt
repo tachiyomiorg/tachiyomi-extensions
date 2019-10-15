@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.mangaplus
 
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
@@ -233,19 +232,22 @@ abstract class MangaPlus(override val lang: String,
     }
 
     private fun decodeImage(encryptionKey: String, image: ByteArray): ByteArray {
-        val variablesSrc = """
-            var ENCRYPTION_KEY = "$encryptionKey";
-            var RESPONSE_BYTES = new Uint8Array([${image.joinToString()}]);
-            """
+        val keyStream = HEX_GROUP
+            .findAll(encryptionKey)
+            .map { it.groupValues[1].toInt(16) }
+            .toList()
 
-        val res = Duktape.create().use {
-            it.evaluate(variablesSrc + IMAGE_DECRYPT_SRC) as String
+        val content = image
+            .map { it.toInt() }
+            .toMutableList()
+
+        val blockSizeInBytes = keyStream.size
+
+        for ((i, value) in content.iterator().withIndex()) {
+            content[i] = value xor keyStream[i % blockSizeInBytes]
         }
 
-        return res.substringAfter("[").substringBefore("]")
-            .split(",")
-            .map { it.toInt().toByte() }
-            .toByteArray()
+        return ByteArray(content.size) { pos -> content[pos].toByte() }
     }
 
     private fun Response.asProto(): MangaPlusResponse = ProtoBuf.load(MangaPlusSerializer, body()!!.bytes())
@@ -254,28 +256,6 @@ abstract class MangaPlus(override val lang: String,
         private const val WEB_URL = "https://mangaplus.shueisha.co.jp"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
 
-        private const val IMAGE_DECRYPT_SRC = """
-            function hex2bin(hex) {
-                return new Uint8Array(hex.match(/.{1,2}/g)
-                        .map(function (x) { return parseInt(x, 16) }));
-            }
-
-            function decode(encryptionKey, bytes) {
-                var keystream = hex2bin(encryptionKey);
-                var content = bytes;
-                var blockSizeInBytes = keystream.length;
-
-                for (var i = 0; i < content.length; i++) {
-                    content[i] ^= keystream[i % blockSizeInBytes];
-                }
-
-                return content;
-            }
-
-            (function() {
-                var decoded = decode(ENCRYPTION_KEY, RESPONSE_BYTES);
-                return JSON.stringify([].slice.call(decoded));
-            })();
-            """
+        private val HEX_GROUP = "(.{1,2})".toRegex()
     }
 }
