@@ -120,7 +120,7 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
         manga.title = document.select(".infopicbox > img").attr("alt").trim()
         manga.artist = document.select(".textc > a[href*=authors]").text().trim()
         manga.author = document.select(".textc > a[href*=authors]").text().trim()
-        manga.description = getpoppref() + "\n" + getlastestpref() + "\n" + document.select(".infodes2").first().text()
+        manga.description = document.select(".infodes2").first().text()
         val glist = document.select("a.infoan[href*=genres]").map { it.text() }
         manga.genre = glist.joinToString(", ")
         manga.status = when (document.select(".textc:contains(Ongoing), .textc:contains(Completed)")?.first()?.text()) {
