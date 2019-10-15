@@ -1,7 +1,13 @@
 package eu.kanade.tachiyomi.extension.all.wpmangastream
 
 import android.annotation.SuppressLint
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
@@ -10,10 +16,54 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.util.concurrent.TimeUnit
 
-abstract class WPMangaStream(override val name: String, override val baseUrl: String, override val lang: String) : ParsedHttpSource() {
+abstract class WPMangaStream(override val name: String, override val baseUrl: String, override val lang: String) : ConfigurableSource, ParsedHttpSource() {
     override val supportsLatest = true
-    override val client: OkHttpClient = network.cloudflareClient
+
+    //    override val client: OkHttpClient = network.cloudflareClient
+    companion object {
+        private const val MID_QUALITY = 1
+        private const val LOW_QUALITY = 2
+
+        private const val SHOW_THUMBNAIL_PREF_Title = "Default thumbnail quality"
+        private const val SHOW_THUMBNAIL_PREF = "showThumbnailDefault"
+    }
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+
+        val thumbsPref = ListPreference(screen.context).apply {
+            key = SHOW_THUMBNAIL_PREF_Title
+            title = SHOW_THUMBNAIL_PREF_Title
+            entries = arrayOf("Show high quality", "Show mid quality", "Show low quality")
+            entryValues = arrayOf("0", "1", "2")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
+            }
+        }
+        screen.addPreference(thumbsPref)
+    }
+
+    private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
+
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
+
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga/page/$page/?order=popular", headers)
@@ -146,7 +196,7 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        var headers = Headers.Builder()
+        val headers = Headers.Builder()
         headers.apply {
             add("Referer", baseUrl)
             add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")
@@ -157,7 +207,20 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
                 add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
             }
         }
-        return GET(page.imageUrl!!, headers.build())
+
+        return GET(getImageUrl(page.imageUrl!!, getShowThumbnail()), headers.build())
+    }
+
+    private fun getImageUrl(baseUrl: String, quality: Int): String {
+        var url = baseUrl
+        if (quality == LOW_QUALITY) {
+            url = url.replace("https://", "")
+            url = "http://images.weserv.nl/?w=300&q=70&url=" + url
+        } else if (quality == MID_QUALITY) {
+            url = url.replace("https://", "")
+            url = "http://images.weserv.nl/?w=600&q=70&url=" + url
+        }
+        return url
     }
 
     private class AuthorFilter : Filter.Text("Author")
