@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     appName = 'Tachiyomi: MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
@@ -13,6 +14,7 @@ dependencies {
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
     compileOnly project(':duktape-stub')
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.13.0'
 }
 
 apply from: "$rootDir/common.gradle"
