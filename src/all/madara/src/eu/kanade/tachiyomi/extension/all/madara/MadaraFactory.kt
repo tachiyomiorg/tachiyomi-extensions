@@ -24,7 +24,6 @@ class MadaraFactory : SourceFactory {
         HappyTeaScans(),
         JustForFun(),
         AoCTranslations(),
-        Kanjiku(),
         KomikGo(),
         LuxyScans(),
         TritiniaScans(),
@@ -45,7 +44,8 @@ class MadaraFactory : SourceFactory {
         ChibiManga(),
         ZinManga(),
         ManwahentaiMe(),
-        Manga3asq()
+        Manga3asq(),
+        NManhwa()
     )
 }
 
@@ -95,9 +95,7 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe/
         return chapters.reversed()
     }
 }
-class Kanjiku : Madara("Kanjiku", "https://kanjiku.net/", "de",
-    dateFormat = SimpleDateFormat("dd. MMM yyyy", Locale.GERMAN))
-class KomikGo : Madara("KomikGo", "https://komikgo.com/", "id") {
+class KomikGo : Madara("KomikGo", "https://komikgo.com", "id") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
@@ -108,7 +106,6 @@ class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun popularMangaNextPageSelector(): String? = null
 }
-
 class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/",
     "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr",
@@ -167,5 +164,8 @@ class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
 class ManwahentaiMe : Madara("Manwahentai.me", "https://manhwahentai.me", "en")
 
 class Manga3asq: Madara("مانجا العاشق", "https://3asq.org", "ar") {
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+}
+class NManhwa: Madara("N Manhwa", "https://nmanhwa.com", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
