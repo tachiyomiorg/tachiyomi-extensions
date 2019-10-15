@@ -15,14 +15,7 @@ class wnacg : ParsedHttpSource() {
     override val baseUrl = "https://www.wnacg.org"
     override val lang = "zh"
     override val supportsLatest = false
-    /*
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .retryOnConnectionFailure(true)
-        .followRedirects(true)
-        .build()!!
-    */
+    
     override fun popularMangaSelector() = "div.pic_box"
     override fun latestUpdatesSelector() = throw Exception("Not used")
     override fun searchMangaSelector() = "div.iepbox a.an"
@@ -59,36 +52,19 @@ class wnacg : ParsedHttpSource() {
         return manga
     }
 
+
     override fun chapterListParse(response: Response): List<SChapter> {
         var document = response.asJsoup()
         val chapters = mutableListOf<SChapter>()
-        //create first chapter since its on main manga page
+        //create one chapter since it is single books
         chapters.add(createChapter("1", document.baseUri()))
-        //see if there are multiple chapters or not
-        do {
-            val newpage = client.newCall(GET( baseUrl + document.select("a:containsOwn(後頁)").attr("href"), headers)).execute().asJsoup()
-            chapters.add(createChapter(newpage.select("span.thispage").text(), newpage.baseUri()))
-            document = newpage
-        } while (!document.select("a:containsOwn(後頁)").isNullOrEmpty())
-        /*
-        document.select(chapterListSelector())?.let { it ->
-            it.forEach {
-                if (!it.text().contains("後頁", true)) {
-                    val url = it.attr("href")
-                    chapters.add(createChapter(it.text(), url))
-                }
-            }
-        }
-        */
-        chapters.reverse()
-
         return chapters
     }
 
     private fun createChapter(pageNumber: String, mangaUrl: String): SChapter {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(mangaUrl)
-        chapter.name = "Page $pageNumber"
+        chapter.name = "Ch. $pageNumber"
         return chapter
     }
 
@@ -103,36 +79,15 @@ class wnacg : ParsedHttpSource() {
         return manga
     }
 
-    /*
-        override fun pageListParse(response: Response): List<Page> {
-            val body = response.asJsoup()
-            val pages = mutableListOf<Page>()
-            val elements = body.select("img")
-            for (i in 0 until elements.size) {
-                pages.add(Page(i, "", getImage(elements[i])))
-            }
-            return pages
-        }
-
-        private fun getImage(element: Element): String {
-            var url =
-                when {
-                    element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("data-src")
-                    element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") || element.attr("src").endsWith(".jpeg") -> element.attr("src")
-                    else -> element.attr("src")
-                }
-            if (url.startsWith("//")) {
-                url = "http:$url"
-            }
-            return url
-        }
-    */
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        document.select("div.pic_box")?.forEach {
-            val imgdoc = client.newCall(GET( baseUrl + it.select("a").attr("href"), headers)).execute().asJsoup()
-            val imgurl = imgdoc.select("img[id=picarea]").attr("src")
-            pages.add(Page(pages.size, "", "https:$imgurl"))
+        var imgpage = client.newCall(GET( baseUrl + document.select("div.pic_box a").first().attr("href"), headers)).execute().asJsoup()
+        //var pageNumber = imgpage.select("span.newpagelabel").text().substringBefore("/")
+        val totalpage = imgpage.select("span.newpagelabel").text().substringAfter("/").toInt()
+        for (i in 0 until totalpage) {
+            pages.add(Page(pages.size, "", "https:" + imgpage.select("img[id=picarea]").attr("src")))
+            val newpage = client.newCall(GET( baseUrl + imgpage.select("a:containsOwn(下一頁)").attr("href"), headers)).execute().asJsoup()
+            imgpage = newpage
         }
         return pages
     }
