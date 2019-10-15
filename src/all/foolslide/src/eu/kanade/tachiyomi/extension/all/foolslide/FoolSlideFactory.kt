@@ -10,7 +10,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Request
 import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = getAllFoolSlide()
@@ -19,7 +18,6 @@ class FoolSlideFactory : SourceFactory {
 fun getAllFoolSlide(): List<Source> {
     return listOf(
             JaminisBox(),
-            HelveticaScans(),
             SenseScans(),
             KireiCake(),
             SilentSky(),
@@ -42,9 +40,7 @@ fun getAllFoolSlide(): List<Source> {
             AkaiYuhiMunTeam(),
             LupiTeam(),
             HentaiCafe(),
-            ShoujoSense(),
             TheCatScans(),
-            ShoujoHearts(),
             ZandynoFansub()
     )
 }
@@ -68,8 +64,6 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
 }
 
 class TheCatScans : FoolSlide("The Cat Scans", "https://reader2.thecatscans.com/", "en")
-
-class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
 class SenseScans : FoolSlide("Sense-Scans", "http://sensescans.com", "en", "/reader")
 
@@ -119,8 +113,6 @@ class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "
 
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
 
-class ShoujoSense : FoolSlide("ShoujoSense", "http://reader.shoujosense.com", "en")
-
 class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(mangaDetailsInfoSelector).first().text()
@@ -141,21 +133,6 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
         return manga
     }
 
-}
-
-class ShoujoHearts : FoolSlide("ShoujoHearts", "http://shoujohearts.com", "en", "/reader") {
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        element.select("a[title]").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        element.select("img").first()?.let {
-            manga.thumbnail_url = it.absUrl("src")
-        }
-        return manga
-    }
 }
 
 class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
