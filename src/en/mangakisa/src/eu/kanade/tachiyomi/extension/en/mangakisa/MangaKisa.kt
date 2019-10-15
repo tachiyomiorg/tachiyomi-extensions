@@ -1,17 +1,24 @@
 package eu.kanade.tachiyomi.extension.en.mangakisa
 
 import android.net.Uri
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 
-class MangaKisa : ParsedHttpSource() {
+class MangaKisa : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "MangaKisa"
     override val baseUrl = "https://mangakisa.com"
@@ -24,6 +31,10 @@ class MangaKisa : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
     override fun popularMangaSelector() = "div.listanimes a.an"
     override fun latestUpdatesSelector() = ".episode-box-2"
     override fun searchMangaSelector() = "div.iepbox a.an"
@@ -35,11 +46,14 @@ class MangaKisa : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request {
         val page0 = page-1
-        return GET("$baseUrl/popular/$page0", headers)
+        val popselect = getpoppref()
+        return GET("$baseUrl/$popselect/$page0", headers)
+
     }
     override fun latestUpdatesRequest(page: Int): Request {
         val page0 = page-1
-        return GET("$baseUrl/all-updates/latest/$page0", headers)
+        val latestselect = getlastestpref()
+        return GET("$baseUrl/$latestselect/$page0", headers)
     }
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val page0 = page-1
@@ -106,7 +120,7 @@ class MangaKisa : ParsedHttpSource() {
         manga.title = document.select(".infopicbox > img").attr("alt").trim()
         manga.artist = document.select(".textc > a[href*=authors]").text().trim()
         manga.author = document.select(".textc > a[href*=authors]").text().trim()
-        manga.description = document.select(".infodes2").first().text()
+        manga.description = getpoppref() + "\n" + getlastestpref() + "\n" + document.select(".infodes2").first().text()
         val glist = document.select("a.infoan[href*=genres]").map { it.text() }
         manga.genre = glist.joinToString(", ")
         manga.status = when (document.select(".textc:contains(Ongoing), .textc:contains(Completed)")?.first()?.text()) {
@@ -127,9 +141,11 @@ class MangaKisa : ParsedHttpSource() {
 
         return pages
     }
+    
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
+    //Filter List Code
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
@@ -194,7 +210,52 @@ class MangaKisa : ParsedHttpSource() {
         Pair("yaoi", "Yaoi "),
         Pair("yuri", "Yuri ")
         ))
+    
+    // Preferences Code 
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val popularmangapref = ListPreference(screen.context).apply {
+            key = BROWSE_PREF_Title
+            title = BROWSE_PREF_Title
+            entries = arrayOf("Weekly", "All Time")
+            entryValues = arrayOf("popular", "popular-alltime")
+            summary = "%s"
 
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(BROWSE_PREF, entry).commit()
+            }
+        }
+        val latestmangapref = ListPreference(screen.context).apply {
+            key = LATEST_PREF_Title
+            title = LATEST_PREF_Title
+            entries = arrayOf("Popular Updates", "All Updates")
+            entryValues = arrayOf("latest", "all-updates/latest")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(LATEST_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(popularmangapref)
+        screen.addPreference(latestmangapref)
+    }
+
+    private fun getpoppref() = preferences.getString(BROWSE_PREF, "popular")
+    private fun getlastestpref() = preferences.getString(LATEST_PREF, "latest")
+
+
+    companion object {
+        private const val LATEST_PREF_Title = "Latest Manga Selector"
+        private const val LATEST_PREF = "latestmangaurl"
+        private const val BROWSE_PREF_Title = "Popular Manga Selector"
+        private const val BROWSE_PREF = "popularmangaurl"
+    }
 
 }
+
 
