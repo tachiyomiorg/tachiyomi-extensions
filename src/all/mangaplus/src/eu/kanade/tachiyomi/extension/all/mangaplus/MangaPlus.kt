@@ -45,7 +45,7 @@ abstract class MangaPlus(override val lang: String,
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = removeDuration(it.portraitImageUrl)
+                    thumbnail_url = getImageUrl(it.portraitImageUrl)
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -70,7 +70,7 @@ abstract class MangaPlus(override val lang: String,
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = removeDuration(it.portraitImageUrl)
+                    thumbnail_url = getImageUrl(it.portraitImageUrl)
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -99,7 +99,7 @@ abstract class MangaPlus(override val lang: String,
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = removeDuration(it.portraitImageUrl)
+                    thumbnail_url = getImageUrl(it.portraitImageUrl)
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -138,7 +138,7 @@ abstract class MangaPlus(override val lang: String,
             artist = title.author
             description = details.overview + "\n\n" + details.viewingPeriodDescription
             status = SManga.ONGOING
-            thumbnail_url = removeDuration(title.portraitImageUrl)
+            thumbnail_url = getImageUrl(title.portraitImageUrl)
         }
     }
 
@@ -208,7 +208,13 @@ abstract class MangaPlus(override val lang: String,
     }
 
     // Maybe removing the duration parameter make the image accessible forever.
-    private fun removeDuration(url: String): String = url.substringBefore("&duration")
+    private fun getImageUrl(url: String): String {
+        val imageUrl = url.substringBefore("&duration")
+
+        return HttpUrl.parse(IMAGES_WESERV_URL)!!.newBuilder()
+            .addEncodedQueryParameter("url", imageUrl)
+            .toString()
+    }
 
     private fun imageIntercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
@@ -254,6 +260,7 @@ abstract class MangaPlus(override val lang: String,
 
     companion object {
         private const val WEB_URL = "https://mangaplus.shueisha.co.jp"
+        private const val IMAGES_WESERV_URL = "https://images.weserv.nl"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
