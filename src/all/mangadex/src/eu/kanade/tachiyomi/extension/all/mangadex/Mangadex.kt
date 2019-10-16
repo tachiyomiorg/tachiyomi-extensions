@@ -17,6 +17,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -48,7 +49,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override val baseUrl = "https://mangadex.org"
 
-    val cdnUrl = "https://cdndex.com"
+    private val cdnUrl = "https://cdndex.com"
 
     override val supportsLatest = true
 
@@ -211,30 +212,30 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is Demographic -> {
-                    val DemographicToInclude = mutableListOf<String>()
+                    val demographicToInclude = mutableListOf<String>()
                     filter.state.forEach { content ->
                         if (content.isIncluded()) {
-                            DemographicToInclude.add(content.id)
+                            demographicToInclude.add(content.id)
                         }
                     }
-                    if (DemographicToInclude.isNotEmpty()) {
-                        url.addQueryParameter("demos", DemographicToInclude.joinToString(","))
+                    if (demographicToInclude.isNotEmpty()) {
+                        url.addQueryParameter("demos", demographicToInclude.joinToString(","))
                     }
                 }
                 is PublicationStatus -> {
-                    val PublicationToInclude = mutableListOf<String>()
+                    val publicationToInclude = mutableListOf<String>()
                     filter.state.forEach { content ->
                         if (content.isIncluded()) {
-                            PublicationToInclude.add(content.id)
+                            publicationToInclude.add(content.id)
                         }
                     }
-                    if (PublicationToInclude.isNotEmpty()) {
-                        url.addQueryParameter("statuses", PublicationToInclude.joinToString(","))
+                    if (publicationToInclude.isNotEmpty()) {
+                        url.addQueryParameter("statuses", publicationToInclude.joinToString(","))
                     }
                 }
                 is OriginalLanguage -> {
                     if (filter.state != 0) {
-                        val number: String = SOURCE_LANG_LIST.first { it -> it.first == filter.values[filter.state] }.second
+                        val number: String = SOURCE_LANG_LIST.first { it.first == filter.values[filter.state] }.second
                         url.addQueryParameter("lang_id", number)
                     }
                 }
@@ -368,7 +369,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
         }
 
         val genres = (if (mangaJson.get("hentai").int == 1) listOf("Hentai") else listOf()) +
-                mangaJson.get("genres").asJsonArray.mapNotNull { GENRES.get(it.toString()) }
+                mangaJson.get("genres").asJsonArray.mapNotNull { GENRES[it.toString()] }
         manga.genre = genres.joinToString(", ")
 
         return manga
@@ -413,12 +414,12 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     private fun isMangaCompleted(chapterJson: JsonObject, finalChapterNumber: String): Boolean {
         val count = chapterJson.entrySet()
-                .filter { it -> it.value.asJsonObject.get("lang_code").string == internalLang }
-                .filter { it -> doesFinalChapterExist(finalChapterNumber, it.value) }.count()
+                .filter { it.value.asJsonObject.get("lang_code").string == internalLang }
+                .filter { doesFinalChapterExist(finalChapterNumber, it.value) }.count()
         return count != 0
     }
 
-    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson.get("chapter").string.trim()
+    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val now = Date().time
@@ -453,7 +454,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             chapterName.add("Ch." + chapterJson.get("chapter").string)
         }
         if (chapterJson.get("title").string.isNotBlank()) {
-            if (!chapterName.isEmpty()) {
+            if (chapterName.isNotEmpty()) {
                 chapterName.add("-")
             }
             chapterName.add(chapterJson.get("title").string)
@@ -486,13 +487,30 @@ open class Mangadex(override val lang: String, private val internalLang: String,
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
 
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        return client.newCall(pageListRequest(chapter))
+            .asObservable().doOnNext { response ->
+                if (!response.isSuccessful) {
+                    response.close()
+                    if (response.code() == 451) {
+                        error("Error 451: Log in to view manga; contact MangaDex if error persists.")
+                    } else {
+                        throw Exception("HTTP error ${response.code()}")
+                    }
+                }
+            }
+            .map { response ->
+                pageListParse(response)
+            }
+    }
+
     override fun pageListRequest(chapter: SChapter): Request {
         if (chapter.scanlator == "MangaPlus") {
             throw Exception("Chapter is licensed; use the MangaPlus extension")
         }
 
         val server = getServer()
-        return GET("$baseUrl${chapter.url}?server=$server")
+        return GET("$baseUrl${chapter.url}?server=$server", headers)
     }
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
@@ -569,7 +587,7 @@ open class Mangadex(override val lang: String, private val internalLang: String,
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(SERVER_PREF, entry).commit()
             }
         }
@@ -613,9 +631,9 @@ open class Mangadex(override val lang: String, private val internalLang: String,
     // default selection (Rating Descending) matches popularMangaRequest url
     class SortFilter : Filter.Sort("Sort",
             sortables.map { it.first }.toTypedArray(),
-            Filter.Sort.Selection(3, false))
+            Selection(3, false))
 
-    private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it -> it.first }.toTypedArray())
+    private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it.first }.toTypedArray())
 
     override fun getFilterList() = FilterList(
             TextField("Author", "author"),
