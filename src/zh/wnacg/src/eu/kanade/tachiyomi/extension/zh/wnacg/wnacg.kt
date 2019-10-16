@@ -80,14 +80,13 @@ class wnacg : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val regex = "\\/\\/\\S*(jpg)".toRegex()
+        val slideaid = client.newCall(GET( baseUrl + document.select("a.btn:containsOwn(下拉閱讀)").attr("href"), headers)).execute().asJsoup()
+        val galleryaid = client.newCall(GET( baseUrl + slideaid.select("script[src$=html]").attr("src"), headers)).execute().asJsoup().toString()
+        val matchresult = regex.findAll(galleryaid).map { it.value }.toList()
         val pages = mutableListOf<Page>()
-        var imgpage = client.newCall(GET( baseUrl + document.select("div.pic_box a").first().attr("href"), headers)).execute().asJsoup()
-        //var pageNumber = imgpage.select("span.newpagelabel").text().substringBefore("/")
-        val totalpage = imgpage.select("span.newpagelabel").text().substringAfter("/").toInt()
-        for (i in 0 until totalpage) {
-            pages.add(Page(pages.size, "", "https:" + imgpage.select("img[id=picarea]").attr("src")))
-            val newpage = client.newCall(GET( baseUrl + imgpage.select("a:containsOwn(下一頁)").attr("href"), headers)).execute().asJsoup()
-            imgpage = newpage
+        for (i in 0 until matchresult.size){
+            pages.add(Page(i, "", "http:"+matchresult[i]))
         }
         return pages
     }
