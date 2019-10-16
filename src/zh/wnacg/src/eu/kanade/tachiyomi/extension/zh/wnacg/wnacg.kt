@@ -18,7 +18,7 @@ class wnacg : ParsedHttpSource() {
     
     override fun popularMangaSelector() = "div.pic_box"
     override fun latestUpdatesSelector() = throw Exception("Not used")
-    override fun searchMangaSelector() = "div.iepbox a.an"
+    override fun searchMangaSelector() = popularMangaSelector()
     override fun chapterListSelector() = "div.f_left > a"
 
     override fun popularMangaNextPageSelector() = "a:containsOwn(後頁)"
@@ -32,8 +32,7 @@ class wnacg : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val uri = Uri.parse("$baseUrl/albums-index-page-$page-sname-$query.html")//.buildUpon()
-        return GET(uri.toString(), headers)
+        return GET("$baseUrl/albums-index-page-$page-sname-$query.html", headers)
     }
 
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
