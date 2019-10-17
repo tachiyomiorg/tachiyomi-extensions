@@ -5,10 +5,12 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Response
@@ -40,6 +42,7 @@ class MadaraFactory : SourceFactory {
         MangaSY(),
         ManwhaClub(),
         WuxiaWorld(),
+        WordRain(),
         YoManga(),
         ManyToon(),
         ChibiManga(),
@@ -151,6 +154,19 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=latest", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
+}
+class WordRain : Madara("WordRain Translation", "https://wordrain69.com", "en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga-genre/manga/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga-genre/manga/page/$page/?m_orderby=latest", headers)
+    override fun searchMangaParse(response: Response): MangasPage {
+
+        val url = HttpUrl.parse(response.request().url().toString())!!.newBuilder()
+            .addQueryParameter("genre[]", "manga").build()
+        val request: Request = Request.Builder().url(url).build()
+        val call = client.newCall(request)
+        val res: Response = call.execute()
+        return super.searchMangaParse(res)
+    }
 }
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
