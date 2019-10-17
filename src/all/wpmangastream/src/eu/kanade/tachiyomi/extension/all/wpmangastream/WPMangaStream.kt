@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit
 abstract class WPMangaStream(override val name: String, override val baseUrl: String, override val lang: String) : ConfigurableSource, ParsedHttpSource() {
     override val supportsLatest = true
 
-    //    override val client: OkHttpClient = network.cloudflareClient
     companion object {
         private const val MID_QUALITY = 1
         private const val LOW_QUALITY = 2
@@ -213,12 +212,15 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
 
     private fun getImageUrl(baseUrl: String, quality: Int): String {
         var url = baseUrl
-        if (quality == LOW_QUALITY) {
-            url = url.replace("https://", "")
-            url = "http://images.weserv.nl/?w=300&q=70&url=" + url
-        } else if (quality == MID_QUALITY) {
-            url = url.replace("https://", "")
-            url = "http://images.weserv.nl/?w=600&q=70&url=" + url
+        when(quality){
+            LOW_QUALITY -> {
+                url = url.replace("https://", "")
+                url = "http://images.weserv.nl/?w=300&q=70&url=" + url
+            }
+            MID_QUALITY -> {
+                url = url.replace("https://", "")
+                url = "http://images.weserv.nl/?w=600&q=70&url=" + url
+            }
         }
         return url
     }
