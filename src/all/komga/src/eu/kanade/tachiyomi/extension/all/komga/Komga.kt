@@ -178,6 +178,7 @@ open class Komga : ConfigurableSource, HttpSource() {
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
             .add("Authorization", Credentials.basic(username, password))
+            .add("User-Agent", "Tachiyomi Komga v3")
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
