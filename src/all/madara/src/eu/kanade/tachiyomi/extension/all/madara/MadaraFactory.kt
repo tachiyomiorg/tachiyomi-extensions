@@ -45,7 +45,8 @@ class MadaraFactory : SourceFactory {
         ZinManga(),
         ManwahentaiMe(),
         Manga3asq(),
-        NManhwa()
+        NManhwa(),
+        Manhwa18net()
     )
 }
 
@@ -148,6 +149,7 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=latest", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
+    override fun popularMangaNextPageSelector() = "div.nav-previous.float-left"
 }
 class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
@@ -169,3 +171,4 @@ class Manga3asq: Madara("مانجا العاشق", "https://3asq.org", "ar") {
 class NManhwa: Madara("N Manhwa", "https://nmanhwa.com", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
+class Manhwa18net: Madara("Manhwa18.net", "https://manhwa18.net", "en")
