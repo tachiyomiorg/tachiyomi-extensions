@@ -72,13 +72,9 @@ class TuMangaOnline : ParsedHttpSource() {
     
      override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
-        val mangas = mutableListOf<SManga>()
-        val list = document.select(latestUpdatesSelector()).distinctBy { element ->
-            element.select("div.thumbnail-title > h4.text-truncate").text().trim()
-        }
-        for (element in list){
-            mangas.add(latestUpdatesFromElement(element))
-        }
+        val mangas = document.select(latestUpdatesSelector())
+            .distinctBy { it.select("div.thumbnail-title > h4.text-truncate").text().trim() }
+            .map { latestUpdatesFromElement(it) }
         val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
