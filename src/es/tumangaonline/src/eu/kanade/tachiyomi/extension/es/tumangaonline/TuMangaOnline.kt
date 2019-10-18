@@ -22,10 +22,11 @@ class TuMangaOnline : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor).connectTimeout(1, TimeUnit.MINUTES)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .retryOnConnectionFailure(true)
         .followRedirects(true)
@@ -67,6 +68,21 @@ class TuMangaOnline : ParsedHttpSource() {
             title = it.select("h4.text-truncate").text()
             thumbnail_url = it.select("style").toString().substringAfter("('").substringBeforeLast("')")
         }
+    }
+    
+     override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        val mangas = mutableListOf<SManga>()
+        val list = document.select(latestUpdatesSelector()).distinctBy { element ->
+            element.select("div.thumbnail-title > h4.text-truncate").text().trim()
+        }
+        for (element in list){
+            mangas.add(latestUpdatesFromElement(element))
+        }
+        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+        return MangasPage(mangas, hasNextPage)
     }
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
