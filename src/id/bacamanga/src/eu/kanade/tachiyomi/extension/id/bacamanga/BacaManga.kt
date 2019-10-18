@@ -13,6 +13,7 @@ import org.jsoup.nodes.Element
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
+import java.util.*
 
 class BacaManga : ParsedHttpSource() {
 
@@ -95,12 +96,8 @@ class BacaManga : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = sepName.ownText()
         manga.artist = sepName.ownText()
-        val genres = mutableListOf<String>()
-        infoElement.select("span:nth-child(1) > a").forEach { element ->
-            val genre = element.text()
-            genres.add(genre)
-        }
-        manga.genre = genres.joinToString(", ")
+        manga.genre = infoElement.select("span:nth-child(1) > a")
+            .joinToString(", ") { it.text() }
         manga.status = parseStatus(infoElement.select("span:nth-child(2)").text())
         manga.description = document.select("div[itemprop=articleBody]").last().text()
         manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
@@ -109,15 +106,14 @@ class BacaManga : ParsedHttpSource() {
     }
 
     private fun parseStatus(element: String): Int = when {
-        element.toLowerCase().contains("ongoing") -> SManga.ONGOING
-        element.toLowerCase().contains("completed") -> SManga.COMPLETED
+        element.contains("ongoing", ignoreCase = true) -> SManga.ONGOING
+        element.contains("completed", ignoreCase = true) -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val chapters = mutableListOf<SChapter>()
-        document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+        val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
         // Add date for latest chapter only
         document.select("script.yoast-schema-graph").html()
             .let {
@@ -129,7 +125,7 @@ class BacaManga : ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH).parse(date).time
     }
 
     override fun chapterListSelector() = ".lchx"
@@ -149,13 +145,9 @@ class BacaManga : ParsedHttpSource() {
         val coded = script.substringAfter("*/var $key = \"").substringBefore("\";")
         val decoded = URLDecoder.decode(decodeBase64(coded), "UTF-8")
         val images = Jsoup.parse(decoded)
-        var i = 0
-        images.select("img").forEach { element ->
+        images.select("img").forEachIndexed { i, element ->
             val url = element.attr("src")
-            i++
-            if (url.isNotEmpty()) {
-                pages.add(Page(i, "", url))
-            }
+            pages.add(Page(i, "", url))
         }
         return pages
     }
