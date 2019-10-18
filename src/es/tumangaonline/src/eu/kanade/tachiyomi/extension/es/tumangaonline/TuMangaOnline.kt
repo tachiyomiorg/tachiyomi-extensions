@@ -59,7 +59,7 @@ class TuMangaOnline : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&type=&filter_by=title&page=$page", headers)
 
     //override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&type=&filter_by=title&page=$page", headers)
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/?page=$page&uploads_mode=thumbnail#latest_uploads", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest_uploads?page=$page&uploads_mode=thumbnail", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         element.select("div.element > a").let {

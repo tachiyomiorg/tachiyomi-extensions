@@ -26,7 +26,6 @@ class MadaraFactory : SourceFactory {
         HappyTeaScans(),
         JustForFun(),
         AoCTranslations(),
-        Kanjiku(),
         KomikGo(),
         LuxyScans(),
         TritiniaScans(),
@@ -48,7 +47,9 @@ class MadaraFactory : SourceFactory {
         ChibiManga(),
         ZinManga(),
         ManwahentaiMe(),
-        Manga3asq()
+        Manga3asq(),
+        NManhwa(),
+        Manhwa18net()
     )
 }
 
@@ -98,9 +99,7 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe/
         return chapters.reversed()
     }
 }
-class Kanjiku : Madara("Kanjiku", "https://kanjiku.net/", "de",
-    dateFormat = SimpleDateFormat("dd. MMM yyyy", Locale.GERMAN))
-class KomikGo : Madara("KomikGo", "https://komikgo.com/", "id") {
+class KomikGo : Madara("KomikGo", "https://komikgo.com", "id") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
@@ -111,12 +110,11 @@ class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun popularMangaNextPageSelector(): String? = null
 }
-
 class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/",
     "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
-        override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class ZManga : Madara("ZManga", "https://zmanga.org/", "es") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
@@ -154,6 +152,7 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=latest", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
+    override fun popularMangaNextPageSelector() = "div.nav-previous.float-left"
 }
 class WordRain : Madara("WordRain Translation", "https://wordrain69.com", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga-genre/manga/page/$page/?m_orderby=views", headers)
@@ -185,3 +184,7 @@ class ManwahentaiMe : Madara("Manwahentai.me", "https://manhwahentai.me", "en")
 class Manga3asq: Madara("مانجا العاشق", "https://3asq.org", "ar") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
+class NManhwa: Madara("N Manhwa", "https://nmanhwa.com", "en") {
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+}
+class Manhwa18net: Madara("Manhwa18.net", "https://manhwa18.net", "en")

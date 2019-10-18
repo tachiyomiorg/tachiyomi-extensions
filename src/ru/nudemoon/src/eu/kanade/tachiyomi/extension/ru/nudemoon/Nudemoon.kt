@@ -18,7 +18,7 @@ class Nudemoon : ParsedHttpSource() {
 
     override val name = "Nude-Moon"
 
-    override val baseUrl = "http://nude-moon.me"
+    override val baseUrl = "https://nude-moon.net"
 
     override val lang = "ru"
 
@@ -83,7 +83,7 @@ class Nudemoon : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        manga.thumbnail_url = element.select("img.news_pic3").attr("abs:src")
+        manga.thumbnail_url = element.select("img[class^=news]").attr("abs:src")
         element.select("a:has(h2)").let{
             manga.title = it.text()
             manga.setUrlWithoutDomain(it.attr("href"))
@@ -104,13 +104,13 @@ class Nudemoon : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-
-
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.author = document.select("a[title^=Показать всю мангу от]").first().text()
-        manga.genre = document.select("div.tbl2[align] > a").joinToString { it.text() }
+        manga.author = document.select("div.tbl1 a[href^=mangaka]").text()
+        manga.genre = document.select("div.tbl2 span.tag-links a").joinToString { it.text() }
         manga.description = document.select(".description").text()
+        manga.thumbnail_url = document.select("tr[valign=top] img[class^=news]").attr("abs:src")
+
         return manga
     }
 
@@ -137,7 +137,7 @@ class Nudemoon : ParsedHttpSource() {
         //Order chapters by its number 'cause on the site they are in random order
         return document.select(chapterListSelector()).sortedByDescending {
             val regex = "#(\\d+)".toRegex()
-            val chapterName = it.select("img.news_pic3").first().parent().attr("title")
+            val chapterName = it.select("img[class^=news]").first().parent().attr("title")
             regex.find(chapterName)?.groupValues?.get(1)?.toInt() ?: 0
         }.map { chapterFromElement(it) }
     }
@@ -145,9 +145,9 @@ class Nudemoon : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
-        val infoElem = element.select("img.news_pic3").first().parent()
-        val chapterName = infoElem.attr("title")
-        var chapterUrl = infoElem.attr("href")
+        val infoElem = element.select("tr[valign=top]").first().parent()
+        val chapterName = infoElem.select("h1, h2").text()
+        var chapterUrl = infoElem.select("a[title]:has(img)").attr("href")
         if(!chapterUrl.contains("-online")) {
             chapterUrl = chapterUrl.replace("/\\d+".toRegex(), "$0-online")
         } else {
@@ -156,9 +156,13 @@ class Nudemoon : ParsedHttpSource() {
 
         chapter.setUrlWithoutDomain(if(!chapterUrl.startsWith("/")) "/$chapterUrl" else chapterUrl)
         chapter.name = chapterName
-        chapter.date_upload = (element.select("font:containsOwn(Дата:)")?.first()?.nextSibling() as? TextNode)?.text()?.let {
-            SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it).time
-        } ?: 0
+        chapter.date_upload = infoElem.text().substringAfter("Дата:").substringBefore("Просмотров").trim().let {
+            try {
+                SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it).time
+            } catch (e: Exception) {
+                0
+            }
+        }
 
         return chapter
     }
@@ -187,7 +191,7 @@ class Nudemoon : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
     private class OrderBy : Filter.Sort("Сортировка",
             arrayOf("Дата", "Просмотры", "Лайки"),
-            Filter.Sort.Selection(1, false))
+            Selection(1, false))
 
     override fun getFilterList() = FilterList(
             OrderBy(),

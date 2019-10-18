@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Nude-Moon'
-    pkgNameSuffix = 'ru.nudemoon'
-    extClass = '.Nudemoon'
-    extVersionCode = 3
+    appName = 'Tachiyomi: Baca Manga'
+    pkgNameSuffix = 'id.bacamanga'
+    extClass = '.BacaManga'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
