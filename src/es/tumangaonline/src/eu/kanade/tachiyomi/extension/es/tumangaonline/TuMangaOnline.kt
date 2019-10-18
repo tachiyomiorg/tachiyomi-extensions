@@ -195,9 +195,7 @@ class TuMangaOnline : ParsedHttpSource() {
         document.select(regularChapterListSelector()).forEach { chapelement ->
             val chapternumber = chapelement.select("a.btn-collapse").text().substringBefore(":").substringAfter("Capítulo").trim().toFloat()
             val chaptername = chapelement.select("div.col-10.text-truncate").text()
-            chapelement.select("ul.chapter-list > li").let { scanner ->
-                scanner.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
-                }
+            chapelement.select("ul.chapter-list > li").forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
         }
         return chapters
     }
