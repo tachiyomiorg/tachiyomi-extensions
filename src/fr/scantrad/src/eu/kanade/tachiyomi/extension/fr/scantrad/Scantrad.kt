@@ -171,7 +171,7 @@ class Scantrad : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("div.center select[name=chapter-page] option").forEachIndexed { i, page ->
+        document.select("div.center select[name=chapter-page]:not(.mobile) option").forEachIndexed { i, page ->
             pages.add(Page(i, page.attr("value"), ""))
         }
 
