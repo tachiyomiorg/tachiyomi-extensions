@@ -133,10 +133,10 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.spe").first()
         val descElement = document.select(".infox > div.desc").first()
-        val sepName = infoElement.select(".spe > span:nth-child(3)").last()
+        val sepName = infoElement.select(".spe > span:contains(Author)").last()
         val manga = SManga.create()
-        manga.author = sepName.ownText()
-        manga.artist = sepName.ownText()
+        manga.author = sepName?.ownText() ?:"N/A"
+        manga.artist = sepName?.ownText() ?:"N/A"
         val genres = mutableListOf<String>()
         infoElement.select(".spe > span:nth-child(1) > a").forEach { element ->
             val genre = element.text()
