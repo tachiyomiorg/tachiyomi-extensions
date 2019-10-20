@@ -233,7 +233,7 @@ class Manhuaren : HttpSource() {
             val obj = arr.getJSONObject(i)
             ret.add(SChapter.create().apply {
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                name = getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
+                name = if (obj.getInt("isMustPay")==1) {"(锁) "} else {""} + getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
                 date_upload = dateFormat.parse(obj.getString("releaseTime")).time
                 chapter_number = obj.getInt("sectionSort").toFloat()
                 url = "/v1/manga/getRead?mangaSectionId=${obj.getInt("sectionId")}"
