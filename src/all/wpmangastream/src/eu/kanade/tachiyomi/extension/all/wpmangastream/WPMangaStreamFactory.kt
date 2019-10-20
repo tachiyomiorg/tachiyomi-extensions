@@ -25,10 +25,12 @@ class WPMangaStreamFactory : SourceFactory {
         WestManga(),
         KomikGo(),
         KomikIndo(),
-        MaidManga()
+        MaidManga(),
+        SekteKomik()
     )
 }
 
+class SekteKomik() : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
 class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id")
 class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id")
 class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
