@@ -131,14 +131,15 @@ class Mangahub : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pageList = mutableListOf<Page>()
 
-        val page = document.select("div#mangareader img.PB0mN").first()
-        val pageUrl = page.attr("src")
-        val extension = pageUrl.split(".").last()
+        val pages = document.select("div#mangareader img.PB0mN")
+        val pageUrl = pages.first().attr("src")
         val pageRoot = pageUrl.replaceAfterLast("/", "")
-        val numPages = page.nextElementSibling().text().split("/").last().toInt()
+        val numPages = pages.first().nextElementSibling().text().split("/").last().toInt()
 
-        for (i in 1..numPages) {
-            pageList.add(Page(i, "", "$pageRoot$i.$extension"))
+        pageList.add(Page(0, "", pages.first().attr("src")))
+        val extension = pages.last().attr("src").split(".").last()
+        for (i in 2..numPages) {
+            pageList.add(Page(i-1, "", "$pageRoot$i.$extension"))
         }
 
         return pageList
