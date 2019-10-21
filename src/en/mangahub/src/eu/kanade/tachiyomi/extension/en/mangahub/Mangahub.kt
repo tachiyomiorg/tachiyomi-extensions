@@ -92,43 +92,40 @@ class Mangahub : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return when {
-            "hours" in date || "just now" in date -> {
-                Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
+        val now = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        var parsedDate = 0L
+        when {
+            "just now" in date || "less than an hour" in date -> {
+                parsedDate = now.timeInMillis
             }
-            "days" in date -> {
-                val days = date.replace("days ago", "").trim().toInt()
-                Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_YEAR, -days)
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
+            // parses: "1 hour ago" and "2 hours ago"
+            "hour" in date -> {
+                val hours = date.replaceAfter(" ", "").trim().toInt()
+                parsedDate = now.apply { add(Calendar.HOUR, -hours) }.timeInMillis
             }
+            // parses: "Yesterday" and "2 days ago"
+            "day" in date -> {
+                val days = date.replace("days ago", "").trim().toIntOrNull() ?: 1
+                parsedDate = now.apply { add(Calendar.DAY_OF_YEAR, -days) }.timeInMillis
+            }
+            // parses: "2 weeks ago"
             "weeks" in date -> {
                 val weeks = date.replace("weeks ago", "").trim().toInt()
-                Calendar.getInstance().apply {
-                    add(Calendar.WEEK_OF_YEAR, -weeks)
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
+                parsedDate = now.apply { add(Calendar.WEEK_OF_YEAR, -weeks) }.timeInMillis
             }
+            // parses: "12-20-2019" and defaults everything that wasn't taken into account to 0
             else -> {
                 try {
-                    SimpleDateFormat("MM-dd-yyyy", Locale.US).parse(date).time
-                } catch (e: ParseException) {
-                    0L
-                }
+                    parsedDate = SimpleDateFormat("MM-dd-yyyy", Locale.US).parse(date).time
+                } catch (e: ParseException) { /*nothing to do, parsedDate is initialized with 0L*/ }
             }
         }
+        return parsedDate
     }
 
     override fun pageListParse(document: Document): List<Page> {
