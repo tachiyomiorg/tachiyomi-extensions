@@ -130,7 +130,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private fun buildManga(titleElement: Element, thumbnailElement: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
-        manga.title = cleanTitle(titleElement.text()).trim()
+        manga.title = cleanTitle(titleElement.text())
         manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
         return manga
     }
@@ -152,8 +152,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private fun getThumbnail(thumbnailUrl: String) = thumbnailUrl.substringBeforeLast("-") + "." + thumbnailUrl.substringAfterLast(".")
 
     //cleans up the name removing author and language from the title
-    private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(")
-    private fun cleanAuthor(title: String) = title.substringAfter("[").substringBefore("]")
+    private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(").trim()
+    private fun cleanAuthor(author: String) = author.substringAfter("[").substringBefore("]").trim()
 
 
     //Start Manga Details
@@ -169,8 +169,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     private fun mangaDetailsParse(document: Document, needCover: Boolean): SManga {
         val manga = SManga.create()
-        manga.author = cleanAuthor(document.select("h1").text()).trim()
-        manga.artist = cleanAuthor(document.select("h1").text()).trim()
+        manga.author = cleanAuthor(document.select("h1").text())
+        manga.artist = cleanAuthor(document.select("h1").text())
         val glist = document.select(".entry-header p a[href*=genre]").map { it.text() }
         manga.genre = glist.joinToString(", ")
         manga.description = document.select("h1").text() + "\n" + document.select(".info-class")?.text()
