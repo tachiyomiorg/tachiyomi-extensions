@@ -584,8 +584,8 @@ abstract class Mangadex(
         val serverPref = ListPreference(screen.context).apply {
             key = SERVER_PREF_Title
             title = SERVER_PREF_Title
-            entries = arrayOf("Auto", "North America", "North America 2", "Europe", "Europe 2", "Rest of the World")
-            entryValues = arrayOf("0", "na", "na2", "eu", "eu2", "row")
+            entries = SERVER_PREF_ENTRIES
+            entryValues = SERVER_PREF_ENTRY_VALUES
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -603,7 +603,11 @@ abstract class Mangadex(
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
-    private fun getServer(): String = preferences.getString(SERVER_PREF, "0")
+    private fun getServer(): String {
+        val default = SERVER_PREF_ENTRY_VALUES.first()
+        return preferences.getString(SERVER_PREF, default).takeIf { it in SERVER_PREF_ENTRY_VALUES }
+            ?: default
+    }
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Tag(val id: String, name: String) : Filter.TriState(name)
@@ -765,6 +769,8 @@ abstract class Mangadex(
 
         private const val SERVER_PREF_Title = "Image server"
         private const val SERVER_PREF = "imageServer"
+        private val SERVER_PREF_ENTRIES = arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
+        private val SERVER_PREF_ENTRY_VALUES = arrayOf("0", "na", "na2", "row")
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
