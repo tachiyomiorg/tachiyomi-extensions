@@ -45,7 +45,7 @@ class Dmzj : HttpSource() {
                 title = obj.getString("comic_name")
                 thumbnail_url = cleanUrl(obj.getString("comic_cover"))
                 author = obj.optString("comic_author")
-                url = "/comic/comic_$cid.json"
+                url = "/comic/comic_$cid.json?version=2.7.019"
             })
         }
         return MangasPage(ret, false)
@@ -67,7 +67,7 @@ class Dmzj : HttpSource() {
                     "连载中" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
-                url = "/comic/comic_$cid.json"
+                url = "/comic/comic_$cid.json?version=2.7.019"
             })
         }
         return MangasPage(ret, arr.length() != 0)
