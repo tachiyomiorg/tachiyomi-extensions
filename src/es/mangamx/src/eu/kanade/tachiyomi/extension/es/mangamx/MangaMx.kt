@@ -1,12 +1,9 @@
 package eu.kanade.tachiyomi.extension.es.mangamx
 
-import android.widget.Toast
-import com.github.salomonbrys.kotson.array
+
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
-import com.google.gson.Gson
 import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -17,7 +14,6 @@ import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -62,20 +58,14 @@ class MangaMx : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.attr("title").trim()
-            manga.thumbnail_url = it.select("img").attr("abs:src").trim()
-        }
-        return manga
-    }
+    override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
+
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.select("a").first().attr("abs:href"))
         manga.title = element.select("h2").text().trim()
-        manga.thumbnail_url = "https:" + element.select("img").attr("src")
+        //manga.thumbnail_url = "https:" + element.select("img").attr("src")
+        manga.thumbnail_url = element.select("img").attr("abs:src")
         return manga
     }
 
@@ -84,7 +74,7 @@ class MangaMx : ParsedHttpSource() {
         val jsonData = response.body()!!.string()
         val results = JsonParser().parse(jsonData).asJsonArray
         val chapters = mutableListOf<SChapter>()
-        val url = results[0].string
+        val url = "https:" + results[0].string
         for (i in 1 until results.size()) {
             val obj = results[i]
             chapters.add(chapterFromJson(obj, url))
@@ -94,12 +84,13 @@ class MangaMx : ParsedHttpSource() {
 
     private fun chapterFromJson (obj: JsonElement, url: String): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain("https:$url" + obj["id"].string)
+        chapter.setUrlWithoutDomain(url + obj["id"].string)
         chapter.name = obj["tc"].string + obj["titulo"].string
         chapter.chapter_number = obj["numero"].string.toFloat()
         chapter.date_upload = parseDate(obj["datetime"].string)
         return chapter
     }
+
 
     private fun parseDate(date: String): Long {
         return SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US ).parse(date).time
@@ -109,7 +100,7 @@ class MangaMx : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = "https:" + document.select("img[src*=cover]").attr("src")
+        manga.thumbnail_url = document.select("img[src*=cover]").attr("abs:src")
         manga.description = document.select("div[id=sinopsis]").last().ownText()
         manga.author = document.select("div[id=info-i]").text().substringAfter("Autor:").substringBefore("Fecha:")
         manga.artist = manga.author
