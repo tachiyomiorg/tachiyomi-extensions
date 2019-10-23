@@ -118,18 +118,16 @@ class MangaMx : ParsedHttpSource() {
         return manga
     }
 
-
-
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        val element = body.select("script").toString()
-        val regexurl = "[a-z\\\\\\/.-]*(archivos)\\S*[\\/]".toRegex()
-        val url = "https:" + regexurl.find(element)!!.value.replace("\\/","/")
-        val regex = "[a-z\\\\\\/.-]*(archivos).*[\"]".toRegex()
-        val matchresult = regex.find(element)!!.value.split(",").map { it.substringAfter("\"").substringBefore("\"") }
+        val script = body.select("script:containsData(cap_info)").html()
+        val jsonData = script.substringAfter("var cap_info = ").substringBeforeLast(";")
+        val results = JsonParser().parse(jsonData).asJsonArray
+        val jsonImg = results[1].asJsonArray
+        val url = "https:" + jsonImg[0].string
         val pages = mutableListOf<Page>()
-        for (i in 1 until matchresult.size) {
-            pages.add(Page(i, "",url + matchresult[i]))
+        for (i in 1 until jsonImg.size()) {
+            pages.add(Page(i, "",url + jsonImg[i].string))
         }
         return pages
     }
