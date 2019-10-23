@@ -31,7 +31,7 @@ class MyMangaReaderCMSSource(override val lang: String,
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=views&asc=false")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=views&asc=false", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         //Query overrides everything
         val url: Uri.Builder
@@ -43,10 +43,10 @@ class MyMangaReaderCMSSource(override val lang: String,
             filters.filterIsInstance<UriFilter>()
                     .forEach { it.addToUri(url) }
         }
-        return GET(url.toString())
+        return GET(url.toString(), headers)
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=last_release&asc=false")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=last_release&asc=false", headers)
 
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
