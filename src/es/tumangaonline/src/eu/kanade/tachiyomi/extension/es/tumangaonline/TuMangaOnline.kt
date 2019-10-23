@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.extension.es.tumangaonline
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import okhttp3.*
 import java.util.*
 import org.jsoup.nodes.Element
@@ -11,8 +15,11 @@ import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.source.ConfigurableSource
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class TuMangaOnline : ParsedHttpSource() {
+class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "TuMangaOnline"
 
@@ -51,6 +58,10 @@ class TuMangaOnline : ParsedHttpSource() {
            .url()
            .toString()
    }
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override fun popularMangaSelector() = "div.element"
 
@@ -195,7 +206,14 @@ class TuMangaOnline : ParsedHttpSource() {
         document.select(regularChapterListSelector()).forEach { chapelement ->
             val chapternumber = chapelement.select("a.btn-collapse").text().substringBefore(":").substringAfter("Capítulo").trim().toFloat()
             val chaptername = chapelement.select("div.col-10.text-truncate").text()
-            chapelement.select("ul.chapter-list > li").forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+            val scanelement = chapelement.select("ul.chapter-list > li")
+            val dupselect = getduppref()!!
+            if (dupselect=="one") {
+                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+            }
+            else {
+                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+            }
         }
         return chapters
     }
@@ -363,5 +381,31 @@ class TuMangaOnline : ParsedHttpSource() {
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
+    }
+
+    // Preferences Code
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val deduppref = ListPreference(screen.context).apply {
+            key = DEDUP_PREF_Title
+            title = DEDUP_PREF_Title
+            entries = arrayOf("All scanlators", "One scanlator per chapter")
+            entryValues = arrayOf("all", "one")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(DEDUP_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(deduppref)
+    }
+
+    private fun getduppref() = preferences.getString(DEDUP_PREF, "all")
+
+    companion object {
+        private const val DEDUP_PREF_Title = "Chapter List Scanlator Preference"
+        private const val DEDUP_PREF = "deduppref"
     }
 }
