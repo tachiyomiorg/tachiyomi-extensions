@@ -102,7 +102,11 @@ class MangaMx : ParsedHttpSource() {
         val manga = SManga.create()
         manga.thumbnail_url = document.select("img[src*=cover]").attr("abs:src")
         manga.description = document.select("div[id=sinopsis]").last().ownText()
-        manga.author = document.select("div[id=info-i]").text().substringAfter("Autor:").substringBefore("Fecha:")
+        manga.author = document.select("div[id=info-i]").text().let {
+            if (it.contains("Autor", true)) {
+                it.substringAfter("Autor:").substringBefore("Fecha:").trim()
+            } else "N/A"
+        }
         manga.artist = manga.author
         val glist = document.select("div[id=categ] a[href*=genero]").map { it.text() }
         manga.genre = glist.joinToString(", ")
