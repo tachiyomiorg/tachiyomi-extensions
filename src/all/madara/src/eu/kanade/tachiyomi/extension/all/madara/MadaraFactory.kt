@@ -49,7 +49,8 @@ class MadaraFactory : SourceFactory {
         ManwahentaiMe(),
         Manga3asq(),
         NManhwa(),
-        Manhwa18net()
+        Manhwa18net(),
+        Indiancomicsonline()
     )
 }
 
@@ -188,3 +189,5 @@ class NManhwa: Madara("N Manhwa", "https://nmanhwa.com", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class Manhwa18net: Madara("Manhwa18.net", "https://manhwa18.net", "en")
+
+class Indiancomicsonline: Madara("Indian Comics Online", "http://www.indiancomicsonline.com", "hi")
