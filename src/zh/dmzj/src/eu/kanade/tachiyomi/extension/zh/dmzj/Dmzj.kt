@@ -154,12 +154,15 @@ class Dmzj : HttpSource() {
                 ret.add(SChapter.create().apply {
                     name = "$prefix: ${chapter.getString("chapter_title")}"
                     date_upload = chapter.getString("updatetime").toLong()*1000 //milliseconds
-                    url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
+                    //V3API url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
+                    url = "http://m.dmzj.com/chapinfo/$cid/${chapter.getString("chapter_id")}.html" //From m_readerBg.js 
                 })
             }
         }
         return ret
     }
+    
+    override fun pageListRequest(chapter: SChapter) = GET( chapter.url, headers) //Bypass base url
 
     override fun pageListParse(response: Response): List<Page> {
         val obj = JSONObject(response.body()!!.string())
