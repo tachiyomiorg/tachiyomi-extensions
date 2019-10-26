@@ -69,7 +69,7 @@ abstract class FMReader (
     }
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=last_update&sort_type=DESC")
+        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=last_update&sort_type=DESC", headers)
 
     // for sources that don't have the "page x of y" element
     fun defaultMangaParse(response: Response): MangasPage = super.popularMangaParse(response)
@@ -236,7 +236,7 @@ abstract class FMReader (
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Status : Filter.Select<String>("Status", arrayOf("Any", "Completed", "Ongoing"))
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
+    class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
     class Genre(name: String, val id: String = name.replace(' ', '+')) : Filter.TriState(name)
     private class SortBy : Filter.Sort("Sorted By", arrayOf("A-Z", "Most vỉews", "Last updated"), Selection(1, false))
 

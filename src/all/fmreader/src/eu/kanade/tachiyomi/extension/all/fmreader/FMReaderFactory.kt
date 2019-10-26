@@ -30,7 +30,9 @@ class FMReaderFactory : SourceFactory {
         TruyenTranhLH(),
         EighteenLHPlus(),
         MangaTR(),
-        Comicastle()
+        Comicastle(),
+        Manhwa18Net(),
+        Manhwa18NetRaw()
     )
 }
 
@@ -235,7 +237,25 @@ class Comicastle : FMReader("Comicastle", "https://www.comicastle.org", "en") {
     override fun imageUrlParse(document: Document): String = document.select("img.chapter-img").attr("abs:src").trim()
     override fun getGenreList() = getComicsGenreList()
 }
-
+class Manhwa18Net : FMReader("Manhwa18.net", "https://manhwa18.net", "en") {
+    override fun popularMangaRequest(page: Int): Request =
+        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=views&sort_type=DESC&ungenre=raw", headers)
+    override fun latestUpdatesRequest(page: Int): Request =
+        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=last_update&sort_type=DESC&ungenre=raw")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val noRawsUrl = super.searchMangaRequest(page, query, filters).url().newBuilder().addQueryParameter("ungenre", "raw").toString()
+        return GET(noRawsUrl, headers)
+    }
+    override fun getGenreList() = getAdultGenreList()
+}
+class Manhwa18NetRaw : FMReader("Manhwa18.net Raw", "https://manhwa18.net", "ko") {
+    override val requestPath = "manga-list-genre-raw.html"
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val onlyRawsUrl = super.searchMangaRequest(page, query, filters).url().newBuilder().addQueryParameter("genre", "raw").toString()
+        return GET(onlyRawsUrl, headers)
+    }
+    override fun getFilterList() = FilterList(super.getFilterList().filterNot { it == GenreList(getGenreList()) })
+}
 
 
 
