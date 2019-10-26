@@ -135,7 +135,8 @@ class Mangafree : ParsedHttpSource() {
         val urlElement = element.select("a").first()
 
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
+        val url = urlElement.attr("href").replace("[","%255B").replace("]","%255D")
+        chapter.setUrlWithoutDomain(url)
         chapter.name = urlElement.text()
         return chapter
     }
