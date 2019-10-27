@@ -15,7 +15,7 @@ APKS=( ../apk/*".apk"* )
 
 for APK in ${APKS[@]}; do
     FILENAME=$(basename ${APK})
-    BADGING="$(${TOOLS}/aapt dump badging $APK)"
+    BADGING="$(${TOOLS}/aapt2 dump badging $APK)"
 
     PACKAGE=$(echo "$BADGING" | grep package:)
     PKGNAME=$(echo $PACKAGE | grep -Po "name='\K[^']+")
