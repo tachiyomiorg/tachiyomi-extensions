@@ -152,7 +152,7 @@ abstract class MangaBox (
         val chapter = SChapter.create()
 
         element.select("a").let {
-            chapter.setUrlWithoutDomain(it.attr("abs:href"))
+            chapter.url = it.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
             chapter.name = it.text()
         }
         chapter.date_upload = parseChapterDate(element.select("span").last().text())
