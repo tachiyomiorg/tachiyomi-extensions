@@ -51,8 +51,13 @@ open class MangaToon (
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
-    override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
-
+    override fun searchMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        manga.url = (element.select("a").first().attr("href"))
+        manga.title = element.select("div.recommend-comics-title").text().trim()
+        manga.thumbnail_url = element.select("img").attr("abs:src")
+        return manga
+    }
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.url = (element.select("a").first().attr("href"))
