@@ -30,6 +30,8 @@ for APK in ${APKS[@]}; do
     ICON=$(echo "$BADGING" | grep -Po "application-icon-320.*'\K[^']+")
     unzip -p $APK $ICON > icon/${FILENAME%.*}.png
 
+    DESCRIPTION=$(unzip -p $APK DESCRIPTION.txt) || true
+
     jq -n \
         --arg name "$LABEL" \
         --arg pkg "$PKGNAME" \
@@ -37,6 +39,7 @@ for APK in ${APKS[@]}; do
         --arg lang "$LANG" \
         --argjson code $VCODE \
         --arg version "$VNAME" \
-        '{name:$name, pkg:$pkg, apk:$apk, lang:$lang, code:$code, version:$version}'
+        --arg description "$DESCRIPTION" \
+        '{name:$name, pkg:$pkg, apk:$apk, lang:$lang, code:$code, version:$version, description:$description}'
 
 done | jq -sr '[.[]]' > index.json

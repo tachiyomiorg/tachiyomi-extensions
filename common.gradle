@@ -13,6 +13,7 @@ android {
             manifest.srcFile "$rootDir/AndroidManifest.xml"
             java.srcDirs = ['src']
             resources.srcDirs = ['src']
+            resources.includes += [ "**/DESCRIPTION.txt" ]
             aidl.srcDirs = ['src']
             renderscript.srcDirs = ['src']
             res.srcDirs = ["$rootDir/res"]
