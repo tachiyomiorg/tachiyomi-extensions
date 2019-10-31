@@ -13,12 +13,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 open class MangaToon (
-    override val name: String,
-    override val baseUrl: String,
     override val lang: String,
     private val urllang: String
 ) : ParsedHttpSource() {
 
+    override val name = "MangaToon (Limited)"
+    override val baseUrl = "https://mangatoon.mobi"
     override val supportsLatest = true
 
     override fun popularMangaSelector() = "div.genre-content div.items a"
