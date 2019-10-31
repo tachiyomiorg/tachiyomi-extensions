@@ -50,8 +50,8 @@ class JMana : ParsedHttpSource() {
             popularMangaFromElement(element)
         }
 
-        // Can not detect what page is last page but max mangas are 40.
-        val hasNextPage = mangas.size == 40
+        // Can not detect what page is last page but max mangas are 15 per page.
+        val hasNextPage = mangas.size == 15
 
         return MangasPage(mangas, hasNextPage)
     }
@@ -88,7 +88,7 @@ class JMana : ParsedHttpSource() {
         val rawName = linkElement.text()
 
         val chapter = SChapter.create()
-        chapter.url = linkElement.attr("href").substringAfter(".com") + "?viewstyle=list"
+        chapter.url = "/book_frame/" + linkElement.attr("href").substringAfter("/book/") + "?viewstyle=list"
         chapter.chapter_number = parseChapterNumber(rawName)
         chapter.name = rawName.trim()
         chapter.date_upload = parseChapterDate(element.select("li.publish-date span").last().text())
@@ -121,7 +121,7 @@ class JMana : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("ul.listType li img").forEachIndexed { i, img ->
+        document.select("ul.listType img").forEachIndexed { i, img ->
             pages.add(Page(i, "", if (img.hasAttr("src")) img.attr("abs:src") else img.attr("abs:data-src")))
         }
 
