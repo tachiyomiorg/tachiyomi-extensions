@@ -3,20 +3,14 @@ package eu.kanade.tachiyomi.extension.en.pururin
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URLEncoder
-
 
 class Pururin : ParsedHttpSource() {
-
-    private fun pagedRequest(url: String, page: Int, queryString: String? = null): Request {
-        // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl = if (page == 1) url else "${url}browse/newest?page=$page"
-        return GET(if (queryString != null) "$url$queryString" else builtUrl)
-    }
 
     override val name = "Pururin"
 
@@ -30,28 +24,25 @@ class Pururin : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "div.container div.row-gallery a"
 
-    override fun latestUpdatesRequest(page: Int) = pagedRequest("$baseUrl/", page)
-
+    override fun latestUpdatesRequest(page: Int): Request {
+        return if (page == 1) {
+            GET(baseUrl, headers)
+        } else {
+            GET("$baseUrl/browse/newest?page=$page", headers)
+        }
+    }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        manga.url = element.attr("href")
+        manga.setUrlWithoutDomain(element.attr("href"))
         manga.title = element.select("div.title").text()
-        manga.thumbnail_url = "https:" + element.select("img.card-img-top").attr("data-src")
+        manga.thumbnail_url = element.select("img.card-img-top").attr("abs:data-src")
 
         return manga
     }
 
     override fun latestUpdatesNextPageSelector() = "ul.pagination a.page-link[rel=next]"
-
-
-    override fun mangaDetailsRequest(manga: SManga): Request {
-        if (manga.url.startsWith("http")) {
-            return GET(manga.url, headers)
-        }
-        return super.mangaDetailsRequest(manga)
-    }
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.box.box-gallery")
@@ -68,7 +59,7 @@ class Pururin : ParsedHttpSource() {
         manga.artist = infoElement.select("tr:has(td:contains(Circle)) a").text()
         manga.status = SManga.COMPLETED
         manga.genre = genres.joinToString(", ")
-        manga.thumbnail_url = "https:" + document.select("div.cover-wrapper v-lazy-image").attr("src")
+        manga.thumbnail_url = document.select("div.cover-wrapper v-lazy-image").attr("abs:src")
 
         var tags  = ""
         genres.forEach { tags+= " <$it>" }
@@ -78,7 +69,7 @@ class Pururin : ParsedHttpSource() {
         return manga
     }
 
-    fun getDesc(document: Document): String {
+    private fun getDesc(document: Document): String {
         val infoElement = document.select("div.box.box-gallery")
         val stringBuilder = StringBuilder()
         val magazine = infoElement.select("tr:has(td:contains(Convention)) a").text()
@@ -105,13 +96,6 @@ class Pururin : ParsedHttpSource() {
         return stringBuilder.toString()
     }
 
-    override fun chapterListRequest(manga: SManga): Request {
-        if (manga.url.startsWith("http")) {
-            return GET(manga.url, headers)
-        }
-        return super.chapterListRequest(manga)
-    }
-
     override fun chapterListSelector() = "div.gallery-action a"
 
     //TODO Make it work for collections
@@ -119,44 +103,29 @@ class Pururin : ParsedHttpSource() {
 
         val chapter = SChapter.create()
 
-        chapter.url = element.attr("href")
+        chapter.setUrlWithoutDomain(element.attr("href"))
         chapter.name = "Read the chapter"
 
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        if (chapter.url.startsWith("http")) {
-            return GET(chapter.url, headers)
-        }
-        return super.pageListRequest(chapter)
-    }
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-
 
         val galleryInfo = document.select("gallery-read").toString().substringAfter('{').substringBefore('}')
         val id = galleryInfo.substringAfter("id&quot;:").substringBefore(',')
         val total: Int = (galleryInfo.substringAfter("total_pages&quot;:").substringBefore(',')).toInt()
 
-
-        for (i in 1 until total) { //TODO 0?
+        for (i in 1 .. total) {
             pages.add(Page(i,"", "https://cdn.pururin.io/assets/images/data/$id/$i.jpg"))
         }
 
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
-    override fun getFilterList() = FilterList(
-        Filter.Header("CLOSE. THIS. TAB. NOW. [please]"),
-        Filter.Separator()
-    )
-
-
-    override fun popularMangaRequest(page: Int): Request = latestUpdatesRequest(page)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/browse/most-popular?page=$page", headers)
 
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
@@ -164,19 +133,40 @@ class Pururin : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url: String? = null
-        var queryString: String? = null
+    private var tagUrl = ""
 
-        if (query.isNotBlank()) {
-            url = "/search?"
-            queryString = "q=" + URLEncoder.encode(query, "UTF-8")
+    // TODO: Additional filter options, specifically the type[] parameter
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        var url = "$baseUrl/search?q=$query&page=$page"
+
+        if (query.isBlank()) {
+            filters.forEach { filter ->
+                when (filter) {
+                    is Tag -> {
+                        url = if (page == 1) {
+                            "$baseUrl/search/tag?q=${filter.state}&type[]=3" // "Contents" tag
+                        } else {
+                            "$tagUrl?page=$page"
+                        }
+                    }
+                }
+            }
         }
 
-        return url?.let {
-            pagedRequest("$baseUrl$url", page, queryString)
-        } ?: latestUpdatesRequest(page)
+        return GET(url, headers)
+    }
 
+    override fun searchMangaParse(response: Response): MangasPage {
+        return if (response.request().url().toString().contains("tag?")) {
+            tagUrl = response.asJsoup().select("table.table tbody tr a:first-of-type").attr("abs:href") ?: ""
+            if (tagUrl.isNotEmpty()) {
+                super.searchMangaParse(client.newCall(GET(tagUrl, headers)).execute())
+            } else {
+                MangasPage(emptyList(), false)
+            }
+        } else {
+            super.searchMangaParse(response)
+        }
     }
 
     override fun searchMangaSelector() = latestUpdatesSelector()
@@ -185,6 +175,12 @@ class Pururin : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        Tag("Tag")
+    )
 
+    private class Tag(name: String) : Filter.Text(name)
 }
 
