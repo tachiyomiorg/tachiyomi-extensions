@@ -133,7 +133,7 @@ class Pururin : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    private var tagUrl = ""
+    private lateinit var tagUrl: String
 
     // TODO: Additional filter options, specifically the type[] parameter
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -158,11 +158,13 @@ class Pururin : ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         return if (response.request().url().toString().contains("tag?")) {
-            tagUrl = response.asJsoup().select("table.table tbody tr a:first-of-type").attr("abs:href") ?: ""
-            if (tagUrl.isNotEmpty()) {
-                super.searchMangaParse(client.newCall(GET(tagUrl, headers)).execute())
-            } else {
-                MangasPage(emptyList(), false)
+            response.asJsoup().select("table.table tbody tr a:first-of-type").attr("abs:href").let {
+                if (it.isNotEmpty()) {
+                    tagUrl = it
+                    super.searchMangaParse(client.newCall(GET(tagUrl, headers)).execute())
+                } else {
+                    MangasPage(emptyList(), false)
+                }
             }
         } else {
             super.searchMangaParse(response)
