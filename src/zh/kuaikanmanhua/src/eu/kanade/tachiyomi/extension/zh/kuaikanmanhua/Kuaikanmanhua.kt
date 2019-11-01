@@ -155,10 +155,17 @@ class Kuaikanmanhua : ParsedHttpSource() {
         val chapter = SChapter.create()
 
         element.select("div.title a").let {
-            chapter.setUrlWithoutDomain(it.attr("href"))
-            chapter.name = it.text()
+            chapter.url = it.attr("href")
+            chapter.name = it.text() + if (element.select("i.lockedIcon").isNotEmpty()) {" \uD83D\uDD12"} else {""}
         }
         return chapter
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        if (chapter.url=="javascript:void(0);") {
+            return throw Exception("[此章节为付费内容]")
+        }
+        return super.pageListRequest(chapter)
     }
 
     override fun pageListParse(document: Document): List<Page> {
