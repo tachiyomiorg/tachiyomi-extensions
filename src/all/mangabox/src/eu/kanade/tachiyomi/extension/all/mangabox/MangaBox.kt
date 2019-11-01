@@ -58,7 +58,7 @@ abstract class MangaBox (
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("h3 a").first().let {
-            manga.setUrlWithoutDomain(it.attr("abs:href"))
+            manga.url = it.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
             manga.title = it.text()
         }
         manga.thumbnail_url = element.select("img").first().attr("abs:src")
