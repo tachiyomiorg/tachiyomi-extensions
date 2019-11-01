@@ -48,7 +48,8 @@ class MadaraFactory : SourceFactory {
         ManwahentaiMe(),
         Manga3asq(),
         NManhwa(),
-        Indiancomicsonline()
+        Indiancomicsonline(),
+        AdonisFansub()
     )
 }
 
@@ -210,3 +211,8 @@ class NManhwa : Madara("N Manhwa", "https://nmanhwa.com", "en") {
 }
 
 class Indiancomicsonline : Madara("Indian Comics Online", "http://www.indiancomicsonline.com", "hi")
+
+class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "tr") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
+}
