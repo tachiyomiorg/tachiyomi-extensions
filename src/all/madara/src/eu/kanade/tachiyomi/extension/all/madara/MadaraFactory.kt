@@ -49,7 +49,10 @@ class MadaraFactory : SourceFactory {
         Manga3asq(),
         NManhwa(),
         Indiancomicsonline(),
-        AdonisFansub()
+        AdonisFansub(),
+        GetManhwa(),
+        AllPornComic(),
+        Milftoon()
     )
 }
 
@@ -215,4 +218,19 @@ class Indiancomicsonline : Madara("Indian Comics Online", "http://www.indiancomi
 class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "tr") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
+}
+class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+}
+class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
+    override fun searchMangaNextPageSelector() = "a[rel=next]"
+    override fun getGenreList() = listOf(
+        Genre("3D", "3d"),
+        Genre("Hentai", "hentai"),
+        Genre("Western", "western")
+    )
+}
+class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
