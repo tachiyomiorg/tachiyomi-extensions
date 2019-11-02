@@ -15,6 +15,8 @@ data class BookDto(
     val id: Long,
     val name: String,
     val lastModified: String?,
+    val sizeBytes: Long,
+    val size: String,
     val metadata: BookMetadataDto
 )
 

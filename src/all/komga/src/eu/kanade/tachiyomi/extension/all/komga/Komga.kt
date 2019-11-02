@@ -80,7 +80,7 @@ open class Komga : ConfigurableSource, HttpSource() {
         return page.content.mapIndexed { i, book ->
             SChapter.create().apply {
                 chapter_number = (i + 1).toFloat()
-                name = book.name
+                name = "${book.name} (${book.size})"
                 url = "$chapterListUrl/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
@@ -150,6 +150,16 @@ open class Komga : ConfigurableSource, HttpSource() {
     private var libraries = emptyList<LibraryDto>()
 
 
+    override val name = "Komga"
+
+    override val lang = "en"
+    override val supportsLatest = true
+
+    override val baseUrl by lazy { getPrefBaseUrl() }
+    private val username by lazy { getPrefUsername() }
+    private val password by lazy { getPrefPassword() }
+    private val gson by lazy { Gson() }
+
     init {
         Single.fromCallable {
             client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
@@ -165,16 +175,6 @@ open class Komga : ConfigurableSource, HttpSource() {
             }, {})
 
     }
-
-    override val name = "Komga"
-    override val lang = "en"
-
-    override val supportsLatest = true
-    override val baseUrl by lazy { getPrefBaseUrl() }
-    private val username by lazy { getPrefUsername() }
-    private val password by lazy { getPrefPassword() }
-
-    private val gson by lazy { Gson() }
 
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
