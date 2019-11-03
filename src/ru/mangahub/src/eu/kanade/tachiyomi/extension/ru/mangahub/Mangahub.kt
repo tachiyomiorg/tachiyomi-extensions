@@ -29,15 +29,15 @@ open class Mangahub : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request =
         GET("$baseUrl/explore?filter[sort]=update&filter[dateStart][left_number]=1900&filter[dateStart][right_number]=2099&page=$page", headers)
 
-    override fun popularMangaSelector() = "div.align-items-start"
+    override fun popularMangaSelector() = "div.comic-grid-col-xl"
 
-    override fun latestUpdatesSelector() = "div.align-items-start"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.cover-list").attr("style").removeSurrounding(prefix = "background-image: url(", suffix = ");")
-        manga.title = element.select("div.d-flex > a").text()
-        manga.setUrlWithoutDomain(element.select("div.d-flex > a").attr("href"))
+        manga.thumbnail_url = element.select("div.comic-grid-image").attr("data-background-image")
+        manga.title = element.select("a.comic-grid-name").text()
+        manga.setUrlWithoutDomain(element.select("a.comic-grid-name").attr("href"))
         return manga
     }
 
