@@ -31,13 +31,14 @@ class Scantrad : ParsedHttpSource() {
         return GET("$baseUrl/mangas", headers)
     }
 
-    override fun popularMangaSelector() = "ul#projects-list li a"
+    override fun popularMangaSelector() = "div.h-left a"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
         manga.setUrlWithoutDomain(element.attr("href"))
-        manga.title = element.select("span.project-name").text()
+        manga.title = element.select("div.hmi-titre").text()
+        manga.thumbnail_url = element.select("img").attr("abs:src")
 
         return manga
     }
@@ -47,7 +48,7 @@ class Scantrad : ParsedHttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/mangas", headers)
+        return GET(baseUrl, headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -59,13 +60,14 @@ class Scantrad : ParsedHttpSource() {
         return MangasPage(mangas.distinctBy { it.title }, false)
     }
 
-    override fun latestUpdatesSelector() = "ul#chapters-list li a:first-of-type"
+    override fun latestUpdatesSelector() = "div.h-left > div > a"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
 
         manga.url = element.attr("href").substringAfter("mangas").removeSuffix("/").substringBeforeLast("/")
-        manga.title = element.select("h3").first().ownText()
+        manga.title = element.parent().select("div.hmi-titre a").text()
+        manga.thumbnail_url = element.select("img").attr("abs:src")
 
         return manga
     }
@@ -85,7 +87,7 @@ class Scantrad : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = popularMangaRequest(1)
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
-        return MangasPage(popularMangaParse(response).mangas.filter { it.title.toLowerCase().contains(query.toLowerCase()) }, false)
+        return MangasPage(popularMangaParse(response).mangas.filter { it.title.contains(query, ignoreCase = true) }, false)
     }
 
     override fun searchMangaSelector() = throw UnsupportedOperationException("Not used")
@@ -96,32 +98,35 @@ class Scantrad : ParsedHttpSource() {
 
     // Details
 
-    private fun setThumbnail(title: String): String {
-        return client.newCall(GET("https://myanimelist.net/manga.php?q=" + title.replace(" ", "%20"), headers)).execute().asJsoup().select("a.hoverinfo_trigger").first().attr("href").let {
-            client.newCall(GET(it, headers)).execute().asJsoup().select("img.ac").first().attr("src")
-        }
-    }
-
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
 
-        manga.title = document.select("div.project-content h1").text()
-        manga.description = document.select("div.project-content div.synopsis").text()
-        manga.thumbnail_url = setThumbnail(manga.title)
+        document.select("div.mf-info").let {
+            manga.title = it.select("div.titre").text()
+            manga.description = it.select("div.synopsis").text()
+            manga.thumbnail_url = it.select("div.poster img").attr("abs:src")
+            manga.status = parseStatus(it.select("div.sub-i:last-of-type span").text())
+        }
 
         return manga
     }
 
+    private fun parseStatus(status: String) = when {
+        status.contains("En cours") -> SManga.ONGOING
+        status.contains("Terminé") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
     // Chapters
 
-    override fun chapterListSelector() = "ul#project-chapters-list li"
+    override fun chapterListSelector() = "div.chapitre"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
-        chapter.setUrlWithoutDomain(element.select("a:first-of-type").attr("href"))
-        chapter.name = element.select("div.name-chapter").text()
-        chapter.date_upload = parseChapterDate(element.select("span.chapter-date").text())
+        chapter.setUrlWithoutDomain(element.select("a.chr-button").attr("href"))
+        chapter.name = element.select("div.chl-titre").text()
+        chapter.date_upload = parseChapterDate(element.select("div.chl-date").text())
 
         return chapter
     }
@@ -171,16 +176,14 @@ class Scantrad : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("div.center select[name=chapter-page]:not(.mobile) option").forEachIndexed { i, page ->
-            pages.add(Page(i, page.attr("value"), ""))
+        document.select("div.sc-lel img").forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.attr("abs:data-src")))
         }
 
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String {
-        return document.select("div.image img").attr("abs:src")
-    }
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
 
