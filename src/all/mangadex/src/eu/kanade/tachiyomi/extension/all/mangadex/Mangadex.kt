@@ -27,6 +27,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -203,6 +204,8 @@ abstract class Mangadex(
         return clientBuilder()
     }
 
+    private lateinit var groupSearch: String
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
@@ -294,6 +297,13 @@ abstract class Mangadex(
                         }
                     }
                 }
+                is ScanGroup -> {
+                    groupSearch = when {
+                        filter.state.isNotEmpty() && page == 1 -> "$baseUrl/groups/0/1/${filter.state}"
+                        filter.state.isNotEmpty() && page > 1 -> groupSearch.dropLast(1) + page
+                        else -> ""
+                    }
+                }
             }
         }
 
@@ -306,7 +316,26 @@ abstract class Mangadex(
             urlToUse += "&tags_exc=" + genresToExclude.joinToString(",")
         }
 
-        return GET(urlToUse, headersBuilder().build())
+        return if (groupSearch.isNotEmpty()) {
+            GET(groupSearch, headersBuilder().build())
+        } else {
+            GET(urlToUse, headersBuilder().build())
+        }
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        if (response.request().url().toString().contains("/groups/")) {
+            response.asJsoup().select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a:nth-child(1)").attr("abs:href").let {
+                return if (it.isNotEmpty()) {
+                    groupSearch = "$it/manga/0/1"
+                    super.searchMangaParse(client.newCall(GET(groupSearch, headersBuilder().build())).execute())
+                } else {
+                    MangasPage(emptyList(), false)
+                }
+            }
+        } else {
+            return super.searchMangaParse(response)
+        }
     }
 
     override fun searchMangaSelector() = "div.manga-entry"
@@ -617,6 +646,7 @@ abstract class Mangadex(
     private class FormatList(formats: List<Tag>) : Filter.Group<Tag>("Format", formats)
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
     private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
+    private class ScanGroup(name: String) : Filter.Text(name)
 
     private fun getDemographic() = listOf(
         Tag("1", "Shounen"),
@@ -656,7 +686,10 @@ abstract class Mangadex(
         GenreList(getGenreList()),
         ThemeList(getThemeList()),
         TagInclusionMode(),
-        TagExclusionMode()
+        TagExclusionMode(),
+        Filter.Separator(),
+        Filter.Header("Group search ignores other inputs"),
+        ScanGroup("Search for manga by scanlator group")
     )
 
     private fun getContentList() = listOf(
