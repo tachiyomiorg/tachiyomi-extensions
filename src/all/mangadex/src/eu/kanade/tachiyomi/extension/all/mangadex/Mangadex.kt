@@ -204,7 +204,7 @@ abstract class Mangadex(
         return clientBuilder()
     }
 
-    private lateinit var groupSearch: String
+    private var groupSearch = ""
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val genresToInclude = mutableListOf<String>()
