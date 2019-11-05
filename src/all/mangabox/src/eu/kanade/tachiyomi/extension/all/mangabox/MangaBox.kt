@@ -137,7 +137,7 @@ abstract class MangaBox (
 
         manga.title = infoElement.select("h1, h2").first().text()
         manga.author = infoElement.select("li:contains(author) a").text()
-        val status = infoElement.select("li:contains(status").text()
+        val status = infoElement.select("li:contains(status)").text()
         manga.status = parseStatus(status)
         manga.genre = infoElement.select("div.manga-info-top li:contains(genres)").text().substringAfter(": ")
         manga.description = document.select(descriptionSelector).first().ownText()
