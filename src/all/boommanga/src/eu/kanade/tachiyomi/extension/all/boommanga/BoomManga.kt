@@ -35,7 +35,7 @@ open class BoomManga (
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun chapterListSelector() = ".chapters > li"
 
-    override fun popularMangaNextPageSelector() = "script:contains(next_page_url):not(script:contains(false))"
+    override fun popularMangaNextPageSelector() = "script:containsData(next_page_url):not(script:containsData(false))"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
