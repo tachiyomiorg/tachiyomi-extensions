@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
+import com.github.salomonbrys.kotson.string
+import com.google.gson.JsonParser
 import okhttp3.*
 import java.util.*
 import org.jsoup.nodes.Element
@@ -15,6 +17,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -249,12 +252,24 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
+    override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-
-        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
-            add(Page(size, "", it.attr("src")))
+        val imageRoute = body.select("script:containsData(imageRoute)").html().substringAfter("imageRoute = \"").substringBefore(":IMAGE_NAME")
+        val token = body.select("meta[name=csrf-token]").attr("content")
+        val base64 = body.select("script:containsData(base64)").html().substringAfter("','").substringBefore("','all');")
+        val chapterid = body.baseUri().substringAfter("viewer/").substringBefore("/cascade")
+        val headers = headersBuilder()
+            .add("Content-Type", "application/json; charset=utf-8")
+            .add("X-CSRF-TOKEN",token)
+            .build()
+        val jsonData = client.newCall(POST("$baseUrl/upload_images/$chapterid/$base64/all", headers)).execute()
+        val jbody = jsonData.body()!!.string()
+        val results = JsonParser().parse(jbody).asJsonArray
+        val pages = mutableListOf<Page>()
+        for (i in 0 until results.size()) {
+            pages.add(Page(i, "",imageRoute + results[i].string))
         }
+        return pages
     }
 
     override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
