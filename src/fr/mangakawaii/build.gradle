@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: Mangakawaii'
     pkgNameSuffix = 'fr.mangakawaii'
-    extClass = '.MangaKawaiiSource'
+    extClass = '.MangaKawaii'
     extVersionCode = 3
     libVersion = '1.2'
 }
