@@ -1,17 +1,16 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
 
+import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,7 +25,7 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "a.manga-block-item__content"
     override fun latestUpdatesSelector() = throw Exception("Not Used")
-    override fun searchMangaSelector() = "h1 a"
+    override fun searchMangaSelector() = "h1 + ul a[href*=manga]"
     override fun chapterListSelector() = "div.chapter-item.volume-0, div.chapter-item.volume-"
 
     override fun popularMangaNextPageSelector() = "a[rel=next]"
@@ -36,8 +35,9 @@ class MangaKawaii : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterLists?page=$page&sortBy=views&asc=false", headers)
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not Used")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search?query=$query")?.newBuilder()
-        return GET(url.toString(), headers)
+        val uri = Uri.parse("$baseUrl/search").buildUpon()
+                .appendQueryParameter("query", query)
+        return GET(uri.toString(), headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
