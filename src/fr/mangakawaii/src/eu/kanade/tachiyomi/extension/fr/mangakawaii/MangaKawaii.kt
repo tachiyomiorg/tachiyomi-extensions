@@ -100,9 +100,5 @@ class MangaKawaii : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
-
-
-    override fun imageUrlParse(document: Document): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun imageUrlParse(document: Document): String = throw Exception("Not used")
 }
