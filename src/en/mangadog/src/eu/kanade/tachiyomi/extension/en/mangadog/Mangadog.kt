@@ -2,10 +2,8 @@ package eu.kanade.tachiyomi.extension.en.mangadog
 
 import android.net.Uri
 import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -14,7 +12,6 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -53,34 +50,23 @@ class Mangadog : HttpSource() {
         val manga = SManga.create()
         manga.title = json["name"].string.trim()
         manga.thumbnail_url = cdn + json["image"].string.replace("\\/","/")
-        val search_name = json["search_name"].string
+        val searchname = json["search_name"].string
         val id = json["id"].string
-        manga.url = "/detail/$search_name/$id.html"
+        manga.url = "/detail/$searchname/$id.html"
         return manga
     }
-
-
+    
     override fun latestUpdatesParse(response: Response):  MangasPage {
         val jsonData= response.body()!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]
         val mangas = mutableListOf<SManga>()
         for (i in 0 until data.asJsonArray.size()) {
-            mangas.add(Latestmangafromjson(data[i]))
+            mangas.add(popularMangaFromjson(data[i]))
         }
 
         val hasNextPage = true //data.asJsonArray.size()>18
         return MangasPage(mangas, hasNextPage)
-    }
-
-    private fun Latestmangafromjson(json: JsonElement): SManga {
-        val manga = SManga.create()
-        manga.title = json["comic_name"].string.trim()
-        manga.thumbnail_url = cdn + json["image"].string.replace("\\/","/")
-        val search_name = json["comic_search_name"].string
-        val id = json["comic_id"].string
-        manga.url = "/detail/$search_name/$id.html"
-        return manga
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -92,7 +78,7 @@ class Mangadog : HttpSource() {
             mangas.add(searchMangaFromjson(data[i]))
         }
 
-        val hasNextPage = false //results.size()==19
+        val hasNextPage = false
         return MangasPage(mangas, hasNextPage)
     }
 
@@ -123,9 +109,9 @@ class Mangadog : HttpSource() {
 
     private fun chapterFromjson(json: JsonElement): SChapter {
         val chapter = SChapter.create()
-        val search_name = json["search_name"].string
+        val searchname = json["search_name"].string
         val id = json["comic_id"].string
-        chapter.url = "/read/tales-of-demons-and-gods/$search_name/$id.html"
+        chapter.url = "/read/read/$searchname/$id.html" //The url should include the manga name but it doesn't seem to matter
         chapter.name = json["name"].string.trim()
         chapter.chapter_number = json["obj_id"].asFloat
         chapter.date_upload = parseDate(json["create_date"].string)
