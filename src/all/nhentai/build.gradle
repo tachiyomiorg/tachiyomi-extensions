@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: NHentai'
     pkgNameSuffix = 'all.nhentai'
-    extClass = '.NHEnglish; .NHJapanese; .NHChinese'
-    extVersionCode = 6
+    extClass = '.NHFactory'
+    extVersionCode = 14
     libVersion = '1.2'
 }
 

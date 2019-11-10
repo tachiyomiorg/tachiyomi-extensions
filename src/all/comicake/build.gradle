@@ -3,9 +3,9 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: ComiCake'
-    pkgNameSuffix = "all.comicake"
+    pkgNameSuffix = 'all.comicake'
     extClass = '.ComiCakeFactory'
-    extVersionCode = 2
+    extVersionCode = 7
     libVersion = '1.2'
 }
 

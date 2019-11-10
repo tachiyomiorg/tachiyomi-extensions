@@ -5,8 +5,14 @@ ext {
     appName = 'Tachiyomi: Mangahere'
     pkgNameSuffix = 'en.mangahere'
     extClass = '.Mangahere'
-    extVersionCode = 7
+    extVersionCode = 10
     libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':duktape-stub')
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
 }
 
 apply from: "$rootDir/common.gradle"

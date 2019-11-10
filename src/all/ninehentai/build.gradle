@@ -5,11 +5,11 @@ ext {
     appName = 'Tachiyomi: NineHentai'
     pkgNameSuffix = 'all.ninehentai'
     extClass = '.NineHentai'
-    extVersionCode = 2
+    extVersionCode = 5
     libVersion = '1.2'
 }
 dependencies {
-    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.google.code.gson:gson:2.8.5'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
     compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }

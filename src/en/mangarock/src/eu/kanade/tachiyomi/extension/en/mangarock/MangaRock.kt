@@ -1,12 +1,26 @@
 package eu.kanade.tachiyomi.extension.en.mangarock
 
+import com.github.salomonbrys.kotson.jsonObject
+import com.github.salomonbrys.kotson.set
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.*
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.json.JSONObject
-import java.util.*
+import rx.Observable
+import java.util.ArrayList
 import kotlin.experimental.and
 import kotlin.experimental.xor
 
@@ -18,7 +32,9 @@ class MangaRock : HttpSource() {
 
     override val name = "Manga Rock"
 
-    override val baseUrl = "https://api.mangarockhd.com/query/web401"
+    override val baseUrl = "https://mangarock.com"
+
+    private val apiUrl = "https://api.mangarockhd.com/query/web401"
 
     override val lang = "en"
 
@@ -36,9 +52,7 @@ class MangaRock : HttpSource() {
         return response.newBuilder().body(rb).build()
     }).build()
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/mrs_latest")
-    }
+    override fun latestUpdatesRequest(page: Int) = GET("$apiUrl/mrs_latest")
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val res = response.body()!!.string()
@@ -46,9 +60,7 @@ class MangaRock : HttpSource() {
         return getMangasPageFromJsonList(list)
     }
 
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/mrs_latest")
-    }
+    override fun popularMangaRequest(page: Int) = GET("$apiUrl/mrs_latest")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val res = response.body()!!.string()
@@ -64,7 +76,7 @@ class MangaRock : HttpSource() {
             var status = ""
             var rank = ""
             var orderBy = ""
-            var genres = ""
+            val genres = jsonObject()
             filters.forEach { filter ->
                 when (filter) {
                     is StatusFilter -> {
@@ -81,23 +93,28 @@ class MangaRock : HttpSource() {
                         orderBy = filter.toUriPart()
                     }
                     is GenreList -> {
-                        genres = filter.state
-                                .filter { genre -> genre.state != Filter.TriState.STATE_IGNORE }
-                                .map { genre ->
-                                    "\"${genre.id}\": ${if (genre.state == Filter.TriState.STATE_INCLUDE) "true" else "false"}"
-                                }
-                                .joinToString(",")
+                        filter.state
+                                .filter { it.state != Filter.TriState.STATE_IGNORE }
+                                .forEach { genres[it.id] = it.state == Filter.TriState.STATE_INCLUDE }
                     }
                 }
             }
 
-            val body = RequestBody.create(jsonType, "{\"status\":\"$status\",\"genres\":{$genres},\"rank\":\"$rank\",\"order\":\"$orderBy\"}")
-            return POST("$baseUrl/mrs_filter", headers, body)
+            val body = RequestBody.create(jsonType, jsonObject(
+                    "status" to status,
+                    "genres" to genres,
+                    "rank" to rank,
+                    "order" to orderBy
+            ).toString())
+            return POST("$apiUrl/mrs_filter", headers, body)
         }
 
         // Regular search
-        val body = RequestBody.create(jsonType, "{\"type\":\"series\", \"keywords\":\"$query\"}")
-        return POST("$baseUrl/mrs_search", headers, body)
+        val body = RequestBody.create(jsonType, jsonObject(
+                "type" to "series",
+                "keywords" to query
+        ).toString())
+        return POST("$apiUrl/mrs_search", headers, body)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -135,36 +152,72 @@ class MangaRock : HttpSource() {
 
     private fun parseMangaJson(obj: JSONObject): SManga {
         return SManga.create().apply {
+            setUrlWithoutDomain("/manga/${obj.getString("oid")}")
             title = obj.getString("name")
             thumbnail_url = obj.getString("thumbnail")
             status = if (obj.getBoolean("completed")) SManga.COMPLETED else SManga.ONGOING
-            url = "/info?oid=${obj.getString("oid")}"
         }
     }
-
     private fun sortByRank(arr: List<JSONObject>): List<JSONObject> {
-        return arr.sortedBy({ it.getInt("rank") })
+        return arr.sortedBy { it.getInt("rank") }
+    }
+
+    // Avoid directly overriding mangaDetailsRequest so that "Open in browser" action uses the
+    // "real" URL
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(getMangaApiRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    mangaDetailsParse(response).apply { initialized = true }
+                }
+    }
+
+    // Always returns the "real" URL for the "Open in browser" action
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        // Handle older entries with API URL ("/info?oid=mrs-series-...")
+        if (manga.url.startsWith("/info")) {
+            val oid = manga.url.substringAfterLast("=")
+            return GET("$baseUrl/manga/$oid", headers)
+        }
+
+        return super.mangaDetailsRequest(manga)
+    }
+
+    override fun chapterListRequest(manga: SManga) = getMangaApiRequest(manga)
+
+    private fun getMangaApiRequest(manga: SManga): Request {
+        // Handle older entries with API URL ("/info?oid=mrs-series-...")
+        if (manga.url.startsWith("/info")) {
+            return GET("$apiUrl${manga.url}&Country=", headers)
+        }
+
+        val oid = manga.url.substringAfterLast("/")
+        return GET("$apiUrl/info?oid=$oid&Country=", headers)
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val obj = JSONObject(response.body()!!.string()).getJSONObject("data")
 
-        url = "https://mangarock.com/manga/${obj.getString("oid")}"
         title = obj.getString("name")
         description = obj.getString("description")
 
-        val people = obj.getJSONArray("authors")
-        val authors = ArrayList<String>()
-        val artists = ArrayList<String>()
-        for (i in 0 until people.length()) {
-            val person = people.getJSONObject(i)
-            when (person.getString("role")) {
-                "art" -> artists.add(person.getString("name"))
-                "story" -> authors.add(person.getString("name"))
+        if (obj.isNull("authors")) {
+            artist = ""
+            author = ""
+        } else {
+            val people = obj.getJSONArray("authors")
+            val authors = ArrayList<String>()
+            val artists = ArrayList<String>()
+            for (i in 0 until people.length()) {
+                val person = people.getJSONObject(i)
+                when (person.getString("role")) {
+                    "art" -> artists.add(person.getString("name"))
+                    "story" -> authors.add(person.getString("name"))
+                }
             }
+            artist = artists.sorted().joinToString(", ")
+            author = authors.sorted().joinToString(", ")
         }
-        artist = artists.sorted().joinToString(", ")
-        author = authors.sorted().joinToString(", ")
 
         val categories = obj.getJSONArray("rich_categories")
         val genres = ArrayList<String>(categories.length())
@@ -187,17 +240,19 @@ class MangaRock : HttpSource() {
             chapters.add(SChapter.create().apply {
                 name = chapter.getString("name")
                 date_upload = chapter.getString("updatedAt").toLong() * 1000
-                url = "/pages?oid=${chapter.getString("oid")}"
+                url = "/pagesv2?oid=${chapter.getString("oid")}"
             })
         }
         return chapters
     }
 
+    override fun pageListRequest(chapter: SChapter) = GET(apiUrl + chapter.url, headers)
+
     override fun pageListParse(response: Response): List<Page> {
         val obj = JSONObject(response.body()!!.string()).getJSONArray("data")
         val pages = ArrayList<Page>()
         for (i in 0 until obj.length()) {
-            pages.add(Page(i, "", obj.getString(i)))
+            pages.add(Page(i, "", obj.getJSONObject(i).getString("url")))
         }
         return pages
     }

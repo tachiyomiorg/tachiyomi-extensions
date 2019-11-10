@@ -6,7 +6,7 @@ ext {
     pkgNameSuffix = 'id.neumanga'
     extClass = '.Neumanga'
     extVersionCode = 3
-    libVersion = '1.0'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

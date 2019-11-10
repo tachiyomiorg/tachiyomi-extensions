@@ -2,11 +2,16 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaShow.Me'
+    appName = 'Tachiyomi: ManaMoa (MangaShow.Me)'
     pkgNameSuffix = 'ko.mangashowme'
-    extClass = '.MangaShowMe'
-    extVersionCode = 7
+    extClass = '.MSMFactory'
+    extVersionCode = 13
     libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':preference-stub')
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

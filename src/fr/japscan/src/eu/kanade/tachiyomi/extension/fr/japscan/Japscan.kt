@@ -1,26 +1,27 @@
 package eu.kanade.tachiyomi.extension.fr.japscan
 
-/**
- * @file Japscan.kt
- * @brief Defines class Japscan for french source Japscan
- * @date 2018-09-02
- * @version 1.0
- */
-
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.apache.commons.lang3.StringUtils
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.text.ParseException
@@ -32,7 +33,7 @@ class Japscan : ParsedHttpSource() {
 
     override val name = "Japscan"
 
-    override val baseUrl = "https://www.japscan.to"
+    override val baseUrl = "https://www.japscan.co"
 
     override val lang = "fr"
 
@@ -43,7 +44,11 @@ class Japscan : ParsedHttpSource() {
 
         val request = chain.request()
         val url = request.url().toString()
-        val response = chain.proceed(GET(url.substringBefore(indicator)))
+
+        val newRequest = request.newBuilder()
+                .url(url.substringBefore(indicator))
+                .build()
+        val response = chain.proceed(newRequest)
 
         if (!url.endsWith(indicator)) return@addInterceptor response
 
@@ -94,37 +99,57 @@ class Japscan : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = "#theresnone"
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val form = FormBody.Builder().apply {
-            add("search", StringUtils.stripAccents(query))
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        val stripped = StringUtils.stripAccents(query)
+        return client.newCall(searchMangaRequest(stripped[0], page))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, stripped)
+            }
+    }
+
+    private fun searchMangaRequest(char: Char, page: Int): Request {
+        return if (char.isLetter()) GET("$baseUrl/mangas/${char.toUpperCase()}/$page", headers) else GET("$baseUrl/mangas/0-9/$page", headers)
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("Not used")
+
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        val mangas = mutableListOf<SManga>()
+        var document = response.asJsoup()
+        var continueSearch = true
+        var page = 1
+
+        while (continueSearch) {
+            document.select(searchMangaSelector())
+                .filter { it.select("p a").text().contains(query, ignoreCase = true) }
+                .map { mangas.add(searchMangaFromElement(it)) }
+            if (document.select(searchMangaNextPageSelector()).isNotEmpty()) {
+                page++
+                document = client.newCall(searchMangaRequest(query[0], page)).execute().asJsoup()
+            } else {
+                continueSearch = false
+            }
         }
-        return POST("$baseUrl/search/", headers, form.build())
+
+        return MangasPage(mangas, false)
     }
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val result = JsonParser().parse(response.body()!!.string()).asJsonArray
+    override fun searchMangaSelector() = "div.row div.flex-wrap div"
 
-        if (!result!!.isJsonArray)
-            return MangasPage(emptyList(), false)
+    override fun searchMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
 
-        val searchMangas = result.map {
-            searchMangaItemParse(it.asJsonObject)
+        element.select("p a").let{
+            manga.title = it.text()
+            manga.setUrlWithoutDomain(it.attr("href"))
         }
+        manga.thumbnail_url = element.select("img").attr("abs:src")
 
-        return MangasPage(searchMangas, false)
+        return manga
     }
 
-    private fun searchMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["name"]!!.asString
-        thumbnail_url = "$baseUrl/${obj["image"]!!.asString}"
-        url = obj["url"]!!.asString
-    }
-
-    override fun searchMangaSelector() = "#theresnone"
-
-    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
-
-    override fun searchMangaNextPageSelector() = "#theresnone"
+    override fun searchMangaNextPageSelector() = "ul.pagination li.active + li"
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#main > .card > .card-body").first()
@@ -153,14 +178,19 @@ class Japscan : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "div#chapters_list > div.collapse > div.chapters_list"
+    override fun chapterListSelector() = "#chapters_list > div.collapse > div.chapters_list"+
+            ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW),.badge:contains(VUS)))"
+    //JapScan sometimes uploads some "spoiler preview" chapters, containing 2 or 3 untranslated pictures taken from a raw. Sometimes they also upload full RAWs/US versions and replace them with a translation as soon as available.
+    //Those have a span.badge "SPOILER" or "RAW". The additional pseudo selector makes sure to exclude these from the chapter list.
+
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.text().replace(" VUS", "")
+        chapter.name = urlElement.ownText()
+        //Using ownText() doesn't include childs' text, like "VUS" or "RAW" badges, in the chapter name.
         chapter.date_upload = element.select("> span").text().trim().let { parseChapterDate(it) }
         return chapter
     }
@@ -176,7 +206,7 @@ class Japscan : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))
-        val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_']").isNullOrEmpty()) "&decodeImage" else ""
+        val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_U']").isNullOrEmpty()) "&decodeImage" else ""
 
         document.select("select#pages").first()?.select("option")?.forEach {
             pages.add(Page(pages.size, "", "${imagePath?.groupValues?.get(1)}${it.attr("data-img")}$imageScrambled"))

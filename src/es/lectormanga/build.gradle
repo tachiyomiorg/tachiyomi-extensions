@@ -1,0 +1,18 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: LectorManga'
+    pkgNameSuffix = 'es.lectormanga'
+    extClass = '.LectorManga'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
+    compileOnly project(':preference-stub')
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
+}
+
+apply from: "$rootDir/common.gradle"

@@ -1,18 +1,18 @@
 package eu.kanade.tachiyomi.extension.es.ikuhentai
 
-import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-import eu.kanade.tachiyomi.source.model.*
-import java.text.ParseException
-import org.jsoup.nodes.DataNode
-import android.util.Log
-
 
 class Ikuhentai : ParsedHttpSource() {
     override val name = "Ikuhentai"
@@ -143,12 +143,10 @@ class Ikuhentai : ParsedHttpSource() {
         val urlElement = element.select("a").first()
         var url = urlElement.attr("href")
         url = url.replace("/p/1","")
-        url = url+"?style=list"
-        Log.d("URL", url)
+        url += "?style=list"
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(url)
         chapter.name = urlElement.text()
-
 
         return chapter
     }
@@ -165,7 +163,6 @@ class Ikuhentai : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-
         val pages = mutableListOf<Page>()
         var i = 0
         document.select("div.reading-content * img").forEach { element ->
@@ -198,10 +195,6 @@ class Ikuhentai : ParsedHttpSource() {
             Pair("Más visto", "views"),
             Pair("Nuevo", "new-manga")
     ))
-
-
-
-
 
     private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)

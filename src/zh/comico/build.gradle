@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Comico'
+    pkgNameSuffix = 'zh.comico'
+    extClass = '.ComicoFactory'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+}
+
+apply from: "$rootDir/common.gradle"

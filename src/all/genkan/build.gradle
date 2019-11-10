@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Genkan (multiple sources)'
+    pkgNameSuffix = 'all.genkan'
+    extClass = '.GenkanFactory'
+    extVersionCode = 8
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

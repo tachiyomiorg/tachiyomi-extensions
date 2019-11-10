@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Mangakawaii'
     pkgNameSuffix = 'fr.mangakawaii'
     extClass = '.MangaKawaiiSource'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

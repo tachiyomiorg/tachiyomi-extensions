@@ -32,7 +32,7 @@ class QuestionableContent : ParsedHttpSource() {
         return Observable.just(MangasPage(arrayListOf(manga), false))
     }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList) = Observable.just(MangasPage(arrayListOf(), false))
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
 
     override fun fetchMangaDetails(manga: SManga) = Observable.just(manga)
 

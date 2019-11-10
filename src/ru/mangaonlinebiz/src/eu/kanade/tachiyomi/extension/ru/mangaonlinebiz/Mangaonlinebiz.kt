@@ -20,18 +20,39 @@ class MangaOnlineBiz : ParsedHttpSource() {
 
     override val lang = "ru"
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/genre/all/page/$page", headers)
+        GET("$baseUrl/genre/all/page/$page", headers)
+
+    override fun latestUpdatesRequest(page: Int): Request =
+        GET("$baseUrl/genre/all/order/new/page/$page")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search-ajax/?query=$query", headers)
+        val url = if (query.isNotBlank()) {
+            "$baseUrl/search-ajax/?query=$query"
+        } else {
+            var ret = String()
+            (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+                when (filter) {
+                    is GenreList -> {
+                        ret = "$baseUrl/genre/${filter.values[filter.state].id}/page/$page"
+                    }
+                }
+            }
+            ret
+        }
+        return GET(url, headers)
     }
 
     override fun popularMangaSelector() = "div.genres a.genre"
 
+    override fun latestUpdatesSelector() = popularMangaSelector()
+
     override fun searchMangaParse(response: Response): MangasPage {
+        if (!response.request().url().toString().contains("search-ajax")) {
+            return popularMangaParse(response)
+        }
         val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val results = json.getAsJsonArray("results")
@@ -41,7 +62,13 @@ class MangaOnlineBiz : ParsedHttpSource() {
             val manga = SManga.create()
             manga.setUrlWithoutDomain(element.get("url").string)
             manga.title = element.get("title").string.split("/").first()
-            manga.thumbnail_url = baseUrl + element.get("image").string
+            val image = element.get("image").string
+            if (image.startsWith("http")) {
+                manga.thumbnail_url = image
+            } else {
+                manga.thumbnail_url = baseUrl + image
+            }
+
             mangas.add(manga)
         }
 
@@ -58,17 +85,17 @@ class MangaOnlineBiz : ParsedHttpSource() {
         return manga
     }
 
+
     override fun latestUpdatesFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+        popularMangaFromElement(element)
 
     override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not Used")
 
-    override fun popularMangaNextPageSelector() = "a.ui.button.next"
+    override fun popularMangaNextPageSelector() = "a.button.next"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaNextPageSelector() = throw Exception("Not Used")
-
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(".items .item").first()
@@ -122,15 +149,75 @@ class MangaOnlineBiz : ParsedHttpSource() {
         return resPages
     }
 
+    private class Genre(name: String, val id: String) : Filter.CheckBox(name) {
+        override fun toString(): String {
+            return name
+        }
+    }
+
+    private class GenreList(genres: Array<Genre>) : Filter.Select<Genre>("Genres", genres, 0)
+
+    override fun getFilterList() = FilterList(
+        GenreList(getGenreList())
+    )
+
+    /*  [...document.querySelectorAll(".categories .item")]
+    *     .map(el => `Genre("${el.textContent.trim()}", "${el.getAttribute('href')}")`).join(',\n')
+    *   on https://manga-online.biz/genre/all/
+    */
+    private fun getGenreList() = arrayOf(
+        Genre("Все", "all"),
+        Genre("Боевик", "boevik"),
+        Genre("Боевые искусства", "boevye_iskusstva"),
+        Genre("Вампиры", "vampiry"),
+        Genre("Гарем", "garem"),
+        Genre("Гендерная интрига", "gendernaya_intriga"),
+        Genre("Героическое фэнтези", "geroicheskoe_fehntezi"),
+        Genre("Детектив", "detektiv"),
+        Genre("Дзёсэй", "dzyosehj"),
+        Genre("Додзинси", "dodzinsi"),
+        Genre("Драма", "drama"),
+        Genre("Игра", "igra"),
+        Genre("История", "istoriya"),
+        Genre("Меха", "mekha"),
+        Genre("Мистика", "mistika"),
+        Genre("Научная фантастика", "nauchnaya_fantastika"),
+        Genre("Повседневность", "povsednevnost"),
+        Genre("Постапокалиптика", "postapokaliptika"),
+        Genre("Приключения", "priklyucheniya"),
+        Genre("Психология", "psihologiya"),
+        Genre("Романтика", "romantika"),
+        Genre("Самурайский боевик", "samurajskij_boevik"),
+        Genre("Сверхъестественное", "sverhestestvennoe"),
+        Genre("Сёдзё", "syodzyo"),
+        Genre("Сёдзё-ай", "syodzyo-aj"),
+        Genre("Сёнэн", "syonen"),
+        Genre("Спорт", "sport"),
+        Genre("Сэйнэн", "sejnen"),
+        Genre("Трагедия", "tragediya"),
+        Genre("Триллер", "triller"),
+        Genre("Ужасы", "uzhasy"),
+        Genre("Фантастика", "fantastika"),
+        Genre("Фэнтези", "fentezi"),
+        Genre("Школа", "shkola"),
+        Genre("Этти", "etti"),
+        Genre("Юри", "yuri"),
+        Genre("Военный", "voennyj"),
+        Genre("Жосей", "zhosej"),
+        Genre("Магия", "magiya"),
+        Genre("Полиция", "policiya"),
+        Genre("Смена пола", "smena-pola"),
+        Genre("Супер сила", "super-sila"),
+        Genre("Эччи", "echchi"),
+        Genre("Яой", "yaoj"),
+        Genre("Сёнэн-ай", "syonen-aj")
+    )
+
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
     override fun searchMangaSelector(): String = throw Exception("Not Used")
 
-    override fun latestUpdatesSelector(): String = throw Exception("Not Used")
-
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
 
     override fun pageListParse(document: Document): List<Page> = throw Exception("Not Used")
-
-    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not Used")
 }

@@ -3,19 +3,24 @@ package eu.kanade.tachiyomi.extension.all.ehentai
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
+import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
 
-open class EHentai(override val lang: String, val ehLang: String) : HttpSource() {
+open class EHentai(override val lang: String, private val ehLang: String) : HttpSource() {
 
     override val name = "E-Hentai"
 
@@ -23,58 +28,36 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
     override val supportsLatest = true
 
-    /**
-     * Gallery list entry
-     * @param fav The favorite this gallery belongs to (currently unused)
-     * @param manga The manga object
-     */
-    data class ParsedManga(val fav: String?, val manga: SManga)
-
-    fun extendedGenericMangaParse(doc: Document)
-            = with(doc) {
-        //Parse mangas
-        val parsedMangas = select(".gtr0,.gtr1").map {
-            ParsedManga(
-                    fav = it.select(".itd .it3 > .i[id]").attr("title"),
-                    manga = SManga.create().apply {
-                        //Get title
-                        it.select(".itd .it5 a").apply {
-                            title = text()
-                            setUrlWithoutDomain(addParam(attr("href"), "nw", "always"))
-                        }
-                        //Get image
-                        it.select(".itd .it2").first().apply {
-                            children().first()?.let {
-                                thumbnail_url = it.attr("src")
-                            } ?: text().split("~").apply {
-                                thumbnail_url = "http://${this[1]}/${this[2]}"
-                            }
-                        }
-                    })
-
+    private fun genericMangaParse(response: Response): MangasPage {
+        val doc = response.asJsoup()
+        val parsedMangas = doc.select("table.itg td.glname").map {
+            SManga.create().apply {
+                //Get title
+                it.select("a")?.first()?.apply {
+                    title = this.select(".glink").text()
+                    url = ExGalleryMetadata.normalizeUrl(attr("href"))
+                }
+                //Get image
+                it.parent().select(".glthumb img")?.first().apply {
+                    thumbnail_url = this?.attr("data-src")?.nullIfBlank()
+                        ?: this?.attr("src")
+                }
+            }
         }
+
         //Add to page if required
-        val hasNextPage = select("a[onclick=return false]").last()?.text() == ">"
-        Pair(parsedMangas, hasNextPage)
+        val hasNextPage = doc.select("a[onclick=return false]").last()?.text() == ">"
+
+        return MangasPage(parsedMangas, hasNextPage)
     }
 
-    /**
-     * Parse a list of galleries
-     */
-    fun genericMangaParse(response: Response)
-            = extendedGenericMangaParse(response.asJsoup()).let {
-        MangasPage(it.first.map { it.manga }, it.second)
-    }
-
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>>
-            = Observable.just(listOf(SChapter.create().apply {
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = Observable.just(listOf(SChapter.create().apply {
         url = manga.url
         name = "Chapter"
         chapter_number = 1f
     }))
 
-    override fun fetchPageList(chapter: SChapter)
-            = fetchChapterPage(chapter, "$baseUrl/${chapter.url}").map {
+    override fun fetchPageList(chapter: SChapter) = fetchChapterPage(chapter, "$baseUrl/${chapter.url}").map {
         it.mapIndexed { i, s ->
             Page(i, s)
         }
@@ -85,7 +68,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
      */
     private fun fetchChapterPage(chapter: SChapter, np: String,
                                  pastUrls: List<String> = emptyList()): Observable<List<String>> {
-        val urls = pastUrls.toMutableList()
+        val urls = ArrayList(pastUrls)
         return chapterPageCall(np).flatMap {
             val jsoup = it.asJsoup()
             urls += parseChapterPage(jsoup)
@@ -95,8 +78,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         }
     }
 
-    private fun parseChapterPage(response: Element)
-            = with(response) {
+    private fun parseChapterPage(response: Element) = with(response) {
         select(".gdtm a").map {
             Pair(it.child(0).attr("alt").toInt(), it.attr("href"))
         }.sortedBy(Pair<Int, String>::first).map { it.second }
@@ -105,8 +87,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     private fun chapterPageCall(np: String) = client.newCall(chapterPageRequest(np)).asObservableSuccess()
     private fun chapterPageRequest(np: String) = exGet(np, null, headers)
 
-    private fun nextPageUrl(element: Element)
-            = element.select("a[onclick=return false]").last()?.let {
+    private fun nextPageUrl(element: Element) = element.select("a[onclick=return false]").last()?.let {
         if (it.text() == ">") it.attr("href") else null
     }
 
@@ -130,8 +111,7 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     override fun searchMangaParse(response: Response) = genericMangaParse(response)
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
 
-    fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true)
-            = GET(page?.let {
+    private fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true) = GET(page?.let {
         addParam(url, "page", (it - 1).toString())
     } ?: url, additionalHeaders?.let {
         val headers = headers.newBuilder()
@@ -162,44 +142,53 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
             thumbnailUrl = select("#gd1 div").attr("style").nullIfBlank()?.let {
                 it.substring(it.indexOf('(') + 1 until it.lastIndexOf(')'))
             }
-
-            genre = select(".ic").parents().attr("href").nullIfBlank()?.trim()?.substringAfterLast('/')
+            genre = select("#gdc div").text().nullIfBlank()?.trim()?.toLowerCase()
 
             uploader = select("#gdn").text().nullIfBlank()?.trim()
 
             //Parse the table
             select("#gdd tr").forEach {
-                val left = it.select(".gdt1").text().nullIfBlank()?.trim() ?: return@forEach
-                val right = it.select(".gdt2").text().nullIfBlank()?.trim() ?: return@forEach
-                ignore {
-                    when (left.removeSuffix(":")
-                            .toLowerCase()) {
-                        "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
-                        "visible" -> visible = right.nullIfBlank()
-                        "language" -> {
-                            language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
-                            translated = right.endsWith(TR_SUFFIX, true)
-                        }
-                        "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
-                        "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
-                        "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
+                it.select(".gdt1")
+                    .text()
+                    .nullIfBlank()
+                    ?.trim()
+                    ?.let { left ->
+                        it.select(".gdt2")
+                            .text()
+                            .nullIfBlank()
+                            ?.trim()
+                            ?.let { right ->
+                                ignore {
+                                    when (left.removeSuffix(":")
+                                        .toLowerCase()) {
+                                        "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
+                                        "visible" -> visible = right.nullIfBlank()
+                                        "language" -> {
+                                            language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
+                                            translated = right.endsWith(TR_SUFFIX, true)
+                                        }
+                                        "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
+                                        "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
+                                        "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
+                                    }
+                                }
+                            }
                     }
-                }
             }
 
             //Parse ratings
             ignore {
-                averageRating = getElementById("rating_label")
-                        .text()
-                        .removePrefix("Average:")
-                        .trim()
-                        .nullIfBlank()
-                        ?.toDouble()
-                ratingCount = getElementById("rating_count")
-                        .text()
-                        .trim()
-                        .nullIfBlank()
-                        ?.toInt()
+                averageRating = select("#rating_label")
+                    .text()
+                    .removePrefix("Average:")
+                    .trim()
+                    .nullIfBlank()
+                    ?.toDouble()
+                ratingCount = select("#rating_count")
+                    .text()
+                    .trim()
+                    .nullIfBlank()
+                    ?.toInt()
             }
 
             //Parse tags
@@ -208,9 +197,9 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
                 val namespace = it.select(".tc").text().removeSuffix(":")
                 val currentTags = it.select("div").map {
                     Tag(it.text().trim(),
-                            it.hasClass("gtl"))
+                        it.hasClass("gtl"))
                 }
-                tags.put(namespace, currentTags)
+                tags[namespace] = currentTags
             }
 
             //Copy metadata to manga
@@ -220,32 +209,27 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
         }
     }
 
-    override fun chapterListParse(response: Response)
-            = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun chapterListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    override fun pageListParse(response: Response)
-            = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun pageListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    override fun fetchImageUrl(page: Page)
-            = client.newCall(imageUrlRequest(page))
-            .asObservableSuccess()
-            .map { realImageUrlParse(it, page) }!!
+    override fun fetchImageUrl(page: Page) = client.newCall(imageUrlRequest(page))
+        .asObservableSuccess()
+        .map { realImageUrlParse(it, page) }!!
 
-    fun realImageUrlParse(response: Response, page: Page)
-            = with(response.asJsoup()) {
+    private fun realImageUrlParse(response: Response, page: Page) = with(response.asJsoup()) {
         val currentImage = getElementById("img").attr("src")
         //TODO We cannot currently do this as page.url is immutable
         //Each press of the retry button will choose another server
         /*select("#loadfail").attr("onclick").nullIfBlank()?.let {
-            page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 .. it.lastIndexOf('\'') - 1))
+            page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 until it.lastIndexOf('\'')))
         }*/
         currentImage
     }!!
 
-    override fun imageUrlParse(response: Response)
-            = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    val cookiesHeader by lazy {
+    private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
 
         //Setup settings
@@ -256,69 +240,70 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
 
         //Exclude every other language except the one we have selected
         settings += "xl_" + languageMappings.filter { it.first != ehLang }
-                .flatMap { it.second }
-                .joinToString("x")
+            .flatMap { it.second }
+            .joinToString("x")
 
-        cookies.put("uconfig", buildSettings(settings))
+        cookies["uconfig"] = buildSettings(settings)
+
+        // Bypass "Offensive For Everyone" content warning
+        cookies["nw"] = "1"
 
         buildCookies(cookies)
     }
 
     //Headers
-    override fun headersBuilder()
-            = super.headersBuilder().add("Cookie", cookiesHeader)!!
+    override fun headersBuilder() = super.headersBuilder().add("Cookie", cookiesHeader)!!
 
-    fun buildSettings(settings: List<String?>)
-            = settings.filterNotNull().joinToString(separator = "-")
+    private fun buildSettings(settings: List<String?>) = settings.filterNotNull().joinToString(separator = "-")
 
-    fun buildCookies(cookies: Map<String, String>)
-            = cookies.entries.map {
+    private fun buildCookies(cookies: Map<String, String>) = cookies.entries.joinToString(separator = "; ", postfix = ";") {
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
-    }.joinToString(separator = "; ", postfix = ";")
+    }
 
-    fun addParam(url: String, param: String, value: String)
-            = Uri.parse(url)
-            .buildUpon()
-            .appendQueryParameter(param, value)
-            .toString()
+    private fun addParam(url: String, param: String, value: String) = Uri.parse(url)
+        .buildUpon()
+        .appendQueryParameter(param, value)
+        .toString()
 
     override val client = network.client.newBuilder()
-            .addNetworkInterceptor { chain ->
-                val newReq = chain
-                        .request()
-                        .newBuilder()
-                        .addHeader("Cookie", cookiesHeader)
-                        .build()
+        .cookieJar(CookieJar.NO_COOKIES)
+        .addInterceptor { chain ->
+            val newReq = chain
+                .request()
+                .newBuilder()
+                .removeHeader("Cookie")
+                .addHeader("Cookie", cookiesHeader)
+                .build()
 
-                chain.proceed(newReq)
-            }.build()!!
+            chain.proceed(newReq)
+        }.build()!!
 
     //Filters
     override fun getFilterList() = FilterList(
-            GenreGroup(),
-            AdvancedGroup()
+        GenreGroup(),
+        AdvancedGroup()
     )
 
-    class GenreOption(name: String, val genreId: String) : Filter.CheckBox(name, false), UriFilter {
+    class GenreOption(name: String, private val genreId: String) : Filter.CheckBox(name, false), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            builder.appendQueryParameter("f_" + genreId, if (state) "1" else "0")
+            builder.appendQueryParameter("f_$genreId", if (state) "1" else "0")
         }
     }
 
     class GenreGroup : UriGroup<GenreOption>("Genres", listOf(
-            GenreOption("Dōjinshi", "doujinshi"),
-            GenreOption("Manga", "manga"),
-            GenreOption("Artist CG", "artistcg"),
-            GenreOption("Game CG", "gamecg"),
-            GenreOption("Western", "western"),
-            GenreOption("Non-H", "non-h"),
-            GenreOption("Image Set", "imageset"),
-            GenreOption("Cosplay", "cosplay"),
-            GenreOption("Asian Porn", "asianporn"),
-            GenreOption("Misc", "misc")
+        GenreOption("Dōjinshi", "doujinshi"),
+        GenreOption("Manga", "manga"),
+        GenreOption("Artist CG", "artistcg"),
+        GenreOption("Game CG", "gamecg"),
+        GenreOption("Western", "western"),
+        GenreOption("Non-H", "non-h"),
+        GenreOption("Image Set", "imageset"),
+        GenreOption("Cosplay", "cosplay"),
+        GenreOption("Asian Porn", "asianporn"),
+        GenreOption("Misc", "misc")
     ))
 
-    class AdvancedOption(name: String, val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
+    class AdvancedOption(name: String, private val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if (state)
                 builder.appendQueryParameter(param, "on")
@@ -326,49 +311,49 @@ open class EHentai(override val lang: String, val ehLang: String) : HttpSource()
     }
 
     class RatingOption : Filter.Select<String>("Minimum Rating", arrayOf(
-            "Any",
-            "2 stars",
-            "3 stars",
-            "4 stars",
-            "5 stars"
+        "Any",
+        "2 stars",
+        "3 stars",
+        "4 stars",
+        "5 stars"
     )), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            if (state > 0) builder.appendQueryParameter("f_srdd", Integer.toString(state + 1))
+            if (state > 0) builder.appendQueryParameter("f_srdd", (state + 1).toString())
         }
     }
 
     //Explicit type arg for listOf() to workaround this: KT-16570
-    class AdvancedGroup : UriGroup<Filter<*>>("Advanced Options", listOf<Filter<*>>(
-            AdvancedOption("Search Gallery Name", "f_sname", true),
-            AdvancedOption("Search Gallery Tags", "f_stags", true),
-            AdvancedOption("Search Gallery Description", "f_sdesc"),
-            AdvancedOption("Search Torrent Filenames", "f_storr"),
-            AdvancedOption("Only Show Galleries With Torrents", "f_sto"),
-            AdvancedOption("Search Low-Power Tags", "f_sdt1"),
-            AdvancedOption("Search Downvoted Tags", "f_sdt2"),
-            AdvancedOption("Show Expunged Galleries", "f_sh"),
-            RatingOption()
+    class AdvancedGroup : UriGroup<Filter<*>>("Advanced Options", listOf(
+        AdvancedOption("Search Gallery Name", "f_sname", true),
+        AdvancedOption("Search Gallery Tags", "f_stags", true),
+        AdvancedOption("Search Gallery Description", "f_sdesc"),
+        AdvancedOption("Search Torrent Filenames", "f_storr"),
+        AdvancedOption("Only Show Galleries With Torrents", "f_sto"),
+        AdvancedOption("Search Low-Power Tags", "f_sdt1"),
+        AdvancedOption("Search Downvoted Tags", "f_sdt2"),
+        AdvancedOption("Show Expunged Galleries", "f_sh"),
+        RatingOption()
     ))
 
     //map languages to their internal ids
-    val languageMappings = listOf(
-            Pair("japanese", listOf("0", "1024", "2048")),
-            Pair("english", listOf("1", "1025", "2049")),
-            Pair("chinese", listOf("10", "1034", "2058")),
-            Pair("dutch", listOf("20", "1044", "2068")),
-            Pair("french", listOf("30", "1054", "2078")),
-            Pair("german", listOf("40", "1064", "2088")),
-            Pair("hungarian", listOf("50", "1074", "2098")),
-            Pair("italian", listOf("60", "1084", "2108")),
-            Pair("korean", listOf("70", "1094", "2118")),
-            Pair("polish", listOf("80", "1104", "2128")),
-            Pair("portuguese", listOf("90", "1114", "2138")),
-            Pair("russian", listOf("100", "1124", "2148")),
-            Pair("spanish", listOf("110", "1134", "2158")),
-            Pair("thai", listOf("120", "1144", "2168")),
-            Pair("vietnamese", listOf("130", "1154", "2178")),
-            Pair("n/a", listOf("254", "1278", "2302")),
-            Pair("other", listOf("255", "1279", "2303"))
+    private val languageMappings = listOf(
+        Pair("japanese", listOf("0", "1024", "2048")),
+        Pair("english", listOf("1", "1025", "2049")),
+        Pair("chinese", listOf("10", "1034", "2058")),
+        Pair("dutch", listOf("20", "1044", "2068")),
+        Pair("french", listOf("30", "1054", "2078")),
+        Pair("german", listOf("40", "1064", "2088")),
+        Pair("hungarian", listOf("50", "1074", "2098")),
+        Pair("italian", listOf("60", "1084", "2108")),
+        Pair("korean", listOf("70", "1094", "2118")),
+        Pair("polish", listOf("80", "1104", "2128")),
+        Pair("portuguese", listOf("90", "1114", "2138")),
+        Pair("russian", listOf("100", "1124", "2148")),
+        Pair("spanish", listOf("110", "1134", "2158")),
+        Pair("thai", listOf("120", "1144", "2168")),
+        Pair("vietnamese", listOf("130", "1154", "2178")),
+        Pair("n/a", listOf("254", "1278", "2302")),
+        Pair("other", listOf("255", "1279", "2303"))
     )
 
     companion object {

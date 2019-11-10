@@ -5,8 +5,12 @@ ext {
     appName = 'Tachiyomi: Readmanga'
     pkgNameSuffix = 'ru.readmanga'
     extClass = '.Readmanga'
-    extVersionCode = 9
+    extVersionCode = 13
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

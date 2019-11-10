@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: Mangastream'
     pkgNameSuffix = 'en.mangastream'
     extClass = '.Mangastream'
-    extVersionCode = 3
-    libVersion = '1.0'
+    extVersionCode = 4
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

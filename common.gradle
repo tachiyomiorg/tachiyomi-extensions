@@ -20,9 +20,11 @@ android {
         }
         release {
             res.srcDirs = ['res']
+            manifest.srcFile "AndroidManifest.xml"
         }
         debug {
             res.srcDirs = ['res']
+            manifest.srcFile "AndroidManifest.xml"
         }
     }
 

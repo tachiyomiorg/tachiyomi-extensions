@@ -4,9 +4,14 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: NewToki'
     pkgNameSuffix = 'ko.newtoki'
-    extClass = '.NewToki'
-    extVersionCode = 5
+    extClass = '.NewTokiFactory'
+    extVersionCode = 9
     libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':preference-stub')
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

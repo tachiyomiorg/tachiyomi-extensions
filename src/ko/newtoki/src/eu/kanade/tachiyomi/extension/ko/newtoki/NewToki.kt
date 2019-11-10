@@ -1,7 +1,14 @@
 package eu.kanade.tachiyomi.extension.ko.newtoki
 
 import android.annotation.SuppressLint
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.EditTextPreference
+import android.support.v7.preference.PreferenceScreen
+import android.widget.Toast
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
@@ -10,36 +17,19 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
  * NewToki Source
  **/
-class NewToki : ParsedHttpSource() {
-    override val name = "NewToki"
-    override val baseUrl = "https://newtoki3.net"
+open class NewToki(override val name: String, private val defaultBaseUrl: String, private val boardName: String) : ConfigurableSource, ParsedHttpSource() {
+    override val baseUrl by lazy { getPrefBaseUrl() }
     override val lang: String = "ko"
-
-    // Latest updates currently returns duplicate manga as it separates manga into chapters
-    override val supportsLatest = false
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-            .addInterceptor { chain ->
-                val req = chain.request()
-                var res: Response? = null
-
-                for (_i in 0..10) {
-                    try {
-                        res = chain.proceed(req)
-                    } catch (e: javax.net.ssl.SSLHandshakeException) {
-                        if (e.message!!.contains("Connection reset by peer")) continue
-                    }
-                    break
-                }
-
-                res ?: chain.proceed(req)
-            }
-            .build()!!
+    override val supportsLatest = true
+    override val client: OkHttpClient = network.cloudflareClient
 
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
@@ -57,7 +47,7 @@ class NewToki : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "ul.pagination > li:not(.disabled)"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic" + if (page > 1) "/p$page" else "")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/$boardName" + if (page > 1) "/p$page" else "")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -79,7 +69,7 @@ class NewToki : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/comic" + (if (page > 1) "/p$page" else "") + "?stx=$query")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/$boardName" + (if (page > 1) "/p$page" else "") + "?stx=$query")
 
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -192,16 +182,52 @@ class NewToki : ParsedHttpSource() {
     }
 
 
-    // Latest not supported
-    override fun latestUpdatesSelector() = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+    override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
 
 
     //We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList()
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val baseUrlPref = EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(defaultBaseUrl)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $defaultBaseUrl"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
+    }
+
+    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)
+
+    companion object {
+        private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
+        private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
+        private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
+        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+    }
 }
