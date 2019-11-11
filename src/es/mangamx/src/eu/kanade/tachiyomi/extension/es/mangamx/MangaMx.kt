@@ -27,7 +27,7 @@ class MangaMx : ParsedHttpSource() {
     override val supportsLatest = true
 
     override fun popularMangaSelector() = "article[id=item]"
-    override fun latestUpdatesSelector() = "article[id=item]"
+    override fun latestUpdatesSelector() = "div.manga-item"
     override fun searchMangaSelector() = "article[id=item]"
     override fun chapterListSelector() = throw Exception ("Not Used")
 
@@ -37,7 +37,7 @@ class MangaMx : ParsedHttpSource() {
 
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/directorio/?orden=visitas&p=$page", headers)
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/reciente/mangas?p=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/reciente/capitulos?p=$page", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/?s=$query")?.newBuilder()
         return GET(url.toString(), headers)
@@ -56,8 +56,24 @@ class MangaMx : ParsedHttpSource() {
         return POST(baseUrl + manga.url, headers, body)
     }
 
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        val mangas = document.select(latestUpdatesSelector())
+            .distinctBy { it.select("a").first().attr("abs:href") }
+            .map { latestUpdatesFromElement(it) }
+        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+        return MangasPage(mangas, hasNextPage)
+    }
+
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
-    override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        manga.setUrlWithoutDomain(element.select("a").first().attr("abs:href"))
+        manga.title = element.select("a").first().text().trim()
+        return manga
+    }
     override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
 
     private fun mangaFromElement(element: Element): SManga {
@@ -134,6 +150,8 @@ class MangaMx : ParsedHttpSource() {
 
     override fun pageListParse(document: Document)= throw Exception("Not Used")
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
+
+    //TODO Genre Filter Request #1756
 
 }
 
