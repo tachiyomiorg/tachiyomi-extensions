@@ -21,20 +21,19 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 open class Komga : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/api/v1/series?page=${page - 1}", headers)
 
     override fun popularMangaParse(response: Response): MangasPage =
-        processSeriePage(response)
+        processSeriesPage(response)
 
     override fun latestUpdatesRequest(page: Int): Request =
         GET("$baseUrl/api/v1/series/latest?page=${page - 1}", headers)
 
     override fun latestUpdatesParse(response: Response): MangasPage =
-        processSeriePage(response)
+        processSeriesPage(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/api/v1/series?search=$query&page=${page - 1}")!!.newBuilder()
@@ -59,7 +58,7 @@ open class Komga : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage =
-        processSeriePage(response)
+        processSeriesPage(response)
 
     override fun mangaDetailsRequest(manga: SManga): Request =
         GET(baseUrl + manga.url, headers)
@@ -106,7 +105,7 @@ open class Komga : ConfigurableSource, HttpSource() {
         }
     }
 
-    private fun processSeriePage(response: Response): MangasPage {
+    private fun processSeriesPage(response: Response): MangasPage {
         val page = gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)
         val mangas = page.content.map {
             it.toSManga()
@@ -149,9 +148,7 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private var libraries = emptyList<LibraryDto>()
 
-
     override val name = "Komga"
-
     override val lang = "en"
     override val supportsLatest = true
 
@@ -160,36 +157,26 @@ open class Komga : ConfigurableSource, HttpSource() {
     private val password by lazy { getPrefPassword() }
     private val gson by lazy { Gson() }
 
-    init {
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
-                libraries = try {
-                    gson.fromJson(it.body()?.charStream()!!)
-                } catch (e: Exception) {
-                    emptyList()
-                }
-            }, {})
-
-    }
-
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
-            .add("Authorization", Credentials.basic(username, password))
             .add("User-Agent", "Tachiyomi Komga v${BuildConfig.VERSION_NAME}")
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    private fun clientBuilder(): OkHttpClient = network.client.newBuilder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .cache(null)
-        .build()!!
+    override val client: OkHttpClient =
+        network.client.newBuilder()
+            .authenticator { _, response ->
+                if (response.request().header("Authorization") != null) {
+                    null // Give up, we've already failed to authenticate.
+                } else {
+                    response.request().newBuilder()
+                        .addHeader("Authorization", Credentials.basic(username, password))
+                        .build()
+                }
+            }
+            .build()
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
@@ -222,6 +209,22 @@ open class Komga : ConfigurableSource, HttpSource() {
     private fun getPrefBaseUrl(): String = preferences.getString(ADDRESS_TITLE, ADDRESS_DEFAULT)!!
     private fun getPrefUsername(): String = preferences.getString(USERNAME_TITLE, USERNAME_DEFAULT)!!
     private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
+
+    init {
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                libraries = try {
+                    gson.fromJson(it.body()?.charStream()!!)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }, {})
+
+    }
 
     companion object {
         private const val ADDRESS_TITLE = "Address"
