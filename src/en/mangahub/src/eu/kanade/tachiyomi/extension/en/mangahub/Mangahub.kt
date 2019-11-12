@@ -1,15 +1,25 @@
 package eu.kanade.tachiyomi.extension.en.mangahub
 
+import com.github.salomonbrys.kotson.fromJson
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.string
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Request
+import okhttp3.HttpUrl
+import okhttp3.RequestBody
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URL
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 
 class Mangahub : ParsedHttpSource() {
 
@@ -80,14 +90,11 @@ class Mangahub : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(URL(element.attr("href")).path)
 
-        val titleHeader = element.select(".text-secondary").first()
-        val number = titleHeader.select("._3D1SJ").first().text()
-        val title = titleHeader.select("._2IG5P").first().text()
-
-        chapter.name = "$number $title"
+        chapter.setUrlWithoutDomain(element.attr("href"))
+        chapter.name = element.select("span._8Qtbo").text()
         chapter.date_upload = element.select("small.UovLc").first()?.text()?.let { parseChapterDate(it) } ?: 0
+
         return chapter
     }
 
@@ -128,22 +135,32 @@ class Mangahub : ParsedHttpSource() {
         return parsedDate
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val pageList = mutableListOf<Page>()
+    override fun pageListRequest(chapter: SChapter): Request {
+        val jsonHeaders = headers.newBuilder().add("Content-Type", "application/json").build()
 
-        val pages = document.select("div#mangareader img.PB0mN")
-        val pageUrl = pages.first().attr("src")
-        val pageRoot = pageUrl.replaceAfterLast("/", "")
-        val numPages = pages.first().nextElementSibling().text().split("/").last().toInt()
+        val slug = chapter.url.substringAfter("chapter/").substringBefore("/")
+        val number = chapter.url.substringAfter("chapter-").removeSuffix("/")
+        val body = RequestBody.create(null, "{\"query\":\"{chapter(x:m01,slug:\\\"$slug\\\",number:$number){id,title,mangaID,number,slug,date,pages,noAd,manga{id,title,slug,mainSlug,author,isWebtoon,isYaoi,isPorn,isSoftPorn,unauthFile,isLicensed}}}\"}")
 
-        pageList.add(Page(0, "", pages.first().attr("src")))
-        val extension = pages.last().attr("src").split(".").last()
-        for (i in 2..numPages) {
-            pageList.add(Page(i-1, "", "$pageRoot$i.$extension"))
+        return POST("https://api2.mangahub.io/graphql", jsonHeaders, body)
+    }
+
+    private val gson = Gson()
+
+    override fun pageListParse(response: Response): List<Page> {
+        val pages = mutableListOf<Page>()
+        val images = gson.fromJson<JsonObject>(response.body()!!.string())["data"]["chapter"]["pages"].string
+            .removeSurrounding("\"").replace("\\", "")
+            .let { gson.fromJson<JsonObject>(it) }
+
+        for (i in 1 .. images.size()) {
+            pages.add(Page(i - 1, "", "https://cdn.mangahub.io/file/imghub/${images["$i"].string}"))
         }
 
-        return pageList
+        return pages
     }
+
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
