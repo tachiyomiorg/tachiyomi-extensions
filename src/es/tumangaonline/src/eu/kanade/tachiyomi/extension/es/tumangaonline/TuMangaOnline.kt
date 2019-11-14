@@ -228,7 +228,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element, token: String) = SChapter.create().apply {
-        //setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
         url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -238,7 +237,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
     private fun regularChapterFromElement(element: Element, chname: String, number: Float, token: String) = SChapter.create().apply {
-        //setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
         url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token
         name = chname
         chapter_number = number
@@ -266,34 +264,11 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .url()
             .toString()
             .substringBeforeLast("/") + "/cascade"
-        //val url = getBuilder(baseUrl + chapter.url).substringBeforeLast("/") + "/cascade"
-        //val test = throw Exception(url)
+
         // Get /cascade instead of /paginate to get all pages at once
         return GET(url, headers)
     }
-/*
-    override fun pageListParse(response: Response): List<Page> {
-        val body = response.asJsoup()
-            val imageRoute = body.select("script:containsData(imageRoute)").html().substringAfter("imageRoute = \"").substringBefore(":IMAGE_NAME")
-        val token = body.select("meta[name=csrf-token]").attr("content")
-        val base64 = body.select("script:containsData(base64)").html().substringAfter("','").substringBefore("','all');")
-        val chapterid = body.baseUri().substringAfter("viewer/").substringBefore("/cascade")
-        val headers = headersBuilder()
-            .add("Content-Type", "application/json; charset=utf-8")
-            .add("X-CSRF-TOKEN",token)
-            .build()
-        val jsonData = client.newCall(POST("$baseUrl/upload_images/$chapterid/$base64/all", headers)).execute()
-        val jbody = jsonData.body()!!.string()
-        //throw Exception(jbody)
-        val results = JsonParser().parse(jbody).asJsonArray
-        val pages = mutableListOf<Page>()
-        for (i in 0 until results.size()) {
-            pages.add(Page(i, "",imageRoute + results[i].string))
-        }
-        return pages
-    }
-    */
-//*
+
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val body = response.asJsoup()
 
@@ -301,7 +276,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             add(Page(size, "", it.attr("src")))
         }
     }
-//*/
+
     override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
