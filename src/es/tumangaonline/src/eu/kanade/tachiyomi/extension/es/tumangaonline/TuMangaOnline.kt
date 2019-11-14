@@ -198,10 +198,11 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
+        val token = document.select("meta[name=csrf-token]").attr("content")
 
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it , token) }
         }
 
         // Regular list of chapters
@@ -212,10 +213,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             val scanelement = chapelement.select("ul.chapter-list > li")
             val dupselect = getduppref()!!
             if (dupselect=="one") {
-                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, token)) }
             }
             else {
-                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, token)) }
             }
         }
         return chapters
@@ -226,8 +227,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+    private fun oneShotChapterFromElement(element: Element, token: String) = SChapter.create().apply {
+        //setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -235,8 +237,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
-    private fun regularChapterFromElement(element: Element, chname: String, number: Float) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+    private fun regularChapterFromElement(element: Element, chname: String, number: Float, token: String) = SChapter.create().apply {
+        //setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token
         name = chname
         chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -246,15 +249,32 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val url = getBuilder(baseUrl + chapter.url).substringBeforeLast("/") + "/cascade"
-
+        val chapterid = chapter.url.substringBefore("&")
+        val token = chapter.url.substringAfter("&")
+        val goto = "$baseUrl/goto/$chapterid/f454f714874fa4edbb7076d727887062"
+        val formBody = FormBody.Builder()
+            .add("_token", token)
+            .build()
+        val req = Request.Builder()
+            .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
+            .url(goto)
+            .post(formBody)
+            .build()
+        val url =  client.newCall(req)
+            .execute()
+            .request()
+            .url()
+            .toString()
+            .substringBeforeLast("/") + "/cascade"
+        //val url = getBuilder(baseUrl + chapter.url).substringBeforeLast("/") + "/cascade"
+        //val test = throw Exception(url)
         // Get /cascade instead of /paginate to get all pages at once
         return GET(url, headers)
     }
-
+/*
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        val imageRoute = body.select("script:containsData(imageRoute)").html().substringAfter("imageRoute = \"").substringBefore(":IMAGE_NAME")
+            val imageRoute = body.select("script:containsData(imageRoute)").html().substringAfter("imageRoute = \"").substringBefore(":IMAGE_NAME")
         val token = body.select("meta[name=csrf-token]").attr("content")
         val base64 = body.select("script:containsData(base64)").html().substringAfter("','").substringBefore("','all');")
         val chapterid = body.baseUri().substringAfter("viewer/").substringBefore("/cascade")
@@ -264,6 +284,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .build()
         val jsonData = client.newCall(POST("$baseUrl/upload_images/$chapterid/$base64/all", headers)).execute()
         val jbody = jsonData.body()!!.string()
+        //throw Exception(jbody)
         val results = JsonParser().parse(jbody).asJsonArray
         val pages = mutableListOf<Page>()
         for (i in 0 until results.size()) {
@@ -271,7 +292,16 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         }
         return pages
     }
+    */
+//*
+    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
+        val body = response.asJsoup()
 
+        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
+            add(Page(size, "", it.attr("src")))
+        }
+    }
+//*/
     override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
