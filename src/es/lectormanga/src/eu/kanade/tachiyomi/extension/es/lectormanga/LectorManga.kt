@@ -10,11 +10,7 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
@@ -192,23 +188,26 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
+        val token = document.select("meta[name=csrf-token]").attr("content")
+        val hash = document.select("script:containsData(url_goto)").html().substringAfter("\\x3A\\x48\\x41\\x53\\x48\",\"").substringBefore("\",\"")
 
         // One-shot
         if (document.select("#chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it , token , hash) }
         }
 
         // Regular list of chapters
         val chapters = mutableListOf<SChapter>()
         val dupselect = getduppref()!!
         val chapterNames = document.select("#chapters h4.text-truncate")
+        val chapterNumbers = chapterNames.map { it.text().substringAfter("Capítulo").substringBefore("|").trim().toFloat() }
         val chapterInfos = document.select("#chapters .chapter-list")
         chapterNames.forEachIndexed { index, _ ->
             val scanlator = chapterInfos[index].select("li")
             if (dupselect=="one") {
-                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it)) }
+                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it , chapterNumbers[index], token , hash)) }
             } else {
-                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it)) }
+                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it ,chapterNumbers[index], token , hash)) }
             }
         }
         return chapters
@@ -219,31 +218,46 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+    private fun oneShotChapterFromElement(element: Element, token: String, hash: String) = SChapter.create().apply {
+        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token + "&" + hash
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
     }
 
-    private fun regularChapterFromElement(chapterName: String, info: Element): SChapter {
-        //val number = name.substringBefore("|").substringAfter("Capítulo").trim().toFloat()
+    private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, token: String, hash: String): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(info.select("div.row > .text-right > a").attr("href"))
+        chapter.url = info.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token + "&" + hash
         chapter.name = chapterName
         chapter.scanlator = info.select("div.col-md-6.text-truncate")?.text()
         chapter.date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
-        //chapter.chapter_number = number
+        chapter.chapter_number = number
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val url = getBuilder(baseUrl + chapter.url)
-
+        val chapterid = chapter.url.substringBefore("&")
+        val token = chapter.url.substringAfter("&").substringBefore("&")
+        val hash = chapter.url.substringAfterLast("&")
+        val goto = "$baseUrl/goto/$chapterid/$hash"
+        val formBody = FormBody.Builder()
+            .add("_token", token)
+            .build()
+        val req = Request.Builder()
+            .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
+            .url(goto)
+            .post(formBody)
+            .build()
+        val url =  client.newCall(req)
+            .execute()
+            .request()
+            .url()
+            .toString()
+            .substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
-        return GET(url.substringBeforeLast("/") + "/cascade", headers)
+        return GET(url, headers)
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
