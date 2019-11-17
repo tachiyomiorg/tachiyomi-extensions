@@ -394,3 +394,9 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
     private class Tag(name: String) : Filter.CheckBox(name)
 
 }
+
+abstract class OtherSite(private val sourceName: String, private val sourceBaseUrl: String, private val tachiLang: String, private val sourceLang: String): Mangatensei(tachiLang, sourceLang) {
+    override val name = sourceName
+
+    override val baseUrl = sourceBaseUrl
+}
