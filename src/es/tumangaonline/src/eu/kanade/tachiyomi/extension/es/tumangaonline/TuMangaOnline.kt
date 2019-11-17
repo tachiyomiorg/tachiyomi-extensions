@@ -49,10 +49,11 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Cache-mode", "no-cache")
     }
 
-    private fun getBuilder(url: String): String {
+    private fun getBuilder(url: String, formBody: FormBody): String {
        val req = Request.Builder()
            .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
            .url(url)
+           .post(formBody)
            .build()
 
        return client.newCall(req)
@@ -198,12 +199,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val token = document.select("meta[name=csrf-token]").attr("content")
-        val hash = document.select("script:containsData(url_goto)").html().substringAfter("\\x3A\\x48\\x41\\x53\\x48\",\"").substringBefore("\",\"")
-
+        
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it , token, hash) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
         }
 
         // Regular list of chapters
@@ -214,10 +213,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             val scanelement = chapelement.select("ul.chapter-list > li")
             val dupselect = getduppref()!!
             if (dupselect=="one") {
-                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, token, hash)) }
+                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
             }
             else {
-                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, token, hash)) }
+                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
             }
         }
         return chapters
@@ -228,8 +227,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element, token: String, hash: String) = SChapter.create().apply {
-        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token + "&" + hash
+    private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
+        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("('").substringBefore("')")
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -237,8 +236,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
-    private fun regularChapterFromElement(element: Element, chname: String, number: Float, token: String, hash: String) = SChapter.create().apply {
-        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("'").substringBefore("'") + "&" + token + "&" + hash
+    private fun regularChapterFromElement(element: Element, chname: String, number: Float) = SChapter.create().apply {
+        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("('").substringBefore("')")
         name = chname
         chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -248,24 +247,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val chapterid = chapter.url.substringBefore("&")
-        val token = chapter.url.substringAfter("&").substringBefore("&")
-        val hash = chapter.url.substringAfterLast("&")
+        val (chapterid, hash, token) = chapter.url.split("','")
         val goto = "$baseUrl/goto/$chapterid/$hash"
         val formBody = FormBody.Builder()
             .add("_token", token)
             .build()
-        val req = Request.Builder()
-            .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
-            .url(goto)
-            .post(formBody)
-            .build()
-        val url =  client.newCall(req)
-            .execute()
-            .request()
-            .url()
-            .toString()
-            .substringBeforeLast("/") + "/cascade"
+        val url = getBuilder(goto,formBody).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
         return GET(url, headers)
     }
