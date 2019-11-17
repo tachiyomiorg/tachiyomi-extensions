@@ -199,7 +199,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        
+
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
             return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
@@ -228,7 +228,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
-        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("('").substringBefore("')")
+        url = element.select("div.row > .text-right > button").attr("onclick")
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -237,7 +237,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
     private fun regularChapterFromElement(element: Element, chname: String, number: Float) = SChapter.create().apply {
-        url = element.select("div.row > .text-right > button").attr("onclick").substringAfter("('").substringBefore("')")
+        url = element.select("div.row > .text-right > button").attr("onclick")
         name = chname
         chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -247,7 +247,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val (chapterid, hash, token) = chapter.url.split("','")
+        val (chapterid, hash, token) = chapter.url.substringAfter("('").substringBefore("')").split("','")
         val goto = "$baseUrl/goto/$chapterid/$hash"
         val formBody = FormBody.Builder()
             .add("_token", token)
