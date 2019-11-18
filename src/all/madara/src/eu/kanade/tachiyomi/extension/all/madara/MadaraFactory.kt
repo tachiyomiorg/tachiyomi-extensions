@@ -225,6 +225,7 @@ class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
     override fun searchMangaNextPageSelector() = "a[rel=next]"
     override fun getGenreList() = listOf(
         Genre("3D", "3d"),
