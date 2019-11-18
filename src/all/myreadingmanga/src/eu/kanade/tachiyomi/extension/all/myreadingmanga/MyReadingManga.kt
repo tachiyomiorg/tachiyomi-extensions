@@ -125,13 +125,13 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img").first())
+    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img")?.first() )
 
-    private fun buildManga(titleElement: Element, thumbnailElement: Element): SManga {
+    private fun buildManga(titleElement: Element, thumbnailElement: Element?): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
+        if (thumbnailElement !=null) manga.thumbnail_url = getThumbnail(getImage(thumbnailElement)) else manga.thumbnail_url="none"
         return manga
     }
 
