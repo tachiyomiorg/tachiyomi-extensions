@@ -131,7 +131,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        if (thumbnailElement !=null) manga.thumbnail_url = getThumbnail(getImage(thumbnailElement)) // else manga.thumbnail_url="none"
+        if (thumbnailElement !=null) manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
         return manga
     }
 
