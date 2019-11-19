@@ -199,10 +199,14 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
+        val token = document.select("meta[name=csrf-token]").attr("content")
+        val script = document.select("script:containsData(url_goto)").html()
+        val chapteridselector = script.substringAfter("GO_TO_ID\", elem.getAttribute(\"").substringBefore("\"")
+        val hashselector = script.substringAfter("HASH\", elem.getAttribute(\"").substringBefore("\"")
 
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it, token, chapteridselector, hashselector) }
         }
 
         // Regular list of chapters
@@ -213,10 +217,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             val scanelement = chapelement.select("ul.chapter-list > li")
             val dupselect = getduppref()!!
             if (dupselect=="one") {
-                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, token, chapteridselector, hashselector)) }
             }
             else {
-                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber)) }
+                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, token, chapteridselector, hashselector)) }
             }
         }
         return chapters
@@ -227,8 +231,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
-        url = element.select("div.row > .text-right > button").attr("onclick")
+    private fun oneShotChapterFromElement(element: Element, token: String, chapteridselector: String, hashselector: String) = SChapter.create().apply {
+        val button = element.select("div.row > .text-right > button")
+        url = button.attr(chapteridselector) + "&" + button.attr(hashselector) + "&" + token
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -236,8 +241,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
-    private fun regularChapterFromElement(element: Element, chname: String, number: Float) = SChapter.create().apply {
-        url = element.select("div.row > .text-right > button").attr("onclick")
+    private fun regularChapterFromElement(element: Element, chname: String, number: Float, token: String, chapteridselector: String, hashselector: String) = SChapter.create().apply {
+        val button = element.select("div.row > .text-right > button")
+        url = button.attr(chapteridselector) + "&" + button.attr(hashselector) + "&" + token
         name = chname
         chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -247,7 +253,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val (chapterid, hash, token) = chapter.url.substringAfter("('").substringBefore("')").split("','")
+        val (chapterid, hash, token) = chapter.url.split("&")
         val goto = "$baseUrl/goto/$chapterid/$hash"
         val formBody = FormBody.Builder()
             .add("_token", token)
