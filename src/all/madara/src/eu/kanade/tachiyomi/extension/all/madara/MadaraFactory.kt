@@ -199,7 +199,7 @@ class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
 }
 
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", "https://zinmanga.com/")
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
@@ -228,6 +228,7 @@ class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override val client: OkHttpClient = network.client
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0 $time")
+        .add("Referer", "https://allporncomic.com/")
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
