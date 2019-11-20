@@ -199,6 +199,8 @@ class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
 }
 
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Referer", "https://zinmanga.com/")
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 
