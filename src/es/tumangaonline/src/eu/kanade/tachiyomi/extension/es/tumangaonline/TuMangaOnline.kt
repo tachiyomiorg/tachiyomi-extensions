@@ -232,7 +232,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element, token: String, chapteridselector: String, hashselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > button")
+        val button = element.select("div.row > .text-right > span")
         url = button.attr(chapteridselector) + "&" + button.attr(hashselector) + "&" + token
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -242,7 +242,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
     private fun regularChapterFromElement(element: Element, chname: String, number: Float, token: String, chapteridselector: String, hashselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > button")
+        val button = element.select("div.row > .text-right > span")
         url = button.attr(chapteridselector) + "&" + button.attr(hashselector) + "&" + token
         name = chname
         chapter_number = number
@@ -254,7 +254,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterid, hash, token) = chapter.url.split("&")
-        val goto = "$baseUrl/goto/$chapterid/$hash"
+        val goto = "$baseUrl/goto/$hash/$chapterid"
         val formBody = FormBody.Builder()
             .add("_token", token)
             .build()
