@@ -224,13 +224,6 @@ class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
-    private val time = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    override val client: OkHttpClient = network.client
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0 $time")
-        .add("Referer", "https://allporncomic.com/")
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
     override fun getGenreList() = listOf(
         Genre("3D", "3d"),
