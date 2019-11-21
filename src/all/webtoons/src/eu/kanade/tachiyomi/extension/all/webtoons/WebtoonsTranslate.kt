@@ -89,7 +89,6 @@ open class WebtoonsTranslate(override val lang: String, private val translateLan
                     .addQueryParameter("teamVersion", json.optInt("teamVersion", 0).toString())
                     .build()
                     .toString()
-                initialized = true
             }
     }
 
