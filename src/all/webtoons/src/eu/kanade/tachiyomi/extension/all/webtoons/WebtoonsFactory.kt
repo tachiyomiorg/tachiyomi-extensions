@@ -16,7 +16,7 @@ class WebtoonsFactory : SourceFactory {
         // Fan translations
         WebtoonsTranslate("en", "ENG"),
         WebtoonsTranslate("zh", "CMN", " (Simplified)"),
-        WebtoonsTranslate("zh", "CHT", " (Traditional)"),
+        WebtoonsTranslate("zh", "CMT", " (Traditional)"),
         WebtoonsTranslate("th", "THA"),
         WebtoonsTranslate("in", "IND"),
         WebtoonsTranslate("fr", "FRA"),
