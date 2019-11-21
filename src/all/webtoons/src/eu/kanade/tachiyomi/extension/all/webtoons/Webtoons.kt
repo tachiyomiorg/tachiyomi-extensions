@@ -17,7 +17,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
 
     override val supportsLatest = true
 
-    val day: String
+    private val day: String
         get() {
             return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
                 Calendar.SUNDAY -> "div._list_SUNDAY"
@@ -33,45 +33,59 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
             }
         }
 
-    override fun popularMangaSelector() = "div.left_area > ul.lst_type1 > li"
+    override fun popularMangaSelector() = "not using"
 
     override fun latestUpdatesSelector() = "div#dailyList > $day li > a:has(span:contains(UP))"
 
-    override fun headersBuilder() = super.headersBuilder()
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
             .add("Referer", "http://www.webtoons.com/$langCode/")
 
-    protected val mobileHeaders = super.headersBuilder()
+    protected val mobileHeaders: Headers = super.headersBuilder()
             .add("Referer", "http://m.webtoons.com")
             .build()
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/$langCode/top", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/$langCode/dailySchedule", headers)
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val mangas = mutableListOf<SManga>()
+        val document = response.asJsoup()
+        var maxChild = 0
+
+        // For ongoing webtoons rows are ordered by descending popularity, count how many rows there are
+        document.select("div#dailyList > div").forEach { day ->
+            day.select("li").count().let { rowCount ->
+                if (rowCount > maxChild) maxChild = rowCount
+            }
+        }
+
+        // Process each row
+        for (i in 1 .. maxChild) {
+            document.select("div#dailyList > div li:nth-child($i) a").map { mangas.add(popularMangaFromElement(it)) }
+        }
+
+        // Add completed webtoons, no sorting needed
+        document.select("div.daily_lst.comp li a").map { mangas.add(popularMangaFromElement(it)) }
+
+        return MangasPage(mangas, false)
+    }
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/$langCode/dailySchedule?sortOrder=UPDATE&webtoonCompleteType=ONGOING", headers)
 
-    private fun mangaFromElement(query: String, element: Element): SManga {
+    override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select(query).first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("p.subj").text()
-            manga.thumbnail_url = it.select(".pic_area > img")?.attr("src")
-        }
+
+        manga.setUrlWithoutDomain(element.attr("href"))
+        manga.title = element.select("p.subj").text()
+        manga.thumbnail_url = element.select("img").attr("abs:src")
+
         return manga
     }
 
-    override fun popularMangaFromElement(element: Element) = mangaFromElement("a", element)
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("p.subj").text()
-        }
-        return manga
-    }
+    override fun latestUpdatesFromElement(element: Element): SManga  = popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() : String? = null
 
-    override fun latestUpdatesNextPageSelector() = null
+    override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search?keyword=$query")?.newBuilder()!!
@@ -96,18 +110,11 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         return MangasPage(mangas, false)
     }
 
-    override fun searchMangaSelector() = "#content > div.card_wrap.search li"
+    override fun searchMangaSelector() = "#content > div.card_wrap.search li a"
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("p.subj").text()
-        }
-        return manga
-    }
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val detailElement = document.select("#content > div.cont_box > div.detail_header > div.info")
@@ -118,7 +125,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         val manga = SManga.create()
         manga.author = detailElement.select(".author:nth-of-type(1)").first()?.ownText()
         manga.artist = detailElement.select(".author:nth-of-type(2)").first()?.ownText() ?: manga.author
-        manga.genre = detailElement.select(".genre").map { it.text() }.joinToString(", ")
+        manga.genre = detailElement.select(".genre").joinToString(", ") { it.text() }
         manga.description = infoElement.select("p.summary").text()
         manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = discoverPic.select("img").not("[alt='Representative image']").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
@@ -131,6 +138,6 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         else -> SManga.UNKNOWN
     }
 
-    override fun imageUrlParse(document: Document) = document.select("img").first().attr("src")
+    override fun imageUrlParse(document: Document): String = document.select("img").first().attr("src")
 
 }
