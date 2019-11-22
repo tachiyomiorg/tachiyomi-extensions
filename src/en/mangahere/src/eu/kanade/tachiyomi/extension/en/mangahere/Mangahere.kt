@@ -197,7 +197,7 @@ class Mangahere : ParsedHttpSource() {
             val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
             val duktape = Duktape.create()
             val DeobfuscatedScript = duktape.evaluate(script).toString()
-            val urls = DeobfuscatedScript.substringAfter("newImgs=['").substringBefore("];").split("','")
+            val urls = DeobfuscatedScript.substringAfter("newImgs=['").substringBefore("'];").split("','")
             duktape.close()
             val pages = mutableListOf<Page>()
             urls.forEachIndexed { index, s ->
