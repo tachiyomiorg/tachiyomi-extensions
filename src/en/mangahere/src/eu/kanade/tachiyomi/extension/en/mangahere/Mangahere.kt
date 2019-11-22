@@ -192,6 +192,19 @@ class Mangahere : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val bar = document.select("script[src*=chapter_bar]")
+        if (!bar.isNullOrEmpty()){
+            val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
+            val duktape = Duktape.create()
+            val DeobfuscatedScript = duktape.evaluate(script).toString()
+            val urls = DeobfuscatedScript.substringAfter("newImgs=['").substringBefore("];").split("','")
+            duktape.close()
+            val pages = mutableListOf<Page>()
+            urls.forEachIndexed { index, s ->
+                pages.add(Page(index, "", "http:$s"))
+            }
+            return pages
+        } else {
 
         val html = document.html()
         val link = document.location()
@@ -259,6 +272,7 @@ class Mangahere : ParsedHttpSource() {
         duktape.close()
 
         return pages
+        }
     }
 
     private fun extractSecretKey(html: String, duktape: Duktape): String {
