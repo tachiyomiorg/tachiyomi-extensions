@@ -27,7 +27,6 @@ class FoolSlideFactory : SourceFactory {
         YuriIsm(),
         AjiaNoScantrad(),
         OneTimeScans(),
-        TsubasaSociety(),
         MangaScouts(),
         StormInHeaven(),
         Lilyreader(),
@@ -37,7 +36,8 @@ class FoolSlideFactory : SourceFactory {
         LupiTeam(),
         HentaiCafe(),
         TheCatScans(),
-        ZandynoFansub()
+        ZandynoFansub(),
+        HelveticaScans()
     )
 }
 
@@ -94,8 +94,6 @@ class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr"
 
 class OneTimeScans : FoolSlide("One Time Scans", "https://reader.otscans.com", "en")
 
-class TsubasaSociety : FoolSlide("Tsubasa Society", "https://www.tsubasasociety.com", "en", "/reader/master/Xreader")
-
 class MangaScouts : FoolSlide("MangaScouts", "http://onlinereader.mangascouts.org", "de")
 
 class StormInHeaven : FoolSlide("Storm in Heaven", "https://www.storm-in-heaven.net", "it", "/reader-sih")
@@ -130,3 +128,5 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
 }
 
 class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
+
+class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
