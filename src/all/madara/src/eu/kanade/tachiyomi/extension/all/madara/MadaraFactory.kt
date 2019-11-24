@@ -57,7 +57,8 @@ class MadaraFactory : SourceFactory {
         Milftoon(),
         ToonManga(),
         Hiperdex(),
-        DoujinHentai()
+        DoujinHentai(),
+        Azora()
     )
 }
 
@@ -362,4 +363,19 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         Pair("Cosplay", "cosplay")
         )
     )
+}
+
+class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
+    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
+    override fun chapterListSelector() = "li.wp-manga-chapter:not(:has(img))" // Filter fake chapters
+    override fun chapterFromElement(element: Element): SChapter {
+        val chapter = SChapter.create()
+
+        element.select("a").let {
+            chapter.url = it.attr("href").substringAfter(baseUrl)
+            chapter.name = it.text()
+        }
+        return chapter
+    }
 }
