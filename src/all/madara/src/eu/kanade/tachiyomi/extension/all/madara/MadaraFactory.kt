@@ -58,7 +58,8 @@ class MadaraFactory : SourceFactory {
         ToonManga(),
         Hiperdex(),
         DoujinHentai(),
-        Azora()
+        Azora(),
+        HunterFansub()
     )
 }
 
@@ -366,7 +367,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
 }
 
 class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
     override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
     override fun chapterListSelector() = "li.wp-manga-chapter:not(:has(img))" // Filter fake chapters
     override fun chapterFromElement(element: Element): SChapter {
@@ -378,4 +379,10 @@ class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
         }
         return chapter
     }
+}
+
+class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/biblioteca/page/$page?m_orderby=views", headers)
+    override fun popularMangaNextPageSelector() = "div.nav-previous"
+    override val popularMangaUrlSelector = "div.post-title a:last-child"
 }
