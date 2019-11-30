@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Manhuadui'
     pkgNameSuffix = 'zh.manhuadui'
     extClass = '.Manhuadui'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
