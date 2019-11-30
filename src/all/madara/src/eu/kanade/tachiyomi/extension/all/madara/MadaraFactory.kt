@@ -59,27 +59,22 @@ class MadaraFactory : SourceFactory {
         Hiperdex(),
         DoujinHentai(),
         Azora(),
-        HunterFansub()
+        HunterFansub(),
+        MangaArabTeam()
     )
 }
 
-class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
 
 class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
 class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
-    dateFormat = SimpleDateFormat("dd MMM yy", Locale.US)) {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+    dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
 
 class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en")
 class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com/", "en")
 class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com/", "en")
 class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru/", "ru",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
 class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe/", "en") {
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -113,11 +108,10 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe/
     }
 }
 
-class KomikGo : Madara("KomikGo", "https://komikgo.com", "id") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
 
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
+
 class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
@@ -130,30 +124,20 @@ class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/",
     "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
-class ZManga : Madara("ZManga", "https://zmanga.org/", "es") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class ZManga : Madara("ZManga", "https://zmanga.org/", "es")
 
 class MangazukiMe : Madara("Mangazuki.me", "https://mangazuki.me/", "en")
-class MangazukiOnline : Madara("Mangazuki.online", "https://www.mangazuki.online/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
 
-class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club/", "ja") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class MangazukiOnline : Madara("Mangazuki.online", "https://www.mangazuki.online/", "en")
 
-class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club/", "ko") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club/", "ja")
+
+class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club/", "ko")
 
 class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en") {
     override val pageListParseSelector = "div.reading-content img"
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
     private val cdnUrl = "cdn.1stkissmanga.com"
     override fun imageRequest(page: Page): Request {
         val cdnHeaders = Headers.Builder().apply {
@@ -164,11 +148,10 @@ class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en") {
     }
 }
 
-class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en")
 
 class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en")
+
 class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=latest", headers)
@@ -190,33 +173,22 @@ class WordRain : Madara("WordRain Translation", "https://wordrain69.com", "en") 
     }
 }
 
-class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en")
 
-class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en")
 
-class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en")
 
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", "https://zinmanga.com/")
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
 }
 
 class ManwahentaiMe : Madara("Manwahentai.me", "https://manhwahentai.me", "en")
 
-class Manga3asq : Madara("مانجا العاشق", "https://3asq.org", "ar") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class Manga3asq : Madara("مانجا العاشق", "https://3asq.org", "ar")
 
-class NManhwa : Madara("N Manhwa", "https://nmanhwa.com", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class NManhwa : Madara("N Manhwa", "https://nmanhwa.com", "en")
 
 class Indiancomicsonline : Madara("Indian Comics Online", "http://www.indiancomicsonline.com", "hi")
 
@@ -224,9 +196,9 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
-class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+
+class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
+
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override fun searchMangaNextPageSelector() = "a[rel=next]"
     override fun getGenreList() = listOf(
@@ -235,6 +207,7 @@ class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
         Genre("Western", "western")
     )
 }
+
 class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
@@ -368,7 +341,6 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
 
 class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
     override fun chapterListSelector() = "li.wp-manga-chapter:not(:has(img))" // Filter fake chapters
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -386,3 +358,5 @@ class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
     override fun popularMangaNextPageSelector() = "div.nav-previous"
     override val popularMangaUrlSelector = "div.post-title a:last-child"
 }
+
+class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar")

@@ -308,7 +308,7 @@ abstract class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = "div.nav-previous"
+    override fun searchMangaNextPageSelector() = "div.nav-previous, nav.navigation-ajax"
 
     // Manga Details Parse
 
@@ -371,8 +371,9 @@ abstract class Madara(
             }
 
             // For when source's chapter date is a graphic representing "new" instead of text
-            if (select("img").attr("alt").isNotBlank()) {
-                chapter.date_upload = parseRelativeDate(select("img").attr("alt")) ?: 0
+            val imgDate = select("img").attr("alt")
+            if (imgDate.isNotBlank()) {
+                chapter.date_upload = parseRelativeDate(imgDate)
             } else {
                 // For a chapter date that's text
                 select("span.chapter-release-date i").first()?.let {
@@ -387,7 +388,7 @@ abstract class Madara(
     open fun parseChapterDate(date: String): Long? {
         val lcDate = date.toLowerCase()
         if (lcDate.endsWith(" ago"))
-            parseRelativeDate(lcDate)?.let { return it }
+            return parseRelativeDate(lcDate)
 
         //Handle 'yesterday' and 'today', using midnight
         if (lcDate.startsWith("year"))
@@ -411,21 +412,27 @@ abstract class Madara(
 
     // Parses dates in this form:
     // 21 horas ago
-    private fun parseRelativeDate(date: String): Long? {
+    private fun parseRelativeDate(date: String): Long {
         val trimmedDate = date.split(" ")
-        if (trimmedDate[2] != "ago") return null
-        val number = trimmedDate[0].toIntOrNull() ?: return null
+        val number = trimmedDate[0].toIntOrNull()
 
-        // Map English and other language units to Java units
-        val javaUnit = when (trimmedDate[1].removeSuffix("s")) {
-            "jour", "día", "day" -> Calendar.DAY_OF_MONTH
-            "heure", "hora", "hour" -> Calendar.HOUR
-            "min", "minute" -> Calendar.MINUTE
-            "segundo", "second" -> Calendar.SECOND
-            else -> return null
+        /**
+         *  Size check is for Arabic language, would sometimes break if we don't check
+         *  Take that in to consideration if adding support for parsing Arabic dates
+         */
+        return if (trimmedDate.size == 3 && trimmedDate[2] == "ago" && number is Int) {
+            val cal = Calendar.getInstance()
+            // Map English and other language units to Java units
+            when (trimmedDate[1].removeSuffix("s")) {
+                "jour", "día", "day" -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
+                "heure", "hora", "hour" -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
+                "min", "minute" -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
+                "segundo", "second" -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
+                else -> 0
+            }
+        } else {
+            0
         }
-
-        return Calendar.getInstance().apply { add(javaUnit, -number) }.timeInMillis
     }
 
     private fun SimpleDateFormat.parseOrNull(string: String): Date? {
