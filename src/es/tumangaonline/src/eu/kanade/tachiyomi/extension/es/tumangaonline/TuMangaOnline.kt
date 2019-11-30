@@ -4,8 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import okhttp3.*
 import java.util.*
 import org.jsoup.nodes.Element
@@ -17,7 +15,6 @@ import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
-import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -49,18 +46,17 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Cache-mode", "no-cache")
     }
 
-    private fun getBuilder(url: String, formBody: FormBody): String {
-       val req = Request.Builder()
-           .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody): String {
+        val req = Request.Builder()
+           .headers(headers)
            .url(url)
            .post(formBody)
            .build()
 
-       return client.newCall(req)
-           .execute()
-           .request()
-           .url()
-           .toString()
+        return client.newCall(req)
+            .execute()
+            .body()!!
+            .string()
    }
 
     private val preferences: SharedPreferences by lazy {
@@ -84,8 +80,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             thumbnail_url = it.select("style").toString().substringAfter("('").substringBeforeLast("')")
         }
     }
-    
-     override fun latestUpdatesParse(response: Response): MangasPage {
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
         val mangas = document.select(latestUpdatesSelector())
             .distinctBy { it.select("div.thumbnail-title > h4.text-truncate").text().trim() }
@@ -233,7 +229,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > span")
+        val button = element.select("div.row > .text-right > [$chapteridselector]") //button
         url = "$chapterurl#${button.attr(chapteridselector)}"
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -243,7 +239,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
     private fun regularChapterFromElement(element: Element, chname: String, number: Float, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > span")
+        val button = element.select("div.row > .text-right > [$chapteridselector]") //button
         url = "$chapterurl#${button.attr(chapteridselector)}"
         name = chname
         chapter_number = number
@@ -257,18 +253,30 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val (chapterurl, chapterid) = chapter.url.split("#")
         val response = client.newCall(GET(chapterurl, headers)).execute()
         val document = response.asJsoup()
-        val token = document.select("meta[name=csrf-token]").attr("content")
+
+        val csrftoken = document.select("meta[name=csrf-token]").attr("content")
+        val csjftoken = document.select("meta[name=csjf-token]").attr("content")
+
         val script = document.select("script:containsData($scriptselector)").html()
-        val goto = script.substringAfter("action\", '").substringBefore("'")
-        val chaptername = script.substringAfter("name\", '").substringBefore("'")
-        val hashname = script.substringAfterLast("name\", '").substringBefore("'")
-        val hashid = script.substringAfterLast("\"value\", ").substringBefore(")")
+        val chapteridselector = script.substringAfter("getAttribute(\"").substringBefore("\"")
+        val goto = script.substringBeforeLast(chapteridselector).substringAfterLast("url: '").substringBefore("'")
+        val chaptername = script.substringBeforeLast( chapteridselector ).substringBeforeLast("\":").substringAfterLast("\"")
+        val hashname = script.substringAfterLast("$chapteridselector\"").substringAfter("\"").substringBefore("\"")
+        val hashid = script.substringAfterLast(chapteridselector).substringAfter("\": ").substringBefore(",")
+
+        val headers = headersBuilder()
+            .add("Referer", chapterurl)
+            .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
+            .add("X-CSRF-TOKEN",csrftoken)
+            .add("X-CSJF-TOKEN",csjftoken)
+            .build()
+
         val formBody = FormBody.Builder()
-            .add("_token", token)
             .add(chaptername,chapterid)
             .add(hashname,hashid)
             .build()
-        val url = getBuilder(goto,formBody).substringBeforeLast("/") + "/cascade"
+
+        val url = getBuilder(goto,headers,formBody).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
         return GET(url, headers)
     }
