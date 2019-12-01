@@ -218,10 +218,19 @@ abstract class MangaBox (
         val pages = mutableListOf<Page>()
 
         document.select(pageListSelector).forEach {
-            pages.add(Page(pages.size, "", it.attr("abs:src")))
+            pages.add(Page(pages.size, "", changecdn(it.attr("abs:src"))))
         }
 
         return pages
+    }
+    
+    private fun changecdn(url: String): String {
+        if (url.startsWith("https://convert_image_digi.mgicdn.com")) {
+            val newurl = "https://images.weserv.nl/?url=" + url.removePrefix("https://")
+            return newurl
+        } else {
+            return url
+        }
     }
 
     override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("No used")
