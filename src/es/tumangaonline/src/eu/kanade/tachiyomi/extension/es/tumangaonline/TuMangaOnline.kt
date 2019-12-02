@@ -255,7 +255,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val document = response.asJsoup()
 
         val csrftoken = document.select("meta[name=csrf-token]").attr("content")
-        val csjftoken = document.select("meta[name=csjf-token]").attr("content")
+        //val csjftoken = document.select("meta[name=csjf-token]").attr("content")
 
         val script = document.select("script:containsData($scriptselector)").html()
         val chapteridselector = script.substringAfter("getAttribute(\"").substringBefore("\"")
@@ -268,7 +268,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Referer", chapterurl)
             .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
             .add("X-CSRF-TOKEN",csrftoken)
-            .add("X-CSJF-TOKEN",csjftoken)
+            //.add("X-CSJF-TOKEN",csjftoken)
             .build()
 
         val formBody = FormBody.Builder()
