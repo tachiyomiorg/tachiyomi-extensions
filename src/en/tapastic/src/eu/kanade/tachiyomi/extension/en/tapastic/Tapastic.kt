@@ -2,7 +2,8 @@ package eu.kanade.tachiyomi.extension.en.tapastic
 
 import android.net.Uri
 import com.github.salomonbrys.kotson.*
-import com.google.gson.JsonParser
+import com.google.gson.Gson
+import com.google.gson.JsonArray
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -21,7 +22,7 @@ class Tapastic : ParsedHttpSource() {
     private val browseMangaSelector = ".content-item"
     private val nextPageSelector = "a.paging-btn.next"
 
-    private val jsonParser by lazy { JsonParser() }
+    private val gson by lazy { Gson() }
 
     override fun popularMangaSelector() = browseMangaSelector
 
@@ -82,52 +83,35 @@ class Tapastic : ParsedHttpSource() {
 
         description = document.getElementById("series-desc-body").text().trim()
 
-        genre = document.getElementsByClass("genre").text()
+        genre = document.getElementsByClass("genre").joinToString { it.text() }
 
         status = SManga.UNKNOWN
     }
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/comics?pageNumber=$page&browse=FRESH")
 
-    override fun chapterListParse(response: Response)
-            //Chapters are stored in JavaScript as JSON!
-            = response.asJsoup().getElementsByTag("script").filter {
-        it.data().trim().startsWith("var _data")
-    }.flatMap {
-        val text = it.data()
-        val episodeVar = text.indexOf("episodeList")
-        if (episodeVar == -1)
-            return@flatMap emptyList<SChapter>()
+    override fun chapterListParse(response: Response): List<SChapter> {
+        //Chapters are stored in JavaScript as JSON!
+        return response.asJsoup().select("script:containsData(_data)").first()?.data().let { script ->
+            if (script.isNullOrEmpty() || !script.contains("episodeList : [")) {
+                emptyList()
+            } else {
+                gson.fromJson<JsonArray>(script.substringAfter("episodeList : ").substringBefore(",\n"))
+                    //Ensure that the chapter is published (source allows scheduling chapters)
+                    .filter { it["orgScene"].int != 0 }
+                    .map { json ->
+                    SChapter.create().apply {
+                        url = "/episode/${json["id"].string}"
 
-        val episodeLeftBracket = text.indexOf('[', startIndex = episodeVar)
-        if (episodeLeftBracket == -1)
-            return@flatMap emptyList<SChapter>()
+                        name = (if (json["locked"].asBoolean) "\uD83D\uDD12" else "") + json["title"].string
 
-        val endOfLine = text.indexOf('\n', startIndex = episodeLeftBracket)
-        if (endOfLine == -1)
-            return@flatMap emptyList<SChapter>()
+                        date_upload = json["publishDate"].long
 
-        val episodeRightBracket = text.lastIndexOf(']', startIndex = endOfLine)
-        if (episodeRightBracket == -1)
-            return@flatMap emptyList<SChapter>()
-
-        val episodeListText = text.substring(episodeLeftBracket..episodeRightBracket)
-
-        jsonParser.parse(episodeListText).array.map {
-            val json = it.asJsonObject
-            //Ensure that the chapter is published (tapastic allows scheduling chapters)
-            if (json["orgScene"].int != 0)
-                SChapter.create().apply {
-                    url = "/episode/${json["id"].string}"
-
-                    name = json["title"].string
-
-                    date_upload = json["publishDate"].long
-
-                    chapter_number = json["scene"].float
-                }
-            else null
-        }.filterNotNull().sortedByDescending(SChapter::chapter_number)
+                        chapter_number = json["scene"].float
+                    }
+                }.reversed()
+            }
+        }
     }
 
     override fun chapterListSelector()
