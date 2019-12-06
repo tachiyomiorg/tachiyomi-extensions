@@ -17,9 +17,9 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
-class MangaMx : ParsedHttpSource() {
+open class MangaMx : ParsedHttpSource() {
 
     override val name = "MangaMx"
     override val baseUrl = "https://manga-mx.com"
@@ -173,7 +173,7 @@ class MangaMx : ParsedHttpSource() {
         SortFilter()
     )
 
-    private class GenreFilter : UriPartFilter("Género", "genero", arrayOf(
+    class GenreFilter : UriPartFilter("Género", "genero", arrayOf(
         Pair("all","All"),
         Pair("3","Acción"),
         Pair("35","Artes Marciales"),
@@ -214,7 +214,7 @@ class MangaMx : ParsedHttpSource() {
         Pair("16","Yuri")
         ))
 
-    private class LetterFilter : UriPartFilter("Letra","letra", arrayOf(
+    class LetterFilter : UriPartFilter("Letra","letra", arrayOf(
         Pair("all","All"),
         Pair("a","A"),
         Pair("b","B"),
@@ -244,7 +244,7 @@ class MangaMx : ParsedHttpSource() {
         Pair("z","Z")
         ))
 
-    private class StatusFilter : UriPartFilter("Estado", "estado", arrayOf(
+    class StatusFilter : UriPartFilter("Estado", "estado", arrayOf(
         Pair("all","All"),Pair("1","En desarrollo"), Pair("0","Finalizado")))
 
     private class TypeFilter : UriPartFilter("Tipo", "tipo", arrayOf(
@@ -259,7 +259,7 @@ class MangaMx : ParsedHttpSource() {
     private class AdultFilter : UriPartFilter("Filtro adulto", "adulto", arrayOf(
         Pair("all","All"),Pair("0","Mostrar solo +18"), Pair("1","No mostrar +18")))
 
-    private class SortFilter : UriPartFilterreq("Sort", "orden", arrayOf(
+    class SortFilter : UriPartFilterreq("Sort", "orden", arrayOf(
         Pair("visitas","Visitas"),
         Pair("desc","Descendente"),
         Pair("asc","Ascendente"),
@@ -273,9 +273,9 @@ class MangaMx : ParsedHttpSource() {
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
     //vals: <name, display>
-    private open class UriPartFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                            val firstIsUnspecified: Boolean = true,
-                                            defaultValue: Int = 0) :
+    open class UriPartFilter(displayName: String, private val uriParam: String, private val vals: Array<Pair<String, String>>,
+                             private val firstIsUnspecified: Boolean = true,
+                             defaultValue: Int = 0) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
@@ -283,7 +283,7 @@ class MangaMx : ParsedHttpSource() {
         }
     }
 
-    private open class UriPartFilterreq(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>) :
+    open class UriPartFilterreq(displayName: String, private val uriParam: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
                 uri.appendQueryParameter(uriParam, vals[state].first)
