@@ -283,7 +283,7 @@ abstract class Madara(
         Tag("on-hold", "On Hold")
     )
 
-    open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
@@ -386,28 +386,41 @@ abstract class Madara(
     }
 
     open fun parseChapterDate(date: String): Long? {
-        val lcDate = date.toLowerCase()
-        if (lcDate.endsWith(" ago"))
-            return parseRelativeDate(lcDate)
-
-        //Handle 'yesterday' and 'today', using midnight
-        if (lcDate.startsWith("year"))
-            return Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_MONTH, -1) //yesterday
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        else if (lcDate.startsWith("today"))
-            return Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-
-        return dateFormat.parseOrNull(date)?.time
+        return when {
+            date.endsWith(" ago", ignoreCase = true) -> {
+                parseRelativeDate(date)
+            }
+            //Handle 'yesterday' and 'today', using midnight
+            date.startsWith("year", ignoreCase = true) -> {
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_MONTH, -1) //yesterday
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+            date.startsWith("today", ignoreCase = true) -> {
+                Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+            date.contains(Regex("""\d(st|nd|rd|th)""")) -> {
+                // Clean date (e.g. 5th December 2019 to 5 December 2019) before parsing it
+                date.split(" ").map {
+                    if (it.contains(Regex("""\d\D\D"""))) {
+                        it.replace(Regex("""\D"""), "")
+                    } else {
+                        it
+                    }
+                }
+                    .let { dateFormat.parseOrNull(it.joinToString(" "))?.time }
+            }
+            else -> dateFormat.parseOrNull(date)?.time
+        }
     }
 
     // Parses dates in this form:

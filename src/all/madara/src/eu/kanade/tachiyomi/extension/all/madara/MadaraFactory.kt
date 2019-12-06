@@ -60,51 +60,57 @@ class MadaraFactory : SourceFactory {
         DoujinHentai(),
         Azora(),
         HunterFansub(),
-        MangaArabTeam()
+        MangaArabTeam(),
+        NightComic()
     )
 }
 
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
 
 class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
+
 class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
     dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
 
 class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en")
+
 class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com/", "en")
+
 class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com/", "en")
+
 class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru/", "ru",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
+    dateFormat = SimpleDateFormat("yy.MM.dd", Locale.US))
 
-class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe/", "en") {
+class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe", "en") {
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+    override fun popularMangaSelector() = "div.page-item-detail.manga:has(span.chapter)"
+    override fun chapterListSelector() = "li.wp-manga-chapter:has(a)"
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapters = mutableListOf<SChapter>()
-        val document = response.asJsoup()
-
-        // For when it's a normal chapter list
-        if (document.select(chapterListSelector()).hasText()) {
-            document.select(chapterListSelector())
-                .map { chapters.add(chapterFromElement(it)) }
-        } else {
-            // For their "fancy" volume/chapter lists
-            document.select("div.wpb_wrapper:contains(volume) a")
-                .filter { it.attr("href").contains(baseUrl) && !it.attr("href").contains("imgur") }
-                .map { it ->
-                    val chapter = SChapter.create()
-                    if (it.attr("href").contains("volume")) {
-                        val volume = it.attr("href").substringAfter("volume-").substringBefore("/")
-                        val volChap = it.attr("href").substringAfter("volume-$volume/").substringBefore("/").replace("-", " ").capitalize()
-                        chapter.name = "Volume $volume - $volChap"
-                    } else {
-                        chapter.name = it.attr("href").substringBefore("/p").substringAfterLast("/").replace("-", " ").capitalize()
-                    }
-                    it.attr("href").let {
-                        chapter.setUrlWithoutDomain(it.substringBefore("?") + if (!it.endsWith("?style=list")) "?style=list" else "")
-                        chapters.add(chapter)
-                    }
-                }
+        return response.asJsoup().let { document ->
+            document.select(chapterListSelector()).let { normalChapters ->
+                if (normalChapters.isNotEmpty()) {
+                    normalChapters.map { chapterFromElement(it) }
+                } else {
+                    // For their "fancy" volume/chapter lists
+                    document.select("div.wpb_wrapper:contains(volume) a")
+                        .filter { it.attr("href").contains(baseUrl) && !it.attr("href").contains("imgur") }
+                        .map { volumeChapter ->
+                            SChapter.create().apply {
+                                volumeChapter.attr("href").let { url ->
+                                    name = if (url.contains("volume")) {
+                                        val volume = url.substringAfter("volume-").substringBefore("/")
+                                        val volChap = url.substringAfter("volume-$volume/").substringBefore("/").replace("-", " ").capitalize()
+                                        "Volume $volume - $volChap"
+                                    } else {
+                                        url.substringBefore("/p").substringAfterLast("/").replace("-", " ").capitalize()
+                                    }
+                                    setUrlWithoutDomain(url.substringBefore("?") + "?style=list")
+                                }
+                            }
+                        }
+                }.reversed()
+            }
         }
-        return chapters.reversed()
     }
 }
 
@@ -120,8 +126,8 @@ class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
     override fun popularMangaNextPageSelector(): String? = null
 }
 
-class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/",
-    "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
+class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/","fr",
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
@@ -136,7 +142,8 @@ class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club/", "ja"
 
 class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club/", "ko")
 
-class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en") {
+class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en",
+    dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
     override val pageListParseSelector = "div.reading-content img"
     private val cdnUrl = "cdn.1stkissmanga.com"
     override fun imageRequest(page: Page): Request {
@@ -177,7 +184,25 @@ class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en")
 
 class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en")
 
-class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en")
+class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en",
+    dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)) {
+    override fun chapterListParse(response: Response): List<SChapter> {
+        response.asJsoup().let { documet ->
+            documet.select("li.parent.has-child").let { volumes ->
+                return if (volumes.isNullOrEmpty()) {
+                    documet.select(chapterListSelector()).map { chapterFromElement(it) }
+                } else {
+                    val chapters = mutableListOf<SChapter>()
+                    volumes.reversed().forEach { v ->
+                        val vName = v.select("a[href^=javascript]").text()
+                        v.select(chapterListSelector()).map { chapters.add(chapterFromElement(it).apply { name = "$vName - $name" }) }
+                    }
+                    chapters
+                }
+            }
+        }
+    }
+}
 
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
@@ -360,3 +385,5 @@ class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
 }
 
 class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar")
+
+class NightComic : Madara("Night Comic", "http://www.nightcomic.com", "en")
