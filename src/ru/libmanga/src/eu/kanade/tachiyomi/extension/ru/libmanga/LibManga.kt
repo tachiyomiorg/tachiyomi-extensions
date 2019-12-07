@@ -150,8 +150,12 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
-        val body = document.select("div.section__body").first()
         val manga = SManga.create()
+        if (document.html().contains("Манга удалена по просьбе правообладателей")) {
+            manga.status = SManga.LICENSED
+            return manga
+        }
+        val body = document.select("div.section__body").first()
         manga.title = body.select(".manga__title").text()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
