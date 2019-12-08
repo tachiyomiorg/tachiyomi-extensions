@@ -250,34 +250,39 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val (chapterurl, chapterid) = chapter.url.split("#")
-        val response = client.newCall(GET(chapterurl, headers)).execute()
+        val (chapterURL, chapterID) = chapter.url.split("#")
+        val mangaid = chapterURL.substringAfter("library/").substringAfter("/").substringBefore("/")
+        val response = client.newCall(GET(chapterURL, headers)).execute()
         val document = response.asJsoup()
-
-        val csrftoken = document.select("meta[name=csrf-token]").attr("content")
-        //val csjftoken = document.select("meta[name=csjf-token]").attr("content")
-
+        val csrfToken = document.select("meta[name=csrf-token]").attr("content")
         val script = document.select("script:containsData($scriptselector)").html()
-        val chapteridselector = script.substringAfter("getAttribute(\"").substringBefore("\"")
-        val goto = script.substringBeforeLast(chapteridselector).substringAfterLast("url: '").substringBefore("'")
-        val chaptername = script.substringBeforeLast( chapteridselector ).substringBeforeLast("\":").substringAfterLast("\"")
-        val hashname = script.substringAfterLast("$chapteridselector\"").substringAfter("\"").substringBefore("\"")
-        val hashid = script.substringAfterLast(chapteridselector).substringAfter("\": ").substringBefore(",")
-
-        val headers = headersBuilder()
-            .add("Referer", chapterurl)
+        val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
+        val function = script.substringAfter("function _$functionID(").substringBefore("function _")//.substringBefore("});")
+        val goto = function.substringAfter("url: '").substringBefore("'")
+        val paramChapter = function.substringAfter("data").substringAfter("\"").substringBefore("\"")
+        val paramManga = function.substringBefore("success").substringBeforeLast("\"").substringAfterLast("\"")
+       
+        val getHeaders = headersBuilder()
+            .add("Referer", chapterURL)
             .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
-            .add("X-CSRF-TOKEN",csrftoken)
-            //.add("X-CSJF-TOKEN",csjftoken)
+            .add("X-CSRF-TOKEN",csrfToken)
+            .add(functionID,functionID)
             .build()
 
         val formBody = FormBody.Builder()
-            .add(chaptername,chapterid)
-            .add(hashname,hashid)
+            .add(paramChapter,chapterID)
+            .add(paramManga,mangaid)
             .build()
 
-        val url = getBuilder(goto,headers,formBody).substringBeforeLast("/") + "/cascade"
+        val url = getBuilder(goto,getHeaders,formBody).substringBeforeLast("/") + "/cascade"
+        Log.i("TachiDebug", "Viewer URL => $url")
         // Get /cascade instead of /paginate to get all pages at once
+
+        val headers = headersBuilder()
+            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36")
+            .add("Referer", chapterURL)
+            .build()
+
         return GET(url, headers)
     }
 
