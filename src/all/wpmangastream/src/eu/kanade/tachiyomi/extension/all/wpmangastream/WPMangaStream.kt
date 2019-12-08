@@ -133,10 +133,81 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.spe").first()
         val descElement = document.select(".infox > div.desc").first()
-        val sepName = infoElement.select(".spe > span:contains(Author)").last()
+        var author = ""
+        var artist = ""
+        try {
+            val authors = infoElement.select(".spe > span:contains(Author)").last().ownText()
+            if (authors.contains(",")) {
+                val tmp = authors.split(",")
+                if (tmp.size >= 2) {
+                    author = ""
+                    artist = ""
+                    if(authors.contains("Art") && authors.contains("Story")) {
+                        tmp.forEach { s ->
+                            val ss = s.replace("(", "")
+                                .replace(")", "")
+                                .replace("Art", "")
+                                .replace("Story", "")
+                                .replace("&", "")
+                                .replace(" and ", "")
+                                .trim()
+                            if (s.contains("Story") && s.contains("Art")) {
+                                if (author != "") author += ", "
+                                if (artist != "") artist += ", "
+                                author += ss
+                                artist += ss
+                            } else if (s.contains("Story")) {
+                                if (author != "") author += ", "
+                                author += ss
+                            } else if (s.contains("Story")) {
+                                if (artist != "") artist += ", "
+                                artist += ss
+                            } else {
+                                if (artist != "") artist += ", "
+                                artist += ss
+                            }
+                        }
+                    }else {
+                        tmp.forEachIndexed { i, s ->
+                            val ss =s.replace("(", "")
+                                .replace(")", "")
+                                .replace("Art", "")
+                                .replace("Story", "")
+                                .replace("&", "")
+                                .trim()
+                            if(i == 0) author += ss
+                            else {
+                                if (artist != "") artist += ", "
+                                artist += ss
+                            }
+                        }
+                    }
+                    if(author == "" && artist != ""){
+                        author = artist
+                    }
+
+                    if(author != "" && artist == ""){
+                        artist = author
+                    }
+
+                    if(author == "" && artist == "") {
+                        author = authors
+                        artist = authors
+                    }
+                }
+            }else{
+                author = authors.replace("(", "")
+                    .replace(")", "")
+                    .replace("Art", "")
+                    .replace("Story", "")
+                    .replace("&", "")
+                    .trim()
+                artist = author
+            }
+        } catch( ex: NullPointerException ){ }
         val manga = SManga.create()
-        manga.author = sepName?.ownText() ?:"N/A"
-        manga.artist = sepName?.ownText() ?:"N/A"
+        manga.author = author
+        manga.artist = artist
         val genres = mutableListOf<String>()
         infoElement.select(".spe > span:nth-child(1) > a").forEach { element ->
             val genre = element.text()
@@ -146,7 +217,6 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         manga.status = parseStatus(infoElement.select(".spe > span:nth-child(2)").text())
         manga.description = descElement.select("p").text()
         manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
-
         return manga
     }
 
@@ -164,7 +234,7 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
-        chapter.date_upload = 0
+        chapter.date_upload = System.currentTimeMillis()
         return chapter
     }
 
@@ -215,11 +285,11 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         when(quality){
             LOW_QUALITY -> {
                 url = url.replace("https://", "")
-                url = "http://images.weserv.nl/?w=300&q=70&url=" + url
+                url = "http://images.weserv.nl/?w=300&q=70&url=$url"
             }
             MID_QUALITY -> {
                 url = url.replace("https://", "")
-                url = "http://images.weserv.nl/?w=600&q=70&url=" + url
+                url = "http://images.weserv.nl/?w=600&q=70&url=$url"
             }
         }
         return url
