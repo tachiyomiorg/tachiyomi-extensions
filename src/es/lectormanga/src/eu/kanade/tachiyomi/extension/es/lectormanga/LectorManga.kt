@@ -48,18 +48,17 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
                 .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
     }
 
-    private fun getBuilder(url: String, formBody: FormBody): String {
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody): String {
         val req = Request.Builder()
-            .headers(headersBuilder().add("Referer", "$baseUrl/library/manga/").build())
+            .headers(headers)
             .url(url)
             .post(formBody)
             .build()
 
         return client.newCall(req)
             .execute()
-            .request()
-            .url()
-            .toString()
+            .body()!!
+            .string()
     }
 
     private val preferences: SharedPreferences by lazy {
@@ -185,16 +184,17 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
+    private val scriptselector = "disqus_config"
+
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val token = document.select("meta[name=csrf-token]").attr("content")
-        val script = document.select("script:containsData(url_goto)").html()
-        val chapteridselector = script.substringAfter("GO_TO_ID\", elem.getAttribute(\"").substringBefore("\"")
-        val hashselector = script.substringAfter("HASH\", elem.getAttribute(\"").substringBefore("\"")
+        val chapterurl = response.request().url().toString()
+        val script = document.select("script:containsData($scriptselector)").html()
+        val chapteridselector = script.substringAfter("getAttribute(\"").substringBefore("\"")
 
         // One-shot
         if (document.select("#chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it ,token, chapteridselector, hashselector) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it, chapterurl, chapteridselector) }
         }
 
         // Regular list of chapters
@@ -206,9 +206,9 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         chapterNames.forEachIndexed { index, _ ->
             val scanlator = chapterInfos[index].select("li")
             if (dupselect=="one") {
-                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it , chapterNumbers[index], token, chapteridselector, hashselector)) }
+                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it , chapterNumbers[index], chapterurl, chapteridselector)) }
             } else {
-                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it ,chapterNumbers[index], token, chapteridselector, hashselector)) }
+                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it ,chapterNumbers[index], chapterurl, chapteridselector)) }
             }
         }
         return chapters
@@ -219,18 +219,18 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element, token: String, chapteridselector: String, hashselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > button")
-        url = button.attr(chapteridselector) + "&" + button.attr(hashselector) + "&" + token
+    private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
+        val button = element.select("div.row > .text-right > [$chapteridselector]") //button
+        url = "$chapterurl#${button.attr(chapteridselector)}"
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
     }
 
-    private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, token: String, chapteridselector: String, hashselector: String): SChapter {
+    private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, chapterurl: String, chapteridselector: String): SChapter {
         val chapter = SChapter.create()
-        val button = info.select("div.row > .text-right > button")
-        chapter.url = button.attr(chapteridselector) + "&" + button.attr(hashselector) + "&" + token
+        val button = info.select("div.row > .text-right > [$chapteridselector]") //button
+        chapter.url = "$chapterurl#${button.attr(chapteridselector)}"
         chapter.name = chapterName
         chapter.scanlator = info.select("div.col-md-6.text-truncate")?.text()
         chapter.date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -241,12 +241,39 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val (chapterid, hash, token) = chapter.url.split("&")
-        val goto = "$baseUrl/goto/$hash/$chapterid"
-        val formBody = FormBody.Builder()
-            .add("_token", token)
+        val (chapterURL, chapterID) = chapter.url.split("#")
+        val mangaID = chapterURL.substringAfter("library/").substringAfter("/").substringBefore("/")
+        val response = client.newCall(GET(chapterURL, headers)).execute()
+        val document = response.asJsoup()
+        val csrftoken = document.select("meta[name=csrf-token]").attr("content")
+        val script = document.select("script:containsData($scriptselector)").html()
+        val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
+        val function = script.substringAfter("function _$functionID(").substringBefore("function _")
+        val goto = function.substringAfter("url: '").substringBefore("'")
+        val paramChapter = function.substringAfter("data").substringAfter("\"").substringBefore("\"")
+        val paramManga = function.substringBefore("success").substringBeforeLast("\"").substringAfterLast("\"")
+
+        val redirectheaders = headersBuilder()
+            .add("Referer", chapterURL)
+            .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
+            .add("X-CSRF-TOKEN",csrftoken)
+            .add(functionID,functionID)
             .build()
-        val url = getBuilder(goto,formBody).substringBeforeLast("/") + "/cascade"
+
+        val formBody = FormBody.Builder()
+            .add(paramChapter,chapterID)
+            .add(paramManga,mangaID)
+            .build()
+
+        val newurl = getBuilder(goto,redirectheaders,formBody)
+        val url =  if (newurl.contains("paginated")) {
+            newurl.substringBefore("paginated") + "cascade"
+        } else newurl
+
+        val headers = headersBuilder()
+            .add("Referer",newurl)
+            .build()
+
         // Get /cascade instead of /paginate to get all pages at once
         return GET(url, headers)
     }
