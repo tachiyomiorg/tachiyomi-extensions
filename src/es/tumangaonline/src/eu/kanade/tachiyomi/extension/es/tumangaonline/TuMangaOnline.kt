@@ -257,7 +257,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val csrfToken = document.select("meta[name=csrf-token]").attr("content")
         val script = document.select("script:containsData($scriptselector)").html()
         val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
-        val function = script.substringAfter("function _$functionID(").substringBefore("function _")//.substringBefore("});")
+        val function = script.substringAfter("function _$functionID(").substringBefore("function _")
         val goto = function.substringAfter("url: '").substringBefore("'")
         val paramChapter = function.substringAfter("data").substringAfter("\"").substringBefore("\"")
         val paramManga = function.substringBefore("success").substringBeforeLast("\"").substringAfterLast("\"")
