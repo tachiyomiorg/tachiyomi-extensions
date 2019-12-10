@@ -12,7 +12,8 @@ class GenkanFactory : SourceFactory {
         KaguyaDex(),
         KomiScans(),
         HunlightScans(),
-        WoweScans()
+        WoweScans(),
+        ZeroScans()
     )
 }
 
@@ -27,3 +28,4 @@ class KaguyaDex : GenkanOriginal("KaguyaDex", " https://kaguyadex.com", "en")
 class KomiScans : GenkanOriginal("Komi Scans", " https://komiscans.com", "en")
 class HunlightScans : Genkan("Hunlight Scans", "https://hunlight-scans.info", "en")
 class WoweScans : Genkan("Wowe Scans", "https://wowescans.co", "en")
+class ZeroScans : Genkan("ZeroScans", "https://zeroscans.com", "en")

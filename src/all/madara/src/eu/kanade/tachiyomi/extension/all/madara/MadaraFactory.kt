@@ -23,7 +23,6 @@ class MadaraFactory : SourceFactory {
         Mangasushi(),
         NinjaScans(),
         ReadManhua(),
-        ZeroScans(),
         IsekaiScanCom(),
         HappyTeaScans(),
         JustForFun(),
@@ -71,8 +70,6 @@ class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
 
 class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
     dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
-
-class ZeroScans : Madara("ZeroScans", "https://zeroscans.com", "en")
 
 class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com/", "en")
 
