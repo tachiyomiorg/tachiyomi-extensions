@@ -248,10 +248,10 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         val csrftoken = document.select("meta[name=csrf-token]").attr("content")
         val script = document.select("script:containsData($scriptselector)").html()
         val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
-        val function = script.substringAfter("function _$functionID(").substringBefore("function _")
+        val function = script.substringAfter("function _$functionID(").substringBefore("});")
         val goto = function.substringAfter("url: '").substringBefore("'")
-        val paramChapter = function.substringAfter("data").substringAfter("\"").substringBefore("\"")
-        val paramManga = function.substringBefore("success").substringBeforeLast("\"").substringAfterLast("\"")
+        val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
+        val paramManga = function.substringAfter("data").substringBefore("\": ").substringAfterLast("\"")
 
         val redirectheaders = headersBuilder()
             .add("Referer", chapterURL)
@@ -261,8 +261,8 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             .build()
 
         val formBody = FormBody.Builder()
-            .add(paramChapter,chapterID)
             .add(paramManga,mangaID)
+            .add(paramChapter,chapterID)
             .build()
 
         val newurl = getBuilder(goto,redirectheaders,formBody)
