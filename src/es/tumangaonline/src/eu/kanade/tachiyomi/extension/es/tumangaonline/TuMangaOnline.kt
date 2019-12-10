@@ -251,17 +251,20 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val mangaid = chapterURL.substringAfter("library/").substringAfter("/").substringBefore("/")
+        val mangaID = chapterURL.substringAfter("library/").substringAfter("/").substringBefore("/")
+
         val response = client.newCall(GET(chapterURL, headers)).execute()
         val document = response.asJsoup()
+
         val csrfToken = document.select("meta[name=csrf-token]").attr("content")
+
         val script = document.select("script:containsData($scriptselector)").html()
         val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
-        val function = script.substringAfter("function _$functionID(").substringBefore("function _")
+        val function = script.substringAfter("function _$functionID(").substringBefore("});")
         val goto = function.substringAfter("url: '").substringBefore("'")
-        val paramChapter = function.substringAfter("data").substringAfter("\"").substringBefore("\"")
-        val paramManga = function.substringBefore("success").substringBeforeLast("\"").substringAfterLast("\"")
-       
+        val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
+        val paramManga = function.substringAfter("data").substringBefore("\": ").substringAfterLast("\"")
+
         val getHeaders = headersBuilder()
             .add("Referer", chapterURL)
             .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
@@ -270,8 +273,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .build()
 
         val formBody = FormBody.Builder()
+            .add(paramManga,mangaID)
             .add(paramChapter,chapterID)
-            .add(paramManga,mangaid)
             .build()
 
         val url = getBuilder(goto,getHeaders,formBody).substringBeforeLast("/") + "/cascade"
