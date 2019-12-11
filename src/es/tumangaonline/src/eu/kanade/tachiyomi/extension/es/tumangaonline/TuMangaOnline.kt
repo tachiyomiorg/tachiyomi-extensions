@@ -264,7 +264,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
         val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
         val paramManga = function.substringAfter("data").substringBefore("\": ").substringAfterLast("\"")
-        val mangaID = function.substringAfter("data").substringAfter("\": ").substringBefore(",").removeSurrounding("'")
+        //val mangaID = function.substringAfter("data").substringAfter("\": ").substringBefore(",").removeSurrounding("'")
 
         val getHeaders = headersBuilder()
             .add("Referer", chapterURL)
@@ -277,9 +277,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             val formBody = FormBody.Builder()
             if (function.substringAfter("data").substringBefore(",").contains("getAttribute")) {
                 formBody.add(paramChapter, chapterID)
-                    .add(paramManga, mangaID)
+                    //.add(paramManga, mangaID)
             } else {
-                formBody.add(paramManga, mangaID)
+                formBody//.add(paramManga, mangaID)
                     .add(paramChapter, chapterID)
             }
             return formBody.build()
