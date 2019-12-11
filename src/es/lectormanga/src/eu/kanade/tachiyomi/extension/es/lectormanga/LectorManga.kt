@@ -242,7 +242,6 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val mangaID = chapterURL.substringAfter("library/").substringAfter("/").substringBefore("/")
         val response = client.newCall(GET(chapterURL, headers)).execute()
         val document = response.asJsoup()
         val csrftoken = document.select("meta[name=csrf-token]").attr("content")
@@ -252,6 +251,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         val goto = function.substringAfter("url: '").substringBefore("'")
         val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
         val paramManga = function.substringAfter("data").substringBefore("\": ").substringAfterLast("\"")
+        val mangaID = function.substringAfter("data").substringAfter("\": ").substringBefore(",").removeSurrounding("'")
 
         val redirectheaders = headersBuilder()
             .add("Referer", chapterURL)
@@ -260,12 +260,19 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             .add(functionID,functionID)
             .build()
 
-        val formBody = FormBody.Builder()
-            .add(paramManga,mangaID)
-            .add(paramChapter,chapterID)
-            .build()
+        fun formBody():FormBody {
+            val formBody = FormBody.Builder()
+            if (function.substringAfter("data").substringBefore(",").contains("getAttribute")) {
+                formBody.add(paramChapter, chapterID)
+                    .add(paramManga, mangaID)
+            } else {
+                formBody.add(paramManga, mangaID)
+                    .add(paramChapter, chapterID)
+            }
+            return formBody.build()
+        }
 
-        val newurl = getBuilder(goto,redirectheaders,formBody)
+        val newurl = getBuilder(goto,redirectheaders,formBody())
         val url =  if (newurl.contains("paginated")) {
             newurl.substringBefore("paginated") + "cascade"
         } else newurl
