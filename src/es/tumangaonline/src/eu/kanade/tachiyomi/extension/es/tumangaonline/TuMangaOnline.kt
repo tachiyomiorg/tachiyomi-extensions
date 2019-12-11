@@ -251,7 +251,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val mangaID = chapterURL.substringAfter("library/").substringAfter("/").substringBefore("/")
 
         val response = client.newCall(GET(chapterURL, headers)).execute()
         val document = response.asJsoup()
@@ -262,8 +261,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
         val function = script.substringAfter("function _$functionID(").substringBefore("});")
         val goto = function.substringAfter("url: '").substringBefore("'")
+
         val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
         val paramManga = function.substringAfter("data").substringBefore("\": ").substringAfterLast("\"")
+        val mangaID = function.substringAfter("data").substringAfter("\": ").substringBefore(",").removeSurrounding("'")
 
         val getHeaders = headersBuilder()
             .add("Referer", chapterURL)
@@ -272,12 +273,19 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add(functionID,functionID)
             .build()
 
-        val formBody = FormBody.Builder()
-            .add(paramManga,mangaID)
-            .add(paramChapter,chapterID)
-            .build()
+        fun formBody():FormBody {
+            val formBody = FormBody.Builder()
+            if (function.substringAfter("data").substringBefore(",").contains("getAttribute")) {
+                formBody.add(paramChapter, chapterID)
+                    .add(paramManga, mangaID)
+            } else {
+                formBody.add(paramManga, mangaID)
+                    .add(paramChapter, chapterID)
+            }
+            return formBody.build()
+        }
 
-        val url = getBuilder(goto,getHeaders,formBody).substringBeforeLast("/") + "/cascade"
+        val url = getBuilder(goto,getHeaders,formBody()).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
 
         val headers = headersBuilder()
