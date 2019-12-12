@@ -257,6 +257,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             .add("Referer", chapterURL)
             .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
             .add("X-CSRF-TOKEN",csrftoken)
+            .add("X-Requested-With","XMLHttpRequest")
             .add(functionID,functionID)
             .build()
 
