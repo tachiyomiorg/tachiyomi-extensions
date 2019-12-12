@@ -38,10 +38,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         .retryOnConnectionFailure(true)
         .followRedirects(true)
         .build()!!
+    
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0"
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36")
+            .add("User-Agent", userAgent)
             .add("Referer", "$baseUrl/")
             .add("Cache-mode", "no-cache")
     }
@@ -267,9 +269,11 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         //val mangaID = function.substringAfter("data").substringAfter("\": ").substringBefore(",").removeSurrounding("'")
 
         val getHeaders = headersBuilder()
+            .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
             .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
             .add("X-CSRF-TOKEN",csrfToken)
+            .add("X-Requested-With","XMLHttpRequest")
             .add(functionID,functionID)
             .build()
 
@@ -289,7 +293,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         // Get /cascade instead of /paginate to get all pages at once
 
         val headers = headersBuilder()
-            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36")
+            .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
             .build()
 
