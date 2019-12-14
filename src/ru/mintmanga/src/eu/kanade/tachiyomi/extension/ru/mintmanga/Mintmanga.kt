@@ -151,7 +151,7 @@ class Mintmanga : ParsedHttpSource() {
             }
         }
         val dots = chapter.name.indexOf("…")
-        val numbers = chapter.name.findAnyOf(IntRange(0, 9).map { it.toString() })!!.first
+        val numbers = chapter.name.findAnyOf(IntRange(0, 9).map { it.toString() })?.first ?: 0
 
         if (dots in 0 until numbers) {
             chapter.name = chapter.name.substringAfter("…").trim()
