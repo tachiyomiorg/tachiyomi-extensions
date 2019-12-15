@@ -19,8 +19,6 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/pagina/$page", headers)
 
-    //override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/pagina/$page?s=$query", headers)
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var url = HttpUrl.parse(baseUrl)!!.newBuilder()
 
@@ -66,7 +64,8 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         MangaList(getMangasList())
     )
 
-    // Array.from(document.querySelectorAll('div.tagcloud a.tag-cloud-link')).map(a => `Pair("${a.innerText}", "${a.href.replace('https://vermangasporno.com/genero/', '')}")`).join(',\n')
+    // Array.from(document.querySelectorAll('div.tagcloud a.tag-cloud-link'))
+    // .map(a => `Pair("${a.innerText}", "${a.href.replace('https://vermangasporno.com/genero/', '')}")`).join(',\n')
     // from https://vermangasporno.com/
     private class Genre : UriPartFilter("Generos", arrayOf(
         Pair("Ver todos", ""),
@@ -76,6 +75,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Pair("Big Breasts", "big-breasts"),
         Pair("Blowjob", "blowjob"),
         Pair("Cheating", "cheating"),
+        Pair("Colegiala", "colegiala"),
         Pair("Fullcolor", "fullcolor"),
         Pair("Group", "group"),
         Pair("Incest", "incest"),
@@ -83,7 +83,6 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Pair("Lolicon", "lolicon"),
         Pair("Milf", "milf"),
         Pair("Nakadashi", "nakadashi"),
-        Pair("Netorare", "netorare"),
         Pair("Paizuri", "paizuri"),
         Pair("Schoolgirl Uniform", "schoolgirl-uniform"),
         Pair("Sole Female", "sole-female"),
@@ -92,7 +91,8 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Pair("Tetonas", "tetonas")
     ))
 
-    // Array.from(document.querySelectorAll('form select#cat option.level-0')).map(a => `Genre("${a.innerText}", "${a.value}")`).join(',\n')
+    // Array.from(document.querySelectorAll('form select#cat option.level-0'))
+    // .map(a => `Manga("${a.innerText}", "${a.value}")`).join(',\n')
     // from https://vermangasporno.com/
     private fun getMangasList() = listOf(
         Manga("3×3 Eyes", "1325"),
@@ -125,6 +125,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Blood+", "189"),
         Manga("Boku no Hero Academia", "245"),
         Manga("Boku wa tomodachi ga sukunai", "674"),
+        Manga("Bokutachi wa Benkyou ga Dekinai", "2180"),
         Manga("Boruto", "2071"),
         Manga("Capcom", "251"),
         Manga("Charlotte", "1444"),
@@ -153,6 +154,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka", "127"),
         Manga("Dungeon Travelers", "1951"),
         Manga("Dynasty Warriors", "1885"),
+        Manga("Enen no Shouboutai", "2169"),
         Manga("Eromanga Sensei", "901"),
         Manga("Evangelion", "172"),
         Manga("Fairy Tail", "348"),
@@ -178,15 +180,18 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Getsuyoubi no Tawawa", "250"),
         Manga("Ghost In The Shell", "1898"),
         Manga("Girls und Panzer", "904"),
+        Manga("Goblin Slayer", "2143"),
         Manga("Gochuumon wa Usagi Desu ka?", "5"),
         Manga("Granblue Fantasy", "257"),
         Manga("Grisaia no Kajitsu", "6"),
         Manga("Guilty Gear", "727"),
         Manga("Gundam 00", "857"),
+        Manga("Gundam Build Divers", "2137"),
         Manga("Gundam Build Fighters", "7"),
         Manga("Gundam SEED Destiny", "103"),
         Manga("Hanasaku Iroha", "1104"),
         Manga("Hanayamata", "1947"),
+        Manga("Hatsujou no Genri", "2139"),
         Manga("Hatsukoi Delusion", "1930"),
         Manga("Hayate no Gotoku!", "595"),
         Manga("He Is My Master", "104"),
@@ -197,11 +202,14 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Highschool of the Dead", "937"),
         Manga("Himouto! Umaru-chan", "1039"),
         Manga("Hokenshitsu no Shinigami", "1105"),
+        Manga("Honkai Gakuen", "2165"),
         Manga("Hyperdimension Neptunia", "1567"),
         Manga("Ichigo 100%", "151"),
         Manga("Incesto", "182"),
         Manga("Infinite Stratos", "786"),
+        Manga("Isekai Maou to Shoukan Shoujo no Dorei Majutsu", "2170"),
         Manga("K-ON", "150"),
+        Manga("Kaguya-sama wa Kokurasetai", "2157"),
         Manga("Kaichou wa Maid-sama!", "1129"),
         Manga("Kaiten Mutenmaru", "911"),
         Manga("Kami Nomi zo Shiru Sekai", "1091"),
@@ -214,17 +222,22 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Keroro Gunsou", "11"),
         Manga("Kidou Senshi Gundam 00", "960"),
         Manga("Kill la Kill", "1851"),
+        Manga("Kimetsu no Yaiba", "2149"),
         Manga("Kimi ni Todoke", "1127"),
+        Manga("Kimi no Na wa", "2147"),
         Manga("KimiKiss", "1182"),
         Manga("King of fighter", "155"),
         Manga("King of Fighters", "788"),
+        Manga("Kiratto Pri Chan", "2182"),
         Manga("Kobayashi-san-chi no Maid Dragon", "299"),
         Manga("Koihime Musou", "1188"),
         Manga("Kono Subarashii Sekai Ni Syukufuku O", "259"),
         Manga("Kono Subarashii Sekai ni Syukufuku o!", "853"),
+        Manga("Konosuba!", "2128"),
         Manga("Kurogane no Linebarrels", "1150"),
         Manga("Kyoukai Senjou no Horizon", "660"),
         Manga("Ladies Versus Butlers", "204"),
+        Manga("Little Witch Academia", "2127"),
         Manga("Love Hina", "94"),
         Manga("Love Live Sunshine", "207"),
         Manga("Love Live!", "716"),
@@ -264,6 +277,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Ookami-san to Shichinin no Nakama-tachi", "1244"),
         Manga("Ore no Imouto ga Konna ni Kawaii Wake ga Nai", "328"),
         Manga("Original", "15"),
+        Manga("Oshiete! Galko-chan", "2136"),
         Manga("Overlord", "686"),
         Manga("Overwatch", "260"),
         Manga("Panty & Stocking with Garterbelt", "1176"),
@@ -299,6 +313,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Saki", "258"),
         Manga("School Rumble", "191"),
         Manga("Sekirei", "180"),
+        Manga("Sekiro: Shadows Die Twice", "2152"),
         Manga("Serial Experiments Lain", "1498"),
         Manga("Seto No Hanayome", "219"),
         Manga("Shadowverse", "1957"),
@@ -321,6 +336,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Soul Eater", "158"),
         Manga("Space Dandy", "1826"),
         Manga("Spice and wolf", "154"),
+        Manga("Spider-man", "2140"),
         Manga("Steins;Gate", "992"),
         Manga("Street Fighter", "101"),
         Manga("Strike Witches", "642"),
@@ -334,6 +350,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Taimanin Yukikaze", "826"),
         Manga("Tales of the Abyss", "1148"),
         Manga("Tamako Market", "770"),
+        Manga("Tate no Yuusha no Nariagari", "2184"),
         Manga("Teen Titans", "21"),
         Manga("Tengen Toppa Gurren Lagann", "1190"),
         Manga("Tengen Toppa Gurren-Lagann", "100"),
@@ -355,9 +372,11 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Manga("Toradora", "192"),
         Manga("Toradora!", "1152"),
         Manga("Touhou Project", "24"),
+        Manga("Tsujou Kougeki ga Zentai Kougeki de 2-kai Kougeki no Okaasan wa Suki desu ka?", "2131"),
         Manga("Tsukihime", "877"),
         Manga("Uchuu no Stellvia", "715"),
         Manga("Utawarerumono", "1905"),
+        Manga("Uzaki-chan wa Asobitai!", "2146"),
         Manga("Valkyria Chronicles", "1084"),
         Manga("Vampire savior", "982"),
         Manga("Vocaloid", "912"),
