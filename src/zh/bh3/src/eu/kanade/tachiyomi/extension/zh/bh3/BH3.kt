@@ -1,6 +1,11 @@
 package eu.kanade.tachiyomi.extension.zh.bh3
 
 import android.util.Log
+import com.github.salomonbrys.kotson.float
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.string
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -10,12 +15,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class BH3 : ParsedHttpSource() {
 
     override val name = "《崩坏3》IP站"
-    override val baseUrl = "https://comic.bh3.com/"
+    override val baseUrl = "https://comic.bh3.com"
     override val lang = "zh"
     override val supportsLatest = false
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -34,7 +41,6 @@ class BH3 : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "none"
     override fun searchMangaNextPageSelector() = "none"
 
-
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/book", headers)
     override fun latestUpdatesRequest(page: Int) = throw Exception ("Not Used")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception ("No search")
@@ -45,7 +51,7 @@ class BH3 : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
-    override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -58,9 +64,25 @@ class BH3 : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsondata = response.body().toString()
+        val jsondata = response.body()!!.string()
         val json = JsonParser().parse(jsondata).asJsonArray
-        
+        val chapters = mutableListOf<SChapter>()
+        json.forEach {
+            chapters.add(createChapter(it))
+        }
+        return chapters
+    }
+
+    private fun createChapter(json: JsonElement) = SChapter.create().apply {
+        name = json["title"].string
+        url = "/book/${json["bookid"].int}/${json["chapterid"].int}"
+        //Log.i("TachiDebug","Chapter URL => $url")
+        date_upload = parseDate(json["timestamp"].string)
+        chapter_number = json["chapterid"].float
+    }
+
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US ).parse(date).time
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -75,7 +97,7 @@ class BH3 : ParsedHttpSource() {
         val body = response.asJsoup()
         body.select("img.lazy.comic_img")?.forEach {
             add(Page(size, "", it.attr("data-original")))
-            Log.i("TachiDebug", "IMG URL => ${it.attr("data-original")}")
+            //Log.i("TachiDebug", "IMG URL => ${it.attr("data-original")}")
         }
     }
 
