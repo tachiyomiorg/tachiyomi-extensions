@@ -73,7 +73,7 @@ class HiveWorks : ParsedHttpSource() {
             manga.thumbnail_url = element.select("img").attr("abs:src")
             manga.artist = element.select("h2").text().removePrefix("by").trim()
             manga.author = manga.artist
-            manga.description = element.select("div.description").text().trim()
+            manga.description = element.select("div.description").text().trim() + "\n" + "\n" + "*Not all comics are supported*"
             manga.genre = element.select("div.comicrating").text().trim()
         return manga
     }
@@ -125,7 +125,7 @@ class HiveWorks : ParsedHttpSource() {
 
     //Filter List Code
     override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Header("NOTE: Text search does not work."),
         Filter.Header("Only one filter can be used at a time"),
         Filter.Separator(),
         RatingFilter(),
