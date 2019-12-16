@@ -60,7 +60,8 @@ class MadaraFactory : SourceFactory {
         Azora(),
         HunterFansub(),
         MangaArabTeam(),
-        NightComic()
+        NightComic(),
+        Toonily()
     )
 }
 
@@ -384,3 +385,6 @@ class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
 class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar")
 
 class NightComic : Madara("Night Comic", "http://www.nightcomic.com", "en")
+
+class Toonily : Madara("Toonily", "https://toonily.com", "en")
+
