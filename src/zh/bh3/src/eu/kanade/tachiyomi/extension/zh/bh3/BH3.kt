@@ -76,7 +76,6 @@ class BH3 : ParsedHttpSource() {
     private fun createChapter(json: JsonElement) = SChapter.create().apply {
         name = json["title"].string
         url = "/book/${json["bookid"].int}/${json["chapterid"].int}"
-        //Log.i("TachiDebug","Chapter URL => $url")
         date_upload = parseDate(json["timestamp"].string)
         chapter_number = json["chapterid"].float
     }
@@ -97,7 +96,6 @@ class BH3 : ParsedHttpSource() {
         val body = response.asJsoup()
         body.select("img.lazy.comic_img")?.forEach {
             add(Page(size, "", it.attr("data-original")))
-            //Log.i("TachiDebug", "IMG URL => ${it.attr("data-original")}")
         }
     }
 
