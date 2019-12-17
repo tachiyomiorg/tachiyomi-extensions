@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: VCPVMP'
     pkgNameSuffix = "es.vcpvmp"
-    extClass = '.VCP; .VMP'
+    extClass = '.VCPVMPFactory'
     extVersionCode = 1
     libVersion = '1.2'
 }
