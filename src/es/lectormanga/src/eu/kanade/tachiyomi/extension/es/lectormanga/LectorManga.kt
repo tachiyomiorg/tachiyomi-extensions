@@ -261,19 +261,12 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             .add(functionID,functionID)
             .build()
 
-        fun formBody():FormBody {
-            val formBody = FormBody.Builder()
-            if (function.substringAfter("data").substringBefore(",").contains("getAttribute")) {
-                formBody.add(paramChapter, chapterID)
-                    .add(paramManga, mangaID)
-            } else {
-                formBody.add(paramManga, mangaID)
-                    .add(paramChapter, chapterID)
-            }
-            return formBody.build()
-        }
+        val formBody = FormBody.Builder()
+            .add(paramManga, mangaID)
+            .add(paramChapter, chapterID)
+            .build()
 
-        val newurl = getBuilder(goto,redirectheaders,formBody())
+        val newurl = getBuilder(goto,redirectheaders,formBody)
         val url =  if (newurl.contains("paginated")) {
             newurl.substringBefore("paginated") + "cascade"
         } else newurl
