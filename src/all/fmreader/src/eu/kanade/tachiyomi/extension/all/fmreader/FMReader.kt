@@ -38,8 +38,10 @@ abstract class FMReader(
 
     open val requestPath = "manga-list.html"
 
+    open val popularSort = "sort=views"
+
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=views&sort_type=DESC", headers)
+        GET("$baseUrl/$requestPath?listType=pagination&page=$page&$popularSort&sort_type=DESC", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/$requestPath?")!!.newBuilder()
@@ -79,21 +81,18 @@ abstract class FMReader(
     override fun latestUpdatesRequest(page: Int): Request =
         GET("$baseUrl/$requestPath?listType=pagination&page=$page&sort=last_update&sort_type=DESC", headers)
 
-    // for sources that don't have the "page x of y" element
-    fun defaultMangaParse(response: Response): MangasPage = super.popularMangaParse(response)
-
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
-        val mangas = mutableListOf<SManga>()
-        var hasNextPage = true
 
-        document.select(popularMangaSelector()).map { mangas.add(popularMangaFromElement(it)) }
+        val mangas = document.select(popularMangaSelector()).map { popularMangaFromElement(it) }
 
         // check if there's a next page
-        document.select(popularMangaNextPageSelector()).first().text().split(" ").let {
-            val currentPage = it[1]
-            val lastPage = it[3]
-            if (currentPage == lastPage) hasNextPage = false
+        val hasNextPage = (document.select(popularMangaNextPageSelector())?.first()?.text() ?: "").let {
+            if (it.contains(Regex("""\w*\s\d*\s\w*\s\d*"""))) {
+                it.split(" ").let { pageOf -> pageOf[1] != pageOf[3] } // current page not last page
+            } else {
+                it.isNotEmpty() // standard next page check
+            }
         }
 
         return MangasPage(mangas, hasNextPage)
@@ -127,12 +126,15 @@ abstract class FMReader(
         return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga =
-        popularMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    // selects an element with text "x of y pages", must be first element if multiple elements are selected
+    /**
+     * can select one of 2 different types of elements
+     * one is an element with text "page x of y", must be the first element if it's part of a collection
+     * the other choice is the standard "next page" element (but most FMReader sources don't have this one)
+     */
     override fun popularMangaNextPageSelector() = "div.col-lg-9 button.btn-info"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
@@ -145,7 +147,7 @@ abstract class FMReader(
 
         manga.author = infoElement.select("li a.btn-info").text()
         manga.genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
-        manga.status = parseStatus(infoElement.select("li a.btn-success").first().text().toLowerCase())
+        manga.status = parseStatus(infoElement.select("li a.btn-success").first().text())
         manga.description = document.select("div.row ~ div.row p").text().trim()
         manga.thumbnail_url = infoElement.select("img.thumbnail").attr("abs:src")
 
@@ -153,7 +155,7 @@ abstract class FMReader(
     }
 
     // languages: en, vi, tr
-    fun parseStatus(element: String): Int = when (element) {
+    fun parseStatus(status: String): Int = when (status.toLowerCase()) {
         "completed", "complete", "incomplete", "đã hoàn thành", "tamamlandı" -> SManga.COMPLETED
         "ongoing", "on going", "updating", "chưa hoàn thành", "đang cập nhật", "devam ediyor" -> SManga.ONGOING
         else -> SManga.UNKNOWN
@@ -231,13 +233,12 @@ abstract class FMReader(
         }
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
+    open val pageListImageSelector = "img.chapter-img"
 
-        document.select("img.chapter-img").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:data-src").let { if (it.isNotEmpty()) it else img.attr("abs:src") }))
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select(pageListImageSelector).mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:data-src").let { if (it.isNotEmpty()) it else img.attr("abs:src") })
         }
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
