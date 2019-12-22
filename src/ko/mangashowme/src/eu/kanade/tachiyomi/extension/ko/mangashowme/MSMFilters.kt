@@ -132,7 +132,7 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
 
             is SearchStatusList -> {
                 if (filter.state > 0) {
-                    statusFilter = filter.state - 1
+                    statusFilter = filter.state
                 }
             }
 

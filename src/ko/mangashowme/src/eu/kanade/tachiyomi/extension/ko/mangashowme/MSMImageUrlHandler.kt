@@ -29,15 +29,19 @@ private class RequestHandler(val chain: Interceptor.Chain) {
     }
 
     private fun getRequest(url: String): Response = when {
-        "filecdn.xyz" in url || "chickencdn.info" in url
-        -> ownCDNRequestHandler(url)
+        ".xyz/" in url -> ownCDNRequestHandler(url)
         else -> outsideRequestHandler(url)
     }
 
     private fun ownCDNRequestHandler(url: String): Response {
         val res = proceedRequest(url)
         return if (!isSuccess(res)) {
-            proceedRequest(url.replace("img.", "s3.")) // s3
+            val s3url = if (url.contains("img.")) {
+                url.replace("img.", "s3.")
+            } else {
+                url.replace("://", "://s3.")
+            }
+            proceedRequest(s3url) // s3
         } else res
     }
 

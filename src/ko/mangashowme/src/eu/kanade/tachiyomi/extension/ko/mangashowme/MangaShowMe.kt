@@ -40,7 +40,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val name = "ManaMoa"
 
     // This keeps updating: https://twitter.com/manamoa20
-    private val defaultBaseUrl = "https://manamoa13.net"
+    private val defaultBaseUrl = "https://manamoa22.net"
     override val baseUrl by lazy { getPrefBaseUrl() }
 
     override val lang: String = "ko"
