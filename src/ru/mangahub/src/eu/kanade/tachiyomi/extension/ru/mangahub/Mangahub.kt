@@ -60,13 +60,13 @@ open class Mangahub : ParsedHttpSource() {
         return GET("$baseUrl/search/manga?query=$query&sort=rating_short&page=$page")
     }
 
-    override fun searchMangaSelector() = "div.px-4"
+    override fun searchMangaSelector() = "div.comic-grid-col-xl"
 
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.fast-view-layer-scale").attr("data-background-image")
-        manga.title = element.select("a.h4").text()
-        manga.setUrlWithoutDomain(element.select("a.h4").attr("href"))
+        manga.thumbnail_url = element.select("div.comic-grid-image").attr("data-background-image")
+        manga.title = element.select("a.comic-grid-name").text()
+        manga.setUrlWithoutDomain(element.select("a.comic-grid-name").attr("href"))
         return manga
     }
 
