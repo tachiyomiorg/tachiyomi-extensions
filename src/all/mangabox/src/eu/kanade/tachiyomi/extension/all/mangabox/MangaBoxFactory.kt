@@ -30,14 +30,16 @@ class MangaBoxFactory : SourceFactory {
 
 //TODO: Alternate search/filters for some sources that don't use query parameters
 
-class Mangakakalot : MangaBox("Mangakakalot", "http://mangakakalot.com", "en")
+class Mangakakalot : MangaBox("Mangakakalot", "http://mangakakalot.com", "en") {
+    override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
+}
 
 class Manganelo : MangaBox("Manganelo", "https://manganelo.com", "en") {
     // Nelo's date format is part of the base class
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/genre-all/$page?type=topview", headers)
     override fun popularMangaSelector() = "div.content-genres-item"
     override val latestUrlPath = "genre-all/"
-    override fun searchMangaSelector() = "div.search-story-item"
+    override fun searchMangaSelector() = "div.search-story-item, div.content-genres-item"
     override fun getFilterList() = FilterList()
 }
 
