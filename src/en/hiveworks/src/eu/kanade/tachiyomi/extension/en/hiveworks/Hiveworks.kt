@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.hiveworks
 
 import android.net.Uri
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -68,7 +67,6 @@ class HiveWorks : ParsedHttpSource() {
         private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
             manga.url = element.select("a.comiclink").first().attr("abs:href")
-            Log.i("TachiDebug", "MangaURL => ${manga.url}")
             manga.title = element.select("h1").text().trim()
             manga.thumbnail_url = element.select("img").attr("abs:src")
             manga.artist = element.select("h2").text().removePrefix("by").trim()
