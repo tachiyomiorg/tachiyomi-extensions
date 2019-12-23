@@ -82,7 +82,6 @@ class HiveWorks : ParsedHttpSource() {
         val document = response.asJsoup()
         val uri = Uri.parse(document.baseUri())
         val baseUrl = "${uri.scheme}://${uri.authority}"
-        Log.i("TachiDebug", "BaseURL => $baseUrl")
         val elements = document.select(chapterListSelector())
         val chapters = mutableListOf<SChapter>()
         for (i in 1 until elements.size) {
@@ -95,7 +94,6 @@ class HiveWorks : ParsedHttpSource() {
     private fun createChapter(element: Element, baseUrl: String?) = SChapter.create().apply {
         name = element.text().substringAfter("-").trim()
         url = "$baseUrl/" + element.attr("value")
-        Log.i("TachiDebug","Chapter URL => $url")
         date_upload = parseDate(element.text().substringBefore("-").trim())
     }
 
