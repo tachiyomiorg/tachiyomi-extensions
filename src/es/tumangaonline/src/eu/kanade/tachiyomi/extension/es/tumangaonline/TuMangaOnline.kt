@@ -48,11 +48,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Cache-mode", "no-cache")
     }
 
-    private fun getBuilder(url: String, headers: Headers, formBody: FormBody): String {
+    private fun getBuilder(url: String, headers: Headers): String {
         val req = Request.Builder()
            .headers(headers)
            .url(url)
-           .post(formBody)
            .build()
 
         return client.newCall(req)
@@ -259,23 +258,18 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val script = document.select("script:containsData($scriptselector)").html()
         val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
         val function = script.substringAfter("function _$functionID(").substringBefore("});")
-        val goto = function.substringAfter("url: '").substringBefore("'")
-        val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
+        val goto = function.substringAfter("url: '").substringBefore("'").replace(":UPLOAD_ID",chapterID)
 
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
-            .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
             .add("X-CSRF-TOKEN",csrfToken)
             .add("X-Requested-With","XMLHttpRequest")
             .add(functionID,functionID)
             .build()
 
-        val formBody = FormBody.Builder()
-            .add(paramChapter, chapterID)
-            .build()
 
-        val url = getBuilder(goto,getHeaders,formBody).substringBeforeLast("/") + "/cascade"
+        val url = getBuilder(goto,getHeaders).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
 
         val headers = headersBuilder()
