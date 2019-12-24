@@ -258,7 +258,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val script = document.select("script:containsData($scriptselector)").html()
         val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
         val function = script.substringAfter("function _$functionID(").substringBefore("});")
-        val goto = function.substringAfter("url: '").substringBefore("'").replace(":UPLOAD_ID",chapterID)
+        val url_goto = function.substringAfter("url: '").substringBefore("'")
+        val uploadID = function.substringAfter("replace('").substringBefore("'")
+        val goto = url_goto.replace(uploadID,chapterID)
 
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
