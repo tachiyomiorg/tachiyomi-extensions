@@ -61,7 +61,8 @@ class MadaraFactory : SourceFactory {
         HunterFansub(),
         MangaArabTeam(),
         NightComic(),
-        Toonily()
+        Toonily(),
+        PlotTwistScan()
     )
 }
 
@@ -387,4 +388,8 @@ class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https:
 class NightComic : Madara("Night Comic", "http://www.nightcomic.com", "en")
 
 class Toonily : Madara("Toonily", "https://toonily.com", "en")
+
+class PlotTwistScan : Madara("Plot Twist No Fansub", "https://www.plotwistscan.com", "es") {
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).asReversed()
+}
 
