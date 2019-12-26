@@ -1,10 +1,5 @@
-new File(rootDir, "src").eachDir { dir ->
-    dir.eachDir { subdir ->
-        String name = ":${dir.name}-${subdir.name}"
-        include name
-        project(name).projectDir = new File("src/${dir.name}/${subdir.name}")
-    }
-}
+include ':lib-extension'
+project(':lib-extension').projectDir = new File("lib/extension")
 
 include ':lib-ratelimit'
 project(':lib-ratelimit').projectDir = new File("lib/ratelimit")
@@ -14,3 +9,11 @@ project(':duktape-stub').projectDir = new File("lib/duktape-stub")
 
 include ':preference-stub'
 project(':preference-stub').projectDir = new File("lib/preference-stub")
+
+new File(rootDir, "src").eachDir { dir ->
+    dir.eachDir { subdir ->
+        String name = ":${dir.name}-${subdir.name}"
+        include name
+        project(name).projectDir = new File("src/${dir.name}/${subdir.name}")
+    }
+}
