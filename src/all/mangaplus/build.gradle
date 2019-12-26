@@ -11,7 +11,7 @@ ext {
 }
 
 dependencies {
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.13.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.14.0'
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly project(':duktape-stub')
 }
