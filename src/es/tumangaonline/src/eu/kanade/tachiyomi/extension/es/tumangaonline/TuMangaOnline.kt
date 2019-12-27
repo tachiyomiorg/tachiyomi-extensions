@@ -274,7 +274,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val formBody = FormBody.Builder()
             .build()
 
-        val url = getBuilder(goto,getHeaders).substringBeforeLast("/") + "/cascade"
+        val url = getBuilder(goto,getHeaders,formBody).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
 
         val headers = headersBuilder()
