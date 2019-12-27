@@ -58,6 +58,7 @@ class MadaraFactory : SourceFactory {
         Hiperdex(),
         DoujinHentai(),
         Azora(),
+        KMangaIn(),
         HunterFansub(),
         MangaArabTeam(),
         NightComic(),
@@ -376,6 +377,8 @@ class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
         return chapter
     }
 }
+
+class KMangaIn : Madara("Kissmanga.in", "https://kissmanga.in", "en")
 
 class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/biblioteca/page/$page?m_orderby=views", headers)
