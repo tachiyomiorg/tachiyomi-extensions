@@ -48,11 +48,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Cache-mode", "no-cache")
     }
 
-    private fun getBuilder(url: String, headers: Headers): String {
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody): String {
         val req = Request.Builder()
-           .headers(headers)
-           .url(url)
-           .build()
+            .headers(headers)
+            .url(url)
+            .post(formBody)
+            .build()
 
         return client.newCall(req)
             .execute()
@@ -269,7 +270,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("X-Requested-With","XMLHttpRequest")
             .add(functionID,functionID)
             .build()
-
+        
+        val formBody = FormBody.Builder()
+            .build()
 
         val url = getBuilder(goto,getHeaders).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
