@@ -178,7 +178,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
                 "on chapter refresh/update. It will get the next available if " +
                 "your preferred scanlator isn't an option (yet)."
 
-            this.setDefaultValue(1)
+            this.setDefaultValue("1")
 
             setOnPreferenceChangeListener{_, newValue ->
                 val selected = newValue.toString()
