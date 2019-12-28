@@ -16,7 +16,7 @@ import okhttp3.HttpUrl
 import okhttp3.Headers
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -225,6 +225,11 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
 class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
+    private val time = SimpleDateFormat("HHmm.ss", Locale.US).format(Date())
+    private val day = SimpleDateFormat("dd", Locale.US).format(Date())
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.$day (KHTML, like Gecko) Chrome/79.0.$time Safari/537.$day")
+        .add("Referer", baseUrl)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
     override fun getGenreList() = listOf(
         Genre("3D", "3d"),
