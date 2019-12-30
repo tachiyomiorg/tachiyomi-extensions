@@ -69,7 +69,7 @@ open class Komga : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books?size=1000", headers)
+        GET("$baseUrl${manga.url}/books?size=1000&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
