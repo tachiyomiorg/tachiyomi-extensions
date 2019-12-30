@@ -67,7 +67,7 @@ class Latisbooks : HttpSource() {
         return client.newCall(mangaDetailsRequest(manga))
             .asObservableSuccess()
             .map { response ->
-                createManga(response).apply { initialized = true }
+                createManga(response)
             }
     }
 
