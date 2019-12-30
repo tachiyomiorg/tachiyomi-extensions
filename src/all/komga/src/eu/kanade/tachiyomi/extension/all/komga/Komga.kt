@@ -73,14 +73,12 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
-        val chapterListUrl = response.request().url().newBuilder()
-            .removeAllQueryParameters("size").build().toString()
 
-        return page.content.mapIndexed { i, book ->
+        return page.content.map { book ->
             SChapter.create().apply {
-                chapter_number = (i + 1).toFloat()
+                chapter_number = book.number
                 name = "${book.name} (${book.size})"
-                url = "$chapterListUrl/${book.id}"
+                url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
         }.sortedByDescending { it.chapter_number }
@@ -115,9 +113,9 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
-            title = this@toSManga.name
-            url = "/api/v1/series/${this@toSManga.id}"
-            thumbnail_url = "$baseUrl/api/v1/series/${this@toSManga.id}/thumbnail"
+            title = name
+            url = "/api/v1/series/${id}"
+            thumbnail_url = "$baseUrl/api/v1/series/${id}/thumbnail"
             status = SManga.UNKNOWN
         }
 
