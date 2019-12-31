@@ -51,6 +51,18 @@ open class Komga : ConfigurableSource, HttpSource() {
                         url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
                     }
                 }
+                is Filter.Sort -> {
+                    var sortCriteria = when (filter.state?.index) {
+                        0 -> "name"
+                        1 -> "createdDate"
+                        2 -> "lastModifiedDate"
+                        else -> ""
+                    }
+                    if (sortCriteria.isNotEmpty()) {
+                        sortCriteria += "," + if (filter.state?.ascending!!) "asc" else "desc"
+                        url.addQueryParameter("sort", sortCriteria)
+                    }
+                }
             }
         }
 
@@ -138,10 +150,12 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
+    private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Filter.Sort.Selection(0, true))
 
     override fun getFilterList(): FilterList =
         FilterList(
-            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name })
+            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name }),
+            SeriesSort()
         )
 
     private var libraries = emptyList<LibraryDto>()
