@@ -249,6 +249,7 @@ class Generator {
             Triple("es", "Mangas.pw", "https://mangas.pw"),
             Triple("es", "Tumangaonline.co", "http://tumangaonline.co"),
             Triple("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
+            Triple("es", "Universo Yuri", "https://universoyuri.com/"),
             //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             //Changed CMS
