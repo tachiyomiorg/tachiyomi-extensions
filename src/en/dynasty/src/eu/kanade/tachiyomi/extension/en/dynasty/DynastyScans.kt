@@ -74,10 +74,6 @@ abstract class DynastyScans : ParsedHttpSource() {
                 .select("div#main").filter { it.hasText() }.first().childNodes()
     }
 
-    protected fun parseThumbnail(manga: SManga) {
-        if (_valid.isManga) manga.thumbnail_url = baseUrl + imgList[_valid.pos].substringBefore('?')
-    }
-
     protected fun parseHeader(document: Document, manga: SManga): Boolean {
         val elements = document.select("div.tags > h2.tag-title").first().getElementsByTag("a")
         if (elements.isEmpty()) {
