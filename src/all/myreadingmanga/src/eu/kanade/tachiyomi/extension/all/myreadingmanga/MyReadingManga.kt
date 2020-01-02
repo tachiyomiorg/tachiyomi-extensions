@@ -253,21 +253,21 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     //Filter Parsing, grabs home page as document and filters out Genres, Popular Tags, and Catagorys
     private val getFilter:Document? = try { network.client.newCall(GET(baseUrl, headers)).execute().asJsoup() } catch (e: IOException) {null}
-    private fun returnFilter (css: String): Array<Pair<String, String>> = if (getFilter?.select(".cf-browser-verification").isNullOrEmpty()) {
-        getFilter?.select(css)?.map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text()) }?.toTypedArray() ?: arrayOf(Pair("","Error getting filters"))
+    private fun returnFilter (css: String, attributekey: String): Array<Pair<String, String>> = if (getFilter?.select(".cf-browser-verification").isNullOrEmpty()) {
+        getFilter?.select(css)?.map { Pair(it.attr(attributekey).substringBeforeLast("/").substringAfterLast("/"), it.text()) }?.toTypedArray() ?: arrayOf(Pair("","Error getting filters"))
     } else {
         arrayOf(Pair("","Open 'Latest' and force restart app"))
     }
-
+    
     //Generates the filter lists for app
     override fun getFilterList(): FilterList {
         val filterList = FilterList(
             //MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
-            GenreFilter(returnFilter(".tagcloud a[href*=/genre/]")),
-            TagFilter(returnFilter(".tagcloud a[href*=/tag/]")),
-            CatFilter(returnFilter(".level-0"))
+            GenreFilter(returnFilter(".tagcloud a[href*=/genre/]", "href")),
+            TagFilter(returnFilter(".tagcloud a[href*=/tag/]","href")),
+            CatFilter(returnFilter(".level-0", "value"))
         )
         return filterList
     }
