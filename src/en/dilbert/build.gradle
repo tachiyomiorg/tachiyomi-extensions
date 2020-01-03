@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Dilbert'
     pkgNameSuffix = 'en.dilbert'
     extClass = '.Dilbert'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
