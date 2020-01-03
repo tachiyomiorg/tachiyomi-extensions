@@ -115,7 +115,7 @@ abstract class MangaBox (
         val infoElement = document.select(mangaDetailsMainSelector)
 
         return SManga.create().apply {
-            title = infoElement.select("h1, h2").text()
+            title = infoElement.select("h1, h2").first().text()
             author = infoElement.select("li:contains(author) a, td:containsOwn(author) + td").text()
             status = parseStatus(infoElement.select("li:contains(status), td:containsOwn(status) + td").text())
             genre = infoElement.select("div.manga-info-top li:contains(genres)").let { kakalotE ->
