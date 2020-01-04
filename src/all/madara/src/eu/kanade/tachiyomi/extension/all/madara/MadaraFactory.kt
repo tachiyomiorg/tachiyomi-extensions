@@ -29,7 +29,6 @@ class MadaraFactory : SourceFactory {
         AoCTranslations(),
         KomikGo(),
         LuxyScans(),
-        TritiniaScans(),
         TsubakiNoScan(),
         YokaiJump(),
         ZManga(),
@@ -64,7 +63,8 @@ class MadaraFactory : SourceFactory {
         NightComic(),
         Toonily(),
         PlotTwistScan(),
-        MangaKomi()
+        MangaKomi(),
+        Wakamics()
     )
 }
 
@@ -118,14 +118,6 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe"
 class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
 
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
-
-class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?m_orderby=latest", headers)
-    override fun latestUpdatesNextPageSelector(): String? = null
-    override fun popularMangaNextPageSelector(): String? = null
-}
 
 class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/","fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
@@ -403,4 +395,6 @@ class PlotTwistScan : Madara("Plot Twist No Fansub", "https://www.plotwistscan.c
 }
 
 class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
+
+class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
