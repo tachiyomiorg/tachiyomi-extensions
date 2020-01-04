@@ -98,7 +98,7 @@ abstract class ToomicsGlobal(private val siteLang: String,
             .map { it.reversed() }
     }
 
-    override fun chapterListSelector(): String = "section.ep-body ol.list-ep li.normal_ep a:not([onclick*='login'])"
+    override fun chapterListSelector(): String = "section.ep-body ol.list-ep li.normal_ep a:not([onclick*='login']):not([onclick*='free_in_app'])"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val num = element.select("div.cell-num span.num").text()
