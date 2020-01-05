@@ -5,8 +5,6 @@ import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import android.util.Log
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import okhttp3.*
 import java.util.*
 import org.jsoup.nodes.Element
@@ -292,22 +290,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun pageListParse(response: Response): List<Page> {
-        val document = response.asJsoup()
-        val script = document.select("script:containsData($scriptselector)").html()//.substringAfter("DOMContentLoaded").substringBefore("};")
-        val dirPath = script.substringAfter("let dirPath = \"").substringBefore("\"")
-        val attributeKey = script.substringAfter("lazyImage.getAttribute('").substringBefore("')")//.substringBefore("(").trim().removePrefix("_")
-        val imgOrder = document.select("[$attributeKey]").map { it.attr(attributeKey).toInt() }
-        val jsonID = script.substringBefore("[lazyImage.getAttribute").substringAfterLast("+").trim()
-        val json = script.substringAfter("let $jsonID = ").substringBefore(";").trim()
-        val results = JsonParser().parse(json).asJsonArray
-        val pages = mutableListOf<Page>()
-        imgOrder.forEach {
-            pages.add(Page(pages.size,"",dirPath + results[it].string))
-            Log.i("TachiDebug", "ImgURL => ${dirPath + results[it].string}")
+    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
+        val body = response.asJsoup()
 
+        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
+            add(Page(size, "", it.attr("src")))
         }
-        return pages
     }
 
     override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
