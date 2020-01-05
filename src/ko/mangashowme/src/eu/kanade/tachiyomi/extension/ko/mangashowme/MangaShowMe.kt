@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
  *
  * Originally it was mangashow.me extension but they changed site structure widely.
  * so I moved to new name for treating as new source.
- *  Users who uses =<1.2.11 need to migrate sources. starts 1.2.12
+ *  Users who uses =<1.2.11 need to migrate source. starts 1.2.12
  *
  * PS. There's no Popular section. It's just a list of manga. Also not latest updates.
  *     `manga_list` returns latest 'added' manga. not a chapter updates.
@@ -40,7 +40,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val name = "ManaMoa"
 
     // This keeps updating: https://twitter.com/manamoa20
-    private val defaultBaseUrl = "https://manamoa22.net"
+    private val defaultBaseUrl = "https://manamoa23.net"
     override val baseUrl by lazy { getPrefBaseUrl() }
 
     override val lang: String = "ko"
@@ -62,7 +62,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.url = linkElement.attr("href")
-        manga.title = titleElement.text().trim()
+        manga.title = titleElement.html().trim()
         manga.thumbnail_url = urlFinder(element.select(".img-wrap-back").attr("style"))
         return manga
     }
@@ -101,24 +101,30 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         val thumbnailElement = info.select("div.manga-thumbnail").first()
         val publishTypeText = thumbnailElement.select("a.publish_type").text() ?: ""
         val authorText = thumbnailElement.select("a.author").text() ?: ""
-        val mangaLike = info.select("div.recommend > i.fa").first().text() ?: "0"
+
+        val mangaStatus = info.select("div.recommend")
+        val mangaLike = mangaStatus.select(".fa-thumbs-up").text()?.trim() ?: "0"
+        val mangaViews = mangaStatus.select(".fa-smile-o").text()?.trim() ?: "0"
+        val mangaComments = mangaStatus.select(".fa-comment").text()?.trim() ?: "0"
+        val mangaBookmarks = info.select(".fa-bookmark").text()?.trim() ?: "0"
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
-        val mangaComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
+        val mangaChaptersComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
+
         val genres = mutableListOf<String>()
         document.select("div.left-info div.information > .manga-tags > a.tag").forEach {
             genres.add(it.text())
         }
 
         val manga = SManga.create()
-        manga.title = info.select("div.red").text()
+        manga.title = info.select("div.red").html()
         // They using background-image style tag for cover. extract url from style attribute.
         manga.thumbnail_url = urlFinder(thumbnailElement.attr("style"))
-        // Only title and thumbnail are provided now.
-        // TODO: Implement description when site supports it.
-        manga.description = "\nMangaShow.Me doesn't provide manga description currently.\n" +
-                "\n\uD83D\uDCDD: ${if (publishTypeText.trim().isBlank()) "Unknown" else publishTypeText}" +
-                "\n\uD83D\uDCAC: $mangaComments" +
-                "\n👍: $mangaLike ($mangaChaptersLike)"
+        manga.description =
+            "\uD83D\uDCDD: ${if (publishTypeText.trim().isBlank()) "Unknown" else publishTypeText}\n" +
+                "👍: $mangaLike ($mangaChaptersLike)\n" +
+                "\uD83D\uDD0D: $mangaViews\n" +
+                "\uD83D\uDCAC: $mangaComments ($mangaChaptersComments)\n" +
+                "\uD83D\uDD16: $mangaBookmarks"
         manga.author = authorText
         manga.genre = genres.joinToString(", ")
         manga.status = parseStatus(publishTypeText)
@@ -151,14 +157,14 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(linkElement.attr("href"))
         chapter.chapter_number = parseChapterNumber(rawName.text())
-        chapter.name = rawName.ownText().trim()
+        chapter.name = rawName.html().substringBefore("<span").trim()
         chapter.date_upload = parseChapterDate(element.select("div.addedAt").text().split(" ").first())
         return chapter
     }
 
     private fun parseChapterNumber(name: String): Float {
         try {
-            if (name.contains("[단편]")) return 1f
+            if (name.endsWith("단편")) return 1f
             // `특별` means `Special`, so It can be buggy. so pad `편`(Chapter) to prevent false return
             if (name.contains("번외") || name.contains("특별편")) return -2f
             val regex = Regex("([0-9]+)(?:[-.]([0-9]+))?(?:화)")
@@ -301,7 +307,11 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
+        // Image Decoder
         internal const val V1_CX = 5
         internal const val V1_CY = 5
+
+        // Url Handler
+        internal const val MINIMUM_IMAGE_SIZE = 10000
     }
 }
