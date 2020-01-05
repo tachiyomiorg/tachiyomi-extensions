@@ -108,8 +108,8 @@ class MyMangaReaderCMSSource(override val lang: String,
     }
 
     // Guess thumbnails on broken websites
-    private fun coverGuess(url: String, mangaUrl: String): String {
-        return if (url.endsWith("no-image.png")) {
+    private fun coverGuess(url: String?, mangaUrl: String): String? {
+        return if (url?.endsWith("no-image.png") == true) {
             "$baseUrl/uploads/manga/${mangaUrl.substringAfterLast('/')}/cover/cover_250x350.jpg"
         } else {
             url
@@ -142,7 +142,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
         title = document.getElementsByClass("widget-title").text().trim()
-        thumbnail_url = coverGuess(document.select(".row .img-responsive").attr("abs:src"), document.location())
+        thumbnail_url = coverGuess(document.select(".row [class^=img-responsive]").firstOrNull()?.attr("abs:src"), document.location())
         description = document.select(".row .well p").text().trim()
 
         val detailAuthor = setOf("author(s)","autor(es)","auteur(s)","著作","yazar(lar)","mangaka(lar)","pengarang/penulis","pengarang","penulis","autor","المؤلف","перевод")
@@ -153,26 +153,22 @@ class MyMangaReaderCMSSource(override val lang: String,
         val detailStatusOngoing = setOf("ongoing","مستمرة","en cours","em lançamento")
         val detailDescription = setOf("description","resumen")
 
-        var cur: String? = null
-        for (element in document.select(".row .dl-horizontal").select("dt,dd")) {
-            when (element.tagName()) {
-                "dt" -> cur = element.text().trim().toLowerCase()
-                "dd" -> when (cur) {
-                    in detailAuthor -> author = element.text()
-                    in detailArtist -> artist = element.text()
-                    in detailGenre-> genre = element.getElementsByTag("a").joinToString {
-                        it.text().trim()
-                    }
-                    in detailStatus -> status = when (element.text().trim().toLowerCase()) {
-                        in detailStatusComplete -> SManga.COMPLETED
-                        in detailStatusOngoing -> SManga.ONGOING
-                        else -> SManga.UNKNOWN
-                    }
+        for (element in document.select(".row .dl-horizontal dt")) {
+            when (element.text().trim().toLowerCase()) {
+                in detailAuthor -> author = element.nextElementSibling().text()
+                in detailArtist -> artist = element.nextElementSibling().text()
+                in detailGenre-> genre = element.getElementsByTag("a").joinToString {
+                    it.text().trim()
+                }
+                in detailStatus -> status = when (element.nextElementSibling().text().trim().toLowerCase()) {
+                    in detailStatusComplete -> SManga.COMPLETED
+                    in detailStatusOngoing -> SManga.ONGOING
+                    else -> SManga.UNKNOWN
                 }
             }
         }
-        // When details are in a .panel instead of .row
-        for (element in document.select("div.panel span.list-group-item ")) {
+        // When details are in a .panel instead of .row (ES sources)
+        for (element in document.select("div.panel span.list-group-item")) {
             when (element.select("b").text().toLowerCase().substringBefore(":")) {
                 in detailAuthor -> author = element.select("b + a").text()
                 in detailArtist -> artist = element.select("b + a").text()
