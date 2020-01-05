@@ -1,13 +1,9 @@
 package eu.kanade.tachiyomi.source;
 
-import android.support.v7.preference.PreferenceScreen;
-
-/**
- * Created by Carlos on 5/7/2018.
- */
-
 public interface ConfigurableSource {
 
-    void setupPreferenceScreen(PreferenceScreen screen);
+    void setupPreferenceScreen(android.support.v7.preference.PreferenceScreen screen);
+
+    void setupPreferenceScreen(androidx.preference.PreferenceScreen screen);
 
 }

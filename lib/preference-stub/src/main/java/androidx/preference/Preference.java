@@ -1,4 +1,4 @@
-package android.support.v7.preference;
+package androidx.preference;
 
 public class Preference {
 

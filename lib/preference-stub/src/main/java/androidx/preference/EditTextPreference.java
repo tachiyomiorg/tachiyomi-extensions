@@ -1,4 +1,4 @@
-package android.support.v7.preference;
+package androidx.preference;
 
 import android.content.Context;
 
