@@ -157,7 +157,7 @@ class MyMangaReaderCMSSource(override val lang: String,
             when (element.text().trim().toLowerCase()) {
                 in detailAuthor -> author = element.nextElementSibling().text()
                 in detailArtist -> artist = element.nextElementSibling().text()
-                in detailGenre-> genre = element.getElementsByTag("a").joinToString {
+                in detailGenre-> genre = element.nextElementSibling().select("a").joinToString {
                     it.text().trim()
                 }
                 in detailStatus -> status = when (element.nextElementSibling().text().trim().toLowerCase()) {
