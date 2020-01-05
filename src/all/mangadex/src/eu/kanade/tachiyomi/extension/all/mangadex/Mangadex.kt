@@ -52,9 +52,9 @@ abstract class Mangadex(
 
     override val name = "MangaDex"
 
-    override val baseUrl = "https://mangadex.org"
+    override val baseUrl = "https://mangadex.cc"
 
-    private val cdnUrl = "https://s0.mangadex.org"
+    private val cdnUrl = "https://s0.mangadex.cc"
 
     override val supportsLatest = true
 
