@@ -57,6 +57,29 @@ open class NHentai(
         else -> false
     }
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = TITLE_PREF
+            title = TITLE_PREF
+            entries = arrayOf("Full Title", "Short Title")
+            entryValues = arrayOf("full", "short")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                displayFullTitle = when(newValue){
+                    "full" -> true
+                    else -> false
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(TITLE_PREF))
+            preferences.edit().putString(TITLE_PREF, "full").apply()
+
+        screen.addPreference(serverPref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val serverPref = ListPreference(screen.context).apply {
             key = TITLE_PREF

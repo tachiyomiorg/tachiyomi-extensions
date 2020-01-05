@@ -190,13 +190,41 @@ open class Komga : ConfigurableSource, HttpSource() {
             }
             .build()
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
         screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
         screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
     }
 
-    private fun PreferenceScreen.editTextPreference(title: String, default: String, value: String): EditTextPreference {
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String): androidx.preference.EditTextPreference {
+        return androidx.preference.EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
+                        , Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        screen.addPreference(screen.supportEditTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
+        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+    }
+
+    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
         return EditTextPreference(context).apply {
             key = title
             this.title = title
