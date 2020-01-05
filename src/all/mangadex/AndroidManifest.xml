@@ -11,6 +11,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
+                    android:host="mangadex.org"
+                    android:pathPattern="/title/..*" />
+                <data
+                    android:scheme="https"
+                    android:host="mangadex.org"
+                    android:pathPattern="/manga/..*" />
+                <data
+                    android:scheme="https"
                     android:host="mangadex.cc"
                     android:pathPattern="/title/..*" />
                 <data
