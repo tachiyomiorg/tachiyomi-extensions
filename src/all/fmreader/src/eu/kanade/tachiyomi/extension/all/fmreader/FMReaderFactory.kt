@@ -128,6 +128,13 @@ class RawLH : FMReader("RawLH", "https://lhscan.net", "ja") {
 }
 
 class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
+    override fun imageRequest(page: Page): Request {
+        return if (page.imageUrl!!.contains("manhwa18")) {
+            super.imageRequest(page)
+        } else {
+            GET(page.imageUrl!!, headers.newBuilder().removeAll("Referer").build())
+        }
+    }
     override fun getGenreList() = getAdultGenreList()
 }
 
