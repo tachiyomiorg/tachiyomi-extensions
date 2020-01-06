@@ -21,7 +21,7 @@ class Mintmanga : ParsedHttpSource() {
 
     override val name = "Mintmanga"
 
-    override val baseUrl = "http://mintmanga.live"
+    override val baseUrl = "https://mintmanga.live"
 
     override val lang = "ru"
 
