@@ -209,7 +209,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     // Preferences Code
     
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val deduppref = androidx.preference.ListPreference(screen.context).apply {
+        val qualitypref = androidx.preference.ListPreference(screen.context).apply {
             key = QUALITY_PREF_Title
             title = QUALITY_PREF_Title
             entries = arrayOf("High Quality", "Low Quality")
@@ -223,13 +223,13 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(QUALITY_PREF, entry).commit()
             }
         }
-        screen.addPreference(deduppref)
+        screen.addPreference(qualitypref)
     }
 
     
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val deduppref = ListPreference(screen.context).apply {
+        val qualitypref = ListPreference(screen.context).apply {
             key = QUALITY_PREF_Title
             title = QUALITY_PREF_Title
             entries = arrayOf("High Quality", "Low Quality")
@@ -243,7 +243,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(QUALITY_PREF, entry).commit()
             }
         }
-        screen.addPreference(deduppref)
+        screen.addPreference(qualitypref)
     }
 
     private fun qualitypref() = preferences.getString(QUALITY_PREF, "hq")
