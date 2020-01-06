@@ -21,7 +21,7 @@ import java.util.*
 
 abstract class DynastyScans : ParsedHttpSource() {
 
-    override val baseUrl = "http://dynasty-scans.com"
+    override val baseUrl = "https://dynasty-scans.com"
 
     abstract fun popularMangaInitialUrl(): String
 
