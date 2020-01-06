@@ -99,14 +99,14 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.left-info").first()
         val thumbnailElement = info.select("div.manga-thumbnail").first()
-        val publishTypeText = thumbnailElement.select("a.publish_type").text() ?: ""
-        val authorText = thumbnailElement.select("a.author").text() ?: ""
+        val publishTypeText = trimElementText(thumbnailElement.select("a.publish_type"), "Unknown")
+        val authorText = trimElementText(thumbnailElement.select("a.author"))
 
         val mangaStatus = info.select("div.recommend")
-        val mangaLike = mangaStatus.select(".fa-thumbs-up").text()?.trim() ?: "0"
-        val mangaViews = mangaStatus.select(".fa-smile-o").text()?.trim() ?: "0"
-        val mangaComments = mangaStatus.select(".fa-comment").text()?.trim() ?: "0"
-        val mangaBookmarks = info.select(".fa-bookmark").text()?.trim() ?: "0"
+        val mangaLike = trimElementText(mangaStatus.select(".fa-thumbs-up"), "0")
+        //val mangaViews = trimElementText(mangaStatus.select(".fa-smile-o"), "0")
+        val mangaComments = trimElementText(mangaStatus.select(".fa-comment"), "0")
+        val mangaBookmarks = trimElementText(info.select(".fa-bookmark"), "0")
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
         val mangaChaptersComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
 
@@ -120,9 +120,9 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         // They using background-image style tag for cover. extract url from style attribute.
         manga.thumbnail_url = urlFinder(thumbnailElement.attr("style"))
         manga.description =
-            "\uD83D\uDCDD: ${if (publishTypeText.trim().isBlank()) "Unknown" else publishTypeText}\n" +
+            "\uD83D\uDCDD: $publishTypeText\n" +
                 "👍: $mangaLike ($mangaChaptersLike)\n" +
-                "\uD83D\uDD0D: $mangaViews\n" +
+                //"\uD83D\uDD0D: $mangaViews\n" +
                 "\uD83D\uDCAC: $mangaComments ($mangaChaptersComments)\n" +
                 "\uD83D\uDD16: $mangaBookmarks"
         manga.author = authorText
@@ -267,6 +267,10 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         // val regex = Regex("(https?:)?//[-a-zA-Z0-9@:%._\\\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\\\+.~#?&/=]*)")
         // return regex.find(style)!!.value
         return style.substringAfter("background-image:url(").substringBefore(")")
+    }
+
+    private fun trimElementText(element: Elements, fallback: String = ""): String {
+        return element.text()?.trim()?.takeUnless { it.isBlank() } ?: fallback
     }
 
     private val preferences: SharedPreferences by lazy {
