@@ -15,7 +15,7 @@ import java.util.regex.Pattern
 class HentaiFantasy : ParsedHttpSource() {
     override val name = "HentaiFantasy"
 
-    override val baseUrl = "http://www.hentaifantasy.it/index.php"
+    override val baseUrl = "https://www.hentaifantasy.it/index.php"
 
     override val lang = "it"
 
