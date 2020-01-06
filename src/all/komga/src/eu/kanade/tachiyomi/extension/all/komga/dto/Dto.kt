@@ -7,22 +7,31 @@ data class LibraryDto(
 
 data class SeriesDto(
     val id: Long,
+    val libraryId: Long,
     val name: String,
-    val lastModified: String?
+    val created: String?,
+    val lastModified: String?,
+    val fileLastModified: String,
+    val booksCount: Int
 )
 
 data class BookDto(
     val id: Long,
+    val seriesId: Long,
     val name: String,
+    val number: Float,
+    val created: String?,
     val lastModified: String?,
+    val fileLastModified: String,
     val sizeBytes: Long,
     val size: String,
-    val metadata: BookMetadataDto
+    val media: MediaDto
 )
 
-data class BookMetadataDto(
+data class MediaDto(
     val status: String,
-    val mediaType: String
+    val mediaType: String,
+    val pagesCount: Int
 )
 
 data class PageDto(

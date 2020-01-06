@@ -163,6 +163,32 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return parseManga(truncatedJSON)
     }
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val preference = androidx.preference.ListPreference(screen.context).apply {
+            key = "preferred_scanlator"
+            title = "Preferred scanlator"
+            entries = arrayOf<String>()
+            entryValues = arrayOf<String>()
+            for (key in Scanlators.keys()) {
+                entries += Scanlators.getValueFromKey(key)
+                entryValues += key
+            }
+            summary = "Current: %s\n\n" +
+                "This setting sets the scanlation group to prioritize " +
+                "on chapter refresh/update. It will get the next available if " +
+                "your preferred scanlator isn't an option (yet)."
+
+            this.setDefaultValue("1")
+
+            setOnPreferenceChangeListener{_, newValue ->
+                val selected = newValue.toString()
+                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
+            }
+        }
+
+        screen.addPreference(preference)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val preference = ListPreference(screen.context).apply {
             key = "preferred_scanlator"
@@ -178,7 +204,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
                 "on chapter refresh/update. It will get the next available if " +
                 "your preferred scanlator isn't an option (yet)."
 
-            this.setDefaultValue(1)
+            this.setDefaultValue("1")
 
             setOnPreferenceChangeListener{_, newValue ->
                 val selected = newValue.toString()

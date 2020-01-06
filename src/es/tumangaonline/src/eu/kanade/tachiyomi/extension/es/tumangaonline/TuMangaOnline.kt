@@ -40,7 +40,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36" //last updated 2020/01/06
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
@@ -425,6 +425,24 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     // Preferences Code
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val deduppref = androidx.preference.ListPreference(screen.context).apply {
+            key = DEDUP_PREF_Title
+            title = DEDUP_PREF_Title
+            entries = arrayOf("All scanlators", "One scanlator per chapter")
+            entryValues = arrayOf("all", "one")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(DEDUP_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(deduppref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val deduppref = ListPreference(screen.context).apply {
             key = DEDUP_PREF_Title

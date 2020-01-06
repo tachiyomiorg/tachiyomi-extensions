@@ -30,7 +30,7 @@ class MangaBoxFactory : SourceFactory {
 
 //TODO: Alternate search/filters for some sources that don't use query parameters
 
-class Mangakakalot : MangaBox("Mangakakalot", "http://mangakakalot.com", "en") {
+class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
     override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
 }
 

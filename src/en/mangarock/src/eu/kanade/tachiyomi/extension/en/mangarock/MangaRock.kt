@@ -231,7 +231,13 @@ class MangaRock : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val obj = JSONObject(response.body()!!.string()).getJSONObject("data")
+        val body = response.body()!!.string()
+
+        if (body == "Manga is licensed") {
+            throw Exception("Manga has been removed from Manga Rock, please migrate to another source")
+        }
+
+        val obj = JSONObject(body).getJSONObject("data")
         val chapters = ArrayList<SChapter>()
         val arr = obj.getJSONArray("chapters")
         // Iterate backwards to match website's sorting

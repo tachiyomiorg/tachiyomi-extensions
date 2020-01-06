@@ -21,7 +21,7 @@ class Mintmanga : ParsedHttpSource() {
 
     override val name = "Mintmanga"
 
-    override val baseUrl = "http://mintmanga.com"
+    override val baseUrl = "http://mintmanga.live"
 
     override val lang = "ru"
 
@@ -234,7 +234,7 @@ class Mintmanga : ParsedHttpSource() {
     /* [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")]
     *  .map(el => `Genre("${el.textContent.trim()}", $"{el.getAttribute('onclick')
     *  .substr(31,el.getAttribute('onclick').length-33)"})`).join(',\n')
-    *  on http://mintmanga.com/search/advanced
+    *  on http://mintmanga.live/search/advanced
     */
     override fun getFilterList() = FilterList(
             Category(getCategoryList()),

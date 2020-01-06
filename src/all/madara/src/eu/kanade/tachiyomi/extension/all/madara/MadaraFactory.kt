@@ -16,7 +16,7 @@ import okhttp3.HttpUrl
 import okhttp3.Headers
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -29,7 +29,6 @@ class MadaraFactory : SourceFactory {
         AoCTranslations(),
         KomikGo(),
         LuxyScans(),
-        TritiniaScans(),
         TsubakiNoScan(),
         YokaiJump(),
         ZManga(),
@@ -58,10 +57,14 @@ class MadaraFactory : SourceFactory {
         Hiperdex(),
         DoujinHentai(),
         Azora(),
+        KMangaIn(),
         HunterFansub(),
         MangaArabTeam(),
         NightComic(),
-        Toonily()
+        Toonily(),
+        PlotTwistScan(),
+        MangaKomi(),
+        Wakamics()
     )
 }
 
@@ -115,14 +118,6 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe"
 class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
 
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
-
-class TritiniaScans : Madara("Tritinia Scans", "http://ghajik.ml/", "en",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)) {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?m_orderby=views", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?m_orderby=latest", headers)
-    override fun latestUpdatesNextPageSelector(): String? = null
-    override fun popularMangaNextPageSelector(): String? = null
-}
 
 class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/","fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
@@ -223,6 +218,11 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
 class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
+    private val time = SimpleDateFormat("HHmm.ss", Locale.US).format(Date())
+    private val day = SimpleDateFormat("dd", Locale.US).format(Date())
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.$day (KHTML, like Gecko) Chrome/79.0.$time Safari/537.$day")
+        .add("Referer", baseUrl)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
     override fun getGenreList() = listOf(
         Genre("3D", "3d"),
@@ -376,6 +376,8 @@ class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
     }
 }
 
+class KMangaIn : Madara("Kissmanga.in", "https://kissmanga.in", "en")
+
 class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/biblioteca/page/$page?m_orderby=views", headers)
     override fun popularMangaNextPageSelector() = "div.nav-previous"
@@ -387,4 +389,12 @@ class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https:
 class NightComic : Madara("Night Comic", "http://www.nightcomic.com", "en")
 
 class Toonily : Madara("Toonily", "https://toonily.com", "en")
+
+class PlotTwistScan : Madara("Plot Twist No Fansub", "https://www.plotwistscan.com", "es") {
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).asReversed()
+}
+
+class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
+
+class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 

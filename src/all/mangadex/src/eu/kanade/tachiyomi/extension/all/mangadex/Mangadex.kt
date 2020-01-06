@@ -581,6 +581,55 @@ abstract class Mangadex(
         return baseUrl + attr
     }
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val myPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_R18_PREF_Title
+            title = SHOW_R18_PREF_Title
+
+            title = SHOW_R18_PREF_Title
+            entries = arrayOf("Show No R18+", "Show All", "Show Only R18+")
+            entryValues = arrayOf("0", "1", "2")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_R18_PREF, index).commit()
+            }
+        }
+        val thumbsPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_THUMBNAIL_PREF_Title
+            title = SHOW_THUMBNAIL_PREF_Title
+            entries = arrayOf("Show high quality", "Show low quality")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
+            }
+        }
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF_Title
+            title = SERVER_PREF_Title
+            entries = SERVER_PREF_ENTRIES
+            entryValues = SERVER_PREF_ENTRY_VALUES
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SERVER_PREF, entry).commit()
+            }
+        }
+
+        screen.addPreference(myPref)
+        screen.addPreference(thumbsPref)
+        screen.addPreference(serverPref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val myPref = ListPreference(screen.context).apply {
             key = SHOW_R18_PREF_Title

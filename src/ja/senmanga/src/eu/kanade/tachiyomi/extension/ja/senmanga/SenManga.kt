@@ -1,14 +1,14 @@
 package eu.kanade.tachiyomi.extension.ja.senmanga
 
-import android.net.Uri
+import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Response
+import okhttp3.HttpUrl
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 
 /**
  * Sen Manga source
@@ -17,11 +17,11 @@ import java.util.*
 class SenManga : ParsedHttpSource() {
     override val lang: String = "ja"
 
-    //Latest updates currently returns duplicate manga as it separates manga into chapters
-    override val supportsLatest = false
+    override val supportsLatest = true
     override val name = "Sen Manga"
     override val baseUrl = "https://raw.senmanga.com"
 
+    @SuppressLint("DefaultLocale")
     override val client = super.client.newBuilder().addInterceptor {
         //Intercept any image requests and add a referer to them
         //Enables bandwidth stealing feature
@@ -35,75 +35,50 @@ class SenManga : ParsedHttpSource() {
         it.proceed(request)
     }.build()!!
 
-    //Sen Manga doesn't follow the specs and decides to use multiple elements with the same ID on the page...
-    override fun popularMangaSelector() = ".update"
+    override fun popularMangaSelector() = "li.series"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        val linkElement = element.select("a")
-        val titleElement = element.select("p.title").first()
-
-        setUrlWithoutDomain(linkElement.attr("href"))
-        title = titleElement.text()
-    }
-
-    override fun popularMangaNextPageSelector() = "#Navigation > span > ul > li:nth-last-child(2):contains(next page)"
-
-    override fun searchMangaSelector() = ".search-results"
-
-    override fun searchMangaFromElement(element: Element) = SManga.create().apply {
-        val coverImage = element.getElementsByTag("img")
-
-        url = coverImage.parents().attr("href")
-
-        title = coverImage.attr("alt")
-
-        thumbnail_url = baseUrl + coverImage.attr("src")
-    }
-
-    //Sen Manga search returns one page max!
-    override fun searchMangaNextPageSelector() = null
-
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/directory/popular/page/$page")
-
-    override fun latestUpdatesSelector()
-            = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun latestUpdatesFromElement(element: Element)
-            = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun searchMangaParse(response: Response)
-            = if (response.request().url().pathSegments().firstOrNull()?.toLowerCase() != "search.php") {
-        //Use popular manga parser if we are not actually doing text search
-        popularMangaParse(response)
-    } else {
-        val document = response.asJsoup()
-
-        val mangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
+        element.select("p.title a").let {
+            setUrlWithoutDomain(it.attr("href"))
+            title = it.text()
         }
-
-        MangasPage(mangas, false)
+        thumbnail_url = element.select("img").attr("abs:src")
     }
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
-            = GET(if (query.isNullOrBlank()) {
-        val genreFilter = filters.find { it is GenreFilter } as GenreFilter
-        val sortFilter = filters.find { it is SortFilter } as SortFilter
-        //If genre sort is not active or sort settings are changed
-        if (!sortFilter.isDefault() || genreFilter.genrePath() == ALL_GENRES_PATH) {
-            val uri = Uri.parse("$baseUrl/directory/")
-                    .buildUpon()
-            sortFilter.addToUri(uri)
-            uri.toString()
-        } else "$baseUrl/directory/category/${genreFilter.genrePath()}/"
-    } else {
-        Uri.parse("$baseUrl/Search/")
-                .buildUpon().appendPath(query)
-                .toString()
-    })
+    override fun popularMangaNextPageSelector() = "ul.pagination a[rel=next]"
 
-    override fun latestUpdatesNextPageSelector()
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun searchMangaSelector() = popularMangaSelector()
+
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/directory/popular?page=$page")
+
+    override fun latestUpdatesSelector() = popularMangaSelector()
+
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+            .addQueryParameter("s", query)
+            .addQueryParameter("page", page.toString())
+
+        filters.forEach { filter ->
+            when (filter) {
+                is GenreFilter -> {
+                    val genreInclude = filter.state.filter { it.isIncluded() }.joinToString("%2C") { it.id }
+                    val genreExclude = filter.state.filter { it.isExcluded() }.joinToString("%2C") { it.id }
+                    url.addQueryParameter("genre", genreInclude)
+                    url.addQueryParameter("nogenre", genreExclude)
+                }
+                is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
+            }
+        }
+        return GET(url.toString(), headers)
+    }
+
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         title = document.select("div.panel h1.title").text()
@@ -113,28 +88,25 @@ class SenManga : ParsedHttpSource() {
         val seriesElement = document.select("ul.series-info")
 
         description = seriesElement.select("span").text()
-        author = seriesElement.select("li:eq(4) a").text()
-        artist = seriesElement.select("li:eq(5) a").text()
+        author = seriesElement.select("li:eq(4)").text().substringAfter(": ")
+        artist = seriesElement.select("li:eq(5)").text().substringAfter(": ")
         status = seriesElement.select("li:eq(7)").first()?.text().orEmpty().let { parseStatus(it.substringAfter("Status:")) }
-
-        val genreElement = seriesElement.select("li:eq(2) a")
-        var genres = mutableListOf<String>()
-        genreElement?.forEach { genres.add(it.text()) }
-        genre = genres.joinToString(", ")
+        genre = seriesElement.select("li:eq(2) a").joinToString { it.text() }
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Complete") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
-    override fun latestUpdatesRequest(page: Int)
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET("$baseUrl/directory/last_update?page=$page", headers)
+    }
 
-    //This may be unreliable as Sen Manga breaks the specs by having multiple elements with the same ID
-    override fun chapterListSelector() = "div.element"
+    override fun chapterListSelector() = "div.group div.element"
 
+    @SuppressLint("DefaultLocale")
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         val linkElement = element.getElementsByTag("a")
 
@@ -179,121 +151,69 @@ class SenManga : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        //Base URI (document URI but without page index)
-        val baseUri = Uri.parse(baseUrl).buildUpon().apply {
-            Uri.parse(document.baseUri()).pathSegments.let {
-                it.take(it.size - 1)
-            }.forEach {
-                appendPath(it)
-            }
-        }.build()
-
-        //Base Image URI (document URI but without page index and with "viewer" inserted as first path segment
-        val baseImageUri = Uri.parse(baseUrl).buildUpon().appendPath("viewer").apply {
-            baseUri.pathSegments.forEach {
-                appendPath(it)
-            }
-        }.build()
-
-        val token = document.select("img[id=picture]").attr("src").substringAfter("?token=")
-
-        return document.select("select[name=page] > option").map {
-            val index = it.attr("value")
-
-            val uri = baseUri.buildUpon().appendPath(index).build()
-
-            val imageUriBuilder = baseImageUri.buildUpon().appendPath(index).appendQueryParameter("token", token)
-
-            Page(index.toInt() - 1, uri.toString(), imageUriBuilder.toString())
+        return listOf(1 .. document.select("select[name=page] option:last-of-type").first().text().toInt()).flatten().map { i ->
+            Page(i - 1, "", "${document.location().replace(baseUrl, "$baseUrl/viewer")}/$i")
         }
     }
 
-    //We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document)
             = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            GenreFilter(),
-            Filter.Header("NOTE: Sort ignores genres search!"),
-            SortFilter()
+        GenreFilter(getGenreList()),
+        SortFilter()
     )
 
-    private class GenreFilter : Filter.Select<String>("Genre", GENRES.map { it.second }.toTypedArray()) {
-        fun genrePath() = GENRES[state].first
+    private class Genre(name: String, val id: String = name) : Filter.TriState(name)
+    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
+
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
+        fun toUriPart() = vals[state].first
     }
 
-    private class SortFilter : UriSelectFilter("Sort", "order", arrayOf(
-            Pair("popular", "Popularity"),
-            Pair("title", "Title"),
-            Pair("rating", "Rating")
-    ), false) {
-        fun isDefault() = state == 0
-    }
+    private class SortFilter : UriPartFilter("Sort By", arrayOf(
+        Pair("total_views", "Total Views"),
+        Pair("title", "Title"),
+        Pair("rank", "Rank"),
+        Pair("last_update", "Last Update")
+    ))
 
-    /**
-     * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
-     * If an entry is selected it is appended as a query parameter onto the end of the URI.
-     * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
-     */
-    //vals: <name, display>
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                       val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0) :
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
-        override fun addToUri(uri: Uri.Builder) {
-            if (state != 0 || !firstIsUnspecified)
-                uri.appendQueryParameter(uriParam, vals[state].first)
-        }
-    }
-
-    /**
-     * Represents a filter that is able to modify a URI.
-     */
-    private interface UriFilter {
-        fun addToUri(uri: Uri.Builder)
-    }
-
-    companion object {
-        private val ALL_GENRES_PATH = "all"
-        //<path, display name>
-        private val GENRES = listOf(
-                Pair(ALL_GENRES_PATH, "All"),
-                Pair("Action", "Action"),
-                Pair("Adult", "Adult"),
-                Pair("Adventure", "Adventure"),
-                Pair("Comedy", "Comedy"),
-                Pair("Cooking", "Cooking"),
-                Pair("Drama", "Drama"),
-                Pair("Ecchi", "Ecchi"),
-                Pair("Fantasy", "Fantasy"),
-                Pair("Gender-Bender", "Gender Bender"),
-                Pair("Harem", "Harem"),
-                Pair("Historical", "Historical"),
-                Pair("Horror", "Horror"),
-                Pair("Josei", "Josei"),
-                Pair("Light_Novel", "Light Novel"),
-                Pair("Martial_Arts", "Martial Arts"),
-                Pair("Mature", "Mature"),
-                Pair("Music", "Music"),
-                Pair("Mystery", "Mystery"),
-                Pair("Psychological", "Psychological"),
-                Pair("Romance", "Romance"),
-                Pair("School_Life", "School Life"),
-                Pair("Sci-Fi", "Sci-Fi"),
-                Pair("Seinen", "Seinen"),
-                Pair("Shoujo", "Shoujo"),
-                Pair("Shoujo-Ai", "Shoujo Ai"),
-                Pair("Shounen", "Shounen"),
-                Pair("Shounen-Ai", "Shounen Ai"),
-                Pair("Slice_of_Life", "Slice of Life"),
-                Pair("Smut", "Smut"),
-                Pair("Sports", "Sports"),
-                Pair("Supernatural", "Supernatural"),
-                Pair("Tragedy", "Tragedy"),
-                Pair("Webtoons", "Webtoons"),
-                Pair("Yaoi", "Yaoi"),
-                Pair("Yuri", "Yuri")
-        )
-    }
+    private fun getGenreList(): List<Genre> = listOf(
+        Genre("Action", "Action"),
+        Genre("Adult", "Adult"),
+        Genre("Adventure", "Adventure"),
+        Genre("Comedy", "Comedy"),
+        Genre("Cooking", "Cooking"),
+        Genre("Drama", "Drama"),
+        Genre("Ecchi", "Ecchi"),
+        Genre("Fantasy", "Fantasy"),
+        Genre("Gender Bender", "Gender+Bender"),
+        Genre("Harem", "Harem"),
+        Genre("Historical", "Historical"),
+        Genre("Horror", "Horror"),
+        Genre("Josei", "Josei"),
+        Genre("Light Novel", "Light+Novel"),
+        Genre("Martial Arts", "Martial+Arts"),
+        Genre("Mature", "Mature"),
+        Genre("Music", "Music"),
+        Genre("Mystery", "Mystery"),
+        Genre("Psychological", "Psychological"),
+        Genre("Romance", "Romance"),
+        Genre("School Life", "School+Life"),
+        Genre("Sci-Fi", "Sci+Fi"),
+        Genre("Seinen", "Seinen"),
+        Genre("Shoujo", "Shoujo"),
+        Genre("Shoujo Ai", "Shoujo+Ai"),
+        Genre("Shounen", "Shounen"),
+        Genre("Shounen Ai", "Shounen+Ai"),
+        Genre("Slice of Life", "Slice+of+Life"),
+        Genre("Smut", "Smut"),
+        Genre("Sports", "Sports"),
+        Genre("Supernatural", "Supernatural"),
+        Genre("Tragedy", "Tragedy"),
+        Genre("Webtoons", "Webtoons"),
+        Genre("Yaoi", "Yaoi"),
+        Genre("Yuri", "Yuri")
+    )
 }

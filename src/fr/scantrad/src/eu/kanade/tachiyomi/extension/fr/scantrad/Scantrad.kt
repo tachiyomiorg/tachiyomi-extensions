@@ -10,8 +10,11 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
+import java.text.SimpleDateFormat
 import rx.Observable
+import java.lang.Exception
 
 class Scantrad : ParsedHttpSource() {
 
@@ -132,41 +135,49 @@ class Scantrad : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        val value = date.split(" ")[3].toInt()
+        val value = date.split(" ")[3].toIntOrNull()
 
-        return when (date.split(" ")[4]) {
-           "minute", "minutes" -> Calendar.getInstance().apply {
-                add(Calendar.MINUTE, value * -1)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            "heure", "heures" -> Calendar.getInstance().apply {
-                add(Calendar.HOUR_OF_DAY, value * -1)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            "jour", "jours" -> Calendar.getInstance().apply {
-                add(Calendar.DATE, value * -1)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            "semaine", "semaines" -> Calendar.getInstance().apply {
-                add(Calendar.DATE, value * 7 * -1)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            "mois" -> Calendar.getInstance().apply {
-                add(Calendar.MONTH, value * -1)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            "an", "ans" -> Calendar.getInstance().apply {
-                add(Calendar.YEAR, value * -1)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            else -> {
-                return 0
+        return if (value != null) {
+            when (date.split(" ")[4]) {
+                "minute", "minutes" -> Calendar.getInstance().apply {
+                    add(Calendar.MINUTE, value * -1)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                "heure", "heures" -> Calendar.getInstance().apply {
+                    add(Calendar.HOUR_OF_DAY, value * -1)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                "jour", "jours" -> Calendar.getInstance().apply {
+                    add(Calendar.DATE, value * -1)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                "semaine", "semaines" -> Calendar.getInstance().apply {
+                    add(Calendar.DATE, value * 7 * -1)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                "mois" -> Calendar.getInstance().apply {
+                    add(Calendar.MONTH, value * -1)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                "an", "ans", "année" -> Calendar.getInstance().apply {
+                    add(Calendar.YEAR, value * -1)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                else -> {
+                    return 0L
+                }
+            }
+        } else {
+            try {
+                SimpleDateFormat("dd MMM yyyy", Locale.FRENCH).parse(date.substringAfter("le ")).time
+            } catch (_: Exception) {
+                0L
             }
         }
     }

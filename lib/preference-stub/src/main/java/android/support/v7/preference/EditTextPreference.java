@@ -3,6 +3,7 @@ package android.support.v7.preference;
 import android.content.Context;
 
 public class EditTextPreference extends DialogPreference {
+
     public EditTextPreference(Context context) {
         throw new RuntimeException("Stub!");
     }
@@ -14,4 +15,5 @@ public class EditTextPreference extends DialogPreference {
     public void setText(String text) {
         throw new RuntimeException("Stub!");
     }
+
 }

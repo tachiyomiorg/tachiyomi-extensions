@@ -8,7 +8,7 @@ internal class ImageUrlHandlerInterceptor : Interceptor {
 }
 
 private class RequestHandler(val chain: Interceptor.Chain) {
-    val req = chain.request()
+    val req = chain.request()!!
     val origUrl = req.url().toString()
 
     fun run(): Response {
@@ -25,7 +25,7 @@ private class RequestHandler(val chain: Interceptor.Chain) {
 
     private fun isSuccess(res: Response): Boolean {
         val length = res.header("content-length")?.toInt() ?: 0
-        return !(!res.isSuccessful || length < 50000)
+        return !(!res.isSuccessful || length < ManaMoa.MINIMUM_IMAGE_SIZE)
     }
 
     private fun getRequest(url: String): Response = when {

@@ -141,7 +141,7 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
 
         return pages
     }
-    
+
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
@@ -210,8 +210,41 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
         Pair("yaoi", "Yaoi "),
         Pair("yuri", "Yuri ")
         ))
-    
-    // Preferences Code 
+
+    // Preferences Code
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val popularmangapref = androidx.preference.ListPreference(screen.context).apply {
+            key = BROWSE_PREF_Title
+            title = BROWSE_PREF_Title
+            entries = arrayOf("Weekly", "All Time")
+            entryValues = arrayOf("popular", "popular-alltime")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(BROWSE_PREF, entry).commit()
+            }
+        }
+        val latestmangapref = androidx.preference.ListPreference(screen.context).apply {
+            key = LATEST_PREF_Title
+            title = LATEST_PREF_Title
+            entries = arrayOf("Popular Updates", "All Updates")
+            entryValues = arrayOf("latest", "all-updates/latest")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(LATEST_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(popularmangapref)
+        screen.addPreference(latestmangapref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val popularmangapref = ListPreference(screen.context).apply {
             key = BROWSE_PREF_Title

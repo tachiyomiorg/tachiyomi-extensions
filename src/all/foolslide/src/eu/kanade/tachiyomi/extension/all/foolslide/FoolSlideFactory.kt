@@ -37,7 +37,8 @@ class FoolSlideFactory : SourceFactory {
         HentaiCafe(),
         TheCatScans(),
         ZandynoFansub(),
-        HelveticaScans()
+        HelveticaScans(),
+        KirishimaFansub()
     )
 }
 
@@ -130,3 +131,6 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
 class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
 
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
+
+class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
+

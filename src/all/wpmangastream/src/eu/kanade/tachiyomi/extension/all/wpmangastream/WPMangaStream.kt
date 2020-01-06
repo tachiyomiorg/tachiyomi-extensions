@@ -35,8 +35,24 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val thumbsPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_THUMBNAIL_PREF_Title
+            title = SHOW_THUMBNAIL_PREF_Title
+            entries = arrayOf("Show high quality", "Show mid quality", "Show low quality")
+            entryValues = arrayOf("0", "1", "2")
+            summary = "%s"
 
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
+            }
+        }
+        screen.addPreference(thumbsPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val thumbsPref = ListPreference(screen.context).apply {
             key = SHOW_THUMBNAIL_PREF_Title
             title = SHOW_THUMBNAIL_PREF_Title

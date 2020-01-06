@@ -47,6 +47,29 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     private val jsonParser = JsonParser()
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй")
+            entryValues = arrayOf("main", "alt")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                imageServerUrl = when(newValue){
+                    "main" -> "https://img2.mangalib.me"
+                    else -> "https://img3.mangalib.me"
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(SERVER_PREF))
+            preferences.edit().putString(SERVER_PREF, "main").apply()
+
+        screen.addPreference(serverPref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val serverPref = ListPreference(screen.context).apply {
             key = SERVER_PREF
