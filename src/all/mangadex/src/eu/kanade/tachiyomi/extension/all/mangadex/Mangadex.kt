@@ -36,7 +36,7 @@ abstract class Mangadex(
 
     override val name = "MangaDex"
 
-    override val baseUrl = "https://mangadex.cc"
+    override val baseUrl = "https://mangadex.cc" //"https://mangadex.org"
 
     private val cdnUrl = "https://mangadex.cc" // comment out until mangadex gets .org back "https://s0.mangadex.org"
 
