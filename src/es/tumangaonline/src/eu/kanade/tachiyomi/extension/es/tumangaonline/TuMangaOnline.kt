@@ -293,8 +293,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val body = response.asJsoup()
 
-        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
-            add(Page(size, "", it.attr("src")))
+        body.select("div#viewer-container > div.viewer-image-container > img.viewer-page")?.forEach {
+            add(Page(size, "", it.attr("data-src")))
         }
     }
 
