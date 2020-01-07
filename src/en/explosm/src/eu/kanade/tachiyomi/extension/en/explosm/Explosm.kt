@@ -10,6 +10,8 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import rx.Observable
 import org.jsoup.nodes.Element
+import java.util.Locale
+import java.text.SimpleDateFormat
 
 class Explosm : HttpSource() {
 
@@ -80,10 +82,14 @@ class Explosm : HttpSource() {
     }
 
     private fun Document.chaptersFromDocument(): List<SChapter> {
-        return this.select("div.inner-wrap > div.row div.row.collapse").map {
+        return this.select("div.inner-wrap > div.row div.row.collapse").map { element ->
             SChapter.create().apply {
-                setUrlWithoutDomain(it.select("a").attr("href"))
-                name = it.select("div#comic-author").text()
+                setUrlWithoutDomain(element.select("a").attr("href"))
+                element.select("div#comic-author").text().let { cName ->
+                    name = cName
+                    date_upload = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault())
+                        .parse(cName.substringBefore(" ")).time
+                }
             }
         }
     }
