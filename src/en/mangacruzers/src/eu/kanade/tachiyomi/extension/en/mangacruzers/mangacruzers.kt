@@ -70,10 +70,8 @@ class mangacruzers : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
 
         private fun mangaFromElement(element: Element): SManga {
-            Log.i("TachiDebug","MangaElement => $element")
             val manga = SManga.create()
                 manga.url = element.select("a").attr("abs:href")
-                Log.i("TachiDebug", "MangaURL => ${manga.url}")
                 manga.title = element.select("td").first().text().trim()
                
         return manga
