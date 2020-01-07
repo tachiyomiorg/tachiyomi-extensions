@@ -64,7 +64,6 @@ class mangacruzers : ParsedHttpSource() {
         }
         return GET(url, headers)
     }
-    //override fun chapterListRequest(manga: SManga) = GET(manga.url + "/comic/archive", headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -76,37 +75,9 @@ class mangacruzers : ParsedHttpSource() {
                 manga.url = element.select("a").attr("abs:href")
                 Log.i("TachiDebug", "MangaURL => ${manga.url}")
                 manga.title = element.select("td").first().text().trim()
-                //manga.thumbnail_url = element.select("img").attr("abs:src")
-                //manga.artist = element.select("h2").text().removePrefix("by").trim()
-                //manga.author = manga.artist
-                //manga.description = element.select("div.description").text().trim() + "\n" + "\n" + "*Not all comics are supported*"
-                //manga.genre = element.select("div.comicrating").text().trim()
+               
         return manga
     }
-/*
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val document = response.asJsoup()
-        val uri = Uri.parse(document.baseUri())
-        val baseUrl = "${uri.scheme}://${uri.authority}"
-        Log.i("TachiDebug", "BaseURL => $baseUrl")
-        val elements = document.select(chapterListSelector())
-        val chapters = mutableListOf<SChapter>()
-        for (i in 1 until elements.size) {
-            chapters.add(createChapter(elements[i] , baseUrl))
-        }
-        chapters.reverse()
-        return chapters
-    }
-
-    private fun createChapter(element: Element, baseUrl: String?) = SChapter.create().apply {
-        name = element.text().substringAfter("-").trim()
-        url = "$baseUrl/" + element.attr("value")
-        Log.i("TachiDebug","Chapter URL => $url")
-        date_upload = parseDate(element.text().substringBefore("-").trim())
-    }
-
-
- */
 
     private fun parseDate(date: String): Long {
         return SimpleDateFormat("MMM dd, yyyy", Locale.US ).parse(date).time
