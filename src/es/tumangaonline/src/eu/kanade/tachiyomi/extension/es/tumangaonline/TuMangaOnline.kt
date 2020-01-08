@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
+import android.util.Log
 import okhttp3.*
 import java.util.*
 import org.jsoup.nodes.Element
@@ -38,8 +39,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         .retryOnConnectionFailure(true)
         .followRedirects(true)
         .build()!!
-    
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0"
+
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36" //last updated 2020/01/06
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
@@ -48,18 +49,18 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Cache-mode", "no-cache")
     }
 
-    private fun getBuilder(url: String, headers: Headers, formBody: FormBody): String {
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody?, method: String): String {
         val req = Request.Builder()
-           .headers(headers)
-           .url(url)
-           .post(formBody)
-           .build()
+            .headers(headers)
+            .url(url)
+            .method(method,formBody)
+            .build()
 
         return client.newCall(req)
             .execute()
             .body()!!
             .string()
-   }
+    }
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -257,25 +258,28 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val document = response.asJsoup()
         val csrfToken = document.select("meta[name=csrf-token]").attr("content")
         val script = document.select("script:containsData($scriptselector)").html()
-        val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
+        val functionID = script.substringAfter("addEventListener").substringAfter("preventDefault();").substringBefore("(").trim().removePrefix("_")
         val function = script.substringAfter("function _$functionID(").substringBefore("});")
-        val goto = function.substringAfter("url: '").substringBefore("'")
-        val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
+        val urlGoto = function.substringAfter("url: '").substringBefore("'")
+        val uploadID = function.substringAfter("replace('").substringBefore("'")
+        val goto = urlGoto.replace(uploadID,chapterID)
+        val method = function.substringAfter("type: '").substringBefore("'")
 
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
-            .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
             .add("X-CSRF-TOKEN",csrfToken)
             .add("X-Requested-With","XMLHttpRequest")
             .add(functionID,functionID)
             .build()
 
-        val formBody = FormBody.Builder()
-            .add(paramChapter, chapterID)
-            .build()
+        val formBody = when (method) {
+            "GET" -> null
+            "POST" -> FormBody.Builder().build()
+            else -> throw UnsupportedOperationException("Unknown method. Open help ticket")
+        }
 
-        val url = getBuilder(goto,getHeaders,formBody).substringBeforeLast("/") + "/cascade"
+        val url = getBuilder(goto,getHeaders,formBody,method).substringBeforeLast("/") + "/cascade"
         // Get /cascade instead of /paginate to get all pages at once
 
         val headers = headersBuilder()
@@ -421,6 +425,24 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     // Preferences Code
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val deduppref = androidx.preference.ListPreference(screen.context).apply {
+            key = DEDUP_PREF_Title
+            title = DEDUP_PREF_Title
+            entries = arrayOf("All scanlators", "One scanlator per chapter")
+            entryValues = arrayOf("all", "one")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(DEDUP_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(deduppref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val deduppref = ListPreference(screen.context).apply {
             key = DEDUP_PREF_Title

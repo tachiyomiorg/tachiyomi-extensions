@@ -30,7 +30,7 @@ class MangaBoxFactory : SourceFactory {
 
 //TODO: Alternate search/filters for some sources that don't use query parameters
 
-class Mangakakalot : MangaBox("Mangakakalot", "http://mangakakalot.com", "en") {
+class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
     override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
 }
 
@@ -71,7 +71,7 @@ class Mangabat : MangaBox("Mangabat", "https://mangabat.com", "en") {
     override val mangaDetailsMainSelector = "div.truyen_info"
     override val thumbnailSelector = "img.info_image_manga"
     override val descriptionSelector = "div#contentm"
-    override val pageListSelector = "div.vung_doc img"
+    override val pageListSelector = "div.vung_doc img, ${super.pageListSelector}" //some chapters link to Nelo
 }
 
 class KonoBasho : MangaBox("Kono-Basho", "https://kono-basho.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
@@ -87,11 +87,11 @@ class MangaOnl : MangaBox("MangaOnl", "https://mangaonl.com", "en") {
     override val popularUrlPath = "story-list-ty-topview-st-all-ca-all-"
     override val latestUrlPath = "story-list-ty-latest-st-all-ca-all-"
     override fun popularMangaSelector() = "div.story_item"
-    override val mangaDetailsMainSelector = "div.panel_story_info"
-    override val thumbnailSelector = "img.story_avatar"
-    override val descriptionSelector = "div.panel_story_info_description"
-    override fun chapterListSelector() = "div.chapter_list_title + ul li"
-    override val pageListSelector = "div.container_readchapter img"
+    override val mangaDetailsMainSelector = "div.panel_story_info, ${super.mangaDetailsMainSelector}" //Some manga link to Nelo
+    override val thumbnailSelector = "img.story_avatar, ${super.thumbnailSelector}"
+    override val descriptionSelector = "div.panel_story_info_description, ${super.descriptionSelector}"
+    override fun chapterListSelector() = "div.chapter_list_title + ul li, ${super.chapterListSelector()}"
+    override val pageListSelector = "div.container_readchapter img, ${super.pageListSelector}"
     override fun getFilterList() = FilterList()
 }
 

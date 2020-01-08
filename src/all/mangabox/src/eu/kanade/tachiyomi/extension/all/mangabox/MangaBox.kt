@@ -126,7 +126,10 @@ abstract class MangaBox (
                     infoElement.select("td:containsOwn(genres) + td a").joinToString { it.text() }
                 }
             }
-            description = document.select(descriptionSelector)?.first()?.ownText()?.replace("\\<br\\>", "\n")?.replace("\\<.*?\\>", "")?.replace("^$title summary\\:", "")
+            description = document.select(descriptionSelector)?.first()?.ownText()
+                ?.replace("""^$title summary:\s""".toRegex(), "")
+                ?.replace("""<\s*br\s*\/?>""".toRegex(), "\n")
+                ?.replace("<[^>]*>".toRegex(), "")
             thumbnail_url = document.select(thumbnailSelector).attr("abs:src")
         }
     }

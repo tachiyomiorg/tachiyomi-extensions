@@ -4,14 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import com.github.salomonbrys.kotson.forEach
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.keys
-import com.github.salomonbrys.kotson.long
-import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
+import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -20,19 +13,10 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
@@ -40,7 +24,7 @@ import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.net.URLEncoder
-import java.util.Date
+import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.set
 
@@ -52,9 +36,9 @@ abstract class Mangadex(
 
     override val name = "MangaDex"
 
-    override val baseUrl = "https://mangadex.cc" // mangadex.org
+    override val baseUrl = "https://mangadex.cc" //"https://mangadex.org"
 
-    private val cdnUrl = "https://mangadex.cc"
+    private val cdnUrl = "https://mangadex.cc" // comment out until mangadex gets .org back "https://s0.mangadex.org"
 
     override val supportsLatest = true
 
@@ -579,6 +563,55 @@ abstract class Mangadex(
             return attr
         }
         return baseUrl + attr
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val myPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_R18_PREF_Title
+            title = SHOW_R18_PREF_Title
+
+            title = SHOW_R18_PREF_Title
+            entries = arrayOf("Show No R18+", "Show All", "Show Only R18+")
+            entryValues = arrayOf("0", "1", "2")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_R18_PREF, index).commit()
+            }
+        }
+        val thumbsPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_THUMBNAIL_PREF_Title
+            title = SHOW_THUMBNAIL_PREF_Title
+            entries = arrayOf("Show high quality", "Show low quality")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
+            }
+        }
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF_Title
+            title = SERVER_PREF_Title
+            entries = SERVER_PREF_ENTRIES
+            entryValues = SERVER_PREF_ENTRY_VALUES
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SERVER_PREF, entry).commit()
+            }
+        }
+
+        screen.addPreference(myPref)
+        screen.addPreference(thumbsPref)
+        screen.addPreference(serverPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {

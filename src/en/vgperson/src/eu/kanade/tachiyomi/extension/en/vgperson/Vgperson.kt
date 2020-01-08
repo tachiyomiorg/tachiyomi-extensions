@@ -21,7 +21,7 @@ class Vgperson : ParsedHttpSource() {
 
     override val supportsLatest = false
 
-    override val baseUrl = "http://vgperson.com/other/mangaviewer.php"
+    override val baseUrl = "https://vgperson.com/other/mangaviewer.php"
 
     private val userAgent = "Mozilla/5.0 " +
         "(Android ${VERSION.RELEASE}; Mobile) " +

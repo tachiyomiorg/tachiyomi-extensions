@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: vgperson'
     pkgNameSuffix = 'en.vgperson'
     extClass = '.Vgperson'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

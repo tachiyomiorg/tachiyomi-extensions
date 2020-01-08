@@ -1,0 +1,15 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Manga Cruzers'
+    pkgNameSuffix = 'en.mangacruzers'
+    extClass = '.mangacruzers'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+}
+
+apply from: "$rootDir/common.gradle"

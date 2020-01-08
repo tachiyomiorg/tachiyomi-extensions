@@ -114,6 +114,7 @@ abstract class MangaCards(
         manga.artist = infoElement.select("strong:contains(artist) + span").text()
         manga.description = infoElement.select("strong:contains(synopsis) + span").text()
         manga.status = parseStatus(infoElement.select("strong:contains(status) + span").text())
+        manga.thumbnail_url = document.select("div.container img").attr("abs:src")
         return manga
     }
 
