@@ -293,7 +293,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val body = response.asJsoup()
 
-        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image:not([style=display:none])")?.forEach {
+        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image:not([style=display:none;])")?.forEach {
             add(Page(size, "", getImage(it)))
         }
     }
@@ -303,7 +303,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             when {
                 element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("data-src")
                 element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") || element.attr("src").endsWith(".jpeg") -> element.attr("src")
-                else -> element.attr("data-lazy-src")
+                else -> throw Exception("Extension needs update, post issue to GitHub") //element.attr("data-lazy-src")
             }
         if (url.startsWith("//")) {
             url = "http:$url"
