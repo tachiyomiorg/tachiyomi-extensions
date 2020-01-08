@@ -291,7 +291,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
-        val chapterID = string.substringAfter("viewer/").substringBefore("/cascade")
+        val chapterID = response.request().url().toString().substringAfter("viewer/").substringBefore("/cascade")
         val body = response.asJsoup()
         
         //alternative lookup img.viewer-image:eq(1)
