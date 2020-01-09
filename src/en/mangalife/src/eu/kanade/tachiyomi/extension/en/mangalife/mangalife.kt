@@ -83,7 +83,7 @@ class MangaLife : HttpSource() {
         val mangas = mutableListOf<SManga>()
         val endRange = ((page * 24) - 1).let { if (it <= directory.lastIndex) it else directory.lastIndex }
 
-        for (i in (((page - 1) * 23) .. endRange)){
+        for (i in (((page - 1) * 24) .. endRange)){
             mangas.add(SManga.create().apply {
                 title = directory[i]["s"].string
                 url = "/manga/${directory[i]["i"].string}"
@@ -135,7 +135,41 @@ class MangaLife : HttpSource() {
         directory = gson.fromJson<JsonArray>(directoryFromResponse(response))
             .filter { it["s"].string.contains(query, ignoreCase = true) }
 
-        // TODO filters here, should be applied to directory
+        val genres = mutableListOf<String>()
+        val genresNo = mutableListOf<String>()
+        var sortBy: String
+        for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+            when (filter) {
+                is Sort -> {
+                    sortBy = when (filter.state?.index) {
+                        1 -> "ls"
+                        2 -> "v"
+                        else -> "s"
+                    }
+                    directory = if (filter.state?.ascending != true) {
+                        directory.sortedByDescending { it[sortBy].string }
+                    } else {
+                        directory.sortedByDescending { it[sortBy].string }.reversed()
+                    }
+                }
+                is SelectField -> if (filter.state != 0) directory = when (filter.name) {
+                    "Scan Status" -> directory.filter { it["ss"].string.contains(filter.values[filter.state], ignoreCase = true) }
+                    "Publish Status" -> directory.filter { it["ps"].string.contains(filter.values[filter.state], ignoreCase = true) }
+                    "Type" -> directory.filter { it["t"].string.contains(filter.values[filter.state], ignoreCase = true) }
+                    else -> directory
+                }
+                is YearField -> if (filter.state.isNotEmpty()) directory = directory.filter { it["y"].string.contains(filter.state) }
+                is AuthorField -> if (filter.state.isNotEmpty()) directory = directory.filter { e -> e["a"].asJsonArray.any { it.string.contains(filter.state, ignoreCase = true) } }
+                is GenreList -> filter.state.forEach { genre ->
+                    when (genre.state) {
+                        Filter.TriState.STATE_INCLUDE -> genres.add(genre.name)
+                        Filter.TriState.STATE_EXCLUDE -> genresNo.add(genre.name)
+                    }
+                }
+            }
+        }
+        if (genres.isNotEmpty()) genres.map { genre -> directory = directory.filter { e -> e["g"].asJsonArray.any { it.string.contains(genre, ignoreCase = true) } } }
+        if (genresNo.isNotEmpty()) genresNo.map { genre -> directory = directory.filterNot { e -> e["g"].asJsonArray.any { it.string.contains(genre, ignoreCase = true) } } }
 
         return parseDirectory(1)
     }
@@ -171,7 +205,7 @@ class MangaLife : HttpSource() {
         val vmChapters = response.asJsoup().select("script:containsData(MainFunction)").first().data()
             .substringAfter("vm.Chapters = ").substringBefore(";")
 
-        return gson.fromJson<JsonArray>(vmChapters).mapIndexed { i, json ->
+        return gson.fromJson<JsonArray>(vmChapters).map{ json ->
             val indexChapter = json["Chapter"].string
             val index = indexChapter.substringBefore("0")
             val chNum = indexChapter.substringAfter(index).dropWhile { it == 0.toChar() }
@@ -221,23 +255,21 @@ class MangaLife : HttpSource() {
 
     // Filters
 
-    private class Sort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date updated", "Popularity"), Filter.Sort.Selection(2, false))
+    private class Sort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date updated", "Popularity"), Selection(2, false))
     private class Genre(name: String) : Filter.TriState(name)
-    private class TextField(name: String, val key: String) : Filter.Text(name)
-    private class SelectField(name: String, val key: String, values: Array<String>, state: Int = 0) : Filter.Select<String>(name, values, state)
+    private class YearField : Filter.Text("Years")
+    private class AuthorField : Filter.Text("Author")
+    private class SelectField(name: String, values: Array<String>, state: Int = 0) : Filter.Select<String>(name, values, state)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-        /* TODO Add this back in later
-            TextField("Years", "year"),
-            TextField("Author", "author"),
-            SelectField("Scan Status", "status", arrayOf("Any", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing")),
-            SelectField("Publish Status", "pstatus", arrayOf("Any", "Cancelled", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing", "Unfinished")),
-            SelectField("Type", "type", arrayOf("Any", "Doujinshi", "Manga", "Manhua", "Manhwa", "OEL", "One-shot")),
+            YearField(),
+            AuthorField(),
+            SelectField("Scan Status", arrayOf("Any", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing")),
+            SelectField("Publish Status", arrayOf("Any", "Cancelled", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing", "Unfinished")),
+            SelectField("Type", arrayOf("Any", "Doujinshi", "Manga", "Manhua", "Manhwa", "OEL", "One-shot")),
             Sort(),
             GenreList(getGenreList())
-
-         */
     )
 
     // [...document.querySelectorAll("label.triStateCheckBox input")].map(el => `Filter("${el.getAttribute('name')}", "${el.nextSibling.textContent.trim()}")`).join(',\n')
