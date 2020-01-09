@@ -260,9 +260,7 @@ class MangaLife : HttpSource() {
         while (chNum.substringBefore(".").count() < 4) chNum = "0$chNum" // needs to be of form xxxx or xxxx.x
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
-            var imageNum = (i + 1).toString()
-            while (imageNum.count() < 3) imageNum = "0$imageNum" // needs to be 3 chars long
-
+            var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length-3) }
             Page(i, "", path + "$chNum-$imageNum.png")
         }
     }
