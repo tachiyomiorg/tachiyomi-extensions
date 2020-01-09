@@ -52,7 +52,7 @@ class MangaRock : HttpSource() {
         return response.newBuilder().body(rb).build()
     }).build()
 
-    override fun latestUpdatesRequest(page: Int) = GET("$apiUrl/mrs_latest")
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Manga Rock has shut down. Please migrate to another source") //GET("$apiUrl/mrs_latest")
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val res = response.body()!!.string()
@@ -60,7 +60,7 @@ class MangaRock : HttpSource() {
         return getMangasPageFromJsonList(list)
     }
 
-    override fun popularMangaRequest(page: Int) = GET("$apiUrl/mrs_latest")
+    override fun popularMangaRequest(page: Int) = throw Exception("Manga Rock has shut down. Please migrate to another source") //GET("$apiUrl/mrs_latest")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val res = response.body()!!.string()
