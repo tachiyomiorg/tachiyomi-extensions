@@ -255,9 +255,7 @@ class MangaLife : HttpSource() {
             .let { if (it.isEmpty()) "" else "$it/" }
         val path = "$host/manga/$titleURI/$seasonURI"
 
-        var chNum = response.request().url().toString().substringAfterLast("-chapter-")
-            .substringBeforeLast(".").substringBefore("-")
-        while (chNum.substringBefore(".").count() < 4) chNum = "0$chNum" // needs to be of form xxxx or xxxx.x
+        var chNum = chapterImage(curChapter["Chapter"].string)
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
             var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length-3) }
