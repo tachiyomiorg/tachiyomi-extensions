@@ -293,10 +293,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val chapterID = response.request().url().toString().substringAfter("viewer/").substringBefore("/cascade")
         val body = response.asJsoup()
-        
-        //alternative lookup img.viewer-image:eq(1)
-        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image[src*=$chapterID]:not([style=display:none;])")?.forEach {   
-            add(Page(size, "", getImage(it)))
+        val script = body.select("script:containsData($scriptselector)").html()
+        val pages = body.select("div#viewer-container > div.viewer-image-container > .viewer-image").map { it.attr("id") }.map { script.substringAfter("_$it.src = '").substringBefore("';") }
+        Log.i("TachiDebug","Script Check => $script") //TODO - Reminder to remove log
+        pages.forEach {
+            Log.i("TachiDebug","Page URL => $it") //TODO - Reminder to remove log
+            add(Page(size, "", it))
         }
     }
     
