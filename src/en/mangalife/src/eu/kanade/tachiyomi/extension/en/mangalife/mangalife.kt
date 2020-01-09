@@ -200,6 +200,27 @@ class MangaLife : HttpSource() {
     // Chapters - Mind special cases like decimal chapters (e.g. One Punch Man) and manga with seasons (e.g. The Gamer)
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    
+    private fun chapterURLEncode(e: String ):String {
+        var index = ""
+        val t = e.substring(0,1).toInt()
+        if (1 != t) { index = "-index-$t" }
+        val n = e.substring(1,e.length-1)
+        var suffix = ""
+        val path = e.substring(e.length-1).toInt()
+        if (0 != path) {suffix = ".$path"}
+        return "-chapter-$n$index$suffix.html"
+    }
+    
+    private fun chapterImage(e: String): String {
+        val a = e.substring(1,e.length-1)
+        val b = e.substring(e.length-1).toInt()
+        return if (b == 0) {
+            a
+        } else {
+            "$a.$b"
+        }
+    }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val vmChapters = response.asJsoup().select("script:containsData(MainFunction)").first().data()
@@ -207,14 +228,9 @@ class MangaLife : HttpSource() {
 
         return gson.fromJson<JsonArray>(vmChapters).map{ json ->
             val indexChapter = json["Chapter"].string
-            val index = indexChapter.substringBefore("0")
-            val chNum = indexChapter.substringAfter(index).dropWhile { it == 0.toChar() }
-                .toInt().div(10.0).toString().substringBefore(".0")
-
             SChapter.create().apply {
-                name = json["ChapterName"].string.let { if (it.isNotEmpty()) it else "${json["Type"].string} $chNum" }
-                url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") +
-                    "-chapter-$chNum" + if (index.toInt() > 1) "-index-$index" else "" + ".html"
+                name = json["ChapterName"].string.let { if (it.isNotEmpty()) it else "${json["Type"].string} ${chapterImage(indexChapter)}" }
+                url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
                     dateFormat.parse(json["Date"].string.substringBefore(" ")).time
                 } catch (_: Exception) {
@@ -239,14 +255,10 @@ class MangaLife : HttpSource() {
             .let { if (it.isEmpty()) "" else "$it/" }
         val path = "$host/manga/$titleURI/$seasonURI"
 
-        var chNum = response.request().url().toString().substringAfterLast("-chapter-")
-            .substringBeforeLast(".").substringBefore("-")
-        while (chNum.substringBefore(".").count() < 4) chNum = "0$chNum" // needs to be of form xxxx or xxxx.x
+        var chNum = chapterImage(curChapter["Chapter"].string)
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
-            var imageNum = (i + 1).toString()
-            while (imageNum.count() < 3) imageNum = "0$imageNum" // needs to be 3 chars long
-
+            var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length-3) }
             Page(i, "", path + "$chNum-$imageNum.png")
         }
     }
