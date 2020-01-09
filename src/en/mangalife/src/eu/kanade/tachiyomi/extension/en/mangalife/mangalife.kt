@@ -211,6 +211,16 @@ class MangaLife : HttpSource() {
         if (0 != path) {suffix = ".$path"}
         return "-chapter-$n$index$suffix.html"
     }
+    
+    private fun chapterImage(e: String): String {
+        val a = e.substring(1,e.length-1)
+        val b = e.substring(e.length-1).toInt()
+        return if (b == 0) {
+            a
+        } else {
+            "$a.$b"
+        }
+    }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val vmChapters = response.asJsoup().select("script:containsData(MainFunction)").first().data()
@@ -219,7 +229,7 @@ class MangaLife : HttpSource() {
         return gson.fromJson<JsonArray>(vmChapters).map{ json ->
             val indexChapter = json["Chapter"].string
             SChapter.create().apply {
-                name = json["ChapterName"].string.let { if (it.isNotEmpty()) it else "${json["Type"].string} $chNum" }
+                name = json["ChapterName"].string.let { if (it.isNotEmpty()) it else "${json["Type"].string} ${chapterImage(indexChapter)}" }
                 url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
                     dateFormat.parse(json["Date"].string.substringBefore(" ")).time
