@@ -452,11 +452,26 @@ abstract class Mangadex(
         // Skip chapters that don't match the desired language, or are future releases
         chapterJson?.forEach { key, jsonElement ->
             val chapterElement = jsonElement.asJsonObject
-            if (chapterElement.get("lang_code").string == internalLang && (chapterElement.get("timestamp").asLong * 1000) <= now) {
+            if (shouldKeepChapter(chapterElement, now)) {
                 chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
             }
         }
         return chapters
+    }
+
+    /**filter out the following chapters
+     * language doesn't match the chosen language
+     * future chapters
+     * chapters from manga plus since they have to be read in mangaplus extension
+     *
+     */
+    private fun shouldKeepChapter(chapterJson: JsonObject, now: Long): Boolean {
+        return when {
+            chapterJson.get("lang_code").string != internalLang -> false
+            (chapterJson.get("timestamp").asLong * 1000) > now -> false
+            chapterJson.get("group_id").string == "9097" -> false
+            else -> true
+        }
     }
 
     private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
