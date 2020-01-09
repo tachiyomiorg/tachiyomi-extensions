@@ -294,7 +294,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val chapterID = response.request().url().toString().substringAfter("viewer/").substringBefore("/cascade")
         val body = response.asJsoup()
         val script = body.select("script:containsData($scriptselector)").html()
-        val pages = body.select("div#viewer-container > div.viewer-image-container > .viewer-image").map { it.attr("id") }.map { script.substringAfter("_$it.src = '").substringBefore("';") }
+        val pages = body.select("div#viewer-container > div.viewer-image-container > .viewer-image").map { script.substringAfter("_${it.attr("id")}.src = '").substringBefore("';") }
         Log.i("TachiDebug","Script Check => $script") //TODO - Reminder to remove log
         pages.forEach {
             Log.i("TachiDebug","Page URL => $it") //TODO - Reminder to remove log
