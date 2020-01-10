@@ -259,7 +259,7 @@ class MangaLife : HttpSource() {
             .url("$baseUrl/read-online/fetch.php")
             .post(RequestBody.create(MediaType.parse("application/json; charset=utf-8"),reqJSON))
             .build()
-        val test = client.newCall(request).execute().body()!!.string().substringAfter("PathName\":\"").substringBefore("\"")
+        val host = client.newCall(request).execute().body()!!.string().substringAfter("PathName\":\"").substringBefore("\"")
         val path = "https://$host/manga/$titleURI/$seasonURI"
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
