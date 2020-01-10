@@ -218,10 +218,8 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
 class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
-    private val time = SimpleDateFormat("Hm.s", Locale.US).format(Date())
-    private val day = SimpleDateFormat("d", Locale.US).format(Date()).toInt()
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.${day*3} (KHTML, like Gecko) Chrome/79.0.$time Safari/537.${day*2}")
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.${Random().nextInt(99)} (KHTML, like Gecko) Chrome/79.0.${Random().nextInt(9999)}.${Random().nextInt(999)} Safari/537.${Random().nextInt(99)}")
         .add("Referer", baseUrl)
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
