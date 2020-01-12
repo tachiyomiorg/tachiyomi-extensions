@@ -210,12 +210,12 @@ class Rawdevart : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val script = document.select("script:containsData(const pages)").html()
+        val list = script.substringAfter("const pages = [\"").substringBefore("\",]").split("\",\"")
         val pages = mutableListOf<Page>()
-
-        document.select("img.img-fluid.not-lazy").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:data-src")))
+        list.forEachIndexed { i, img ->
+            pages.add(Page(i, "", img))
         }
-
         return pages
     }
 
