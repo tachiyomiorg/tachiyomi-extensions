@@ -22,7 +22,15 @@ class NineMangaFactory : SourceFactory {
     )
 }
 
-class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en")
+class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en"){
+    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
+        element.select("a.bookname").let {
+            url = it.attr("abs:href").replace("www","en").substringAfter(baseUrl)
+            title = it.text()
+        }
+        thumbnail_url = element.select("img").attr("abs:src")
+    }
+}
 
 class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
     // ES, FR, RU don't return results for searches with an apostrophe
