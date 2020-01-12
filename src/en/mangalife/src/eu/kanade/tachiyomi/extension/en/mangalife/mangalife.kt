@@ -11,7 +11,10 @@ import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -245,19 +248,14 @@ class MangaLife : HttpSource() {
         val curChapter = gson.fromJson<JsonElement>(script.substringAfter("vm.CurChapter = ").substringBefore(";"))
 
         val pageTotal = curChapter["Page"].string.toInt()
-        var chNum = chapterImage(curChapter["Chapter"].string)
 
+        val host = "https://" + script.substringAfter("vm.CurPathName = \"").substringBefore("\"")
         val titleURI = script.substringAfter("vm.IndexName = \"").substringBefore("\"")
         val seasonURI = curChapter["Directory"].string
             .let { if (it.isEmpty()) "" else "$it/" }
+        val path = "$host/manga/$titleURI/$seasonURI"
 
-        val reqJSON = "{\"IndexName\":\"$titleURI\",\"Chapter\":\"$chNum\"}"
-        val request = Request.Builder()
-            .url("$baseUrl/read-online/fetch.php")
-            .post(RequestBody.create(MediaType.parse("application/json; charset=utf-8"),reqJSON))
-            .build()
-        val host = client.newCall(request).execute().body()!!.string().substringAfter("PathName\":\"").substringBefore("\"")
-        val path = "https://$host/manga/$titleURI/$seasonURI"
+        var chNum = chapterImage(curChapter["Chapter"].string)
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
             var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length-3) }
