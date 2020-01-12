@@ -22,7 +22,7 @@ class NineMangaFactory : SourceFactory {
     )
 }
 
-class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en"){
+class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en") {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("a.bookname").let {
             url = it.attr("abs:href").replace("www","en").substringAfter(baseUrl)
