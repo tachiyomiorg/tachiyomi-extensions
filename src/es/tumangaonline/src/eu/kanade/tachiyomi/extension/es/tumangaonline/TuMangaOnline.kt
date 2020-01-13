@@ -279,8 +279,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             else -> throw UnsupportedOperationException("Unknown method. Open help ticket")
         }
 
-        val url = getBuilder(goto,getHeaders,formBody,method).substringBeforeLast("/") + "/cascade"
-        // Get /cascade instead of /paginate to get all pages at once
+        val url = getBuilder(goto,getHeaders,formBody,method).substringBeforeLast("/") + "/paginated"
+        // Getting /cascade instead of /paginated can get all pages at once
+        // TMO is messing with cascade. Getting paginated instead.
+
 
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
@@ -290,36 +292,15 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
-        val chapterID = response.request().url().toString().substringAfter("viewer/").substringBefore("/cascade")
-        val body = response.asJsoup()
-        val script = body.select("script:containsData($scriptselector)").html()
-        val pages = body.select( ".viewer-image-container + .viewer-image").map {it.attr("id")}.map { script.substringAfter("$it.src = '").substringBefore("';") }
-        Log.i("TachiDebug","Script Check => $script") //TODO - Reminder to remove log
-        pages.forEach {
-            Log.i("TachiDebug","Page URL => $it") //TODO - Reminder to remove log
-            add(Page(size, "", it))
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
+        val url = document.baseUri()
+        pageList.forEach {
+            add(Page(it, "$url/$it"))
         }
     }
-    
-    private fun getImage(element: Element): String {
-        var url =
-            when {
-                element.attr("data-src").endsWith(".jpg") || element.attr("data-src").endsWith(".png") || element.attr("data-src").endsWith(".jpeg") -> element.attr("data-src")
-                element.attr("src").endsWith(".jpg") || element.attr("src").endsWith(".png") || element.attr("src").endsWith(".jpeg") -> element.attr("src")
-                else -> throw Exception("Extension needs update, post issue to GitHub") //element.attr("data-lazy-src")
-            }
-        if (url.startsWith("//")) {
-            url = "http:$url"
-        }
-        return url
-    }
 
-    override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
-
-    override fun imageUrlRequest(page: Page) = GET(page.url, headers)
-
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = document.select("div.viewer-container > div.img-container > img.viewer-image").attr("src")
 
     private class Types : UriPartFilter("Tipo", arrayOf(
         Pair("Ver todo", ""),
