@@ -157,13 +157,13 @@ class Rawkuma: ParsedHttpSource() {
         document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
         // Add date for latest chapter only
         document.select("time[itemprop=dateModified]").attr("datetime")
-            .let { chapters[0].date_upload = parseDate(it) }
+            .let { chapters[0].date_upload = parseDate(it.substringBefore("+")) }
         return chapters
     }
 
     private fun parseDate(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(date).time
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date).time
         } catch (e: ParseException) {
             0L
         }
