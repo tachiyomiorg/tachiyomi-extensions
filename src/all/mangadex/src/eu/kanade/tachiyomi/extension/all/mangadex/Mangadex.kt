@@ -37,8 +37,9 @@ abstract class Mangadex(
     override val name = "MangaDex"
 
     override val baseUrl = "https://mangadex.org"
+    get() = getDomain()
 
-    private val cdnUrl = "https://mangadex.org" // "https://s0.mangadex.org"
+    private val cdnUrl = "https://s0.mangadex.org"
 
     override val supportsLatest = true
 
@@ -672,10 +673,25 @@ abstract class Mangadex(
                 preferences.edit().putString(SERVER_PREF, entry).commit()
             }
         }
+        val domainPref = ListPreference(screen.context).apply {
+            key = DOMAIN_PREF
+            title = DOMAIN_PREF_Title
+            entries = DOMAIN_PREF_ENTRIES
+            entryValues = DOMAIN_PREF_ENTRIES
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(DOMAIN_PREF, entry).commit()
+            }
+        }
 
         screen.addPreference(myPref)
         screen.addPreference(thumbsPref)
         screen.addPreference(serverPref)
+        screen.addPreference(domainPref)
     }
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
@@ -683,6 +699,11 @@ abstract class Mangadex(
     private fun getServer(): String {
         val default = SERVER_PREF_ENTRY_VALUES.first()
         return preferences.getString(SERVER_PREF, default).takeIf { it in SERVER_PREF_ENTRY_VALUES }
+            ?: default
+    }
+    private fun getDomain(): String {
+        val default = DOMAIN_PREF_ENTRIES.first()
+        preferences.getString(DOMAIN_PREF, default).takeIf { it in DOMAIN_PREF_ENTRIES }
             ?: default
     }
 
@@ -852,6 +873,10 @@ abstract class Mangadex(
         private const val SERVER_PREF = "imageServer"
         private val SERVER_PREF_ENTRIES = arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
         private val SERVER_PREF_ENTRY_VALUES = arrayOf("0", "na", "na2", "row")
+
+        private const val DOMAIN_PREF_Title = "Domain preference"
+        private const val DOMAIN_PREF = "domainServer"
+        private val DOMAIN_PREF_ENTRIES = arrayOf("mangadex.org", "mangadex.cc")
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
