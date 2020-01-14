@@ -36,11 +36,9 @@ abstract class Mangadex(
 
     override val name = "MangaDex"
 
-    override val baseUrl
-    get() = getDomain()
+    override val baseUrl get() = getDomain()
 
-    private val cdnUrl
-    get() = getDomain()
+    private val cdnUrl get() = getDomain()
 
     override val supportsLatest = true
 
