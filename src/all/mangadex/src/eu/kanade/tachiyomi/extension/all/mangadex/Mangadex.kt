@@ -38,9 +38,11 @@ abstract class Mangadex(
 
     override val baseUrl = "https://mangadex.org"
     get() = getDomain()
+    set(value) { field = value }
 
     private val cdnUrl = "https://mangadex.org"
     get() = getDomain()
+    set(value) { field = value }
 
     override val supportsLatest = true
 
