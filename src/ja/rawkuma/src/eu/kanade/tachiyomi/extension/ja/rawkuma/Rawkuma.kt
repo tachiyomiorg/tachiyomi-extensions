@@ -11,6 +11,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Rawkuma: ParsedHttpSource() {
 
@@ -160,7 +161,11 @@ class Rawkuma: ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").parse(date).time
+        return try {
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX" Locale.US).parse(date).time
+        } catch (e: ParseException) {
+            0L
+        }
     }
 
     override fun chapterListSelector() = ".lchx"
