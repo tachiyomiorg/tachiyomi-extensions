@@ -10,6 +10,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -162,7 +163,7 @@ class Rawkuma: ParsedHttpSource() {
 
     private fun parseDate(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX" Locale.US).parse(date).time
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(date).time
         } catch (e: ParseException) {
             0L
         }
