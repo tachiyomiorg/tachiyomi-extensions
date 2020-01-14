@@ -64,7 +64,8 @@ class MadaraFactory : SourceFactory {
         Toonily(),
         PlotTwistScan(),
         MangaKomi(),
-        Wakamics()
+        Wakamics(),
+        TeabeerComics()
     )
 }
 
@@ -388,4 +389,6 @@ class PlotTwistScan : Madara("Plot Twist No Fansub", "https://www.plotwistscan.c
 class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
+
+class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com/", "en")
 
