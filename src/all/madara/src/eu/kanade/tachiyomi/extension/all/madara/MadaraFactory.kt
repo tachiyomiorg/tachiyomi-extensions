@@ -398,6 +398,4 @@ class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
-class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com/", "en") {
-    override fun searchMangaNextPageSelector() = "nav.navigation-ajax"
-}
+class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com/", "en") 
