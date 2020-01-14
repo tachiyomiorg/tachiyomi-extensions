@@ -137,15 +137,7 @@ class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club/", "ko"
 
 class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en",
     dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
-    override val pageListParseSelector = "div.reading-content img"
-    private val cdnUrl = "cdn.1stkissmanga.com"
-    override fun imageRequest(page: Page): Request {
-        val cdnHeaders = Headers.Builder().apply {
-            add("Referer", baseUrl)
-            add("Host", cdnUrl)
-        }.build()
-        return if (page.imageUrl!!.contains(cdnUrl)) GET(page.imageUrl!!, cdnHeaders) else GET(page.imageUrl!!, headers)
-    }
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en")
