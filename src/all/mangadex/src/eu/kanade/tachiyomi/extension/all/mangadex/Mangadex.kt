@@ -39,7 +39,8 @@ abstract class Mangadex(
     override val baseUrl = "https://mangadex.org"
     get() = getDomain()
 
-    private val cdnUrl = baseUrl
+    private val cdnUrl = "https://mangadex.org"
+    get() = getDomain()
 
     override val supportsLatest = true
 
@@ -702,8 +703,8 @@ abstract class Mangadex(
             ?: default
     }
     private fun getDomain(): String {
-        preferences.getString(DOMAIN_PREF, DOMAIN_PREF_DEFAULT).takeIf { it in DOMAIN_PREF_ENTRIES }
-            ?: default
+        return preferences.getString(DOMAIN_PREF, DOMAIN_PREF_DEFAULT).takeIf { it in DOMAIN_PREF_ENTRIES }
+            ?: DOMAIN_PREF_DEFAULT
     }
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
