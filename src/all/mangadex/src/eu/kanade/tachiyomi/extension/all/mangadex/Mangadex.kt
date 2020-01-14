@@ -702,8 +702,7 @@ abstract class Mangadex(
             ?: default
     }
     private fun getDomain(): String {
-        val default = DOMAIN_PREF_ENTRIES.first()
-        preferences.getString(DOMAIN_PREF, default).takeIf { it in DOMAIN_PREF_ENTRIES }
+        preferences.getString(DOMAIN_PREF, DOMAIN_PREF_DEFAULT).takeIf { it in DOMAIN_PREF_ENTRIES }
             ?: default
     }
 
@@ -877,6 +876,7 @@ abstract class Mangadex(
         private const val DOMAIN_PREF_Title = "Domain preference"
         private const val DOMAIN_PREF = "domainServer"
         private val DOMAIN_PREF_ENTRIES = arrayOf("mangadex.org", "mangadex.cc")
+        private val DOMAIN_PREF_DEFAULT = "mangadex.org"
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
