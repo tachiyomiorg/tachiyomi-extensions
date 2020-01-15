@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Henchan'
     pkgNameSuffix = 'ru.henchan'
     extClass = '.Henchan'
-    extVersionCode = 11
+    extVersionCode = 12
     libVersion = '1.2'
 }
 dependencies {
