@@ -145,12 +145,12 @@ class MyMangaReaderCMSSource(override val lang: String,
         thumbnail_url = coverGuess(document.select(".row [class^=img-responsive]").firstOrNull()?.attr("abs:src"), document.location())
         description = document.select(".row .well p").text().trim()
 
-        val detailAuthor = setOf("author(s)","autor(es)","auteur(s)","著作","yazar(lar)","mangaka(lar)","pengarang/penulis","pengarang","penulis","autor","المؤلف","перевод")
-        val detailArtist = setOf("artist(s)","artiste(s)","sanatçi(lar)","artista(s)","artist(s)/ilustrator","الرسام","seniman")
-        val detailGenre = setOf("categories","categorías","catégories","ジャンル","kategoriler","categorias","kategorie","التصنيفات","жанр","kategori" )
+        val detailAuthor = setOf("author(s)","autor(es)","auteur(s)","著作","yazar(lar)","mangaka(lar)","pengarang/penulis","pengarang","penulis","autor","المؤلف","перевод", "autor/autorzy")
+        val detailArtist = setOf("artist(s)","artiste(s)","sanatçi(lar)","artista(s)","artist(s)/ilustrator","الرسام","seniman", "rysownik/rysownicy")
+        val detailGenre = setOf("categories","categorías","catégories","ジャンル","kategoriler","categorias","kategorie","التصنيفات","жанр","kategori", "tagi")
         val detailStatus = setOf("status","statut","estado","状態","durum","الحالة","статус")
-        val detailStatusComplete = setOf("complete","مكتملة","complet","completo")
-        val detailStatusOngoing = setOf("ongoing","مستمرة","en cours","em lançamento")
+        val detailStatusComplete = setOf("complete","مكتملة","complet","completo", "zakończone")
+        val detailStatusOngoing = setOf("ongoing","مستمرة","en cours","em lançamento", "prace w toku")
         val detailDescription = setOf("description","resumen")
 
         for (element in document.select(".row .dl-horizontal dt")) {

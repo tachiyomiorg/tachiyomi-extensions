@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: My Manga Reader CMS (Many sources)'
     pkgNameSuffix = 'all.mmrcms'
     extClass = '.MyMangaReaderCMSSources'
-    extVersionCode = 26
+    extVersionCode = 27
     libVersion = '1.2'
 }
 
