@@ -66,7 +66,7 @@ class TruyenQQ : ParsedHttpSource() {
         val glist = document.select(".list01 li").map { it.text() }
         genre = glist.joinToString(", ")
         description = document.select(".story-detail-info").text()
-
+        thumbnail_url = document.select("div.left img").attr("src")
         status = when (document.select(".info-item:eq(2)").text().substringAfter(":").trim()) {
             "Đang Cập Nhật" -> SManga.ONGOING
             //"" -> SManga.COMPLETED
