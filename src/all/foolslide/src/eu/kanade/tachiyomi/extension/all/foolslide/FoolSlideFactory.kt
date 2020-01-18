@@ -38,7 +38,8 @@ class FoolSlideFactory : SourceFactory {
         TheCatScans(),
         ZandynoFansub(),
         HelveticaScans(),
-        KirishimaFansub()
+        KirishimaFansub(),
+        PowerMangaIT()
     )
 }
 
@@ -133,4 +134,7 @@ class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishite
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
 class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
+
+class PowerMangaIT : FoolSlide("PowerManga", "http://reader.powermanga.org", "it", "")
+
 
