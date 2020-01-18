@@ -158,7 +158,6 @@ class Rawkuma: ParsedHttpSource() {
         // Add date for latest chapter only
         document.select("time[itemprop=dateModified]").text()
             .let {
-                Log.i("TachiDebug", "Date => $it")
                 chapters[0].date_upload = parseDate(it)
             }
         return chapters
