@@ -1,8 +1,11 @@
 package eu.kanade.tachiyomi.extension.ko.mangashowme
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
+import android.os.Build
+import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
@@ -12,18 +15,19 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+
 
 /**
  * ManaMoa Source
@@ -39,9 +43,9 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "ManaMoa"
 
-    // This keeps updating: https://twitter.com/manamoa20
-    private val defaultBaseUrl = "https://manamoa23.net"
-    override val baseUrl by lazy { getPrefBaseUrl() }
+    // This keeps updating: https://twitter.com/manamoa24
+    private val defaultBaseUrl = "https://manamoa25.net"
+    override val baseUrl by lazy { getCurrentBaseUrl() }
 
     override val lang: String = "ko"
 
@@ -298,7 +302,26 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
+        val autoFetchUrlPref = androidx.preference.CheckBoxPreference (screen.context).apply {
+            key = AUTOFETCH_URL_PREF_TITLE
+            title = AUTOFETCH_URL_PREF_TITLE
+            summary = AUTOFETCH_URL_PREF_SUMMARY
+            this.setEnabled(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(AUTOFETCH_URL_PREF, newValue as Boolean).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
+        screen.addPreference(autoFetchUrlPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -322,8 +345,66 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
+        val autoFetchUrlPref = CheckBoxPreference(screen.context).apply {
+            key = AUTOFETCH_URL_PREF_TITLE
+            title = AUTOFETCH_URL_PREF_TITLE
+            summary = AUTOFETCH_URL_PREF_SUMMARY
+            this.setEnabled(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(AUTOFETCH_URL_PREF, newValue as Boolean).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
+        screen.addPreference(autoFetchUrlPref)
     }
+
+    private fun getCurrentBaseUrl(): String {
+        val prefBaseUrl = getPrefBaseUrl()
+        if (!preferences.getBoolean(AUTOFETCH_URL_PREF, false)) {
+            return prefBaseUrl
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            @TargetApi(Build.VERSION_CODES.N)
+            class CallbackFuture : CompletableFuture<Response?>(), Callback {
+                override fun onResponse(call: Call?, response: Response?) {
+                    super.complete(response)
+                }
+
+                override fun onFailure(call: Call?, e: IOException?) {
+                    super.completeExceptionally(e)
+                }
+            }
+
+            val request: Request = Request.Builder().get()
+            .url("https://mnmnmnmnm.xyz")
+            .build()
+
+            val call = okhttp3.OkHttpClient().newCall(request)
+
+            val future = CallbackFuture()
+            val response = future.get()!!
+
+            val body = response.body()!!.string()
+            println(body)
+            val num = body.substringBefore("https://manamoa").substringAfter(".net")
+            if (num.isBlank()) { return prefBaseUrl }
+            val url = "https://manamoa${num}.net"
+            return url
+        } else {
+            return prefBaseUrl
+        }
+    }
+
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
 
@@ -333,6 +414,9 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
+        private const val AUTOFETCH_URL_PREF_TITLE = "Automatically fetch new domain"
+        private const val AUTOFETCH_URL_PREF = "autoFetchNewUrl"
+        private const val AUTOFETCH_URL_PREF_SUMMARY = "Experimental, When turned off or failed to fetch, it will uses overridden/default BaseUrl. Requires Android Nougat and newer."
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
         // Image Decoder
