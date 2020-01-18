@@ -156,20 +156,19 @@ class Rawkuma: ParsedHttpSource() {
         val chapters = mutableListOf<SChapter>()
         document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
         // Add date for latest chapter only
-        document.select("time[itemprop=dateModified]").attr("datetime")
-            .let { chapters[0].date_upload = parseDate(it) }
+        document.select("time[itemprop=dateModified]").text()
+            .let {
+                Log.i("TachiDebug", "Date => $it")
+                chapters[0].date_upload = parseDate(it)
+            }
         return chapters
     }
 
     private fun parseDate(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(date).time
+            SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date).time
         } catch (e: ParseException) {
-            try {
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date.substringBefore("+")).time
-            } catch (e: ParseException) {
-                0L
-            }
+            0L
         }
     }
 
