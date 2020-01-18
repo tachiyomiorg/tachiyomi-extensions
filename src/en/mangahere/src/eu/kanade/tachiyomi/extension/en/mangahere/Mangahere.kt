@@ -19,7 +19,7 @@ class Mangahere : ParsedHttpSource() {
 
     override val name = "Mangahere"
 
-    override val baseUrl = "http://www.mangahere.cc"
+    override val baseUrl = "https://www.mangahere.cc"
 
     override val lang = "en"
 
@@ -193,15 +193,15 @@ class Mangahere : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val bar = document.select("script[src*=chapter_bar]")
-        if (!bar.isNullOrEmpty()){
+        if (!bar.isNullOrEmpty()){ //Webtoonviewer or cascade, all images on one page
             val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
             val duktape = Duktape.create()
             val DeobfuscatedScript = duktape.evaluate(script).toString()
             val urls = DeobfuscatedScript.substringAfter("newImgs=['").substringBefore("'];").split("','")
             duktape.close()
             val pages = mutableListOf<Page>()
-            urls.forEachIndexed { index, s ->
-                pages.add(Page(index, "", "http:$s"))
+            for (i in 0 until urls.size-1) { 
+                pages.add(Page(i,"","https:${urls[i]}"))
             }
             return pages
         } else {
