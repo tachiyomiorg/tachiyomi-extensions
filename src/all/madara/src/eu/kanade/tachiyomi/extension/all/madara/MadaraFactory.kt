@@ -5,7 +5,6 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.Filter
@@ -14,9 +13,11 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.HttpUrl
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import java.util.Random
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -65,7 +66,8 @@ class MadaraFactory : SourceFactory {
         PlotTwistScan(),
         MangaKomi(),
         Wakamics(),
-        TeabeerComics()
+        TeabeerComics(),
+        KingzManga()
     )
 }
 
@@ -76,11 +78,11 @@ class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
 class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
     dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
 
-class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com/", "en")
+class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com", "en")
 
-class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com/", "en")
+class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com", "en")
 
-class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru/", "ru",
+class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru", "ru",
     dateFormat = SimpleDateFormat("yy.MM.dd", Locale.US))
 
 class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe", "en") {
@@ -118,34 +120,36 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe"
 
 class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
 
-class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com/", "en")
+class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com", "en")
 
-class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com/","fr",
+class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com","fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
-class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr/", "fr",
+class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr", "fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
-class ZManga : Madara("ZManga", "https://zmanga.org/", "es")
+class ZManga : Madara("ZManga", "https://zmanga.org", "es")
 
-class MangazukiMe : Madara("Mangazuki.me", "https://mangazuki.me/", "en")
+class MangazukiMe : Madara("Mangazuki.me", "https://mangazuki.me", "en")
 
-class MangazukiOnline : Madara("Mangazuki.online", "https://www.mangazuki.online/", "en")
+class MangazukiOnline : Madara("Mangazuki.online", "https://www.mangazuki.online", "en") {
+    override val client: OkHttpClient = super.client.newBuilder().followRedirects(true).build()
+}
 
-class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club/", "ja")
+class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club", "ja")
 
-class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club/", "ko")
+class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club", "ko")
 
-class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com/", "en",
+class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com", "en",
     dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
-class MangaSY : Madara("Manga SY", "https://www.mangasy.com/", "en")
+class MangaSY : Madara("Manga SY", "https://www.mangasy.com", "en")
 
-class ManwhaClub : Madara("Manwha Club", "https://manhwa.club/", "en")
+class ManwhaClub : Madara("Manwha Club", "https://manhwa.club", "en")
 
-class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site/", "en") {
+class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/tag/webcomic/page/$page/?m_orderby=latest", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
@@ -166,11 +170,11 @@ class WordRain : Madara("WordRain Translation", "https://wordrain69.com", "en") 
     }
 }
 
-class YoManga : Madara("Yo Manga", "https://yomanga.info/", "en")
+class YoManga : Madara("Yo Manga", "https://yomanga.info", "en")
 
-class ManyToon : Madara("ManyToon", "https://manytoon.com/", "en")
+class ManyToon : Madara("ManyToon", "https://manytoon.com", "en")
 
-class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en",
+class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info", "en",
     dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)) {
     override fun chapterListParse(response: Response): List<SChapter> {
         response.asJsoup().let { documet ->
@@ -190,7 +194,7 @@ class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info/", "en",
     }
 }
 
-class ZinManga : Madara("Zin Translator", "https://zinmanga.com/", "en") {
+class ZinManga : Madara("Zin Translator", "https://zinmanga.com", "en") {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", "https://zinmanga.com/")
 }
@@ -228,7 +232,7 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
 
-class ToonManga : Madara("ToonManga", "https://toonmanga.com/", "en")
+class ToonManga : Madara("ToonManga", "https://toonmanga.com", "en")
 
 class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     override fun getGenreList() = listOf(
@@ -390,5 +394,6 @@ class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
-class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com/", "en")
+class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com", "en")
 
+class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
