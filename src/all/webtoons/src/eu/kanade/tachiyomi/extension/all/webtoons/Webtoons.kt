@@ -4,10 +4,13 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.HttpUrl
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 
 abstract class Webtoons(override val lang: String, open val langCode: String = lang) : ParsedHttpSource() {
 
@@ -66,7 +69,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         // Add completed webtoons, no sorting needed
         document.select("div.daily_lst.comp li a").map { mangas.add(popularMangaFromElement(it)) }
 
-        return MangasPage(mangas, false)
+        return MangasPage(mangas.distinctBy { it.url }, false)
     }
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/$langCode/dailySchedule?sortOrder=UPDATE&webtoonCompleteType=ONGOING", headers)
@@ -116,11 +119,15 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
 
     override fun searchMangaNextPageSelector(): String? = null
 
+    open fun parseDetailsThumbnail(document: Document): String? {
+        val picElement = document.select("#content > div.cont_box > div.detail_body")
+        val discoverPic = document.select("#content > div.cont_box > div.detail_header > span.thmb")
+        return discoverPic.select("img").not("[alt='Representative image']").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
+    }
+
     override fun mangaDetailsParse(document: Document): SManga {
         val detailElement = document.select("#content > div.cont_box > div.detail_header > div.info")
         val infoElement = document.select("#_asideDetail")
-        val picElement = document.select("#content > div.cont_box > div.detail_body")
-        val discoverPic = document.select("#content > div.cont_box > div.detail_header > span.thmb")
 
         val manga = SManga.create()
         manga.author = detailElement.select(".author:nth-of-type(1)").first()?.ownText()
@@ -128,7 +135,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         manga.genre = detailElement.select(".genre").joinToString(", ") { it.text() }
         manga.description = infoElement.select("p.summary").text()
         manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
-        manga.thumbnail_url = discoverPic.select("img").not("[alt='Representative image']").first()?.attr("src") ?: picElement.attr("style")?.substringAfter("url(")?.substringBeforeLast(")")
+        manga.thumbnail_url = parseDetailsThumbnail(document)
         return manga
     }
 
