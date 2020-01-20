@@ -347,19 +347,13 @@ abstract class Mangadex(
     }
 
     private fun apiRequest(manga: SManga): Request {
-        return GETNoCache(baseUrl + API_MANGA + getMangaId(manga.url), headers)
+        return GET(baseUrl + API_MANGA + getMangaId(manga.url), headers, CacheControl.FORCE_NETWORK)
     }
 
     private fun searchMangaByIdRequest(id: String): Request {
-        return GETNoCache(baseUrl + API_MANGA + id, headers)
+        return GET(baseUrl + API_MANGA + id, headers, CacheControl.FORCE_NETWORK)
     }
-    private fun GETNoCache(url: String, headers: Headers): Request {
-        return Request.Builder()
-            .url(url)
-            .headers(Headers.Builder().build())
-            .cacheControl(CacheControl.FORCE_NETWORK)
-            .build()
-    }
+
     private fun getMangaId(url: String): String {
         val lastSection = url.trimEnd('/').substringAfterLast("/")
         return if (lastSection.toIntOrNull() != null) {
