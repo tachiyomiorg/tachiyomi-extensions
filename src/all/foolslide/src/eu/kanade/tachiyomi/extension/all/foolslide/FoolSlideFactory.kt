@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import org.jsoup.nodes.Document
 
@@ -39,7 +40,8 @@ class FoolSlideFactory : SourceFactory {
         ZandynoFansub(),
         HelveticaScans(),
         KirishimaFansub(),
-        PowerMangaIT()
+        PowerMangaIT(),
+        BaixarHentai()
     )
 }
 
@@ -137,4 +139,13 @@ class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.n
 
 class PowerMangaIT : FoolSlide("PowerManga", "http://reader.powermanga.org", "it", "")
 
-
+class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt") {
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            title = document.select("h1.title").text()
+            thumbnail_url = document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
+                client.newCall(GET(document.select("div.title a").last().attr("abs:href"), headers)).execute().asJsoup()
+                    .let { pageListParse(it).firstOrNull()?.imageUrl }
+        }
+    }
+}
