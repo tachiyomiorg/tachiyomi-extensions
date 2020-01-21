@@ -26,7 +26,7 @@ abstract class MangasProject(override val name: String,
 
     override val supportsLatest = true
 
-    private val correctClient = if (name == "MangaLivre") network.cloudflareClient else network.client
+    private val correctClient = network.cloudflareClient
 
     // Sometimes the site is slow.
     override val client = correctClient.newBuilder()
@@ -273,7 +273,7 @@ abstract class MangasProject(override val name: String,
             return result
 
         val document = result.asJsoup()
-        val readerSrc = document.select("script[src*=\"reader.min.js\"]")
+        val readerSrc = document.select("script[src*=\"reader.\"]")
             ?.attr("src") ?: ""
 
         val token = TOKEN_REGEX.find(readerSrc)?.groupValues?.get(1) ?: ""
