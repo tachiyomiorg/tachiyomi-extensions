@@ -293,8 +293,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         if (getPageMethod()=="cascade") {
             val style = document.select("style:containsData(height)").html()
-            val hiddenClass = style.substringAfter("._").substringBefore("{")
-            document.select( " .img-container > .viewer-img:not(._$hiddenClass)").forEach {
+            document.select( " .img-container > .viewer-img").filterNot { it.attr("id") in style }.forEach {
                 add(Page(size, "", it.attr("src")))
             }
         } else {
