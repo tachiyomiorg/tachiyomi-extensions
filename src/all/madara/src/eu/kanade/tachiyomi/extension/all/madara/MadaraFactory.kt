@@ -5,7 +5,6 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.Filter
@@ -215,7 +214,7 @@ class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36"
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
-        .add("Referer", "$baseUrl/manga/?m_orderby=views"))
+        .add("Referer", "$baseUrl/manga/?m_orderby=views")
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
