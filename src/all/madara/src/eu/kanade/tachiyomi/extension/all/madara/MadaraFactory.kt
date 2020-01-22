@@ -215,8 +215,11 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
 class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
+    override val client: OkHttpClient = network.client
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36"
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.${Random().nextInt(99)} (KHTML, like Gecko) Chrome/79.0.${Random().nextInt(9999)}.${Random().nextInt(999)} Safari/537.${Random().nextInt(99)}")
+        .add("User-Agent", userAgent)
+        .add("Referer", "$baseUrl/manga/?m_orderby=views"))
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
