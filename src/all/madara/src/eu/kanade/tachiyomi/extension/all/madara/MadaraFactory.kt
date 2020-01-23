@@ -3,13 +3,10 @@ package eu.kanade.tachiyomi.extension.all.madara
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
@@ -62,7 +59,8 @@ class MadaraFactory : SourceFactory {
         MangaKomi(),
         Wakamics(),
         TeabeerComics(),
-        KingzManga()
+        KingzManga(),
+        YaoiToshokan()
     )
 }
 
@@ -395,3 +393,16 @@ class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com", "en")
 
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
+
+class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", "pt-BR") {
+    override val popularMangaUrlSelector = "div.post-title a:not([target])" //Page has custum link to scan website
+    override fun chapterListParse(response: Response): List<SChapter> { //Chapters are listed old to new
+        return super.chapterListParse(response).reversed()
+    }
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select(pageListParseSelector).mapIndexed { index, element ->
+            Page(index, "", element.select("img").attr("data-src").trim())  //had to add trim because of white space in source
+        }
+    }
+
+}
