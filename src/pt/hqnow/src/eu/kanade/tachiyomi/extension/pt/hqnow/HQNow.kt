@@ -150,7 +150,7 @@ class HQNow : HttpSource() {
         LetterFilter()
     )
 
-    private class LetterFilter : UriPartFilter("Carta", arrayOf(
+    private class LetterFilter : UriPartFilter("Letra", arrayOf(
         Pair("---","<Selecione>"),
         Pair("a","A"),
         Pair("b","B"),
