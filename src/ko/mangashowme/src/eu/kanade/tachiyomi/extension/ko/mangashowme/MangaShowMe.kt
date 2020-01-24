@@ -105,14 +105,14 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.left-info").first()
         val thumbnailElement = info.select("div.manga-thumbnail").first()
-        val publishTypeText = trimElementText(thumbnailElement.select("a.publish_type"), "Unknown")
-        val authorText = trimElementText(thumbnailElement.select("a.author"))
+        val publishTypeText = thumbnailElement.select("a.publish_type").trimText("Unknown")
+        val authorText = thumbnailElement.select("a.author").trimText()
 
         val mangaStatus = info.select("div.recommend")
-        val mangaLike = trimElementText(mangaStatus.select(".fa-thumbs-up"), "0")
+        val mangaLike = mangaStatus.select(".fa-thumbs-up").trimText("0")
         //val mangaViews = trimElementText(mangaStatus.select(".fa-smile-o"), "0")
-        val mangaComments = trimElementText(mangaStatus.select(".fa-comment"), "0")
-        val mangaBookmarks = trimElementText(info.select(".fa-bookmark"), "0")
+        val mangaComments = mangaStatus.select(".fa-comment").trimText("0")
+        val mangaBookmarks = info.select(".fa-bookmark").trimText("0")
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
         val mangaChaptersComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
 
@@ -275,8 +275,8 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         return style.substringAfter("background-image:url(").substringBefore(")")
     }
 
-    private fun trimElementText(element: Elements, fallback: String = ""): String {
-        return element.text()?.trim()?.takeUnless { it.isBlank() } ?: fallback
+    private fun Elements.trimText(fallback: String = ""): String {
+        return this.text()?.trim()?.takeUnless { it.isBlank() } ?: fallback
     }
 
     private val preferences: SharedPreferences by lazy {
