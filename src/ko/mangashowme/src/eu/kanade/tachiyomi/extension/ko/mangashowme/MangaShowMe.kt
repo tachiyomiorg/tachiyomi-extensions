@@ -8,7 +8,6 @@ import android.os.Build
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Log
 import android.widget.Toast
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
@@ -28,7 +27,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-import java.util.logging.Logger
 
 
 /**
@@ -46,7 +44,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val name = "ManaMoa"
 
     // This keeps updating: https://twitter.com/manamoa24
-    private val defaultBaseUrl = "https://manamoa25.net"
+    private val defaultBaseUrl = "https://manamoa26.net"
     override val baseUrl by lazy { getCurrentBaseUrl() }
 
     override val lang: String = "ko"
@@ -376,27 +374,31 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            @TargetApi(Build.VERSION_CODES.N)
-            class CallbackFuture : CompletableFuture<Response?>(), Callback {
-                override fun onResponse(call: Call?, response: Response?) {
-                    super.complete(response)
+            try {
+                @TargetApi(Build.VERSION_CODES.N)
+                class CallbackFuture : CompletableFuture<Response?>(), Callback {
+                    override fun onResponse(call: Call?, response: Response?) {
+                        super.complete(response)
+                    }
+
+                    override fun onFailure(call: Call?, e: IOException?) {
+                        super.completeExceptionally(e)
+                    }
                 }
 
-                override fun onFailure(call: Call?, e: IOException?) {
-                    super.completeExceptionally(e)
-                }
+                val request: Request = Request.Builder().get()
+                    .url("http://13.229.223.203")
+                    .build()
+
+                val future = CallbackFuture()
+                okhttp3.OkHttpClient().newCall(request).enqueue(future)
+
+                val response = future.get()!!
+                return "https://${response.request().url().host()}"
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return prefBaseUrl
             }
-
-            val request: Request = Request.Builder().get()
-            .url("http://13.229.223.203")
-            .build()
-
-            val future = CallbackFuture()
-            okhttp3.OkHttpClient().newCall(request).enqueue(future)
-
-            val response = future.get()!!
-            val url = "https://${response.request().url().host()}"
-            return url
         } else {
             return prefBaseUrl
         }
