@@ -269,9 +269,10 @@ abstract class MangaPlus(override val lang: String,
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT)
             return ProtoBuf.load(MangaPlusSerializer, body()!!.bytes())
 
-        // Apparently, the version used of Kotlinx Serialization lib causes a crash
-        // on KitKat devices (see #1678). So, if the device is running KitKat or lower,
-        // we use the old method of parsing their API -- using ProtobufJS + Duktape + Gson.
+        // Apparently, the Kotlinx Serialization lib causes a crash on KitKat devices (see #1678).
+        // So, if the device is running KitKat or lower, we use the old method of parsing
+        // their API -- using ProtobufJS + Duktape + Gson. When the repository drops the
+        // support for KitKat devices, the old way can be removed.
 
         val bytes = body()!!.bytes()
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
