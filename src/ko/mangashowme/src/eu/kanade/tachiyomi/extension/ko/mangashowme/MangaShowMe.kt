@@ -8,6 +8,7 @@ import android.os.Build
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.util.Log
 import android.widget.Toast
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
@@ -27,6 +28,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 
 
 /**
@@ -386,19 +388,14 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             }
 
             val request: Request = Request.Builder().get()
-            .url("https://mnmnmnmnm.xyz")
+            .url("http://13.229.223.203")
             .build()
 
-            val call = okhttp3.OkHttpClient().newCall(request)
-
             val future = CallbackFuture()
-            val response = future.get()!!
+            okhttp3.OkHttpClient().newCall(request).enqueue(future)
 
-            val body = response.body()!!.string()
-            println(body)
-            val num = body.substringBefore("https://manamoa").substringAfter(".net")
-            if (num.isBlank()) { return prefBaseUrl }
-            val url = "https://manamoa${num}.net"
+            val response = future.get()!!
+            val url = "https://${response.request().url().host()}"
             return url
         } else {
             return prefBaseUrl
@@ -411,12 +408,17 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun getFilterList() = getFilters()
 
     companion object {
+        // Setting: Override BaseUrl
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
+        // Setting: Fetch Domain
         private const val AUTOFETCH_URL_PREF_TITLE = "Automatically fetch new domain"
         private const val AUTOFETCH_URL_PREF = "autoFetchNewUrl"
-        private const val AUTOFETCH_URL_PREF_SUMMARY = "Experimental, When turned off or failed to fetch, it will uses overridden/default BaseUrl. Requires Android Nougat and newer."
+        private const val AUTOFETCH_URL_PREF_SUMMARY =
+            "Experimental, May cause Tachiyomi unstable.\n" +
+            "Requires Android Nougat or newer."
+
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
         // Image Decoder
