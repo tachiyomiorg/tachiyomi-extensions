@@ -11,6 +11,11 @@ import okhttp3.ResponseBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.sin
+import kotlin.math.tan
+
 
 /*
  * `v1` means url padding of image host.
@@ -19,7 +24,7 @@ import java.io.InputStream
 
 internal class ImageDecoder(scripts: String) {
     private val cnt = substringBetween(scripts, "var view_cnt = ", ";")
-            .toIntOrNull() ?: 0
+        .toIntOrNull() ?: 0
     private val chapter = substringBetween(scripts, "var chapter = ", ";")
             .toIntOrNull() ?: 0
 
@@ -73,28 +78,27 @@ internal class ImageDecoderInterceptor : Interceptor {
      *
      * MIT License
      *
-     *
      * Copyright (c) 2019 junheah
      */
-    private fun imageDecoder(input: Bitmap, chapter: Int, view_cnt: Int, half: Int = 0, _CX: Int = ManaMoa.V1_CX, _CY: Int = ManaMoa.V1_CY): Bitmap {
+    private fun imageDecoder(input: Bitmap, chapter: Int, view_cnt: Int, half: Int = 0): Bitmap {
         if (view_cnt == 0) return input
         val viewCnt = view_cnt / 10
-        var CX = _CX
-        var CY = _CY
+        var cx = ManaMoa.V1_CX
+        var cy = ManaMoa.V1_CY
 
         //view_cnt / 10 > 30000 ? (this._CX = 1, this._CY = 6)  : view_cnt / 10 > 20000 ? this._CX = 1 : view_cnt / 10 > 10000 && (this._CY = 1)
         // DO NOT (AUTOMATICALLY) REPLACE TO when USING IDEA. seems it doesn't detect correct condition
         if (viewCnt > 30000) {
-            CX = 1
-            CY = 6
+            cx = 1
+            cy = 6
         } else if (viewCnt > 20000) {
-            CX = 1
+            cx = 1
         } else if (viewCnt > 10000) {
-            CY = 1
+            cy = 1
         }
 
         //decode image
-        val order = Array(CX * CY) { IntArray(2) }
+        val order = Array(cx * cy) { IntArray(2) }
         val oSize = order.size - 1
 
         for (i in 0..oSize) {
@@ -102,22 +106,22 @@ internal class ImageDecoderInterceptor : Interceptor {
             order[i][1] = decoderRandom(chapter, viewCnt, i)
         }
 
-        java.util.Arrays.sort(order) { a, b -> java.lang.Double.compare(a[1].toDouble(), b[1].toDouble()) }
+        java.util.Arrays.sort(order) { a, b -> a[1].toDouble().compareTo(b[1].toDouble()) }
 
         //create new bitmap
         val outputWidth = if (half == 0) input.width else input.width / 2
         val output = Bitmap.createBitmap(outputWidth, input.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
 
-        val rowWidth = input.width / CX
-        val rowHeight = input.height / CY
+        val rowWidth = input.width / cx
+        val rowHeight = input.height / cy
 
         for (i in 0..oSize) {
             val o = order[i]
-            val ox = i % CX
-            val oy = i / CX
-            val tx = o[0] % CX
-            val ty = o[0] / CX
+            val ox = i % cx
+            val oy = i / cx
+            val tx = o[0] % cx
+            val ty = o[0] / cx
             val sx = if (half == 2) -input.width / 2 else 0
 
             val srcX = ox * rowWidth
@@ -126,9 +130,9 @@ internal class ImageDecoderInterceptor : Interceptor {
             val destY = ty * rowHeight
 
             canvas.drawBitmap(input,
-                    Rect(srcX, srcY, srcX + rowWidth, srcY + rowHeight),
-                    Rect(destX, destY, destX + rowWidth, destY + rowHeight),
-                    null)
+                Rect(srcX, srcY, srcX + rowWidth, srcY + rowHeight),
+                Rect(destX, destY, destX + rowWidth, destY + rowHeight),
+                null)
         }
 
         return output
@@ -144,18 +148,18 @@ internal class ImageDecoderInterceptor : Interceptor {
      */
     private fun decoderRandom(chapter: Int, view_cnt: Int, index: Int): Int {
         if (chapter < 554714) {
-            val x = 10000 * Math.sin((view_cnt + index).toDouble())
-            return Math.floor(100000 * (x - Math.floor(x))).toInt()
+            val x = 10000 * sin((view_cnt + index).toDouble())
+            return floor(100000 * (x - floor(x))).toInt()
         }
 
         val seed = view_cnt + index + 1
-        val t = 100 * Math.sin((10 * seed).toDouble())
-        val n = 1000 * Math.cos((13 * seed).toDouble())
-        val a = 10000 * Math.tan((14 * seed).toDouble())
+        val t = 100 * sin((10 * seed).toDouble())
+        val n = 1000 * cos((13 * seed).toDouble())
+        val a = 10000 * tan((14 * seed).toDouble())
 
-        return (Math.floor(100 * (t - Math.floor(t))) +
-                Math.floor(1000 * (n - Math.floor(n))) +
-                Math.floor(10000 * (a - Math.floor(a)))).toInt()
+        return (floor(100 * (t - floor(t))) +
+            floor(1000 * (n - floor(n))) +
+            floor(10000 * (a - floor(a)))).toInt()
     }
 }
 
