@@ -209,8 +209,7 @@ class Japscan : ParsedHttpSource() {
         val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_U']").isNullOrEmpty()) "&decodeImage" else ""
 
         document.select("select#pages").first()?.select("option")?.forEach {
-            val url = it.attr("data-img")
-            if (url.startsWith("http")) imagePath = ""
+            if (it.attr("data-img").startsWith("http")) imagePath = ""
             pages.add(Page(pages.size, "", "$imagePath${it.attr("data-img")}$imageScrambled"))
         }
 
