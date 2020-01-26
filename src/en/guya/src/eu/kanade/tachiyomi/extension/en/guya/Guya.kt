@@ -273,6 +273,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         // Get the scanlator info based on group ranking; do it first since we need it later
         val firstGroupId = getBestScanlator(json.getJSONObject("groups"), sort)
         chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
+        chapter.date_upload = json.getJSONObject("release_date").getLong(firstGroupId) * 1000
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
         chapter.url = "$slug/$num/$firstGroupId"
