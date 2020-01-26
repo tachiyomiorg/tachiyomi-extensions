@@ -192,7 +192,7 @@ class Mangahere : ParsedHttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET("$baseUrl/${chapter.url}".replace("www","m"))
+        return GET("$baseUrl/${chapter.url}".replace("www","m"), headers)
     }
 
     override fun pageListParse(document: Document): List<Page> =  mutableListOf<Page>().apply {
