@@ -191,109 +191,19 @@ class Mangahere : ParsedHttpSource() {
 			}
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val bar = document.select("script[src*=chapter_bar]")
-        if (!bar.isNullOrEmpty()){ //Webtoonviewer or cascade, all images on one page
-            val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
-            val duktape = Duktape.create()
-            val DeobfuscatedScript = duktape.evaluate(script).toString()
-            val urls = DeobfuscatedScript.substringAfter("newImgs=['").substringBefore("'];").split("','")
-            duktape.close()
-            val pages = mutableListOf<Page>()
-            for (i in 0 until urls.size-1) { 
-                pages.add(Page(i,"","https:${urls[i]}"))
-            }
-            return pages
-        } else {
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET("$baseUrl/${chapter.url}".replace("www","m"))
+    }
 
-        val html = document.html()
-        val link = document.location()
-
-        val pages = mutableListOf<Page>()
-
-        val duktape = Duktape.create()
-
-        var secretKey = extractSecretKey(html, duktape)
-
-        val chapterIdStartLoc =  html.indexOf("chapterid")
-        val chapterId = html.substring(
-                chapterIdStartLoc + 11,
-                html.indexOf(";", chapterIdStartLoc)).trim()
-
-        val chapterPagesElement = document.select(".pager-list-left > span").first()
-        val pagesLinksElements = chapterPagesElement.select("a")
-        val pagesNumber = pagesLinksElements.get(pagesLinksElements.size - 2).attr("data-page").toInt()
-
-        val pageBase = link.substring(0, link.lastIndexOf("/"))
-
-        for (i in 1..pagesNumber){
-
-            val pageLink = "${pageBase}/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
-
-            var responseText = ""
-
-            for (tr in 1..3){
-
-                val request = Request.Builder()
-                        .url(pageLink)
-                        .addHeader("Referer",link)
-                        .addHeader("Accept","*/*")
-                        .addHeader("Accept-Language","en-US,en;q=0.9")
-                        .addHeader("Connection","keep-alive")
-                        .addHeader("Host","www.mangahere.cc")
-                        .addHeader("User-Agent", System.getProperty("http.agent") ?: "")
-                        .addHeader("X-Requested-With","XMLHttpRequest")
-                        .build()
-
-                val response = client.newCall(request).execute()
-                responseText = response.body()!!.string()
-
-                if (responseText.isNotEmpty())
-                    break
-                else
-                    secretKey = ""
-
-            }
-
-            val deobfuscatedScript = duktape.evaluate(responseText.removePrefix("eval")).toString()
-
-            val baseLinkStartPos = deobfuscatedScript.indexOf("pix=") + 5
-            val baseLinkEndPos = deobfuscatedScript.indexOf(";", baseLinkStartPos) - 1
-            val baseLink = deobfuscatedScript.substring(baseLinkStartPos, baseLinkEndPos)
-
-            val imageLinkStartPos = deobfuscatedScript.indexOf("pvalue=") + 9
-            val imageLinkEndPos = deobfuscatedScript.indexOf("\"", imageLinkStartPos)
-            val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
-
-            pages.add(Page(i, "", "http:$baseLink$imageLink"))
-
-        }
-
-        duktape.close()
-
-        return pages
+    override fun pageListParse(document: Document): List<Page> =  mutableListOf<Page>().apply {
+        document.select("select option").forEach {
+            add(Page(size,"https:${it.attr("value")}"))
         }
     }
 
-    private fun extractSecretKey(html: String, duktape: Duktape): String {
-
-        val secretKeyScriptLocation = html.indexOf("eval(function(p,a,c,k,e,d)")
-        val secretKeyScriptEndLocation = html.indexOf("</script>", secretKeyScriptLocation)
-        val secretKeyScript = html.substring(secretKeyScriptLocation, secretKeyScriptEndLocation).removePrefix("eval")
-
-        val secretKeyDeobfuscatedScript = duktape.evaluate(secretKeyScript).toString()
-
-        val secretKeyStartLoc = secretKeyDeobfuscatedScript.indexOf("'")
-        val secretKeyEndLoc = secretKeyDeobfuscatedScript.indexOf(";")
-
-        val secretKeyResultScript = secretKeyDeobfuscatedScript.substring(
-                secretKeyStartLoc, secretKeyEndLoc)
-
-        return duktape.evaluate(secretKeyResultScript).toString()
-
+    override fun imageUrlParse(document: Document): String {
+        return document.select("img#image").attr("src")
     }
-
-    override fun imageUrlParse(document: Document) = document.getElementById("image").attr("src")
 
     private class Genre(title: String, val id: Int) : Filter.TriState(title)
 
