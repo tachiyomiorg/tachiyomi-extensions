@@ -88,7 +88,7 @@ class Japscan : ParsedHttpSource() {
                     .replace("[\\W]".toRegex(), "-")
                     .replace("[-]{2,}".toRegex(), "-")
                     .replace("^-|-$".toRegex(), "")
-            manga.thumbnail_url = "$baseUrl/imgs/mangas/$s.jpg"
+            manga.thumbnail_url = "$baseUrl/imgs/mangas/$s.jpg".toLowerCase()
         }
         return manga
     }
@@ -205,11 +205,13 @@ class Japscan : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))
+        var imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))?.groupValues?.get(1)
         val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_U']").isNullOrEmpty()) "&decodeImage" else ""
 
         document.select("select#pages").first()?.select("option")?.forEach {
-            pages.add(Page(pages.size, "", "${imagePath?.groupValues?.get(1)}${it.attr("data-img")}$imageScrambled"))
+            val url = it.attr("data-img")
+            if (url.startsWith("http")) imagePath = ""
+            pages.add(Page(pages.size, "", "$imagePath${it.attr("data-img")}$imageScrambled"))
         }
 
         return pages
