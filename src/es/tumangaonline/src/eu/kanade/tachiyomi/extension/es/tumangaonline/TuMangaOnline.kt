@@ -232,8 +232,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > [$chapteridselector]") //button
-        url = "$chapterurl#${button.attr(chapteridselector)}"
+        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -242,8 +241,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
     private fun regularChapterFromElement(element: Element, chname: String, number: Float, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > [$chapteridselector]") //button
-        url = "$chapterurl#${button.attr(chapteridselector)}"
+        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
         name = chname
         chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -253,40 +251,11 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val (chapterURL, chapterID) = chapter.url.split("#")
-        val response = client.newCall(GET(chapterURL, headers)).execute()
-        val document = response.asJsoup()
-        val csrfToken = document.select("meta[name=csrf-token]").attr("content")
-        val script = document.select("script:containsData($scriptselector)").html()
-        val functionID = script.substringAfter("addEventListener").substringAfter("preventDefault();").substringBefore("(").trim().removePrefix("_")
-        val function = script.substringAfter("function _$functionID(").substringBefore("});")
-        val urlGoto = function.substringAfter("url: '").substringBefore("'")
-        val uploadID = function.substringAfter("replace('").substringBefore("'")
-        val goto = urlGoto.replace(uploadID,chapterID)
-        val method = function.substringAfter("type: '").substringBefore("'")
-
-        val getHeaders = headersBuilder()
-            .add("User-Agent", userAgent)
-            .add("Referer", chapterURL)
-            .add("X-CSRF-TOKEN",csrfToken)
-            .add("X-Requested-With","XMLHttpRequest")
-            .add(functionID,functionID)
-            .build()
-
-        val formBody = when (method) {
-            "GET" -> null
-            "POST" -> FormBody.Builder().build()
-            else -> throw UnsupportedOperationException("Unknown method. Open help ticket")
-        }
-
-        val url = getBuilder(goto,getHeaders,formBody,method).substringBeforeLast("/") + "/${getPageMethod()}"
-        // Getting /cascade instead of /paginated can get all pages at once
-
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
-            .add("Referer", chapterURL)
+            .add("Referer", "$baseUrl/library/manga/")
             .build()
-
+        val url = getBuilder(baseUrl + chapter.url,headers,null,"GET").substringBeforeLast("/") + "/${getPageMethod()}"
         return GET(url, headers)
     }
 
