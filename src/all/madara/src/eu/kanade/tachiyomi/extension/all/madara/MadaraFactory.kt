@@ -60,7 +60,9 @@ class MadaraFactory : SourceFactory {
         Wakamics(),
         TeabeerComics(),
         KingzManga(),
-        YaoiToshokan()
+        YaoiToshokan(),
+        GoldenManga(),
+        Mangalek()
     )
 }
 
@@ -406,3 +408,7 @@ class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", 
     }
 
 }
+
+class GoldenManga : Madara("موقع لترجمة المانجا", "https://golden-manga.ml", "ar", SimpleDateFormat("yyyy-MM-dd", Locale.US))
+
+class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
