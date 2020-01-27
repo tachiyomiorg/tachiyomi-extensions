@@ -58,8 +58,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
         return client.newCall(req)
             .execute()
-            .body()!!
-            .string()
+            .request()
+            .url()
+            .toString()
     }
 
     private val preferences: SharedPreferences by lazy {
