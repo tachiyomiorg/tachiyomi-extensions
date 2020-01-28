@@ -200,6 +200,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private val scriptselector = "addEventListener"
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date())
+        
         val document = response.asJsoup()
         val chapterurl = response.request().url().toString()
         val script = document.select("script:containsData($scriptselector)").html()
@@ -251,7 +253,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
-    private val time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of at load
+    private var time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of at load
     
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
@@ -265,9 +267,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val getHeaders = headersBuilder() //TODO - Check Headers
             .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
-            .add("X-CSRF-TOKEN",csrfToken)
-            .add("X-Requested-With","XMLHttpRequest")
-            .add(functionID,functionID)
+            //.add("X-CSRF-TOKEN",csrfToken)
+            //.add("X-Requested-With","XMLHttpRequest")
+            //.add(functionID,functionID)
+            .add("content-type", "application/x-www-form-urlencoded")
             .build()
         
         val formBody = when (method) { //TODO - Double Check Body
