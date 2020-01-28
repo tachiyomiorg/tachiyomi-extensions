@@ -251,7 +251,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
-    private val time1 = ""
+    private val time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date())
     
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
@@ -259,12 +259,13 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val document = response.asJsoup()
         val geturl = document.select("form#$chapterID").attr("action")
         val token = document.select("form#$chapterID").attr("value")
-        val time2 = ""
+        val method = document.select("form#$chapterID").attr("method")
+        val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date())
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
             .add("Referer", "$baseUrl/library/manga/")
             .build()
-        val url = getBuilder(baseUrl + chapter.url,headers,null,"GET").substringBeforeLast("/") + "/${getPageMethod()}"
+        val url = getBuilder(geturl,headers,null,method).substringBeforeLast("/") + "/${getPageMethod()}"
         return GET(url, headers)
     }
 
