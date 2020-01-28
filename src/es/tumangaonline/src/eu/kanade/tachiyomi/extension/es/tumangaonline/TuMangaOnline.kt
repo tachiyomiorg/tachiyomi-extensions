@@ -251,18 +251,18 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
-    private val time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date())
+    private val time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of at load
     
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val response = client.newCall(GET(chapterURL, headers)).execute()
+        val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
         val document = response.asJsoup()
-        val geturl = document.select("form#$chapterID").attr("action")
-        val token = document.select("form#$chapterID").attr("value")
-        val method = document.select("form#$chapterID").attr("method")
-        val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date())
+        val geturl = document.select("form#$chapterID").attr("action") //Get redirect URL
+        val token = document.select("form#$chapterID").attr("value") //Get token
+        val method = document.select("form#$chapterID").attr("method") //Check POST or GET
+        val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of chapter reqeust
         
-        val getHeaders = headersBuilder()
+        val getHeaders = headersBuilder() //TODO - Check Headers
             .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
             .add("X-CSRF-TOKEN",csrfToken)
@@ -270,7 +270,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add(functionID,functionID)
             .build()
         
-        val formBody = when (method) {
+        val formBody = when (method) { //TODO - Double Check Body
             "GET" -> null
             "POST" -> FormBody.Builder()
             .add("_token", token)
