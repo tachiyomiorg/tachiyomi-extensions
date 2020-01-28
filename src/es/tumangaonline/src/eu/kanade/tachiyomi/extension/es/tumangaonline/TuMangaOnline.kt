@@ -233,7 +233,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+        url = "$chapterurl#${element.select("div.row > .text-right > form").attr("id")}"
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -242,7 +242,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
     private fun regularChapterFromElement(element: Element, chname: String, number: Float, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+        url = "$chapterurl#${element.select("div.row > .text-right > form").attr("id")}"
         name = chname
         chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
@@ -251,7 +251,15 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
 
+    private val time1 = ""
+    
     override fun pageListRequest(chapter: SChapter): Request {
+        val (chapterURL, chapterID) = chapter.url.split("#")
+        val response = client.newCall(GET(chapterURL, headers)).execute()
+        val document = response.asJsoup()
+        val geturl = document.select("form#$chapterID").attr("action")
+        val token = document.select("form#$chapterID").attr("value")
+        val time2 = ""
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
             .add("Referer", "$baseUrl/library/manga/")
