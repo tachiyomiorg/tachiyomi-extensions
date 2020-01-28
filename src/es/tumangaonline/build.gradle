@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: TuMangaOnline'
     pkgNameSuffix = 'es.tumangaonline'
     extClass = '.TuMangaOnline'
-    extVersionCode = 20
+    extVersionCode = 21
     libVersion = '1.2'
 }
 
