@@ -261,11 +261,32 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val token = document.select("form#$chapterID").attr("value")
         val method = document.select("form#$chapterID").attr("method")
         val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date())
+        
+        val getHeaders = headersBuilder()
+            .add("User-Agent", userAgent)
+            .add("Referer", chapterURL)
+            .add("X-CSRF-TOKEN",csrfToken)
+            .add("X-Requested-With","XMLHttpRequest")
+            .add(functionID,functionID)
+            .build()
+        
+        val formBody = when (method) {
+            "GET" -> null
+            "POST" -> FormBody.Builder()
+            .add("_token", token)
+            .add("time", time1)
+            .add("time2", time2)
+            .build()
+            else -> throw UnsupportedOperationException("Unknown method. Open help ticket")
+        }
+        
+        val url = getBuilder(geturl,getHeaders,formBody,method).substringBeforeLast("/") + "/${getPageMethod()}"
+        
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
-            .add("Referer", "$baseUrl/library/manga/")
+            .add("Referer", chapterURL)
             .build()
-        val url = getBuilder(geturl,headers,null,method).substringBeforeLast("/") + "/${getPageMethod()}"
+        
         return GET(url, headers)
     }
 
