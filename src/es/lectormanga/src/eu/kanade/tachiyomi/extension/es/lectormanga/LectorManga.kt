@@ -42,23 +42,26 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"
+
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-                .add("Referer", baseUrl)
-                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+            .add("User-Agent", userAgent)
+            .add("Referer", "$baseUrl/")
     }
 
-    private fun getBuilder(url: String, headers: Headers, formBody: FormBody): String {
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody?, method: String): String {
         val req = Request.Builder()
             .headers(headers)
             .url(url)
-            .post(formBody)
+            .method(method,formBody)
             .build()
 
         return client.newCall(req)
             .execute()
-            .body()!!
-            .string()
+            .request()
+            .url()
+            .toString()
     }
 
     private val preferences: SharedPreferences by lazy {
@@ -187,6 +190,8 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private val scriptselector = "disqus_config"
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        time1 = SimpleDateFormat("yyyy-M-d+k:m:s", Locale.US).format(Date()) //Emulate when the chapter page is opened
+
         val document = response.asJsoup()
         val chapterurl = response.request().url().toString()
         val script = document.select("script:containsData($scriptselector)").html()
@@ -220,8 +225,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
     private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
-        val button = element.select("div.row > .text-right > [$chapteridselector]") //button
-        url = "$chapterurl#${button.attr(chapteridselector)}"
+        url = "$chapterurl#${element.select("div.row > .text-right > form").attr("id")}"
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -229,8 +233,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, chapterurl: String, chapteridselector: String): SChapter {
         val chapter = SChapter.create()
-        val button = info.select("div.row > .text-right > [$chapteridselector]") //button
-        chapter.url = "$chapterurl#${button.attr(chapteridselector)}"
+        chapter.url = "$chapterurl#${info.select("div.row > .text-right > form").attr("id")}"
         chapter.name = chapterName
         chapter.scanlator = info.select("div.col-md-6.text-truncate")?.text()
         chapter.date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -239,40 +242,41 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
+    private var time1 = SimpleDateFormat("yyyy-M-d+k:m:s", Locale.US).format(Date()) //Grab time at app launch, can be updated
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val response = client.newCall(GET(chapterURL, headers)).execute()
+        val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
         val document = response.asJsoup()
-        val csrftoken = document.select("meta[name=csrf-token]").attr("content")
-        val script = document.select("script:containsData($scriptselector)").html()
-        val functionID = script.substringAfter("addEventListener").substringAfter("{").substringBefore("(").trim().removePrefix("_")
-        val function = script.substringAfter("function _$functionID(").substringBefore("});")
-        val goto = function.substringAfter("url: '").substringBefore("'")
-        val paramChapter = function.substringAfter("data").substringBefore("\":_").substringAfterLast("\"")
-        val paramManga = function.substringAfter("data").substringBefore("\": ").substringAfterLast("\"")
-        val mangaID = function.substringAfter("data").substringAfter("\": ").substringBefore(",").removeSurrounding("'")
+        val geturl = document.select("form#$chapterID").attr("action") //Get redirect URL
+        val token = document.select("form#$chapterID input").attr("value") //Get token
+        val method = document.select("form#$chapterID").attr("method") //Check POST or GET
+        val time2 = SimpleDateFormat("yyyy-M-d+k:m:s", Locale.US).format(Date()) //Get time of chapter request
 
-        val redirectheaders = headersBuilder()
+       val getHeaders = headersBuilder()
+            .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
-            .add("Content-Type","application/x-www-form-urlencoded; charset=UTF-8")
-            .add("X-CSRF-TOKEN",csrftoken)
-            .add("X-Requested-With","XMLHttpRequest")
-            .add(functionID,functionID)
+            .add("Content-Type", "application/x-www-form-urlencoded")
             .build()
 
-        val formBody = FormBody.Builder()
-            .add(paramManga, mangaID)
-            .add(paramChapter, chapterID)
-            .build()
+        val formBody = when (method) {
+            "GET" -> null
+            "POST" -> FormBody.Builder()
+                .add("_token", token)
+                .add("time", time1)
+                .add("time2", time2)
+                .build()
+            else -> throw UnsupportedOperationException("Unknown method. Open GitHub issue")
+        }
 
-        val newurl = getBuilder(goto,redirectheaders,formBody)
+        val newurl = getBuilder(geturl,getHeaders,formBody,method)
         val url =  if (newurl.contains("paginated")) {
             newurl.substringBefore("paginated") + "cascade"
         } else newurl
 
         val headers = headersBuilder()
-            .add("Referer",newurl)
+            .add("User-Agent", userAgent)
+            .add("Referer", "$baseUrl/library/manga/")
             .build()
 
         // Get /cascade instead of /paginate to get all pages at once
