@@ -46,6 +46,7 @@ class Gufengmh : ParsedHttpSource() {
         val uri = Uri.parse(baseUrl).buildUpon()
         if (query.isNotBlank()) {
             uri.appendPath("search")
+                .appendEncodedPath("")
                 .appendQueryParameter("keywords", query)
                 .appendQueryParameter("page", page.toString())
         } else {
