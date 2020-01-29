@@ -5,11 +5,15 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.Headers
+import okhttp3.HttpUrl
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -40,13 +44,11 @@ class MadaraFactory : SourceFactory {
         ZinManga(),
         ManwahentaiMe(),
         Manga3asq(),
-        NManhwa(),
         Indiancomicsonline(),
         AdonisFansub(),
         GetManhwa(),
         AllPornComic(),
         Milftoon(),
-        ToonManga(),
         Hiperdex(),
         DoujinHentai(),
         Azora(),
@@ -62,7 +64,8 @@ class MadaraFactory : SourceFactory {
         KingzManga(),
         YaoiToshokan(),
         GoldenManga(),
-        Mangalek()
+        Mangalek(),
+        AstralLibrary()
     )
 }
 
@@ -198,8 +201,6 @@ class ManwahentaiMe : Madara("Manwahentai.me", "https://manhwahentai.me", "en")
 
 class Manga3asq : Madara("مانجا العاشق", "https://3asq.org", "ar")
 
-class NManhwa : Madara("N Manhwa", "https://nmanhwa.com", "en")
-
 class Indiancomicsonline : Madara("Indian Comics Online", "http://www.indiancomicsonline.com", "hi")
 
 class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "tr") {
@@ -229,8 +230,6 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
-
-class ToonManga : Madara("ToonManga", "https://toonmanga.com", "en")
 
 class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     override fun getGenreList() = listOf(
@@ -412,3 +411,7 @@ class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", 
 class GoldenManga : Madara("موقع لترجمة المانجا", "https://golden-manga.ml", "ar", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
 class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
+
+class AstralLibrary : Madara("Astral Library", "https://astrallibrary.net", "en") {
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
+}
