@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -19,6 +18,7 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.regex.Pattern
 
 class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
@@ -37,9 +37,9 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    override fun popularMangaSelector() = "table.listing tr:gt(1)"
+    override fun popularMangaSelector() = "table.listing tr:has(a) td:nth-child(1) a"
 
-    override fun latestUpdatesSelector() = "table.listing tr:gt(1)"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/ComicList/MostPopular?page=$page", headers)
@@ -50,12 +50,10 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("td a:eq(0)").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
+        return SManga.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            title = element.text()
         }
-        return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
@@ -87,7 +85,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         return popularMangaFromElement(element)
     }
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.barContent").first()
@@ -102,7 +100,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         return manga
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -117,7 +115,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
-            SimpleDateFormat("MM/dd/yyyy").parse(it).time
+            SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).parse(it).time
         } ?: 0
         return chapter
     }
