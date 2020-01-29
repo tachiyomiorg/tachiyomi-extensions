@@ -26,7 +26,8 @@ class WPMangaStreamFactory : SourceFactory {
         KomikGo(),
         KomikIndo(),
         MaidManga(),
-        SekteKomik()
+        SekteKomik(),
+        MangaSwat()
     )
 }
 
@@ -968,4 +969,44 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
         Pair("One-Shot", "One-Shot"),
         Pair("Doujin", "Doujin")
     ))
+}
+
+class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
+    //Popular
+    //Latest
+    //Search
+    //Details
+
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
+        thumbnail_url = document.select("div.thumb img.lazyload").attr("data-src")
+        title = document.select("div.infox h1").text()
+        genre = document.select("div.spe [rel=tag]").map { it.text() }.joinToString(", ")
+        status = when (document.select("span:contains(الحالة)").text().substringAfter(":").trim()) {
+            "Ongoing" -> SManga.ONGOING
+            "Completed" -> SManga.COMPLETED
+            else -> SManga.UNKNOWN
+        }
+        author = document.select("span:contains(المؤلف)").text().substringAfter(":").trim()
+        artist = author
+        description = document.select("div[itemprop=articleBody]").text()
+    }
+    
+    //Chapters
+    //Pages and Images
+    
+    override fun pageListRequest(chapter: SChapter): Request {
+        Log.i("TachiDebug","MangaSwat Chapter Page => ${baseUrl + chapter.url + "?/"}")
+        return GET(baseUrl + chapter.url + "?/", headers)
+    }
+
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        document.select("div#readerarea img[data-src]").forEachIndexed { index, element ->
+            Log.i("TachiDebug","MangaSwat Page $index => ${element.attr("data-src")}")
+            add(Page(index,"",element.attr("data-src")))
+        }
+    }
+    
+    override fun imageRequest(page: Page): Request {
+        return GET( page.imageUrl!! , headers)
+    }
 }
