@@ -995,13 +995,11 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
     //Pages and Images
     
     override fun pageListRequest(chapter: SChapter): Request {
-        Log.i("TachiDebug","MangaSwat Chapter Page => ${baseUrl + chapter.url + "?/"}")
         return GET(baseUrl + chapter.url + "?/", headers)
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("div#readerarea img[data-src]").forEachIndexed { index, element ->
-            Log.i("TachiDebug","MangaSwat Page $index => ${element.attr("data-src")}")
             add(Page(index,"",element.attr("data-src")))
         }
     }
