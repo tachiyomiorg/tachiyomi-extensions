@@ -9,11 +9,10 @@ class GenkanFactory : SourceFactory {
         LeviatanScansES(),
         PsychoPlay(),
         OneShotScans(),
-        KaguyaDex(),
-        KomiScans(),
         HunlightScans(),
         WoweScans(),
-        ZeroScans()
+        ZeroScans(),
+        ReaperScans()
     )
 }
 
@@ -29,3 +28,5 @@ class KomiScans : GenkanOriginal("Komi Scans", "https://komiscans.com", "en")
 class HunlightScans : Genkan("Hunlight Scans", "https://hunlight-scans.info", "en")
 class WoweScans : Genkan("Wowe Scans", "https://wowescans.co", "en")
 class ZeroScans : Genkan("ZeroScans", "https://zeroscans.com", "en")
+// Search isn't working on Reaper's website, use GenkanOriginal for now
+class ReaperScans : GenkanOriginal("Reaper Scans", "https://reaperscans.com", "en")
