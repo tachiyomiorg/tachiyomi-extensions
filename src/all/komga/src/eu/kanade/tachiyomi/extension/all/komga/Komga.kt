@@ -51,6 +51,17 @@ open class Komga : ConfigurableSource, HttpSource() {
                         url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
                     }
                 }
+                is StatusGroup -> {
+                    val statusToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            statusToInclude.add(content.name.toUpperCase(Locale.ROOT))
+                        }
+                    }
+                    if (statusToInclude.isNotEmpty()) {
+                        url.addQueryParameter("status", statusToInclude.joinToString(","))
+                    }
+                }
                 is Filter.Sort -> {
                     var sortCriteria = when (filter.state?.index) {
                         0 -> "name"
@@ -128,7 +139,11 @@ open class Komga : ConfigurableSource, HttpSource() {
             title = name
             url = "/api/v1/series/${id}"
             thumbnail_url = "$baseUrl/api/v1/series/${id}/thumbnail"
-            status = SManga.UNKNOWN
+            status = when (metadata.status) {
+                "ONGOING" -> SManga.ONGOING
+                "ENDED" -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
         }
 
     private fun parseDate(date: String?): Long =
@@ -151,10 +166,13 @@ open class Komga : ConfigurableSource, HttpSource() {
     private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Filter.Sort.Selection(0, true))
+    private class StatusFilter(name: String) : Filter.CheckBox(name, false)
+    private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
 
     override fun getFilterList(): FilterList =
         FilterList(
             LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name }),
+            StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
             SeriesSort()
         )
 

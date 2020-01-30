@@ -12,7 +12,14 @@ data class SeriesDto(
     val created: String?,
     val lastModified: String?,
     val fileLastModified: String,
-    val booksCount: Int
+    val booksCount: Int,
+    val metadata: SeriesMetadataDto
+)
+
+data class SeriesMetadataDto(
+    val status: String,
+    val created: String?,
+    val lastModified: String?
 )
 
 data class BookDto(
