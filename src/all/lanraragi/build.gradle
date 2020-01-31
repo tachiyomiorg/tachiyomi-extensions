@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: LANraragi'
     pkgNameSuffix = 'all.lanraragi'
     extClass = '.LANraragi'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
