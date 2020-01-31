@@ -83,7 +83,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return searchMangaParse(response)
     }
 
-    private var lastResultCount = 100
+    private var lastResultCount: Int = 100
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = getApiUriBuilder("/api/search")
         uri.appendQueryParameter("start", ((page - 1) * lastResultCount).toString())
@@ -97,8 +98,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         val jsonResult = Gson().fromJson<ArchiveSearchResult>(response.body()!!.string())
+        val currentStart = getStart(response)
 
-        val oldLastResultCount = lastResultCount
         lastResultCount = jsonResult.data.size
 
         return MangasPage(
@@ -111,7 +112,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                     artist = getArtist(it.tags)
                     author = artist
                 }
-            }, jsonResult.data.size >= oldLastResultCount)
+            }, currentStart + jsonResult.data.size < jsonResult.recordsFiltered)
     }
 
     // Preferences
@@ -228,15 +229,16 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return uri.toString()
     }
 
+    private fun getTopResponse(response: Response): Response {
+        return if (response.priorResponse() == null) response else getTopResponse(response.priorResponse()!!)
+    }
+
     private fun getId(response: Response): String {
-        var originalResponse = response
+        return getTopResponse(response).request().url().queryParameter("id").toString()
+    }
 
-        while (true) {
-            val temp = originalResponse.priorResponse() ?: break
-            originalResponse = temp
-        }
-
-        return originalResponse.request().url().queryParameter("id").toString()
+    private fun getStart(response: Response): Int {
+        return getTopResponse(response).request().url().queryParameter("start")!!.toInt()
     }
 
     private fun getArtist(tags: String): String {
