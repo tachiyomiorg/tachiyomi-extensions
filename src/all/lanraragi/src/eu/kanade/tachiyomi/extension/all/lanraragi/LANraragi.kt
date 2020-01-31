@@ -64,7 +64,7 @@ open class LANraragi(override val lang: String) : ConfigurableSource, HttpSource
         val pages = ArrayList<Page>()
         var i = 0
         pageList.pages.forEach { url ->
-            val uri = Uri.parse("$baseUrl/${url.trimStart('.')}")
+            val uri = Uri.parse("$baseUrl/${url.trimStart('.').trimStart('/')}")
 
             pages.add(Page(i++, uri.toString(), uri.toString(), uri))
         }
@@ -194,7 +194,7 @@ open class LANraragi(override val lang: String) : ConfigurableSource, HttpSource
                     genre = a.tags
 
                     if(apiKey.isNotEmpty()) {
-                        url = "$url&apiKey=$apiKey"
+                        url = "$url&key=$apiKey"
                     }
                 })
             }
