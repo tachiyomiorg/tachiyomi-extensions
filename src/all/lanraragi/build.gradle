@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: LANraragi'
     pkgNameSuffix = 'all.lanraragi'
-    extClass = '.LANraragiFactory'
-    extVersionCode = 1
+    extClass = '.LANraragi'
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

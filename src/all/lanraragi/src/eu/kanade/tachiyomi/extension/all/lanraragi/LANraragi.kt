@@ -7,6 +7,8 @@ import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
+import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchivePage
+import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchiveSearchResult
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
@@ -16,79 +18,105 @@ import okhttp3.Response
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-open class LANraragi(override val lang: String) : ConfigurableSource, HttpSource() {
-
-    override val name = "LANraragi"
+open class LANraragi : ConfigurableSource, HttpSource() {
 
     override val baseUrl: String
         get() = preferences.getString("hostname", "http://127.0.0.1:3000")
 
+    override val lang = "all"
+
+    override val name = "LANraragi"
+
     override val supportsLatest = true
 
     private val apiKey: String
-        get() = preferences.getString("apikey", "")
-
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val id = response.request().url().queryParameter("id").toString()
-
-        val uriBuilder = Uri.parse("$baseUrl/api/extract").buildUpon()
-        uriBuilder.appendQueryParameter("id", id)
-        if(apiKey.isNotEmpty()) {
-            uriBuilder.appendQueryParameter("key", apiKey)
-        }
-
-        val chapters = ArrayList<SChapter>()
-        chapters.add(SChapter.create().apply {
-            val uri = uriBuilder.build()
-
-            url = "${uri.encodedPath}?${uri.encodedQuery}"
-            chapter_number = 1F
-            name = "Chapter 1"
-        })
-        return chapters
-    }
-
-    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("imageUrlParse is unused: ${response.request().url().encodedPath()}")
-
-    override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
-
-    override fun latestUpdatesRequest(page: Int) = searchMangaRequest(page, "", FilterList())
+        get() = preferences.getString("apiKey", "")
 
     override fun mangaDetailsParse(response: Response): SManga {
-        return SManga.create()
+        val id = getId(response)
+
+        return SManga.create().apply {
+            thumbnail_url = getThumbnailUri(id)
+        }
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val id = getId(response)
+
+        val uri = getApiUriBuilder("/api/extract")
+        uri.appendQueryParameter("id", id)
+
+        return listOf(
+            SChapter.create().apply {
+                val uriBuild = uri.build()
+
+                url = "${uriBuild.encodedPath}?${uriBuild.encodedQuery}"
+                chapter_number = 1F
+                name = "Chapter"
+            })
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val pageList = Gson().fromJson<PageList>(response.body()!!.string())
+        val archivePage = Gson().fromJson<ArchivePage>(response.body()!!.string())
 
-        val pages = ArrayList<Page>()
-        var i = 0
-        pageList.pages.forEach { url ->
-            val uri = Uri.parse("$baseUrl/${url.trimStart('.').trimStart('/')}")
-
-            pages.add(Page(i++, uri.toString(), uri.toString(), uri))
+        return archivePage.pages.mapIndexed { index, url ->
+            val uri = Uri.parse("${baseUrl}${url.trimStart('.')}")
+            Page(index, uri.toString(), uri.toString(), uri)
         }
-        return pages
     }
 
-    override fun popularMangaParse(response: Response) = genericMangaParse(response)
+    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("imageUrlParse is unused")
 
-    override fun popularMangaRequest(page: Int)= searchMangaRequest(page, "", FilterList())
+    override fun popularMangaRequest(page: Int): Request {
+        return searchMangaRequest(page, "", FilterList())
+    }
 
-    override fun searchMangaParse(response: Response) = genericMangaParse(response)
+    override fun popularMangaParse(response: Response): MangasPage {
+        return searchMangaParse(response)
+    }
 
+    override fun latestUpdatesRequest(page: Int): Request {
+        return searchMangaRequest(page, "", FilterList())
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        return searchMangaParse(response)
+    }
+
+    private var lastResultCount = 100
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val uri = Uri.parse("$baseUrl/api/archivelist").buildUpon()
+        val uri = getApiUriBuilder("/api/search")
+        uri.appendQueryParameter("start", ((page - 1) * lastResultCount).toString())
 
-        if(query.isNotEmpty()) {
-            uri.appendQueryParameter("query", query)
-        }
-
-        if(apiKey.isNotEmpty()) {
-            uri.appendQueryParameter("key", apiKey)
+        if (query.isNotEmpty()) {
+            uri.appendQueryParameter("filter", query)
         }
 
         return GET(uri.toString())
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val jsonResult = Gson().fromJson<ArchiveSearchResult>(response.body()!!.string())
+
+        val oldLastResultCount = lastResultCount
+        lastResultCount = jsonResult.data.size
+
+        return MangasPage(
+            jsonResult.data.map {
+                SManga.create().apply {
+                    url = "/reader?id=${it.arcid}"
+                    title = it.title
+                    thumbnail_url = getThumbnailUri(it.arcid)
+                    genre = it.tags
+                    artist = getArtist(it.tags)
+                    author = artist
+                }
+            }, jsonResult.data.size >= oldLastResultCount)
+    }
+
+    // Preferences
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -101,120 +129,125 @@ open class LANraragi(override val lang: String) : ConfigurableSource, HttpSource
 
             setOnPreferenceChangeListener { _, newValue ->
                 var hostname = newValue as String
-                if(!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
+                if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
                     hostname = "http://$hostname"
                 }
 
-                summary = hostname
+                this.apply {
+                    text = hostname
+                    summary = hostname
+                }
+
                 preferences.edit().putString("hostname", hostname).commit()
             }
         }
 
-        val apikeyPref = EditTextPreference(screen.context).apply {
+        val apiKeyPref = EditTextPreference(screen.context).apply {
             key = "API Key"
             title = "API Key"
             text = apiKey
-            summary = apiKey.replace(Regex("."), "*")
+            summary = apiKey
             dialogTitle = "API Key"
 
             setOnPreferenceChangeListener { _, newValue ->
-                summary = (newValue as String).replace(Regex("."), "*")
-                preferences.edit().putString("apikey", newValue).commit()
+                val apiKey = newValue as String
+
+                this.apply {
+                    text = apiKey
+                    summary = apiKey
+                }
+
+                preferences.edit().putString("apiKey", newValue).commit()
             }
         }
 
         screen.addPreference(hostnamePref)
-        screen.addPreference(apikeyPref)
+        screen.addPreference(apiKeyPref)
     }
 
-    private fun genericMangaParse(response: Response): MangasPage {
-        val archives = Gson().fromJson<List<Archive>>(response.body()!!.string())
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val hostnamePref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = "Hostname"
+            title = "Hostname"
+            text = baseUrl
+            summary = baseUrl
+            dialogTitle = "Hostname"
 
-        val mangas = ArrayList<SManga>()
-        val queries = response.request().url().queryParameter("query")?.trim()?.split(Regex(" (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"))
-
-        archives.forEach archiveForEach@{ a ->
-            val shortTags = HashSet<String>()
-            val longTags = HashMap<String, HashSet<String>>()
-
-            val tags = a.tags.trim().split(Regex(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"))
-            tags.forEach { t ->
-                if(t.isNotEmpty()) {
-                    val split = t.trim().trim('"').split(':', limit = 2)
-                    if (split.size > 1) {
-                        val parent = split[0].toLowerCase()
-                        val child = split[1].toLowerCase()
-
-                        shortTags.add(child)
-                        if(!longTags.containsKey(parent)) {
-                            longTags[parent] = HashSet()
-                        }
-                        longTags[parent]!!.add(child)
-                    } else {
-                        val child = split[0].toLowerCase()
-                        shortTags.add(child)
-                    }
+            setOnPreferenceChangeListener { _, newValue ->
+                var hostname = newValue as String
+                if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
+                    hostname = "http://$hostname"
                 }
-            }
 
-            var tagsMatched = true
-            var titleMatched = false
-            queries?.forEach queryForEach@{ q ->
-                if(q.isNotEmpty()) {
-                    val split = q.trim().trimStart('-').trim('"').split(':', limit = 2)
-
-                    if (split.size > 1) {
-                        val parent = split[0].toLowerCase()
-                        val child = split[1].toLowerCase()
-
-                        if(!longTags[parent]?.contains(child)!!) {
-                            tagsMatched = false
-                        }
-                    } else {
-                        val child = split[0].toLowerCase()
-
-                        if(!shortTags.contains(child)) {
-                            tagsMatched = false
-                        }
-                    }
-
-                    if (a.title.contains(q, true)) {
-                        titleMatched = true
-                    }
+                this.apply {
+                    text = hostname
+                    summary = hostname
                 }
-            }
 
-            if(queries == null || tagsMatched || titleMatched) {
-                mangas.add(SManga.create().apply {
-                    url = "/api/extract?id=${a.arcid}"
-                    title = a.title
-                    thumbnail_url = getThumbnailsUri(a.arcid)
-                    artist = longTags["artist"]?.joinToString()
-                    author = artist
-                    genre = a.tags
-
-                    if(apiKey.isNotEmpty()) {
-                        url = "$url&key=$apiKey"
-                    }
-                })
+                preferences.edit().putString("hostname", hostname).commit()
             }
         }
 
-        return MangasPage(mangas, false)
+        val apiKeyPref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = "API Key"
+            title = "API Key"
+            text = apiKey
+            summary = apiKey
+            dialogTitle = "API Key"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val apiKey = newValue as String
+
+                this.apply {
+                    text = apiKey
+                    summary = apiKey
+                }
+
+                preferences.edit().putString("apiKey", newValue).commit()
+            }
+        }
+
+        screen.addPreference(hostnamePref)
+        screen.addPreference(apiKeyPref)
     }
 
-    private val preferences: SharedPreferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
-    private fun getThumbnailsUri(id: String): String {
-        val uri = Uri.parse("$baseUrl/api/thumbnail").buildUpon()
-        uri.appendQueryParameter("id", id)
-
-        if(apiKey.isNotEmpty()) {
+    // Helper
+    private fun getApiUriBuilder(path: String): Uri.Builder {
+        val uri = Uri.parse("$baseUrl$path").buildUpon()
+        if (apiKey.isNotEmpty()) {
             uri.appendQueryParameter("key", apiKey)
         }
 
+        return uri
+    }
+
+    private fun getThumbnailUri(id: String): String {
+        val uri = getApiUriBuilder("/api/thumbnail")
+        uri.appendQueryParameter("id", id)
+
         return uri.toString()
+    }
+
+    private fun getId(response: Response): String {
+        var originalResponse = response
+
+        while (true) {
+            val temp = originalResponse.priorResponse() ?: break
+            originalResponse = temp
+        }
+
+        return originalResponse.request().url().queryParameter("id").toString()
+    }
+
+    private fun getArtist(tags: String): String {
+        tags.split(',').forEach {
+            if (it.contains(':')) {
+                val temp = it.trim().split(':')
+
+                if (temp[0].equals("artist", true)) return temp[1]
+            }
+        }
+
+        return "N/A"
     }
 }
