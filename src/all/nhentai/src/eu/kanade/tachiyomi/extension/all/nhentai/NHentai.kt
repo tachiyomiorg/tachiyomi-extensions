@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.extension.all.nhentai
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getArtists
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getGroups
@@ -7,6 +11,8 @@ import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTags
 import eu.kanade.tachiyomi.extension.all.nhentai.NHUtils.Companion.getTime
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -22,8 +28,13 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-open class NHentai(override val lang: String, private val nhLang: String) : ParsedHttpSource() {
+open class NHentai(
+    override val lang: String,
+    private val nhLang: String
+) : ConfigurableSource, ParsedHttpSource() {
 
     final override val baseUrl = "https://nhentai.net"
 
@@ -37,16 +48,73 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
         add("User-Agent", "Tachiyomi/${BuildConfig.VERSION_NAME} ${System.getProperty("http.agent")}")
     }
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private var displayFullTitle: Boolean = when(preferences.getString(TITLE_PREF, "full")){
+        "full" -> true
+        else -> false
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = TITLE_PREF
+            title = TITLE_PREF
+            entries = arrayOf("Full Title", "Short Title")
+            entryValues = arrayOf("full", "short")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                displayFullTitle = when(newValue){
+                    "full" -> true
+                    else -> false
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(TITLE_PREF))
+            preferences.edit().putString(TITLE_PREF, "full").apply()
+
+        screen.addPreference(serverPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val serverPref = ListPreference(screen.context).apply {
+            key = TITLE_PREF
+            title = TITLE_PREF
+            entries = arrayOf("Full Title", "Short Title")
+            entryValues = arrayOf("full", "short")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                displayFullTitle = when(newValue){
+                    "full" -> true
+                    else -> false
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(TITLE_PREF))
+            preferences.edit().putString(TITLE_PREF, "full").apply()
+
+        screen.addPreference(serverPref)
+    }
+
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/language/$nhLang/?page=$page", headers)
 
     override fun latestUpdatesSelector() = "#content .gallery"
 
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
-        title = element.select("a > div").text().replace("\"", "").trim()
-
-        val img = element.select(".cover img").first()
-        thumbnail_url = if (img.hasAttr("data-src")) img.absUrl("data-src") else img.absUrl("src")
+        title = element.select("a > div").text().replace("\"", "").let {
+            if (displayFullTitle) it.trim() else it.substringAfter("]").substringBefore("[").trim()
+        }
+        thumbnail_url = element.select(".cover img").first().let { img ->
+            if (img.hasAttr("data-src")) img.attr("abs:data-src") else img.attr("abs:src")
+        }
     }
 
     override fun latestUpdatesNextPageSelector() = "#content > section.pagination > a.next"
@@ -63,8 +131,8 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
             val id = query.removePrefix(PREFIX_ID_SEARCH)
             client.newCall(searchMangaByIdRequest(id))
-                    .asObservableSuccess()
-                    .map { response -> searchMangaByIdParse(response, id) }
+                .asObservableSuccess()
+                .map { response -> searchMangaByIdParse(response, id) }
         } else {
             return super.fetchSearchManga(page, query, filters)
         }
@@ -72,8 +140,8 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
-                .addQueryParameter("q", "$query +$nhLang")
-                .addQueryParameter("page", page.toString())
+            .addQueryParameter("q", "$query +$nhLang")
+            .addQueryParameter("page", page.toString())
 
         filters.forEach {
             when (it) {
@@ -98,13 +166,24 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        title = document.select("#info > h1").text().replace("\"", "").trim()
-        thumbnail_url = document.select("#cover > a > img").attr("data-src")
-        status = SManga.COMPLETED
-        artist = getArtists(document)
-        author = artist
-        description = getTags(document)
+    override fun mangaDetailsParse(document: Document): SManga {
+        val fullTitle = document.select("#info > h1").text().replace("\"", "").trim()
+
+        return SManga.create().apply {
+            title = if (displayFullTitle) fullTitle else fullTitle.substringAfter("]").substringBefore("[").trim()
+            thumbnail_url = document.select("#cover > a > img").attr("data-src")
+            status = SManga.COMPLETED
+            artist = getArtists(document)
+            author = artist
+            // Some people want these additional details in description
+            description = "Full English and Japanese titles:\n"
+                .plus("$fullTitle\n")
+                .plus("${document.select("div#info h2").text()}\n\n")
+                .plus("Length: ${document.select("div#info div:contains(pages)").text()}\n")
+                .plus("Favorited by: ${document.select("div#info i.fa-heart + span span").text().removeSurrounding("(", ")")}\n")
+                .plus("Categories: ${document.select("div.field-name:contains(Categories) span.tags a").first()?.ownText()}\n\n")
+                .plus(getTags(document))
+        }
     }
 
     override fun chapterListRequest(manga: SManga): Request = GET("$baseUrl${manga.url}", headers)
@@ -146,6 +225,9 @@ open class NHentai(override val lang: String, private val nhLang: String) : Pars
 
     companion object {
         const val PREFIX_ID_SEARCH = "id:"
+        private const val TITLE_PREF = "Display manga title as:"
     }
+
+    private class SortFilter : Filter.Select<String>("Sort", arrayOf("Popular", "Date"))
 
 }

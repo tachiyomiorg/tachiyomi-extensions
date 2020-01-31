@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Tsumino'
+    pkgNameSuffix = 'en.tsumino'
+    extClass = '.Tsumino'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.8.5'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+}
+
+apply from: "$rootDir/common.gradle"

@@ -1,10 +1,7 @@
 package android.support.v7.preference;
 
-/**
- * Created by Carlos on 5/9/2018.
- */
-
 public abstract class DialogPreference extends Preference {
+
     public CharSequence getDialogTitle() {
         throw new RuntimeException("Stub!");
     }
@@ -20,4 +17,5 @@ public abstract class DialogPreference extends Preference {
     public void setDialogMessage(CharSequence dialogMessage) {
         throw new RuntimeException("Stub!");
     }
+
 }

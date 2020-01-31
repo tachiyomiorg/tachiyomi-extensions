@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mmrcms
 
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
 import com.google.gson.Gson
@@ -34,7 +35,7 @@ class Generator {
         var number = 1
         sources.forEach {
             try {
-                var map = mutableMapOf<String, Any>()
+                val map = mutableMapOf<String, Any>()
                 map["language"] = it.first
                 map["name"] = it.second
                 map["base_url"] = it.third
@@ -47,7 +48,7 @@ class Generator {
                     parseCategories = parseCategories(advancedSearchDocument)
                 }
 
-                val homePageDocument = getDocument("${it.third}")!!
+                val homePageDocument = getDocument(it.third)!!
 
                 val itemUrl = getItemUrl(homePageDocument)
 
@@ -109,11 +110,28 @@ class Generator {
     }
 
     private fun getDocument(url: String, printStackTrace: Boolean = true): Document? {
-        try {
+        val serverCheck = arrayOf("cloudflare-nginx", "cloudflare")
 
-            val response = getOkHttpClient().newCall(Request.Builder().url(url).build()).execute()
-            if (response.code() == 200) {
-                return Jsoup.parse(response.body()?.string())
+        try {
+            val request = Request.Builder().url(url)
+            getOkHttpClient().newCall(request.build()).execute().let { response ->
+                // Bypass Cloudflare ("Please wait 5 seconds" page)
+                if (response.code() == 503 && response.header("Server") in serverCheck) {
+                    var cookie = "${response.header("Set-Cookie")!!.substringBefore(";")}; "
+                    Jsoup.parse(response.body()!!.string()).let { document ->
+                        val path = document.select("[id=\"challenge-form\"]").attr("action")
+                        val chk = document.select("[name=\"s\"]").attr("value")
+                        getOkHttpClient().newCall(Request.Builder().url("$url/$path?s=$chk").build()).execute().let { solved ->
+                            cookie += solved.header("Set-Cookie")!!.substringBefore(";")
+                            request.addHeader("Cookie", cookie).build().let {
+                                return Jsoup.parse(getOkHttpClient().newCall(it).execute().body()?.string())
+                            }
+                        }
+                    }
+                }
+                if (response.code() == 200) {
+                    return Jsoup.parse(response.body()?.string())
+                }
             }
         } catch (e: Exception) {
             if (printStackTrace) {
@@ -129,9 +147,9 @@ class Generator {
         if (elements.isEmpty()) {
             return mutableListOf()
         }
-        var array = mutableListOf<Map<String, String>>()
+        val array = mutableListOf<Map<String, String>>()
         elements.forEach {
-            var map = mutableMapOf<String, String>()
+            val map = mutableMapOf<String, String>()
             map["id"] = it.attr("href").substringAfterLast("/")
             map["name"] = it.text()
             array.add(map)
@@ -148,19 +166,19 @@ class Generator {
     }
 
     private fun supportsLatest(third: String): Boolean {
-        getDocument("$third/filterList?page=1&sortBy=last_release&asc=false", false) ?: return false
-        return true
+        val document = getDocument("$third/filterList?page=1&sortBy=last_release&asc=false", false) ?: return false
+        return document.select("div[class^=col-sm], div.col-xs-6").isNotEmpty()
     }
 
     private fun parseCategories(document: Document): MutableList<Map<String, String>> {
-        var array = mutableListOf<Map<String, String>>()
-        var elements = document.select("select[name^=categories] option")
+        val array = mutableListOf<Map<String, String>>()
+        val elements = document.select("select[name^=categories] option")
         if (elements.size == 0) {
             return mutableListOf()
         }
         var id = 1
         elements.forEach {
-            var map = mutableMapOf<String, String>()
+            val map = mutableMapOf<String, String>()
             map["id"] = id.toString()
             map["name"] = it.text()
             array.add(map)
@@ -173,10 +191,12 @@ class Generator {
     @Throws(Exception::class)
     private fun getOkHttpClient(): OkHttpClient {
         val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+            @SuppressLint("TrustAllX509TrustManager")
             @Throws(CertificateException::class)
             override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
             }
 
+            @SuppressLint("TrustAllX509TrustManager")
             @Throws(CertificateException::class)
             override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
             }
@@ -205,16 +225,13 @@ class Generator {
     companion object {
         const val DRY_RUN = false
         val sources = listOf(
-            Triple("ar", "مانجا اون لاين", "https://www.on-manga.me"),
+            Triple("ar", "مانجا اون لاين", "https://onma.me"),
             Triple("en", "Read Comics Online", "http://readcomicsonline.ru"),
             Triple("en", "Biamam Scans", "http://biamam.com/"),
             Triple("en", "Fallen Angels", "http://manga.fascans.com"),
             Triple("en", "Hatigarm Scans", "https://hatigarmscans.net"),
             Triple("en", "Mangawww Reader", "http://mangawww.club"),
-            Triple("en", "ZXComic", "http://zxcomic.com"),
             Triple("en", "White Cloud Pavilion", "http://www.whitecloudpavilion.com/manga/free"),
-            Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
-            Triple("es", "SOS Scanlation", "https://sosscanlation.com"),
             Triple("fr", "Scan FR", "http://www.scan-fr.io"),
             Triple("fr", "Scan VF", "https://www.scan-vf.co"),
             Triple("id", "Komikid", "http://www.komikid.com"),
@@ -227,16 +244,22 @@ class Generator {
             Triple("tr", "MangaHanta", "http://mangahanta.com"),
             Triple("vi", "Fallen Angels Scans", "http://truyen.fascans.com"),
             Triple("es", "LeoManga", "https://leomanga.me"),
-            Triple("es", "submanga", "https://submanga.online"),
+            Triple("es", "submanga", "https://submanga.li"),
             Triple("es", "Mangadoor", "https://mangadoor.com"),
             Triple("es", "Mangas.pw", "https://mangas.pw"),
+            Triple("es", "Tumangaonline.co", "http://tumangaonline.co"),
+            Triple("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
+            Triple("es", "Universo Yuri", "https://universoyuri.com"),
+            Triple("pl", "Phoenix-Scans", "https://phoenix-scans.pl"),
             //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
-            //Now uses wpmanga
+            //Changed CMS
+            //Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
             //Triple("en", "Chibi Manga Reader", "http://www.cmreader.info"),
-            //Blocks bots (like this one)
             //Triple("tr", "Epikmanga", "http://www.epikmanga.com"),
             //Went offline
+            //Triple("en", "ZXComic", "http://zxcomic.com"),
+            //Triple("es", "SOS Scanlation", "https://sosscanlation.com"),
             //Triple("es", "MangaCasa", "https://mangacasa.com"))
             //Triple("ja", "RAW MANGA READER", "https://rawmanga.site"),
             //Triple("ar", "Manga FYI", "http://mangafyi.com/manga/arabic"),

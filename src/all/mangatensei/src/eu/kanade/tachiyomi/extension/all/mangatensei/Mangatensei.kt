@@ -1,7 +1,11 @@
 package eu.kanade.tachiyomi.extension.all.mangatensei
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -9,7 +13,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 open class Mangatensei(override val lang: String, private val Mtlang: String) : ParsedHttpSource() {
@@ -25,7 +29,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    override fun latestUpdatesRequest(page: Int):  Request {
+    override fun latestUpdatesRequest(page: Int): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
         val builtUrl = "$baseUrl/browse?langs=$Mtlang&sort=update&page=$page"
         return GET(builtUrl)
@@ -45,7 +49,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
 
     override fun latestUpdatesNextPageSelector() = "div.browse-pager:contains(order) a.page-link:contains(»)"
 
-    override fun popularMangaRequest(page: Int):  Request {
+    override fun popularMangaRequest(page: Int): Request {
         val builtUrl = "$baseUrl/browse?langs=$Mtlang&sort=views_w&page=$page"
         return GET(builtUrl)
     }
@@ -64,7 +68,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         filters.forEach { filter ->
             when (filter) {
                 is AuthorFilter -> {
-                        author = filter.state
+                    author = filter.state
                 }
                 is StyleFilter -> {
                     val styleToInclude = mutableListOf<String>()
@@ -96,7 +100,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
                         Filter.TriState.STATE_EXCLUDE -> "0"
                         else -> ""
                     }
-                    if(status.isNotEmpty()) {
+                    if (status.isNotEmpty()) {
                         url.addQueryParameter("status", status)
                     }
                 }
@@ -113,23 +117,23 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
                     }
                 }
                 is StarFilter -> {
-                    if(filter.state != 0) {
+                    if (filter.state != 0) {
                         url.addQueryParameter("stars", filter.toUriPart())
                     }
                 }
                 is ChapterFilter -> {
-                    if(filter.state != 0) {
+                    if (filter.state != 0) {
                         url.addQueryParameter("chapters", filter.toUriPart())
                     }
                 }
                 is SortBy -> {
-                    if(filter.state != 0) {
+                    if (filter.state != 0) {
                         url.addQueryParameter("sort", filter.toUriPart())
                     }
                 }
             }
         }
-        return if(query.isNotBlank() || author!!.isNotBlank()) {
+        return if (query.isNotBlank() || author!!.isNotBlank()) {
             GET("$baseUrl/search?q=$query&a=$author")
         } else GET(url.build().toString(), headers)
     }
@@ -257,7 +261,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         val imgJson = JSONObject(script)
         val imgNames = imgJson.names()
 
-        for( i in 0 until imgNames.length()) {
+        for (i in 0 until imgNames.length()) {
             val imgKey = imgNames.getString(i)
             val imgUrl = imgJson.getString(imgKey)
             pages.add(Page(i, "", imgUrl))
@@ -275,111 +279,111 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
     private class StatusFilter : Filter.TriState("Completed")
 
     private class StarFilter : UriPartFilter("Stars", arrayOf(
-            Pair("<select>", ""),
-            Pair("5 Stars", "5"),
-            Pair("4 Stars", "4"),
-            Pair("3 Stars", "3"),
-            Pair("2 Stars", "2"),
-            Pair("1 Stars", "1")
+        Pair("<select>", ""),
+        Pair("5 Stars", "5"),
+        Pair("4 Stars", "4"),
+        Pair("3 Stars", "3"),
+        Pair("2 Stars", "2"),
+        Pair("1 Stars", "1")
     ))
 
     private class ChapterFilter : UriPartFilter("Chapters", arrayOf(
-            Pair("<select>", ""),
-            Pair("1 ~ 9", "1-9"),
-            Pair("10 ~ 29", "10-29"),
-            Pair("30 ~ 99", "30-99"),
-            Pair("100 ~ 199", "100-199"),
-            Pair("200+", "200"),
-            Pair("100+", "100"),
-            Pair("50+", "50"),
-            Pair("10+", "10"),
-            Pair("1+", "1")
+        Pair("<select>", ""),
+        Pair("1 ~ 9", "1-9"),
+        Pair("10 ~ 29", "10-29"),
+        Pair("30 ~ 99", "30-99"),
+        Pair("100 ~ 199", "100-199"),
+        Pair("200+", "200"),
+        Pair("100+", "100"),
+        Pair("50+", "50"),
+        Pair("10+", "10"),
+        Pair("1+", "1")
     ))
 
     private class SortBy : UriPartFilter("Sorts By", arrayOf(
-            Pair("<select>", ""),
-            Pair("Totally", "views_t"),
-            Pair("365 days", "views_y"),
-            Pair("30 days", "views_m"),
-            Pair("7 days", "views_w"),
-            Pair("24 hours", "views_d"),
-            Pair("60 minutes", "views_h"),
-            Pair("A-Z", "title"),
-            Pair("Update time", "update"),
-            Pair("Add time", "create")
+        Pair("<select>", ""),
+        Pair("Totally", "views_t"),
+        Pair("365 days", "views_y"),
+        Pair("30 days", "views_m"),
+        Pair("7 days", "views_w"),
+        Pair("24 hours", "views_d"),
+        Pair("60 minutes", "views_h"),
+        Pair("A-Z", "title"),
+        Pair("Update time", "update"),
+        Pair("Add time", "create")
     ))
 
     override fun getFilterList() = FilterList(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            AuthorFilter(),
-            Filter.Separator(),
-            StatusFilter(),
-            StarFilter(),
-            ChapterFilter(),
-            SortBy(),
-            StyleFilter(getStyleList()),
-            DemographicFilter(getDemographicList()),
-            GenreFilter(getGenreList())
+        Filter.Header("NOTE: Ignored if using text search!"),
+        AuthorFilter(),
+        Filter.Separator(),
+        StatusFilter(),
+        StarFilter(),
+        ChapterFilter(),
+        SortBy(),
+        StyleFilter(getStyleList()),
+        DemographicFilter(getDemographicList()),
+        GenreFilter(getGenreList())
     )
 
     private fun getStyleList() = listOf(
-            Tag("manga"),
-            Tag("manhwa"),
-            Tag("manhua"),
-            Tag("webtoon")
+        Tag("manga"),
+        Tag("manhwa"),
+        Tag("manhua"),
+        Tag("webtoon")
     )
 
     private fun getDemographicList() = listOf(
-            Tag("josei"),
-            Tag("seinen"),
-            Tag("shoujo"),
-            Tag("shoujo ai"),
-            Tag("shounen"),
-            Tag("shounen ai"),
-            Tag("yaoi"),
-            Tag("yuri")
+        Tag("josei"),
+        Tag("seinen"),
+        Tag("shoujo"),
+        Tag("shoujo ai"),
+        Tag("shounen"),
+        Tag("shounen ai"),
+        Tag("yaoi"),
+        Tag("yuri")
     )
 
     private fun getGenreList() = listOf(
-            Tag("action"),
-            Tag("adventure"),
-            Tag("award winning"),
-            Tag("comedy"),
-            Tag("cooking"),
-            Tag("demons"),
-            Tag("doujinshi"),
-            Tag("drama"),
-            Tag("ecchi"),
-            Tag("fantasy"),
-            Tag("gender bender"),
-            Tag("harem"),
-            Tag("historical"),
-            Tag("horror"),
-            Tag("isekai"),
-            Tag("magic"),
-            Tag("martial arts"),
-            Tag("mature"),
-            Tag("mecha"),
-            Tag("medical"),
-            Tag("military"),
-            Tag("music"),
-            Tag("mystery"),
-            Tag("one shot"),
-            Tag("psychological"),
-            Tag("reverse harem"),
-            Tag("romance"),
-            Tag("school life"),
-            Tag("sci fi"),
-            Tag("shotacon"),
-            Tag("slice of life"),
-            Tag("smut"),
-            Tag("sports"),
-            Tag("super power"),
-            Tag("supernatural"),
-            Tag("tragedy"),
-            Tag("uncategorized"),
-            Tag("vampire"),
-            Tag("youkai")
+        Tag("action"),
+        Tag("adventure"),
+        Tag("award winning"),
+        Tag("comedy"),
+        Tag("cooking"),
+        Tag("demons"),
+        Tag("doujinshi"),
+        Tag("drama"),
+        Tag("ecchi"),
+        Tag("fantasy"),
+        Tag("gender bender"),
+        Tag("harem"),
+        Tag("historical"),
+        Tag("horror"),
+        Tag("isekai"),
+        Tag("magic"),
+        Tag("martial arts"),
+        Tag("mature"),
+        Tag("mecha"),
+        Tag("medical"),
+        Tag("military"),
+        Tag("music"),
+        Tag("mystery"),
+        Tag("one shot"),
+        Tag("psychological"),
+        Tag("reverse harem"),
+        Tag("romance"),
+        Tag("school life"),
+        Tag("sci fi"),
+        Tag("shotacon"),
+        Tag("slice of life"),
+        Tag("smut"),
+        Tag("sports"),
+        Tag("super power"),
+        Tag("supernatural"),
+        Tag("tragedy"),
+        Tag("uncategorized"),
+        Tag("vampire"),
+        Tag("youkai")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
@@ -389,4 +393,10 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
 
     private class Tag(name: String) : Filter.CheckBox(name)
 
+}
+
+abstract class OtherSite(private val sourceName: String, private val sourceBaseUrl: String, private val tachiLang: String, private val sourceLang: String): Mangatensei(tachiLang, sourceLang) {
+    override val name = sourceName
+
+    override val baseUrl = sourceBaseUrl
 }

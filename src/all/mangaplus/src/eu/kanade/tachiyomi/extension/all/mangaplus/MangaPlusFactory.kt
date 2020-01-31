@@ -7,8 +7,8 @@ class MangaPlusFactory : SourceFactory {
     override fun createSources(): List<Source> = getAllMangaPlus()
 }
 
-class MangaPlusEnglish : MangaPlus("en", "eng", 0)
-class MangaPlusSpanish : MangaPlus("es", "esp", 1)
+class MangaPlusEnglish : MangaPlus("en", "eng", Language.ENGLISH)
+class MangaPlusSpanish : MangaPlus("es", "esp", Language.SPANISH)
 
 fun getAllMangaPlus(): List<Source> = listOf(
     MangaPlusEnglish(),

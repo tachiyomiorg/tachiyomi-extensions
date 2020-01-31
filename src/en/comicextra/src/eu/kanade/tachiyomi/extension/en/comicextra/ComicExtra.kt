@@ -1,13 +1,14 @@
 package eu.kanade.tachiyomi.extension.en.comicextra
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -25,6 +26,8 @@ class ComicExtra : ParsedHttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    override val client: OkHttpClient = network.cloudflareClient
 
     private val datePattern = Pattern.compile("(\\d+) days? ago")
 
@@ -144,29 +147,18 @@ class ComicExtra : ParsedHttpSource() {
         return date.time
     }
 
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET(baseUrl + chapter.url + "/full", headers)
+    }
+
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val urls = document.select("select.full-select[name=page_select] > option")
 
-        for (element in urls) {
-            val url = element.attr("value")
-            if (url.isEmpty()) continue
-            pages.add(Page(index = Integer.valueOf(element.text()) - 1, url = url))
+        document.select("img.chapter_img").forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.attr("abs:src")))
         }
         return pages
     }
-
-    override fun imageUrlRequest(page: Page) = GET(page.url)
-
-    override fun fetchImageUrl(page: Page) = client.newCall(imageUrlRequest(page))
-            .asObservableSuccess()
-            .map { realImageUrlParse(it) }!!
-
-    private fun realImageUrlParse(response: Response) = with(response.asJsoup()) {
-        getElementById("main_img").attr("src")
-    }!!
-
-    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Unused method was called somehow!")
 }

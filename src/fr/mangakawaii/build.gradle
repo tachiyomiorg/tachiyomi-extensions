@@ -4,14 +4,9 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: Mangakawaii'
     pkgNameSuffix = 'fr.mangakawaii'
-    extClass = '.MangaKawaiiSource'
-    extVersionCode = 1
+    extClass = '.MangaKawaii'
+    extVersionCode = 3
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly 'com.google.code.gson:gson:2.8.2'
-    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"

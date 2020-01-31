@@ -12,6 +12,7 @@ import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.extension.BuildConfig
 import okhttp3.*
+import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
 import uy.kohesive.injekt.Injekt
@@ -27,6 +28,8 @@ open class Guya() : ConfigurableSource, HttpSource() {
     override val baseUrl = "https://guya.moe"
     override val supportsLatest = false
     override val lang = "en"
+
+    private val scanlatorCacheUrl = "https://raw.githubusercontent.com/appu1232/guyamoe/master/api/data_cache/all_groups.json"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent","(Android ${Build.VERSION.RELEASE}; " +
@@ -160,31 +163,52 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return parseManga(truncatedJSON)
     }
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val preference = androidx.preference.ListPreference(screen.context).apply {
+            key = "preferred_scanlator"
+            title = "Preferred scanlator"
+            entries = arrayOf<String>()
+            entryValues = arrayOf<String>()
+            for (key in Scanlators.keys()) {
+                entries += Scanlators.getValueFromKey(key)
+                entryValues += key
+            }
+            summary = "Current: %s\n\n" +
+                "This setting sets the scanlation group to prioritize " +
+                "on chapter refresh/update. It will get the next available if " +
+                "your preferred scanlator isn't an option (yet)."
+
+            this.setDefaultValue("1")
+
+            setOnPreferenceChangeListener{_, newValue ->
+                val selected = newValue.toString()
+                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
+            }
+        }
+
+        screen.addPreference(preference)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val preference = ListPreference(screen.context).apply {
             key = "preferred_scanlator"
             title = "Preferred scanlator"
-            var scanlators = arrayOf<String>()
-            var scanlatorsIndex = arrayOf<String>()
+            entries = arrayOf<String>()
+            entryValues = arrayOf<String>()
             for (key in Scanlators.keys()) {
-                scanlators += Scanlators.getValueFromKey(key)
-                scanlatorsIndex += key
+                entries += Scanlators.getValueFromKey(key)
+                entryValues += key
             }
-            entries = scanlators
-            entryValues = scanlatorsIndex
             summary = "Current: %s\n\n" +
                 "This setting sets the scanlation group to prioritize " +
                 "on chapter refresh/update. It will get the next available if " +
-                "your preferred scanlator isn't an option (yet)." +
-                "\nNOTE: If you've already downloaded a chapter and the pages aren't updating, " +
-                "clear your chapter cache under Settings > Advanced > Clear chapter cache."
+                "your preferred scanlator isn't an option (yet)."
 
-            this.setDefaultValue(1)
+            this.setDefaultValue("1")
 
             setOnPreferenceChangeListener{_, newValue ->
                 val selected = newValue.toString()
-                val index = (this.findIndexOfValue(selected) + 1).toString()
-                preferences.edit().putString(SCANLATOR_PREFERENCE, index).commit()
+                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
             }
         }
 
@@ -194,6 +218,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     // ------------- Helpers and whatnot ---------------
 
     private fun parseChapterList(payload: String): List<SChapter> {
+        val SORT_KEY = "preferred_sort"
         val response = JSONObject(payload)
         val chapters = response.getJSONObject("chapters")
 
@@ -204,7 +229,11 @@ open class Guya() : ConfigurableSource, HttpSource() {
         while (iter.hasNext()) {
             val chapter = iter.next()
             val chapterObj = chapters.getJSONObject(chapter)
-            chapterList.add(parseChapterFromJson(chapterObj, chapter, response.getString("slug")))
+            var preferredSort = response.getJSONArray(SORT_KEY)
+            if (chapterObj.has(SORT_KEY)) {
+                preferredSort = chapterObj.getJSONArray(SORT_KEY)
+            }
+            chapterList.add(parseChapterFromJson(chapterObj, chapter, preferredSort, response.getString("slug")))
         }
 
         return chapterList.reversed()
@@ -238,15 +267,16 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return manga
     }
 
-    private fun parseChapterFromJson(json: JSONObject, num: String, slug: String): SChapter {
+    private fun parseChapterFromJson(json: JSONObject, num: String, sort: JSONArray, slug: String): SChapter {
         val chapter = SChapter.create()
 
         // Get the scanlator info based on group ranking; do it first since we need it later
-        val firstGroupId = getBestScanlator(json.getJSONObject("groups"))
+        val firstGroupId = getBestScanlator(json.getJSONObject("groups"), sort)
         chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
+        chapter.date_upload = json.getJSONObject("release_date").getLong(firstGroupId) * 1000
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
-        chapter.url = "$slug/$num/1"
+        chapter.url = "$slug/$num/$firstGroupId"
 
         return chapter
     }
@@ -266,13 +296,19 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return pageArray
     }
 
-    private fun getBestScanlator(json: JSONObject): String {
+    private fun getBestScanlator(json: JSONObject, sort: JSONArray): String {
         val preferred = preferences.getString(SCANLATOR_PREFERENCE, null)
 
-        return if (preferred != null && json.has(preferred)) {
-            preferred
+        if (preferred != null && json.has(preferred)) {
+            return preferred
         } else {
-            json.keys().next()
+            for (i in 0 until sort.length()) {
+                if (json.has(sort.get(i).toString())) {
+                    return sort.get(i).toString()
+                }
+            }
+            // If all fails, fall-back to the next available key
+            return json.keys().next()
         }
     }
 
@@ -300,14 +336,15 @@ open class Guya() : ConfigurableSource, HttpSource() {
                     return key
                 }
             }
-
-            throw Exception("Cannot find scanlator group!")
+            // Fall back to value as key if endpoint fails
+            return value
         }
 
         fun getValueFromKey(key: String): String {
             update()
+            // Fallback to key as value if endpoint fails
             return if (!scanlatorMap[key].isNullOrEmpty())
-                scanlatorMap[key].toString() else "No info"
+                scanlatorMap[key].toString() else key
         }
 
         fun keys(): MutableSet<String> {
@@ -318,14 +355,18 @@ open class Guya() : ConfigurableSource, HttpSource() {
         private fun update() {
             if (scanlatorMap.isEmpty() && !polling) {
                 polling = true
-                clientBuilder().newCall(GET("$baseUrl/api/get_all_groups/", headers)).enqueue(
+                clientBuilder().newCall(GET(scanlatorCacheUrl, headers)).enqueue(
                     object: Callback {
                         override fun onResponse(call: Call, response: Response) {
-                            val json = JSONObject(response.body()!!.string())
-                            val iter = json.keys()
-                            while (iter.hasNext()) {
-                                val scanId = iter.next()
-                                scanlatorMap[scanId] = json.getString(scanId)
+                            try {
+                                val json = JSONObject(response.body()!!.string())
+                                val iter = json.keys()
+                                while (iter.hasNext()) {
+                                    val scanId = iter.next()
+                                    scanlatorMap[scanId] = json.getString(scanId)
+                                }
+                            } catch (e: Exception) {
+                                // ScanlatorStore will fall back to using keys until update() succeeds
                             }
                             polling = false
                         }

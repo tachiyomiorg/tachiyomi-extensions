@@ -17,6 +17,14 @@
                     android:scheme="https"
                     android:host="mangadex.org"
                     android:pathPattern="/manga/..*" />
+                <data
+                    android:scheme="https"
+                    android:host="mangadex.cc"
+                    android:pathPattern="/title/..*" />
+                <data
+                    android:scheme="https"
+                    android:host="mangadex.cc"
+                    android:pathPattern="/manga/..*" />
             </intent-filter>
         </activity>
     </application>

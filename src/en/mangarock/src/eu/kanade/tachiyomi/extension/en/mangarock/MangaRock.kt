@@ -52,7 +52,7 @@ class MangaRock : HttpSource() {
         return response.newBuilder().body(rb).build()
     }).build()
 
-    override fun latestUpdatesRequest(page: Int) = GET("$apiUrl/mrs_latest")
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Manga Rock has shut down. Please migrate to another source") //GET("$apiUrl/mrs_latest")
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val res = response.body()!!.string()
@@ -60,7 +60,7 @@ class MangaRock : HttpSource() {
         return getMangasPageFromJsonList(list)
     }
 
-    override fun popularMangaRequest(page: Int) = GET("$apiUrl/mrs_latest")
+    override fun popularMangaRequest(page: Int) = throw Exception("Manga Rock has shut down. Please migrate to another source") //GET("$apiUrl/mrs_latest")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val res = response.body()!!.string()
@@ -188,11 +188,11 @@ class MangaRock : HttpSource() {
     private fun getMangaApiRequest(manga: SManga): Request {
         // Handle older entries with API URL ("/info?oid=mrs-series-...")
         if (manga.url.startsWith("/info")) {
-            return GET("$apiUrl${manga.url}&country=", headers)
+            return GET("$apiUrl${manga.url}&Country=", headers)
         }
 
         val oid = manga.url.substringAfterLast("/")
-        return GET("$apiUrl/info?oid=$oid&country=", headers)
+        return GET("$apiUrl/info?oid=$oid&Country=", headers)
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
@@ -231,7 +231,13 @@ class MangaRock : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val obj = JSONObject(response.body()!!.string()).getJSONObject("data")
+        val body = response.body()!!.string()
+
+        if (body == "Manga is licensed") {
+            throw Exception("Manga has been removed from Manga Rock, please migrate to another source")
+        }
+
+        val obj = JSONObject(body).getJSONObject("data")
         val chapters = ArrayList<SChapter>()
         val arr = obj.getJSONArray("chapters")
         // Iterate backwards to match website's sorting
@@ -249,12 +255,15 @@ class MangaRock : HttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(apiUrl + chapter.url, headers)
 
     override fun pageListParse(response: Response): List<Page> {
+        /*
         val obj = JSONObject(response.body()!!.string()).getJSONArray("data")
         val pages = ArrayList<Page>()
         for (i in 0 until obj.length()) {
             pages.add(Page(i, "", obj.getJSONObject(i).getString("url")))
         }
         return pages
+        */
+        return throw Exception("Manga Rock has shut down. Please migrate to another source")
     }
 
     override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("This method should not be called!")

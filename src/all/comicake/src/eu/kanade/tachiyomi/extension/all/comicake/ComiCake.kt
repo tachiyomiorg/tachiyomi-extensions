@@ -1,9 +1,13 @@
 package eu.kanade.tachiyomi.extension.all.comicake
 
 import android.os.Build
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.extensions.BuildConfig
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.Request
@@ -12,23 +16,22 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 
-const val COMICAKE_DEFAULT_API_ENDPOINT = "/api" // Highly unlikely to change
-const val COMICAKE_DEFAULT_READER_ENDPOINT = "/r" // Can change based on CC config
+abstract class ComiCake(
+    override val name: String,
+    final override val baseUrl: String,
+    override val lang: String,
+    readerEndpoint: String = COMICAKE_DEFAULT_READER_ENDPOINT,
+    apiEndpoint: String = COMICAKE_DEFAULT_API_ENDPOINT
+) : HttpSource() {
 
-open class ComiCake(override val name: String,
-                    final override val baseUrl: String,
-                    override val lang: String,
-                    readerEndpoint: String = COMICAKE_DEFAULT_READER_ENDPOINT,
-                    apiEndpoint: String = COMICAKE_DEFAULT_API_ENDPOINT) : HttpSource() {
     override val versionId = 1
     override val supportsLatest = true
     private val readerBase = baseUrl + readerEndpoint
     private var apiBase = baseUrl + apiEndpoint
 
-
     private val userAgent = "Mozilla/5.0 (" +
-            "Android ${Build.VERSION.RELEASE}; Mobile) " +
-            "Tachiyomi/${BuildConfig.VERSION_NAME}"
+        "Android ${Build.VERSION.RELEASE}; Mobile) " +
+        "Tachiyomi/${BuildConfig.VERSION_NAME}"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", userAgent)
@@ -69,6 +72,7 @@ open class ComiCake(override val name: String,
                 mangas.add(parseComicJson(obj))
             }
         }
+
         return MangasPage(mangas, !(response.getString("next").isNullOrEmpty() || response.getString("next") == "null"))
     }
 
@@ -156,4 +160,9 @@ open class ComiCake(override val name: String,
     }
 
     override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("This method should not be called!")
+
+    companion object {
+        private const val COMICAKE_DEFAULT_API_ENDPOINT = "/api" // Highly unlikely to change
+        private const val COMICAKE_DEFAULT_READER_ENDPOINT = "/r" // Can change based on CC config
+    }
 }

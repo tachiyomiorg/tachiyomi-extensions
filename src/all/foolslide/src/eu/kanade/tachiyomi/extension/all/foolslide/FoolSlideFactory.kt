@@ -8,48 +8,44 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 
 class FoolSlideFactory : SourceFactory {
-    override fun createSources(): List<Source> = getAllFoolSlide()
-}
-
-fun getAllFoolSlide(): List<Source> {
-    return listOf(
-            JaminisBox(),
-            HelveticaScans(),
-            SenseScans(),
-            KireiCake(),
-            SilentSky(),
-            Mangatellers(),
-            IskultripScans(),
-            AnataNoMotokare(),
-            DeathTollScans(),
-            DKThias(),
-            WorldThree(),
-            DokiFansubs(),
-            YuriIsm(),
-            AjiaNoScantrad(),
-            OneTimeScans(),
-            TsubasaSociety(),
-            MangaScouts(),
-            StormInHeaven(),
-            Lilyreader(),
-            Russification(),
-            EvilFlowers(),
-            AkaiYuhiMunTeam(),
-            LupiTeam(),
-            HentaiCafe(),
-            ShoujoSense(),
-            TheCatScans(),
-            ShoujoHearts()
+    override fun createSources(): List<Source> = listOf(
+        JaminisBox(),
+        SenseScans(),
+        KireiCake(),
+        SilentSky(),
+        Mangatellers(),
+        IskultripScans(),
+        AnataNoMotokare(),
+        DeathTollScans(),
+        DKThias(),
+        WorldThree(),
+        DokiFansubs(),
+        YuriIsm(),
+        AjiaNoScantrad(),
+        OneTimeScans(),
+        MangaScouts(),
+        StormInHeaven(),
+        Lilyreader(),
+        Russification(),
+        EvilFlowers(),
+        AkaiYuhiMunTeam(),
+        LupiTeam(),
+        HentaiCafe(),
+        TheCatScans(),
+        ZandynoFansub(),
+        HelveticaScans(),
+        KirishimaFansub(),
+        PowerMangaIT(),
+        BaixarHentai()
     )
 }
 
 class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
-
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
         var jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
@@ -68,9 +64,7 @@ class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "
 
 class TheCatScans : FoolSlide("The Cat Scans", "https://reader2.thecatscans.com/", "en")
 
-class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
-
-class SenseScans : FoolSlide("Sense-Scans", "https://sensescans.com", "en", "/reader")
+class SenseScans : FoolSlide("Sense-Scans", "http://sensescans.com", "en", "/reader")
 
 class KireiCake : FoolSlide("Kirei Cake", "https://reader.kireicake.com", "en")
 
@@ -102,9 +96,7 @@ class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide"
 
 class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr", "fr", "/reader")
 
-class OneTimeScans : FoolSlide("One Time Scans", "https://otscans.com", "en", "/foolslide")
-
-class TsubasaSociety : FoolSlide("Tsubasa Society", "https://www.tsubasasociety.com", "en", "/reader/master/Xreader")
+class OneTimeScans : FoolSlide("One Time Scans", "https://reader.otscans.com", "en")
 
 class MangaScouts : FoolSlide("MangaScouts", "http://onlinereader.mangascouts.org", "de")
 
@@ -117,8 +109,6 @@ class Russification : FoolSlide("Русификация", "https://rusmanga.ru",
 class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
 
 class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
-
-class ShoujoSense : FoolSlide("ShoujoSense", "http://reader.shoujosense.com", "en")
 
 class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
@@ -139,20 +129,23 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
 
         return manga
     }
-
 }
 
-class ShoujoHearts : FoolSlide("ShoujoHearts", "http://shoujohearts.com", "en", "/reader") {
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
+class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
 
-        element.select("a[title]").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
+class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
+
+class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
+
+class PowerMangaIT : FoolSlide("PowerManga", "http://reader.powermanga.org", "it", "")
+
+class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt") {
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            title = document.select("h1.title").text()
+            thumbnail_url = document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
+                client.newCall(GET(document.select("div.title a").last().attr("abs:href"), headers)).execute().asJsoup()
+                    .let { pageListParse(it).firstOrNull()?.imageUrl }
         }
-        element.select("img").first()?.let {
-            manga.thumbnail_url = it.absUrl("src")
-        }
-        return manga
     }
 }

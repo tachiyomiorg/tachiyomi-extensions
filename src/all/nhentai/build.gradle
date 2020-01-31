@@ -4,9 +4,14 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: NHentai'
     pkgNameSuffix = 'all.nhentai'
-    extClass = '.NHEnglish; .NHJapanese; .NHChinese'
-    extVersionCode = 13
+    extClass = '.NHFactory'
+    extVersionCode = 16
     libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':preference-stub')
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

@@ -21,7 +21,7 @@ import java.util.*
 
 abstract class DynastyScans : ParsedHttpSource() {
 
-    override val baseUrl = "http://dynasty-scans.com"
+    override val baseUrl = "https://dynasty-scans.com"
 
     abstract fun popularMangaInitialUrl(): String
 
@@ -72,10 +72,6 @@ abstract class DynastyScans : ParsedHttpSource() {
         return client.newCall(Request.Builder().headers(headers)
                 .url(popularMangaInitialUrl()).build()).execute().asJsoup()
                 .select("div#main").filter { it.hasText() }.first().childNodes()
-    }
-
-    protected fun parseThumbnail(manga: SManga) {
-        if (_valid.isManga) manga.thumbnail_url = baseUrl + imgList[_valid.pos].substringBefore('?')
     }
 
     protected fun parseHeader(document: Document, manga: SManga): Boolean {

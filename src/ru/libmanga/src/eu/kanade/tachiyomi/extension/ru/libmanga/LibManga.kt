@@ -1,23 +1,36 @@
 package eu.kanade.tachiyomi.extension.ru.libmanga
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Base64.decode as base64Decode
 
 
-open class LibManga(override val name: String, override val baseUrl: String, private val staticUrl: String) : HttpSource() {
+class LibManga : ConfigurableSource, HttpSource() {
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override val name: String = "Mangalib"
 
     override val lang = "ru"
 
@@ -25,7 +38,60 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    override val baseUrl: String = "https://mangalib.me"
+
+    private var imageServerUrl: String = when(preferences.getString(SERVER_PREF, "main")){
+        "main" -> "https://img2.mangalib.me"
+        else -> "https://img3.mangalib.me"
+    }
+
     private val jsonParser = JsonParser()
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй")
+            entryValues = arrayOf("main", "alt")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                imageServerUrl = when(newValue){
+                    "main" -> "https://img2.mangalib.me"
+                    else -> "https://img3.mangalib.me"
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(SERVER_PREF))
+            preferences.edit().putString(SERVER_PREF, "main").apply()
+
+        screen.addPreference(serverPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val serverPref = ListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй")
+            entryValues = arrayOf("main", "alt")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                imageServerUrl = when(newValue){
+                    "main" -> "https://img2.mangalib.me"
+                    else -> "https://img3.mangalib.me"
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(SERVER_PREF))
+            preferences.edit().putString(SERVER_PREF, "main").apply()
+
+        screen.addPreference(serverPref)
+    }
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
@@ -107,8 +173,12 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
-        val body = document.select("div.section__body").first()
         val manga = SManga.create()
+        if (document.html().contains("Манга удалена по просьбе правообладателей")) {
+            manga.status = SManga.LICENSED
+            return manga
+        }
+        val body = document.select("div.section__body").first()
         manga.title = body.select(".manga__title").text()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
@@ -116,7 +186,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         manga.status = when (
             body.select(".info-list__row:has(strong:contains(Перевод))")
                 .first()
-                .select("span.m-label_info")
+                .select("span.m-label")
                 .text())
         {
             "продолжается" -> SManga.ONGOING
@@ -177,7 +247,7 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
 
         val pages = mutableListOf<Page>()
         pagesJson.forEach { page ->
-            pages.add(Page(page["p"].int, "", staticUrl + chapInfoJson["imgUrl"].string + page["u"].string))
+            pages.add(Page(page["p"].int, "", imageServerUrl + chapInfoJson["imgUrl"].string + page["u"].string))
         }
 
         return pages
@@ -349,4 +419,9 @@ open class LibManga(override val name: String, override val baseUrl: String, pri
         SearchFilter("юри", "73"),
         SearchFilter("яой", "74")
     )
+
+    companion object {
+        private const val SERVER_PREF_Title = "Сервер изображений"
+        private const val SERVER_PREF = "imageServer"
+    }
 }

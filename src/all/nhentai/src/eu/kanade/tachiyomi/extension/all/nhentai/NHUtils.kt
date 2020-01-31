@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.nhentai
 
 import org.jsoup.nodes.Document
-import java.lang.StringBuilder
 import java.text.SimpleDateFormat
 
 class NHUtils {

@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Dilbert'
+    pkgNameSuffix = 'en.dilbert'
+    extClass = '.Dilbert'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
+}
+
+apply from: "$rootDir/common.gradle"

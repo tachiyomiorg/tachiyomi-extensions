@@ -30,15 +30,19 @@ import java.util.concurrent.TimeUnit
  *
  * Originally it was mangashow.me extension but they changed site structure widely.
  * so I moved to new name for treating as new source.
- *  Users who uses =<1.2.11 need to migrate sources. starts 1.2.12
+ *  Users who uses =<1.2.11 need to migrate source. starts 1.2.12
  *
  * PS. There's no Popular section. It's just a list of manga. Also not latest updates.
  *     `manga_list` returns latest 'added' manga. not a chapter updates.
  **/
 class ManaMoa : ConfigurableSource, ParsedHttpSource() {
+
     override val name = "ManaMoa"
-    private val defaultBaseUrl = "https://manamoa3.net"
+
+    // This keeps updating: https://twitter.com/manamoa20
+    private val defaultBaseUrl = "https://manamoa23.net"
     override val baseUrl by lazy { getPrefBaseUrl() }
+
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
@@ -58,7 +62,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.url = linkElement.attr("href")
-        manga.title = titleElement.text().trim()
+        manga.title = titleElement.html().trim()
         manga.thumbnail_url = urlFinder(element.select(".img-wrap-back").attr("style"))
         return manga
     }
@@ -95,26 +99,32 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.left-info").first()
         val thumbnailElement = info.select("div.manga-thumbnail").first()
-        val publishTypeText = thumbnailElement.select("a.publish_type").text() ?: ""
-        val authorText = thumbnailElement.select("a.author").text() ?: ""
-        val mangaLike = info.select("div.recommend > i.fa").first().text() ?: "0"
+        val publishTypeText = trimElementText(thumbnailElement.select("a.publish_type"), "Unknown")
+        val authorText = trimElementText(thumbnailElement.select("a.author"))
+
+        val mangaStatus = info.select("div.recommend")
+        val mangaLike = trimElementText(mangaStatus.select(".fa-thumbs-up"), "0")
+        //val mangaViews = trimElementText(mangaStatus.select(".fa-smile-o"), "0")
+        val mangaComments = trimElementText(mangaStatus.select(".fa-comment"), "0")
+        val mangaBookmarks = trimElementText(info.select(".fa-bookmark"), "0")
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
-        val mangaComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
+        val mangaChaptersComments = mangaElementsSum(document.select(".title i.fa.fa-comment > span"))
+
         val genres = mutableListOf<String>()
         document.select("div.left-info div.information > .manga-tags > a.tag").forEach {
             genres.add(it.text())
         }
 
         val manga = SManga.create()
-        manga.title = info.select("div.red").text()
+        manga.title = info.select("div.red").html()
         // They using background-image style tag for cover. extract url from style attribute.
         manga.thumbnail_url = urlFinder(thumbnailElement.attr("style"))
-        // Only title and thumbnail are provided now.
-        // TODO: Implement description when site supports it.
-        manga.description = "\nMangaShow.Me doesn't provide manga description currently.\n" +
-                "\n\uD83D\uDCDD: ${if (publishTypeText.trim().isBlank()) "Unknown" else publishTypeText}" +
-                "\n\uD83D\uDCAC: $mangaComments" +
-                "\n👍: $mangaLike ($mangaChaptersLike)"
+        manga.description =
+            "\uD83D\uDCDD: $publishTypeText\n" +
+                "👍: $mangaLike ($mangaChaptersLike)\n" +
+                //"\uD83D\uDD0D: $mangaViews\n" +
+                "\uD83D\uDCAC: $mangaComments ($mangaChaptersComments)\n" +
+                "\uD83D\uDD16: $mangaBookmarks"
         manga.author = authorText
         manga.genre = genres.joinToString(", ")
         manga.status = parseStatus(publishTypeText)
@@ -147,14 +157,14 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(linkElement.attr("href"))
         chapter.chapter_number = parseChapterNumber(rawName.text())
-        chapter.name = rawName.ownText().trim()
+        chapter.name = rawName.html().substringBefore("<span").trim()
         chapter.date_upload = parseChapterDate(element.select("div.addedAt").text().split(" ").first())
         return chapter
     }
 
     private fun parseChapterNumber(name: String): Float {
         try {
-            if (name.contains("[단편]")) return 1f
+            if (name.endsWith("단편")) return 1f
             // `특별` means `Special`, so It can be buggy. so pad `편`(Chapter) to prevent false return
             if (name.contains("번외") || name.contains("특별편")) return -2f
             val regex = Regex("([0-9]+)(?:[-.]([0-9]+))?(?:화)")
@@ -259,8 +269,36 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         return style.substringAfter("background-image:url(").substringBefore(")")
     }
 
+    private fun trimElementText(element: Elements, fallback: String = ""): String {
+        return element.text()?.trim()?.takeUnless { it.isBlank() } ?: fallback
+    }
+
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val baseUrlPref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(defaultBaseUrl)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $defaultBaseUrl"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -287,7 +325,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         screen.addPreference(baseUrlPref)
     }
 
-    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)
+    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
 
     override fun getFilterList() = getFilters()
 
@@ -297,7 +335,11 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
+        // Image Decoder
         internal const val V1_CX = 5
         internal const val V1_CY = 5
+
+        // Url Handler
+        internal const val MINIMUM_IMAGE_SIZE = 10000
     }
 }

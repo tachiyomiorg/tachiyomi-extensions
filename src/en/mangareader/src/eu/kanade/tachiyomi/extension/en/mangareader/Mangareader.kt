@@ -12,12 +12,10 @@ import okhttp3.Response
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-class Mangareader : ParsedHttpSource() {
-
-    override val name = "Mangareader"
-
-    override val baseUrl = "http://mangareader.net"
+abstract class MRP(
+        override val name: String,
+        override val baseUrl: String
+) : ParsedHttpSource() {
 
     override val lang = "en"
 
@@ -28,16 +26,18 @@ class Mangareader : ParsedHttpSource() {
     override fun popularMangaSelector() = "div.mangaresultitem"
 
     override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/popular/")
+        return if (page == 1) {
+            GET("$baseUrl/popular/")
         } else {
-            return GET("$baseUrl/popular/$nextPageNumber")
+            GET("$baseUrl/popular/$nextPageNumber")
         }
     }
 
     // Site's page numbering is weird, have to do some work to get the right page number for additional requests
-    private var nextPageNumber = ""
-    val nextPageSelector = "div#sp a:contains(>)"
+    private lateinit var nextPageNumber: String
+
+    private val nextPageSelector = "div#sp a:contains(>)"
+
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
@@ -65,10 +65,10 @@ class Mangareader : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "tr.c3"
 
     override fun latestUpdatesRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/latest/")
+        return if (page == 1) {
+            GET("$baseUrl/latest/")
         } else {
-            return GET("$baseUrl/latest/$nextPageNumber")
+            GET("$baseUrl/latest/$nextPageNumber")
         }
     }
 
@@ -96,10 +96,10 @@ class Mangareader : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "Not using this"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (page==1) {
-            return GET("$baseUrl/search/?w=$query&p", headers)
+        return if (page==1) {
+            GET("$baseUrl/search/?w=$query&p", headers)
         } else {
-            return GET("$baseUrl/search/?w=$query&p=$nextPageNumber", headers)
+            GET("$baseUrl/search/?w=$query&p=$nextPageNumber", headers)
         }
     }
 
@@ -138,13 +138,15 @@ class Mangareader : ParsedHttpSource() {
         return super.chapterListParse(response).reversed()
     }
 
-    override fun chapterListSelector() = "div#chapterlist tr:gt(0)"
+    override fun chapterListSelector() = "table#listing tr:not(.table_head)"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-        chapter.url = element.select("a").attr("href")
-        chapter.name = element.select("td:has(a)").text()
-        chapter.date_upload = parseDate(element.select("td:has(a) + td").text())
+        element.select("a").let {
+            chapter.setUrlWithoutDomain(it.attr("href"))
+            chapter.name = it.text()
+        }
+        chapter.date_upload = parseDate(element.select("td + td").text())
         return chapter
     }
 
@@ -163,15 +165,12 @@ class Mangareader : ParsedHttpSource() {
     }
 
     // Get the page
-    override fun imageUrlRequest(page: Page) = GET("$baseUrl" + page.url)
+    override fun imageUrlRequest(page: Page) = GET(baseUrl + page.url)
 
-   //  Get the image from the requested page
-    override fun imageUrlParse (response: Response): String {
-        val document = response.asJsoup()
+    // Get the image from the requested page
+    override fun imageUrlParse(document: Document): String {
         return document.select("a img").attr("src")
     }
-
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
 

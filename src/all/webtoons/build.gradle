@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Webtoons'
     pkgNameSuffix = 'all.webtoons'
     extClass = '.WebtoonsFactory'
-    extVersionCode = 7
+    extVersionCode = 13
     libVersion = '1.2'
 }
 

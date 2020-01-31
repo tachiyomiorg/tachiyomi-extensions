@@ -20,13 +20,16 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 abstract class MangasProject(override val name: String,
-                    override val baseUrl: String) : HttpSource() {
+                             override val baseUrl: String) : HttpSource() {
+
     override val lang = "pt"
 
     override val supportsLatest = true
 
+    private val correctClient = network.cloudflareClient
+
     // Sometimes the site is slow.
-    override val client = network.client.newBuilder()
+    override val client = correctClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
@@ -270,13 +273,13 @@ abstract class MangasProject(override val name: String,
             return result
 
         val document = result.asJsoup()
-        val readerSrc = document.select("script[src*=\"reader.min.js\"]")
+        val readerSrc = document.select("script[src*=\"reader.\"]")
             ?.attr("src") ?: ""
 
         val token = TOKEN_REGEX.find(readerSrc)?.groupValues?.get(1) ?: ""
 
         if (token.isEmpty())
-            throw Exception("Mangá licenciado e removido pela editora.")
+            throw Exception("Não foi possível obter o token de leitura.")
 
         return chain.proceed(pageListApiRequest(request.url().toString(), token))
     }

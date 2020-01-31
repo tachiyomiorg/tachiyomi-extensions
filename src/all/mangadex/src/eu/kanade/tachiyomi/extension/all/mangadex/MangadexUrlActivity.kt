@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import kotlin.system.exitProcess
 
 /**
  * Springboard that accepts https://mangadex.com/title/xxx intents and redirects them to
@@ -38,7 +39,7 @@ class MangadexUrlActivity : Activity() {
         }
 
         finish()
-        System.exit(0)
+        exitProcess(0)
     }
 
 }

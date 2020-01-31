@@ -3,10 +3,19 @@ package eu.kanade.tachiyomi.extension.all.ehentai
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.CacheControl
+import okhttp3.CookieJar
+import okhttp3.Headers
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
@@ -31,7 +40,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
                 //Get image
                 it.parent().select(".glthumb img")?.first().apply {
                     thumbnail_url = this?.attr("data-src")?.nullIfBlank()
-                            ?: this?.attr("src")
+                        ?: this?.attr("src")
                 }
             }
         }
@@ -140,46 +149,46 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
             //Parse the table
             select("#gdd tr").forEach {
                 it.select(".gdt1")
-                        .text()
-                        .nullIfBlank()
-                        ?.trim()
-                        ?.let { left ->
-                            it.select(".gdt2")
-                                    .text()
-                                    .nullIfBlank()
-                                    ?.trim()
-                                    ?.let { right ->
-                                        ignore {
-                                            when (left.removeSuffix(":")
-                                                    .toLowerCase()) {
-                                                "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
-                                                "visible" -> visible = right.nullIfBlank()
-                                                "language" -> {
-                                                    language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
-                                                    translated = right.endsWith(TR_SUFFIX, true)
-                                                }
-                                                "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
-                                                "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
-                                                "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
-                                            }
+                    .text()
+                    .nullIfBlank()
+                    ?.trim()
+                    ?.let { left ->
+                        it.select(".gdt2")
+                            .text()
+                            .nullIfBlank()
+                            ?.trim()
+                            ?.let { right ->
+                                ignore {
+                                    when (left.removeSuffix(":")
+                                        .toLowerCase()) {
+                                        "posted" -> datePosted = EX_DATE_FORMAT.parse(right).time
+                                        "visible" -> visible = right.nullIfBlank()
+                                        "language" -> {
+                                            language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
+                                            translated = right.endsWith(TR_SUFFIX, true)
                                         }
+                                        "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
+                                        "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
+                                        "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
                                     }
-                        }
+                                }
+                            }
+                    }
             }
 
             //Parse ratings
             ignore {
                 averageRating = select("#rating_label")
-                        .text()
-                        .removePrefix("Average:")
-                        .trim()
-                        .nullIfBlank()
-                        ?.toDouble()
+                    .text()
+                    .removePrefix("Average:")
+                    .trim()
+                    .nullIfBlank()
+                    ?.toDouble()
                 ratingCount = select("#rating_count")
-                        .text()
-                        .trim()
-                        .nullIfBlank()
-                        ?.toInt()
+                    .text()
+                    .trim()
+                    .nullIfBlank()
+                    ?.toInt()
             }
 
             //Parse tags
@@ -188,7 +197,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
                 val namespace = it.select(".tc").text().removeSuffix(":")
                 val currentTags = it.select("div").map {
                     Tag(it.text().trim(),
-                            it.hasClass("gtl"))
+                        it.hasClass("gtl"))
                 }
                 tags[namespace] = currentTags
             }
@@ -205,8 +214,8 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     override fun pageListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
     override fun fetchImageUrl(page: Page) = client.newCall(imageUrlRequest(page))
-            .asObservableSuccess()
-            .map { realImageUrlParse(it, page) }!!
+        .asObservableSuccess()
+        .map { realImageUrlParse(it, page) }!!
 
     private fun realImageUrlParse(response: Response, page: Page) = with(response.asJsoup()) {
         val currentImage = getElementById("img").attr("src")
@@ -231,10 +240,13 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
         //Exclude every other language except the one we have selected
         settings += "xl_" + languageMappings.filter { it.first != ehLang }
-                .flatMap { it.second }
-                .joinToString("x")
+            .flatMap { it.second }
+            .joinToString("x")
 
         cookies["uconfig"] = buildSettings(settings)
+
+        // Bypass "Offensive For Everyone" content warning
+        cookies["nw"] = "1"
 
         buildCookies(cookies)
     }
@@ -249,27 +261,27 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     }
 
     private fun addParam(url: String, param: String, value: String) = Uri.parse(url)
-            .buildUpon()
-            .appendQueryParameter(param, value)
-            .toString()
+        .buildUpon()
+        .appendQueryParameter(param, value)
+        .toString()
 
     override val client = network.client.newBuilder()
-            .cookieJar(CookieJar.NO_COOKIES)
-            .addInterceptor { chain ->
-                val newReq = chain
-                        .request()
-                        .newBuilder()
-                        .removeHeader("Cookie")
-                        .addHeader("Cookie", cookiesHeader)
-                        .build()
+        .cookieJar(CookieJar.NO_COOKIES)
+        .addInterceptor { chain ->
+            val newReq = chain
+                .request()
+                .newBuilder()
+                .removeHeader("Cookie")
+                .addHeader("Cookie", cookiesHeader)
+                .build()
 
-                chain.proceed(newReq)
-            }.build()!!
+            chain.proceed(newReq)
+        }.build()!!
 
     //Filters
     override fun getFilterList() = FilterList(
-            GenreGroup(),
-            AdvancedGroup()
+        GenreGroup(),
+        AdvancedGroup()
     )
 
     class GenreOption(name: String, private val genreId: String) : Filter.CheckBox(name, false), UriFilter {
@@ -279,16 +291,16 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     }
 
     class GenreGroup : UriGroup<GenreOption>("Genres", listOf(
-            GenreOption("Dōjinshi", "doujinshi"),
-            GenreOption("Manga", "manga"),
-            GenreOption("Artist CG", "artistcg"),
-            GenreOption("Game CG", "gamecg"),
-            GenreOption("Western", "western"),
-            GenreOption("Non-H", "non-h"),
-            GenreOption("Image Set", "imageset"),
-            GenreOption("Cosplay", "cosplay"),
-            GenreOption("Asian Porn", "asianporn"),
-            GenreOption("Misc", "misc")
+        GenreOption("Dōjinshi", "doujinshi"),
+        GenreOption("Manga", "manga"),
+        GenreOption("Artist CG", "artistcg"),
+        GenreOption("Game CG", "gamecg"),
+        GenreOption("Western", "western"),
+        GenreOption("Non-H", "non-h"),
+        GenreOption("Image Set", "imageset"),
+        GenreOption("Cosplay", "cosplay"),
+        GenreOption("Asian Porn", "asianporn"),
+        GenreOption("Misc", "misc")
     ))
 
     class AdvancedOption(name: String, private val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
@@ -299,11 +311,11 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     }
 
     class RatingOption : Filter.Select<String>("Minimum Rating", arrayOf(
-            "Any",
-            "2 stars",
-            "3 stars",
-            "4 stars",
-            "5 stars"
+        "Any",
+        "2 stars",
+        "3 stars",
+        "4 stars",
+        "5 stars"
     )), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if (state > 0) builder.appendQueryParameter("f_srdd", (state + 1).toString())
@@ -311,37 +323,37 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     }
 
     //Explicit type arg for listOf() to workaround this: KT-16570
-    class AdvancedGroup : UriGroup<Filter<*>>("Advanced Options", listOf<Filter<*>>(
-            AdvancedOption("Search Gallery Name", "f_sname", true),
-            AdvancedOption("Search Gallery Tags", "f_stags", true),
-            AdvancedOption("Search Gallery Description", "f_sdesc"),
-            AdvancedOption("Search Torrent Filenames", "f_storr"),
-            AdvancedOption("Only Show Galleries With Torrents", "f_sto"),
-            AdvancedOption("Search Low-Power Tags", "f_sdt1"),
-            AdvancedOption("Search Downvoted Tags", "f_sdt2"),
-            AdvancedOption("Show Expunged Galleries", "f_sh"),
-            RatingOption()
+    class AdvancedGroup : UriGroup<Filter<*>>("Advanced Options", listOf(
+        AdvancedOption("Search Gallery Name", "f_sname", true),
+        AdvancedOption("Search Gallery Tags", "f_stags", true),
+        AdvancedOption("Search Gallery Description", "f_sdesc"),
+        AdvancedOption("Search Torrent Filenames", "f_storr"),
+        AdvancedOption("Only Show Galleries With Torrents", "f_sto"),
+        AdvancedOption("Search Low-Power Tags", "f_sdt1"),
+        AdvancedOption("Search Downvoted Tags", "f_sdt2"),
+        AdvancedOption("Show Expunged Galleries", "f_sh"),
+        RatingOption()
     ))
 
     //map languages to their internal ids
     private val languageMappings = listOf(
-            Pair("japanese", listOf("0", "1024", "2048")),
-            Pair("english", listOf("1", "1025", "2049")),
-            Pair("chinese", listOf("10", "1034", "2058")),
-            Pair("dutch", listOf("20", "1044", "2068")),
-            Pair("french", listOf("30", "1054", "2078")),
-            Pair("german", listOf("40", "1064", "2088")),
-            Pair("hungarian", listOf("50", "1074", "2098")),
-            Pair("italian", listOf("60", "1084", "2108")),
-            Pair("korean", listOf("70", "1094", "2118")),
-            Pair("polish", listOf("80", "1104", "2128")),
-            Pair("portuguese", listOf("90", "1114", "2138")),
-            Pair("russian", listOf("100", "1124", "2148")),
-            Pair("spanish", listOf("110", "1134", "2158")),
-            Pair("thai", listOf("120", "1144", "2168")),
-            Pair("vietnamese", listOf("130", "1154", "2178")),
-            Pair("n/a", listOf("254", "1278", "2302")),
-            Pair("other", listOf("255", "1279", "2303"))
+        Pair("japanese", listOf("0", "1024", "2048")),
+        Pair("english", listOf("1", "1025", "2049")),
+        Pair("chinese", listOf("10", "1034", "2058")),
+        Pair("dutch", listOf("20", "1044", "2068")),
+        Pair("french", listOf("30", "1054", "2078")),
+        Pair("german", listOf("40", "1064", "2088")),
+        Pair("hungarian", listOf("50", "1074", "2098")),
+        Pair("italian", listOf("60", "1084", "2108")),
+        Pair("korean", listOf("70", "1094", "2118")),
+        Pair("polish", listOf("80", "1104", "2128")),
+        Pair("portuguese", listOf("90", "1114", "2138")),
+        Pair("russian", listOf("100", "1124", "2148")),
+        Pair("spanish", listOf("110", "1134", "2158")),
+        Pair("thai", listOf("120", "1144", "2168")),
+        Pair("vietnamese", listOf("130", "1154", "2178")),
+        Pair("n/a", listOf("254", "1278", "2302")),
+        Pair("other", listOf("255", "1279", "2303"))
     )
 
     companion object {

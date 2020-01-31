@@ -2,11 +2,14 @@ package eu.kanade.tachiyomi.extension.ru.readmanga
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,7 +21,7 @@ class Readmanga : ParsedHttpSource() {
 
     override val name = "Readmanga"
 
-    override val baseUrl = "http://readmanga.me"
+    override val baseUrl = "https://readmanga.me"
 
     override val lang = "ru"
 
@@ -93,39 +96,79 @@ class Readmanga : ParsedHttpSource() {
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().replace(" ,", ",")
         manga.description = infoElement.select("div.manga-description").text()
-        manga.status = parseStatus(infoElement.html())
+        manga.status = parseStatus(infoElement)
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga
     }
 
-    private fun parseStatus(element: String): Int = when {
-        element.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
-        element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
-        element.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
-        else -> SManga.UNKNOWN
+    private fun parseStatus(element: Element): Int {
+        val hiddenWarningMessage = element.select("span.hide > h3").first()
+        val html = element.html()
+        return if (hiddenWarningMessage != null) {
+            when {
+                html.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
+                html.contains("<h1 class=\"names\"> Сингл") || html.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
+        } else {
+            when {
+                html.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
+                else -> SManga.UNKNOWN
+            }
+        }
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return if (manga.status != SManga.LICENSED) {
+            client.newCall(chapterListRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    chapterListParse(response, manga)
+                }
+        } else {
+            Observable.error(java.lang.Exception("Licensed - No chapters to show"))
+        }
+    }
+
+    private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
+        val document = response.asJsoup()
+        return document.select(chapterListSelector()).map { chapterFromElement(it, manga) }
     }
 
     override fun chapterListSelector() = "div.chapters-link > table > tbody > tr:has(td > a)"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    private fun chapterFromElement(element: Element, manga: SManga): SChapter {
         val urlElement = element.select("a").first()
         val urlText = urlElement.text()
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href") + "?mtr=1")
-        if (urlText.endsWith(" новое")) {
-            chapter.name = urlText.dropLast(6)
-        } else {
-            chapter.name = urlText
+
+        chapter.name = urlText.removeSuffix(" новое").trim()
+        if (manga.title.length > 25) {
+            for (word in manga.title.split(' ')) {
+                chapter.name = chapter.name.removePrefix(word).trim()
+            }
         }
+        val dots = chapter.name.indexOf("…")
+        val numbers = chapter.name.findAnyOf(IntRange(0, 9).map { it.toString() })?.first ?: 0
+
+        if (dots in 0 until numbers) {
+            chapter.name = chapter.name.substringAfter("…").trim()
+        }
+
         chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
             try {
-                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
-            } catch (e: ParseException) {
                 SimpleDateFormat("dd.MM.yy", Locale.US).parse(it).time
+            } catch (e: ParseException) {
+                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
             }
         } ?: 0
         return chapter
+    }
+
+    override fun chapterFromElement(element: Element): SChapter {
+        throw Exception("Not used")
     }
 
     override fun prepareNewChapter(chapter: SChapter, manga: SManga) {

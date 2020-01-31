@@ -3,12 +3,15 @@ package eu.kanade.tachiyomi.extension.id.maidmanga
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.HttpUrl
+import okhttp3.Response
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.StringBuilder
+import java.text.SimpleDateFormat
 
 class MaidManga : ParsedHttpSource() {
 
@@ -26,7 +29,7 @@ class MaidManga : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int):  Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) "${baseUrl}" else "${baseUrl}/page/$page/"
+        val builtUrl =  if(page == 1) baseUrl else "$baseUrl/page/$page/"
         return GET(builtUrl)
     }
 
@@ -43,7 +46,7 @@ class MaidManga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a:containsOwn(Berikutnya)"
 
     override fun popularMangaRequest(page: Int):  Request {
-        val builtUrl =  if(page == 1) "${baseUrl}/advanced-search/?order=popular" else "${baseUrl}/advanced-search/page/$page/?order=popular"
+        val builtUrl =  if(page == 1) "$baseUrl/advanced-search/?order=popular" else "$baseUrl/advanced-search/page/$page/?order=popular"
         return GET(builtUrl)
     }
 
@@ -61,7 +64,7 @@ class MaidManga : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl =  if(page == 1) "${baseUrl}/advanced-search/" else "${baseUrl}/advanced-search/page/$page/"
+        val builtUrl =  if(page == 1) "$baseUrl/advanced-search/" else "$baseUrl/advanced-search/page/$page/"
         val url = HttpUrl.parse(builtUrl)!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
@@ -124,11 +127,14 @@ class MaidManga : ParsedHttpSource() {
         }
         if (desc.size > 0) {
             desc.forEach {
-                stringBuilder.append(cleanDesc(it.text()))
+                stringBuilder.append(it.text())
                 if (it != desc.last())
                     stringBuilder.append("\n\n")
             }
-        }
+            manga.description = stringBuilder.toString()
+        } else
+            manga.description = document.select("div.sinopsis").text()
+
         manga.title = infoElement.select("h1").text()
         manga.author = author
         manga.artist = author
@@ -153,6 +159,24 @@ class MaidManga : ParsedHttpSource() {
         return super.chapterListRequest(manga)
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val chapters = mutableListOf<SChapter>()
+        document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+        // Add date for latest chapter only
+        document.select("script.yoast-schema-graph").html()
+            .let {
+                val date = JSONObject(it).getJSONArray("@graph").
+                    getJSONObject(3).getString("dateModified")
+                chapters[0].date_upload = parseDate(date)
+            }
+        return chapters
+    }
+
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").parse(date).time
+    }
+
     override fun chapterListSelector() = "ul#chapter_list li a:contains(chapter)"
 
     override fun chapterFromElement(element: Element): SChapter {
@@ -174,9 +198,7 @@ class MaidManga : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         document.select("div#readerarea img").forEach {
             val url = it.attr("src")
-            if (url != "") {
-                pages.add(Page(pages.size, "", url))
-            }
+            pages.add(Page(pages.size, "", url))
         }
         return pages
     }
@@ -284,6 +306,4 @@ class MaidManga : ParsedHttpSource() {
     private class Tag(val id: String, name: String) : Filter.TriState(name)
 
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
-
-    private fun cleanDesc(desc: String): String = desc.replace(Regex("\\(.*\\)"), "").trim()
 }

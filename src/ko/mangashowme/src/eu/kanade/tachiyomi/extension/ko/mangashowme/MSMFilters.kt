@@ -111,7 +111,7 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
             }
 
             is TextField -> {
-                if (filter.key == "author" && !filter.state.isEmpty()) {
+                if (filter.key == "author" && filter.state.isNotEmpty()) {
                     authorFilter = filter.state
                 }
             }
@@ -132,7 +132,7 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
 
             is SearchStatusList -> {
                 if (filter.state > 0) {
-                    statusFilter = filter.state - 1
+                    statusFilter = filter.state
                 }
             }
 

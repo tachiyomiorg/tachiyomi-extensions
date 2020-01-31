@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import kotlin.system.exitProcess
 
 /**
  * Springboard that accepts https://nhentai.net/g/xxxxxx intents and redirects them to
@@ -32,6 +33,6 @@ class NHUrlActivity : Activity() {
         }
 
         finish()
-        System.exit(0)
+        exitProcess(0)
     }
 }

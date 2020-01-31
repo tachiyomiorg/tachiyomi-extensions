@@ -1,18 +1,26 @@
 package eu.kanade.tachiyomi.extension.es.tumangaonline
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
+import android.util.Log
+import okhttp3.*
+import java.util.*
+import org.jsoup.nodes.Element
+import org.jsoup.nodes.Document
+import java.text.SimpleDateFormat
+import java.util.concurrent.TimeUnit
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.TimeUnit
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.source.ConfigurableSource
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class TuMangaOnline : ParsedHttpSource() {
+class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "TuMangaOnline"
 
@@ -22,7 +30,7 @@ class TuMangaOnline : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -32,18 +40,20 @@ class TuMangaOnline : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36" //last updated 2020/01/06
+
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+            .add("User-Agent", userAgent)
+            .add("Referer", "$baseUrl/")
+            .add("Cache-mode", "no-cache")
     }
 
-    private fun getBuilder(url: String): String {
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody?, method: String): String {
         val req = Request.Builder()
-            .headers(headersBuilder()
-                .add("Referer", "$baseUrl/library/manga/")
-                .add("Cache-mode", "no-cache")
-                .build())
+            .headers(headers)
             .url(url)
+            .method(method,formBody)
             .build()
 
         return client.newCall(req)
@@ -53,13 +63,19 @@ class TuMangaOnline : ParsedHttpSource() {
             .toString()
     }
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
     override fun popularMangaSelector() = "div.element"
 
-    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesSelector() = "div.upload-file-row"
+    //override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&type=&filter_by=title&page=$page", headers)
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&type=&filter_by=title&page=$page", headers)
+    //override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&type=&filter_by=title&page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest_uploads?page=$page&uploads_mode=thumbnail", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         element.select("div.element > a").let {
@@ -69,7 +85,24 @@ class TuMangaOnline : ParsedHttpSource() {
         }
     }
 
-    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        val mangas = document.select(latestUpdatesSelector())
+            .distinctBy { it.select("div.thumbnail-title > h4.text-truncate").text().trim() }
+            .map { latestUpdatesFromElement(it) }
+        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+        return MangasPage(mangas, hasNextPage)
+    }
+
+    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
+        element.select("div.upload-file-row > a").let {
+            setUrlWithoutDomain(it.attr("href"))
+            title = it.select("div.thumbnail-title > h4.text-truncate").text()
+            thumbnail_url = it.select("div.thumbnail > style").toString().substringAfter("url('").substringBefore("');")
+        }
+    }
 
     override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
         document.select("h5.card-title").let {
@@ -164,16 +197,36 @@ class TuMangaOnline : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
+    private val scriptselector = "addEventListener"
+
     override fun chapterListParse(response: Response): List<SChapter> {
+        time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Emulate when the chapter pate is opened
+        
         val document = response.asJsoup()
+        val chapterurl = response.request().url().toString()
+        val script = document.select("script:containsData($scriptselector)").html()
+        val chapteridselector = script.substringAfter("getAttribute(\"").substringBefore("\"")
 
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it, chapterurl, chapteridselector) }
         }
 
         // Regular list of chapters
-        return document.select(regularChapterListSelector()).map { regularChapterFromElement(it) }
+        val chapters = mutableListOf<SChapter>()
+        document.select(regularChapterListSelector()).forEach { chapelement ->
+            val chapternumber = chapelement.select("a.btn-collapse").text().substringBefore(":").substringAfter("Capítulo").trim().toFloat()
+            val chaptername = chapelement.select("div.col-10.text-truncate").text()
+            val scanelement = chapelement.select("ul.chapter-list > li")
+            val dupselect = getduppref()!!
+            if (dupselect=="one") {
+                scanelement.first { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, chapterurl, chapteridselector)) }
+            }
+            else {
+                scanelement.forEach { chapters.add(regularChapterFromElement(it, chaptername, chapternumber, chapterurl, chapteridselector)) }
+            }
+        }
+        return chapters
     }
 
     override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
@@ -181,8 +234,8 @@ class TuMangaOnline : ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+    private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
+        url = "$chapterurl#${element.select("div.row > .text-right > form").attr("id")}"
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
@@ -190,35 +243,68 @@ class TuMangaOnline : ParsedHttpSource() {
 
     private fun regularChapterListSelector() = "div.chapters > ul.list-group li.p-0.list-group-item"
 
-    private fun regularChapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
-        name = element.select("div.col-10.text-truncate").text()
+    private fun regularChapterFromElement(element: Element, chname: String, number: Float, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
+        url = "$chapterurl#${element.select("div.row > .text-right > form").attr("id")}"
+        name = chname
+        chapter_number = number
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
-
+    private var time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Grab time at app launch, can be updated
+    
     override fun pageListRequest(chapter: SChapter): Request {
-        val url = getBuilder(baseUrl + chapter.url).substringBeforeLast("/") + "/cascade"
+        val (chapterURL, chapterID) = chapter.url.split("#")
+        val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
+        val document = response.asJsoup()
+        val geturl = document.select("form#$chapterID").attr("action") //Get redirect URL
+        val token = document.select("form#$chapterID input").attr("value") //Get token
+        val method = document.select("form#$chapterID").attr("method") //Check POST or GET
+        val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of chapter request
+        
+        val getHeaders = headersBuilder()
+            .add("User-Agent", userAgent)
+            .add("Referer", chapterURL)
+            .add("Content-Type", "application/x-www-form-urlencoded")
+            .build()
 
-        // Get /cascade instead of /paginate to get all pages at once
+        val formBody = when (method) { 
+            "GET" -> null
+            "POST" -> FormBody.Builder()
+                .add("_token", token)
+                .add("time", time1)
+                .add("time2", time2)
+                .build()
+            else -> throw UnsupportedOperationException("Unknown method. Open GitHub issue")
+        }
+
+        val url = getBuilder(geturl,getHeaders,formBody,method).substringBeforeLast("/") + "/${getPageMethod()}"
+        
+        val headers = headersBuilder()
+            .add("User-Agent", userAgent)
+            .add("Referer", chapterURL)
+            .build()
+        
         return GET(url, headers)
     }
 
-    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
-        val body = response.asJsoup()
-
-        body.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
-            add(Page(size, "", it.attr("src")))
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        if (getPageMethod()=="cascade") {
+            val style = document.select("style:containsData(height)").html()
+            document.select( " .img-container > .viewer-img").filterNot { it.attr("id") in style }.forEach {
+                add(Page(size, "", it.attr("src")))
+            }
+        } else {
+            val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
+            val url = document.baseUri()
+            pageList.forEach {
+                add(Page(it, "$url/$it"))
+            }
         }
     }
 
-    override fun pageListParse(document: Document) = throw UnsupportedOperationException("Not used")
-
-    override fun imageUrlRequest(page: Page) = GET(page.url, headers)
-
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = document.select("div.viewer-container > div.img-container > img.viewer-image").attr("src")
 
     private class Types : UriPartFilter("Tipo", arrayOf(
         Pair("Ver todo", ""),
@@ -338,5 +424,87 @@ class TuMangaOnline : ParsedHttpSource() {
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
+    }
+
+    // Preferences Code
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val deduppref = androidx.preference.ListPreference(screen.context).apply {
+            key = DEDUP_PREF_Title
+            title = DEDUP_PREF_Title
+            entries = arrayOf("All scanlators", "One scanlator per chapter")
+            entryValues = arrayOf("all", "one")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(DEDUP_PREF, entry).commit()
+            }
+        }
+
+        val pageMethod = androidx.preference.ListPreference(screen.context).apply {
+            key = PAGEGET_PREF_Title
+            title = PAGEGET_PREF_Title
+            entries = arrayOf("Cascada", "Paginada")
+            entryValues = arrayOf("cascade", "paginated")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(PAGEGET_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(deduppref)
+        screen.addPreference(pageMethod)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val deduppref = ListPreference(screen.context).apply {
+            key = DEDUP_PREF_Title
+            title = DEDUP_PREF_Title
+            entries = arrayOf("All scanlators", "One scanlator per chapter")
+            entryValues = arrayOf("all", "one")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(DEDUP_PREF, entry).commit()
+            }
+        }
+
+        val pageMethod = ListPreference(screen.context).apply {
+            key = PAGEGET_PREF_Title
+            title = PAGEGET_PREF_Title
+            entries = arrayOf("Cascada", "Paginada")
+            entryValues = arrayOf("cascade", "paginated")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(PAGEGET_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(deduppref)
+        screen.addPreference(pageMethod)
+
+    }
+
+    private fun getduppref() = preferences.getString(DEDUP_PREF, "all")
+    private fun getPageMethod() = preferences.getString(PAGEGET_PREF, "cascade")
+
+
+    companion object {
+        private const val DEDUP_PREF_Title = "Chapter List Scanlator Preference"
+        private const val DEDUP_PREF = "deduppref"
+        private const val PAGEGET_PREF_Title = "Método para obtener imágenes"
+        private const val PAGEGET_PREF = "pagemethodpref"
     }
 }

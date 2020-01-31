@@ -1,11 +1,14 @@
 package eu.kanade.tachiyomi.extension.ru.mangaonlinebiz
 
+import com.github.salomonbrys.kotson.float
+import com.github.salomonbrys.kotson.forEach
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.github.salomonbrys.kotson.*
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -21,6 +24,12 @@ class MangaOnlineBiz : ParsedHttpSource() {
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", userAgent)
+        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/genre/all/page/$page", headers)
@@ -45,7 +54,7 @@ class MangaOnlineBiz : ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun popularMangaSelector() = "div.genres a.genre"
+    override fun popularMangaSelector() = "a.genre"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 

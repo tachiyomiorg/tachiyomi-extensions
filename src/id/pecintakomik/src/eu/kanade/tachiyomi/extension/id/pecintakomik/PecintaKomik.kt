@@ -30,7 +30,7 @@ class PecintaKomik : ParsedHttpSource() {
         return GET(builtUrl)
     }
 
-    override fun latestUpdatesSelector() = "div.listthumbx:eq(2) li"
+    override fun latestUpdatesSelector() = ".releases:contains(update) + .listthumbx li"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -178,16 +178,20 @@ class PecintaKomik : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.url = urlElement.attr("href")
         chapter.name = urlElement.text()
-        chapter.date_upload = element.select("span.dt").text().let {
-            SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(it
-                .replace("Mei", "May")
-                .replace("Agu", "Aug")
-                .replace("Okt", "Oct")
-                .replace("Nop", "Nov")
-                .replace("Des", "Dec")
-            ).time
-        }
+        chapter.date_upload = element.select("span.dt").text()?.let {
+            chapterParseDate(it)
+        } ?: 0
         return chapter
+    }
+
+    private fun chapterParseDate(date: String): Long {
+        return SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(date
+            .replace("Mei", "May")
+            .replace("Agu", "Aug")
+            .replace("Okt", "Oct")
+            .replace("Nop", "Nov")
+            .replace("Des", "Dec")
+        ).time
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -200,7 +204,7 @@ class PecintaKomik : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select("div#readerarea img").forEach {
-            val url = it.attr("src")
+            val url = it.attr("data-src")
             if (url != "") {
                 pages.add(Page(pages.size, "", url))
             }

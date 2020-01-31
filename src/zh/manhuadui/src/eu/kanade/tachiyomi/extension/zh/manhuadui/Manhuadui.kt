@@ -1,7 +1,5 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadui
 
-//import android.util.Base64.NO_WRAP
-//import java.util.*
 import android.util.Base64
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
@@ -16,10 +14,6 @@ import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-//import android.util.Base64
-//import android.util.Log
-
-
 class Manhuadui : ParsedHttpSource() {
 
     override val name = "漫画堆"
@@ -31,7 +25,7 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "ul#chapter-list-1 > li"
+    override fun chapterListSelector() = "ul[id^=chapter-list] > li"
 
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
@@ -153,8 +147,12 @@ class Manhuadui : ParsedHttpSource() {
             it.evaluate(imgCode!! + """.join('|')""") as String
         }
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            //Log.i("test", "img => ${imageServer[0]}/$imgPath$imgStr")
-            Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
+            //Log.i("Tachidebug", "img => ${imageServer[0]}/$imgPath$imgStr")
+            if (imgStr.startsWith("http://images.dmzj.com")) {
+                Page(i, "", "https://mhcdn.manhuazj.com/showImage.php?url=$imgStr")
+            } else {
+                Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
+            }
         }
     }
 

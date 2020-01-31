@@ -4,7 +4,11 @@ import com.github.salomonbrys.kotson.get
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
 import okhttp3.Request
@@ -13,13 +17,17 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.HashSet
+import java.util.Locale
 
-
-open class FoolSlide(override val name: String,
-                     override val baseUrl: String,
-                     override val lang: String,
-                     val urlModifier: String = "") : ParsedHttpSource() {
+abstract class FoolSlide(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String,
+    val urlModifier: String = ""
+) : ParsedHttpSource() {
 
     protected open val dedupeLatestUpdates = true
 
@@ -81,7 +89,7 @@ open class FoolSlide(override val name: String,
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val form = FormBody.Builder()
-                .add("search", query)
+            .add("search", query)
 
         return POST("$baseUrl$urlModifier/search/", headers, form.build())
     }
@@ -123,8 +131,8 @@ open class FoolSlide(override val name: String,
 
     private fun allowAdult(url: String): Request {
         return POST(url, body = FormBody.Builder()
-                .add("adult", "true")
-                .build())
+            .add("adult", "true")
+            .build())
     }
 
     override fun chapterListRequest(manga: SManga) = allowAdult(super.chapterListRequest(manga))
@@ -142,7 +150,7 @@ open class FoolSlide(override val name: String,
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = dateElement.text()?.let { parseChapterDate(it.substringAfter(", ")) }
-                ?: 0
+            ?: 0
         return chapter
     }
 
@@ -162,6 +170,13 @@ open class FoolSlide(override val name: String,
             relativeDate.set(Calendar.MILLISECOND, 0)
         } else if (lcDate.startsWith("today")) {
             relativeDate = Calendar.getInstance()
+            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+            relativeDate.set(Calendar.MINUTE, 0)
+            relativeDate.set(Calendar.SECOND, 0)
+            relativeDate.set(Calendar.MILLISECOND, 0)
+        } else if (lcDate.startsWith("tomorrow")) {
+            relativeDate = Calendar.getInstance()
+            relativeDate.add(Calendar.DAY_OF_MONTH, +1) //tomorrow
             relativeDate.set(Calendar.HOUR_OF_DAY, 0)
             relativeDate.set(Calendar.MINUTE, 0)
             relativeDate.set(Calendar.SECOND, 0)
@@ -247,8 +262,8 @@ open class FoolSlide(override val name: String,
         json.forEach {
             // Create dummy element to resolve relative URL
             val absUrl = document.createElement("a")
-                    .attr("href", it["url"].asString)
-                    .absUrl("href")
+                .attr("href", it["url"].asString)
+                .absUrl("href")
 
             pages.add(Page(pages.size, "", absUrl))
         }

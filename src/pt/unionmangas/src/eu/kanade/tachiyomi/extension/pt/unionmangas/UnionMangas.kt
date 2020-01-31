@@ -21,7 +21,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override val name = "Union Mangás"
 
-    override val baseUrl = "https://unionmangas.top"
+    override val baseUrl = "https://unionleitor.top"
 
     override val lang = "pt"
 
@@ -38,7 +38,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/ne")
+        .add("Referer", "$baseUrl/home-nn")
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "/$page" else ""
