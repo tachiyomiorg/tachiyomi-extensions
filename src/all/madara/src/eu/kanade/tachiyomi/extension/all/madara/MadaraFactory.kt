@@ -65,7 +65,8 @@ class MadaraFactory : SourceFactory {
         YaoiToshokan(),
         GoldenManga(),
         Mangalek(),
-        AstralLibrary()
+        AstralLibrary(),
+        NovelFrance()
     )
 }
 
@@ -415,3 +416,5 @@ class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", Simpl
 class AstralLibrary : Madara("Astral Library", "https://astrallibrary.net", "en") {
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
+
+class NovelFrance : Madara("Novel France", "http://novel-france.fr", "fr", SimpleDateFormat("dd MMM yyyy", Locale.FRENCH))
