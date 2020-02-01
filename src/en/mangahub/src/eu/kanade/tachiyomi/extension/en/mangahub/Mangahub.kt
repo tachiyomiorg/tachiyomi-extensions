@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.en.mangahub
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
+import com.github.salomonbrys.kotson.keys
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
@@ -142,22 +143,21 @@ class Mangahub : ParsedHttpSource() {
         val number = chapter.url.substringAfter("chapter-").removeSuffix("/")
         val body = RequestBody.create(null, "{\"query\":\"{chapter(x:m01,slug:\\\"$slug\\\",number:$number){id,title,mangaID,number,slug,date,pages,noAd,manga{id,title,slug,mainSlug,author,isWebtoon,isYaoi,isPorn,isSoftPorn,unauthFile,isLicensed}}}\"}")
 
-        return POST("https://api2.mangahub.io/graphql", jsonHeaders, body)
+        return POST("https://api.mghubcdn.com/graphql", jsonHeaders, body)
     }
 
     private val gson = Gson()
 
     override fun pageListParse(response: Response): List<Page> {
-        val pages = mutableListOf<Page>()
-        val images = gson.fromJson<JsonObject>(response.body()!!.string())["data"]["chapter"]["pages"].string
+        val cdn = "https://img.mghubcdn.com/file/imghub"
+
+        return gson.fromJson<JsonObject>(response.body()!!.string())["data"]["chapter"]["pages"].string
             .removeSurrounding("\"").replace("\\", "")
-            .let { gson.fromJson<JsonObject>(it) }
-
-        for (i in 1 .. images.size()) {
-            pages.add(Page(i - 1, "", "https://cdn.mangahub.io/file/imghub/${images["$i"].string}"))
-        }
-
-        return pages
+            .let { cleaned ->
+                val jsonObject = gson.fromJson<JsonObject>(cleaned)
+                jsonObject.keys().map { key -> jsonObject[key].string }
+            }
+            .mapIndexed { i, tail -> Page(i, "", "$cdn/$tail") }
     }
 
     override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
