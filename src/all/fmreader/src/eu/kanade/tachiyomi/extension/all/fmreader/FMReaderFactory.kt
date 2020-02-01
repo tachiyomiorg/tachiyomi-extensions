@@ -16,6 +16,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.Headers
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -31,7 +32,6 @@ class FMReaderFactory : SourceFactory {
         YoloManga(),
         AiLoveManga(),
         ReadComicOnlineOrg(),
-        MangaWeek(),
         HanaScan(),
         RawLH(),
         Manhwa18(),
@@ -118,13 +118,13 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
     override fun getGenreList() = getComicsGenreList()
 }
 
-class MangaWeek : FMReader("MangaWeek", "https://mangaweek.com", "en")
 class HanaScan : FMReader("HanaScan (RawQQ)", "http://rawqq.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
 }
 
-class RawLH : FMReader("RawLH", "https://lhscan.net", "ja") {
+class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Refere", baseUrl)
 }
 
 class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
