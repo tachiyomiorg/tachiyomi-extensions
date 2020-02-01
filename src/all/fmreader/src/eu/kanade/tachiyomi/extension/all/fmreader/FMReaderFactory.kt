@@ -124,7 +124,7 @@ class HanaScan : FMReader("HanaScan (RawQQ)", "http://rawqq.com", "ja") {
 
 class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
-    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Refere", baseUrl)
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
 class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
