@@ -21,7 +21,7 @@ import uy.kohesive.injekt.api.get
 open class LANraragi : ConfigurableSource, HttpSource() {
 
     override val baseUrl: String
-        get() = preferences.getString("hostname", "http://127.0.0.1:3000")
+        get() = preferences.getString("hostname", "http://127.0.0.1:3000")!!
 
     override val lang = "all"
 
@@ -30,7 +30,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     override val supportsLatest = true
 
     private val apiKey: String
-        get() = preferences.getString("apiKey", "")
+        get() = preferences.getString("apiKey", "")!!
+
+    private val gson: Gson = Gson()
 
     override fun mangaDetailsParse(response: Response): SManga {
         val id = getId(response)
@@ -57,7 +59,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val archivePage = Gson().fromJson<ArchivePage>(response.body()!!.string())
+        val archivePage = gson.fromJson<ArchivePage>(response.body()!!.string())
 
         return archivePage.pages.mapIndexed { index, url ->
             val uri = Uri.parse("${baseUrl}${url.trimStart('.')}")
@@ -97,7 +99,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val jsonResult = Gson().fromJson<ArchiveSearchResult>(response.body()!!.string())
+        val jsonResult = gson.fromJson<ArchiveSearchResult>(response.body()!!.string())
         val currentStart = getStart(response)
 
         lastResultCount = jsonResult.data.size
