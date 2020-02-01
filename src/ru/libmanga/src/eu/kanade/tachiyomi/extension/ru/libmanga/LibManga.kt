@@ -179,7 +179,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             return manga
         }
         val body = document.select("div.section__body").first()
-        manga.title = body.select(".manga-title h1").text()
+        manga.title = document.select(".manga-title h1").text()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
         manga.artist = body.select(".info-list__row:nth-child(3) > a").text()
