@@ -391,7 +391,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
                     .build()
 
                 val future = CallbackFuture()
-                okhttp3.OkHttpClient().newCall(request).enqueue(future)
+                network.client.newCall(request).enqueue(future)
 
                 val response = future.get()!!
                 return "https://${response.request().url().host()}"
