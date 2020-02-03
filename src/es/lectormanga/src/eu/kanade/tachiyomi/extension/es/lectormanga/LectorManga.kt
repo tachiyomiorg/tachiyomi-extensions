@@ -270,8 +270,10 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         }
 
         val newurl = getBuilder(geturl,getHeaders,formBody,method)
-        val url =  if (newurl.contains("paginated")) {
+        val url =  if (getPageMethod()=="cascade" && newurl.contains("paginated")) {
             newurl.substringBefore("paginated") + "cascade"
+        } else if (getPageMethod()=="paginated" && newurl.contains("cascade")) {
+            newurl.substringBefore("cascade") + "paginated"
         } else newurl
 
         val headers = headersBuilder()
@@ -284,12 +286,21 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
-            add(Page(size, "", it.attr("src")))
+        if (getPageMethod()=="cascade") {
+            val style = document.select("style:containsData(height)").html()
+            document.select( "img[id]").filterNot { it.attr("id") in style }.forEach {
+                add(Page(size, "", it.attr("src")))
+            }
+        } else {
+            val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
+            val url = document.baseUri()
+            pageList.forEach {
+                add(Page(it, "$url/$it"))
+            }
         }
     }
 
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = document.select("img.viewer-image").attr("src")
 
     private class Types : UriPartFilter("Tipo", arrayOf(
             Pair("Ver todo", ""),
