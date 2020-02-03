@@ -276,7 +276,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
-            .add("Referer", "$baseUrl/library/manga/")
+            .add("Referer", newurl)
             .build()
 
         // Get /cascade instead of /paginate to get all pages at once
