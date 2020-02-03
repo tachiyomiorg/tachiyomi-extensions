@@ -134,6 +134,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
+        url.addQueryParameter("_title", "search")
 
         filters.forEach { filter ->
             when (filter) {
