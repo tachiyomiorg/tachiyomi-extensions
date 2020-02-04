@@ -973,7 +973,17 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
     //Popular
+    override fun popularMangaParse(response: Response): MangasPage {
+        if (response.headers().get("x-sucuri-cache") != "BYPASS") throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
+        return super.popularMangaParse(response)
+    }
+    
     //Latest
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        if (response.headers().get("x-sucuri-cache") != "BYPASS") throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
+        return super.latestUpdatesParse(response)
+    }
+
     //Search
     //Details
 
