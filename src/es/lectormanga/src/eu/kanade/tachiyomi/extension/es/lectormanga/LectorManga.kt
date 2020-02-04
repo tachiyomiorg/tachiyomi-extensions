@@ -190,7 +190,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private val scriptselector = "disqus_config"
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(getUTCDate().add(Calendar.HOUR_OF_DAY, 1)) //Emulate when the chapter page is opened
+        time1 = SimpleDateFormat("yyyy-MM-dd k:m:s", Locale.US).format(getUTCDate().add(Calendar.HOUR_OF_DAY, 1)) //Emulate when the chapter page is opened
 
         val document = response.asJsoup()
         val chapterurl = response.request().url().toString()
@@ -242,7 +242,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
-    private var time1 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(getUTCDate().add(Calendar.HOUR_OF_DAY, 1)) //Grab time at app launch, can be updated
+    private var time1 = SimpleDateFormat("yyyy-MM-dd k:m:s", Locale.US).format(getUTCDate().add(Calendar.HOUR_OF_DAY, 1)) //Grab time at app launch, can be updated
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
