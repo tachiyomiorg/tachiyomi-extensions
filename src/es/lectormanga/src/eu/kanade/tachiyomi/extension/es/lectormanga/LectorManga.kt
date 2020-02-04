@@ -293,9 +293,9 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             }
         } else {
             val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
-            val url = document.baseUri()
+            val url = document.baseUri().substringBefore("/paginated") //Accounts for url ending in number "/paginated/1"
             pageList.forEach {
-                add(Page(it, "$url/$it"))
+                add(Page(it, "$url/paginated/$it"))
             }
         }
     }
