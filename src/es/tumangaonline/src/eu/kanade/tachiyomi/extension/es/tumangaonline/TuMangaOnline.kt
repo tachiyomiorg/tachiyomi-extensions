@@ -205,8 +205,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         
         val document = response.asJsoup()
         val chapterurl = response.request().url().toString()
-        val script = document.select("script:containsData($scriptselector)").html()
-        val chapteridselector = script.substringAfter("getAttribute(\"").substringBefore("\"")
+        val script = "" //document.select("script:containsData($scriptselector)").html()
+        val chapteridselector = "" //script.substringAfter("getAttribute(\"").substringBefore("\"")
 
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
@@ -259,10 +259,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val (chapterURL, chapterID) = chapter.url.split("#")
         val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
         val document = response.asJsoup()
-        val geturl = document.select("form#$chapterID").attr("action") //Get redirect URL
+        val geturl = document.select("form#$chapterID").attr("action")+time1 //Get redirect URL
         val token = document.select("form#$chapterID input").attr("value") //Get token
         val method = document.select("form#$chapterID").attr("method") //Check POST or GET
-        val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of chapter request
+        //val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of chapter request
         
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
@@ -274,8 +274,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             "GET" -> null
             "POST" -> FormBody.Builder()
                 .add("_token", token)
-                .add("time", time1)
-                .add("time2", time2)
+                //.add("time", time1)
+                //.add("time2", time2)
                 .build()
             else -> throw UnsupportedOperationException("Unknown method. Open GitHub issue")
         }
