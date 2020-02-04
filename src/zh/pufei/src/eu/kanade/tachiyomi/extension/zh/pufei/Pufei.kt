@@ -45,7 +45,7 @@ class Pufei : ParsedHttpSource() {
     override val baseUrl = "http://m.ipufei.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = "http://res.img.ipufei.com/"
+    val imageServer = "http://res.img.220012.net/"  //Alternative: "http://res.img.ipufei.com/"
 
     override fun popularMangaSelector() = "ul#detail li"
 
