@@ -198,16 +198,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    private val scriptselector = "addEventListener"
-
     override fun chapterListParse(response: Response): List<SChapter> {
-        time1 = servertime() //Emulate when the chapter pate is opened
+        time = serverTime() //Get time when the chapter page is opened
         
         val document = response.asJsoup()
         val chapterurl = response.request().url().toString()
-        val script = "" //document.select("script:containsData($scriptselector)").html()
-        val chapteridselector = "" //script.substringAfter("getAttribute(\"").substringBefore("\"")
-
+        val chapteridselector = "" 
         // One-shot
         if (document.select("div.chapters").isEmpty()) {
             return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it, chapterurl, chapteridselector) }
@@ -253,10 +249,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
-    private var time1 = servertime() //Grab time at app launch, can be updated
-    private fun servertime() :String {
+    private var time = serverTime() //Grab time at app launch, can be updated
+    private fun serverTime() :String {
         val formatter = SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US)
-        formatter.timeZone = TimeZone.getTimeZone("GMT+1")
+        formatter.timeZone = TimeZone.getTimeZone("GMT+1") //Convert time to match server
         return formatter.format(Date())
     }
     
@@ -267,8 +263,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val geturl = document.select("form#$chapterID").attr("action")+"/$time1" //Get redirect URL
         val token = document.select("form#$chapterID input").attr("value") //Get token
         val method = document.select("form#$chapterID").attr("method") //Check POST or GET
-        //val time2 = SimpleDateFormat("yyyy-M-d k:m:s", Locale.US).format(Date()) //Get time of chapter request
-        
+        time = serverTime() //Update time for next chapter
+
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
             .add("Referer", chapterURL)
@@ -279,8 +275,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             "GET" -> null
             "POST" -> FormBody.Builder()
                 .add("_token", token)
-                //.add("time", time1)
-                //.add("time2", time2)
                 .build()
             else -> throw UnsupportedOperationException("Unknown method. Open GitHub issue")
         }
