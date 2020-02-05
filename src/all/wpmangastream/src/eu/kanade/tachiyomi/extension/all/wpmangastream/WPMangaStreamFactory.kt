@@ -972,21 +972,28 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
 }
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
+    private fun sucuriCheck(response: Response) {
+        if (response.headers().get("x-sucuri-cache") != "BYPASS") throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح") else ""
+    }
+
     //Popular
     override fun popularMangaParse(response: Response): MangasPage {
-        if (response.headers().get("x-sucuri-cache") != "BYPASS") throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
+        sucuriCheck(response)
         return super.popularMangaParse(response)
     }
-    
+
     //Latest
     override fun latestUpdatesParse(response: Response): MangasPage {
-        if (response.headers().get("x-sucuri-cache") != "BYPASS") throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
+        sucuriCheck(response)
         return super.latestUpdatesParse(response)
     }
 
     //Search
     //Details
-
+    override fun mangaDetailsParse(response: Response): SManga {
+        sucuriCheck(response)
+        return super.mangaDetailsParse(response)
+    }
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         thumbnail_url = document.select("div.thumb img.lazyload").attr("data-src")
         title = document.select("div.infox h1").text()
@@ -1000,20 +1007,26 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
         artist = author
         description = document.select("div[itemprop=articleBody]").text()
     }
-    
+
     //Chapters
-    //Pages and Images
-    
-    override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url + "?/", headers)
+    override fun chapterListParse(response: Response): List<SChapter> {
+        sucuriCheck(response)
+        return super.chapterListParse(response)
     }
 
+    //Pages and Images
+    override fun pageListParse(response: Response): List<Page> {
+        sucuriCheck(response)
+        return super.pageListParse(response)
+    }
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET(baseUrl + chapter.url + "?/", headers) //Bypass "linkvertise" ads
+    }
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("div#readerarea img[data-src]").forEachIndexed { index, element ->
             add(Page(index,"",element.attr("data-src")))
         }
     }
-    
     override fun imageRequest(page: Page): Request {
         return GET( page.imageUrl!! , headers)
     }
