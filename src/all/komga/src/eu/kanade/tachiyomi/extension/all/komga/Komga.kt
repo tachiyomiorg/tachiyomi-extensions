@@ -64,7 +64,7 @@ open class Komga : ConfigurableSource, HttpSource() {
                 }
                 is Filter.Sort -> {
                     var sortCriteria = when (filter.state?.index) {
-                        0 -> "name"
+                        0 -> "metadata.titleSort"
                         1 -> "createdDate"
                         2 -> "lastModifiedDate"
                         else -> ""
@@ -136,7 +136,7 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
-            title = name
+            title = metadata.title
             url = "/api/v1/series/${id}"
             thumbnail_url = "$baseUrl/api/v1/series/${id}/thumbnail"
             status = when (metadata.status) {

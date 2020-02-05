@@ -19,7 +19,9 @@ data class SeriesDto(
 data class SeriesMetadataDto(
     val status: String,
     val created: String?,
-    val lastModified: String?
+    val lastModified: String?,
+    val title: String,
+    val titleSort: String
 )
 
 data class BookDto(
