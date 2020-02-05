@@ -66,7 +66,8 @@ class MadaraFactory : SourceFactory {
         GoldenManga(),
         Mangalek(),
         AstralLibrary(),
-        NovelFrance()
+        NovelFrance(),
+        KlikManga()
     )
 }
 
@@ -213,7 +214,7 @@ class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override val client: OkHttpClient = network.client
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36"
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
         .add("Referer", "$baseUrl/manga/?m_orderby=views")
@@ -418,3 +419,6 @@ class AstralLibrary : Madara("Astral Library", "https://astrallibrary.net", "en"
 }
 
 class NovelFrance : Madara("Novel France", "http://novel-france.fr", "fr", SimpleDateFormat("dd MMM yyyy", Locale.FRENCH))
+
+class KlikManga : Madara("KlikManga", "https://klikmanga.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale("id")))
+
