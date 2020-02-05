@@ -260,7 +260,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         val (chapterURL, chapterID) = chapter.url.split("#")
         val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
         val document = response.asJsoup()
-        val geturl = document.select("form#$chapterID").attr("action")+"/$time1" //Get redirect URL
+        val geturl = document.select("form#$chapterID").attr("action")+"/$time" //Get redirect URL
         val token = document.select("form#$chapterID input").attr("value") //Get token
         val method = document.select("form#$chapterID").attr("method") //Check POST or GET
         time = serverTime() //Update time for next chapter
