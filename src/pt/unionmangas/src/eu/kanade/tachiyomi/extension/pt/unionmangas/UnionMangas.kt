@@ -21,14 +21,14 @@ class UnionMangas : ParsedHttpSource() {
 
     override val name = "Union Mangás"
 
-    override val baseUrl = "https://unionleitor.top"
+    override val baseUrl = "http://unionleitor.top"
 
     override val lang = "pt"
 
     override val supportsLatest = true
 
     // Sometimes the site is very slow.
-    override val client =
+    override val client: OkHttpClient =
         network.cloudflareClient.newBuilder()
             .connectTimeout(3, TimeUnit.MINUTES)
             .readTimeout(3, TimeUnit.MINUTES)
@@ -38,7 +38,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/home-nn")
+        .add("Referer", "$baseUrl/qa")
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "/$page" else ""
