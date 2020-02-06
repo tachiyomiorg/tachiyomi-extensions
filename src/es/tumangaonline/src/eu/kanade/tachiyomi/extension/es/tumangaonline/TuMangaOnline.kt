@@ -22,14 +22,13 @@ import uy.kohesive.injekt.api.get
 
 class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
+    //Basic Info
     override val name = "TuMangaOnline"
-
     override val baseUrl = "https://tmofans.com"
-
     override val lang = "es"
-
     override val supportsLatest = true
 
+    //Network
     private val rateLimitInterceptor = RateLimitInterceptor(2)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -49,6 +48,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .add("Cache-mode", "no-cache")
     }
 
+    //Process Chapter Redirect
     private fun getBuilder(url: String, headers: Headers, formBody: FormBody?, method: String): String {
         val req = Request.Builder()
             .headers(headers)
@@ -66,6 +66,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+    
+    //Popular Latest and Search
 
     override fun popularMangaSelector() = "div.element"
 
@@ -198,9 +200,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        time = serverTime() //Get time when the chapter page is opened
-        
+    //Chapters
+    
+    override fun chapterListParse(response: Response): List<SChapter> {        
         val document = response.asJsoup()
         val chapterurl = response.request().url().toString()
         val chapteridselector = "" 
@@ -249,21 +251,21 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
-    private var time = serverTime() //Grab time at app launch, can be updated
     private fun serverTime() :String {
-        val formatter = SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US)
-        formatter.timeZone = TimeZone.getTimeZone("GMT+1") //Convert time to match server
+        val formatter = SimpleDateFormat("'?'s'='yyyy-MM-dd'T'kk:mm:ss.SSS'Z'", Locale.US) //URL String + ISO Time
+        formatter.timeZone = TimeZone.getTimeZone("GMT") //ISO Time
         return formatter.format(Date())
     }
+    
+    //Pages and Images
     
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
         val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
         val document = response.asJsoup()
-        val geturl = document.select("form#$chapterID").attr("action")+"/$time" //Get redirect URL
+        val geturl = document.select("form#$chapterID").attr("action")+serverTime() //Get redirect URL
         val token = document.select("form#$chapterID input").attr("value") //Get token
         val method = document.select("form#$chapterID").attr("method") //Check POST or GET
-        time = serverTime() //Update time for next chapter
 
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
@@ -290,12 +292,12 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        if (getPageMethod()=="cascade") {
+        if (getPageMethod()=="cascade") { // Get /cascade instead of /paginate to get all pages at once
             val style = document.select("style:containsData(height)").html()
             document.select( " .img-container > .viewer-img").filterNot { it.attr("id") in style }.forEach {
                 add(Page(size, "", it.attr("src")))
             }
-        } else {
+        } else { //If they mess with cascade, paginate is a backup
             val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
             val url = document.baseUri()
             pageList.forEach {
