@@ -13,7 +13,7 @@ import java.text.ParseException
 class Mangashiro : ParsedHttpSource() {
 
     override val name = "Mangashiro"
-    override val baseUrl = "https://mangashiro.org"
+    override val baseUrl = "https://mangashiro.co"
     override val lang = "id"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
