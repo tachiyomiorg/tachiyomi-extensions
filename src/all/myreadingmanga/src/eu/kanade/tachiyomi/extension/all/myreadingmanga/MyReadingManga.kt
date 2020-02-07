@@ -172,7 +172,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         manga.artist = cleanAuthor(document.select("h1").text())
         val glist = document.select(".entry-header p a[href*=genre]").map { it.text() }
         manga.genre = glist.joinToString(", ")
-        manga.description = document.select("h1").text() + "\n" + document.select(".info-class")?.text()
+        val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.map { it.text() }?.joinToString("\n")
+        manga.description = document.select("h1").text() + if (extendedDescription.isNullOrEmpty()) "" else "\n\n$extendedDescription"
         manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
             "Ongoing" -> SManga.ONGOING
             "Completed" -> SManga.COMPLETED
