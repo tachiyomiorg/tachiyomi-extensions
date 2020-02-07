@@ -23,10 +23,10 @@ import kotlin.math.tan
  */
 
 internal class ImageDecoder(scripts: String) {
-    private val cnt = substringBetween(scripts, "var view_cnt = ", ";")
+    private val cnt = scripts.substringBetween("var view_cnt = ", ";")
         .toIntOrNull() ?: 0
-    private val chapter = substringBetween(scripts, "var chapter = ", ";")
-            .toIntOrNull() ?: 0
+    private val chapter = scripts.substringBetween("var chapter = ", ";")
+        .toIntOrNull() ?: 0
 
     fun request(url: String): String {
         if (cnt < 10) return url
@@ -162,7 +162,3 @@ internal class ImageDecoderInterceptor : Interceptor {
             floor(10000 * (a - floor(a)))).toInt()
     }
 }
-
-private fun substringBetween(target: String, prefix: String, suffix: String): String = {
-    target.substringAfter(prefix).substringBefore(suffix)
-}()

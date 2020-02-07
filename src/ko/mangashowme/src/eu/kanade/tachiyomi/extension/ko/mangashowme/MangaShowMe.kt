@@ -44,7 +44,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val name = "ManaMoa"
 
     // This keeps updating: https://twitter.com/manamoa24
-    private val defaultBaseUrl = "https://manamoa26.net"
+    private val defaultBaseUrl = "https://manamoa27.net"
     override val baseUrl by lazy { getCurrentBaseUrl() }
 
     override val lang: String = "ko"
@@ -203,28 +203,29 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     // They are using full url in every links.
     // There's possibility to using another domain for serve manga(s). Like marumaru.
     //override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
         try {
             val element = document.select("div.col-md-9.at-col.at-main script").html()
-            val imageUrl = element.substringAfter("var img_list = [").substringBefore("];")
-            val imageUrls = JSONArray("[$imageUrl]")
+            val cdnHandler = CDNUrlHandler(element)
 
-            val imageUrl1 = element.substringAfter("var img_list1 = [").substringBefore("];")
-            val imageUrls1 = JSONArray("[$imageUrl1]")
+            val imageUrl = element.substringBetween("var img_list = [", "];")
+            val imageUrls = cdnHandler.replace(JSONArray("[$imageUrl]"))
+
+            val imageUrl1 = element.substringAfter("var img_list1 = [", "];")
+            val imageUrls1 = cdnHandler.replace(JSONArray("[$imageUrl1]"))
 
             val decoder = ImageDecoder(element)
 
-            (0 until imageUrls.length())
-                    .map {
-                        imageUrls.getString(it) + try {
-                            "!!${imageUrls1.getString(it)}?quick"
-                        } catch (_: Exception) {
-                            ""
-                        }
+            (imageUrls.indices)
+                .map {
+                    imageUrls[it] + try {
+                        "!!${imageUrls1[it]}?quick"
+                    } catch (_: Exception) {
+                        ""
                     }
+                }
                     .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -306,7 +307,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             key = AUTOFETCH_URL_PREF_TITLE
             title = AUTOFETCH_URL_PREF_TITLE
             summary = AUTOFETCH_URL_PREF_SUMMARY
-            this.setEnabled(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            this.setEnabled(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -349,7 +350,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             key = AUTOFETCH_URL_PREF_TITLE
             title = AUTOFETCH_URL_PREF_TITLE
             summary = AUTOFETCH_URL_PREF_SUMMARY
-            this.setEnabled(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            this.setEnabled(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -373,9 +374,9 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             return prefBaseUrl
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
-                @TargetApi(Build.VERSION_CODES.N)
+                @TargetApi(Build.VERSION_CODES.O)
                 class CallbackFuture : CompletableFuture<Response?>(), Callback {
                     override fun onResponse(call: Call?, response: Response?) {
                         super.complete(response)
@@ -387,14 +388,21 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
                 }
 
                 val request: Request = Request.Builder().get()
-                    .url("http://13.229.223.203")
+                    //.url("https://mnmnmnmnm.xyz/")
+                    .url("http://52.74.159.59")
                     .build()
 
                 val future = CallbackFuture()
-                network.client.newCall(request).enqueue(future)
+                network.client
+                    //.newBuilder()
+                    //.addInterceptor(DDOSGuardInterceptor())
+                    //.build()!!
+                    .newCall(request).enqueue(future)
 
                 val response = future.get()!!
                 return "https://${response.request().url().host()}"
+                //val code = response.body().toString().substringBetween("manamoa", ".net")
+                //return "https://manamoa$code.net"
             } catch (e: Exception) {
                 e.printStackTrace()
                 return prefBaseUrl
@@ -418,8 +426,8 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         private const val AUTOFETCH_URL_PREF_TITLE = "Automatically fetch new domain"
         private const val AUTOFETCH_URL_PREF = "autoFetchNewUrl"
         private const val AUTOFETCH_URL_PREF_SUMMARY =
-            "Experimental, May cause Tachiyomi unstable.\n" +
-            "Requires Android Nougat or newer."
+            "Experimental, May cause Tachiyomi *very* unstable.\n" +
+                "Requires Android Oreo or newer."
 
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
