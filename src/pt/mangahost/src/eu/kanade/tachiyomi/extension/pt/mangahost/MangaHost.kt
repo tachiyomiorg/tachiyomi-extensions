@@ -7,6 +7,7 @@ import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -15,7 +16,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Manga Host"
 
-    override val baseUrl = "https://mangahosted.com"
+    override val baseUrl = "https://mangahost2.com"
 
     override val lang = "pt"
 
@@ -71,9 +72,9 @@ class MangaHost : ParsedHttpSource() {
         val infoElement = document.select("div#page > section > div > div.pull-left")
 
         return SManga.create().apply {
-            author = removeLabel(infoElement.select("li:contains(Autor:)").text())
-            artist = removeLabel(infoElement.select("li:contains(Desenho (Art):)").text())
-            genre = removeLabel(infoElement.select("li:contains(Categoria(s):)").text())
+            author = infoElement.select("li:contains(Autor:)").textWithoutLabel()
+            artist = infoElement.select("li:contains(Desenho (Art):)").textWithoutLabel()
+            genre = infoElement.select("li:contains(Categoria(s):)").textWithoutLabel()
             description = infoElement.select("article").first()?.text()
                 ?.substringBefore("Relacionados:")
             status = parseStatus(infoElement.select("li:contains(Status:)").text().orEmpty())
@@ -89,8 +90,8 @@ class MangaHost : ParsedHttpSource() {
     }
 
     override fun chapterListSelector(): String
-            = "ul.list_chapters li a," +
-              "table.table-hover:not(.table-mangas) > tbody > tr"
+        = "ul.list_chapters li a, " +
+          "table.table-hover:not(.table-mangas) > tbody > tr"
 
     override fun chapterFromElement(element: Element): SChapter {
         val isNewLayout = element.tagName() == "a"
@@ -131,8 +132,8 @@ class MangaHost : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter): Request {
         // Just to prevent the detection of the crawler.
         val newHeader = headersBuilder()
-                .set("Referer", "$baseUrl${chapter.url}".substringBeforeLast("/"))
-                .build()
+            .set("Referer", "$baseUrl${chapter.url}".substringBeforeLast("/"))
+            .build()
 
         return GET(baseUrl + chapter.url, newHeader)
     }
@@ -159,7 +160,7 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun removeLabel(text: String?): String = text!!.substringAfter(":")
+    private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":")
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
