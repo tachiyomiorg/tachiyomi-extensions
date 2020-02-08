@@ -101,15 +101,15 @@ class Japscan : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         val stripped = StringUtils.stripAccents(query)
-        return client.newCall(searchMangaRequest(stripped[0], page))
+        return client.newCall(searchMangaRequest(page))
             .asObservableSuccess()
             .map { response ->
                 searchMangaParse(response, stripped)
             }
     }
 
-    private fun searchMangaRequest(char: Char, page: Int): Request {
-        return if (char.isLetter()) GET("$baseUrl/mangas/${char.toUpperCase()}/$page", headers) else GET("$baseUrl/mangas/0-9/$page", headers)
+    private fun searchMangaRequest(page: Int): Request {
+        return GET("$baseUrl/mangas/$page", headers)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("Not used")
@@ -126,7 +126,7 @@ class Japscan : ParsedHttpSource() {
                 .map { mangas.add(searchMangaFromElement(it)) }
             if (document.select(searchMangaNextPageSelector()).isNotEmpty()) {
                 page++
-                document = client.newCall(searchMangaRequest(query[0], page)).execute().asJsoup()
+                document = client.newCall(searchMangaRequest(page)).execute().asJsoup()
             } else {
                 continueSearch = false
             }
