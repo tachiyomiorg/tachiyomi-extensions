@@ -26,10 +26,8 @@ abstract class MangasProject(override val name: String,
 
     override val supportsLatest = true
 
-    private val correctClient = network.cloudflareClient
-
     // Sometimes the site is slow.
-    override val client = correctClient.newBuilder()
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
@@ -301,7 +299,7 @@ abstract class MangasProject(override val name: String,
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
 
         private val TOKEN_REGEX = "token=(.*)&id".toRegex()
 
