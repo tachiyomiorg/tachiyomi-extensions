@@ -68,7 +68,8 @@ class MadaraFactory : SourceFactory {
         AstralLibrary(),
         NovelFrance(),
         KlikManga(),
-        MiracleScans()
+        MiracleScans(),
+        Manhuasnet()
     )
 }
 
@@ -424,3 +425,6 @@ class NovelFrance : Madara("Novel France", "http://novel-france.fr", "fr", Simpl
 class KlikManga : Madara("KlikManga", "https://klikmanga.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale("id")))
 
 class MiracleScans : Madara("Miracle Scans", "https://miraclescans.com", "en")
+
+class Manhuasnet: Madara("Manhuas.net","https://manhuas.net","en")
+
