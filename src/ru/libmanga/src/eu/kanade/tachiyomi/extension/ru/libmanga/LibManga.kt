@@ -109,7 +109,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val link = element.select("a").first()
         val img = link.select("img").first()
         val manga = SManga.create()
-        manga.thumbnail_url = baseUrl+img.attr("abs:data-src").substringAfter(baseUrl)
+        manga.thumbnail_url = baseUrl+img.attr("data-src").substringAfter(baseUrl)
             .replace("cover_thumb", "cover_250x350")
         manga.setUrlWithoutDomain(link.attr("href"))
         manga.title = img.attr("alt")
