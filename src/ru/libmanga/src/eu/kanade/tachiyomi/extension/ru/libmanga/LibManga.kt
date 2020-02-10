@@ -109,7 +109,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val link = element.select("a").first()
         val img = link.select("img").first()
         val manga = SManga.create()
-        manga.thumbnail_url = img.attr("data-src")
+        manga.thumbnail_url = baseUrl+img.attr("data-src")
             .replace("cover_thumb", "cover_250x350")
         manga.setUrlWithoutDomain(link.attr("href"))
         manga.title = img.attr("alt")
@@ -179,7 +179,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             return manga
         }
         val body = document.select("div.section__body").first()
-        manga.title = document.select(".manga-title h1").text()
+        manga.title = document.select(".manga-title small").text().substringBefore("/").trim()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
         manga.artist = body.select(".info-list__row:nth-child(3) > a").text()
