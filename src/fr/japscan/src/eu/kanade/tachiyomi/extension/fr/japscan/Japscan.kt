@@ -8,10 +8,8 @@ import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.ResponseBody
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.*
 import org.apache.commons.lang3.StringUtils
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -59,18 +57,22 @@ class Japscan : ParsedHttpSource() {
         }
     }
 
-    override fun popularMangaSelector() = "#top_mangas_week li > span"
-
+	//Popular
     override fun popularMangaRequest(page: Int): Request {
-        return GET(baseUrl, headers)
+        return GET("$baseUrl/mangas/", headers)
     }
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        pageNumberDoc = document
 
-    override fun latestUpdatesSelector() = "#chapters > div:eq(0) > h3.text-truncate"
-
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET(baseUrl, headers)
+        val mangas = document.select(popularMangaSelector()).map { element ->
+            popularMangaFromElement(element)
+        }
+        val hasNextPage = false
+        return MangasPage(mangas, hasNextPage)
     }
-
+    override fun popularMangaNextPageSelector(): String? = null
+    override fun popularMangaSelector() = "#top_mangas_week li > span"
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a").first().let {
@@ -85,12 +87,23 @@ class Japscan : ParsedHttpSource() {
         }
         return manga
     }
-
+    
+    //Latest
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET(baseUrl, headers)
+    }
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        val mangas = document.select(latestUpdatesSelector())
+            .distinctBy { element -> element.select("a").attr("href") }
+            .map { element -> latestUpdatesFromElement(element)
+            }
+        val hasNextPage = false
+        return MangasPage(mangas, hasNextPage)
+    }
+    override fun latestUpdatesNextPageSelector() :String? = null
+    override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
-
-    override fun popularMangaNextPageSelector() = "#theresnone"
-
-    override fun latestUpdatesNextPageSelector() = "#theresnone"
 
     //"Search"
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -100,6 +113,7 @@ class Japscan : ParsedHttpSource() {
             filters.forEach { filter ->
                 when (filter) {
                     is TextField -> uri.appendPath(filter.state)
+                    is PageList -> uri.appendPath(filter.values[filter.state].toString())
                 }
             }
             return GET(uri.toString(), headers)
@@ -107,7 +121,7 @@ class Japscan : ParsedHttpSource() {
             throw Exception("Search unavailable, use filter to browse by page")
     }
 
-    override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active)"
+    override fun searchMangaNextPageSelector(): String? = null //"li.page-item:last-child:not(li.active)"
     override fun searchMangaSelector(): String = "div.card div.p-2"
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
         thumbnail_url = baseUrl+element.select("img").attr("src").substringAfter(baseUrl)
@@ -115,10 +129,6 @@ class Japscan : ParsedHttpSource() {
             title = it.text()
             url = it.attr("href")
         }
-        Log.i("TachiDebug","Manga Title = $title")
-        Log.i("TachiDebug","Manga URL = $url")
-        Log.i("TachiDebug","Manga Thumbnail = $thumbnail_url")
-
 
     }
 
@@ -235,11 +245,29 @@ class Japscan : ParsedHttpSource() {
     }
 	
 	//Filters
-	private class TextField(name: String, val key: String) : Filter.Text(name)
+    private class TextField(name: String, val key: String) : Filter.Text(name)
+    private class PageList(pages: Array<Int>): Filter.Select<Int>("Page #", arrayOf(0,*pages))
+    override fun getFilterList():FilterList {
+        val totalPages = pageNumberDoc?.select("li.page-item:last-child a")?.text()
+        val pagelist = mutableListOf<Int>()
+        var filterList:FilterList = if (!totalPages.isNullOrEmpty()) {
+            for (i in 0 until totalPages.toInt()) {
+                pagelist.add(i+1)
+            }
+            FilterList(
+                Filter.Header("Alphabetical Page"),
+                Filter.Header("Page alphabétique"),
+                //Filter.Header("$totalPages Pages"),
+                PageList(pagelist.toTypedArray())
+            )
+        } else FilterList(
+            Filter.Header("Alphabetical Page"),
+            Filter.Header("Page alphabétique"),
+            TextField("Page #", "page"),
+            Filter.Header("Hit reset for list")
+            )
+        return filterList
+    }
 
-    override fun getFilterList() = FilterList(
-        Filter.Header("Alphabetical Start Page"),
-        Filter.Header("Page de démarrage alphabétique"),
-        TextField("Page #", "page")
-    )
+    private var pageNumberDoc : Document? = null
 }
