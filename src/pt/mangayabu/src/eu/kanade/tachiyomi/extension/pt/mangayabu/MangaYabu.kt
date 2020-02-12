@@ -40,11 +40,7 @@ class MangaYabu : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.attr("title").substringBefore(" –")
         thumbnail_url = element.select("span.clip img")!!.attr("src")
-        setUrlWithoutDomain(
-            element.attr("href")
-                .substringBefore("-capitulo")
-                .replace("ler", "manga")
-        )
+        url = mapChapterToMangaUrl(element.attr("href"))
     }
 
     override fun popularMangaNextPageSelector(): String? = null
@@ -68,11 +64,7 @@ class MangaYabu : ParsedHttpSource() {
 
         title = image.attr("alt").substringBefore(" –")
         thumbnail_url = image.attr("src")
-        setUrlWithoutDomain(
-            element.attr("href")
-                .substringBefore("-capitulo")
-                .replace("ler", "manga")
-        )
+        url = mapChapterToMangaUrl(element.attr("href"))
     }
 
     override fun latestUpdatesNextPageSelector() = "div#pagination a div.item.icon i:contains(arrow_forward_ios)"
@@ -100,8 +92,6 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector(): String? = null
 
-    override fun mangaDetailsRequest(manga: SManga): Request = GET(baseUrl + manga.url, headers)
-
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#channel-content div.row").first()!!
         val statusStr = infoElement.select("div.left20 p:contains(Status)")!!.text()
@@ -119,8 +109,6 @@ class MangaYabu : ParsedHttpSource() {
         }
     }
 
-    override fun chapterListRequest(manga: SManga): Request = GET(baseUrl + manga.url, headers)
-
     override fun chapterListSelector() = "div.loop-content div.chap-holder a.chapter-link"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
@@ -129,8 +117,6 @@ class MangaYabu : ParsedHttpSource() {
         setUrlWithoutDomain(element.attr("href"))
     }
 
-    override fun pageListRequest(chapter: SChapter): Request = GET(baseUrl + chapter.url, headers)
-
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img.img-responsive.img-manga")
             .mapIndexed { i, element -> Page(i, "", element.absUrl("src"))}
@@ -138,7 +124,27 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = ""
 
+    /**
+     * Some mangas doesn't use the same slug from the chapter url, and
+     * since the site doesn't have a proper popular list yet, we have
+     * to deal with some exceptions and map them to the correct
+     * slug manually.
+     *
+     * It's a bad solution, but it's a working one for now.
+     */
+    private fun mapChapterToMangaUrl(chapterUrl: String): String {
+        val chapterSlug = chapterUrl
+            .substringBefore("-capitulo")
+            .substringAfter("ler/")
+
+        return "/manga/" + (SLUG_EXCEPTIONS[chapterSlug] ?: chapterSlug)
+    }
+
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+
+        private val SLUG_EXCEPTIONS = mapOf(
+            "the-promised-neverland-yakusoku-no-neverland" to "yakusoku-no-neverland-the-promised-neverland"
+        )
     }
 }
