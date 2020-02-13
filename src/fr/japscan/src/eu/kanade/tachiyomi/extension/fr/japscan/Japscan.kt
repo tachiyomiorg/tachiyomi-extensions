@@ -255,16 +255,13 @@ class Japscan : ParsedHttpSource() {
                 pagelist.add(i+1)
             }
             FilterList(
-                Filter.Header("Alphabetical Page"),
                 Filter.Header("Page alphabétique"),
-                //Filter.Header("$totalPages Pages"),
                 PageList(pagelist.toTypedArray())
             )
         } else FilterList(
-            Filter.Header("Alphabetical Page"),
             Filter.Header("Page alphabétique"),
             TextField("Page #", "page"),
-            Filter.Header("Hit reset for list")
+            Filter.Header("Appuyez sur reset pour la liste")
             )
         return filterList
     }
