@@ -12,7 +12,8 @@ class GenkanFactory : SourceFactory {
         HunlightScans(),
         WoweScans(),
         ZeroScans(),
-        ReaperScans()
+        ReaperScans(),
+        TheNonamesScans()
     )
 }
 
@@ -30,3 +31,4 @@ class WoweScans : Genkan("Wowe Scans", "https://wowescans.co", "en")
 class ZeroScans : Genkan("ZeroScans", "https://zeroscans.com", "en")
 // Search isn't working on Reaper's website, use GenkanOriginal for now
 class ReaperScans : GenkanOriginal("Reaper Scans", "https://reaperscans.com", "en")
+class TheNonamesScans : Genkan("The Nonames Scans", "https://the-nonames.com", "en")
