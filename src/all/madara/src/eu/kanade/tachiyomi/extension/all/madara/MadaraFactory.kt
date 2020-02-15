@@ -69,7 +69,9 @@ class MadaraFactory : SourceFactory {
         NovelFrance(),
         KlikManga(),
         MiracleScans(),
-        Manhuasnet()
+        Manhuasnet(),
+        MangaLaw(),
+        EarlyManga()
     )
 }
 
@@ -216,7 +218,7 @@ class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override val client: OkHttpClient = network.client
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.106 Safari/537.36"
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
         .add("Referer", "$baseUrl/manga/?m_orderby=views")
@@ -428,3 +430,6 @@ class MiracleScans : Madara("Miracle Scans", "https://miraclescans.com", "en")
 
 class Manhuasnet: Madara("Manhuas.net","https://manhuas.net","en")
 
+class MangaLaw: Madara("MangaLaw","https://mangalaw.com","ja",SimpleDateFormat("MM/dd/yyyy", Locale.US))
+
+class EarlyManga: Madara("EarlyManga","https://earlymanga.website","en")
