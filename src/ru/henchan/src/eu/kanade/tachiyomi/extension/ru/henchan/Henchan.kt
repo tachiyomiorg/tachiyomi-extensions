@@ -1,12 +1,12 @@
 package eu.kanade.tachiyomi.extension.ru.henchan
 
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -17,8 +17,9 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URL
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 
 class Henchan : ParsedHttpSource() {
@@ -37,7 +38,6 @@ class Henchan : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor).build()
-
 
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/mostfavorites&sort=manga?offset=${20 * (page - 1)}", headers)
@@ -94,13 +94,11 @@ class Henchan : ParsedHttpSource() {
     override fun searchMangaSelector() = ".content_row:not(:has(div.item:containsOwn(Тип)))"
 
     private fun String.getHQThumbnail(): String? {
-        return if (this.isNotEmpty()) {
-            this.replace("manganew_thumbs", "showfull_retina/manga")
-                .replace("img.", "imgcover.")
-                .replace("_henchan.me", "_hentaichan.ru")
-        } else {
-            null
-        }
+        val isExHenManga = this.contains("/manganew_thumbs_blur/")
+        val regex = "(?<=/)manganew_thumbs\\w*?(?=/)".toRegex(RegexOption.IGNORE_CASE)
+        return this.replace(regex, "showfull_retina/manga")
+            .replace("_".plus(URL(baseUrl).host), "_hentaichan.ru") //domain-related replacing for very old mangas
+            .plus(if(isExHenManga) {"#"} else {""})// # for later so we know what type manga is it
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -128,14 +126,6 @@ class Henchan : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = document.select("#cover").first().attr("src").let {
-            if (it.isNotEmpty()) {
-                it
-            } else {
-                client.newCall(GET(document.select("div.extaraNavi p:last-child a").attr("abs:href") + "?development_access=true#page=1", headers))
-                    .execute().asJsoup().parseJsonArray()[0].string + "#" // # for later so we know where we got it from
-            }
-        }
         manga.author = document.select(".row .item2 h2")[1].text()
         manga.genre = document.select(".sidetag > a:eq(2)").joinToString { it.text() }
         manga.description = document.select("#description").text()
@@ -177,7 +167,7 @@ class Henchan : ParsedHttpSource() {
             chap.setUrlWithoutDomain(document.select("#left > div > a").attr("href"))
             chap.name = document.select("#right > div:nth-child(4)").text().split(" похожий на ")[1]
             chap.chapter_number = 1F
-            chap.date_upload = 0L
+            chap.date_upload = Date().time //setting to current date because of a sorting in the "Recent updates" section
             return listOf(chap)
         }
 
@@ -210,7 +200,7 @@ class Henchan : ParsedHttpSource() {
         val chapterName = element.select("h2 a").attr("title")
         chapter.name = chapterName
         chapter.chapter_number = "(глава\\s|часть\\s)(\\d+)".toRegex(RegexOption.IGNORE_CASE).find(chapterName)?.groupValues?.get(2)?.toFloat() ?: 0F
-        chapter.date_upload = 0L
+        chapter.date_upload = Date().time //setting to current date because of a sorting in the "Recent updates" section
         return chapter
     }
 
@@ -261,6 +251,7 @@ class Henchan : ParsedHttpSource() {
             Genre("action"),
             Genre("ahegao"),
             Genre("bdsm"),
+            Genre("corruption"),
             Genre("foot_fetish"),
             Genre("footfuck"),
             Genre("gender_bender"),
@@ -278,7 +269,9 @@ class Henchan : ParsedHttpSource() {
             Genre("shemale"),
             Genre("shooter"),
             Genre("simulation"),
+            Genre("skinsuit"),
             Genre("tomboy"),
+            Genre("x-ray"),
             Genre("алкоголь"),
             Genre("анал"),
             Genre("андроид"),
@@ -302,7 +295,9 @@ class Henchan : ParsedHttpSource() {
             Genre("в_первый_раз"),
             Genre("в_цвете"),
             Genre("в_школе"),
+            Genre("вампиры"),
             Genre("веб"),
+            Genre("вебкам"),
             Genre("вибратор"),
             Genre("визуальная_новелла"),
             Genre("внучка"),
@@ -311,6 +306,7 @@ class Henchan : ParsedHttpSource() {
             Genre("гипноз"),
             Genre("глубокий_минет"),
             Genre("горячий_источник"),
+            Genre("грудастая_лоли"),
             Genre("групповой_секс"),
             Genre("гяру_и_гангуро"),
             Genre("двойное_проникновение"),
@@ -336,6 +332,7 @@ class Henchan : ParsedHttpSource() {
             Genre("комиксы"),
             Genre("косплей"),
             Genre("кузина"),
+            Genre("куннилингус"),
             Genre("купальники"),
             Genre("латекс_и_кожа"),
             Genre("магия"),
@@ -349,9 +346,13 @@ class Henchan : ParsedHttpSource() {
             Genre("монстры"),
             Genre("мочеиспускание"),
             Genre("мужская_озвучка"),
+            Genre("мужчина_крепкого_телосложения"),
+            Genre("мускулистые_женщины"),
             Genre("на_природе"),
             Genre("наблюдение"),
             Genre("непрямой_инцест"),
+            Genre("обмен_партнерами"),
+            Genre("обмен_телами"),
             Genre("огромная_грудь"),
             Genre("огромный_член"),
             Genre("остановка_времени"),
@@ -365,6 +366,7 @@ class Henchan : ParsedHttpSource() {
             Genre("похищение"),
             Genre("принуждение"),
             Genre("прозрачная_одежда"),
+            Genre("проникновение_в_матку"),
             Genre("психические_отклонения"),
             Genre("публично"),
             Genre("рабыни"),
