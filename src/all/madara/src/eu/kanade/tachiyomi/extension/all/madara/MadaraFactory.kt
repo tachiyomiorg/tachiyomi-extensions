@@ -71,7 +71,12 @@ class MadaraFactory : SourceFactory {
         MiracleScans(),
         Manhuasnet(),
         MangaLaw(),
-        EarlyManga()
+        EarlyManga(),
+        MangaTX(),
+        ATMSubs(),
+        OnManga(),
+        MangaAction(),
+        NijiTranslations()
     )
 }
 
@@ -433,3 +438,14 @@ class Manhuasnet: Madara("Manhuas.net","https://manhuas.net","en")
 class MangaLaw: Madara("MangaLaw","https://mangalaw.com","ja",SimpleDateFormat("MM/dd/yyyy", Locale.US))
 
 class EarlyManga: Madara("EarlyManga","https://earlymanga.website","en")
+
+class MangaTX: Madara("MangaTX","https://mangatx.com","en")
+
+class ATMSubs: Madara("ATM-Subs","https://atm-subs.fr","fr",SimpleDateFormat("d MMMM yyyy", Locale("fr")))
+
+class OnManga: Madara("OnManga","https://onmanga.com","en")
+
+class MangaAction: Madara("Manga Action","https://manga-action.com","ar",SimpleDateFormat("yyyy-MM-dd", Locale("ar")))
+
+class NijiTranslations: Madara("Niji Translations","https://niji-translations.com/","ar",SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
+
