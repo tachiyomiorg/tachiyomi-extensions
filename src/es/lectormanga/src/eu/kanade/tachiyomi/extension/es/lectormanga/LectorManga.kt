@@ -32,7 +32,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(2)
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -42,7 +42,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36"
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
@@ -249,6 +249,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
         val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
+        if (!response.isSuccessful) throw Exception("Lector Manga HTTP Error ${response.code()}")
         val document = response.asJsoup()
         val geturl = document.select("form#$chapterID").attr("action")+"/$time" //Get redirect URL
         val token = document.select("form#$chapterID input").attr("value") //Get token
@@ -266,7 +267,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             "POST" -> FormBody.Builder()
                 .add("_token", token)
                 .build()
-            else -> throw UnsupportedOperationException("Unknown method. Open GitHub issue")
+            else -> throw UnsupportedOperationException("Lector Manga something else broke.")
         }
 
         val newurl = getBuilder(geturl,getHeaders,formBody,method)
@@ -288,7 +289,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         if (getPageMethod()=="cascade") {
             val style = document.select("style:containsData(height)").html()
-            document.select( "img[id]").filterNot { it.attr("id") in style }.forEach {
+            document.select( "img[id]").filterNot { "#${it.attr("id")}," in style || "#${it.attr("id")}{"  in style  }.forEach {
                 add(Page(size, "", it.attr("src")))
             }
         } else {
