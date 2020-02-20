@@ -105,9 +105,9 @@ class Japscan : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //"Search"
+    //Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query.isNullOrEmpty()) {
+        if (query.isEmpty()) {
             val uri = Uri.parse(baseUrl).buildUpon()
                 .appendPath("mangas")
             filters.forEach { filter ->
@@ -117,20 +117,32 @@ class Japscan : ParsedHttpSource() {
                 }
             }
             return GET(uri.toString(), headers)
-        } else
-            throw Exception("Search unavailable, use filter to browse by page")
+        } else {
+            val uri = Uri.parse("https://duckduckgo.com/lite/").buildUpon()
+                .appendQueryParameter("q","$query site:www.japscan.co/manga/")
+                .appendQueryParameter("kd","-1")
+            return GET(uri.toString(), headers)
+        }
     }
 
     override fun searchMangaNextPageSelector(): String? = null //"li.page-item:last-child:not(li.active)"
-    override fun searchMangaSelector(): String = "div.card div.p-2"
-    override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = baseUrl+element.select("img").attr("src").substringAfter(baseUrl)
-        element.select("p a").let {
-            title = it.text()
-            url = it.attr("href")
+    override fun searchMangaSelector(): String = "div.card div.p-2, a.result-link"
+    override fun searchMangaFromElement(element: Element): SManga =
+        if (element.attr("class")=="result-link") {
+            Log.i("TachiDebug", "Element = $element")
+            SManga.create().apply {
+                title = element.text().substringAfter(" ").substringBefore(" | JapScan")
+                setUrlWithoutDomain(element.attr("abs:href"))
+            }
+        } else {
+            SManga.create().apply {
+                thumbnail_url = baseUrl + element.select("img").attr("src").substringAfter(baseUrl)
+                element.select("p a").let {
+                    title = it.text()
+                    url = it.attr("href")
+                }
+            }
         }
-
-    }
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#main > .card > .card-body").first()
@@ -255,10 +267,12 @@ class Japscan : ParsedHttpSource() {
                 pagelist.add(i+1)
             }
             FilterList(
+                Filter.Header("Recherche par Duck Duck Go"),
                 Filter.Header("Page alphabétique"),
                 PageList(pagelist.toTypedArray())
             )
         } else FilterList(
+            Filter.Header("Recherche par Duck Duck Go"),
             Filter.Header("Page alphabétique"),
             TextField("Page #", "page"),
             Filter.Header("Appuyez sur reset pour la liste")
