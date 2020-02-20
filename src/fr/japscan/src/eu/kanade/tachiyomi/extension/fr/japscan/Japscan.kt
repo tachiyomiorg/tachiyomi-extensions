@@ -129,7 +129,6 @@ class Japscan : ParsedHttpSource() {
     override fun searchMangaSelector(): String = "div.card div.p-2, a.result-link"
     override fun searchMangaFromElement(element: Element): SManga =
         if (element.attr("class")=="result-link") {
-            Log.i("TachiDebug", "Element = $element")
             SManga.create().apply {
                 title = element.text().substringAfter(" ").substringBefore(" | JapScan")
                 setUrlWithoutDomain(element.attr("abs:href"))
