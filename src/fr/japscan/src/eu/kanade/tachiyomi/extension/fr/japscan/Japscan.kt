@@ -135,7 +135,7 @@ class Japscan : ParsedHttpSource() {
             }
         } else {
             SManga.create().apply {
-                thumbnail_url = baseUrl + element.select("img").attr("src").substringAfter(baseUrl)
+                thumbnail_url = element.select("img").attr("abs:src")
                 element.select("p a").let {
                     title = it.text()
                     url = it.attr("href")
