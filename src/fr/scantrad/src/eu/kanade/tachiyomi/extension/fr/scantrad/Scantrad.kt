@@ -60,18 +60,18 @@ class Scantrad : ParsedHttpSource() {
 
         document.select(latestUpdatesSelector()).map { mangas.add(latestUpdatesFromElement(it)) }
 
-        return MangasPage(mangas.distinctBy { it.title }, false)
+        return MangasPage(mangas.distinctBy { it.url }, false)
     }
 
-    override fun latestUpdatesSelector() = "div.h-left > div > a"
+    override fun latestUpdatesSelector() = "div.h-left > div.home-manga"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        manga.url = element.attr("href").substringAfter("mangas").removeSuffix("/").substringBeforeLast("/")
-        manga.title = element.parent().select("div.hmi-titre a").text()
+        manga.setUrlWithoutDomain(element.select("div.hmi-titre a").first().attr("abs:href"))
+        manga.title = element.select("div.hmi-titre a").first().text()
         manga.thumbnail_url = element.select("img").attr("abs:src")
-
+        
         return manga
     }
 
@@ -187,7 +187,7 @@ class Scantrad : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("div.sc-lel img").forEachIndexed { i, img ->
+        document.select("div.sc-lel img[id]").forEachIndexed { i, img ->
             pages.add(Page(i, "", img.attr("abs:data-src")))
         }
 
