@@ -4,10 +4,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.HttpUrl
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
@@ -19,6 +16,22 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
     override val baseUrl = "http://www.webtoons.com"
 
     override val supportsLatest = true
+
+    override val client = super.client.newBuilder()
+        .cookieJar(object : CookieJar {
+            override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
+            override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
+                return ArrayList<Cookie>().apply {
+                    add(Cookie.Builder()
+                        .domain("www.webtoons.com")
+                        .path("/")
+                        .name("ageGatePass")
+                        .value("true")
+                        .build()) }
+            }
+
+        })
+        .build()
 
     private val day: String
         get() {
