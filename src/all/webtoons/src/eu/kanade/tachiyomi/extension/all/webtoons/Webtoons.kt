@@ -19,15 +19,16 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
 
     override val client = super.client.newBuilder()
         .cookieJar(object : CookieJar {
-            override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
-            override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
-                return ArrayList<Cookie>().apply {
-                    add(Cookie.Builder()
+            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
+            override fun loadForRequest(url: HttpUrl): List<Cookie> {
+                return listOf<Cookie>(
+                    Cookie.Builder()
                         .domain("www.webtoons.com")
                         .path("/")
                         .name("ageGatePass")
                         .value("true")
-                        .build()) }
+                        .build()
+                )
             }
 
         })
