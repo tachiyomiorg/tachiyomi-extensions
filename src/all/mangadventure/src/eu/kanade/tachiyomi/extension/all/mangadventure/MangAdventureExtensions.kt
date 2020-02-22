@@ -72,10 +72,10 @@ fun SChapter.fromJSON(obj: JSONObject) = apply {
     chapter_number = obj.optString("chapter", "0").toFloat()
     date_upload = MangAdventure.httpDateToTimestamp(obj.getString("date"))
     scanlator = obj.getJSONArray("groups")?.joinField("name", " & ")
-    name = buildString {
-        obj.optInt("volume").let { if (it != 0) append("Vol.$it ") }
-        append("Ch.${DecimalFormat("#.#").format(chapter_number)} - ")
+    name = obj.optString("full_title", buildString {
+        obj.optInt("volume").let { if (it != 0) append("Vol. $it, ") }
+        append("Ch. ${DecimalFormat("#.#").format(chapter_number)}: ")
         append(obj.getString("title"))
-        if (obj.getBoolean("final")) append(" [END]")
-    }
+    })
+    if (obj.getBoolean("final")) name += " [END]"
 }

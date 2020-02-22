@@ -122,7 +122,7 @@ abstract class MangAdventure(
                         }
                     )
                 }
-            }.sortedByDescending(SChapter::name).toList()
+            }.toList().reversed()
         }
 
     override fun mangaDetailsParse(response: Response) =
@@ -131,7 +131,9 @@ abstract class MangAdventure(
     override fun pageListParse(response: Response) =
         JSONObject(response.asString()).run {
             val url = getString("url")
+            // Workaround for a bug in MangAdventure < 0.6.3
             val root = getString("pages_root")
+                .replace("://media/series", "://reader")
             val arr = getJSONArray("pages_list")
             (0 until arr.length()).map {
                 Page(it, "$url${it + 1}", "$root${arr.getString(it)}")
