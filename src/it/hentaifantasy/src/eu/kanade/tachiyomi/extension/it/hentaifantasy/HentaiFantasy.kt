@@ -190,7 +190,7 @@ class HentaiFantasy : ParsedHttpSource() {
 
     // Tags: 47
     // $("select[name='tag[]']:eq(0) > option").map((i, el) => `Tag("${$(el).text().trim()}", ${$(el).attr("value")})`).get().sort().join(",\n")
-    // on http://www.hentaifantasy.it/search/
+    // on https://www.hentaifantasy.it/search/
     private fun getTagList() = listOf(
         Tag("Ahegao", 56),
         Tag("Anal", 28),

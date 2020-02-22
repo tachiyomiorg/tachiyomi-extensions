@@ -15,7 +15,7 @@ class MangaOwl : ParsedHttpSource() {
 
     override val name = "MangaOwl"
 
-    override val baseUrl = "http://mangaowl.com"
+    override val baseUrl = "https://mangaowl.com"
 
     override val lang = "en"
 

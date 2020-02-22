@@ -21,7 +21,7 @@ abstract class HttpSource : CatalogueSource {
     protected val network: NetworkHelper = throw Exception("Stub!")
 
     /**
-     * Base url of the website without the trailing slash, like: http://mysite.com
+     * Base url of the website without the trailing slash, like: https://mysite.com
      */
     abstract val baseUrl: String
 

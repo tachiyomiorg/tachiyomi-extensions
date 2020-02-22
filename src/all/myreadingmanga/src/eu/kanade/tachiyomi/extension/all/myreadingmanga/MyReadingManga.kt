@@ -142,7 +142,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                 else -> element.attr("data-lazy-src")
             }
         if (url.startsWith("//")) {
-            url = "http:$url"
+            url = "https:$url"
         }
         return url
     }
@@ -259,7 +259,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     } else {
         arrayOf(Pair("","Open 'Latest' and force restart app"))
     }
-    
+
     //Generates the filter lists for app
     override fun getFilterList(): FilterList {
         val filterList = FilterList(

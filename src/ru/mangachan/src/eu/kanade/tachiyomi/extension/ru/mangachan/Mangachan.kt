@@ -236,7 +236,7 @@ class Mangachan : ParsedHttpSource() {
 
     /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")]
     *  .map(el => `Genre("${el.getAttribute('href').substr(6)}")`).join(',\n')
-    *  on http://mangachan.me/
+    *  on https://mangachan.me/
     */
     private fun getGenreList() = listOf(
             Genre("18_плюс"),

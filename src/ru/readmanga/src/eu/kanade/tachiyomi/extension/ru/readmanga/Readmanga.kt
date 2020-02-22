@@ -234,7 +234,7 @@ class Readmanga : ParsedHttpSource() {
     /* [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")]
     *  .map(el => `Genre("${el.textContent.trim()}", $"{el.getAttribute('onclick')
     *  .substr(31,el.getAttribute('onclick').length-33)"})`).join(',\n')
-    *  on http://readmanga.me/search/advanced
+    *  on https://readmanga.me/search/advanced
     */
     override fun getFilterList() = FilterList(
             Category(getCategoryList()),

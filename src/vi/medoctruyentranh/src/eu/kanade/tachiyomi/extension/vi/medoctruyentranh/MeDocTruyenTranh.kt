@@ -18,7 +18,7 @@ class MeDocTruyenTranh : ParsedHttpSource() {
 
     override val name = "MeDocTruyenTranh"
 
-    override val baseUrl = "http://www.medoctruyentranh.net"
+    override val baseUrl = "https://www.medoctruyentranh.net"
 
     override val lang = "vi"
 
@@ -51,7 +51,7 @@ class MeDocTruyenTranh : ParsedHttpSource() {
         return manga
     }
 
-    
+
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         val jsonData = element.ownerDocument().select("#__NEXT_DATA__").first()!!.data()

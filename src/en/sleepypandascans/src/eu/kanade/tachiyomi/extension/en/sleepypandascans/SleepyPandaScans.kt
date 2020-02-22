@@ -15,7 +15,7 @@ class SleepyPandaScans : ParsedHttpSource() {
 
     override val name = "Sleepy Panda Scans"
 
-    override val baseUrl = "http://sleepypandascans.co"
+    override val baseUrl = "https://sleepypandascans.co"
 
     override val lang = "en"
 

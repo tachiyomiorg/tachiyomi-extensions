@@ -20,7 +20,7 @@ import javax.net.ssl.X509TrustManager
  * This class generates the sources for MMRCMS.
  * Credit to nulldev for writing the original shell script
  *
-# CMS: https://getcyberworks.com/product/manga-reader-cms/
+ * CMS: https://getcyberworks.com/product/manga-reader-cms/
  */
 
 class Generator {
@@ -31,7 +31,7 @@ class Generator {
         val dateTime = ZonedDateTime.now()
         val formattedDate = dateTime.format(DateTimeFormatter.RFC_1123_DATE_TIME)
         buffer.append("package eu.kanade.tachiyomi.extension.all.mmrcms")
-        buffer.append("\n\n// GENERATED FILE, DO NOT MODIFY!\n//Generated $formattedDate\n\n")
+        buffer.append("\n\n// GENERATED FILE, DO NOT MODIFY!\n// Generated $formattedDate\n\n")
         var number = 1
         sources.forEach {
             try {
@@ -226,23 +226,22 @@ class Generator {
         const val DRY_RUN = false
         val sources = listOf(
             Triple("ar", "مانجا اون لاين", "https://onma.me"),
-            Triple("en", "Read Comics Online", "http://readcomicsonline.ru"),
-            Triple("en", "Biamam Scans", "http://biamam.com/"),
-            Triple("en", "Fallen Angels", "http://manga.fascans.com"),
+            Triple("en", "Read Comics Online", "https://readcomicsonline.ru"),
+            Triple("en", "Biamam Scans", "https://biamam.com/"),
+            Triple("en", "Fallen Angels", "https://manga.fascans.com"),
             Triple("en", "Hatigarm Scans", "https://hatigarmscans.net"),
-            Triple("en", "Mangawww Reader", "http://mangawww.club"),
-            Triple("en", "White Cloud Pavilion", "http://www.whitecloudpavilion.com/manga/free"),
-            Triple("fr", "Scan FR", "http://www.scan-fr.io"),
+            Triple("en", "Mangawww Reader", "https://mangawww.club"),
+            Triple("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
+            Triple("fr", "Scan FR", "https://www.scan-fr.io"),
             Triple("fr", "Scan VF", "https://www.scan-vf.co"),
-            Triple("id", "Komikid", "http://www.komikid.com"),
+            Triple("id", "Komikid", "https://www.komikid.com"),
             Triple("pl", "ToraScans", "http://torascans.pl"),
             Triple("pt", "Comic Space", "https://www.comicspace.com.br"),
             Triple("pt", "Mangás Yuri", "https://mangasyuri.net"),
-            Triple("pl", "Dracaena", "http://dracaena.webd.pl/czytnik"),
+            Triple("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),
             Triple("pl", "Nikushima", "http://azbivo.webd.pro"),
-            Triple("ru", "Anigai clan", "http://anigai.ru"),
             Triple("tr", "MangaHanta", "http://mangahanta.com"),
-            Triple("vi", "Fallen Angels Scans", "http://truyen.fascans.com"),
+            Triple("vi", "Fallen Angels Scans", "https://truyen.fascans.com"),
             Triple("es", "LeoManga", "https://leomanga.me"),
             Triple("es", "submanga", "https://submanga.li"),
             Triple("es", "Mangadoor", "https://mangadoor.com"),
@@ -255,9 +254,10 @@ class Generator {
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             //Changed CMS
             //Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
-            //Triple("en", "Chibi Manga Reader", "http://www.cmreader.info"),
-            //Triple("tr", "Epikmanga", "http://www.epikmanga.com"),
+            //Triple("en", "Chibi Manga Reader", "https://www.cmreader.info"),
+            //Triple("tr", "Epikmanga", "https://www.epikmanga.com"),
             //Went offline
+            //Triple("ru", "Anigai clan", "http://anigai.ru"),
             //Triple("en", "ZXComic", "http://zxcomic.com"),
             //Triple("es", "SOS Scanlation", "https://sosscanlation.com"),
             //Triple("es", "MangaCasa", "https://mangacasa.com"))

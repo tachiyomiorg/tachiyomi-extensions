@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: WP Manga Stream'
     pkgNameSuffix = 'all.wpmangastream'
     extClass = '.WPMangaStreamFactory'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 

@@ -53,7 +53,7 @@ class DoujinYang: MangaMx() {
     override fun pageListParse(response: Response): List<Page> {
         return response.body()!!.string().substringAfter(",[").substringBefore("]")
             .replace(Regex("""[\\"]"""), "").split(",").let { list ->
-                val path = "http:" + list[0]
+                val path = "https:" + list[0]
                 list.drop(1).mapIndexed { i, img -> Page(i, "", path + img) }
             }
     }

@@ -13,7 +13,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
 
     override val name = "Webtoons.com"
 
-    override val baseUrl = "http://www.webtoons.com"
+    override val baseUrl = "https://www.webtoons.com"
 
     override val supportsLatest = true
 
@@ -55,10 +55,10 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
     override fun latestUpdatesSelector() = "div#dailyList > $day li > a:has(span:contains(UP))"
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
-            .add("Referer", "http://www.webtoons.com/$langCode/")
+            .add("Referer", "https://www.webtoons.com/$langCode/")
 
     protected val mobileHeaders: Headers = super.headersBuilder()
-            .add("Referer", "http://m.webtoons.com")
+            .add("Referer", "https://m.webtoons.com")
             .build()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/$langCode/dailySchedule", headers)

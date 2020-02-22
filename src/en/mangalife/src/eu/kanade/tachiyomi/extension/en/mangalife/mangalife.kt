@@ -200,7 +200,7 @@ class MangaLife : HttpSource() {
     // Chapters - Mind special cases like decimal chapters (e.g. One Punch Man) and manga with seasons (e.g. The Gamer)
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    
+
     private fun chapterURLEncode(e: String ):String {
         var index = ""
         val t = e.substring(0,1).toInt()
@@ -211,7 +211,7 @@ class MangaLife : HttpSource() {
         if (0 != path) {suffix = ".$path"}
         return "-chapter-$n$index$suffix.html"
     }
-    
+
     private fun chapterImage(e: String): String {
         val a = e.substring(1,e.length-1)
         val b = e.substring(e.length-1).toInt()
@@ -285,7 +285,7 @@ class MangaLife : HttpSource() {
     )
 
     // [...document.querySelectorAll("label.triStateCheckBox input")].map(el => `Filter("${el.getAttribute('name')}", "${el.nextSibling.textContent.trim()}")`).join(',\n')
-    // http://mangalife.co/advanced-search/
+    // https://manga4life.com/advanced-search/
     private fun getGenreList() = listOf(
             Genre("Action"),
             Genre("Adult"),

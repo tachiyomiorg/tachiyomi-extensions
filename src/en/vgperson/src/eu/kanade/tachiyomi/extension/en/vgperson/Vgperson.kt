@@ -105,7 +105,7 @@ class Vgperson : ParsedHttpSource() {
             "Azure and Claude" -> "buXnlmh.jpg"
             "Three Days of Happiness" -> "kL5dvnp.jpg"
             else -> null
-        }?.let { "http://i.imgur.com/$it" }
+        }?.let { "https://i.imgur.com/$it" }
 
     override fun latestUpdatesSelector() = ""
 

@@ -23,9 +23,9 @@ class MyMangaReaderCMSSources : SourceFactory {
      *     {
      *         "language": "en",
      *         "name": "Example manga reader",
-     *         "base_url": "http://example.com",
+     *         "base_url": "https://example.com",
      *         "supports_latest": true,
-     *         "item_url": "http://example.com/manga/",
+     *         "item_url": "https://example.com/manga/",
      *         "categories": [
      *             {"id": "stuff", "name": "Stuff"},
      *             {"id": "test", "name": "Test"}

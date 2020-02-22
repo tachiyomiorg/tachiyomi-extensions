@@ -231,11 +231,11 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         when(quality){
             LOW_QUALITY -> {
                 url = url.replace("https://", "")
-                url = "http://images.weserv.nl/?w=300&q=70&url=" + url
+                url = "https://images.weserv.nl/?w=300&q=70&url=" + url
             }
             MID_QUALITY -> {
                 url = url.replace("https://", "")
-                url = "http://images.weserv.nl/?w=600&q=70&url=" + url
+                url = "https://images.weserv.nl/?w=600&q=70&url=" + url
             }
         }
         return url

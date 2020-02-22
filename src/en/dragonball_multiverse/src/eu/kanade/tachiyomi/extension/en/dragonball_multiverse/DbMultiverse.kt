@@ -16,7 +16,7 @@ import rx.Observable
 open class DbMultiverse : ParsedHttpSource() {
 
     override val name = "Dragon Ball Multiverse"
-    override val baseUrl = "http://www.dragonball-multiverse.com"
+    override val baseUrl = "https://www.dragonball-multiverse.com"
     override val supportsLatest = false
     override val lang = "en"
 

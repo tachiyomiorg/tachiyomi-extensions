@@ -15,7 +15,7 @@ class Webcomics : ParsedHttpSource() {
 
     override val name = "Webcomics"
 
-    override val baseUrl = "http://www.webcomicsapp.com"
+    override val baseUrl = "https://www.webcomicsapp.com"
 
     override val lang = "en"
 
@@ -26,7 +26,7 @@ class Webcomics : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "section.mangas div div.col-md-3"
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", "http://www.webcomicsapp.com")
+            .add("Referer", "https://www.webcomicsapp.com")
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/popular.html", headers)
 
@@ -162,7 +162,7 @@ class Webcomics : ParsedHttpSource() {
     )
 
     // [...$('.row.wiki-book-nav .col-md-8 ul a')].map(el => `"${el.textContent.trim()}"`).join(',\n')
-    // http://www.webcomicsapp.com/wiki.html
+    // https://www.webcomicsapp.com/wiki.html
     private fun getGenreList() = arrayOf(
             "All",
             "Fantasy",

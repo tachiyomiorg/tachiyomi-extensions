@@ -34,7 +34,7 @@ open class WebtoonsDefault(override val lang: String, override val langCode: Str
         return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
     }
 
-    override fun chapterListRequest(manga: SManga) = GET("http://m.webtoons.com" + manga.url, mobileHeaders)
+    override fun chapterListRequest(manga: SManga) = GET("https://m.webtoons.com" + manga.url, mobileHeaders)
 
     override fun pageListParse(document: Document) = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
 }

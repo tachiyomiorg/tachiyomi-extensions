@@ -118,7 +118,7 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
     override fun getGenreList() = getComicsGenreList()
 }
 
-class HanaScan : FMReader("HanaScan (RawQQ)", "http://rawqq.com", "ja") {
+class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
 }
 
@@ -299,7 +299,7 @@ class Manhwa18NetRaw : FMReader("Manhwa18.net Raw", "https://manhwa18.net", "ko"
     override fun getFilterList() = FilterList(super.getFilterList().filterNot { it == GenreList(getGenreList()) })
 }
 
-class MangaBorn : FMReader("MangaBorn", "http://hellxlight.com", "en") {
+class MangaBorn : FMReader("MangaBorn", "https://hellxlight.com", "en") {
     override val requestPath = "manga_list"
     override val popularSort = "type=topview"
     override fun popularMangaNextPageSelector() = "div.page-number a.select + a:not(.go-p-end)"

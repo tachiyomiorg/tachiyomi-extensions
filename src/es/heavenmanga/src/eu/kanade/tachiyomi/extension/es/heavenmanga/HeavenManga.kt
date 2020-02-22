@@ -18,7 +18,7 @@ class HeavenManga : ParsedHttpSource() {
 
     override val name = "HeavenManga"
 
-    override val baseUrl = "http://heavenmanga.com"
+    override val baseUrl = "https://heavenmanga.com"
 
     override val lang = "es"
 
@@ -111,7 +111,7 @@ class HeavenManga : ParsedHttpSource() {
                     }
                 }
             }
-    
+
         }
 
         return GET(search_url, headers)
@@ -240,7 +240,7 @@ class HeavenManga : ParsedHttpSource() {
 
     /**
      * Array.from(document.querySelectorAll('.categorias a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
-     * on http://heavenmanga.com/top/
+     * on https://heavenmanga.com/top/
      * */
     private class GenreFilter : UriPartFilter("Géneros", arrayOf(
         Pair("Todo", ""),
@@ -331,7 +331,7 @@ class HeavenManga : ParsedHttpSource() {
 
     /**
      * Array.from(document.querySelectorAll('.letras a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
-     * on http://heavenmanga.com/top/
+     * on https://heavenmanga.com/top/
      * */
     private class AlphabeticoFilter : UriPartFilter("Alfabético", arrayOf(
         Pair("Todo", ""),
@@ -366,7 +366,7 @@ class HeavenManga : ParsedHttpSource() {
 
     /**
      * Array.from(document.querySelectorAll('#t li a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
-     * on http://heavenmanga.com/top/
+     * on https://heavenmanga.com/top/
      * */
     private class ListaCompletasFilter: UriPartFilter("Lista Completa", arrayOf(
         Pair("Todo", ""),
@@ -390,5 +390,5 @@ class HeavenManga : ParsedHttpSource() {
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-    
+
 }

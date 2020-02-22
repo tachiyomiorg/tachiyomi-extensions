@@ -15,7 +15,7 @@ class wnacg : ParsedHttpSource() {
     override val baseUrl = "https://www.wnacg.org"
     override val lang = "zh"
     override val supportsLatest = false
-    
+
     override fun popularMangaSelector() = "div.pic_box"
     override fun latestUpdatesSelector() = throw Exception("Not used")
     override fun searchMangaSelector() = popularMangaSelector()
@@ -85,7 +85,7 @@ class wnacg : ParsedHttpSource() {
         val matchresult = regex.findAll(galleryaid).map { it.value }.toList()
         val pages = mutableListOf<Page>()
         for (i in 0 until matchresult.size){
-            pages.add(Page(i, "", "http:"+matchresult[i]))
+            pages.add(Page(i, "", "https:"+matchresult[i]))
         }
         return pages
     }

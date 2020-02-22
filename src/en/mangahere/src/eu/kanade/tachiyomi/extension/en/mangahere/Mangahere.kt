@@ -188,7 +188,7 @@ class Mangahere : ParsedHttpSource() {
             } catch (e: ParseException) {
                 0L
             }
-			}
+        }
     }
 
     override fun pageListRequest(chapter: SChapter): Request {

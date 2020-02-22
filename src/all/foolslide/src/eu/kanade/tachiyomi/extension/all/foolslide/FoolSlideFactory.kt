@@ -131,13 +131,13 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
     }
 }
 
-class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
+class ZandynoFansub : FoolSlide("Zandy no Fansub", "https://zandynofansub.aishiteru.org", "en", "/reader")
 
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
 class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
 
-class PowerMangaIT : FoolSlide("PowerManga", "http://reader.powermanga.org", "it", "")
+class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
 
 class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt") {
     override fun mangaDetailsParse(document: Document): SManga {

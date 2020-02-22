@@ -116,7 +116,7 @@ open class Mangahub : ParsedHttpSource() {
         val r = Regex("""\/\/([\w\.\/])+""")
         val pages = mutableListOf<Page>()
         for ((index, value) in r.findAll(pictures).withIndex()) {
-            pages.add(Page(index = index, imageUrl = "http:${value.value}"))
+            pages.add(Page(index = index, imageUrl = "https:${value.value}"))
         }
 
         return pages

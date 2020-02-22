@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Dragon Ball Multiverse'
     pkgNameSuffix = 'en.dragonball_multiverse'
     extClass = '.DbMultiverse'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
