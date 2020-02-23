@@ -11,6 +11,7 @@ import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -20,6 +21,7 @@ import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.IOException
@@ -97,7 +99,22 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = searchComplexFilterMangaRequestBuilder(baseUrl, page, query, filters)
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+            val urlPath = "/bbs/page.php?hid=manga_detail&manga_id=$realQuery"
+            client.newCall(GET("$baseUrl$urlPath"))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = urlPath
+                    MangasPage(listOf(details), false)
+                }
+        } else super.fetchSearchManga(page, query, filters)
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
+        searchComplexFilterMangaRequestBuilder(baseUrl, page, query, filters)
 
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -437,5 +454,8 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
         // Url Handler
         internal const val MINIMUM_IMAGE_SIZE = 10000
+
+        // Activity Url Handler
+        const val PREFIX_ID_SEARCH = "id:"
     }
 }

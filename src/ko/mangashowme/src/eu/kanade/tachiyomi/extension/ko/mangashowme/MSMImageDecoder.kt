@@ -38,7 +38,12 @@ internal class ImageDecoder(scripts: String) {
 internal class ImageDecoderInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val req = chain.request()
-        val response = chain.proceed(req)
+        val newReq = req.newBuilder()!!
+            .removeHeader("ImageRequest")
+            .removeHeader("ImageDecodeRequest")
+            .removeHeader("SecondUrlToRequest")
+            .build()!!
+        val response = chain.proceed(newReq)
 
         val decodeHeader = req.header("ImageDecodeRequest")
 
