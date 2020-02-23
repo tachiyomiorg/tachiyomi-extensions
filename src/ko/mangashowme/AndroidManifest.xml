@@ -9,10 +9,29 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
+                <!-- Current domain -->
                 <data
                         android:scheme="https"
-                        android:host="nhentai.net"
-                        android:pathPattern="/bbs/page.php?hid=manga_detail&amp;manga_id=..*"/>
+                        android:host="manamoa28.net"
+                        android:pathPattern="/bbs/page.php"/>
+                <!-- Future domains -->
+                <data
+                        android:scheme="https"
+                        android:host="manamoa29.net"
+                        android:pathPattern="/bbs/page.php"/>
+                <data
+                        android:scheme="https"
+                        android:host="manamoa30.net"
+                        android:pathPattern="/bbs/page.php"/>
+                <data
+                        android:scheme="https"
+                        android:host="manamoa31.net"
+                        android:pathPattern="/bbs/page.php"/>
+                <data
+                        android:scheme="https"
+                        android:host="manamoa32.net"
+                        android:pathPattern="/bbs/page.php"/>
+
             </intent-filter>
         </activity>
     </application>

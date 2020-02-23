@@ -11,9 +11,8 @@ class ManaMoaUrlActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val pathSegments = intent?.data?.pathSegments
-        if (pathSegments != null && pathSegments.size > 1) {
-            val titleid = pathSegments[1].substringBetween("manga_id=", "&")
+        val titleid = intent?.data?.getQueryParameter("manga_id")
+        if (titleid != null && titleid.toInt() > 1) {
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
                 putExtra("query", "${ManaMoa.PREFIX_ID_SEARCH}$titleid")
