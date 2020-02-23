@@ -131,11 +131,20 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return client.newCall(searchMangaRequest(page, query, filters))
-            .asObservableSuccess()
-            .map { response ->
-                searchMangaParse(response, query)
-            }
+        return if ( query.startsWith(SLUG_PREFIX)) {
+            val slug = query.removePrefix(SLUG_PREFIX)
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParseWithSlug(response, slug)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response, query)
+                }
+        }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -144,6 +153,24 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         throw Exception("Unused.")
+    }
+
+    private fun searchMangaParseWithSlug(response: Response, slug: String) : MangasPage {
+        val results = JSONObject(response.body()!!.string())
+        val mangaIter = results.keys()
+        val truncatedJSON = JSONObject()
+
+        while (mangaIter.hasNext()) {
+            val mangaTitle = mangaIter.next()
+            val mangaDetails = results.getJSONObject(mangaTitle)
+
+            if (mangaDetails.get("slug") == slug) {
+                truncatedJSON.put(mangaTitle, mangaDetails)
+            }
+
+        }
+
+        return parseManga(truncatedJSON)
     }
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
@@ -393,4 +420,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         throw Exception("Latest updates not supported.")
     }
 
+    companion object {
+        const val SLUG_PREFIX = "slug:"
+    }
 }
