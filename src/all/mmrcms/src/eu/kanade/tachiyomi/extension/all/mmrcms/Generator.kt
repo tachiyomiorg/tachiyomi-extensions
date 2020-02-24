@@ -229,7 +229,6 @@ class Generator {
             Triple("en", "Read Comics Online", "https://readcomicsonline.ru"),
             Triple("en", "Biamam Scans", "https://biamam.com/"),
             Triple("en", "Fallen Angels", "https://manga.fascans.com"),
-            Triple("en", "Hatigarm Scans", "https://hatigarmscans.net"),
             Triple("en", "Mangawww Reader", "https://mangawww.club"),
             Triple("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
             Triple("fr", "Scan FR", "https://www.scan-fr.io"),
@@ -256,6 +255,7 @@ class Generator {
             //Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
             //Triple("en", "Chibi Manga Reader", "https://www.cmreader.info"),
             //Triple("tr", "Epikmanga", "https://www.epikmanga.com"),
+            //Triple("en", "Hatigarm Scans", "https://hatigarmscans.net"),
             //Went offline
             //Triple("ru", "Anigai clan", "http://anigai.ru"),
             //Triple("en", "ZXComic", "http://zxcomic.com"),
