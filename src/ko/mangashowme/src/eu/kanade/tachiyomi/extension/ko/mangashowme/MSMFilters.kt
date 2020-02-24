@@ -162,8 +162,9 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
     */
 
     if (query.isEmpty() && nameFilter == null && statusFilter == null && orderFilter == 0 && matchFilter == 1 && genresFilter.isEmpty()) {
-        Log.println(Log.DEBUG, "TACHI REQUEST", "NORMAL REQU")
-        return GET("$baseUrl/bbs/page.php?hid=manga_list")
+        Log.d("TACHIREQUEST", "NORMAL REQU")
+        return GET("$baseUrl/bbs/page.php?hid=manga_list" +
+            if (page > 1) "&page=${page - 1}" else "")
     }
 
     val url = HttpUrl.parse("$baseUrl/bbs/page.php?hid=manga_list")!!.newBuilder()
@@ -178,7 +179,7 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
         url.addQueryParameter("page", "${page - 1}")
     }
 
-    Log.println(Log.DEBUG, "TACHI REQUEST", "REQU URL : $url")
+    Log.d("TACHIREQUEST", "REQU URL : $url")
 
     return GET(url.toString())
 }
