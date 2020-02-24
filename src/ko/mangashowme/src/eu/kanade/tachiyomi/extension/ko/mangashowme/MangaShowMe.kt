@@ -137,7 +137,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         }
 
         val manga = SManga.create()
-        manga.title = info.select("div.red").html()
+        manga.title = info.select("div.red.title").html().trim()
         // They using background-image style tag for cover. extract url from style attribute.
         manga.thumbnail_url = urlFinder(thumbnailElement.attr("style"))
         manga.description =
