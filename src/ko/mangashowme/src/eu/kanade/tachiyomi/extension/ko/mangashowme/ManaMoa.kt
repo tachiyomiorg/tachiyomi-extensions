@@ -300,7 +300,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/bbs/board.php?bo_table=manga" + if (page > 1) "&page=$page" else "")
-    override fun latestUpdatesNextPageSelector() = null // Disabled by site bug : "ul.pagination > li:not(.disabled)"
+    override fun latestUpdatesNextPageSelector() = "ul.pagination > li:not(.disabled)"
 
 
     //We are able to get the image URL directly from the page list
@@ -507,7 +507,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         // Setting: Experimental Latest Fetcher
         private const val EXPERIMENTAL_LATEST_PREF_TITLE = "Enable Latest (Experimental)"
         private const val EXPERIMENTAL_LATEST_PREF = "fetchLatestExperiment"
-        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates."
+        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates or invalid name."
 
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
