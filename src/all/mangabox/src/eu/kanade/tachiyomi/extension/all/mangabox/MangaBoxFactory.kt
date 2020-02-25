@@ -43,7 +43,7 @@ class Manganelo : MangaBox("Manganelo", "https://manganelo.com", "en") {
     override fun getFilterList() = FilterList()
 }
 
-class Mangafree : MangaBox("Mangafree", "https://mangafree.online", "en") {
+class Mangafree : MangaBox("Mangafree", "http://mangafree.online", "en") {
     override val popularUrlPath = "hotmanga/"
     override val latestUrlPath = "latest/"
     override fun popularMangaParse(response: Response): MangasPage {
