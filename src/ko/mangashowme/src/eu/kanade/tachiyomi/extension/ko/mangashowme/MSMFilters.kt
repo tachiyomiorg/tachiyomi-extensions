@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.ko.mangashowme
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -162,7 +161,6 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
     */
 
     if (query.isEmpty() && nameFilter == null && statusFilter == null && orderFilter == 0 && matchFilter == 1 && genresFilter.isEmpty()) {
-        Log.d("TACHIREQUEST", "NORMAL REQU")
         return GET("$baseUrl/bbs/page.php?hid=manga_list" +
             if (page > 1) "&page=${page - 1}" else "")
     }
@@ -178,8 +176,6 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
     if (page > 1) {
         url.addQueryParameter("page", "${page - 1}")
     }
-
-    Log.d("TACHIREQUEST", "REQU URL : $url")
 
     return GET(url.toString())
 }
