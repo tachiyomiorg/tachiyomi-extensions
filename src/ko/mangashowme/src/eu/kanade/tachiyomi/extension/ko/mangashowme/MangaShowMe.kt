@@ -52,13 +52,15 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val lang: String = "ko"
 
     // Latest updates currently returns duplicate manga as it separates manga into chapters
-    override val supportsLatest = false
+    // But allowing to fetch from chapters with experimental setting.
+    override val supportsLatest by lazy { getExperimentLatest() }
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(ImageDecoderInterceptor())
-            .addInterceptor(ImageUrlHandlerInterceptor())
-            .build()!!
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addInterceptor(ImageDecoderInterceptor())
+        .addInterceptor(ImageUrlHandlerInterceptor())
+        .build()!!
 
     override fun popularMangaSelector() = "div.manga-list-gallery > div > div.post-row"
 
@@ -276,10 +278,29 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
 
     // Latest not supported
-    override fun latestUpdatesSelector() = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException("This method should not be called!")
-    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
+    override fun latestUpdatesSelector() = ".post-row > div.media.post-list"
+
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val linkElement = element.select("a.btn-primary")
+        val rawTitle = element.select(".post-subject > a").first().ownText()
+
+        // TODO: Make Clear Regex.
+        val chapterRegex = Regex("""((?:\s+)(?:(?:(?:[0-9]+권)?(?:[0-9]+부)?(?:[0-9]*?시즌[0-9]*?)?)?(?:\s*)(?:(?:[0-9]+)(?:[-.](?:[0-9]+))?)?(?:\s*[~,]\s*)?(?:[0-9]+)(?:[-.](?:[0-9]+))?)(?:화))""")
+        val title = rawTitle.trim().replace(chapterRegex, "")
+        //val regexSpecialChapter = Regex("(부록|단편|외전|.+편)")
+        //val lastTitleWord = excludeChapterTitle.split(" ").last()
+        //val title = excludeChapterTitle.replace(lastTitleWord, lastTitleWord.replace(regexSpecialChapter, ""))
+
+        val manga = SManga.create()
+        manga.url = linkElement.attr("href")
+        manga.title = title
+        manga.thumbnail_url = element.select(".img-item > img").attr("src")
+        manga.initialized = false
+        return manga
+    }
+
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/bbs/board.php?bo_table=manga" + if (page > 1) "&page=$page" else "")
+    override fun latestUpdatesNextPageSelector() = null // Disabled by site bug : "ul.pagination > li:not(.disabled)"
 
 
     //We are able to get the image URL directly from the page list
@@ -338,8 +359,26 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
+        val latestExperimentPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_PREF, newValue as Boolean).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         screen.addPreference(autoFetchUrlPref)
+        screen.addPreference(latestExperimentPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -381,8 +420,26 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
+        val latestExperimentPref = CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_PREF, newValue as Boolean).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         screen.addPreference(autoFetchUrlPref)
+        screen.addPreference(latestExperimentPref)
     }
 
     private fun getCurrentBaseUrl(): String {
@@ -431,6 +488,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
+    private fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
 
     override fun getFilterList() = getFilters()
 
@@ -445,6 +503,11 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         private const val AUTOFETCH_URL_PREF_SUMMARY =
             "Experimental, May cause Tachiyomi *very* unstable.\n" +
                 "Requires Android Oreo or newer."
+
+        // Setting: Experimental Latest Fetcher
+        private const val EXPERIMENTAL_LATEST_PREF_TITLE = "Enable Latest (Experimental)"
+        private const val EXPERIMENTAL_LATEST_PREF = "fetchLatestExperiment"
+        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates."
 
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
