@@ -119,7 +119,7 @@ open class BoomManga (
                 else -> element.attr("data-src")
             }
         if (url.startsWith("//")) {
-            url = "http:$url"
+            url = "https:$url"
         }
         return url
     }

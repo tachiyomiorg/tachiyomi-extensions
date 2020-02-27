@@ -6,9 +6,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -26,7 +24,8 @@ class WPMangaStreamFactory : SourceFactory {
         KomikGo(),
         KomikIndo(),
         MaidManga(),
-        SekteKomik()
+        SekteKomik(),
+        MangaSwat()
     )
 }
 
@@ -968,4 +967,48 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
         Pair("One-Shot", "One-Shot"),
         Pair("Doujin", "Doujin")
     ))
+}
+
+class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
+    private class sucuri(): Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val originalRequest = chain.request()
+            val response = chain.proceed(originalRequest)
+            if (response.headers().get("x-sucuri-cache").isNullOrEmpty()) throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
+            return response
+        }
+    }
+    override val client: OkHttpClient = super.client.newBuilder().addInterceptor(sucuri()).build()
+    
+    //Popular
+    //Latest
+    //Search
+    //Details
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
+        thumbnail_url = document.select("div.thumb img.lazyload").attr("data-src")
+        title = document.select("div.infox h1").text()
+        genre = document.select("div.spe [rel=tag]").map { it.text() }.joinToString(", ")
+        status = when (document.select("span:contains(الحالة)").text().substringAfter(":").trim()) {
+            "Ongoing" -> SManga.ONGOING
+            "Completed" -> SManga.COMPLETED
+            else -> SManga.UNKNOWN
+        }
+        author = document.select("span:contains(المؤلف)").text().substringAfter(":").trim()
+        artist = author
+        description = document.select("div[itemprop=articleBody]").text()
+    }
+
+    //Chapters
+    //Pages and Images
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET(baseUrl + chapter.url + "?/", headers) //Bypass "linkvertise" ads
+    }
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        document.select("div#readerarea img[data-src]").forEachIndexed { index, element ->
+            add(Page(index,"",element.attr("data-src")))
+        }
+    }
+    override fun imageRequest(page: Page): Request {
+        return GET( page.imageUrl!! , headers)
+    }
 }

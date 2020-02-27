@@ -12,11 +12,12 @@ class WebtoonsFactory : SourceFactory {
         WebtoonsChineseTraditional(),
         WebtoonsIndonesian(),
         WebtoonsThai(),
+        DongmanManhua(),
 
         // Fan translations
         WebtoonsTranslate("en", "ENG"),
         WebtoonsTranslate("zh", "CMN", " (Simplified)"),
-        WebtoonsTranslate("zh", "CHT", " (Traditional)"),
+        WebtoonsTranslate("zh", "CMT", " (Traditional)"),
         WebtoonsTranslate("th", "THA"),
         WebtoonsTranslate("in", "IND"),
         WebtoonsTranslate("fr", "FRA"),

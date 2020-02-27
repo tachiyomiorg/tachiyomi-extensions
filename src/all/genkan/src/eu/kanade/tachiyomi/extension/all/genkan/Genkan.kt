@@ -97,31 +97,29 @@ abstract class Genkan(
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div#content").first()
-
-        val manga = SManga.create()
-        manga.title = infoElement.select("h5").first().text()
-
-        manga.description = document.select("div.col-lg-9").text().substringAfter("Description ").substringBefore(" Volume")
-        manga.thumbnail_url = styleToUrl(document.select("div.media a").first())
-        return manga
+        return SManga.create().apply {
+            title = document.select("div#content h5").first().text()
+            description = document.select("div.col-lg-9").text().substringAfter("Description ").substringBefore(" Volume")
+            thumbnail_url = styleToUrl(document.select("div.media a").first())
+        }
     }
 
     override fun chapterListSelector() = "div.col-lg-9 div.flex"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a.item-author")
+        return SChapter.create().apply {
 
-        val chapNum = urlElement.attr("href").split("/").last()
-        val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        if (urlElement.text().contains("Chapter $chapNum")) {
-            chapter.name = urlElement.text()
-        } else {
-            chapter.name = "Ch. " + chapNum + ": " + urlElement.text()
+            val urlElement = element.select("a.item-author")
+            val chapNum = urlElement.attr("href").split("/").last()
+
+            setUrlWithoutDomain(urlElement.attr("href"))
+            name = if (urlElement.text().contains("Chapter $chapNum")) {
+                urlElement.text()
+            } else {
+                "Ch. $chapNum: ${urlElement.text()}"
+            }
+            date_upload = parseChapterDate(element.select("a.item-company").first().text()) ?: 0
         }
-        chapter.date_upload = parseChapterDate(element.select("a.item-company").first().text()) ?: 0
-        return chapter
     }
 
     companion object {
@@ -194,7 +192,7 @@ abstract class GenkanOriginal(
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (page == 1) searchPage = 1
-        searchQuery = query.toLowerCase()
+        searchQuery = query
         return popularMangaRequest(page)
     }
 
@@ -219,7 +217,7 @@ abstract class GenkanOriginal(
     private fun getMatchesFrom(document: Document): MutableList<SManga> {
         val searchMatches = mutableListOf<SManga>()
         document.select(searchMangaSelector())
-            .filter { it.text().toLowerCase().contains(searchQuery) }
+            .filter { it.text().contains(searchQuery, ignoreCase = true) }
             .map { searchMatches.add(searchMangaFromElement(it)) }
 
         return searchMatches

@@ -51,6 +51,29 @@ open class Komga : ConfigurableSource, HttpSource() {
                         url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
                     }
                 }
+                is StatusGroup -> {
+                    val statusToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            statusToInclude.add(content.name.toUpperCase(Locale.ROOT))
+                        }
+                    }
+                    if (statusToInclude.isNotEmpty()) {
+                        url.addQueryParameter("status", statusToInclude.joinToString(","))
+                    }
+                }
+                is Filter.Sort -> {
+                    var sortCriteria = when (filter.state?.index) {
+                        0 -> "metadata.titleSort"
+                        1 -> "createdDate"
+                        2 -> "lastModifiedDate"
+                        else -> ""
+                    }
+                    if (sortCriteria.isNotEmpty()) {
+                        sortCriteria += "," + if (filter.state?.ascending!!) "asc" else "desc"
+                        url.addQueryParameter("sort", sortCriteria)
+                    }
+                }
             }
         }
 
@@ -69,18 +92,16 @@ open class Komga : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books?size=1000", headers)
+        GET("$baseUrl${manga.url}/books?size=1000&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
-        val chapterListUrl = response.request().url().newBuilder()
-            .removeAllQueryParameters("size").build().toString()
 
-        return page.content.mapIndexed { i, book ->
+        return page.content.map { book ->
             SChapter.create().apply {
-                chapter_number = (i + 1).toFloat()
+                chapter_number = book.number
                 name = "${book.name} (${book.size})"
-                url = "$chapterListUrl/${book.id}"
+                url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
         }.sortedByDescending { it.chapter_number }
@@ -115,10 +136,14 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
-            title = this@toSManga.name
-            url = "/api/v1/series/${this@toSManga.id}"
-            thumbnail_url = "$baseUrl/api/v1/series/${this@toSManga.id}/thumbnail"
-            status = SManga.UNKNOWN
+            title = metadata.title
+            url = "/api/v1/series/${id}"
+            thumbnail_url = "$baseUrl/api/v1/series/${id}/thumbnail"
+            status = when (metadata.status) {
+                "ONGOING" -> SManga.ONGOING
+                "ENDED" -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
         }
 
     private fun parseDate(date: String?): Long =
@@ -140,10 +165,15 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
+    private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Filter.Sort.Selection(0, true))
+    private class StatusFilter(name: String) : Filter.CheckBox(name, false)
+    private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
 
     override fun getFilterList(): FilterList =
         FilterList(
-            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name })
+            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name }),
+            StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
+            SeriesSort()
         )
 
     private var libraries = emptyList<LibraryDto>()
@@ -178,13 +208,41 @@ open class Komga : ConfigurableSource, HttpSource() {
             }
             .build()
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
         screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
         screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
     }
 
-    private fun PreferenceScreen.editTextPreference(title: String, default: String, value: String): EditTextPreference {
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String): androidx.preference.EditTextPreference {
+        return androidx.preference.EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
+                        , Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        screen.addPreference(screen.supportEditTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
+        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+    }
+
+    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
         return EditTextPreference(context).apply {
             key = title
             this.title = title

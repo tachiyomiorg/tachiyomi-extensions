@@ -42,10 +42,10 @@ fun ByteArray.toHexString() = joinToString("%") { "%02x".format(it) }
 class Pufei : ParsedHttpSource() {
 
     override val name = "扑飞漫画"
-    override val baseUrl = "http://m.pufei.net"
+    override val baseUrl = "http://m.ipufei.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = "http://res.img.pufei.net/"
+    val imageServer = "http://res.img.220012.net/"  //Alternative: "http://res.img.ipufei.com/"
 
     override fun popularMangaSelector() = "ul#detail li"
 

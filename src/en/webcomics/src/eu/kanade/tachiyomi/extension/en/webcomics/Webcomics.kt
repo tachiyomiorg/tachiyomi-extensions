@@ -15,7 +15,7 @@ class Webcomics : ParsedHttpSource() {
 
     override val name = "Webcomics"
 
-    override val baseUrl = "http://www.webcomicsapp.com"
+    override val baseUrl = "https://www.webcomicsapp.com"
 
     override val lang = "en"
 
@@ -26,7 +26,7 @@ class Webcomics : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "section.mangas div div.col-md-3"
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", "http://www.webcomicsapp.com")
+            .add("Referer", "https://www.webcomicsapp.com")
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/popular.html", headers)
 
@@ -56,6 +56,9 @@ class Webcomics : ParsedHttpSource() {
         manga.genre = infoElement.select(".labels > label").joinToString(", ") { it.text() }
         manga.description = infoElement.select("p.p-description").text()
         manga.thumbnail_url = infoElement.select("img").first()?.attr("src")
+        infoElement.select("p.p-schedule:first-of-type").text().let {
+            if (it.contains("IDK")) manga.status = SManga.COMPLETED else manga.status = SManga.ONGOING
+        }
         return manga
     }
 
@@ -112,7 +115,22 @@ class Webcomics : ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        return document.select(chapterListSelector()).asReversed().map {chapterFromElement(it)}
+
+        /* Source only allows 20 chapters to be readable on their website, trying to read past
+           that results in a page list empty error; so might as well not grab them. */
+        if (document.select("${chapterListSelector()}:nth-child(21)").isEmpty()) {
+            return document.select(chapterListSelector()).asReversed().map { chapterFromElement(it) }
+        } else {
+            val chapters = mutableListOf<SChapter>()
+            for (i in 1..20)
+                document.select("${chapterListSelector()}:nth-child($i)").map { chapters.add(chapterFromElement(it)) }
+            // Add a chapter notifying the user of the situation
+            val lockedNotification = SChapter.create()
+            lockedNotification.name = "[Attention] Additional chapters are restricted by the source to their own app"
+            lockedNotification.url = "wiki.html"
+            chapters.add(lockedNotification)
+            return chapters.reversed()
+        }
     }
 
     override fun chapterFromElement(element: Element): SChapter {
@@ -144,7 +162,7 @@ class Webcomics : ParsedHttpSource() {
     )
 
     // [...$('.row.wiki-book-nav .col-md-8 ul a')].map(el => `"${el.textContent.trim()}"`).join(',\n')
-    // http://www.webcomicsapp.com/wiki.html
+    // https://www.webcomicsapp.com/wiki.html
     private fun getGenreList() = arrayOf(
             "All",
             "Fantasy",

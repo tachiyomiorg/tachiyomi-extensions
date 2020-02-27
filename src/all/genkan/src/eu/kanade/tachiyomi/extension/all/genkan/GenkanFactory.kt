@@ -7,12 +7,13 @@ class GenkanFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LeviatanScans(),
         LeviatanScansES(),
-        PsychoPlay(),
         OneShotScans(),
-        KaguyaDex(),
-        KomiScans(),
         HunlightScans(),
-        WoweScans()
+        WoweScans(),
+        ZeroScans(),
+        ReaperScans(),
+        TheNonamesScans(),
+        HatigarmScans()
     )
 }
 
@@ -21,9 +22,13 @@ class GenkanFactory : SourceFactory {
 
 class LeviatanScans : Genkan("Leviatan Scans", "https://leviatanscans.com", "en")
 class LeviatanScansES : GenkanOriginal("Leviatan Scans", "https://es.leviatanscans.com", "es")
-class PsychoPlay : Genkan("Psycho Play", "https://psychoplay.co", "en")
 class OneShotScans : Genkan("One Shot Scans", "https://oneshotscans.com", "en")
-class KaguyaDex : GenkanOriginal("KaguyaDex", " https://kaguyadex.com", "en")
-class KomiScans : GenkanOriginal("Komi Scans", " https://komiscans.com", "en")
 class HunlightScans : Genkan("Hunlight Scans", "https://hunlight-scans.info", "en")
 class WoweScans : Genkan("Wowe Scans", "https://wowescans.co", "en")
+class ZeroScans : Genkan("ZeroScans", "https://zeroscans.com", "en")
+// Search isn't working on Reaper's website, use GenkanOriginal for now
+class ReaperScans : GenkanOriginal("Reaper Scans", "https://reaperscans.com", "en")
+class TheNonamesScans : Genkan("The Nonames Scans", "https://the-nonames.com", "en")
+class HatigarmScans : GenkanOriginal("Hatigarm Scans", "https://hatigarmscanz.net", "en") {
+    override val versionId = 2
+}

@@ -131,11 +131,20 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return client.newCall(searchMangaRequest(page, query, filters))
-            .asObservableSuccess()
-            .map { response ->
-                searchMangaParse(response, query)
-            }
+        return if ( query.startsWith(SLUG_PREFIX)) {
+            val slug = query.removePrefix(SLUG_PREFIX)
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParseWithSlug(response, slug)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response, query)
+                }
+        }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -144,6 +153,24 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         throw Exception("Unused.")
+    }
+
+    private fun searchMangaParseWithSlug(response: Response, slug: String) : MangasPage {
+        val results = JSONObject(response.body()!!.string())
+        val mangaIter = results.keys()
+        val truncatedJSON = JSONObject()
+
+        while (mangaIter.hasNext()) {
+            val mangaTitle = mangaIter.next()
+            val mangaDetails = results.getJSONObject(mangaTitle)
+
+            if (mangaDetails.get("slug") == slug) {
+                truncatedJSON.put(mangaTitle, mangaDetails)
+            }
+
+        }
+
+        return parseManga(truncatedJSON)
     }
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
@@ -163,6 +190,32 @@ open class Guya() : ConfigurableSource, HttpSource() {
         return parseManga(truncatedJSON)
     }
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val preference = androidx.preference.ListPreference(screen.context).apply {
+            key = "preferred_scanlator"
+            title = "Preferred scanlator"
+            entries = arrayOf<String>()
+            entryValues = arrayOf<String>()
+            for (key in Scanlators.keys()) {
+                entries += Scanlators.getValueFromKey(key)
+                entryValues += key
+            }
+            summary = "Current: %s\n\n" +
+                "This setting sets the scanlation group to prioritize " +
+                "on chapter refresh/update. It will get the next available if " +
+                "your preferred scanlator isn't an option (yet)."
+
+            this.setDefaultValue("1")
+
+            setOnPreferenceChangeListener{_, newValue ->
+                val selected = newValue.toString()
+                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
+            }
+        }
+
+        screen.addPreference(preference)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val preference = ListPreference(screen.context).apply {
             key = "preferred_scanlator"
@@ -178,7 +231,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
                 "on chapter refresh/update. It will get the next available if " +
                 "your preferred scanlator isn't an option (yet)."
 
-            this.setDefaultValue(1)
+            this.setDefaultValue("1")
 
             setOnPreferenceChangeListener{_, newValue ->
                 val selected = newValue.toString()
@@ -247,6 +300,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         // Get the scanlator info based on group ranking; do it first since we need it later
         val firstGroupId = getBestScanlator(json.getJSONObject("groups"), sort)
         chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
+        chapter.date_upload = json.getJSONObject("release_date").getLong(firstGroupId) * 1000
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
         chapter.url = "$slug/$num/$firstGroupId"
@@ -366,4 +420,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         throw Exception("Latest updates not supported.")
     }
 
+    companion object {
+        const val SLUG_PREFIX = "slug:"
+    }
 }

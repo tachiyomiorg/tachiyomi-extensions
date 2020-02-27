@@ -16,9 +16,11 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.Headers
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLEncoder
 
 class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -28,10 +30,8 @@ class FMReaderFactory : SourceFactory {
         MangaTiki(),
         MangaBone(),
         YoloManga(),
-        MangaLeer(),
         AiLoveManga(),
         ReadComicOnlineOrg(),
-        MangaWeek(),
         HanaScan(),
         RawLH(),
         Manhwa18(),
@@ -40,7 +40,8 @@ class FMReaderFactory : SourceFactory {
         MangaTR(),
         Comicastle(),
         Manhwa18Net(),
-        Manhwa18NetRaw()
+        Manhwa18NetRaw(),
+        MangaBorn()
     )
 }
 
@@ -55,11 +56,6 @@ class MangaTiki : FMReader("MangaTiki", "https://mangatiki.com", "ja")
 class MangaBone : FMReader("MangaBone", "https://mangabone.com", "en")
 class YoloManga : FMReader("Yolo Manga", "https://yolomanga.ca", "es") {
     override fun chapterListSelector() = "div#tab-chapper ~ div#tab-chapper table tr"
-}
-
-class MangaLeer : FMReader("MangaLeer", "https://mangaleer.com", "es") {
-    override val dateValueIndex = 1
-    override val dateWordIndex = 2
 }
 
 class AiLoveManga : FMReader("AiLoveManga", "https://ailovemanga.com", "vi") {
@@ -78,7 +74,7 @@ class AiLoveManga : FMReader("AiLoveManga", "https://ailovemanga.com", "vi") {
         manga.author = infoElement.select("a.btn-info").first().text()
         manga.artist = infoElement.select("a.btn-info + a").text()
         manga.genre = infoElement.select("a.btn-danger").joinToString { it.text() }
-        manga.status = parseStatus(infoElement.select("a.btn-success").text().toLowerCase())
+        manga.status = parseStatus(infoElement.select("a.btn-success").text())
         manga.description = document.select("div.col-sm-8 p").text().trim()
         manga.thumbnail_url = infoElement.select("img").attr("abs:src")
 
@@ -97,11 +93,12 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
 
         return if (response.headers("set-cookie").isNotEmpty()) {
             val body = FormBody.Builder()
-                .add("dqh_firewall", "%2F")
+                .add("dqh_firewall", URLEncoder.encode(request.url().toString().substringAfter(baseUrl), "utf-8"))
                 .build()
-            val cookie = mutableListOf<String>()
-            response.headers("set-cookie").map { cookie.add(it.substringBefore(" ")) }
-            headers.newBuilder().add("Cookie", cookie.joinToString { " " }).build()
+            val cookie = response.headers("set-cookie")[0].split(" ")
+                .filter {it.contains("__cfduid") || it.contains("PHPSESSID") }
+                .joinToString("; ") {it.substringBefore(";")}
+            headers.newBuilder().add("Cookie", cookie).build()
             client.newCall(POST(request.url().toString(), headers, body)).execute()
         } else {
             response
@@ -110,10 +107,8 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
 
     override val requestPath = "comic-list.html"
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div#divImage > select:first-of-type option").forEachIndexed { i, imgPage ->
-            pages.add(Page(i, imgPage.attr("value"), ""))
+        val pages = document.select("div#divImage > select:first-of-type option").mapIndexed { i, imgPage ->
+            Page(i, imgPage.attr("value"))
         }
         return pages.dropLast(1) // last page is a comments page
     }
@@ -123,16 +118,23 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
     override fun getGenreList() = getComicsGenreList()
 }
 
-class MangaWeek : FMReader("MangaWeek", "https://mangaweek.com", "en")
-class HanaScan : FMReader("HanaScan (RawQQ)", "http://rawqq.com", "ja") {
+class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
 }
 
-class RawLH : FMReader("RawLH", "https://lhscan.net", "ja") {
+class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
 class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
+    override fun imageRequest(page: Page): Request {
+        return if (page.imageUrl!!.contains("manhwa18")) {
+            super.imageRequest(page)
+        } else {
+            GET(page.imageUrl!!, headers.newBuilder().removeAll("Referer").build())
+        }
+    }
     override fun getGenreList() = getAdultGenreList()
 }
 
@@ -176,7 +178,7 @@ class MangaTR : FMReader("Manga-TR", "https://manga-tr.com", "tr") {
         manga.author = infoElement.select("table + table tr + tr td a").first()?.text()
         manga.artist = infoElement.select("table + table tr + tr td + td a").first()?.text()
         manga.genre = infoElement.select("div#tab1 table + table tr + tr td + td + td").text()
-        manga.status = parseStatus(infoElement.select("div#tab1 table tr + tr td a").first().text().toLowerCase())
+        manga.status = parseStatus(infoElement.select("div#tab1 table tr + tr td a").first().text())
         manga.description = infoElement.select("div.well").text().trim()
         manga.thumbnail_url = document.select("img.thumbnail").attr("abs:src")
 
@@ -227,7 +229,7 @@ class MangaTR : FMReader("Manga-TR", "https://manga-tr.com", "tr") {
         val pages = mutableListOf<Page>()
 
         document.select("div.chapter-content select:first-of-type option").forEachIndexed { i, imgPage ->
-            pages.add(Page(i, "$baseUrl/${imgPage.attr("value")}", ""))
+            pages.add(Page(i, "$baseUrl/${imgPage.attr("value")}"))
         }
         return pages.dropLast(1) // last page is a comments page
     }
@@ -236,13 +238,13 @@ class MangaTR : FMReader("Manga-TR", "https://manga-tr.com", "tr") {
 }
 
 class Comicastle : FMReader("Comicastle", "https://www.comicastle.org", "en") {
-    override val requestPath = "comic-dir"
-    // this source doesn't have the "page x of y" element
-    override fun popularMangaNextPageSelector() = "li:contains(»)"
-
-    override fun popularMangaParse(response: Response) = defaultMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/comic-dir?q=$query", headers)
-    override fun searchMangaParse(response: Response): MangasPage = defaultMangaParse(response)
+    override fun popularMangaRequest(page: Int): Request =
+        GET("$baseUrl/comic-dir?sorting=views&c-page=$page&sorting-type=DESC", headers)
+    override fun popularMangaNextPageSelector() = "li:contains(»):not(.disabled)"
+    override fun latestUpdatesRequest(page: Int): Request =
+        GET("$baseUrl/comic-dir?sorting=lastUpdate&c-page=$page&sorting-type=ASC", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
+        GET("$baseUrl/comic-dir?q=$query" + if (page > 1) "&c-page=$page" else "", headers)
     override fun getFilterList() = FilterList()
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -263,7 +265,7 @@ class Comicastle : FMReader("Comicastle", "https://www.comicastle.org", "en") {
         val pages = mutableListOf<Page>()
 
         document.select("div.text-center select option").forEachIndexed { i, imgPage ->
-            pages.add(Page(i, imgPage.attr("value"), ""))
+            pages.add(Page(i, imgPage.attr("value")))
         }
         return pages
     }
@@ -295,4 +297,43 @@ class Manhwa18NetRaw : FMReader("Manhwa18.net Raw", "https://manhwa18.net", "ko"
     }
 
     override fun getFilterList() = FilterList(super.getFilterList().filterNot { it == GenreList(getGenreList()) })
+}
+
+class MangaBorn : FMReader("MangaBorn", "https://hellxlight.com", "en") {
+    override val requestPath = "manga_list"
+    override val popularSort = "type=topview"
+    override fun popularMangaNextPageSelector() = "div.page-number a.select + a:not(.go-p-end)"
+    override fun popularMangaSelector() = "div.story-item"
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return GET("$baseUrl/search/${query.replace(" ", "_")}?page=$page", headers)
+    }
+    override fun searchMangaParse(response: Response): MangasPage {
+        return response.asJsoup().let { document ->
+            val mangas = document.select(searchMangaSelector()).map { searchMangaFromElement(it) }
+            MangasPage(mangas, document.select(searchMangaNextPageSelector()).isNotEmpty())
+        }
+    }
+    override fun searchMangaFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            element.select("h2 a").let {
+                setUrlWithoutDomain(it.attr("href"))
+                title = it.text()
+            }
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
+    }
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            document.select("div.story_content").let { info ->
+                author = info.select("span:contains(Author) + a").text()
+                genre = info.select("span:contains(Genres) + a").joinToString { it.text() }
+                status = parseStatus(info.select("span:contains(Status) + a").text())
+                thumbnail_url = info.select("img.avatar").attr("abs:src")
+                description = info.select("div#story_discription > p").text()
+            }
+        }
+    }
+    override fun chapterListSelector() = "div.chapter_list li"
+    override val pageListImageSelector = "div.panel-read-story img"
+    override fun getFilterList() = FilterList()
 }

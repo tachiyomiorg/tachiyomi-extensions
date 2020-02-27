@@ -156,7 +156,7 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
     )
 
     // $(document.querySelectorAll('.optionbox .typelist:nth-child(3) ul li.cate_list')).map((i, el)=>`Genre("${$(el).first().text().trim()}", "${$(el).attr("cate_id")}")`).get().sort().join(",\n")
-    // http://en.ninemanga.com/search/?type=high
+    // https://en.ninemanga.com/search/?type=high
     open fun getGenreList() = listOf(
         Genre("4-Koma", "56"),
         Genre("Action", "1"),

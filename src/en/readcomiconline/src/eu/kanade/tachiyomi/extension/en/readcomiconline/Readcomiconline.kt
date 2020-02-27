@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.readcomiconline
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
@@ -10,10 +15,13 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.regex.Pattern
 
-class Readcomiconline : ParsedHttpSource() {
+class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "ReadComicOnline"
 
@@ -25,25 +33,27 @@ class Readcomiconline : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "table.listing tr:gt(1)"
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
-    override fun latestUpdatesSelector() = "table.listing tr:gt(1)"
+    override fun popularMangaSelector() = "table.listing tr:has(a) td:nth-child(1) a"
+
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/ComicList/MostPopular?page=$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("https://readcomiconline.to/ComicList/LatestUpdate?page=$page", headers)
+        return GET("$baseUrl/ComicList/LatestUpdate?page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("td a:eq(0)").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
+        return SManga.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            title = element.text()
         }
-        return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
@@ -75,7 +85,7 @@ class Readcomiconline : ParsedHttpSource() {
         return popularMangaFromElement(element)
     }
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.barContent").first()
@@ -90,7 +100,7 @@ class Readcomiconline : ParsedHttpSource() {
         return manga
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -105,12 +115,12 @@ class Readcomiconline : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
-            SimpleDateFormat("MM/dd/yyyy").parse(it).time
+            SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).parse(it).time
         } ?: 0
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url+"&quality=hq", headers)
+    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url + "&quality=${qualitypref()}", headers)
 
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
@@ -194,4 +204,50 @@ class Readcomiconline : ParsedHttpSource() {
             Genre("Western"),
             Genre("Zombies")
     )
+    // Preferences Code
+    
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val qualitypref = androidx.preference.ListPreference(screen.context).apply {
+            key = QUALITY_PREF_Title
+            title = QUALITY_PREF_Title
+            entries = arrayOf("High Quality", "Low Quality")
+            entryValues = arrayOf("hq", "lq")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(QUALITY_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(qualitypref)
+    }
+
+    
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val qualitypref = ListPreference(screen.context).apply {
+            key = QUALITY_PREF_Title
+            title = QUALITY_PREF_Title
+            entries = arrayOf("High Quality", "Low Quality")
+            entryValues = arrayOf("hq", "lq")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(QUALITY_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(qualitypref)
+    }
+
+    private fun qualitypref() = preferences.getString(QUALITY_PREF, "hq")
+
+    companion object {
+        private const val QUALITY_PREF_Title = "Image Quality Selector"
+        private const val QUALITY_PREF = "qualitypref"
+    }
 }

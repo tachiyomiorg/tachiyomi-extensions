@@ -191,7 +191,7 @@ class Readmangatoday : ParsedHttpSource() {
     )
 
     // [...document.querySelectorAll("ul.manga-cat span")].map(el => `Genre("${el.nextSibling.textContent.trim()}", ${el.getAttribute('data-id')})`).join(',\n')
-    // http://www.readmanga.today/advanced-search
+    // https://www.readmng.com/advanced-search
     private fun getGenreList() = listOf(
             Genre("Action", 2),
             Genre("Adventure", 4),

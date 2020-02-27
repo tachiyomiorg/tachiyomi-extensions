@@ -47,6 +47,29 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     private val jsonParser = JsonParser()
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй")
+            entryValues = arrayOf("main", "alt")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                imageServerUrl = when(newValue){
+                    "main" -> "https://img2.mangalib.me"
+                    else -> "https://img3.mangalib.me"
+                }
+                true
+            }
+        }
+
+        if(!preferences.contains(SERVER_PREF))
+            preferences.edit().putString(SERVER_PREF, "main").apply()
+
+        screen.addPreference(serverPref)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val serverPref = ListPreference(screen.context).apply {
             key = SERVER_PREF
@@ -86,7 +109,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val link = element.select("a").first()
         val img = link.select("img").first()
         val manga = SManga.create()
-        manga.thumbnail_url = img.attr("data-src")
+        manga.thumbnail_url = baseUrl+img.attr("data-src").substringAfter(baseUrl)
             .replace("cover_thumb", "cover_250x350")
         manga.setUrlWithoutDomain(link.attr("href"))
         manga.title = img.attr("alt")
@@ -150,9 +173,13 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
-        val body = document.select("div.section__body").first()
         val manga = SManga.create()
-        manga.title = body.select(".manga__title").text()
+        if (document.html().contains("Манга удалена по просьбе правообладателей")) {
+            manga.status = SManga.LICENSED
+            return manga
+        }
+        val body = document.select("div.section__body").first()
+        manga.title = document.select(".manga-title small").text().substringBefore("/").trim()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
         manga.artist = body.select(".info-list__row:nth-child(3) > a").text()

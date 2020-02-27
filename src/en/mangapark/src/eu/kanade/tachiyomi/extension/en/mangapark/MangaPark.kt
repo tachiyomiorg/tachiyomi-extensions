@@ -32,7 +32,7 @@ class MangaPark : ParsedHttpSource() {
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
-        "http:$url"
+        "https:$url"
     else url
 
 

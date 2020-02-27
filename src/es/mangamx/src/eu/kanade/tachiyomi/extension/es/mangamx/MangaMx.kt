@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.mangamx
 
 
+import android.net.Uri
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
@@ -11,15 +12,14 @@ import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
-import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
-class MangaMx : ParsedHttpSource() {
+open class MangaMx : ParsedHttpSource() {
 
     override val name = "MangaMx"
     override val baseUrl = "https://manga-mx.com"
@@ -33,14 +33,25 @@ class MangaMx : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "a[href*=directorio]:containsOwn(Última)"
     override fun latestUpdatesNextPageSelector() = "a[href*=reciente]:containsOwn(Última)"
-    override fun searchMangaNextPageSelector() = "a[href*=/?s]:containsOwn(Última)"
+    override fun searchMangaNextPageSelector() = "a[href*=/?s]:containsOwn(Última), a[href*=directorio]:containsOwn(Última)"
 
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/directorio/?orden=visitas&p=$page", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/reciente/capitulos?p=$page", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/?s=$query")?.newBuilder()
-        return GET(url.toString(), headers)
+        val uri = if (query.isNotBlank()) {
+            Uri.parse(baseUrl).buildUpon()
+                .appendQueryParameter("s", query)
+        } else {
+            val uri = Uri.parse("$baseUrl/directorio").buildUpon()
+            //Append uri filters
+            filters.forEach {
+                if (it is UriFilter)
+                    it.addToUri(uri)
+            }
+            uri.appendQueryParameter("p", page.toString())
+        }
+        return GET(uri.toString(), headers)
     }
 
     //override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
@@ -151,7 +162,139 @@ class MangaMx : ParsedHttpSource() {
     override fun pageListParse(document: Document)= throw Exception("Not Used")
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
-    //TODO Genre Filter Request #1756
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTA: ¡Ignorado si usa la búsqueda de texto!"),
+        Filter.Separator(),
+        GenreFilter(),
+        LetterFilter(),
+        StatusFilter(),
+        TypeFilter(),
+        AdultFilter(),
+        SortFilter()
+    )
 
+    class GenreFilter : UriPartFilter("Género", "genero", arrayOf(
+        Pair("all","All"),
+        Pair("3","Acción"),
+        Pair("35","Artes Marciales"),
+        Pair("7","Aventura"),
+        Pair("31","Ciencia ficción"),
+        Pair("1","Comedia"),
+        Pair("37","Demonios"),
+        Pair("10","Deportes"),
+        Pair("2","Drama"),
+        Pair("6","Ecchi"),
+        Pair("42","Eroge"),
+        Pair("4","Escolar"),
+        Pair("12","Fantasía"),
+        Pair("20","Ficción"),
+        Pair("14","Gore"),
+        Pair("21","Harem"),
+        Pair("27","Histórico"),
+        Pair("36","Horror"),
+        Pair("43","Isekai"),
+        Pair("33","Josei"),
+        Pair("34","Magia"),
+        Pair("13","Mecha"),
+        Pair("41","Militar"),
+        Pair("17","Misterio"),
+        Pair("30","Músical"),
+        Pair("11","Psicológico"),
+        Pair("39","Recuentos de la vida"),
+        Pair("5","Romance"),
+        Pair("19","Seinen"),
+        Pair("9","Shōjo"),
+        Pair("32","Shōjo-ai"),
+        Pair("8","Shōnen"),
+        Pair("40","Shōnen ai"),
+        Pair("18","Sobrenatural"),
+        Pair("38","Supervivencia"),
+        Pair("25","Webtoon"),
+        Pair("15","Yaoi"),
+        Pair("16","Yuri")
+        ))
+
+    class LetterFilter : UriPartFilter("Letra","letra", arrayOf(
+        Pair("all","All"),
+        Pair("a","A"),
+        Pair("b","B"),
+        Pair("c","C"),
+        Pair("d","D"),
+        Pair("e","E"),
+        Pair("f","F"),
+        Pair("g","G"),
+        Pair("h","H"),
+        Pair("i","I"),
+        Pair("j","J"),
+        Pair("k","K"),
+        Pair("l","L"),
+        Pair("m","M"),
+        Pair("n","N"),
+        Pair("o","O"),
+        Pair("p","P"),
+        Pair("q","Q"),
+        Pair("r","R"),
+        Pair("s","S"),
+        Pair("t","T"),
+        Pair("u","U"),
+        Pair("v","V"),
+        Pair("w","W"),
+        Pair("x","X"),
+        Pair("y","Y"),
+        Pair("z","Z")
+        ))
+
+    class StatusFilter : UriPartFilter("Estado", "estado", arrayOf(
+        Pair("all","All"),Pair("1","En desarrollo"), Pair("0","Finalizado")))
+
+    private class TypeFilter : UriPartFilter("Tipo", "tipo", arrayOf(
+        Pair("all","All"),
+        Pair("0","Manga"),
+        Pair("1","Manhwa"),
+        Pair("2","One Shot"),
+        Pair("3","Manhua"),
+        Pair("4","Novela")
+        ))
+
+    private class AdultFilter : UriPartFilter("Filtro adulto", "adulto", arrayOf(
+        Pair("all","All"),Pair("0","Mostrar solo +18"), Pair("1","No mostrar +18")))
+
+    class SortFilter : UriPartFilterreq("Sort", "orden", arrayOf(
+        Pair("visitas","Visitas"),
+        Pair("desc","Descendente"),
+        Pair("asc","Ascendente"),
+        Pair("lanzamiento","Lanzamiento"),
+        Pair("nombre","Nombre")
+        ))
+
+    /**
+     * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
+     * If an entry is selected it is appended as a query parameter onto the end of the URI.
+     * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
+     */
+    //vals: <name, display>
+    open class UriPartFilter(displayName: String, private val uriParam: String, private val vals: Array<Pair<String, String>>,
+                             private val firstIsUnspecified: Boolean = true,
+                             defaultValue: Int = 0) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+        override fun addToUri(uri: Uri.Builder) {
+            if (state != 0 || !firstIsUnspecified)
+                uri.appendQueryParameter(uriParam, vals[state].first)
+        }
+    }
+
+    open class UriPartFilterreq(displayName: String, private val uriParam: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()), UriFilter {
+        override fun addToUri(uri: Uri.Builder) {
+                uri.appendQueryParameter(uriParam, vals[state].first)
+        }
+    }
+
+    /**
+     * Represents a filter that is able to modify a URI.
+     */
+    private interface UriFilter {
+        fun addToUri(uri: Uri.Builder)
+    }
 }
 

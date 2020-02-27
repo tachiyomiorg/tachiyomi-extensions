@@ -10,7 +10,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 
 class HentaiVN : ParsedHttpSource() {
@@ -34,13 +34,11 @@ class HentaiVN : ParsedHttpSource() {
     }
 
     private fun parseDate(dateString: String): Long {
-        val date: Date
-        try {
-            date = dateFormat.parse(dateString)
+        return try {
+            dateFormat.parse(dateString).time
         } catch (e: ParseException) {
-            return 0
+            return 0L
         }
-        return date.time
     }
 
     override fun chapterListSelector() = ".page-info > table.listing > tbody > tr"
@@ -53,6 +51,7 @@ class HentaiVN : ParsedHttpSource() {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text().trim()
         }
+        manga.thumbnail_url = element.select("img.img-list").attr("abs:src")
         return manga
     }
 
@@ -67,15 +66,16 @@ class HentaiVN : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(".main > .page-left > .left-info > .page-info")
         val manga = SManga.create()
-        manga.author = infoElement.select("p:contains(Tác giả) a").text()
-        manga.description = infoElement.select(":root > p:contains(Nội dung) +p").text()
-        manga.genre = infoElement.select("p:contains(Thể loại) a").joinToString { it.text() }
-        manga.thumbnail_url = document.select(".main > .page-right > .right-info > .page-ava > img").attr("src")
-        manga.status = parseStatus(infoElement.select("p:contains(Tình Trạng) a").first().text())
+        manga.author = infoElement.select("p:contains(Tác giả:) a").text()
+        manga.description = infoElement.select(":root > p:contains(Nội dung:) + p").text()
+        manga.genre = infoElement.select("p:contains(Thể loại:) a").joinToString { it.text() }
+        manga.thumbnail_url = document.select(".main > .page-right > .right-info > .page-ava > img").attr("abs:src")
+        manga.status = parseStatus(infoElement.select("p:contains(Tình Trạng:) a").firstOrNull()?.text())
         return manga
     }
 
-    private fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String?) = when {
+        status == null -> SManga.UNKNOWN
         status.contains("Đang tiến hành") -> SManga.ONGOING
         status.contains("Đã hoàn thành") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -85,7 +85,7 @@ class HentaiVN : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         val pageUrl = document.select("link[rel=canonical]").attr("href")
         document.select("#image > img").forEachIndexed { i, e ->
-            pages.add(Page(i, pageUrl, e.attr("src")))
+            pages.add(Page(i, pageUrl, e.attr("abs:src")))
         }
         return pages
     }
@@ -111,6 +111,7 @@ class HentaiVN : ParsedHttpSource() {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text().trim()
         }
+        manga.thumbnail_url = element.select("div.search-img img").attr("abs:src")
         return manga
     }
 

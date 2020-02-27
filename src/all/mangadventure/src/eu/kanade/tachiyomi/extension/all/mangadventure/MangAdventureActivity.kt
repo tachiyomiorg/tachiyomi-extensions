@@ -8,7 +8,7 @@ import android.util.Log
 import kotlin.system.exitProcess
 
 /**
- * Springboard that accepts {baseUrl}/reader/{slug}
+ * Springboard that accepts `{baseUrl}/reader/{slug}`
  * intents and redirects them to the main Tachiyomi process.
  */
 class MangAdventureActivity : Activity() {
@@ -30,8 +30,8 @@ class MangAdventureActivity : Activity() {
         exitProcess(0)
     }
 
-    private fun logInvalidIntent(intent: Intent) {
-        Log.e("MangAdventureActivity", "Failed to parse URI from intent: $intent")
-    }
+    private fun logInvalidIntent(intent: Intent) = Log.e(
+        "MangAdventureActivity", "Failed to parse URI from intent: $intent"
+    )
 
 }

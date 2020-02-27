@@ -40,7 +40,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
         val item = element.select("a.item-cover")
-        val imgurl = "http:" + item.select("img").attr("src")
+        val imgurl = "https:" + item.select("img").attr("src")
         manga.setUrlWithoutDomain(item.attr("href"))
         manga.title = element.select("a.item-title").text()
         manga.thumbnail_url = imgurl
@@ -166,7 +166,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         manga.status = parseStatus(status)
         manga.genre = genres.joinToString(", ")
         manga.description = infoElement.select("h5:contains(summary) + pre").text()
-        manga.thumbnail_url = "http:" + document.select("div.attr-cover img")
+        manga.thumbnail_url = "https:" + document.select("div.attr-cover img")
             .attr("src")
         return manga
     }
@@ -393,4 +393,10 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
 
     private class Tag(name: String) : Filter.CheckBox(name)
 
+}
+
+abstract class OtherSite(private val sourceName: String, private val sourceBaseUrl: String, private val tachiLang: String, private val sourceLang: String): Mangatensei(tachiLang, sourceLang) {
+    override val name = sourceName
+
+    override val baseUrl = sourceBaseUrl
 }

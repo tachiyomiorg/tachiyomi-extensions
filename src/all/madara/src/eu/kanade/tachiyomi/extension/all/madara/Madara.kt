@@ -44,11 +44,13 @@ abstract class Madara(
 
     override fun popularMangaSelector() = "div.page-item-detail"
 
+    open val popularMangaUrlSelector = "div.post-title a"
+
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
         with(element) {
-            select("div.post-title a").first()?.let {
+            select(popularMangaUrlSelector).first()?.let {
                 manga.setUrlWithoutDomain(it.attr("href"))
                 manga.title = it.ownText()
             }
@@ -281,7 +283,7 @@ abstract class Madara(
         Tag("on-hold", "On Hold")
     )
 
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
@@ -306,7 +308,7 @@ abstract class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = "div.nav-previous"
+    override fun searchMangaNextPageSelector() = "div.nav-previous, nav.navigation-ajax"
 
     // Manga Details Parse
 
@@ -369,8 +371,9 @@ abstract class Madara(
             }
 
             // For when source's chapter date is a graphic representing "new" instead of text
-            if (select("img").attr("alt").isNotBlank()) {
-                chapter.date_upload = parseRelativeDate(select("img").attr("alt")) ?: 0
+            val imgDate = select("img").attr("alt")
+            if (imgDate.isNotBlank()) {
+                chapter.date_upload = parseRelativeDate(imgDate)
             } else {
                 // For a chapter date that's text
                 select("span.chapter-release-date i").first()?.let {
@@ -383,47 +386,66 @@ abstract class Madara(
     }
 
     open fun parseChapterDate(date: String): Long? {
-        val lcDate = date.toLowerCase()
-        if (lcDate.endsWith(" ago"))
-            parseRelativeDate(lcDate)?.let { return it }
-
-        //Handle 'yesterday' and 'today', using midnight
-        if (lcDate.startsWith("year"))
-            return Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_MONTH, -1) //yesterday
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        else if (lcDate.startsWith("today"))
-            return Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-
-        return dateFormat.parseOrNull(date)?.time
+        return when {
+            date.endsWith(" ago", ignoreCase = true) -> {
+                parseRelativeDate(date)
+            }
+            //Handle 'yesterday' and 'today', using midnight
+            date.startsWith("year", ignoreCase = true) -> {
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_MONTH, -1) //yesterday
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+            date.startsWith("today", ignoreCase = true) -> {
+                Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+            date.contains(Regex("""\d(st|nd|rd|th)""")) -> {
+                // Clean date (e.g. 5th December 2019 to 5 December 2019) before parsing it
+                date.split(" ").map {
+                    if (it.contains(Regex("""\d\D\D"""))) {
+                        it.replace(Regex("""\D"""), "")
+                    } else {
+                        it
+                    }
+                }
+                    .let { dateFormat.parseOrNull(it.joinToString(" "))?.time }
+            }
+            else -> dateFormat.parseOrNull(date)?.time
+        }
     }
 
     // Parses dates in this form:
     // 21 horas ago
-    private fun parseRelativeDate(date: String): Long? {
+    private fun parseRelativeDate(date: String): Long {
         val trimmedDate = date.split(" ")
-        if (trimmedDate[2] != "ago") return null
-        val number = trimmedDate[0].toIntOrNull() ?: return null
+        val number = trimmedDate[0].toIntOrNull()
 
-        // Map English and other language units to Java units
-        val javaUnit = when (trimmedDate[1].removeSuffix("s")) {
-            "jour", "día", "day" -> Calendar.DAY_OF_MONTH
-            "heure", "hora", "hour" -> Calendar.HOUR
-            "min", "minute" -> Calendar.MINUTE
-            "segundo", "second" -> Calendar.SECOND
-            else -> return null
+        /**
+         *  Size check is for Arabic language, would sometimes break if we don't check
+         *  Take that in to consideration if adding support for parsing Arabic dates
+         */
+        return if (trimmedDate.size == 3 && trimmedDate[2] == "ago" && number is Int) {
+            val cal = Calendar.getInstance()
+            // Map English and other language units to Java units
+            when (trimmedDate[1].removeSuffix("s")) {
+                "jour", "día", "day" -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
+                "heure", "hora", "hour" -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
+                "min", "minute" -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
+                "segundo", "second" -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
+                else -> 0
+            }
+        } else {
+            0
         }
-
-        return Calendar.getInstance().apply { add(javaUnit, -number) }.timeInMillis
     }
 
     private fun SimpleDateFormat.parseOrNull(string: String): Date? {

@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Request
+import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -22,7 +23,15 @@ class NineMangaFactory : SourceFactory {
     )
 }
 
-class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en")
+class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en") {
+    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
+        element.select("a.bookname").let {
+            url = it.attr("abs:href").replace("www","en").substringAfter(baseUrl)
+            title = it.text()
+        }
+        thumbnail_url = element.select("img").attr("abs:src")
+    }
+}
 
 class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
     // ES, FR, RU don't return results for searches with an apostrophe

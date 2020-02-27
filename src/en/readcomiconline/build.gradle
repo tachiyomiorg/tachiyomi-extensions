@@ -5,8 +5,13 @@ ext {
     appName = 'Tachiyomi: ReadComicOnline'
     pkgNameSuffix = 'en.readcomiconline'
     extClass = '.Readcomiconline'
-    extVersionCode = 5
+    extVersionCode = 7
     libVersion = '1.2'
+}
+
+dependencies {
+    compileOnly project(':preference-stub')
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

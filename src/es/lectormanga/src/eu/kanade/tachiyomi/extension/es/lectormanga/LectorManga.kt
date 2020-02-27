@@ -10,17 +10,13 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -36,7 +32,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(2)
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -46,25 +42,26 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36"
+
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-                .add("Referer", baseUrl)
-                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
+            .add("User-Agent", userAgent)
+            .add("Referer", "$baseUrl/")
     }
 
-    private fun getBuilder(url: String): String {
+    private fun getBuilder(url: String, headers: Headers, formBody: FormBody?, method: String): String {
         val req = Request.Builder()
-                .headers(headersBuilder()
-                        .add("Cache-mode", "no-cache")
-                        .build())
-                .url(url)
-                .build()
+            .headers(headers)
+            .url(url)
+            .method(method,formBody)
+            .build()
 
         return client.newCall(req)
-                .execute()
-                .request()
-                .url()
-                .toString()
+            .execute()
+            .request()
+            .url()
+            .toString()
     }
 
     private val preferences: SharedPreferences by lazy {
@@ -191,24 +188,29 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val document = response.asJsoup()
+        time = serverTime() //Get time when the chapter page is opened
 
+        val document = response.asJsoup()
+        val chapterurl = response.request().url().toString()
+        val chapteridselector = "" 
+        
         // One-shot
         if (document.select("#chapters").isEmpty()) {
-            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it) }
+            return document.select(oneShotChapterListSelector()).map { oneShotChapterFromElement(it, chapterurl, chapteridselector) }
         }
 
         // Regular list of chapters
         val chapters = mutableListOf<SChapter>()
         val dupselect = getduppref()!!
         val chapterNames = document.select("#chapters h4.text-truncate")
+        val chapterNumbers = chapterNames.map { it.text().substringAfter("Capítulo").substringBefore("|").trim().toFloat() }
         val chapterInfos = document.select("#chapters .chapter-list")
         chapterNames.forEachIndexed { index, _ ->
             val scanlator = chapterInfos[index].select("li")
             if (dupselect=="one") {
-                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it)) }
+                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it , chapterNumbers[index], chapterurl, chapteridselector)) }
             } else {
-                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it)) }
+                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it ,chapterNumbers[index], chapterurl, chapteridselector)) }
             }
         }
         return chapters
@@ -219,40 +221,87 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
 
-    private fun oneShotChapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("div.row > .text-right > a").attr("href"))
+    private fun oneShotChapterFromElement(element: Element, chapterurl: String, chapteridselector: String) = SChapter.create().apply {
+        url = "$chapterurl#${element.select("div.row > .text-right > form").attr("id")}"
         name = "One Shot"
         scanlator = element.select("div.col-md-6.text-truncate")?.text()
         date_upload = element.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
     }
 
-    private fun regularChapterFromElement(chapterName: String, info: Element): SChapter {
-        //val number = name.substringBefore("|").substringAfter("Capítulo").trim().toFloat()
+    private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, chapterurl: String, chapteridselector: String): SChapter {
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(info.select("div.row > .text-right > a").attr("href"))
+        chapter.url = "$chapterurl#${info.select("div.row > .text-right > form").attr("id")}"
         chapter.name = chapterName
         chapter.scanlator = info.select("div.col-md-6.text-truncate")?.text()
         chapter.date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) } ?: 0
-        //chapter.chapter_number = number
+        chapter.chapter_number = number
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
-
+    private var time = serverTime() //Grab time at app launch, can be updated
+    private fun serverTime() :String {
+        val formatter = SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US)
+        formatter.timeZone = TimeZone.getTimeZone("GMT+1") //Convert time to match server
+        return formatter.format(Date())
+    }
+    
     override fun pageListRequest(chapter: SChapter): Request {
-        val url = getBuilder(baseUrl + chapter.url)
+        val (chapterURL, chapterID) = chapter.url.split("#")
+        val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
+        if (!response.isSuccessful) throw Exception("Lector Manga HTTP Error ${response.code()}")
+        val document = response.asJsoup()
+        val geturl = document.select("form#$chapterID").attr("action")+"/$time" //Get redirect URL
+        val token = document.select("form#$chapterID input").attr("value") //Get token
+        val method = document.select("form#$chapterID").attr("method") //Check POST or GET
+        time = serverTime() //Update time for next chapter
+
+       val getHeaders = headersBuilder()
+            .add("User-Agent", userAgent)
+            .add("Referer", chapterURL)
+            .add("Content-Type", "application/x-www-form-urlencoded")
+            .build()
+
+        val formBody = when (method) {
+            "GET" -> null
+            "POST" -> FormBody.Builder()
+                .add("_token", token)
+                .build()
+            else -> throw UnsupportedOperationException("Lector Manga something else broke.")
+        }
+
+        val newurl = getBuilder(geturl,getHeaders,formBody,method)
+        val url =  if (getPageMethod()=="cascade" && newurl.contains("paginated")) {
+            newurl.substringBefore("paginated") + "cascade"
+        } else if (getPageMethod()=="paginated" && newurl.contains("cascade")) {
+            newurl.substringBefore("cascade") + "paginated"
+        } else newurl
+
+        val headers = headersBuilder()
+            .add("User-Agent", userAgent)
+            .add("Referer", newurl)
+            .build()
 
         // Get /cascade instead of /paginate to get all pages at once
-        return GET(url.substringBeforeLast("/") + "/cascade", headers)
+        return GET(url, headers)
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div#viewer-container > div.viewer-image-container > img.viewer-image")?.forEach {
-            add(Page(size, "", it.attr("src")))
+        if (getPageMethod()=="cascade") {
+            val style = document.select("style:containsData(height)").html()
+            document.select( "img[id]").filterNot { "#${it.attr("id")}," in style || "#${it.attr("id")}{"  in style  }.forEach {
+                add(Page(size, "", it.attr("src")))
+            }
+        } else {
+            val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
+            val url = document.baseUri().substringBefore("/paginated") //Accounts for url ending in number "/paginated/1"
+            pageList.forEach {
+                add(Page(it, "$url/paginated/$it"))
+            }
         }
     }
 
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = document.select("img.viewer-image").attr("src")
 
     private class Types : UriPartFilter("Tipo", arrayOf(
             Pair("Ver todo", ""),
@@ -375,6 +424,41 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     }
 
     // Preferences Code
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val deduppref = androidx.preference.ListPreference(screen.context).apply {
+            key = DEDUP_PREF_Title
+            title = DEDUP_PREF_Title
+            entries = arrayOf("All scanlators", "One scanlator per chapter")
+            entryValues = arrayOf("all", "one")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(DEDUP_PREF, entry).commit()
+            }
+        }
+
+        val pageMethod = androidx.preference.ListPreference(screen.context).apply {
+            key = PAGEGET_PREF_Title
+            title = PAGEGET_PREF_Title
+            entries = arrayOf("Cascada", "Paginada")
+            entryValues = arrayOf("cascade", "paginated")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(PAGEGET_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(deduppref)
+        screen.addPreference(pageMethod)
+    }
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val deduppref = ListPreference(screen.context).apply {
             key = DEDUP_PREF_Title
@@ -390,14 +474,34 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(DEDUP_PREF, entry).commit()
             }
         }
+
+        val pageMethod = ListPreference(screen.context).apply {
+            key = PAGEGET_PREF_Title
+            title = PAGEGET_PREF_Title
+            entries = arrayOf("Cascada", "Paginada")
+            entryValues = arrayOf("cascade", "paginated")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(PAGEGET_PREF, entry).commit()
+            }
+        }
         screen.addPreference(deduppref)
+        screen.addPreference(pageMethod)
+
     }
 
     private fun getduppref() = preferences.getString(DEDUP_PREF, "all")
+    private fun getPageMethod() = preferences.getString(PAGEGET_PREF, "cascade")
+
 
     companion object {
         private const val DEDUP_PREF_Title = "Chapter List Scanlator Preference"
         private const val DEDUP_PREF = "deduppref"
+        private const val PAGEGET_PREF_Title = "Método para obtener imágenes"
+        private const val PAGEGET_PREF = "pagemethodpref"
     }
-
 }

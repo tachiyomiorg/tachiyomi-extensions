@@ -9,13 +9,13 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 
 class SleepyPandaScans : ParsedHttpSource() {
 
     override val name = "Sleepy Panda Scans"
 
-    override val baseUrl = "http://sleepypandascans.co"
+    override val baseUrl = "https://sleepypandascans.co"
 
     override val lang = "en"
 
@@ -32,95 +32,79 @@ class SleepyPandaScans : ParsedHttpSource() {
     override fun popularMangaSelector() = "div.card.card-cascade"
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        manga.url = element.select("a").attr("href")
-        manga.title = element.select("h6").text()
-        manga.thumbnail_url = element.select("img").attr("abs:src")
-
-        return manga
+        return SManga.create().apply {
+            url = element.select("a").attr("href")
+            title = element.select("h6").text()
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
     }
 
-    override fun popularMangaNextPageSelector() = "Not needed"
+    override fun popularMangaNextPageSelector(): String? = null
 
     // Latest
 
-    // Track which manga titles have been added to latestUpdates's MangasPage
-    private val latestUpdatesTitles = mutableSetOf<String>()
-
     override fun latestUpdatesRequest(page: Int): Request {
-        if (page == 1) latestUpdatesTitles.clear()
         return GET(baseUrl)
     }
 
     // Only add manga to MangasPage if its title is not one we've added already
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val latestManga = mutableListOf<SManga>()
-        val document = response.asJsoup()
+        val mangas = response.asJsoup().select(latestUpdatesSelector())
+            .distinctBy { it.select(".card-title").text() }
+            .map { latestUpdatesFromElement(it) }
 
-        document.select(latestUpdatesSelector()).forEach { element ->
-            latestUpdatesFromElement(element).let { manga ->
-                if (manga.title !in latestUpdatesTitles) {
-                    latestManga.add(manga)
-                    latestUpdatesTitles.add(manga.title)
-                }
-            }
-        }
-        return MangasPage(latestManga, document.select(latestUpdatesNextPageSelector()).hasText())
+        return MangasPage(mangas, false)
     }
 
     // Updates less than a day old are patron only, ignore them
     override fun latestUpdatesSelector() = "div.card.card-cascade:not(div.amber)"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        manga.url = element.select("a").attr("href")
-            .replace("Reader", "Series").substringBeforeLast("/")
-        manga.title = element.select("h5").text()
-        manga.thumbnail_url = element.select("img").attr("abs:src")
-
-        return manga
+        return SManga.create().apply {
+            url = element.select("a").attr("href")
+                .replace("Reader", "Series").substringBeforeLast("/")
+            title = element.select("h5").text()
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
     }
 
-    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector(): String? = null
 
     // Search
 
     // Source's website doesn't appear to have a search function; so searching locally
-    private var searchQuery = ""
+    private lateinit var searchQuery: String
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        searchQuery = query.toLowerCase()
+        searchQuery = query
         return popularMangaRequest(1)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val searchMatches = mutableListOf<SManga>()
-        val document = response.asJsoup()
+        val mangas = response.asJsoup().select(searchMangaSelector())
+            .filter { it.text().contains(searchQuery, ignoreCase = true) }
+            .map { searchMangaFromElement(it) }
 
-        document.select(searchMangaSelector())
-            .filter { it.text().toLowerCase().contains(searchQuery) }
-            .map { searchMatches.add(searchMangaFromElement(it)) }
-
-        return MangasPage(searchMatches, false)
+        return MangasPage(mangas, false)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector(): String? = null
 
     // Manga summary page
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.card-body")
 
-        val manga = SManga.create()
-        manga.title = infoElement.select("h4").text()
-        manga.description = infoElement.select("p").text()
-        return manga
+        return SManga.create().apply {
+            title = infoElement.select("h4").text()
+            description = infoElement.select("p").text()
+            thumbnail_url = client.newCall(popularMangaRequest(1)).execute().asJsoup().select(popularMangaSelector())
+                .first { it.select(".card-title").text() == title }?.select("img")?.attr("abs:src")
+        }
     }
 
     // Chapters
@@ -129,11 +113,11 @@ class SleepyPandaScans : ParsedHttpSource() {
     override fun chapterListSelector() = "div.list-group a:not(a[data-target])"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-        chapter.url = element.attr("href")
-        chapter.name = element.ownText()
-        chapter.date_upload = parseRelativeDate(element.select("span").text().substringBefore(" ago"))
-        return chapter
+        return SChapter.create().apply {
+            url = element.attr("href")
+            name = element.ownText()
+            date_upload = parseRelativeDate(element.select("span").text().substringBefore(" ago"))
+        }
     }
 
     // Subtract relative date (e.g. posted 3 days ago)
@@ -157,12 +141,9 @@ class SleepyPandaScans : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.view img").forEach {
-            pages.add(Page(pages.size, "", it.attr("abs:src")))
+        return document.select("div.view img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:src"))
         }
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

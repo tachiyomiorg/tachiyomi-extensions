@@ -10,7 +10,9 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Rawkuma: ParsedHttpSource() {
 
@@ -154,13 +156,19 @@ class Rawkuma: ParsedHttpSource() {
         val chapters = mutableListOf<SChapter>()
         document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
         // Add date for latest chapter only
-        document.select("time[itemprop=dateModified]").attr("datetime")
-            .let { chapters[0].date_upload = parseDate(it) }
+        document.select("time[itemprop=dateModified]").text()
+            .let {
+                chapters[0].date_upload = parseDate(it)
+            }
         return chapters
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").parse(date).time
+        return try {
+            SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date).time
+        } catch (e: ParseException) {
+            0L
+        }
     }
 
     override fun chapterListSelector() = ".lchx"

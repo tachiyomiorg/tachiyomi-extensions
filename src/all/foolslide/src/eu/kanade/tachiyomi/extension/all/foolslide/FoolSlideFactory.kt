@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import org.jsoup.nodes.Document
 
@@ -27,7 +28,6 @@ class FoolSlideFactory : SourceFactory {
         YuriIsm(),
         AjiaNoScantrad(),
         OneTimeScans(),
-        TsubasaSociety(),
         MangaScouts(),
         StormInHeaven(),
         Lilyreader(),
@@ -37,7 +37,11 @@ class FoolSlideFactory : SourceFactory {
         LupiTeam(),
         HentaiCafe(),
         TheCatScans(),
-        ZandynoFansub()
+        ZandynoFansub(),
+        HelveticaScans(),
+        KirishimaFansub(),
+        PowerMangaIT(),
+        BaixarHentai()
     )
 }
 
@@ -94,8 +98,6 @@ class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr"
 
 class OneTimeScans : FoolSlide("One Time Scans", "https://reader.otscans.com", "en")
 
-class TsubasaSociety : FoolSlide("Tsubasa Society", "https://www.tsubasasociety.com", "en", "/reader/master/Xreader")
-
 class MangaScouts : FoolSlide("MangaScouts", "http://onlinereader.mangascouts.org", "de")
 
 class StormInHeaven : FoolSlide("Storm in Heaven", "https://www.storm-in-heaven.net", "it", "/reader-sih")
@@ -129,4 +131,21 @@ class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") 
     }
 }
 
-class ZandynoFansub : FoolSlide("Zandy no Fansub", "http://zandynofansub.aishiteru.org", "en", "/reader")
+class ZandynoFansub : FoolSlide("Zandy no Fansub", "https://zandynofansub.aishiteru.org", "en", "/reader")
+
+class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
+
+class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
+
+class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
+
+class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt") {
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            title = document.select("h1.title").text()
+            thumbnail_url = document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
+                client.newCall(GET(document.select("div.title a").last().attr("abs:href"), headers)).execute().asJsoup()
+                    .let { pageListParse(it).firstOrNull()?.imageUrl }
+        }
+    }
+}

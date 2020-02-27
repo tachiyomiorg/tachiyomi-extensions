@@ -1,13 +1,6 @@
 package android.support.v7.preference;
 
-/**
- * Created by Carlos on 5/9/2018.
- */
-
 public class Preference {
-    public interface OnPreferenceChangeListener {
-        boolean onPreferenceChange(Preference preference, Object newValue);
-    }
 
     public void setOnPreferenceChangeListener(OnPreferenceChangeListener onPreferenceChangeListener) {
         throw new RuntimeException("Stub!");
@@ -29,7 +22,11 @@ public class Preference {
         throw new RuntimeException("Stub!");
     }
 
-    public void setKey(String key) {
+    public void setSummary(CharSequence summary) {
+        throw new RuntimeException("Stub!");
+    }
+
+    public void setEnabled(boolean enabled)  {
         throw new RuntimeException("Stub!");
     }
 
@@ -37,7 +34,7 @@ public class Preference {
         throw new RuntimeException("Stub!");
     }
 
-    public void setSummary(CharSequence summary) {
+    public void setKey(String key) {
         throw new RuntimeException("Stub!");
     }
 
@@ -45,7 +42,12 @@ public class Preference {
         throw new RuntimeException("Stub!");
     }
 
+    public interface OnPreferenceChangeListener {
+        boolean onPreferenceChange(Preference preference, Object newValue);
+    }
+
     public interface OnPreferenceClickListener {
         boolean onPreferenceClick(Preference preference);
     }
+
 }

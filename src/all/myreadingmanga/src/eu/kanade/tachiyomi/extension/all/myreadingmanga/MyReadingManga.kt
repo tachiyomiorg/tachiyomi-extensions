@@ -10,7 +10,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.io.IOException
-import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -125,13 +124,13 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img").first())
+    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img")?.first() )
 
-    private fun buildManga(titleElement: Element, thumbnailElement: Element): SManga {
+    private fun buildManga(titleElement: Element, thumbnailElement: Element?): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
+        if (thumbnailElement !=null) manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
         return manga
     }
 
@@ -143,7 +142,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                 else -> element.attr("data-lazy-src")
             }
         if (url.startsWith("//")) {
-            url = "http:$url"
+            url = "https:$url"
         }
         return url
     }
@@ -173,7 +172,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         manga.artist = cleanAuthor(document.select("h1").text())
         val glist = document.select(".entry-header p a[href*=genre]").map { it.text() }
         manga.genre = glist.joinToString(", ")
-        manga.description = document.select("h1").text() + "\n" + document.select(".info-class")?.text()
+        val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.map { it.text() }?.joinToString("\n")
+        manga.description = document.select("h1").text() + if (extendedDescription.isNullOrEmpty()) "" else "\n\n$extendedDescription"
         manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
             "Ongoing" -> SManga.ONGOING
             "Completed" -> SManga.COMPLETED
@@ -253,10 +253,12 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
 
     //Filter Parsing, grabs home page as document and filters out Genres, Popular Tags, and Catagorys
-    private val filterdoc:Document? = try { OkHttpClient().newCall(GET("$baseUrl", headers)).execute().asJsoup() } catch (e: IOException) {null}
-    private val genresarray = filterdoc?.select(".tagcloud a[href*=/genre/]")?.map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}?.toTypedArray() ?: arrayOf(Pair("","Error getting filters, try restarting app"))
-    private val poptagarray = filterdoc?.select(".tagcloud a[href*=/tag/]")?.map { Pair(it.attr("href").substringBeforeLast("/").substringAfterLast("/"), it.text())}?.toTypedArray() ?: arrayOf(Pair("","Error getting filters, try restarting app"))
-    private val cattagarray = filterdoc?.select(".level-0")?.map { Pair(it.attr("value"), it.text())}?.toTypedArray() ?: arrayOf(Pair("","Error getting filters, try restarting app"))
+    private val getFilter:Document? = try { network.client.newCall(GET(baseUrl, headers)).execute().asJsoup() } catch (e: IOException) {null}
+    private fun returnFilter (css: String, attributekey: String): Array<Pair<String, String>> = if (getFilter?.select(".cf-browser-verification").isNullOrEmpty()) {
+        getFilter?.select(css)?.map { Pair(it.attr(attributekey).substringBeforeLast("/").substringAfterLast("/"), it.text()) }?.toTypedArray() ?: arrayOf(Pair("","Error getting filters"))
+    } else {
+        arrayOf(Pair("","Open 'Latest' and force restart app"))
+    }
 
     //Generates the filter lists for app
     override fun getFilterList(): FilterList {
@@ -264,9 +266,9 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             //MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
-            GenreFilter(genresarray),
-            TagFilter(poptagarray),
-            CatFilter(cattagarray)
+            GenreFilter(returnFilter(".tagcloud a[href*=/genre/]", "href")),
+            TagFilter(returnFilter(".tagcloud a[href*=/tag/]","href")),
+            CatFilter(returnFilter(".level-0", "value"))
         )
         return filterList
     }

@@ -2,11 +2,14 @@ package eu.kanade.tachiyomi.extension.ru.mintmanga
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,7 +21,7 @@ class Mintmanga : ParsedHttpSource() {
 
     override val name = "Mintmanga"
 
-    override val baseUrl = "http://mintmanga.com"
+    override val baseUrl = "https://mintmanga.live"
 
     override val lang = "ru"
 
@@ -115,19 +118,45 @@ class Mintmanga : ParsedHttpSource() {
         }
     }
 
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return if (manga.status != SManga.LICENSED) {
+            client.newCall(chapterListRequest(manga))
+                .asObservableSuccess()
+                .map { response ->
+                    chapterListParse(response, manga)
+                }
+        } else {
+            Observable.error(java.lang.Exception("Licensed - No chapters to show"))
+        }
+    }
+
+    private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
+        val document = response.asJsoup()
+        return document.select(chapterListSelector()).map { chapterFromElement(it, manga) }
+    }
+
     override fun chapterListSelector() = "div.chapters-link > table > tbody > tr:has(td > a)"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    private fun chapterFromElement(element: Element, manga: SManga): SChapter {
         val urlElement = element.select("a").first()
         val urlText = urlElement.text()
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href") + "?mtr=1")
-        if (urlText.endsWith(" новое")) {
-            chapter.name = urlText.dropLast(6)
-        } else {
-            chapter.name = urlText
+
+        chapter.name = urlText.removeSuffix(" новое").trim()
+        if (manga.title.length > 25) {
+            for (word in manga.title.split(' ')) {
+                chapter.name = chapter.name.removePrefix(word).trim()
+            }
         }
+        val dots = chapter.name.indexOf("…")
+        val numbers = chapter.name.findAnyOf(IntRange(0, 9).map { it.toString() })?.first ?: 0
+
+        if (dots in 0 until numbers) {
+            chapter.name = chapter.name.substringAfter("…").trim()
+        }
+
         chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
             try {
                 SimpleDateFormat("dd.MM.yy", Locale.US).parse(it).time
@@ -136,6 +165,10 @@ class Mintmanga : ParsedHttpSource() {
             }
         } ?: 0
         return chapter
+    }
+
+    override fun chapterFromElement(element: Element): SChapter {
+        throw Exception("Not used")
     }
 
     override fun prepareNewChapter(chapter: SChapter, manga: SManga) {
@@ -201,7 +234,7 @@ class Mintmanga : ParsedHttpSource() {
     /* [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")]
     *  .map(el => `Genre("${el.textContent.trim()}", $"{el.getAttribute('onclick')
     *  .substr(31,el.getAttribute('onclick').length-33)"})`).join(',\n')
-    *  on http://mintmanga.com/search/advanced
+    *  on https://mintmanga.live/search/advanced
     */
     override fun getFilterList() = FilterList(
             Category(getCategoryList()),

@@ -1,3 +1,3 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-class MangaDexEnglish : Mangadex("en", "gb", 1)
+class MangaDexEnglish : Mangadex("en", "gb")

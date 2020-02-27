@@ -13,7 +13,7 @@ import java.util.*
 class Desu : HttpSource() {
     override val name = "Desu"
 
-    override val baseUrl = "http://desu.me/manga/api"
+    override val baseUrl = "https://desu.me/manga/api"
 
     override val lang = "ru"
 

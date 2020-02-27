@@ -5,12 +5,11 @@ ext {
     appName = 'Tachiyomi: Mangaonlinebiz'
     pkgNameSuffix = 'ru.mangaonlinebiz'
     extClass = '.MangaOnlineBiz'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
 }
 
 dependencies {
-    compileOnly project(':preference-stub')
     compileOnly 'com.google.code.gson:gson:2.8.5'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
     compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'

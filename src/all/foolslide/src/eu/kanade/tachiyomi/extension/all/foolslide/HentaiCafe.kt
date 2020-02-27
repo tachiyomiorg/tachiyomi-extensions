@@ -37,7 +37,7 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
 
     override fun latestUpdatesRequest(page: Int) = pagedRequest("$baseUrl/", page)
 
-    override fun latestUpdatesSelector() = "article"
+    override fun latestUpdatesSelector() = "article:not(#post-0)"
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         title = document.select(".entry-title").text()

@@ -8,19 +8,24 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaOwl : ParsedHttpSource() {
 
     override val name = "MangaOwl"
 
-    override val baseUrl = "http://mangaowl.com"
+    override val baseUrl = "https://mangaowl.com"
 
     override val lang = "en"
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(1, TimeUnit.MINUTES)
+        .readTimeout(1, TimeUnit.MINUTES)
+        .writeTimeout(1, TimeUnit.MINUTES)
+        .build()
 
     // Popular
 
@@ -98,7 +103,8 @@ class MangaOwl : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         element.select("a").let {
-            chapter.setUrlWithoutDomain(it.attr("href"))
+            // They replace some URLs with a different host getting a path of domain.com/reader/reader/, fix to make usable on baseUrl
+            chapter.setUrlWithoutDomain(it.attr("href").replace("/reader/reader/", "/reader/"))
             chapter.name = it.text()
         }
         chapter.date_upload = parseChapterDate(element.select("td + td").text())
@@ -119,12 +125,9 @@ class MangaOwl : ParsedHttpSource() {
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.item img.owl-lazy").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:data-src")))
+        return document.select("div.item img.owl-lazy").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:data-src"))
         }
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

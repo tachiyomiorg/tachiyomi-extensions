@@ -15,7 +15,7 @@ class Perveden : ParsedHttpSource() {
 
     override val name = "PervEden"
 
-    override val baseUrl = "http://www.perveden.com"
+    override val baseUrl = "https://www.perveden.com"
 
     override val lang = "en"
 
@@ -84,7 +84,7 @@ class Perveden : ParsedHttpSource() {
         description = document.select("h2#mangaDescription").text()
         status = parseStatus(infos.select("h4:containsOwn(Status)").first()?.nextSibling().toString())
         val img = infos.select("div.mangaImage2 > img").first()?.attr("src")
-        if (!img.isNullOrBlank()) thumbnail_url = img.let { "http:$it" }
+        if (!img.isNullOrBlank()) thumbnail_url = img.let { "https:$it" }
     }
 
     private fun parseStatus(status: String) = when {
@@ -131,7 +131,7 @@ class Perveden : ParsedHttpSource() {
         }
     }
 
-    override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "http:$it" }
+    override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "https:$it" }
 
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)

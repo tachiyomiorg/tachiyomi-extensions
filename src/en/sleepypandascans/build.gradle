@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Sleepy Panda Scans'
     pkgNameSuffix = 'en.sleepypandascans'
     extClass = '.SleepyPandaScans'
-    extVersionCode = 1
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

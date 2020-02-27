@@ -17,6 +17,10 @@
             android:scheme="https"
             android:host="arc-relight.com"
             android:pathPattern="/reader/..*"/>
+        <data
+            android:scheme="https"
+            android:host="reader.decadencescans.com"
+            android:pathPattern="/reader/..*"/>
       </intent-filter>
     </activity>
   </application>

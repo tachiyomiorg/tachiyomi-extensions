@@ -4,14 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import com.github.salomonbrys.kotson.forEach
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.keys
-import com.github.salomonbrys.kotson.long
-import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
+import com.github.salomonbrys.kotson.*
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -20,19 +13,10 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
@@ -46,15 +30,14 @@ import kotlin.collections.set
 
 abstract class Mangadex(
     override val lang: String,
-    private val internalLang: String,
-    private val langCode: Int
+    private val internalLang: String
 ) : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "MangaDex"
 
     override val baseUrl = "https://mangadex.org"
 
-    private val cdnUrl = "https://s0.mangadex.org"
+    private val cdnUrl = "https://mangadex.org" // "https://s0.mangadex.org"
 
     override val supportsLatest = true
 
@@ -64,13 +47,13 @@ abstract class Mangadex(
 
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+    override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
     private fun clientBuilder(): OkHttpClient = clientBuilder(getShowR18())
 
-    private fun clientBuilder(r18Toggle: Int): OkHttpClient = network.cloudflareClient.newBuilder()
+    private fun clientBuilder(r18Toggle: Int): OkHttpClient = network.client.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -79,7 +62,7 @@ abstract class Mangadex(
             val newReq = chain
                 .request()
                 .newBuilder()
-                .header("Cookie", "$originalCookies; ${cookiesHeader(r18Toggle, langCode)}")
+                .header("Cookie", "$originalCookies; ${cookiesHeader(r18Toggle)}")
                 .build()
             chain.proceed(newReq)
         }.build()!!
@@ -88,10 +71,9 @@ abstract class Mangadex(
         add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
     }
 
-    private fun cookiesHeader(r18Toggle: Int, langCode: Int): String {
+    private fun cookiesHeader(r18Toggle: Int): String {
         val cookies = mutableMapOf<String, String>()
         cookies["mangadex_h_toggle"] = r18Toggle.toString()
-        cookies["mangadex_filter_langs"] = langCode.toString()
         return buildCookies(cookies)
     }
 
@@ -363,11 +345,11 @@ abstract class Mangadex(
     }
 
     private fun apiRequest(manga: SManga): Request {
-        return GET(baseUrl + API_MANGA + getMangaId(manga.url), headers)
+        return GET(baseUrl + API_MANGA + getMangaId(manga.url), headers, CacheControl.FORCE_NETWORK)
     }
 
     private fun searchMangaByIdRequest(id: String): Request {
-        return GET(baseUrl + API_MANGA + id, headers)
+        return GET(baseUrl + API_MANGA + id, headers, CacheControl.FORCE_NETWORK)
     }
 
     private fun getMangaId(url: String): String {
@@ -468,11 +450,26 @@ abstract class Mangadex(
         // Skip chapters that don't match the desired language, or are future releases
         chapterJson?.forEach { key, jsonElement ->
             val chapterElement = jsonElement.asJsonObject
-            if (chapterElement.get("lang_code").string == internalLang && (chapterElement.get("timestamp").asLong * 1000) <= now) {
+            if (shouldKeepChapter(chapterElement, now)) {
                 chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
             }
         }
         return chapters
+    }
+
+    /**filter out the following chapters
+     * language doesn't match the chosen language
+     * future chapters
+     * chapters from manga plus since they have to be read in mangaplus extension
+     *
+     */
+    private fun shouldKeepChapter(chapterJson: JsonObject, now: Long): Boolean {
+        return when {
+            chapterJson.get("lang_code").string != internalLang -> false
+            (chapterJson.get("timestamp").asLong * 1000) > now -> false
+            chapterJson.get("group_id").string == "9097" -> false
+            else -> true
+        }
     }
 
     private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
@@ -579,6 +576,55 @@ abstract class Mangadex(
             return attr
         }
         return baseUrl + attr
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val myPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_R18_PREF_Title
+            title = SHOW_R18_PREF_Title
+
+            title = SHOW_R18_PREF_Title
+            entries = arrayOf("Show No R18+", "Show All", "Show Only R18+")
+            entryValues = arrayOf("0", "1", "2")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_R18_PREF, index).commit()
+            }
+        }
+        val thumbsPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_THUMBNAIL_PREF_Title
+            title = SHOW_THUMBNAIL_PREF_Title
+            entries = arrayOf("Show high quality", "Show low quality")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
+            }
+        }
+        val serverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF_Title
+            title = SERVER_PREF_Title
+            entries = SERVER_PREF_ENTRIES
+            entryValues = SERVER_PREF_ENTRY_VALUES
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SERVER_PREF, entry).commit()
+            }
+        }
+
+        screen.addPreference(myPref)
+        screen.addPreference(thumbsPref)
+        screen.addPreference(serverPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
