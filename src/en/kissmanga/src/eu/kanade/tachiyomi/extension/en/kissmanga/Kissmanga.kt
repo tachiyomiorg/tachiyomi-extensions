@@ -44,6 +44,7 @@ class Kissmanga : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
+        manga.thumbnail_url = element.select("td").attr("title").substringAfter("src=\"").substringBefore("\"")
         element.select("td a:eq(0)").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             val title = it.text()
