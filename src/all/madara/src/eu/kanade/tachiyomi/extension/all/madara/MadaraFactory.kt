@@ -5,15 +5,11 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -76,7 +72,8 @@ class MadaraFactory : SourceFactory {
         ATMSubs(),
         OnManga(),
         MangaAction(),
-        NijiTranslations()
+        NijiTranslations(),
+        IchirinNoHanaYuri()
     )
 }
 
@@ -131,7 +128,7 @@ class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
 
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com", "en")
 
-class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com","fr",
+class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com", "fr",
     dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
 
 class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr", "fr",
@@ -227,6 +224,7 @@ class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
         .add("Referer", "$baseUrl/manga/?m_orderby=views")
+
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
@@ -244,38 +242,38 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
 
 class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     override fun getGenreList() = listOf(
-        Genre( "Adult",  "adult"),
-        Genre( "Action",  "action"),
-        Genre( "Adventure",  "adventure"),
-        Genre( "Bully",  "bully"),
-        Genre( "Comedy",  "comedy"),
-        Genre( "Drama",  "drama"),
-        Genre( "Ecchi",  "ecchi"),
-        Genre( "Fantasy",  "fantasy"),
-        Genre( "Gender Bender",  "gender-bender"),
-        Genre( "Harem",  "harem"),
-        Genre( "Historical",  "historical"),
-        Genre( "Horror",  "horror"),
-        Genre( "Isekai",  "isekai"),
-        Genre( "Josei",  "josei"),
-        Genre( "Martial Arts",  "martial-arts"),
-        Genre( "Mature",  "mature"),
-        Genre( "Mystery",  "mystery"),
-        Genre( "Psychological",  "psychological"),
-        Genre( "Romance",  "romance"),
-        Genre( "School Life",  "school-life"),
-        Genre( "Sci-Fi",  "sci-fi"),
-        Genre( "Seinen",  "seinen"),
-        Genre( "Shoujo",  "shoujo"),
-        Genre( "Shounen",  "shounen"),
-        Genre( "Slice of Life",  "slice-of-life"),
-        Genre( "Smut",  "smut"),
-        Genre( "Sports",  "sports"),
-        Genre( "Supernatural",  "supernatural"),
-        Genre( "Thriller",  "thriller"),
-        Genre( "Tragedy",  "tragedy"),
-        Genre( "Yaoi",  "yaoi"),
-        Genre( "Yuri",  "yuri")
+        Genre("Adult", "adult"),
+        Genre("Action", "action"),
+        Genre("Adventure", "adventure"),
+        Genre("Bully", "bully"),
+        Genre("Comedy", "comedy"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mystery", "mystery"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-Fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shounen", "shounen"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Smut", "smut"),
+        Genre("Sports", "sports"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Yaoi", "yaoi"),
+        Genre("Yuri", "yuri")
     )
 }
 
@@ -291,6 +289,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
 
         return manga
     }
+
     override fun popularMangaNextPageSelector() = "a[rel=next]"
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/lista-manga-hentai?orderby=last&page=$page", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -312,6 +311,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         }
         return GET(url.build().toString(), headers)
     }
+
     override fun searchMangaSelector() = "div.c-tabs-item__content > div.c-tabs-item__content, ${popularMangaSelector()}"
     override fun searchMangaFromElement(element: Element): SManga {
         return if (element.hasAttr("href")) {
@@ -321,6 +321,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         }
 
     }
+
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun chapterListSelector() = "ul.main.version-chap > li.wp-manga-chapter:not(:last-child)" // removing empty li
     override val pageListParseSelector = "div#all > img.img-responsive"
@@ -328,6 +329,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         Filter.Header("Solo funciona si la consulta está en blanco"),
         GenreSelectFilter()
     )
+
     class GenreSelectFilter : UriPartFilter("Búsqueda de género", arrayOf(
         Pair("<seleccionar>", ""),
         Pair("Ecchi", "ecchi"),
@@ -362,7 +364,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         Pair("Futanari", "futanari"),
         Pair("Doble Penetracion", "doble-penetracion"),
         Pair("Cosplay", "cosplay")
-        )
+    )
     )
 }
 
@@ -411,6 +413,7 @@ class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", 
     override fun chapterListParse(response: Response): List<SChapter> { //Chapters are listed old to new
         return super.chapterListParse(response).reversed()
     }
+
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListParseSelector).mapIndexed { index, element ->
             Page(index, "", element.select("img").attr("data-src").trim())  //had to add trim because of white space in source
@@ -433,19 +436,21 @@ class KlikManga : Madara("KlikManga", "https://klikmanga.com", "id", SimpleDateF
 
 class MiracleScans : Madara("Miracle Scans", "https://miraclescans.com", "en")
 
-class Manhuasnet: Madara("Manhuas.net","https://manhuas.net","en")
+class Manhuasnet : Madara("Manhuas.net", "https://manhuas.net", "en")
 
-class MangaLaw: Madara("MangaLaw","https://mangalaw.com","ja",SimpleDateFormat("MM/dd/yyyy", Locale.US))
+class MangaLaw : Madara("MangaLaw", "https://mangalaw.com", "ja", SimpleDateFormat("MM/dd/yyyy", Locale.US))
 
-class EarlyManga: Madara("EarlyManga","https://earlymanga.website","en")
+class EarlyManga : Madara("EarlyManga", "https://earlymanga.website", "en")
 
-class MangaTX: Madara("MangaTX","https://mangatx.com","en")
+class MangaTX : Madara("MangaTX", "https://mangatx.com", "en")
 
-class ATMSubs: Madara("ATM-Subs","https://atm-subs.fr","fr",SimpleDateFormat("d MMMM yyyy", Locale("fr")))
+class ATMSubs : Madara("ATM-Subs", "https://atm-subs.fr", "fr", SimpleDateFormat("d MMMM yyyy", Locale("fr")))
 
-class OnManga: Madara("OnManga","https://onmanga.com","en")
+class OnManga : Madara("OnManga", "https://onmanga.com", "en")
 
-class MangaAction: Madara("Manga Action","https://manga-action.com","ar",SimpleDateFormat("yyyy-MM-dd", Locale("ar")))
+class MangaAction : Madara("Manga Action", "https://manga-action.com", "ar", SimpleDateFormat("yyyy-MM-dd", Locale("ar")))
 
-class NijiTranslations: Madara("Niji Translations","https://niji-translations.com/","ar",SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
+class NijiTranslations : Madara("Niji Translations", "https://niji-translations.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
+
+class IchirinNoHanaYuri : Madara("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt")))
 
