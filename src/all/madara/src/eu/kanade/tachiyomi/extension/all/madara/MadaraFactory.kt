@@ -455,5 +455,5 @@ class NijiTranslations : Madara("Niji Translations", "https://niji-translations.
 
 class IchirinNoHanaYuri : Madara("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt")))
 
-class LilyManga: Madara("Lily Manga","https://lilymanga.com","en",SimpleDateFormat("yyyy/MM/dd", Locale.US))
+class LilyManga: Madara("Lily Manga","https://lilymanga.com","en",SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
