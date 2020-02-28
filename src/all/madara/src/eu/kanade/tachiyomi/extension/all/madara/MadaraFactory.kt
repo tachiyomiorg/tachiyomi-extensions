@@ -73,7 +73,8 @@ class MadaraFactory : SourceFactory {
         OnManga(),
         MangaAction(),
         NijiTranslations(),
-        IchirinNoHanaYuri()
+        IchirinNoHanaYuri(),
+        LilyManga()
     )
 }
 
@@ -453,4 +454,6 @@ class MangaAction : Madara("Manga Action", "https://manga-action.com", "ar", Sim
 class NijiTranslations : Madara("Niji Translations", "https://niji-translations.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
 
 class IchirinNoHanaYuri : Madara("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt")))
+
+class LilyManga: Madara("Lily Manga","https://lilymanga.com","en",SimpleDateFormat("yyyy/MM/dd", Locale.US))
 
