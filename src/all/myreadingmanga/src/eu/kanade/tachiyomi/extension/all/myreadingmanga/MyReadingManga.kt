@@ -6,13 +6,15 @@ import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
@@ -50,7 +52,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
         val mangas = mutableListOf<SManga>()
-        val list  = document.select(latestUpdatesSelector()).filter { element ->
+        val list = document.select(latestUpdatesSelector()).filter { element ->
             val select = element.select("a[rel=bookmark]")
             select.text().contains("[$lang", true)
         }
@@ -108,7 +110,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         //Process Filter Results / Same theme as home page
         else {
             //return popularMangaParse(response)
-            val list  = document.select(latestUpdatesSelector()).filter { element ->
+            val list = document.select(latestUpdatesSelector()).filter { element ->
                 val select = element.select("a[rel=bookmark]")
                 select.text().contains("[$lang", true)
             }
@@ -125,13 +127,13 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img")?.first() )
+    override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img")?.first())
 
     private fun buildManga(titleElement: Element, thumbnailElement: Element?): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(titleElement.attr("href"))
         manga.title = cleanTitle(titleElement.text())
-        if (thumbnailElement !=null) manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
+        if (thumbnailElement != null) manga.thumbnail_url = getThumbnail(getImage(thumbnailElement))
         return manga
     }
 
@@ -201,8 +203,9 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
         val date = parseDate(document.select(".entry-time").text())
         val mangaUrl = document.baseUri()
-        val chfirstname = document.select(".chapter-class a[href*=$mangaUrl]")?.first()?.text()?.ifEmpty { "Ch. 1" }?.capitalize() ?:"Ch. 1"
-        val scangroup= document.select(".entry-terms a[href*=group]")?.first()?.text()
+        val chfirstname = document.select(".chapter-class a[href*=$mangaUrl]")?.first()?.text()?.ifEmpty { "Ch. 1" }?.capitalize()
+            ?: "Ch. 1"
+        val scangroup = document.select(".entry-terms a[href*=group]")?.first()?.text()
         //create first chapter since its on main manga page
         chapters.add(createChapter("1", document.baseUri(), date, chfirstname, scangroup))
         //see if there are multiple chapters or not
@@ -210,7 +213,8 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             it.forEach {
                 if (!it.text().contains("Next »", true)) {
                     val pageNumber = it.text()
-                    val chname = document.select(".chapter-class a[href$=/$pageNumber/]")?.text()?.ifEmpty { "Ch. $pageNumber" }?.capitalize() ?:"Ch. $pageNumber"
+                    val chname = document.select(".chapter-class a[href$=/$pageNumber/]")?.text()?.ifEmpty { "Ch. $pageNumber" }?.capitalize()
+                        ?: "Ch. $pageNumber"
                     chapters.add(createChapter(it.text(), document.baseUri(), date, chname, scangroup))
                 }
             }
@@ -221,7 +225,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("MMM dd, yyyy", Locale.US ).parse(date).time
+        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date).time
     }
 
     private fun createChapter(pageNumber: String, mangaUrl: String, date: Long, chname: String, scangroup: String?): SChapter {
@@ -260,12 +264,17 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private val pairingDoc = getFilterDoc("$baseUrl/pairing/")
     private val scangroupDoc = getFilterDoc("$baseUrl/group/")
     private fun getFilterDoc(url: String): Document? {
-        return try { network.client.newCall(GET(url, headers)).execute().asJsoup() } catch (e: IOException) {null}
+        return try {
+            network.client.newCall(GET(url, headers)).execute().asJsoup()
+        } catch (e: IOException) {
+            null
+        }
     }
-    private fun returnFilter (document: Document?, css: String, attributekey: String): Array<Pair<String, String>> {
+
+    private fun returnFilter(document: Document?, css: String, attributekey: String): Array<Pair<String, String>> {
         val captchacheck = !document?.select(".cf-captcha-container").isNullOrEmpty()
         val cfcheck = !document?.select(".cf-browser-verification").isNullOrEmpty()
-        return if (captchacheck){
+        return if (captchacheck) {
             arrayOf(Pair("", "Solve captcha and force restart app"))
         } else if (cfcheck) {
             arrayOf(Pair("", "Open 'Latest' and force restart app"))
@@ -281,20 +290,20 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             //MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
-            GenreFilter(returnFilter(filterDoc,".tagcloud a[href*=/genre/]", "href")),
-            TagFilter(returnFilter(filterDoc,".tagcloud a[href*=/tag/]","href")),
-            CatFilter(returnFilter(categoryDoc,".links a", "abs:href")),
-            PairingFilter(returnFilter(pairingDoc,".links a", "abs:href")),
-            ScanGroupFilter(returnFilter(scangroupDoc,".links a", "abs:href"))
+            GenreFilter(returnFilter(filterDoc, ".tagcloud a[href*=/genre/]", "href")),
+            TagFilter(returnFilter(filterDoc, ".tagcloud a[href*=/tag/]", "href")),
+            CatFilter(returnFilter(categoryDoc, ".links a", "abs:href")),
+            PairingFilter(returnFilter(pairingDoc, ".links a", "abs:href")),
+            ScanGroupFilter(returnFilter(scangroupDoc, ".links a", "abs:href"))
         )
         return filterList
     }
 
-    private class GenreFilter(GENRES: Array<Pair<String, String>>) : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("","Any"),*GENRES))
-    private class TagFilter(POPTAG: Array<Pair<String, String>>) : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("","Any"),*POPTAG))
-    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterShortPath("Categories", "cat", arrayOf(Pair("","Any"), *CATID))
-    private class PairingFilter(PAIR: Array<Pair<String, String>>): UriSelectFilterPath ("Pairing","pairing",arrayOf(Pair("","Any"),*PAIR))
-    private class ScanGroupFilter(GROUP: Array<Pair<String, String>>): UriSelectFilterPath ("Scanlation Group","group",arrayOf(Pair("","Any"),*GROUP))
+    private class GenreFilter(GENRES: Array<Pair<String, String>>) : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("", "Any"), *GENRES))
+    private class TagFilter(POPTAG: Array<Pair<String, String>>) : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("", "Any"), *POPTAG))
+    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterShortPath("Categories", "cat", arrayOf(Pair("", "Any"), *CATID))
+    private class PairingFilter(PAIR: Array<Pair<String, String>>) : UriSelectFilterPath("Pairing", "pairing", arrayOf(Pair("", "Any"), *PAIR))
+    private class ScanGroupFilter(GROUP: Array<Pair<String, String>>) : UriSelectFilterPath("Scanlation Group", "group", arrayOf(Pair("", "Any"), *GROUP))
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
@@ -312,9 +321,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                     .appendPath(vals[state].first)
         }
     }
+
     private open class UriSelectFilterShortPath(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                            val firstIsUnspecified: Boolean = true,
-                                            defaultValue: Int = 0) :
+                                                val firstIsUnspecified: Boolean = true,
+                                                defaultValue: Int = 0) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
