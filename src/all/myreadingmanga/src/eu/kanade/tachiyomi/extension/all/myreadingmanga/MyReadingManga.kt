@@ -1,4 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.myreadingmanga
+
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -253,11 +254,25 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
 
     //Filter Parsing, grabs home page as document and filters out Genres, Popular Tags, and Catagorys
-    private val getFilter:Document? = try { network.client.newCall(GET(baseUrl, headers)).execute().asJsoup() } catch (e: IOException) {null}
-    private fun returnFilter (css: String, attributekey: String): Array<Pair<String, String>> = if (getFilter?.select(".cf-browser-verification").isNullOrEmpty()) {
-        getFilter?.select(css)?.map { Pair(it.attr(attributekey).substringBeforeLast("/").substringAfterLast("/"), it.text()) }?.toTypedArray() ?: arrayOf(Pair("","Error getting filters"))
-    } else {
-        arrayOf(Pair("","Open 'Latest' and force restart app"))
+
+    private val filterDoc = getFilterDoc(baseUrl)
+    private val categoryDoc = getFilterDoc("$baseUrl/cats/")
+    private val pairingDoc = getFilterDoc("$baseUrl/pairing/")
+    private val scangroupDoc = getFilterDoc("$baseUrl/group/")
+    private fun getFilterDoc(url: String): Document? {
+        return try { network.client.newCall(GET(url, headers)).execute().asJsoup() } catch (e: IOException) {null}
+    }
+    private fun returnFilter (document: Document?, css: String, attributekey: String): Array<Pair<String, String>> {
+        val captchacheck = !document?.select(".cf-captcha-container").isNullOrEmpty()
+        val cfcheck = !document?.select(".cf-browser-verification").isNullOrEmpty()
+        return if (captchacheck){
+            arrayOf(Pair("", "Solve captcha and force restart app"))
+        } else if (cfcheck) {
+            arrayOf(Pair("", "Open 'Latest' and force restart app"))
+        } else {
+            document?.select(css)?.map { Pair(it.attr(attributekey).substringBeforeLast("/").substringAfterLast("/"), it.text()) }?.toTypedArray()
+                ?: arrayOf(Pair("", "Error getting filters"))
+        }
     }
 
     //Generates the filter lists for app
@@ -266,16 +281,20 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             //MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
-            GenreFilter(returnFilter(".tagcloud a[href*=/genre/]", "href")),
-            TagFilter(returnFilter(".tagcloud a[href*=/tag/]","href")),
-            CatFilter(returnFilter(".level-0", "value"))
+            GenreFilter(returnFilter(filterDoc,".tagcloud a[href*=/genre/]", "href")),
+            TagFilter(returnFilter(filterDoc,".tagcloud a[href*=/tag/]","href")),
+            CatFilter(returnFilter(categoryDoc,".links a", "abs:href")),
+            PairingFilter(returnFilter(pairingDoc,".links a", "abs:href")),
+            ScanGroupFilter(returnFilter(scangroupDoc,".links a", "abs:href"))
         )
         return filterList
     }
 
     private class GenreFilter(GENRES: Array<Pair<String, String>>) : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("","Any"),*GENRES))
     private class TagFilter(POPTAG: Array<Pair<String, String>>) : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("","Any"),*POPTAG))
-    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterQuery("Categories", "cat", arrayOf(Pair("","Any"), *CATID))
+    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterShortPath("Categories", "cat", arrayOf(Pair("","Any"), *CATID))
+    private class PairingFilter(PAIR: Array<Pair<String, String>>): UriSelectFilterPath ("Pairing","pairing",arrayOf(Pair("","Any"),*PAIR))
+    private class ScanGroupFilter(GROUP: Array<Pair<String, String>>): UriSelectFilterPath ("Scanlation Group","group",arrayOf(Pair("","Any"),*GROUP))
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
@@ -293,13 +312,14 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
                     .appendPath(vals[state].first)
         }
     }
-    private open class UriSelectFilterQuery(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+    private open class UriSelectFilterShortPath(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                             val firstIsUnspecified: Boolean = true,
                                             defaultValue: Int = 0) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
-                uri.appendQueryParameter(uriParam, vals[state].first)
+                uri.appendPath(vals[state].first)
+
         }
     }
 
@@ -311,3 +331,4 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
 }
+
