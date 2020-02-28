@@ -40,7 +40,7 @@ class Kissmanga : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("https://kissmanga.com/MangaList/LatestUpdate?page=$page", headers)
+        return GET("$baseUrl/MangaList/LatestUpdate?page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
