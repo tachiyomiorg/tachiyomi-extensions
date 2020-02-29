@@ -37,6 +37,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
     override fun popularMangaSelector() = searchMangaSelector()
+    override fun popularMangaParse(response: Response) = searchMangaParse(response)
     override fun popularMangaFromElement(element: Element) = searchMangaFromElement(element)
 
     //Latest
@@ -86,7 +87,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         return GET(uri.toString(), headers)
     }
 
-    override fun searchMangaNextPageSelector() = throw Exception("Not used")
+    override fun searchMangaNextPageSelector(): String? = null
     override fun searchMangaSelector() = "div.results-by-facets div[id*=res]"
     override fun searchMangaParse(response: Response): MangasPage {
         //Filter Assist - Caches Pages required for filter parsing
