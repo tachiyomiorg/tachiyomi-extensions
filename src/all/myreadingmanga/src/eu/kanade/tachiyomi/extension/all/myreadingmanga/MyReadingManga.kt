@@ -91,12 +91,12 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun searchMangaSelector() = "div.results-by-facets div[id*=res]"
     override fun searchMangaParse(response: Response): MangasPage {
         //Filter Assist - Caches Pages required for filter parsing
-        if (!filtesrCached) {
+        if (!filtersCached) {
             filterAssist(baseUrl)
             filterAssist("$baseUrl/cats/")
             filterAssist("$baseUrl/pairing/")
             filterAssist("$baseUrl/group/")
-            filtesrCached = true
+            filtersCached = true
         }
 
         val document = response.asJsoup()
@@ -265,7 +265,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
     //Filter Parsing, grabs pages as document and filters out Genres, Popular Tags, and Categories, Parings, and Scan Groups
-    private var filtesrCached = false
+    private var filtersCached = false
 
     //Grabs page containing filters and puts it into cache
     private fun filterAssist(url: String): String {
@@ -277,10 +277,10 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     private fun getCache(url: String): Document? {
         val response = client.newCall(GET(url, headers, CacheControl.FORCE_CACHE)).execute()
         return if (response.isSuccessful) {
-            filtesrCached = true
+            filtersCached = true
             response.asJsoup()
         } else {
-            filtesrCached = false
+            filtersCached = false
             null
         }
     }
