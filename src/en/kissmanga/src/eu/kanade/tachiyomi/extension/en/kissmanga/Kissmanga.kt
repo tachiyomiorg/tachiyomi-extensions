@@ -1,18 +1,25 @@
 package eu.kanade.tachiyomi.extension.en.kissmanga
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 
-class Kissmanga : ParsedHttpSource() {
+class Kissmanga : ConfigurableSource, ParsedHttpSource() {
 
     override val id: Long = 4
 
@@ -36,7 +43,7 @@ class Kissmanga : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "table.listing tr:gt(1)"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/MangaList/MostPopular?page=$page", headers)
+        return GET("$baseUrl/MangaList/${getPopPref()}?page=$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -247,4 +254,52 @@ class Kissmanga : ParsedHttpSource() {
             Genre("Yaoi"),
             Genre("Yuri")
     )
+    // Preferences Code
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+	
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val popularmangapref = androidx.preference.ListPreference(screen.context).apply {
+            key = BROWSE_PREF_Title
+            title = BROWSE_PREF_Title
+            entries = arrayOf("Sort by popularity", "Sort by trending")
+            entryValues = arrayOf("MostPopular", "Trending")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(BROWSE_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(popularmangapref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val popularmangapref = ListPreference(screen.context).apply {
+            key = BROWSE_PREF_Title
+            title = BROWSE_PREF_Title
+            entries = arrayOf("Sort by popularity", "Sort by trending")
+            entryValues = arrayOf("MostPopular", "Trending")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(BROWSE_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(popularmangapref)
+    }
+
+    private fun getPopPref() = preferences.getString(BROWSE_PREF, "MostPopular")
+
+    companion object {
+
+        private const val BROWSE_PREF_Title = "Browse Manga Selector"
+        private const val BROWSE_PREF = "popularmangaurl"
+    }
 }
