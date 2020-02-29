@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -39,11 +40,12 @@ class Kissmanga : ParsedHttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("https://kissmanga.com/MangaList/LatestUpdate?page=$page", headers)
+        return GET("$baseUrl/MangaList/LatestUpdate?page=$page", headers)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
+        manga.thumbnail_url = Jsoup.parseBodyFragment(element.select("td").attr("title")).select("img").attr("abs:src")
         element.select("td a:eq(0)").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             val title = it.text()

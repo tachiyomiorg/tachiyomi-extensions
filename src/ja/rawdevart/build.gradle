@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Rawdevart'
     pkgNameSuffix = 'ja.rawdevart'
     extClass = '.Rawdevart'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

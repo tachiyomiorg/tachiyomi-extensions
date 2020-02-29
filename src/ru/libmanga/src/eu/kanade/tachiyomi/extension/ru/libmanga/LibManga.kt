@@ -45,6 +45,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         else -> "https://img3.mangalib.me"
     }
 
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        add("Accept", "*/*")
+    }
+
     private val jsonParser = JsonParser()
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {

@@ -3,7 +3,10 @@ package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -18,25 +21,25 @@ import java.util.*
 class MangaKawaii : ParsedHttpSource() {
 
     override val name = "Mangakawaii"
-    override val baseUrl = "https://www.mangakawaii.to"
+    override val baseUrl = "https://www.mangakawaii.com"
     override val lang = "fr"
-    override val supportsLatest = false
+    override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaSelector() = "a.manga-block-item__content"
-    override fun latestUpdatesSelector() = throw Exception("Not Used")
+    override fun latestUpdatesSelector() = ".manga-list li div.updates__left"
     override fun searchMangaSelector() = "h1 + ul a[href*=manga]"
     override fun chapterListSelector() = "div.chapter-item.volume-0, div.chapter-item.volume-"
 
     override fun popularMangaNextPageSelector() = "a[rel=next]"
-    override fun latestUpdatesNextPageSelector() = throw Exception("Not Used")
+    override fun latestUpdatesNextPageSelector(): String? = null
     override fun searchMangaNextPageSelector() = "no selector"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterLists?page=$page&sortBy=views&asc=false", headers)
-    override fun latestUpdatesRequest(page: Int) = throw Exception("Not Used")
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
-                .appendQueryParameter("query", query)
+            .appendQueryParameter("query", query)
         return GET(uri.toString(), headers)
     }
 
@@ -47,8 +50,11 @@ class MangaKawaii : ParsedHttpSource() {
         manga.thumbnail_url = element.select("a").attr("abs:data-background-image")
         return manga
     }
-
-    override fun latestUpdatesFromElement(element: Element) = throw Exception("Not Used")
+    override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
+        title = element.select(" a").attr("title")
+        setUrlWithoutDomain(element.select("a").attr("href"))
+        thumbnail_url = element.select("img").attr("data-src")
+    }
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.url = element.select("a").attr("href")
@@ -61,7 +67,7 @@ class MangaKawaii : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.url = element.select("a.list-item__title").attr("href")
         chapter.name = element.select("a.list-item__title").text().trim()
-        chapter.chapter_number = element.select("a.list-item__title").text().substringAfter("Chapitre").replace(",",".").trim().toFloat()
+        chapter.chapter_number = element.select("a.list-item__title").text().substringAfter("Chapitre").replace(",", ".").trim().toFloat()
         chapter.date_upload = parseDate(element.select("div.chapter-item__date").text())
         return chapter
     }
@@ -90,7 +96,7 @@ class MangaKawaii : ParsedHttpSource() {
         val body = response.asJsoup()
         val element = body.select("script:containsData(Imagesrc)").toString()
         val regex = "(data-src).*[\"]".toRegex()
-        val match = regex.findAll(element)!!.map { it.value.substringAfter("data-src\", \" ").substringBefore("\"").trim() }
+        val match = regex.findAll(element).map { it.value.substringAfter("data-src\", \" ").substringBefore("\"").trim() }
         //throw Exception(match.elementAt(1))
         val pages = mutableListOf<Page>()
         for (i in 0 until match.count()) {
