@@ -316,7 +316,18 @@ abstract class Mangadex(
                 }
             }
         } else {
-            return super.searchMangaParse(response)
+            val document = response.asJsoup()
+            if (document.select("#login_button").isNotEmpty()) throw Exception("Log in via WebView to enable search")
+
+            val mangas = document.select(searchMangaSelector()).map { element ->
+                searchMangaFromElement(element)
+            }
+
+            val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+                document.select(selector).first()
+            } != null
+
+            return MangasPage(mangas, hasNextPage)
         }
     }
 
