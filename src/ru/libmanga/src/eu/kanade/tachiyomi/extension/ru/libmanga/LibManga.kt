@@ -6,7 +6,6 @@ import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
@@ -180,7 +179,7 @@ class LibManga : HttpSource() {
 
         val imageServerUrl: String = when(chapInfoJson["imgServer"].string){
             "compress" -> "https://img3.mangalib.me"
-            else -> "https://img3.mangalib.me"
+            else -> "https://img2.mangalib.me"
         }
 
         // Get pages
