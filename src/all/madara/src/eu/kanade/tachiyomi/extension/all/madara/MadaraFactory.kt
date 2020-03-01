@@ -75,7 +75,9 @@ class MadaraFactory : SourceFactory {
         NijiTranslations(),
         IchirinNoHanaYuri(),
         LilyManga(),
-        MangaBob()
+        MangaBob(),
+        ThreeSixtyFiveManga(),
+        DisasterScans()
     )
 }
 
@@ -463,4 +465,12 @@ class IchirinNoHanaYuri : Madara("Ichirin No Hana Yuri", "https://ichirinnohanay
 class LilyManga: Madara("Lily Manga","https://lilymanga.com","en",SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
 class MangaBob: Madara("MangaBob","https://mangabob.com","en")
+
+class ThreeSixtyFiveManga: Madara("365Manga","https://365manga.com","en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
+}
+
+class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en")
+
 
