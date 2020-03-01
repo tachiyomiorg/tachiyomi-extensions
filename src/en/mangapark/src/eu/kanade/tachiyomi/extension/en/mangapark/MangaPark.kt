@@ -142,18 +142,18 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         }
         return when (getSourcePref()) {
             // source with most chapters along with chapters that source doesn't have
-            1 -> {
+            "most" -> {
                 val chapters = mangaBySource.maxBy { it.count() }!!
                 (chapters + chapters.getMissingChapters(mangaBySource.flatten())).sortedByDescending { it.chapter_number }
             }
             // "smart list" - try not to miss a chapter and avoid dupes
-            2 -> mangaBySource.flatten().distinctBy { it.chapter_number }.sortedByDescending { it.chapter_number }
+            "smart" -> mangaBySource.flatten().distinctBy { it.chapter_number }.sortedByDescending { it.chapter_number }
             // use a specific source + any missing chapters, display all if none available from that source
-            3 -> mangaBySource.flatten().filterOrAll("Rock")
-            4 -> mangaBySource.flatten().filterOrAll("Duck")
-            5 -> mangaBySource.flatten().filterOrAll("Mini")
-            6 -> mangaBySource.flatten().filterOrAll("Fox")
-            7 -> mangaBySource.flatten().filterOrAll("Panda")
+            "rock" -> mangaBySource.flatten().filterOrAll("Rock")
+            "duck" -> mangaBySource.flatten().filterOrAll("Duck")
+            "mini" -> mangaBySource.flatten().filterOrAll("Mini")
+            "fox" -> mangaBySource.flatten().filterOrAll("Fox")
+            "panda" -> mangaBySource.flatten().filterOrAll("Panda")
             // all sources, all chapters
             else -> mangaBySource.flatten()
         }
@@ -481,7 +481,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             title = SOURCE_PREF_TITLE
             entries = arrayOf("All sources, all chapters", "Source with most chapters", "Smart list", "Prioritize source: Rock",
                 "Prioritize source: Duck", "Prioritize source: Mini", "Prioritize source: Fox", "Prioritize source: Panda")
-            entryValues = arrayOf("0", "1", "2", "3", "4", "5", "6", "7")
+            entryValues = arrayOf("all", "most", "smart", "rock", "duck", "mini", "fox", "panda")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -499,7 +499,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             title = SOURCE_PREF_TITLE
             entries = arrayOf("All sources, all chapters", "Source with most chapters", "Smart list", "Prioritize source: Rock",
                 "Prioritize source: Duck", "Prioritize source: Mini", "Prioritize source: Fox", "Prioritize source: Panda")
-            entryValues = arrayOf("0", "1", "2", "3", "4", "5", "6", "7")
+            entryValues = arrayOf("all", "most", "smart", "rock", "duck", "mini", "fox", "panda")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -510,7 +510,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         }
         screen.addPreference(myPref)
     }
-    private fun getSourcePref(): Int = preferences.getInt(SOURCE_PREF, 0)
+    private fun getSourcePref(): String? = preferences.getString(SOURCE_PREF, "all")
     
     companion object {
         private const val SOURCE_PREF_TITLE = "Chapter List Source Pref"
