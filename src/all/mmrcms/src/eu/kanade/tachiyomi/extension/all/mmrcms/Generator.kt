@@ -73,6 +73,7 @@ class Generator {
                     map["tags"] = tags
                 }
 
+                if (!itemUrl.startsWith(it.third)) println("**Note: ${it.second} URL does not match! Check for changes: \n ${it.third} vs $itemUrl")
 
                 val toJson = Gson().toJson(map)
 
