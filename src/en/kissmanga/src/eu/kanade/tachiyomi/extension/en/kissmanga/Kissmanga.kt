@@ -87,6 +87,12 @@ class Kissmanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = "ul.pager > li > a:contains(Next)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        for (filter in filters) {
+            when (filter) {
+                is SortTrending -> if (filter.state) return GET("$baseUrl/MangaList/Trending?page=$page", headers)
+                is NewManga -> if (filter.state) return GET("$baseUrl/MangaList/Newest?page=$page", headers)
+            }
+        }
         val form = FormBody.Builder().apply {
             add("mangaName", query)
 
@@ -190,11 +196,17 @@ class Kissmanga : ParsedHttpSource() {
     private class Author : Filter.Text("Author")
     private class Genre(name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    private class SortTrending: Filter.CheckBox("View Trending Manga")
+    private class NewManga: Filter.CheckBox("View New Manga")
 
     override fun getFilterList() = FilterList(
-            Author(),
-            Status(),
-            GenreList(getGenreList())
+        Author(),
+        Status(),
+        GenreList(getGenreList()),
+        Filter.Separator(),
+        Filter.Header("Change Manga List"),
+        SortTrending(),
+        NewManga()
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
