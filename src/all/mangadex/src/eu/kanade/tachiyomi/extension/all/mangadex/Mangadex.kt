@@ -395,7 +395,8 @@ abstract class Mangadex(
         }
 
         val genres = (if (mangaJson.get("hentai").int == 1) listOf("Hentai") else listOf()) +
-            mangaJson.get("genres").asJsonArray.mapNotNull { GENRES[it.toString()] }
+            mangaJson.get("genres").asJsonArray.mapNotNull { GENRES[it.toString()] } +
+            mangaJson.get("lang_name").string
         manga.genre = genres.joinToString(", ")
 
         return manga
