@@ -52,7 +52,7 @@ class MyMangaReaderCMSSource(override val lang: String,
         return GET(url.toString(), headers)
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/filterList?page=$page&sortBy=last_release&asc=false", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest-release?page=$page", headers)
 
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
@@ -75,7 +75,26 @@ class MyMangaReaderCMSSource(override val lang: String,
         }
     }
 
-    override fun latestUpdatesParse(response: Response) = internalMangaParse(response)
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(latestUpdatesSelector()).map { element ->
+            latestUpdatesFromElement(element)
+        }.distinctBy { manga -> manga.url }
+
+        val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
+    private fun latestUpdatesSelector() = "div.mangalist div.manga-item"
+    private fun latestUpdatesNextPageSelector() = "a[rel=next]"
+    private fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
+        setUrlWithoutDomain(element.select("a").first().attr("abs:href"))
+        title = element.select("a").first().text().trim()
+        thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
+    }
 
     private fun internalMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -141,7 +160,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     @SuppressLint("DefaultLocale")
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
-        title = document.getElementsByClass("widget-title").text().trim()
+        title = document.getElementsByClass("widget-title").first().text().trim()
         thumbnail_url = coverGuess(document.select(".row [class^=img-responsive]").firstOrNull()?.attr("abs:src"), document.location())
         description = document.select(".row .well p").text().trim()
 

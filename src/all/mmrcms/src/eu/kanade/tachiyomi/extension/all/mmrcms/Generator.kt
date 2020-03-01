@@ -166,8 +166,8 @@ class Generator {
     }
 
     private fun supportsLatest(third: String): Boolean {
-        val document = getDocument("$third/filterList?page=1&sortBy=last_release&asc=false", false) ?: return false
-        return document.select("div[class^=col-sm], div.col-xs-6").isNotEmpty()
+        val document = getDocument("$third/latest-release?page=1", false) ?: return false
+        return document.select("div.mangalist div.manga-item a").isNotEmpty()
     }
 
     private fun parseCategories(document: Document): MutableList<Map<String, String>> {
@@ -231,7 +231,7 @@ class Generator {
             Triple("en", "Fallen Angels", "https://manga.fascans.com"),
             Triple("en", "Mangawww Reader", "https://mangawww.club"),
             Triple("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
-            Triple("fr", "Scan FR", "https://www.scan-fr.io"),
+            Triple("fr", "Scan FR", "https://www.scan-fr.co"),
             Triple("fr", "Scan VF", "https://www.scan-vf.co"),
             Triple("id", "Komikid", "https://www.komikid.com"),
             Triple("pl", "ToraScans", "http://torascans.pl"),
