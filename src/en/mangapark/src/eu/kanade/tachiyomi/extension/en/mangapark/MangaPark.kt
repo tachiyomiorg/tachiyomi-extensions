@@ -487,7 +487,8 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                preferences.edit().putString(SOURCE_PREF, index).commit()
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SOURCE_PREF, entry).commit()
             }
         }
         screen.addPreference(myPref)
@@ -505,7 +506,8 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                preferences.edit().putString(SOURCE_PREF, index).commit()
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SOURCE_PREF, entry).commit()
             }
         }
         screen.addPreference(myPref)
