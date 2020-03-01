@@ -473,4 +473,3 @@ class ThreeSixtyFiveManga: Madara("365Manga","https://365manga.com","en") {
 
 class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en")
 
-
