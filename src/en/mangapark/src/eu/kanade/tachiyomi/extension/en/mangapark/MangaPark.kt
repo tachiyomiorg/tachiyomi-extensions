@@ -518,4 +518,5 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         private const val SOURCE_PREF_TITLE = "Chapter List Source Pref"
         private const val SOURCE_PREF = "Manga_Park_Source_Pref"
     }
+    
 }
