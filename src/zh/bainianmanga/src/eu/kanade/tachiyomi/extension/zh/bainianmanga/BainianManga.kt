@@ -1,16 +1,15 @@
 package eu.kanade.tachiyomi.extension.zh.bainianmanga
 
+import com.github.salomonbrys.kotson.*
+import com.google.gson.Gson
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
-import com.squareup.duktape.Duktape
 
 class BainianManga : ParsedHttpSource() {
 
@@ -18,8 +17,6 @@ class BainianManga : ParsedHttpSource() {
     override val baseUrl = "https://m.bnmanhua.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = arrayOf("http://bnpic.comic123.net/",
-            "https://m-bnmanhua-com.mipcdn.com/i/bnpic.comic123.net")
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/page/hot/$page.html", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/new/$page.html", headers)
@@ -79,17 +76,22 @@ class BainianManga : ParsedHttpSource() {
         return super.chapterListParse(response).asReversed()
     }
 
+    private val gson = Gson()
+
     override fun pageListParse(document: Document): List<Page> {
         val html = document.html()
+        val baseURLRe = Regex("var z_yurl='(.*?)';")
+        val baseImageUrl = baseURLRe.find(html)?.groups?.get(1)?.value
+
         val re = Regex("var z_img='(.*?)';")
         val imgCode = re.find(html)?.groups?.get(1)?.value
-        val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode + """.join('|')""") as String
+        if (imgCode != null) {
+            val anotherStr = gson.fromJson<List<String>>(imgCode)
+            return anotherStr.mapIndexed { i, imgStr ->
+                Page(i, "", "$baseImageUrl$imgStr")
+            }
         }
-        return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            //Log.i("test", "img => ${imageServer[0]}/$imgPath$imgStr")
-            Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/${imgStr.replace("""\/""", """\""")}" else imgStr)
-        }
+        return listOf()
     }
 
     override fun imageUrlParse(document: Document) = ""

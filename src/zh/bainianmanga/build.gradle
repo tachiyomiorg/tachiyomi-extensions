@@ -10,7 +10,8 @@ ext {
 }
 
 dependencies {
-    compileOnly project(':duktape-stub')
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
 
 apply from: "$rootDir/common.gradle"
