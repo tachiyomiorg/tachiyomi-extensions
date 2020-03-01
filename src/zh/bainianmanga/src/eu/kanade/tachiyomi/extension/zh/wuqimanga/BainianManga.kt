@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.zh.bainianmanga
+package eu.kanade.tachiyomi.extension.zh.wuqimanga
 
 import com.github.salomonbrys.kotson.*
 import com.google.gson.Gson
