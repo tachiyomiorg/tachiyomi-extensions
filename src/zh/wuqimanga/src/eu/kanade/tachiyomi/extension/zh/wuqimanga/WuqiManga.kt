@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.wuqimanga
 
 import android.util.Log
-import com.github.salomonbrys.kotson.jsonArray
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*

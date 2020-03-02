@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.zh.wuqimanga
+package eu.kanade.tachiyomi.extension.zh.bainianmanga
 
 import com.github.salomonbrys.kotson.*
 import com.google.gson.Gson
@@ -99,7 +99,7 @@ class BainianManga : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
