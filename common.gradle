@@ -1,5 +1,5 @@
 android {
-    compileSdkVersion 29
+    compileSdkVersion 27
     buildToolsVersion '29.0.2'
 
     buildTypes {
@@ -30,7 +30,7 @@ android {
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 29
+        targetSdkVersion 27
         applicationIdSuffix pkgNameSuffix
         versionCode extVersionCode
         versionName "$libVersion.$extVersionCode"
