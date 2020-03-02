@@ -246,7 +246,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         screen.addPreference(baseUrlPref)
     }
 
-    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
+    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)
 
     companion object {
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
