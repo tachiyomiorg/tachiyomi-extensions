@@ -99,7 +99,7 @@ class BainianManga : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-        GenreFilter(getGenreList())
+            GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
