@@ -479,9 +479,8 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         val myPref = androidx.preference.ListPreference(screen.context).apply {
             key = SOURCE_PREF_TITLE
             title = SOURCE_PREF_TITLE
-            entries = arrayOf("All sources, all chapters", "Source with most chapters", "Smart list", "Prioritize source: Rock",
-                "Prioritize source: Duck", "Prioritize source: Mini", "Prioritize source: Fox", "Prioritize source: Panda")
-            entryValues = arrayOf("all", "most", "smart", "rock", "duck", "mini", "fox", "panda")
+            entries = sourceArray.map { it.first }.toTypedArray()
+            entryValues = sourceArray.map { it.second }.toTypedArray()
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -498,9 +497,8 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         val myPref = ListPreference(screen.context).apply {
             key = SOURCE_PREF_TITLE
             title = SOURCE_PREF_TITLE
-            entries = arrayOf("All sources, all chapters", "Source with most chapters", "Smart list", "Prioritize source: Rock",
-                "Prioritize source: Duck", "Prioritize source: Mini", "Prioritize source: Fox", "Prioritize source: Panda")
-            entryValues = arrayOf("all", "most", "smart", "rock", "duck", "mini", "fox", "panda")
+            entries = sourceArray.map { it.first }.toTypedArray()
+            entryValues = sourceArray.map { it.second }.toTypedArray()
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -515,8 +513,18 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     private fun getSourcePref(): String? = preferences.getString(SOURCE_PREF, "all")
     
     companion object {
-        private const val SOURCE_PREF_TITLE = "Chapter List Source Pref"
-        private const val SOURCE_PREF = "Manga_Park_Source_Pref"
+        private const val SOURCE_PREF_TITLE = "Chapter List Source"
+        private const val SOURCE_PREF = "Manga_Park_Source"
+        private val sourceArray = arrayOf(
+            Pair("All sources, all chapters","all"),
+            Pair("Source with most chapters","most"),
+            Pair("Smart list","smart"),
+            Pair("Prioritize source: Rock","rock"),
+            Pair("Prioritize source: Duck","duck"),
+            Pair("Prioritize source: Mini","mini"),
+            Pair("Prioritize source: Fox","fox"),
+            Pair("Prioritize source: Panda","panda")
+        )
     }
     
 }
