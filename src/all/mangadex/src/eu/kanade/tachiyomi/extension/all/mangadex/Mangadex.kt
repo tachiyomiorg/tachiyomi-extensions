@@ -299,9 +299,9 @@ abstract class Mangadex(
         }
 
         return if (groupSearch.isNotEmpty()) {
-            GET(groupSearch, headersBuilder().build())
+            GET(groupSearch, headersBuilder().build(), CacheControl.FORCE_NETWORK)
         } else {
-            GET(urlToUse, headersBuilder().build())
+            GET(urlToUse, headersBuilder().build(), CacheControl.FORCE_NETWORK)
         }
     }
 
