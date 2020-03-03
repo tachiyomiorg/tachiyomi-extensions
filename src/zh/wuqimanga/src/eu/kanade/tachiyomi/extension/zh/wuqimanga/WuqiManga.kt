@@ -19,7 +19,7 @@ class WuqiManga : ParsedHttpSource() {
     override val baseUrl = "http://www.wuqimh.com"
     override val lang = "zh"
     override val supportsLatest = false
-    val imageServer = arrayOf("http://images.lancaier.com")
+    private val imageServer = "http://images.lancaier.com"
 
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
     override fun latestUpdatesNextPageSelector() = throw Exception("Not used")
@@ -150,7 +150,7 @@ class WuqiManga : ParsedHttpSource() {
         val imageJson: Comic = gson.fromJson(imgJsonStr, Comic::class.java)
 
         return imageJson.fs!!.mapIndexed { i, imgStr ->
-            val imgurl = "${imageServer[0]}$imgStr"
+            val imgurl = "$imageServer$imgStr"
             Page(i, "", imgurl)
         }
     }
