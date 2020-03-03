@@ -173,7 +173,7 @@ class Generator {
 
     private fun parseCategories(document: Document): MutableList<Map<String, String>> {
         val array = mutableListOf<Map<String, String>>()
-        val elements = document.select("select[name^=categories] option")
+        val elements = document.select("select[name^=categories] option, a.category")
         if (elements.size == 0) {
             return mutableListOf()
         }
@@ -234,6 +234,7 @@ class Generator {
             Triple("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
             Triple("fr", "Scan FR", "https://www.scan-fr.co"),
             Triple("fr", "Scan VF", "https://www.scan-vf.net"),
+            Triple("fr", "Scan OP","https://scan-op.com"),
             Triple("id", "Komikid", "https://www.komikid.com"),
             Triple("pl", "ToraScans", "http://torascans.pl"),
             Triple("pt", "Comic Space", "https://www.comicspace.com.br"),
@@ -250,6 +251,7 @@ class Generator {
             Triple("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
             Triple("es", "Universo Yuri", "https://universoyuri.com"),
             Triple("pl", "Phoenix-Scans", "https://phoenix-scans.pl"),
+            Triple("ru", "Japit Comics","https://j-comics.ru"),
             //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             //Changed CMS
