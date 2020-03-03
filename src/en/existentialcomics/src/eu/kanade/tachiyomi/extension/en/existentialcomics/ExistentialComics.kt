@@ -43,15 +43,10 @@ class ExistentialComics : ParsedHttpSource() {
     override fun chapterListSelector() = "div#date-comics ul li a:eq(0)"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlregex = "https://existentialcomics.com/comic/(.*)".toRegex()
-        val chapterUrl = element.attr("href")
-
-        val number = urlregex.find(chapterUrl)!!.groupValues[1]
-
         val chapter = SChapter.create()
-        chapter.url = "/comic/$number"
+        chapter.setUrlWithoutDomain(element.attr("href"))
         chapter.name = element.text()
-        chapter.chapter_number = number.toFloat()
+        chapter.chapter_number = chapter.url.substringAfterLast("/").toFloat()
         return chapter
     }
 
