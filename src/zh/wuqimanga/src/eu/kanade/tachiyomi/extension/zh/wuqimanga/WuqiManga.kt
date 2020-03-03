@@ -21,8 +21,6 @@ class WuqiManga : ParsedHttpSource() {
     override val supportsLatest = false
     val imageServer = arrayOf("http://images.lancaier.com")
 
-    private fun log(msg: String) = Log.i("tachiyomi", msg)
-
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
     override fun latestUpdatesNextPageSelector() = throw Exception("Not used")
     override fun latestUpdatesSelector() = throw Exception("Not used")
@@ -59,7 +57,6 @@ class WuqiManga : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = "div.book-result > div > span > a.prev"
     override fun searchMangaSelector() = "div.book-result li.cf"
     override fun searchMangaFromElement(element: Element): SManga {
-        Log.i("57M", "try to parse el")
         val manga = SManga.create()
         element.select("div.book-detail").first().let {
             val titleEl = it.select("dl > dt > a")
@@ -84,7 +81,6 @@ class WuqiManga : ParsedHttpSource() {
 
     override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/${manga.url}", headers)
     override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    //    override fun chapterListSelector(): String = "#non-exist-id-23123"
     override fun chapterListSelector() = throw Exception("Not used")
 
     override fun pageListRequest(chapter: SChapter) = GET("$baseUrl/${chapter.url}", headers)
@@ -104,7 +100,6 @@ class WuqiManga : ParsedHttpSource() {
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        log(document.baseUri())
         val manga = SManga.create()
         manga.description = ""
         manga.title = document.select(".book-title h1").text().trim()
@@ -115,7 +110,6 @@ class WuqiManga : ParsedHttpSource() {
                 break
             }
         }
-        log(gson.toJson(manga))
         return manga
     }
 
