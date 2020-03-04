@@ -5,7 +5,6 @@ import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -61,7 +60,6 @@ class MyAnimeList : ParsedHttpSource() {
         val people = infoElement.select("td:nth-child(2) table span.information.studio.author").first().text().split("), ")
 
         val requireLogin = document.select("div.search_all div.content-left table tr:contains(Sign-in)") != null
-        val loginWarning = if (requireLogin) "This manga has chapters that require login. Use the WebView to login into your MyAnimeList account.\n\n" else ""
 
         title = infoElement.select("td:nth-child(2) h1.comic-detail-title").first().text()
         author = people
@@ -71,7 +69,8 @@ class MyAnimeList : ParsedHttpSource() {
             .filter { it.contains("Art") }
             .joinToString("; ") { it.substringBefore(" (") }
         genre = infoElement.select("td:nth-child(2) table + div section a").joinToString { it.text() }
-        description = loginWarning + document.select("div.search_all div.content-right span[itemprop=description]").first().text()
+        description = (if (requireLogin) LOGIN_WARNING else "") +
+            document.select("div.search_all div.content-right span[itemprop=description]").first().text()
         thumbnail_url = infoElement.select("td:nth-child(1) a img.lazyload").first().attr("data-src")
     }
 
@@ -117,7 +116,7 @@ class MyAnimeList : ParsedHttpSource() {
     }
 
     /**
-     * Decodes the image of chapter page using Duktape.
+     * Decodes the image of chapter page using the XOR Cipher.
      *
      * The [image] comes in a [ByteArray], with the following properties:
      *
@@ -128,40 +127,11 @@ class MyAnimeList : ParsedHttpSource() {
      *
      * To decrypt, for each byte b in the index o in r,
      * b needs to be replaced with b xor i[o % n].
-     *
-     * The process is slow, so using a native way is preferred if working.
      */
     private fun decodeImage(image: ByteArray): ByteArray {
-        val variablesSrc = """
-            var RESPONSE_BYTES = new Uint8Array([${image.joinToString()}]);
-            """
-
-        val res = Duktape.create().use {
-            it.evaluate(variablesSrc + IMAGE_DECRYPT_SRC) as String
-        }
-
-        return res
-            .substringAfter("[")
-            .substringBefore("]")
-            .split(",")
-            .map { it.toInt().toByte() }
-            .toByteArray()
-    }
-
-    /**
-     * For some odd reason, probably with the way Kotlin handles UInt is different of
-     * the Javascript way, using a native method will not work, as some bytes
-     * becomes different values.
-     *
-     * Replacing the instances of [toInt] with [toUint] don't solve the problem either.
-     *
-     * Not converting the bytes to Int or Uint don't help too.
-     */
-    @Suppress("unused")
-    private fun decodeImageNative(image: ByteArray): ByteArray {
-        val n = image[1].toInt()
-        val i = image.slice(2 until 2 + n).map{ it.toInt() }
-        val r = image.drop(2 + n).map { it.toInt() }.toMutableList()
+        val n = image[1].toPositiveInt()
+        val i = image.slice(2 until 2 + n).map{ it.toPositiveInt() }
+        val r = image.drop(2 + n).map { it.toPositiveInt() }.toMutableList()
 
         for ((o, b) in r.iterator().withIndex()) {
             r[o] = b xor i[o % n]
@@ -169,6 +139,8 @@ class MyAnimeList : ParsedHttpSource() {
 
         return ByteArray(r.size) { pos -> r[pos].toByte() }
     }
+
+    private fun Byte.toPositiveInt() = toInt() and 0xFF
 
     override fun imageUrlParse(document: Document) = ""
 
@@ -190,26 +162,6 @@ class MyAnimeList : ParsedHttpSource() {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
         private val JSON_PARSER by lazy { JsonParser() }
 
-        private const val IMAGE_DECRYPT_SRC = """
-            function decode(bytes) {
-                if (1 !== bytes[0])
-                    throw new Error("Invalid data");
-                    
-                var n = bytes[1];
-                var i = bytes.subarray(2, 2 + n);
-                var r = bytes.subarray(2 + n);
-                
-                for (var o = 0; o < r.length; o++) {
-                    r[o] ^= i[o % n];
-                }
-                
-                return r;
-            }
-            
-            (function() {
-                var decoded = decode(RESPONSE_BYTES);
-                return JSON.stringify([].slice.call(decoded));
-            })();
-            """
+        private const val LOGIN_WARNING = "This manga has chapters that require login. Use the WebView to login into your MyAnimeList account.\n\n"
     }
 }
