@@ -155,15 +155,6 @@ class WuqiManga : ParsedHttpSource() {
         }
     }
 
+    override fun getFilterList() = FilterList()
 
-    private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
-
-
-    override fun getFilterList() = FilterList(
-        GenreFilter(getGenreList())
-    )
-
-    private fun getGenreList() = arrayOf(
-        "All"
-    )
 }
