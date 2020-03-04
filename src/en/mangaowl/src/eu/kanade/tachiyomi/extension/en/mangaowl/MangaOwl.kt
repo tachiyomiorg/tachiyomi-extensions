@@ -79,7 +79,8 @@ class MangaOwl : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.title = infoElement.select("h2").first().ownText()
-        manga.author = infoElement.select("p:contains(author)").first().ownText()
+        manga.author = infoElement.select("p:contains(author) a").text()
+        manga.artist = manga.author
         val status = infoElement.select("p:contains(pub. status)").first().ownText()
         manga.status = parseStatus(status)
         manga.genre = infoElement.select("a.label").mapNotNull{ it.text() }.joinToString(", ")
@@ -98,16 +99,16 @@ class MangaOwl : ParsedHttpSource() {
 
     // Chapters
 
-    override fun chapterListSelector() = "div.table-chapter-list table.table-responsive-md tr"
+    override fun chapterListSelector() = "div.table-chapter-list ul li"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         element.select("a").let {
             // They replace some URLs with a different host getting a path of domain.com/reader/reader/, fix to make usable on baseUrl
             chapter.setUrlWithoutDomain(it.attr("href").replace("/reader/reader/", "/reader/"))
-            chapter.name = it.text()
+            chapter.name = it.select("label")[0].text()
         }
-        chapter.date_upload = parseChapterDate(element.select("td + td").text())
+        chapter.date_upload = parseChapterDate(element.select("small").text())
 
         return chapter
     }
