@@ -42,7 +42,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36"
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
@@ -238,10 +238,10 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         return chapter
     }
 
-    private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date).time
+    private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)?.time ?: 0
     private var time = serverTime() //Grab time at app launch, can be updated
     private fun serverTime() :String {
-        val formatter = SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US)
+        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         formatter.timeZone = TimeZone.getTimeZone("GMT+1") //Convert time to match server
         return formatter.format(Date())
     }
