@@ -55,11 +55,14 @@ class MyAnimeList : ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
 
+    override fun mangaDetailsRequest(manga: SManga): Request
+        = GET(baseUrl + manga.url, headers, CacheControl.FORCE_NETWORK)
+
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("div#content div.membership-manager table[width='100%'] tr").first()
         val people = infoElement.select("td:nth-child(2) table span.information.studio.author").first().text().split("), ")
 
-        val requireLogin = document.select("div.search_all div.content-left table tr:contains(Sign-in)") != null
+        val requireLogin = document.select("div.search_all div.content-left table tr:contains(Sign-in)").first() != null
 
         title = infoElement.select("td:nth-child(2) h1.comic-detail-title").first().text()
         author = people
