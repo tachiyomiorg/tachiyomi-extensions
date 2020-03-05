@@ -77,7 +77,9 @@ class MadaraFactory : SourceFactory {
         LilyManga(),
         MangaBob(),
         ThreeSixtyFiveManga(),
-        DisasterScans()
+        DisasterScans(),
+        MangaKiss(),
+        MangaDods()
     )
 }
 
@@ -472,4 +474,10 @@ class ThreeSixtyFiveManga: Madara("365Manga","https://365manga.com","en") {
 }
 
 class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en")
+
+class MangaKiss: Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US)) {
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+}
+
+class MangaDods: Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
