@@ -14,9 +14,10 @@ class GenkanFactory : SourceFactory {
         ReaperScans(),
         TheNonamesScans(),
         HatigarmScans(),
-		EdelgardeScans()
+        EdelgardeScans()
     )
 }
+
 /* Genkan class is for the latest version of Genkan CMS
    GenkanOriginal is for the initial version of the CMS that didn't have its own search function  */
 
