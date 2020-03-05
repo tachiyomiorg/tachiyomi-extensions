@@ -70,7 +70,7 @@ class Mangaclub : ParsedHttpSource() {
                 .appendPath("f")
             for (filter in filters) {
                 when (filter) {
-                    is Categories -> if (filter.state > 1) uri.appendEncodedPath("cat=${filter.state}")
+                    is Categories -> if (filter.state > 0) uri.appendEncodedPath("cat=${categoriesArray[filter.state].second}")
                     is Status -> if (filter.values[filter.state].isNotEmpty()) uri.appendEncodedPath(
                         "status_translation=${filter.values[filter.state]}"
                     )
@@ -115,9 +115,10 @@ class Mangaclub : ParsedHttpSource() {
 
     //Chapters
     override fun chapterListSelector(): String = ".chapter-main"
+
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select(".chapter-main .chapter-namber a").text().trim()
-        chapter_number = name.substringAfter("Глава").replace(",",".").trim().toFloat()
+        chapter_number = name.substringAfter("Глава").replace(",", ".").trim().toFloat()
         setUrlWithoutDomain(element.select(".chapter-main .chapter-namber a").attr("abs:href"))
         date_upload = parseDate(element.select(".chapter-date").text().trim())
     }
@@ -134,16 +135,12 @@ class Mangaclub : ParsedHttpSource() {
         }
     }
 
-    override fun imageUrlParse(document: Document): String = throw Exception("imageUrlParse Not Used")
+    override fun imageUrlParse(document: Document): String =
+        throw Exception("imageUrlParse Not Used")
 
     //Filters
-    private class Categories :
-        Filter.Select<String>("Категории", arrayOf("", "Манга", "Манхва", "Маньхуа", "Веб-манхва"))
-
-    private class Status : Filter.Select<String>(
-        "Статус",
-        arrayOf("", "Завершен", "Продолжается", "Заморожено/Заброшено")
-    )
+    private class Categories(values: Array<Pair<String, String>>) :
+        Filter.Select<String>("Категории", values.map { it.first }.toTypedArray())
 
     private class Tag(values: Array<String>) : Filter.Select<String>("Жанр", values)
     private class Sort(values: List<Pair<String, String>>) : Filter.Sort(
@@ -151,12 +148,25 @@ class Mangaclub : ParsedHttpSource() {
         Selection(2, false)
     )
 
+    private class Status : Filter.Select<String>(
+        "Статус",
+        arrayOf("", "Завершен", "Продолжается", "Заморожено/Заброшено")
+    )
+
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Filters are ignored if using text search."),
-        Categories(),
+        Categories(categoriesArray),
         Status(),
         Tag(tag),
         Sort(sortables)
+    )
+
+    private val categoriesArray = arrayOf(
+        Pair("", ""),
+        Pair("Манга", "1"),
+        Pair("Манхва", "2"),
+        Pair("Маньхуа", "3"),
+        Pair("Веб-манхва", "6")
     )
 
     private val tag = arrayOf(
