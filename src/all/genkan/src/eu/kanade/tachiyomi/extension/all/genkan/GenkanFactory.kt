@@ -13,10 +13,10 @@ class GenkanFactory : SourceFactory {
         ZeroScans(),
         ReaperScans(),
         TheNonamesScans(),
-        HatigarmScans()
+        HatigarmScans(),
+		EdelgardeScans()
     )
 }
-
 /* Genkan class is for the latest version of Genkan CMS
    GenkanOriginal is for the initial version of the CMS that didn't have its own search function  */
 
@@ -32,3 +32,4 @@ class TheNonamesScans : Genkan("The Nonames Scans", "https://the-nonames.com", "
 class HatigarmScans : GenkanOriginal("Hatigarm Scans", "https://hatigarmscanz.net", "en") {
     override val versionId = 2
 }
+class EdelgardeScans : Genkan("Edelgarde Scans", "https://edelgardescans.com", "en")
