@@ -2,7 +2,10 @@ package eu.kanade.tachiyomi.extension.en.ciayo
 
 import android.util.Log
 import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.jsonObject
+import com.github.salomonbrys.kotson.long
+import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -20,41 +23,48 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Date
 
 class Ciayo : HttpSource() {
 
     //Info
     override val name: String = "Ciayo Comics"
     override val baseUrl: String = "https://www.ciayo.com"
+    private val apiUrl = "https://vueserion.ciayo.com/3.3/comics"
     override val lang: String = "en"
     override val supportsLatest: Boolean = true
+
+    //Page Helpers
+    private var next: String? = ""
+    private var previous: String? = ""
 
     //Popular
     override fun popularMangaParse(response: Response): MangasPage {
         val body = response.body()!!.string()
         val json = JsonParser().parse(body)["c"]
-        Log.i("TachiDebug","Json => $json")
+        //Log.i("TachiDebug","Json => $json")
         val data = json["data"].asJsonArray
 
         val mangas = data.map { jsonObject ->
             popularMangaFromJson(jsonObject)
         }
 
+        previous = next
+        next = json["meta"]["cursor"]["next"].nullString
+
         val hasNextPage = json["meta"]["more"].string == "true"
 
         return MangasPage(mangas, hasNextPage)
     }
     override fun popularMangaRequest(page: Int): Request {
-        val current = if((page-1)*10 < 1) "" else (page-1)*10
-        val previous = if ((page-1)*10-1 <1) "" else (page-1)*10-1
-        val url = "https://vueserion.ciayo.com/3.3/comics/?current=$current&previous=$previous&app=desktop&type=comic&count=10&language=$lang&with=image,genres"
+        val url = "$apiUrl/?current=$next&previous=$previous&app=desktop&type=comic&count=15&language=$lang&with=image,genres"
         Log.i("TachiDebug","URL => $url")
         return GET(url)
     }
     private fun popularMangaFromJson(json: JsonElement): SManga = SManga.create().apply {
         title = json["title"].string
         setUrlWithoutDomain(json["share_url"].string)
-        Log.i("TachiDebug",url)
+        //Log.i("TachiDebug",url)
         thumbnail_url = json["image"]["cover"].string
     }
 
@@ -69,15 +79,18 @@ class Ciayo : HttpSource() {
             latestUpdatesFromJson(jsonObject)
         }
 
+        previous = next
+        next = json["meta"]["cursor"]["next"].nullString
+
         val hasNextPage = json["meta"]["more"].string == "true"
 
         return MangasPage(mangas, hasNextPage)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val current = if((page-1)*10 < 1) "" else (page-1)*10
-        val previous = if ((page-1)*10-1 <1) "" else (page-1)*10-1
-        return GET("https://vueserion.ciayo.com/3.3/comics/new-release?app=desktop&language=$lang&current=$current&previous=$previous&count=10&with=image,genres&type=comic")
+        val url = "$apiUrl/new-release?app=desktop&language=$lang&current=$next&previous=$previous&count=10&with=image,genres&type=comic"
+        Log.i("TachiDebug","URL => $url")
+        return GET(url)
     }
 
     private fun latestUpdatesFromJson(json: JsonElement): SManga = popularMangaFromJson(json)
@@ -112,20 +125,35 @@ class Ciayo : HttpSource() {
 
     override fun chapterListRequest(manga: SManga): Request {
         val slug = manga.url.substringAfterLast("/")
-        return GET("https://vueserion.ciayo.com/3.3/comics/$slug/chapters?current=&count=9999&app=desktop&language=$lang&with=image,comic&sort=desc")
+        return GET("$apiUrl/$slug/chapters?current=&count=999&app=desktop&language=$lang&with=image,comic&sort=desc")
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val body = response.body()!!.string()
+        val json = JsonParser().parse(body)["c"]
+        val data = json["data"].asJsonArray
+        return data.map {
+            SChapter.create().apply {
+                name = "${it["episode"].string} - ${it["name"].string}"
+                scanlator = "[${it["status"].string}]"
+                setUrlWithoutDomain(it["share_url"].string)
+                Log.i("TachiDebug","Date => ${it["release_date"].string}")
+                date_upload = it["release_date"].long*1000
+
+            }
+        }
+
     }
 
     //Pages
 
-    override fun pageListParse(response: Response): List<Page> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
+        val document = response.asJsoup()
+        document.select("div.chapterViewer img").forEach {
+            add(Page(size,"", it.attr("abs:src")))
+        }
+
     }
-    override fun imageUrlParse(response: Response): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun imageUrlParse(response: Response): String = throw Exception("ImgParse Not Used")
 
 }
