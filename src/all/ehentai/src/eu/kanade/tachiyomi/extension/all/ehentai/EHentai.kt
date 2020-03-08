@@ -280,9 +280,16 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
     //Filters
     override fun getFilterList() = FilterList(
+        Watched(),
         GenreGroup(),
         AdvancedGroup()
     )
+    
+    class Watched : Filter.CheckBox("Watched List"), UriFilter {
+        override fun addToUri(builder: Uri.Builder) {
+            builder.appendPath("watched")
+        }
+    }
 
     class GenreOption(name: String, private val genreId: String) : Filter.CheckBox(name, false), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
