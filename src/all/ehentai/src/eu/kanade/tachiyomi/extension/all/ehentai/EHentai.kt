@@ -287,7 +287,8 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     
     class Watched : Filter.CheckBox("Watched List"), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            builder.appendPath("watched")
+            if(state)
+                builder.appendPath("watched")
         }
     }
 
