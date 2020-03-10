@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.tapastic
 
 import android.net.Uri
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -99,12 +100,12 @@ class Tapastic : ParsedHttpSource() {
     //Chapters
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET(baseUrl + manga.url + "?sort_order=desc")
+        return GET(baseUrl + manga.url + "?sort_order=desc", headers)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         var document = response.asJsoup()
-        val baseUri = document.baseUri()
+        val baseUri = document.baseUri().substringBefore("?")
         val chapters = mutableListOf<SChapter>()
         document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
         var nextPage = document.select(".paging__button--next:not(.disabled)")
