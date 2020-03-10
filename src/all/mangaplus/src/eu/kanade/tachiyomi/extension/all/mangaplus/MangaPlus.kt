@@ -47,7 +47,7 @@ abstract class MangaPlus(override val lang: String,
         val result = response.asProto()
 
         if (result.success == null)
-            return MangasPage(emptyList(), false)
+            throw Exception(result.error!!.langPopup.body)
 
         val mangas = result.success.titleRankingView!!.titles
             .filter { it.language == langCode }
@@ -70,7 +70,7 @@ abstract class MangaPlus(override val lang: String,
         val result = response.asProto()
 
         if (result.success == null)
-            return MangasPage(emptyList(), false)
+            throw Exception(result.error!!.langPopup.body)
 
         val mangas = result.success.webHomeView!!.groups
             .flatMap { it.titles }
@@ -101,7 +101,7 @@ abstract class MangaPlus(override val lang: String,
         val result = response.asProto()
 
         if (result.success == null)
-            return MangasPage(emptyList(), false)
+            throw Exception(result.error!!.langPopup.body)
 
         val mangas = result.success.allTitlesView!!.titles
             .filter { it.language == langCode }
@@ -137,7 +137,7 @@ abstract class MangaPlus(override val lang: String,
         val result = response.asProto()
 
         if (result.success == null)
-            throw Exception(mapLangToErrorProperty(result.error!!).body)
+            throw Exception(result.error!!.langPopup.body)
 
         val details = result.success.titleDetailView!!
         val title = details.title
@@ -157,7 +157,7 @@ abstract class MangaPlus(override val lang: String,
         val result = response.asProto()
 
         if (result.success == null)
-            throw Exception(mapLangToErrorProperty(result.error!!).body)
+            throw Exception(result.error!!.langPopup.body)
 
         val titleDetailView = result.success.titleDetailView!!
 
@@ -186,7 +186,7 @@ abstract class MangaPlus(override val lang: String,
         val result = response.asProto()
 
         if (result.success == null)
-            throw Exception(mapLangToErrorProperty(result.error!!).body)
+            throw Exception(result.error!!.langPopup.body)
 
         return result.success.mangaViewer!!.pages
             .mapNotNull { it.page }
@@ -211,12 +211,6 @@ abstract class MangaPlus(override val lang: String,
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun mapLangToErrorProperty(error: ErrorResult): Popup = when (lang) {
-        "es" -> error.spanishPopup
-        else -> error.englishPopup
-    }
-
-    // Maybe removing the duration parameter make the image accessible forever.
     private fun getImageUrl(url: String): String {
         val imageUrl = url.substringBefore("&duration")
 
@@ -240,9 +234,9 @@ abstract class MangaPlus(override val lang: String,
 
         val response = chain.proceed(request)
 
+        val contentType = response.header("Content-Type", "image/jpeg")!!
         val image = decodeImage(encryptionKey, response.body()!!.bytes())
-
-        val body = ResponseBody.create(MediaType.parse("image/jpeg"), image)
+        val body = ResponseBody.create(MediaType.parse(contentType), image)
         return response.newBuilder().body(body).build()
     }
 
@@ -264,6 +258,12 @@ abstract class MangaPlus(override val lang: String,
 
         return ByteArray(content.size) { pos -> content[pos].toByte() }
     }
+
+    private val ErrorResult.langPopup: Popup
+        get() = when(lang) {
+            "es" -> spanishPopup
+            else -> englishPopup
+        }
 
     private fun Response.asProto(): MangaPlusResponse {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT)
@@ -296,7 +296,7 @@ abstract class MangaPlus(override val lang: String,
     companion object {
         private const val WEB_URL = "https://mangaplus.shueisha.co.jp"
         private const val IMAGES_WESERV_URL = "https://images.weserv.nl"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
 
