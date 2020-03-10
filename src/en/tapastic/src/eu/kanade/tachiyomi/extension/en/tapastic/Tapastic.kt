@@ -1,64 +1,61 @@
 package eu.kanade.tachiyomi.extension.en.tapastic
 
 import android.net.Uri
-import com.github.salomonbrys.kotson.*
-import com.google.gson.Gson
-import com.google.gson.JsonArray
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Tapastic : ParsedHttpSource() {
+
+    //Info
     override val lang = "en"
     override val supportsLatest = true
     override val name = "Tapastic"
     override val baseUrl = "https://tapas.io"
 
-    private val browseMangaSelector = ".content-item"
-    private val nextPageSelector = "a.paging-btn.next"
+    //Popular
 
-    private val gson by lazy { Gson() }
+    override fun popularMangaRequest(page: Int): Request =
+        GET("$baseUrl/comics?b=POPULAR&g=&f=NONE&pageNumber=$page&pageSize=20&")
 
-    override fun popularMangaSelector() = browseMangaSelector
-
-    private fun mangaFromElement(element: Element) = SManga.create().apply {
-        val thumb = element.getElementsByClass("thumb-wrap")
-
-        url = thumb.attr("href")
-
-        title = element.getElementsByClass("title").text().trim()
-
-        thumbnail_url = thumb.select("img").attr("src")
+    override fun popularMangaNextPageSelector() = "div[data-has-next=true]"
+    override fun popularMangaSelector() = "li.js-list-item"
+    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+        url = element.select(".item__thumb a").attr("href")
+        title = element.select(".item__thumb img").attr("alt")
+        thumbnail_url = element.select(".item__thumb img").attr("src")
     }
 
-    override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
+    //Latest
 
-    override fun popularMangaNextPageSelector() = nextPageSelector
+    override fun latestUpdatesRequest(page: Int): Request =
+        GET("$baseUrl/comics?b=FRESH&g=&f=NONE&pageNumber=$page&pageSize=20&")
 
-    override fun searchMangaSelector() = "$browseMangaSelector, .search-item-wrap"
+    override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
+    override fun latestUpdatesSelector(): String = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element): SManga =
+        popularMangaFromElement(element)
 
-    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
-
-    override fun searchMangaNextPageSelector() = nextPageSelector
-
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/comics?pageNumber=$page&browse=POPULAR")
-
-    override fun latestUpdatesSelector() = browseMangaSelector
-
-    override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
+    //Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         //If there is any search text, use text search, otherwise use filter search
         val uri = if (query.isNotBlank()) {
             Uri.parse("$baseUrl/search")
-                    .buildUpon()
-                    .appendQueryParameter("t", "COMICS")
-                    .appendQueryParameter("q", query)
+                .buildUpon()
+                .appendQueryParameter("t", "COMICS")
+                .appendQueryParameter("q", query)
         } else {
             val uri = Uri.parse("$baseUrl/comics").buildUpon()
             //Append uri filters
@@ -73,104 +70,149 @@ class Tapastic : ParsedHttpSource() {
         return GET(uri.toString())
     }
 
-    override fun latestUpdatesNextPageSelector() = nextPageSelector
+    override fun searchMangaNextPageSelector() =
+        "${popularMangaNextPageSelector()}, a.paging__button--next"
 
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        title = document.getElementsByClass("series-header-title").text().trim()
-
-        author = document.getElementsByClass("name").text().trim()
-        artist = author
-
-        description = document.getElementById("series-desc-body").text().trim()
-
-        genre = document.getElementsByClass("genre").joinToString { it.text() }
-
-        status = SManga.UNKNOWN
+    override fun searchMangaSelector() = "${popularMangaSelector()}, .search-item-wrap"
+    override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
+        url = element.select(".item__thumb a, .title-section .title a").attr("href")
+        val browseTitle = element.select(".item__thumb img")
+        title = if (browseTitle != null) {
+            browseTitle.attr("alt")
+        } else {
+            element.select(".title-section .title a").text()
+        }
+        thumbnail_url = element.select(".item__thumb img, .thumb-wrap img").attr("src")
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/comics?pageNumber=$page&browse=FRESH")
+    //Details
+
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
+        title = document.select(".desc__title").text().trim()
+        author = document.select(".tag__author").text().trim()
+        artist = author
+        description = document.select(".js-series-description").text().trim()
+        genre = document.select("div.info__genre a, div.item__genre a")
+            .joinToString(", ") { it.text() }
+    }
+
+    //Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        //Chapters are stored in JavaScript as JSON!
-        return response.asJsoup().select("script:containsData(_data)").first()?.data().let { script ->
-            if (script.isNullOrEmpty() || !script.contains("episodeList : [")) {
-                emptyList()
-            } else {
-                gson.fromJson<JsonArray>(script.substringAfter("episodeList : ").substringBefore(",\n"))
-                    //Ensure that the chapter is published (source allows scheduling chapters)
-                    .filter { it["orgScene"].int != 0 }
-                    .map { json ->
-                    SChapter.create().apply {
-                        url = "/episode/${json["id"].string}"
+        var document = response.asJsoup()
+        val baseUri = document.baseUri()
+        val chapters = mutableListOf<SChapter>()
+        document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+        var nextPage = document.select(".paging__button--next:not(.disabled)")
+        while (!nextPage.isNullOrEmpty()) {
+            document = client.newCall(GET(baseUri + nextPage.attr("href"))).execute().asJsoup()
+            document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+            nextPage = document.select(".paging__button--next:not(.disabled)")
+        }
+        return chapters.reversed()
+    }
 
-                        name = (if (json["locked"].asBoolean) "\uD83D\uDD12" else "") + json["title"].string
+    override fun chapterListSelector() = "li.content__item"
+    override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
+        val lock = !element.select(".sp-ico-episode-lock, .sp-ico-schedule-white").isNullOrEmpty()
+        name = if (lock) {
+            "\uD83D\uDD12 "
+        } else {
+            ""
+        } + element.select(".info__title").text().trim()
 
-                        date_upload = json["publishDate"].long
+        url = if (lock) {
+            "locked"
+        } else {
+            element.select("a").first().attr("href")
+        }
+        chapter_number =
+            element.select(".info__header").text().substringAfter("Episode")
+                .substringBefore("Early access").trim().toFloat()
 
-                        chapter_number = json["scene"].float
-                    }
-                }.reversed()
-            }
+        date_upload =
+            parseDate(element.select(".info__tag").text().substringAfter(":").substringBefore("•").trim())
+    }
+
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date)?.time ?: 0
+    }
+
+    //Pages
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        if (chapter.url == "locked") throw Exception("Chapter Locked. If logged in, refresh chapter list.")
+        return GET(baseUrl + chapter.url, headers)
+    }
+
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        document.select("img.content__img").forEach {
+            add(Page(size, "", it.attr("src")))
         }
     }
 
-    override fun chapterListSelector()
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun imageUrlParse(document: Document) =
+        throw UnsupportedOperationException("This method should not be called!")
 
-    override fun chapterFromElement(element: Element)
-            = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun pageListParse(document: Document)
-            = document.getElementsByClass("art-image").mapIndexed { index, element ->
-        Page(index, "", element.attr("src"))
-    }
-
-    //Unused, we can get image urls directly from the chapter page
-    override fun imageUrlParse(document: Document)
-            = throw UnsupportedOperationException("This method should not be called!")
+    //Filters
 
     override fun getFilterList() = FilterList(
-            //Tapastic does not support genre filtering and text search at the same time
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            FilterFilter(),
-            GenreFilter(),
-            Filter.Separator(),
-            Filter.Header("Sort is ignored when filter is active!"),
-            SortFilter()
+        //Tapastic does not support genre filtering and text search at the same time
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        FilterFilter(),
+        GenreFilter(),
+        StatusFilter(),
+        Filter.Separator(),
+        Filter.Header("Sort is ignored when filter is active!"),
+        SortFilter()
     )
 
-    private class FilterFilter : UriSelectFilter("Filter", "browse", arrayOf(
+    private class FilterFilter : UriSelectFilter(
+        "Filter", "b", arrayOf(
             Pair("ALL", "None"),
             Pair("POPULAR", "Popular"),
             Pair("TRENDING", "Trending"),
             Pair("FRESH", "Fresh"),
-            Pair("TAPASTIC", "Staff Picks")
-    ), firstIsUnspecified = false, defaultValue = 1)
+            Pair("BINGE", "Binge"),
+            Pair("ORIGINAL", "Tapas Originals")
+        ), firstIsUnspecified = false, defaultValue = 1
+    )
 
-    private class GenreFilter : UriSelectFilter("Genre", "genreIds", arrayOf(
+    private class GenreFilter : UriSelectFilter(
+        "Genre", "g", arrayOf(
             Pair("", "Any"),
             Pair("7", "Action"),
             Pair("22", "Boys Love"),
             Pair("2", "Comedy"),
             Pair("8", "Drama"),
             Pair("3", "Fantasy"),
+            Pair("24", "Girls Love"),
             Pair("9", "Gaming"),
             Pair("6", "Horror"),
+            Pair("25", "LGBTQ+"),
             Pair("10", "Mystery"),
             Pair("5", "Romance"),
             Pair("4", "Science Fiction"),
             Pair("1", "Slice of Life")
-    ))
+        )
+    )
 
-    private class SortFilter : UriSelectFilter("Sort", "sortType", arrayOf(
-            Pair("SUBSCRIBE", "Subscribers"),
+    private class StatusFilter : UriSelectFilter(
+        "Status", "f", arrayOf(
+            Pair("NONE", "All"),
+            Pair("F2R", "Free to read"),
+            Pair("PRM", "Premium")
+        )
+    )
+
+    private class SortFilter : UriSelectFilter(
+        "Sort", "s", arrayOf(
+            Pair("DATE", "Date"),
             Pair("LIKE", "Likes"),
-            Pair("VIEW", "Views"),
-            Pair("COMMENT", "Comments"),
-            Pair("CREATED", "Date"),
-            Pair("TITLE", "Name")
-    ))
+            Pair("SUBSCRIBE", "Subscribers")
+        )
+    )
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
@@ -178,10 +220,13 @@ class Tapastic : ParsedHttpSource() {
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
     //vals: <name, display>
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                       val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0) :
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+    private open class UriSelectFilter(
+        displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue),
+        UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
