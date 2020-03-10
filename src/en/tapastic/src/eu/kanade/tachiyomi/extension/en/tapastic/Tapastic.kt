@@ -98,6 +98,10 @@ class Tapastic : ParsedHttpSource() {
 
     //Chapters
 
+    override fun chapterListRequest(manga: SManga): Request {
+        return GET(baseUrl + manga.url + "?sort_order=desc")
+    }
+
     override fun chapterListParse(response: Response): List<SChapter> {
         var document = response.asJsoup()
         val baseUri = document.baseUri()
@@ -109,7 +113,7 @@ class Tapastic : ParsedHttpSource() {
             document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
             nextPage = document.select(".paging__button--next:not(.disabled)")
         }
-        return chapters.reversed()
+        return chapters
     }
 
     override fun chapterListSelector() = "li.content__item"
