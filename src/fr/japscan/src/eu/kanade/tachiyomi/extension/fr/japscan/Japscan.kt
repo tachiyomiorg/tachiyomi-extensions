@@ -278,9 +278,6 @@ class Japscan : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        if (document.select("li[data-chapter-url]").first()?.attr("data-chapter-url") == "/lecture-en-ligne/4-tetes-a-claques/volume-1/") {
-            return mutableListOf<Page>()
-        }
         loadKeysheetChapter()
         val pages = mutableListOf<Page>()
         var imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))?.groupValues?.get(1)
