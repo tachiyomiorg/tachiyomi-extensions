@@ -23,8 +23,8 @@ class MangaBoxFactory : SourceFactory {
         Mangafree(),
         Mangabat(),
         KonoBasho(),
-        MangaOnl(),
-        ChapterManga()
+        MangaOnl()
+        //ChapterManga()
     )
 }
 
@@ -63,15 +63,11 @@ class Mangafree : MangaBox("Mangafree", "http://mangafree.online", "en") {
     override fun getFilterList() = FilterList()
 }
 
-class Mangabat : MangaBox("Mangabat", "https://mangabat.com", "en") {
-    override fun popularMangaSelector() = "div.item"
-    override fun latestUpdatesSelector() = "div.update_item"
-    override fun searchMangaSelector() = "div.update_item"
-    override val simpleQueryPath = "search_manga/"
-    override val mangaDetailsMainSelector = "div.truyen_info"
-    override val thumbnailSelector = "img.info_image_manga"
-    override val descriptionSelector = "div#contentm"
-    override val pageListSelector = "div.vung_doc img, ${super.pageListSelector}" //some chapters link to Nelo
+class Mangabat : MangaBox("Mangabat", "https://mangabat.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga-list-all/$page?type=topview", headers)
+    override fun popularMangaSelector() = "div.list-story-item"
+    override val latestUrlPath = "manga-list-all/"
+    override fun searchMangaSelector() = "div.list-story-item"
 }
 
 class KonoBasho : MangaBox("Kono-Basho", "https://kono-basho.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
