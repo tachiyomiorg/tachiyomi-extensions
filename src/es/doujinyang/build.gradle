@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Doujin-Yang'
     pkgNameSuffix = 'es.doujinyang'
     extClass = '.DoujinYang'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
