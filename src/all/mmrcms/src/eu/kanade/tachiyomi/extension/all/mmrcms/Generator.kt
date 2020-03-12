@@ -246,7 +246,7 @@ class Generator {
             Triple("es", "LeoManga", "https://leomanga.me"),
             Triple("es", "submanga", "https://submanga.li"),
             Triple("es", "Mangadoor", "https://mangadoor.com"),
-            Triple("es", "Mangas.pw", "https://mangas.pw"),
+            Triple("es", "Mangas.pw", "https://mangas.in"),
             Triple("es", "Tumangaonline.co", "http://tumangaonline.fun"),
             Triple("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
             Triple("es", "Universo Yuri", "https://universoyuri.com"),
