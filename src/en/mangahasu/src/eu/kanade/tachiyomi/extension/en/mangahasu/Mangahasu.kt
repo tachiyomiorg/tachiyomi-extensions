@@ -1,7 +1,10 @@
 package eu.kanade.tachiyomi.extension.en.mangahasu
 
 import android.util.Base64
-import com.github.salomonbrys.kotson.*
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -15,9 +18,9 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
-class Mangahasu: ParsedHttpSource() {
+class Mangahasu : ParsedHttpSource() {
 
     override val name = "Mangahasu"
 
@@ -29,11 +32,15 @@ class Mangahasu: ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", baseUrl)
+    }
+
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/directory.html?page=$page", headers)
+        GET("$baseUrl/directory.html?page=$page", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/latest-releases.html?page=$page", headers)
+        GET("$baseUrl/latest-releases.html?page=$page", headers)
 
     override fun popularMangaSelector() = "div.div_item"
 
@@ -50,21 +57,24 @@ class Mangahasu: ParsedHttpSource() {
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+        popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a[title = Tiếp]"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/advanced-search.html?keyword=$query&author=&artist=&status=&typeid=&page=$page", headers)
+        return GET(
+            "$baseUrl/advanced-search.html?keyword=$query&author=&artist=&status=&typeid=&page=$page",
+            headers
+        )
     }
 
     override fun searchMangaSelector() =
-            popularMangaSelector()
+        popularMangaSelector()
 
     override fun searchMangaFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+        popularMangaFromElement(element)
 
     // max 200 results
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
@@ -98,7 +108,7 @@ class Mangahasu: ParsedHttpSource() {
         chapter.name = urlElement.text()
 
         chapter.date_upload = element.select(".date-updated").last()?.text()?.let {
-            SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(it).time
+            SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(it)?.time ?: 0
         } ?: 0
         return chapter
     }
@@ -118,25 +128,27 @@ class Mangahasu: ParsedHttpSource() {
 
         //Grab All Pages from site
         //Some images are place holders on new chapters.
-		
+
         val pages = mutableListOf<Page>().apply {
             document.select("div.img img").forEach {
                 val pageNumber = it.attr("class").substringAfter("page").toInt()
-                add(Page(pageNumber,"",it.attr("src")))
+                add(Page(pageNumber, "", it.attr("src")))
             }
         }
 
         //Some images are not yet loaded onto Mangahasu's image server.
         //Decode temporary URLs and replace placeholder images.
-		
-        val lstDUrls = document.select("script:containsData(lstDUrls)").html().substringAfter("lstDUrls").substringAfter("\"").substringBefore("\"")
-        if (lstDUrls != "W10="){ //Base64 = [] or empty file
-            val decoded = String(Base64.decode(lstDUrls,Base64.DEFAULT))
+
+        val lstDUrls =
+            document.select("script:containsData(lstDUrls)").html().substringAfter("lstDUrls")
+                .substringAfter("\"").substringBefore("\"")
+        if (lstDUrls != "W10=") { //Base64 = [] or empty file
+            val decoded = String(Base64.decode(lstDUrls, Base64.DEFAULT))
             val json = JsonParser().parse(decoded).array
             json.forEach {
                 val pageNumber = it["page"].int
-                pages.removeAll { page ->  page.index == pageNumber  }
-                pages.add(Page(pageNumber,"",it["url"].string))
+                pages.removeAll { page -> page.index == pageNumber }
+                pages.add(Page(pageNumber, "", it["url"].string))
             }
         }
         pages.sortBy { page -> page.index }
@@ -144,12 +156,4 @@ class Mangahasu: ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
-
-    override fun imageRequest(page: Page): Request {
-        val imgHeader = headers.newBuilder().apply {
-            add("Referer", baseUrl)
-        }.build()
-        return GET(page.imageUrl!!, imgHeader)
-    }
-
 }
