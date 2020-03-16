@@ -35,4 +35,4 @@ class HatigarmScans : GenkanOriginal("Hatigarm Scans", "https://hatigarmscanz.ne
     override val versionId = 2
 }
 class EdelgardeScans : Genkan("Edelgarde Scans", "https://edelgardescans.com", "en") 
-class SecretScans : Genkan("SecretScans", "https://secretscans.co", "en")
+class SecretScans : GenkanOriginal("SecretScans", "https://secretscans.co", "en")
