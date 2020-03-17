@@ -1,17 +1,14 @@
 package eu.kanade.tachiyomi.extension.en.xkcd
 
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Xkcd : ParsedHttpSource() {
 
@@ -22,7 +19,6 @@ class Xkcd : ParsedHttpSource() {
     override val lang = "en"
 
     override val supportsLatest = false
-
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         val manga = SManga.create()
@@ -39,52 +35,40 @@ class Xkcd : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
 
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return Observable.just(manga)
-    }
-
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
 
     override fun chapterListSelector() = "div#middleContainer.box a"
 
     override fun chapterFromElement(element: Element): SChapter {
-
         val chapter = SChapter.create()
         chapter.url = element.attr("href")
         val number = chapter.url.removeSurrounding("/")
         chapter.chapter_number = number.toFloat()
         chapter.name = number + " - " + element.text()
         chapter.date_upload = element.attr("title").let {
-            SimpleDateFormat("yyyy-MM-dd").parse(it).time
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it).time
         }
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url + "info.0.json")
+    override fun pageListParse(document: Document): List<Page> {
+        val titleWords: Sequence<String>
+        val altTextWords: Sequence<String>
 
-    override fun pageListParse(response: Response): List<Page> {
-        var jsonData = response.body()!!.string()
-        jsonData = jsonData.replace("\\u00e2\\u0080\\u0094", "\\u2014")
-                .replace("\\u00c3\\u00a9", "\\u00e9")
-                .replace("\\u00e2\\u0080\\u0093", "\\u2014")
-                .replace("\\u00c3\\u00b3", "\\u00F3")
-                .replace("#", "%23")
-                .replace("&eacute;", "\\u00e9")
-        val json = JsonParser().parse(jsonData).asJsonObject
-
-        //the comic get hd if  1084 or higher
-        var imageUrl = json["img"].string
-        val number = json["num"].int
-        if (number >= 1084) {
-            imageUrl = imageUrl.replace(defaultExt, comicsAfter1084Ext)
+        // transforming filename from info.0.json isn't guaranteed to work, stick to html
+        // if an HD image is available it'll be the srcset attribute
+        val image =  document.select("div#comic img").let {
+            if (it.hasAttr("srcset")) it.attr("abs:srcset").substringBefore(" ")
+                else it.attr("abs:src")
         }
-        val pages = mutableListOf<Page>()
-        pages.add(Page(0, "", imageUrl))
 
-        //create a text image for the alt text
-        var titleWords = json["title"].string.splitToSequence(" ")
-        var altTextWords = json["alt"].string.splitToSequence(" ")
+        // create a text image for the alt text
+        document.select("div#comic img").let {
+            titleWords = it.attr("alt").splitToSequence(" ")
+            altTextWords = it.attr("title").splitToSequence(" ")
+        }
 
-        var builder = StringBuilder()
+        val builder = StringBuilder()
         var count = 0
 
         for (i in titleWords) {
@@ -107,11 +91,8 @@ class Xkcd : ParsedHttpSource() {
             charCount += i.length + 1
         }
 
-        pages.add(Page(1, "", baseAltTextUrl + builder.toString() + baseAltTextPostUrl))
-        return pages
+        return listOf(Page(0, "", image), Page(1, "", baseAltTextUrl + builder.toString() + baseAltTextPostUrl))
     }
-
-    override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
 
     override fun imageUrlRequest(page: Page) = GET(page.url)
 
@@ -147,8 +128,6 @@ class Xkcd : ParsedHttpSource() {
         const val thumbnailUrl = "https://fakeimg.pl/550x780/ffffff/6E7B91/?text=xkcd&font=museo"
         const val baseAltTextUrl = "https://fakeimg.pl/1500x2126/ffffff/000000/?text="
         const val baseAltTextPostUrl = "&font_size=42&font=museo"
-        const val comicsAfter1084Ext = "_2x.png"
-        const val defaultExt = ".png"
     }
 
 }
