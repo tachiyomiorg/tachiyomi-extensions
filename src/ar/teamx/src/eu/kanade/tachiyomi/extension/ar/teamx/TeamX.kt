@@ -36,7 +36,8 @@ class TeamX : ParsedHttpSource() {
         return SManga.create().apply {
             title = element.select(titleSelector).text()
             setUrlWithoutDomain(element.select("a").first().attr("href"))
-            thumbnail_url = element.select("img").first().attr("abs:data-src")
+            thumbnail_url = element.select("img").let { if (it.hasAttr("data-src"))
+                it.attr("abs:data-src") else it.attr("abs:src") }
         }
     }
 
@@ -97,7 +98,8 @@ class TeamX : ParsedHttpSource() {
                 title = info.select("div.col-md-9").text()
                 description = info.select("div.story p").text()
                 genre = info.select("div.genre a").joinToString { it.text() }
-                thumbnail_url = info.select("img").attr("abs:data-src")
+                thumbnail_url = info.select("img").let { if (it.hasAttr("data-src"))
+                    it.attr("abs:data-src") else it.attr("abs:src") }
             }
         }
     }
@@ -118,7 +120,8 @@ class TeamX : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#translationPageall img").mapIndexed { i, img ->
-            Page(i, "", img.attr("abs:data-src"))
+            Page(i, "", img.let { if (it.hasAttr("data-src"))
+                it.attr("abs:data-src") else it.attr("abs:src") })
         }
     }
 
