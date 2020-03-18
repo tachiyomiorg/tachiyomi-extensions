@@ -143,13 +143,12 @@ open class NHentai(
             .addQueryParameter("q", "$query +$nhLang")
             .addQueryParameter("page", page.toString())
 
-        filters.forEach {
-            when (it) {
-                is SortFilter -> url.addQueryParameter("sort", it.values[it.state].toLowerCase())
+        for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+            when (filter) {
+                is SortFilter -> url.addQueryParameter("sort", filter.values[filter.state].toLowerCase())
             }
         }
-
-        return GET(url.build().toString(), headers)
+        return GET(url.toString(), headers)
     }
 
     private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/g/$id", headers)
