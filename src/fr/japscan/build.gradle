@@ -12,6 +12,7 @@ ext {
 apply from: "$rootDir/common.gradle"
 
 dependencies {
-    implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'org.apache.commons:commons-lang3:3.8.1'
+    compileOnly 'com.google.code.gson:gson:2.8.6'
+    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
 }
