@@ -184,13 +184,20 @@ class Hiveworks : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        val url = response.request().url().toString()
         val document = response.asJsoup()
         val baseUrl = document.select("div script").html().substringAfter("href='").substringBefore("'")
         val elements = document.select(chapterListSelector())
         if (elements.isNullOrEmpty()) throw Exception("This comic has a unsupported chapter list")
-        val chapters = mutableListOf<SChapter>()
+        var chapters = mutableListOf<SChapter>()
         for (i in 1 until elements.size) {
             chapters.add(createChapter(elements[i], baseUrl))
+        }
+        when {
+            "checkpleasecomic" in url -> {
+                val filtered = chapters.filter { it.name.endsWith("01") || it.name.endsWith(" 1") }.toMutableList()
+                chapters = filtered
+            }
         }
         chapters.reverse()
         return chapters
