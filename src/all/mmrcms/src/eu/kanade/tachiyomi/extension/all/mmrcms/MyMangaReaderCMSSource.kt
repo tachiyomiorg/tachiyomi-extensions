@@ -160,7 +160,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     @SuppressLint("DefaultLocale")
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
-        title = document.getElementsByClass("widget-title").first().text().trim()
+        title = document.select("h2.listmanga-header, h2.widget-title").first().text().trim()
         thumbnail_url = coverGuess(document.select(".row [class^=img-responsive]").firstOrNull()?.attr("abs:src"), document.location())
         description = document.select(".row .well p").text().trim()
 
