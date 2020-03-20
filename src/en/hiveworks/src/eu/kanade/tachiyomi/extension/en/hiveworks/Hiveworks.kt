@@ -223,9 +223,8 @@ class Hiveworks : ParsedHttpSource() {
         //Site specific pages can be added here
         when {
             "smbc-comics" in url -> {
-                val altText = document.select("div#cc-comicbody img").attr("title")
                 pages.add(Page(pages.size, "", document.select("div#aftercomic img").attr("src")))
-                pages.add(Page(pages.size, "", smbcTextHandler(altText)))
+                pages.add(Page(pages.size, "", smbcTextHandler(document)))
             }
         }
 
@@ -345,10 +344,27 @@ class Hiveworks : ParsedHttpSource() {
     //Other Code
 
     //Builds Image from mouse tooltip text
-    private fun smbcTextHandler(title: String): String {
-        val altTextWords: Sequence<String> = title.splitToSequence(" ")
+    private fun smbcTextHandler(document: Document): String {
+        val title = document.select("title").text().trim()
+        val altText = document.select("div#cc-comicbody img").attr("title")
+
+        val titleWords: Sequence<String> = title.splitToSequence(" ")
+        val altTextWords: Sequence<String> = altText.splitToSequence(" ")
+
         val builder = StringBuilder()
+        var count = 0
+
+        for (i in titleWords) {
+            if (count != 0 && count.rem(7) == 0) {
+                builder.append("%0A")
+            }
+            builder.append(i).append("+")
+            count++
+        }
+        builder.append("%0A%0A")
+
         var charCount = 0
+
         for (i in altTextWords) {
             if (charCount > 25) {
                 builder.append("%0A")
@@ -357,6 +373,7 @@ class Hiveworks : ParsedHttpSource() {
             builder.append(i).append("+")
             charCount += i.length + 1
         }
+
         return "https://fakeimg.pl/1500x2126/ffffff/000000/?text=$builder&font_size=42&font=museo"
     }
 
