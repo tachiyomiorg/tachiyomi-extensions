@@ -152,7 +152,7 @@ class Tapastic : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("img.content__img").forEach {
-            add(Page(size, "", it.attr("src")))
+            add(Page(size, "", if (it.hasAttr("data-src")) it.attr("abs:data-src") else it.attr("abs:src")))
         }
     }
 

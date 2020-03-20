@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Tapas'
     pkgNameSuffix = 'en.tapastic'
     extClass = '.Tapastic'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
