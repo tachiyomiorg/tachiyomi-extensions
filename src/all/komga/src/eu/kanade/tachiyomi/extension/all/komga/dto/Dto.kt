@@ -34,7 +34,8 @@ data class BookDto(
     val fileLastModified: String,
     val sizeBytes: Long,
     val size: String,
-    val media: MediaDto
+    val media: MediaDto,
+    val metadata: BookMetadataDto
 )
 
 data class MediaDto(
@@ -47,4 +48,30 @@ data class PageDto(
     val number: Int,
     val fileName: String,
     val mediaType: String
+)
+
+data class BookMetadataDto(
+    val title: String,
+    val titleLock: Boolean,
+    val summary: String,
+    val summaryLock: Boolean,
+    val number: String,
+    val numberLock: Boolean,
+    val numberSort: Float,
+    val numberSortLock: Boolean,
+    val readingDirection: String,
+    val readingDirectionLock: Boolean,
+    val publisher: String,
+    val publisherLock: Boolean,
+    val ageRating: Int?,
+    val ageRatingLock: Boolean,
+    val releaseDate: String?,
+    val releaseDateLock: Boolean,
+    val authors: List<AuthorDto>,
+    val authorsLock: Boolean
+)
+
+data class AuthorDto(
+    val name: String,
+    val role: String
 )

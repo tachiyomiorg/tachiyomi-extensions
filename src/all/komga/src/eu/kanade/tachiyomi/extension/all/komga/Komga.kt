@@ -99,8 +99,8 @@ open class Komga : ConfigurableSource, HttpSource() {
 
         return page.content.map { book ->
             SChapter.create().apply {
-                chapter_number = book.number
-                name = "${book.name} (${book.size})"
+                chapter_number = book.metadata.numberSort
+                name = "${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
