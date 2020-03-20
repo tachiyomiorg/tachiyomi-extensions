@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Mangatensei (and others)'
     pkgNameSuffix = 'all.mangatensei'
     extClass = '.MangatenseiFactory'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
