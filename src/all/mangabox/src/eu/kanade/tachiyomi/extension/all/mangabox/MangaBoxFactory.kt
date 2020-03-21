@@ -22,7 +22,6 @@ class MangaBoxFactory : SourceFactory {
         Manganelo(),
         Mangafree(),
         Mangabat(),
-        KonoBasho(),
         MangaOnl()
         //ChapterManga()
     )
@@ -68,15 +67,6 @@ class Mangabat : MangaBox("Mangabat", "https://mangabat.com", "en", SimpleDateFo
     override fun popularMangaSelector() = "div.list-story-item"
     override val latestUrlPath = "manga-list-all/"
     override fun searchMangaSelector() = "div.list-story-item"
-}
-
-class KonoBasho : MangaBox("Kono-Basho", "https://kono-basho.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
-    // Basically a dupe of Manganelo
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/genre-all/$page?type=topview", headers)
-    override fun popularMangaSelector() = "div.content-genres-item"
-    override val latestUrlPath = "genre-all/"
-    override fun searchMangaSelector() = "div.search-story-item"
-    override fun getFilterList() = FilterList()
 }
 
 class MangaOnl : MangaBox("MangaOnl", "https://mangaonl.com", "en") {
