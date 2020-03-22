@@ -51,7 +51,7 @@ class BlogTruyen : ParsedHttpSource() {
         val imgURL = document.select("img").map { it.attr("abs:src") }
         val mangas = document.select(popularMangaSelector()).mapIndexed { index, element -> popularMangaFromElement(element, imgURL[index]) }
 
-        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
@@ -99,19 +99,19 @@ class BlogTruyen : ParsedHttpSource() {
                     }
                 }
                 is Author -> {
-                    if (!filter.state.isEmpty()) {
+                    if (filter.state.isNotEmpty()) {
                         aut = filter.state
                     }
                 }
             }
         }
         if (genres.isNotEmpty()) temp = temp + "/" + genres.joinToString(",")
-        else temp = temp + "/-1"
+        else temp = "$temp/-1"
         if (genresEx.isNotEmpty()) temp = temp + "/" + genresEx.joinToString(",")
-        else temp = temp + "/-1"
+        else temp = "$temp/-1"
         val url = HttpUrl.parse(temp)!!.newBuilder()
         url.addQueryParameter("txt", query)
-        if (!aut.isEmpty()) url.addQueryParameter("aut", aut)
+        if (aut.isNotEmpty()) url.addQueryParameter("aut", aut)
         url.addQueryParameter("p", page.toString())
         return GET(url.toString().replace("m.", ""), headers)
     }
@@ -136,7 +136,7 @@ class BlogTruyen : ParsedHttpSource() {
         return manga
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Đang tiến hành") -> SManga.ONGOING
         status.contains("Đã hoàn thành") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -151,7 +151,7 @@ class BlogTruyen : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.attr("title").trim()
         chapter.date_upload = element.select("span.publishedDate").first()?.text()?.let {
-            SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ENGLISH).parse(it).time
+            SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ENGLISH).parse(it)?.time ?: 0
         } ?: 0
         return chapter
     }
@@ -167,16 +167,8 @@ class BlogTruyen : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageRequest(page: Page): Request {
-        val imgHeaders = headersBuilder().add("Referer", page.url).build()
-        return GET(page.imageUrl!!, imgHeaders)
-    }
-
-    override fun imageUrlRequest(page: Page) = GET(page.url)
-
     override fun imageUrlParse(document: Document) = ""
 
-    var status = arrayOf("Sao cũng được", "Đang tiến hành", "Đã hoàn thành", "Tạm ngưng")
 
     private class Status : Filter.Select<String>("Status", arrayOf("Sao cũng được", "Đang tiến hành", "Đã hoàn thành", "Tạm ngưng"))
     private class Author : Filter.Text("Tác giả")
