@@ -3,30 +3,35 @@ package eu.kanade.tachiyomi.extension.vi.blogtruyen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
-
+import java.util.Locale
 
 class BlogTruyen : ParsedHttpSource() {
 
     override val name = "BlogTruyen"
 
-    override val baseUrl = "https://blogtruyen.com"
+    override val baseUrl = "https://blogtruyen.vn"
 
     override val lang = "vi"
 
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 
     override fun popularMangaSelector() = "div.list span.tiptip.fs-12.ellipsis"
 
@@ -40,20 +45,37 @@ class BlogTruyen : ParsedHttpSource() {
         return GET("$baseUrl/page-$page", headers)
     }
 
-    override fun popularMangaFromElement(element: Element): SManga {
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val imgURL = document.select("img").map { it.attr("abs:src") }
+        val mangas = document.select(popularMangaSelector()).mapIndexed { index, element -> popularMangaFromElement(element, imgURL[index]) }
+
+        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
+
+    private fun popularMangaFromElement(element: Element, imgURL: String): SManga {
         val manga = SManga.create()
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text().trim()
+            manga.thumbnail_url = imgURL
         }
         return manga
     }
+
+    override fun popularMangaFromElement(element: Element): SManga = throw Exception("Not Used")
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = element.select("img").first().attr("alt").toString().trim()
+            manga.thumbnail_url = element.select("img").first().attr("abs:src")
         }
         return manga
     }
