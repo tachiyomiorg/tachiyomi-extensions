@@ -86,9 +86,13 @@ class Hiveworks : ParsedHttpSource() {
         val uri = Uri.parse(baseUrl).buildUpon()
         if (filters.isNotEmpty()) uri.appendPath("home")
         //Append uri filters
-        filters.forEach {
-            if (it is UriFilter)
-                it.addToUri(uri)
+        filters.forEach { filter ->
+            when (filter) {
+                is UriFilter -> filter.addToUri(uri)
+                is OriginalsFilter -> if (filter.state) return GET("$baseUrl/originals", headers)
+                is KidsFilter -> if (filter.state) return GET("$baseUrl/kids", headers)
+                is CompletedFilter -> if (filter.state) return GET("$baseUrl/completed", headers)
+            }
         }
         if (query.isNotEmpty()) {
             searchQuery = query
@@ -97,20 +101,19 @@ class Hiveworks : ParsedHttpSource() {
         return GET(uri.toString(), headers)
     }
 
-    override fun searchMangaSelector() = popularMangaSelector()
+    override fun searchMangaSelector() = popularMangaSelector() + ", div.originalsblock"
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaParse(response: Response): MangasPage {
         val url = response.request().url().toString()
         val document = response.asJsoup()
 
         val selectManga = document.select(searchMangaSelector())
-        val filterManga = if (url.endsWith("localSearch")) {
-            selectManga.filter { it.text().contains(searchQuery, true) }
+        val mangas = if (url.endsWith("localSearch")) {
+            selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
+        } else if (url.contains("originals")) {
+            selectManga.map { element -> searchOriginalMangaFromElement(element) }
         } else {
-            selectManga
-        }
-        val mangas = filterManga.map { element ->
-            searchMangaFromElement(element)
+            selectManga.map { element -> searchMangaFromElement(element) }
         }
 
         val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
@@ -121,6 +124,14 @@ class Hiveworks : ParsedHttpSource() {
     }
 
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
+    private fun searchOriginalMangaFromElement(element: Element): SManga = SManga.create().apply {
+        thumbnail_url = element.select("img")[1].attr("abs:src")
+        title = element.select("div.header").text().substringBefore("by").trim()
+        author = element.select("div.header").text().substringAfter("by").trim()
+        artist = author
+        description = element.select("div.description").text().trim()
+        url = element.select("a").first().attr("href")
+    }
 
     // Common
 
@@ -156,7 +167,7 @@ class Hiveworks : ParsedHttpSource() {
             document.select(popularMangaSelector())
                 .first { url == it.select("a.comiclink").first().attr("abs:href") }
                 .let { mangaFromElement(it) }
-        } catch (e:  NoSuchElementException ) {
+        } catch (e: NoSuchElementException) {
             SManga.create()
         }
     }
@@ -250,8 +261,18 @@ class Hiveworks : ParsedHttpSource() {
         RatingFilter(),
         GenreFilter(),
         TitleFilter(),
-        SortFilter()
+        SortFilter(),
+        Filter.Separator(),
+        Filter.Header("Extra Lists"),
+        OriginalsFilter(),
+        KidsFilter(),
+        CompletedFilter()
     )
+
+    private class OriginalsFilter : Filter.CheckBox("Original Comics")
+    private class KidsFilter : Filter.CheckBox("Kids Comics")
+    private class CompletedFilter : Filter.CheckBox("Completed Comics")
+
 
     private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
                                        val firstIsUnspecified: Boolean = true,
