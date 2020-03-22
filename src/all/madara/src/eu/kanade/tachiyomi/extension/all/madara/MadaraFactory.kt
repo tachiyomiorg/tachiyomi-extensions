@@ -415,7 +415,7 @@ class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com", "en"
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
 
 class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", "pt-BR") {
-    override val popularMangaUrlSelector = "div.post-title a:not([target])" //Page has custum link to scan website
+    override val popularMangaUrlSelector = "div.post-title a:not([target])" //Page has custom link to scan website
     override fun chapterListParse(response: Response): List<SChapter> { //Chapters are listed old to new
         return super.chapterListParse(response).reversed()
     }
@@ -473,7 +473,9 @@ class ThreeSixtyFiveManga: Madara("365Manga","https://365manga.com","en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
 
-class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en")
+class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en") {
+    override val popularMangaUrlSelector = "div.post-title a:last-child"
+}
 
 class MangaKiss: Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US)) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
