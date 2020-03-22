@@ -137,6 +137,11 @@ class HocVienTruyenTranh : ParsedHttpSource() {
         return pages
     }
 
+    override fun imageRequest(page: Page): Request {
+        val imgHeaders = headersBuilder().add("Referer", page.url).build()
+        return GET(page.imageUrl!!, imgHeaders)
+    }
+
     override fun imageUrlRequest(page: Page) = GET(page.url)
 
     override fun imageUrlParse(document: Document) = ""
