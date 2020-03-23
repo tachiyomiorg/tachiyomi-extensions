@@ -39,6 +39,7 @@ class HocVienTruyenTranh : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
+            manga.thumbnail_url = it.attr("data-thumbnail")
         }
         return manga
     }
