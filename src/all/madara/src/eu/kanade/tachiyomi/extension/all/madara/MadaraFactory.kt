@@ -79,7 +79,9 @@ class MadaraFactory : SourceFactory {
         ThreeSixtyFiveManga(),
         DisasterScans(),
         MangaKiss(),
-        MangaDods()
+        MangaDods(),
+        MangaWOW(),
+        MangaStream()
     )
 }
 
@@ -482,4 +484,8 @@ class MangaKiss: Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFo
 }
 
 class MangaDods: Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
+
+class MangaWOW: Madara("MangaWOW", "https://mangawow.com", "tr")
+
+class MangaStream: Madara("MangaStream", "https://www.mangastream.cc", "en")
 
