@@ -1,14 +1,19 @@
 package eu.kanade.tachiyomi.extension.vi.academyvn
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 
 class HocVienTruyenTranh : ParsedHttpSource() {
 
@@ -21,6 +26,8 @@ class HocVienTruyenTranh : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 
     override fun popularMangaSelector() = "table.table.table-hover > tbody > tr"
 
@@ -88,7 +95,7 @@ class HocVienTruyenTranh : ParsedHttpSource() {
         return manga
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Đang tiến hành") -> SManga.ONGOING
         status.contains("Đã hoàn thành") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -101,7 +108,8 @@ class HocVienTruyenTranh : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.attr("title")
-        chapter.date_upload = element.select("td.text-center").last()?.text()?.let { parseChapterDate(it) } ?: 0
+        chapter.date_upload = element.select("td.text-center").last()?.text()?.let { parseChapterDate(it) }
+            ?: 0
         return chapter
     }
 
@@ -110,18 +118,25 @@ class HocVienTruyenTranh : ParsedHttpSource() {
         if (dateWords.size == 3) {
             val timeAgo = Integer.parseInt(dateWords[0])
             val dates: Calendar = Calendar.getInstance()
-            if (dateWords[1].contains("minute")) {
-                dates.add(Calendar.MINUTE, -timeAgo)
-            } else if (dateWords[1].contains("hour")) {
-                dates.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            } else if (dateWords[1].contains("day")) {
-                dates.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("week")) {
-                dates.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("month")) {
-                dates.add(Calendar.MONTH, -timeAgo)
-            } else if (dateWords[1].contains("year")) {
-                dates.add(Calendar.YEAR, -timeAgo)
+            when {
+                dateWords[1].contains("minute") -> {
+                    dates.add(Calendar.MINUTE, -timeAgo)
+                }
+                dateWords[1].contains("hour") -> {
+                    dates.add(Calendar.HOUR_OF_DAY, -timeAgo)
+                }
+                dateWords[1].contains("day") -> {
+                    dates.add(Calendar.DAY_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("week") -> {
+                    dates.add(Calendar.WEEK_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("month") -> {
+                    dates.add(Calendar.MONTH, -timeAgo)
+                }
+                dateWords[1].contains("year") -> {
+                    dates.add(Calendar.YEAR, -timeAgo)
+                }
             }
             return dates.timeInMillis
         }
@@ -138,17 +153,10 @@ class HocVienTruyenTranh : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageRequest(page: Page): Request {
-        val imgHeaders = headersBuilder().add("Referer", page.url).build()
-        return GET(page.imageUrl!!, imgHeaders)
-    }
+    override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
 
-    override fun imageUrlRequest(page: Page) = GET(page.url)
-
-    override fun imageUrlParse(document: Document) = ""
-
-    var type = arrayOf("Khác", "Manga", "Manhwa", "Manhua", "Tất cả")
-    var status = arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành", "Tất cả")
+    private var type = arrayOf("Khác", "Manga", "Manhwa", "Manhua", "Tất cả")
+    private var status = arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành", "Tất cả")
 
     private class Type : Filter.Select<String>("Type", arrayOf("Khác", "Manga", "Manhwa", "Manhua", "Tất cả"))
     private class Status : Filter.Select<String>("Status", arrayOf("Ngưng", "Đang tiến hành", "Đã hoàn thành", "Tất cả"))
@@ -156,47 +164,47 @@ class HocVienTruyenTranh : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Thể loại", genres)
 
     override fun getFilterList() = FilterList(
-            Type(),
-            Status(),
-            GenreList(getGenreList())
+        Type(),
+        Status(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adult"),
-            Genre("Adventure"),
-            Genre("Comedy"),
-            Genre("Doujinshi"),
-            Genre("Drama"),
-            Genre("Ecchi"),
-            Genre("Fantasy"),
-            Genre("Gender Bender"),
-            Genre("Harem"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Josei"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Mecha"),
-            Genre("Mystery"),
-            Genre("One shot"),
-            Genre("Psychological"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci-fi"),
-            Genre("Seinen"),
-            Genre("Shoujo"),
-            Genre("Shoujo Ai"),
-            Genre("Shounen"),
-            Genre("Shounen Ai"),
-            Genre("Slice of Life"),
-            Genre("Smut"),
-            Genre("Sports"),
-            Genre("Supernatural"),
-            Genre("Tragedy"),
-            Genre("Webtoon"),
-            Genre("Yaoi"),
-            Genre("Yuri"),
-            Genre("Hot")
+        Genre("Action"),
+        Genre("Adult"),
+        Genre("Adventure"),
+        Genre("Comedy"),
+        Genre("Doujinshi"),
+        Genre("Drama"),
+        Genre("Ecchi"),
+        Genre("Fantasy"),
+        Genre("Gender Bender"),
+        Genre("Harem"),
+        Genre("Historical"),
+        Genre("Horror"),
+        Genre("Josei"),
+        Genre("Martial Arts"),
+        Genre("Mature"),
+        Genre("Mecha"),
+        Genre("Mystery"),
+        Genre("One shot"),
+        Genre("Psychological"),
+        Genre("Romance"),
+        Genre("School Life"),
+        Genre("Sci-fi"),
+        Genre("Seinen"),
+        Genre("Shoujo"),
+        Genre("Shoujo Ai"),
+        Genre("Shounen"),
+        Genre("Shounen Ai"),
+        Genre("Slice of Life"),
+        Genre("Smut"),
+        Genre("Sports"),
+        Genre("Supernatural"),
+        Genre("Tragedy"),
+        Genre("Webtoon"),
+        Genre("Yaoi"),
+        Genre("Yuri"),
+        Genre("Hot")
     )
 }
