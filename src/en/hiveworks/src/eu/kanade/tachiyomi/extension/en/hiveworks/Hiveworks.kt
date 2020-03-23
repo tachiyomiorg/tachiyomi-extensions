@@ -163,13 +163,9 @@ class Hiveworks : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga = throw Exception("Not Used")
     private fun mangaDetailsParse(response: Response, url: String): SManga {
         val document = response.asJsoup()
-        return try {
-            document.select(popularMangaSelector())
-                .first { url == it.select("a.comiclink").first().attr("abs:href") }
-                .let { mangaFromElement(it) }
-        } catch (e: NoSuchElementException) {
-            SManga.create()
-        }
+        return document.select(popularMangaSelector())
+            .firstOrNull { url == it.select("a.comiclink").first().attr("abs:href") }
+            ?.let { mangaFromElement(it) } ?: SManga.create()
     }
 
 
