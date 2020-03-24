@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.madara
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
