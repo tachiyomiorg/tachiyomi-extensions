@@ -1,22 +1,28 @@
 package eu.kanade.tachiyomi.extension.zh.pufei
 
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
-import com.squareup.duktape.Duktape
-import android.util.Base64
-
 // temp patch:
 // https://github.com/inorichi/tachiyomi/pull/2031
 
-import org.jsoup.Jsoup // import for patch
+import android.util.Base64
+import com.squareup.duktape.Duktape
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 fun asJsoup(response: Response, html: String? = null): Document {
     return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request().url().toString())
@@ -46,6 +52,22 @@ class Pufei : ParsedHttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     val imageServer = "http://res.img.220012.net/"  //Alternative: "http://res.img.ipufei.com/"
+
+    override val client: OkHttpClient
+        get() = network.client.newBuilder()
+            .addNetworkInterceptor(rewriteOctetStream)
+            .build()
+
+    private val rewriteOctetStream: Interceptor = Interceptor { chain ->
+        val originalResponse: Response = chain.proceed(chain.request())
+        if (originalResponse.headers("Content-Type").contains("application/octet-stream") && originalResponse.request().url().toString().contains(".jpg")) {
+            val orgBody = originalResponse.body()!!.bytes()
+            val newBody = ResponseBody.create(MediaType.parse("image/jpeg"),orgBody)
+            originalResponse.newBuilder()
+                .body(newBody)
+                .build()
+        } else originalResponse
+    }
 
     override fun popularMangaSelector() = "ul#detail li"
 
