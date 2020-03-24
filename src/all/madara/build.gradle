@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Madara (multiple sources)'
     pkgNameSuffix = "all.madara"
     extClass = '.MadaraFactory'
-    extVersionCode = 61
+    extVersionCode = 62
     libVersion = '1.2'
 }
 
