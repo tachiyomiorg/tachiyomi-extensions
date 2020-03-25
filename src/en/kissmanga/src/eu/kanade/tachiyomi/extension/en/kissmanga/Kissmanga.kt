@@ -28,7 +28,7 @@ class Kissmanga : ParsedHttpSource() {
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/74.0")
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36")
     }
 
     override fun popularMangaSelector() = "table.listing tr:gt(1)"
