@@ -79,6 +79,7 @@ data class Title(
     @ProtoId(7) val language: Language? = Language.ENGLISH
 )
 
+@Serializable
 enum class Language(val id: Int) {
     @ProtoId(0)
     @SerializedName("0")
