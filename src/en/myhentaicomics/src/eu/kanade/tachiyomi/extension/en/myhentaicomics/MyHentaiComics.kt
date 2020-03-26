@@ -54,14 +54,24 @@ class MyHentaiComics : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/index.php/search?q=$query&page=$page", headers)
+        return if (query.isNotBlank()) {
+            GET("$baseUrl/index.php/search?q=$query&page=$page", headers)
+        } else {
+            var url = baseUrl
+            for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+                when (filter) {
+                    is GenreFilter -> url += filter.toUriPart() + "?page=$page"
+                }
+            }
+            GET(url, headers)
+        }
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            title = element.select("p").text()
+            title = element.select("h2, p").text()
             setUrlWithoutDomain(element.select("a").attr("href"))
             thumbnail_url = element.select("img").attr("abs:src")
         }
@@ -110,6 +120,57 @@ class MyHentaiComics : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
-    override fun getFilterList() = FilterList()
+    // Filters
 
+    override fun getFilterList() = FilterList(
+        Filter.Header("Cannot combine search types!"),
+        Filter.Separator("-----------------"),
+        GenreFilter ()
+    )
+
+    private class GenreFilter: UriPartFilter("Genres",
+        arrayOf(
+            Pair("<Choose a genre>", ""),
+            Pair("3D", "/index.php/tag/2403"),
+            Pair("Asian", "/index.php/tag/2404"),
+            Pair("Ass Expansion", "/index.php/tag/2405"),
+            Pair("BBW", "/index.php/tag/2406"),
+            Pair("Beastiality", "/index.php/tag/2407"),
+            Pair("Bisexual", "/index.php/tag/2408"),
+            Pair("Body Swap", "/index.php/tag/2410"),
+            Pair("Breast Expansion", "/index.php/tag/2413"),
+            Pair("Bukakke", "/index.php/tag/2412"),
+            Pair("Cheating", "/index.php/tag/2414"),
+            Pair("Crossdressing", "/index.php/tag/2415"),
+            Pair("Femdom", "/index.php/tag/2417"),
+            Pair("Furry", "/index.php/tag/2418"),
+            Pair("Futanari", "/index.php/tag/2419"),
+            Pair("Futanari On Male", "/index.php/tag/2430"),
+            Pair("Gangbang", "/index.php/tag/2421"),
+            Pair("Gay", "/index.php/tag/2422"),
+            Pair("Gender Bending", "/index.php/tag/2423"),
+            Pair("Giantess", "/index.php/tag/2424"),
+            Pair("Gloryhole", "/index.php/tag/2425"),
+            Pair("Hardcore", "/index.php/tag/2426"),
+            Pair("Harem", "/index.php/tag/2427"),
+            Pair("Incest", "/index.php/tag/2450"),
+            Pair("Interracial", "/index.php/tag/2409"),
+            Pair("Lactation", "/index.php/tag/2428"),
+            Pair("Lesbian", "/index.php/tag/3167"),
+            Pair("Milf", "/index.php/tag/2431"),
+            Pair("Mind Control & Hypnosis", "/index.php/tag/2432"),
+            Pair("Muscle Girl", "/index.php/tag/2434"),
+            Pair("Pegging", "/index.php/tag/2437"),
+            Pair("Pregnant", "/index.php/tag/2438"),
+            Pair("Rape", "/index.php/tag/2433"),
+            Pair("Strap-On", "/index.php/tag/2441"),
+            Pair("Superheroes", "/index.php/tag/2443"),
+            Pair("Tentacles", "/index.php/tag/2444")
+        )
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 }
