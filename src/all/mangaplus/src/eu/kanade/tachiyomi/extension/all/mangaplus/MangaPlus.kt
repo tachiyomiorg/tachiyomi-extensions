@@ -8,7 +8,14 @@ import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.protobuf.ProtoBuf
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import rx.Observable
 import java.lang.Exception
 import java.util.UUID

@@ -6,12 +6,13 @@ ext {
     appName = 'Tachiyomi: MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
 dependencies {
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.14.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-protobuf:0.20.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0'
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly project(':duktape-stub')
 }
