@@ -480,6 +480,18 @@ class ThreeSixtyFiveManga: Madara("365Manga","https://365manga.com","en") {
 
 class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en") {
     override val popularMangaUrlSelector = "div.post-title a:last-child"
+
+    override fun mangaDetailsParse(document: Document): SManga {
+        val manga = super.mangaDetailsParse(document)
+
+        with(document) {
+            select("div.post-title h1").first()?.let {
+                manga.title = it.ownText()
+            }
+        }
+
+        return manga
+    }
 }
 
 class MangaKiss: Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US)) {
