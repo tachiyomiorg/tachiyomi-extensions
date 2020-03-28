@@ -165,7 +165,10 @@ class Henchan : ParsedHttpSource() {
         if (document.select("#right > div:nth-child(4)").text().contains(" похожий на ")) {
             val chap = SChapter.create()
             chap.setUrlWithoutDomain(document.select("#left > div > a").attr("href"))
-            chap.name = document.select("#right > div:nth-child(4)").text().split(" похожий на ")[1]
+            chap.name = document.select("#right > div:nth-child(4)").text()
+                .split(" похожий на ")[1]
+                .replace("\\\"", "\"")
+                .replace("\\'", "'")
             chap.chapter_number = 1F
             chap.date_upload = Date().time //setting to current date because of a sorting in the "Recent updates" section
             return listOf(chap)
@@ -219,7 +222,7 @@ class Henchan : ParsedHttpSource() {
 
     private fun Document.parseJsonArray(): JsonArray {
         val imgScript = this.select("script:containsData(fullimg)").first().toString()
-        val imgString =  imgScript.substring(imgScript.indexOf('{'), imgScript.lastIndexOf('}') + 1)
+        val imgString =  imgScript.substring(imgScript.indexOf('{'), imgScript.lastIndexOf('}') + 1).replace("&quot;", "\"")
         return gson.fromJson<JsonObject>(imgString)["fullimg"].array
     }
 
