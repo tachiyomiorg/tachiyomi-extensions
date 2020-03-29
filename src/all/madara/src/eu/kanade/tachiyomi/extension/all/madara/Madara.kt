@@ -335,7 +335,7 @@ abstract class Madara(
                 }
             }
             select("div.summary_image img").first()?.let {
-                manga.thumbnail_url = it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
+                manga.thumbnail_url = detailsThumbnail(it)
             }
             select("div.summary-content").last()?.let {
                 manga.status = when (it.text()) {
@@ -355,6 +355,10 @@ abstract class Madara(
         }
 
         return manga
+    }
+
+    open fun detailsThumbnail(element: Element): String {
+        return element.absUrl(if (element.hasAttr("data-src")) "data-src" else "src")
     }
 
     override fun chapterListSelector() = "li.wp-manga-chapter"

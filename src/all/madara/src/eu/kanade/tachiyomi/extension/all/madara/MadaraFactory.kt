@@ -160,6 +160,9 @@ class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club", "ko")
 class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com", "en",
     dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+    override fun detailsThumbnail(element: Element): String {
+        return if (element.hasAttr("data-lazy-src")) element.attr("abs:data-lazy-src") else super.detailsThumbnail(element)
+    }
 }
 
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com", "en")
