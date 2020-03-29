@@ -4,7 +4,14 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import com.github.salomonbrys.kotson.*
+import com.github.salomonbrys.kotson.forEach
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.keys
+import com.github.salomonbrys.kotson.long
+import com.github.salomonbrys.kotson.nullString
+import com.github.salomonbrys.kotson.obj
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -13,10 +20,20 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.CacheControl
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
@@ -77,9 +94,10 @@ abstract class Mangadex(
         return buildCookies(cookies)
     }
 
-    private fun buildCookies(cookies: Map<String, String>) = cookies.entries.joinToString(separator = "; ", postfix = ";") {
-        "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
-    }
+    private fun buildCookies(cookies: Map<String, String>) =
+        cookies.entries.joinToString(separator = "; ", postfix = ";") {
+            "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+        }
 
     override fun popularMangaSelector() = "div.manga-entry"
 
@@ -105,7 +123,8 @@ abstract class Mangadex(
         return manga
     }
 
-    private fun modifyMangaUrl(url: String): String = url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
+    private fun modifyMangaUrl(url: String): String =
+        url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
 
     private fun formThumbUrl(mangaUrl: String): String {
         var ext = ".jpg"
@@ -129,11 +148,14 @@ abstract class Mangadex(
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+    override fun popularMangaNextPageSelector() =
+        ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
-    override fun latestUpdatesNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+    override fun latestUpdatesNextPageSelector() =
+        ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
-    override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+    override fun searchMangaNextPageSelector() =
+        ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         return clientBuilder().newCall(popularMangaRequest(page))
@@ -151,7 +173,11 @@ abstract class Mangadex(
             }
     }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+    override fun fetchSearchManga(
+        page: Int,
+        query: String,
+        filters: FilterList
+    ): Observable<MangasPage> {
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
             val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
             client.newCall(searchMangaByIdRequest(realQuery))
@@ -224,7 +250,8 @@ abstract class Mangadex(
                 }
                 is OriginalLanguage -> {
                     if (filter.state != 0) {
-                        val number: String = SOURCE_LANG_LIST.first { it.first == filter.values[filter.state] }.second
+                        val number: String =
+                            SOURCE_LANG_LIST.first { it.first == filter.values[filter.state] }.second
                         url.addQueryParameter("lang_id", number)
                     }
                 }
@@ -273,9 +300,15 @@ abstract class Mangadex(
                 is SortFilter -> {
                     if (filter.state != null) {
                         if (filter.state!!.ascending) {
-                            url.addQueryParameter("s", sortables[filter.state!!.index].second.toString())
+                            url.addQueryParameter(
+                                "s",
+                                sortables[filter.state!!.index].second.toString()
+                            )
                         } else {
-                            url.addQueryParameter("s", sortables[filter.state!!.index].third.toString())
+                            url.addQueryParameter(
+                                "s",
+                                sortables[filter.state!!.index].third.toString()
+                            )
                         }
                     }
                 }
@@ -307,17 +340,28 @@ abstract class Mangadex(
 
     override fun searchMangaParse(response: Response): MangasPage {
         if (response.request().url().toString().contains("/groups/")) {
-            response.asJsoup().select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a:nth-child(1)").attr("abs:href").let {
-                return if (it.isNotEmpty()) {
-                    groupSearch = "$it/manga/0/1"
-                    super.searchMangaParse(client.newCall(GET(groupSearch, headersBuilder().build())).execute())
-                } else {
-                    MangasPage(emptyList(), false)
+            response.asJsoup()
+                .select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a:nth-child(1)")
+                .attr("abs:href").let {
+                    return if (it.isNotEmpty()) {
+                        groupSearch = "$it/manga/0/1"
+                        super.searchMangaParse(
+                            client.newCall(
+                                GET(
+                                    groupSearch,
+                                    headersBuilder().build()
+                                )
+                            ).execute()
+                        )
+                    } else {
+                        MangasPage(emptyList(), false)
+                    }
                 }
-            }
         } else {
             val document = response.asJsoup()
-            if (document.select("#login_button").isNotEmpty()) throw Exception("Log in via WebView to enable search")
+            if (document.select("#login_button")
+                    .isNotEmpty()
+            ) throw Exception("Log in via WebView to enable search")
 
             val mangas = document.select(searchMangaSelector()).map { element ->
                 searchMangaFromElement(element)
@@ -381,14 +425,22 @@ abstract class Mangadex(
         val chapterJson = json.getAsJsonObject("chapter")
         manga.title = cleanString(mangaJson.get("title").string)
         manga.thumbnail_url = cdnUrl + mangaJson.get("cover_url").string
-        manga.description = cleanString(mangaJson.get("description").string)
+        manga.description = cleanDescription(mangaJson.get("description").string)
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
         val status = mangaJson.get("status").int
         val finalChapterNumber = getFinalChapter(mangaJson)
-        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(chapterJson, finalChapterNumber)) {
+        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(
+                chapterJson,
+                finalChapterNumber
+            )
+        ) {
             manga.status = SManga.COMPLETED
-        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, finalChapterNumber)) {
+        } else if (status == 2 && chapterJson != null && isOneshot(
+                chapterJson,
+                finalChapterNumber
+            )
+        ) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
@@ -416,6 +468,58 @@ abstract class Mangadex(
         return Parser.unescapeEntities(intermediate, false)
     }
 
+    /** clean up the description text to match the internal language
+     *
+     */
+    private fun cleanDescription(description: String): String {
+
+        //get list of possible tags for a langauge  add more here when found
+        val listOfLangs = when (internalLang) {
+            "ru" -> listOf("[b][u]Russian / Русский[/u][/b]")
+            "de" -> listOf("[b][u]German / Deutsch[/u][/b]", "German/Deutsch:")
+
+            "it" -> listOf("[b][u]Italian / Italiano[/u][/b]")
+            in "es", "mx" -> listOf("[b][u]Espa&ntilde;ol / Spanish:[/u][/b]")
+            in "br", "pt" -> listOf(
+                "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
+                "[b][u]Português / Portuguese[/u][/b]",
+                "[b][u]Portuguese / Portugu[/u][/b]"
+            )
+            "tr" -> listOf("[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]")
+            "fr" -> listOf(
+                "[b][u]Russian / Русский[/u][/b]",
+                "French - Français:",
+                "[b][u]French / Fran&ccedil;ais[/u][/b]"
+            )
+            "sa" -> listOf("[b][u]Arabic / العربية[/u][/b]")
+            else -> emptyList()
+
+        }
+        return cleanString(getCleanedDescription(description, listOfLangs))
+    }
+
+    /**
+     * this is where teh description really gets cleaned
+     */
+    private fun getCleanedDescription(
+        originalString: String,
+        langTextToCheck: List<String>
+    ): String {
+        val langList = DESCRIPTION_LANGUAGES.toMutableList();
+
+        //remove any languages before the ones provided in the langTextToCheck, if no matches or empty
+        // just uses the original description, also removes the potential lang from all lang list
+        var newDescription = originalString;
+        langTextToCheck.forEach { it ->
+            newDescription = newDescription.substringAfter(it)
+            langList.remove(it)
+        }
+
+        // remove any possible languages that remain to get the new description
+        langList.forEach { it -> newDescription = newDescription.substringBefore(it) }
+        return newDescription
+    }
+
     override fun mangaDetailsParse(document: Document) = throw Exception("Not Used")
 
     override fun chapterListSelector() = ""
@@ -428,10 +532,12 @@ abstract class Mangadex(
             }
     }
 
-    private fun getFinalChapter(jsonObj: JsonObject): String = jsonObj.get("last_chapter").string.trim()
+    private fun getFinalChapter(jsonObj: JsonObject): String =
+        jsonObj.get("last_chapter").string.trim()
 
     private fun isOneshot(chapterJson: JsonObject, lastChapter: String): Boolean {
-        val chapter = chapterJson.takeIf { it.size() > 0 }?.get(chapterJson.keys().elementAt(0))?.obj?.get("title")?.string
+        val chapter = chapterJson.takeIf { it.size() > 0 }
+            ?.get(chapterJson.keys().elementAt(0))?.obj?.get("title")?.string
         return if (chapter != null) {
             chapter == "Oneshot" || chapter.isEmpty() && lastChapter == "0"
         } else {
@@ -446,7 +552,8 @@ abstract class Mangadex(
         return count != 0
     }
 
-    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
+    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) =
+        finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val now = Date().time
@@ -484,7 +591,12 @@ abstract class Mangadex(
         }
     }
 
-    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
+    private fun chapterFromJson(
+        chapterId: String,
+        chapterJson: JsonObject,
+        finalChapterNumber: String,
+        status: Int
+    ): SChapter {
         val chapter = SChapter.create()
         chapter.url = API_CHAPTER + chapterId
         val chapterName = mutableListOf<String>()
@@ -505,7 +617,11 @@ abstract class Mangadex(
         if (chapterName.isEmpty()) {
             chapterName.add("Oneshot")
         }
-        if ((status == 2 || status == 3) && doesFinalChapterExist(finalChapterNumber, chapterJson)) {
+        if ((status == 2 || status == 3) && doesFinalChapterExist(
+                finalChapterNumber,
+                chapterJson
+            )
+        ) {
             chapterName.add("[END]")
         }
 
@@ -698,12 +814,18 @@ abstract class Mangadex(
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Tag(val id: String, name: String) : Filter.TriState(name)
-    private class Demographic(demographics: List<Tag>) : Filter.Group<Tag>("Demographic", demographics)
-    private class PublicationStatus(publications: List<Tag>) : Filter.Group<Tag>("Publication", publications)
+    private class Demographic(demographics: List<Tag>) :
+        Filter.Group<Tag>("Demographic", demographics)
+
+    private class PublicationStatus(publications: List<Tag>) :
+        Filter.Group<Tag>("Publication", publications)
+
     private class ContentList(contents: List<Tag>) : Filter.Group<Tag>("Content", contents)
     private class FormatList(formats: List<Tag>) : Filter.Group<Tag>("Format", formats)
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
-    private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
+    private class R18 :
+        Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
+
     private class ScanGroup(name: String) : Filter.Text(name)
 
     private fun getDemographic() = listOf(
@@ -721,15 +843,21 @@ abstract class Mangadex(
     ).sortedWith(compareBy { it.name })
 
     private class ThemeList(themes: List<Tag>) : Filter.Group<Tag>("Themes", themes)
-    private class TagInclusionMode : Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
-    private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
+    private class TagInclusionMode :
+        Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
+
+    private class TagExclusionMode :
+        Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
 
     // default selection (Rating Descending) matches popularMangaRequest url
-    class SortFilter : Filter.Sort("Sort",
+    class SortFilter : Filter.Sort(
+        "Sort",
         sortables.map { it.first }.toTypedArray(),
-        Selection(3, false))
+        Selection(3, false)
+    )
 
-    private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it.first }.toTypedArray())
+    private class OriginalLanguage :
+        Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it.first }.toTypedArray())
 
     override fun getFilterList() = FilterList(
         TextField("Author", "author"),
@@ -840,7 +968,9 @@ abstract class Mangadex(
         Tag("83", "Incest")
     ).sortedWith(compareBy { it.name })
 
-    private val GENRES = (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }.toMap()
+    private val GENRES =
+        (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }
+            .toMap()
 
     companion object {
         private val WHITESPACE_REGEX = "\\s".toRegex()
@@ -860,7 +990,8 @@ abstract class Mangadex(
 
         private const val SERVER_PREF_Title = "Image server"
         private const val SERVER_PREF = "imageServer"
-        private val SERVER_PREF_ENTRIES = arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
+        private val SERVER_PREF_ENTRIES =
+            arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
         private val SERVER_PREF_ENTRY_VALUES = arrayOf("0", "na", "na2", "row")
 
         private const val API_MANGA = "/api/manga/"
@@ -868,13 +999,30 @@ abstract class Mangadex(
 
         const val PREFIX_ID_SEARCH = "id:"
 
+        private val DESCRIPTION_LANGUAGES = arrayListOf(
+            "[b][u]Russian / Русский[/u][/b]",
+            "[b][u]German / Deutsch[/u][/b]",
+            "French - Français:",
+            "[b][u]French[/u][/b]",
+            "German/Deutsch:",
+            "[b][u]Espa&ntilde;ol / Spanish:[/u][/b]",
+            "[b][u]Italian / Italiano[/u][/b]",
+            "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
+            "[b][u]Português / Portuguese[/u][/b]",
+            "[b][u]Portuguese / Portugu[/u][/b]",
+            "[b][u]French / Fran&ccedil;ais[/u][/b]",
+            "[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]",
+            "[b][u]Arabic / العربية[/u][/b]"
+        )
+
         private val sortables = listOf(
             Triple("Update date", 0, 1),
             Triple("Alphabetically", 2, 3),
             Triple("Number of comments", 4, 5),
             Triple("Rating", 6, 7),
             Triple("Views", 8, 9),
-            Triple("Follows", 10, 11))
+            Triple("Follows", 10, 11)
+        )
 
         private val SOURCE_LANG_LIST = listOf(
             Pair("All", "0"),
@@ -889,6 +1037,7 @@ abstract class Mangadex(
             Pair("Korean", "28"),
             Pair("Spanish (LATAM)", "29"),
             Pair("Thai", "32"),
-            Pair("Filipino", "34"))
+            Pair("Filipino", "34")
+        )
     }
 }
