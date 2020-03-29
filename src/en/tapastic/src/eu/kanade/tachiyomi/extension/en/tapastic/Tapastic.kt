@@ -95,6 +95,7 @@ class Tapastic : ParsedHttpSource() {
         description = document.select(".js-series-description").text().trim()
         genre = document.select("div.info__genre a, div.item__genre a")
             .joinToString(", ") { it.text() }
+        thumbnail_url = document.select("div.header__thumb img").attr("src")
     }
 
     //Chapters
