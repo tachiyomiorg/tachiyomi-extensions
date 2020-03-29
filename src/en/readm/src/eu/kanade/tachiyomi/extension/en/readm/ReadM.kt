@@ -9,10 +9,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 class ReadM : ParsedHttpSource() {
 
@@ -21,6 +23,12 @@ class ReadM : ParsedHttpSource() {
     override val baseUrl: String = "https://readm.org"
     override val lang: String = "en"
     override val supportsLatest: Boolean = true
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(1, TimeUnit.MINUTES)
+        .readTimeout(1, TimeUnit.MINUTES)
+        .retryOnConnectionFailure(true)
+        .followRedirects(true)
+        .build()
 
     //Popular
 
@@ -137,10 +145,8 @@ class ReadM : ParsedHttpSource() {
     //Pages
 
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div.ch-images img").forEach {
-            add(Page(size, "", it.attr("abs:data-src")))
-        }
+    override fun pageListParse(document: Document): List<Page> = document.select("div.ch-images img").mapIndexed { index, element ->
+        Page(index, "", element.attr("abs:data-src"))
     }
 
     //Filters
