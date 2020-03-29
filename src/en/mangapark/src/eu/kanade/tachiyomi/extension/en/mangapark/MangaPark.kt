@@ -43,11 +43,6 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
-    private fun cleanUrl(url: String) = if (url.startsWith("//"))
-        "https:$url"
-    else url
-
-
     override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views_a")
 
     override fun popularMangaSelector() = directorySelector
@@ -92,11 +87,10 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     @SuppressLint("DefaultLocale")
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        val coverElement = document.select(".cover > img").first()
-
-        title = coverElement.attr("title")
-
-        thumbnail_url = cleanUrl(coverElement.attr("src"))
+        document.select(".cover > img").first().let { coverElement ->
+            title = coverElement.attr("title")
+            thumbnail_url = coverElement.attr("abs:src")
+        }
 
         document.select(".attr > tbody > tr").forEach {
             when (it.getElementsByTag("th").first().text().trim().toLowerCase()) {
@@ -121,7 +115,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
         description = document.getElementsByClass("summary").text().trim()
     }
-    
+
     override fun chapterListParse(response: Response): List<SChapter> {
         fun List<SChapter>.getMissingChapters(allChapters: List<SChapter>): List<SChapter> {
             val chapterNums = this.map { it.chapter_number }
@@ -511,7 +505,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         screen.addPreference(myPref)
     }
     private fun getSourcePref(): String? = preferences.getString(SOURCE_PREF, "all")
-    
+
     companion object {
         private const val SOURCE_PREF_TITLE = "Chapter List Source"
         private const val SOURCE_PREF = "Manga_Park_Source"
@@ -526,5 +520,5 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             Pair("Prioritize source: Panda","panda")
         )
     }
-    
+
 }
