@@ -75,19 +75,19 @@ class MangaOwl : ParsedHttpSource() {
     // Manga summary page
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.col-sm-8").first()
+        val infoElement = document.select("div.single_detail").first()
 
-        val manga = SManga.create()
-        manga.title = infoElement.select("h2").first().ownText()
-        manga.author = infoElement.select("p:contains(author) a").text()
-        manga.artist = manga.author
-        val status = infoElement.select("p:contains(pub. status)").first().ownText()
-        manga.status = parseStatus(status)
-        manga.genre = infoElement.select("a.label").mapNotNull{ it.text() }.joinToString(", ")
-        manga.description = infoElement.select("div.single-right-grids.description").first().ownText()
-        manga.thumbnail_url = infoElement.select("div.col-xs-offset-1 img").attr("abs:data-src")
-
-        return manga
+        return SManga.create().apply {
+            title = infoElement.select("h2").first().ownText()
+            author = infoElement.select("p:contains(author) a").text()
+            artist = author
+            status = parseStatus(infoElement.select("p:contains(pub. status)").first().ownText())
+            genre = infoElement.select("a.label").mapNotNull { it.text() }.joinToString(", ")
+            description = infoElement.select("div.single-right-grids.description").first().ownText()
+            thumbnail_url = infoElement.select("img").first()?.let { img ->
+                if (img.hasAttr("data-src")) img.attr("abs:data-src") else img.attr("abs:src")
+            }
+        }
     }
 
     private fun parseStatus(status: String?) = when {
