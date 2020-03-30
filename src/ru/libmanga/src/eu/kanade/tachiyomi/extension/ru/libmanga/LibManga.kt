@@ -178,8 +178,8 @@ class LibManga : HttpSource() {
         val chapInfoJson = jsonParser.parse(chapInfo).obj
 
         val imageServerUrl: String = when(chapInfoJson["imgServer"].string){
-            "compress" -> "https://img3.mangalib.me"
-            else -> "https://img2.mangalib.me"
+            "compress" -> "https://img3.mangalib.me/"
+            else -> "https://img2.mangalib.me/"
         }
 
         // Get pages
@@ -334,6 +334,7 @@ class LibManga : HttpSource() {
         SearchFilter("драма", "43"),
         SearchFilter("ёнкома", "75"),
         SearchFilter("игра", "44"),
+        SearchFilter("исекай", "79"),
         SearchFilter("история", "45"),
         SearchFilter("киберпанк", "46"),
         SearchFilter("кодомо", "76"),
