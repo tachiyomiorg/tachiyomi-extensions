@@ -4,7 +4,7 @@ class MangadexDescription() {
     /** clean up the description text to match the internal language
      *
      */
-    fun clean(internalLang: String, description: String): String{
+    fun clean(internalLang: String, description: String): String {
         //get list of possible tags for a language  add more here when found
         val listOfLangs = when (internalLang) {
             "ru" -> RUSSIAN
@@ -49,16 +49,18 @@ class MangadexDescription() {
             "[b][u]French[/u][/b]",
             "[b][u]French / Fran&ccedil;ais[/u][/b]"
         )
-        val GERMAN= listOf("[b][u]German / Deutsch[/u][/b]", "German/Deutsch:")
-        val ITALIAN=listOf("[b][u]Italian / Italiano[/u][/b]")
+        val GERMAN = listOf("[b][u]German / Deutsch[/u][/b]", "German/Deutsch:")
+        val ITALIAN = listOf("[b][u]Italian / Italiano[/u][/b]")
         val PORTUGESE = listOf(
-        "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
-        "[b][u]Português / Portuguese[/u][/b]",
-        "[b][u]Portuguese / Portugu[/u][/b]")
-        val RUSSIAN= listOf("[b][u]Russian / Русский[/u][/b]")
-        val SPANISH= listOf("[b][u]Espa&ntilde;ol / Spanish:[/u][/b]")
-        val TURKISH= listOf("[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]")
+            "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
+            "[b][u]Português / Portuguese[/u][/b]",
+            "[b][u]Portuguese / Portugu[/u][/b]"
+        )
+        val RUSSIAN = listOf("[b][u]Russian / Русский[/u][/b]")
+        val SPANISH = listOf("[b][u]Espa&ntilde;ol / Spanish:[/u][/b]")
+        val TURKISH = listOf("[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]")
 
-        val ALL_LANGS = listOf(ARABIC, FRENCH, GERMAN,ITALIAN,PORTUGESE, RUSSIAN, SPANISH, TURKISH).flatten()
+        val ALL_LANGS =
+            listOf(ARABIC, FRENCH, GERMAN, ITALIAN, PORTUGESE, RUSSIAN, SPANISH, TURKISH).flatten()
     }
 }
