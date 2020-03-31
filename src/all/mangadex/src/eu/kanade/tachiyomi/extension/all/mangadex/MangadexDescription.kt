@@ -2,17 +2,17 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 class MangadexDescription(private val internalLang: String) {
 
-    val listOfLangs = when (internalLang) {
-            "ru" -> RUSSIAN
-            "de" -> GERMAN
-            "it" -> ITALIAN
-            in "es", "mx" -> SPANISH
-            in "br", "pt" -> PORTUGESE
-            "tr" -> TURKISH
-            "fr" -> FRENCH
-            "sa" -> ARABIC
-            else -> emptyList()
-        }
+    private val listOfLangs = when (internalLang) {
+        "ru" -> RUSSIAN
+        "de" -> GERMAN
+        "it" -> ITALIAN
+        in "es", "mx" -> SPANISH
+        in "br", "pt" -> PORTUGESE
+        "tr" -> TURKISH
+        "fr" -> FRENCH
+        "sa" -> ARABIC
+        else -> emptyList()
+    }
 
     fun clean(internalLang: String, description: String): String {
         val langList = ALL_LANGS.toMutableList()
