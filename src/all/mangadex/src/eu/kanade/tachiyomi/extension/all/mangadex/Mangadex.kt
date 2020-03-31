@@ -50,7 +50,7 @@ abstract class Mangadex(
     }
 
     private val mangadexDescription : MangadexDescription by lazy {
-        MangadexDescription()
+        MangadexDescription(internalLang)
     }
 
     private val rateLimitInterceptor = RateLimitInterceptor(4)
