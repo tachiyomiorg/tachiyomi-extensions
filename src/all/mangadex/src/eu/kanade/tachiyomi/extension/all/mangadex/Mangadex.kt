@@ -423,16 +423,15 @@ abstract class Mangadex(
 
         //get list of possible tags for a langauge  add more here when found
         val listOfLangs = when (internalLang) {
-            "ru" -> listOf("[b][u]Russian / Русский[/u][/b]")
-            "de" -> listOf("[b][u]German / Deutsch[/u][/b]", "German/Deutsch:")
-            "it" -> listOf("[b][u]Italian / Italiano[/u][/b]")
-            in "es", "mx" -> listOf("[b][u]Espa&ntilde;ol / Spanish:[/u][/b]")
-            in "br", "pt" -> listOf("[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]","[b][u]Português / Portuguese[/u][/b]","[b][u]Portuguese / Portugu[/u][/b]")
-            "tr" -> listOf("[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]")
-            "fr" -> listOf("French - Français:","[b][u]French / Fran&ccedil;ais[/u][/b]")
-            "sa" -> listOf("[b][u]Arabic / العربية[/u][/b]")
+            "ru" -> MangadexDescription.RUSSIAN.headers
+            "de" -> MangadexDescription.GERMAN.headers
+            "it" -> MangadexDescription.ITALIAN.headers
+            in "es", "mx" -> MangadexDescription.SPANISH.headers
+            in "br", "pt" -> MangadexDescription.PORTUGESE.headers
+            "tr" -> MangadexDescription.TURKISH.headers
+            "fr" -> MangadexDescription.FRENCH.headers
+            "sa" -> MangadexDescription.ARABIC.headers
             else -> emptyList()
-
         }
         return cleanString(getCleanedDescription(description, listOfLangs))
     }
@@ -444,7 +443,7 @@ abstract class Mangadex(
         originalString: String,
         langTextToCheck: List<String>
     ): String {
-        val langList = DESCRIPTION_LANGUAGES.toMutableList();
+        val langList = MangadexDescription.values().map { it.headers }.flatten().toMutableList()
 
         //remove any languages before the ones provided in the langTextToCheck, if no matches or empty
         // just uses the original description, also removes the potential lang from all lang list
@@ -910,22 +909,6 @@ abstract class Mangadex(
         private const val API_CHAPTER = "/api/chapter/"
 
         const val PREFIX_ID_SEARCH = "id:"
-
-        private val DESCRIPTION_LANGUAGES = arrayListOf(
-            "[b][u]Russian / Русский[/u][/b]",
-            "[b][u]German / Deutsch[/u][/b]",
-            "French - Français:",
-            "[b][u]French[/u][/b]",
-            "German/Deutsch:",
-            "[b][u]Espa&ntilde;ol / Spanish:[/u][/b]",
-            "[b][u]Italian / Italiano[/u][/b]",
-            "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
-            "[b][u]Português / Portuguese[/u][/b]",
-            "[b][u]Portuguese / Portugu[/u][/b]",
-            "[b][u]French / Fran&ccedil;ais[/u][/b]",
-            "[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]",
-            "[b][u]Arabic / العربية[/u][/b]"
-        )
 
         private val sortables = listOf(
             Triple("Update date", 0, 1),
