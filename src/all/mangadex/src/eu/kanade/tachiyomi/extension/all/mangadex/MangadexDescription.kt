@@ -1,24 +1,64 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-enum class MangadexDescription(val headers: List<String>) {
-    ARABIC(listOf("[b][u]Arabic / العربية[/u][/b]")),
-    FRENCH(
-        listOf(
+class MangadexDescription() {
+    /** clean up the description text to match the internal language
+     *
+     */
+    fun clean(internalLang: String, description: String): String{
+        //get list of possible tags for a language  add more here when found
+        val listOfLangs = when (internalLang) {
+            "ru" -> RUSSIAN
+            "de" -> GERMAN
+            "it" -> ITALIAN
+            in "es", "mx" -> SPANISH
+            in "br", "pt" -> PORTUGESE
+            "tr" -> TURKISH
+            "fr" -> FRENCH
+            "sa" -> ARABIC
+            else -> emptyList()
+        }
+        return getCleanedDescription(description, listOfLangs)
+    }
+
+    /**
+     * this is where the description really gets cleaned
+     */
+    private fun getCleanedDescription(
+        originalString: String,
+        langTextToCheck: List<String>
+    ): String {
+        val langList = ALL_LANGS.toMutableList()
+
+        //remove any languages before the ones provided in the langTextToCheck, if no matches or empty
+        // just uses the original description, also removes the potential lang from all lang list
+        var newDescription = originalString;
+        langTextToCheck.forEach { it ->
+            newDescription = newDescription.substringAfter(it)
+            langList.remove(it)
+        }
+
+        // remove any possible languages that remain to get the new description
+        langList.forEach { it -> newDescription = newDescription.substringBefore(it) }
+        return newDescription
+    }
+
+    companion object {
+        val ARABIC = listOf("[b][u]Arabic / العربية[/u][/b]")
+        val FRENCH = listOf(
             "French - Français:",
             "[b][u]French[/u][/b]",
             "[b][u]French / Fran&ccedil;ais[/u][/b]"
         )
-    ),
-    GERMAN(listOf("[b][u]German / Deutsch[/u][/b]", "German/Deutsch:")),
-    ITALIAN(listOf("[b][u]Italian / Italiano[/u][/b]")),
-    PORTUGESE(
-        listOf(
-            "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
-            "[b][u]Português / Portuguese[/u][/b]",
-            "[b][u]Portuguese / Portugu[/u][/b]"
-        )
-    ),
-    RUSSIAN(listOf("[b][u]Russian / Русский[/u][/b]")),
-    SPANISH(listOf("[b][u]Espa&ntilde;ol / Spanish:[/u][/b]")),
-    TURKISH(listOf("[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]"))
+        val GERMAN= listOf("[b][u]German / Deutsch[/u][/b]", "German/Deutsch:")
+        val ITALIAN=listOf("[b][u]Italian / Italiano[/u][/b]")
+        val PORTUGESE = listOf(
+        "[b][u]Portuguese (BR) / Portugu&ecirc;s (BR)[/u][/b]",
+        "[b][u]Português / Portuguese[/u][/b]",
+        "[b][u]Portuguese / Portugu[/u][/b]")
+        val RUSSIAN= listOf("[b][u]Russian / Русский[/u][/b]")
+        val SPANISH= listOf("[b][u]Espa&ntilde;ol / Spanish:[/u][/b]")
+        val TURKISH= listOf("[b][u]Turkish / T&uuml;rk&ccedil;e[/u][/b]")
+
+        val ALL_LANGS = listOf(ARABIC, FRENCH, GERMAN,ITALIAN,PORTUGESE, RUSSIAN, SPANISH, TURKISH).flatten()
+    }
 }

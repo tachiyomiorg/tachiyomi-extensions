@@ -33,6 +33,10 @@ abstract class Mangadex(
     private val internalLang: String
 ) : ConfigurableSource, ParsedHttpSource() {
 
+    init {
+
+    }
+
     override val name = "MangaDex"
 
     override val baseUrl = "https://mangadex.org"
@@ -43,6 +47,10 @@ abstract class Mangadex(
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val mangadexDescription : MangadexDescription by lazy {
+        MangadexDescription()
     }
 
     private val rateLimitInterceptor = RateLimitInterceptor(4)
@@ -381,7 +389,7 @@ abstract class Mangadex(
         val chapterJson = json.getAsJsonObject("chapter")
         manga.title = cleanString(mangaJson.get("title").string)
         manga.thumbnail_url = cdnUrl + mangaJson.get("cover_url").string
-        manga.description = cleanDescription(mangaJson.get("description").string)
+        manga.description = cleanString(mangadexDescription.clean(internalLang, mangaJson.get("description").string))
         manga.author = mangaJson.get("author").string
         manga.artist = mangaJson.get("artist").string
         val status = mangaJson.get("status").int
@@ -414,48 +422,6 @@ abstract class Mangadex(
             intermediate = intermediate.replace(bbRegex, "$2")
         }
         return Parser.unescapeEntities(intermediate, false)
-    }
-
-    /** clean up the description text to match the internal language
-     *
-     */
-    private fun cleanDescription(description: String): String {
-
-        //get list of possible tags for a langauge  add more here when found
-        val listOfLangs = when (internalLang) {
-            "ru" -> MangadexDescription.RUSSIAN.headers
-            "de" -> MangadexDescription.GERMAN.headers
-            "it" -> MangadexDescription.ITALIAN.headers
-            in "es", "mx" -> MangadexDescription.SPANISH.headers
-            in "br", "pt" -> MangadexDescription.PORTUGESE.headers
-            "tr" -> MangadexDescription.TURKISH.headers
-            "fr" -> MangadexDescription.FRENCH.headers
-            "sa" -> MangadexDescription.ARABIC.headers
-            else -> emptyList()
-        }
-        return cleanString(getCleanedDescription(description, listOfLangs))
-    }
-
-    /**
-     * this is where teh description really gets cleaned
-     */
-    private fun getCleanedDescription(
-        originalString: String,
-        langTextToCheck: List<String>
-    ): String {
-        val langList = MangadexDescription.values().map { it.headers }.flatten().toMutableList()
-
-        //remove any languages before the ones provided in the langTextToCheck, if no matches or empty
-        // just uses the original description, also removes the potential lang from all lang list
-        var newDescription = originalString;
-        langTextToCheck.forEach { it ->
-            newDescription = newDescription.substringAfter(it)
-            langList.remove(it)
-        }
-
-        // remove any possible languages that remain to get the new description
-        langList.forEach { it -> newDescription = newDescription.substringBefore(it) }
-        return newDescription
     }
 
     override fun mangaDetailsParse(document: Document) = throw Exception("Not Used")
