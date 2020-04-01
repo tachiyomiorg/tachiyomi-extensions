@@ -22,8 +22,6 @@ class FoolSlideFactory : SourceFactory {
         IskultripScans(),
         AnataNoMotokare(),
         DeathTollScans(),
-        DKThias(),
-        WorldThree(),
         DokiFansubs(),
         YuriIsm(),
         AjiaNoScantrad(),
@@ -33,7 +31,6 @@ class FoolSlideFactory : SourceFactory {
         Lilyreader(),
         Russification(),
         EvilFlowers(),
-        AkaiYuhiMunTeam(),
         LupiTeam(),
         HentaiCafe(),
         TheCatScans(),
@@ -82,14 +79,6 @@ class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.xyz", "
 
 class DeathTollScans : FoolSlide("Death Toll Scans", "https://reader.deathtollscans.net", "en")
 
-class DKThias : FoolSlide("DKThias Scanlations", "http://reader.dkthias.com", "en", "/reader") {
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl$urlModifier/list/$page/", headers)
-    }
-}
-
-class WorldThree : FoolSlide("World Three", "http://www.slide.world-three.org", "en")
-
 class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en", "/reader")
 
 class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide")
@@ -107,8 +96,6 @@ class Lilyreader : FoolSlide("Lilyreader", "https://manga.smuglo.li", "en")
 class Russification : FoolSlide("Русификация", "https://rusmanga.ru", "ru")
 
 class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
-
-class AkaiYuhiMunTeam : FoolSlide("AkaiYuhiMun team", "https://akaiyuhimun.ru", "ru", "/manga")
 
 class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
