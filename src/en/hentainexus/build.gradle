@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: HentaiNexus'
     pkgNameSuffix = 'en.hentainexus'
     extClass = '.HentaiNexus'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
