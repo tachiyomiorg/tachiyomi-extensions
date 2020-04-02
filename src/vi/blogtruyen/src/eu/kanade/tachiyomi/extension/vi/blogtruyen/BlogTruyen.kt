@@ -116,10 +116,16 @@ class BlogTruyen : ParsedHttpSource() {
         return GET(url.toString().replace("m.", ""), headers)
     }
 
-    override fun searchMangaSelector() = "div.list > p:gt(0) > span:eq(0)"
+    override fun searchMangaSelector() = "div.list > p:has(a)"
 
     override fun searchMangaFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
+        return SManga.create().apply {
+            element.select("a").let {
+                setUrlWithoutDomain(it.attr("href"))
+                title = it.text()
+            }
+            thumbnail_url = element.nextElementSibling().select("img").attr("abs:src")
+        }
     }
 
     override fun searchMangaNextPageSelector() = "ul.pagination i.glyphicon.glyphicon-step-forward.red"
