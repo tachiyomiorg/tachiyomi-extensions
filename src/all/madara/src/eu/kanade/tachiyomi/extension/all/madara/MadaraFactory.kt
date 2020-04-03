@@ -84,7 +84,9 @@ class MadaraFactory : SourceFactory {
         MangaStream(),
         NeoxScanlator(),
         MangaLord(),
-        PornComix()
+        PornComix(),
+        MangaRead(),
+        UnknownScans()
     )
 }
 
@@ -524,3 +526,7 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "
 class MangaLord : Madara("Manga Lord", "https://mangalord.com", "en")
 
 class PornComix : Madara("PornComix", "https://www.porncomixonline.net", "en")
+
+class MangaRead : Madara("Manga Read", "https://mangaread.co", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
+
+class UnknownScans : Madara("Unknown Scans", "https://unknoscans.com", "en")
