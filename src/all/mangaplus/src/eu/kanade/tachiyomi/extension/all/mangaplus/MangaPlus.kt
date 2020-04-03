@@ -401,7 +401,7 @@ abstract class MangaPlus(
 
         private const val SPLIT_PREF_KEY = "splitImage"
         private const val SPLIT_PREF_TITLE = "Split double pages"
-        private const val SPLIT_PREF_SUMMARY = "Not all titles support this."
+        private const val SPLIT_PREF_SUMMARY = "Not all titles support disabling this."
         private const val SPLIT_PREF_DEFAULT_VALUE = true
     }
 }
