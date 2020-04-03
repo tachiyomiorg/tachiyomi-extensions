@@ -6,7 +6,7 @@ ext {
     appName = 'Tachiyomi: MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
@@ -15,6 +15,8 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0'
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly project(':duktape-stub')
+    compileOnly project(':preference-stub')
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

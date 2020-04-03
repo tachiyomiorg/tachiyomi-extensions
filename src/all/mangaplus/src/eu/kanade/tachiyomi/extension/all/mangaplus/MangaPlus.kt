@@ -1,10 +1,16 @@
 package eu.kanade.tachiyomi.extension.all.mangaplus
 
+import android.app.Application
+import android.content.SharedPreferences
 import android.os.Build
+import android.support.v7.preference.CheckBoxPreference
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -17,12 +23,16 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.lang.Exception
 import java.util.UUID
 
-abstract class MangaPlus(override val lang: String,
-                         private val internalLang: String,
-                         private val langCode: Language) : HttpSource() {
+abstract class MangaPlus(
+    override val lang: String,
+    private val internalLang: String,
+    private val langCode: Language
+) : HttpSource(), ConfigurableSource {
 
     override val name = "Manga Plus by Shueisha"
 
@@ -46,6 +56,16 @@ abstract class MangaPlus(override val lang: String,
 
     private val gson: Gson by lazy { Gson() }
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val imageResolution: String
+        get() = preferences.getString("${RESOLUTION_PREF_KEY}_$lang", RESOLUTION_PREF_DEFAULT_VALUE)!!
+
+    private val splitImages: String
+        get() = if (preferences.getBoolean("${SPLIT_PREF_KEY}_$lang", SPLIT_PREF_DEFAULT_VALUE)) "yes" else "no"
+
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/title_list/ranking", headers)
     }
@@ -61,7 +81,7 @@ abstract class MangaPlus(override val lang: String,
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = getImageUrl(it.portraitImageUrl)
+                    thumbnail_url = it.portraitImageUrl.toWeservUrl()
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -86,7 +106,7 @@ abstract class MangaPlus(override val lang: String,
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = getImageUrl(it.portraitImageUrl)
+                    thumbnail_url = it.portraitImageUrl.toWeservUrl()
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -115,7 +135,7 @@ abstract class MangaPlus(override val lang: String,
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = getImageUrl(it.portraitImageUrl)
+                    thumbnail_url = it.portraitImageUrl.toWeservUrl()
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -154,7 +174,7 @@ abstract class MangaPlus(override val lang: String,
             artist = title.author
             description = details.overview + "\n\n" + details.viewingPeriodDescription
             status = SManga.ONGOING
-            thumbnail_url = getImageUrl(title.portraitImageUrl)
+            thumbnail_url = title.portraitImageUrl.toWeservUrl()
         }
     }
 
@@ -186,7 +206,7 @@ abstract class MangaPlus(override val lang: String,
 
     override fun pageListRequest(chapter: SChapter): Request {
         val chapterId = chapter.url.substringAfterLast("/")
-        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=yes&img_quality=high", headers)
+        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=$splitImages&img_quality=$imageResolution", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -218,12 +238,68 @@ abstract class MangaPlus(override val lang: String,
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun getImageUrl(url: String): String {
-        val imageUrl = url.substringBefore("&duration")
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val resolutionPref = androidx.preference.ListPreference(screen.context).apply {
+            key = "${RESOLUTION_PREF_KEY}_$lang"
+            title = RESOLUTION_PREF_TITLE
+            entries = RESOLUTION_PREF_ENTRIES
+            entryValues = RESOLUTION_PREF_ENTRY_VALUES
+            setDefaultValue(RESOLUTION_PREF_DEFAULT_VALUE)
+            summary = "%s"
 
-        return HttpUrl.parse(IMAGES_WESERV_URL)!!.newBuilder()
-            .addEncodedQueryParameter("url", imageUrl)
-            .toString()
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString("${RESOLUTION_PREF_KEY}_$lang", entry).commit()
+            }
+        }
+        val splitPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = "${SPLIT_PREF_KEY}_$lang"
+            title = SPLIT_PREF_TITLE
+            summary = SPLIT_PREF_SUMMARY
+            setDefaultValue(SPLIT_PREF_DEFAULT_VALUE)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean("${SPLIT_PREF_KEY}_$lang", checkValue).commit()
+            }
+        }
+
+        screen.addPreference(resolutionPref)
+        screen.addPreference(splitPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val resolutionPref = ListPreference(screen.context).apply {
+            key = "${RESOLUTION_PREF_KEY}_$lang"
+            title = RESOLUTION_PREF_TITLE
+            entries = RESOLUTION_PREF_ENTRIES
+            entryValues = RESOLUTION_PREF_ENTRY_VALUES
+            setDefaultValue(RESOLUTION_PREF_DEFAULT_VALUE)
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString("${RESOLUTION_PREF_KEY}_$lang", entry).commit()
+            }
+        }
+        val splitPref = CheckBoxPreference(screen.context).apply {
+            key = "${SPLIT_PREF_KEY}_$lang"
+            title = SPLIT_PREF_TITLE
+            summary = SPLIT_PREF_SUMMARY
+            setDefaultValue(SPLIT_PREF_DEFAULT_VALUE)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean("${SPLIT_PREF_KEY}_$lang", checkValue).commit()
+            }
+        }
+
+        screen.addPreference(resolutionPref)
+        screen.addPreference(splitPref)
     }
 
     private fun imageIntercept(chain: Interceptor.Chain): Response {
@@ -264,6 +340,14 @@ abstract class MangaPlus(override val lang: String,
         }
 
         return ByteArray(content.size) { pos -> content[pos].toByte() }
+    }
+
+    private fun String.toWeservUrl(): String {
+        val imageUrl = substringBefore("&duration")
+
+        return HttpUrl.parse(IMAGES_WESERV_URL)!!.newBuilder()
+            .addEncodedQueryParameter("url", imageUrl)
+            .toString()
     }
 
     private val ErrorResult.langPopup: Popup
@@ -308,5 +392,16 @@ abstract class MangaPlus(override val lang: String,
         private val HEX_GROUP = "(.{1,2})".toRegex()
 
         private const val PROTOBUFJS_CDN = "https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.8/dist/light/protobuf.min.js"
+
+        private const val RESOLUTION_PREF_KEY = "imageResolution"
+        private const val RESOLUTION_PREF_TITLE = "Image resolution"
+        private val RESOLUTION_PREF_ENTRIES = arrayOf("Low resolution", "High resolution")
+        private val RESOLUTION_PREF_ENTRY_VALUES = arrayOf("low", "high")
+        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[1]
+
+        private const val SPLIT_PREF_KEY = "splitImage"
+        private const val SPLIT_PREF_TITLE = "Split double pages"
+        private const val SPLIT_PREF_SUMMARY = "Not all titles support this."
+        private const val SPLIT_PREF_DEFAULT_VALUE = true
     }
 }
