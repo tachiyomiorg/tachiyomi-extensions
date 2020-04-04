@@ -52,7 +52,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = directoryNextPageSelector
 
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?update")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest")
 
     override fun latestUpdatesSelector() = directorySelector
 
