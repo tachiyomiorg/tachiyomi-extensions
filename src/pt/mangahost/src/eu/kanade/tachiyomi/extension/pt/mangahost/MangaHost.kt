@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.mangahost
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
@@ -16,11 +17,14 @@ import java.util.Locale
 
 class MangaHost : ParsedHttpSource() {
 
-    override val name = "Manga Host"
+    // Hardcode the id because the name was wrong and the language wasn't specific.
+    override val id: Long = 3926812845500643354
+
+    override val name = "Mangá Host"
 
     override val baseUrl = "https://mangahost2.com"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
