@@ -390,8 +390,8 @@ abstract class Mangadex(
         manga.title = cleanString(mangaJson.get("title").string)
         manga.thumbnail_url = cdnUrl + mangaJson.get("cover_url").string
         manga.description = cleanString(mangadexDescription.clean(internalLang, mangaJson.get("description").string))
-        manga.author = mangaJson.get("author").string
-        manga.artist = mangaJson.get("artist").string
+        manga.author = cleanString(mangaJson.get("author").string)
+        manga.artist = cleanString(mangaJson.get("artist").string)
         val status = mangaJson.get("status").int
         val finalChapterNumber = getFinalChapter(mangaJson)
         if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(chapterJson, finalChapterNumber)) {
