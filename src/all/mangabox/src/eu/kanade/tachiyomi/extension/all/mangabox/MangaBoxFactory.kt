@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -78,7 +79,70 @@ class MangaOnl : MangaBox("MangaOnl", "https://mangaonl.com", "en") {
     override val descriptionSelector = "div.panel_story_info_description, ${super.descriptionSelector}"
     override fun chapterListSelector() = "div.chapter_list_title + ul li, ${super.chapterListSelector()}"
     override val pageListSelector = "div.container_readchapter img, ${super.pageListSelector}"
-    override fun getFilterList() = FilterList()
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        GenreFilter()
+    )
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return if (query.isNotBlank()) {
+            GET("$baseUrl/$simpleQueryPath${normalizeSearchQuery(query)}?page=$page", headers)
+        } else {
+            var url = "$baseUrl/"
+
+            filters.forEach { filter ->
+                when (filter) {
+                    is GenreFilter -> {
+                        url += filter.toUriPart()
+                    }
+                }
+            }
+            GET(url + page, headers)
+        }
+    }
+    private class GenreFilter : UriPartFilter("Category", arrayOf(
+        Pair("story-list-ty-latest-st-all-ca-all-", "ALL"),
+        Pair("story-list-ty-latest-st-all-ca-2-", "Action"),
+        Pair("story-list-ty-latest-st-all-ca-3-", "Adult"),
+        Pair("story-list-ty-latest-st-all-ca-4-", "Adventure"),
+        Pair("story-list-ty-latest-st-all-ca-6-", "Comedy"),
+        Pair("story-list-ty-latest-st-all-ca-7-", "Cooking"),
+        Pair("story-list-ty-latest-st-all-ca-9-", "Doujinshi"),
+        Pair("story-list-ty-latest-st-all-ca-10-", "Drama"),
+        Pair("story-list-ty-latest-st-all-ca-11-", "Ecchi"),
+        Pair("story-list-ty-latest-st-all-ca-12-", "Fantasy"),
+        Pair("story-list-ty-latest-st-all-ca-13-", "Gender bender"),
+        Pair("story-list-ty-latest-st-all-ca-14-", "Harem"),
+        Pair("story-list-ty-latest-st-all-ca-15-", "Historical"),
+        Pair("story-list-ty-latest-st-all-ca-16-", "Horror"),
+        Pair("story-list-ty-latest-st-all-ca-45-", "Isekai"),
+        Pair("story-list-ty-latest-st-all-ca-17-", "Josei"),
+        Pair("story-list-ty-latest-st-all-ca-43-", "Manhwa"),
+        Pair("story-list-ty-latest-st-all-ca-44-", "Manhua"),
+        Pair("story-list-ty-latest-st-all-ca-19-", "Martial arts"),
+        Pair("story-list-ty-latest-st-all-ca-20-", "Mature"),
+        Pair("story-list-ty-latest-st-all-ca-21-", "Mecha"),
+        Pair("story-list-ty-latest-st-all-ca-22-", "Medical"),
+        Pair("story-list-ty-latest-st-all-ca-24-", "Mystery"),
+        Pair("story-list-ty-latest-st-all-ca-25-", "One shot"),
+        Pair("story-list-ty-latest-st-all-ca-26-", "Psychological"),
+        Pair("story-list-ty-latest-st-all-ca-27-", "Romance"),
+        Pair("story-list-ty-latest-st-all-ca-28-", "School life"),
+        Pair("story-list-ty-latest-st-all-ca-29-", "Sci fi"),
+        Pair("story-list-ty-latest-st-all-ca-30-", "Seinen"),
+        Pair("story-list-ty-latest-st-all-ca-31-", "Shoujo"),
+        Pair("story-list-ty-latest-st-all-ca-32-", "Shoujo ai"),
+        Pair("story-list-ty-latest-st-all-ca-33-", "Shounen"),
+        Pair("story-list-ty-latest-st-all-ca-34-", "Shounen ai"),
+        Pair("story-list-ty-latest-st-all-ca-35-", "Slice of life"),
+        Pair("story-list-ty-latest-st-all-ca-36-", "Smut"),
+        Pair("story-list-ty-latest-st-all-ca-37-", "Sports"),
+        Pair("story-list-ty-latest-st-all-ca-38-", "Supernatural"),
+        Pair("story-list-ty-latest-st-all-ca-39-", "Tragedy"),
+        Pair("story-list-ty-latest-st-all-ca-40-", "Webtoons"),
+        Pair("story-list-ty-latest-st-all-ca-41-", "Yaoi"),
+        Pair("story-list-ty-latest-st-all-ca-42-", "Yuri")
+    ))
 }
 
 class ChapterManga : MangaBox("ChapterManga", "https://chaptermanga.com", "en", SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH)) {

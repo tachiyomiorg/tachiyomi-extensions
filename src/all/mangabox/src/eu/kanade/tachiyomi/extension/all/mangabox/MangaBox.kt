@@ -289,7 +289,7 @@ abstract class MangaBox (
             Pair("42", "Yuri")
     ))
 
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+    open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
         fun toUriPart() = vals[state].first
     }
