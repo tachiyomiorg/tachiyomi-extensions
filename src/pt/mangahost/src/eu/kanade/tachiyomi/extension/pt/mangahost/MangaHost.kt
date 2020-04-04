@@ -3,7 +3,9 @@ package eu.kanade.tachiyomi.extension.pt.mangahost
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -26,12 +28,14 @@ class MangaHost : ParsedHttpSource() {
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
-    private fun mangaFromElement(element: Element, lazy: Boolean = true): SManga = SManga.create().apply {
-        title = element.attr("title").replace(LANG_REGEX.toRegex(), "")
-        thumbnail_url = element.select("img.manga").attr(if (lazy) "data-path" else "src")
-                .replace(IMAGE_REGEX.toRegex(), "_large.")
-        setUrlWithoutDomain(element.attr("href"))
-    }
+    private fun genericMangaFromElement(element: Element, lazy: Boolean = true): SManga =
+        SManga.create().apply {
+            title = element.attr("title").withoutLanguage()
+            thumbnail_url = element.select("img.manga")
+                .attr(if (lazy) "data-path" else "src")
+                .toLargeUrl()
+            setUrlWithoutDomain(element.attr("href"))
+        }
 
     override fun popularMangaRequest(page: Int): Request {
         val pageStr = if (page != 1) "/page/$page" else ""
@@ -40,7 +44,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun popularMangaSelector(): String = "div.thumbnail div a.pull-left"
 
-    override fun popularMangaFromElement(element: Element): SManga = mangaFromElement(element)
+    override fun popularMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "div.wp-pagenavi:has(a.nextpostslink)"
 
@@ -51,7 +55,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "table.table-lancamentos > tbody > tr > td:eq(0) > a"
 
-    override fun latestUpdatesFromElement(element: Element): SManga = mangaFromElement(element, false)
+    override fun latestUpdatesFromElement(element: Element): SManga = genericMangaFromElement(element, false)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -64,7 +68,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
 
-    override fun searchMangaFromElement(element: Element): SManga = mangaFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun searchMangaNextPageSelector(): String? = null
 
@@ -98,10 +102,11 @@ class MangaHost : ParsedHttpSource() {
 
         if (isNewLayout) {
             val content = Jsoup.parse(element.attr("data-content"))
-            val date = content.select("small.clearfix").text().substringAfter("Adicionado em ")
+            val date = content.select("small.clearfix").text()
+                .substringAfter("Adicionado em ")
 
             return SChapter.create().apply {
-                name = element.attr("data-original-title").replace(LANG_REGEX.toRegex(), "")
+                name = element.attr("data-original-title").withoutLanguage()
                 scanlator = content.select("small.clearfix strong").text()
                 date_upload = parseChapterDate(date, DATE_FORMAT_NEW)
                 chapter_number = element.text().toFloatOrNull() ?: 1f
@@ -114,16 +119,16 @@ class MangaHost : ParsedHttpSource() {
         val thirdColumn = element.select("td:eq(2)")
 
         return SChapter.create().apply {
-            name = firstColumn.select("a").text().replace(LANG_REGEX.toRegex(), "")
+            name = firstColumn.select("a").text().withoutLanguage()
             scanlator = secondColumn.text()
             date_upload = parseChapterDate(thirdColumn.text(), DATE_FORMAT_OLD)
             setUrlWithoutDomain(firstColumn.select("a").attr("href"))
         }
     }
 
-    private fun parseChapterDate(date: String, format: String) : Long {
+    private fun parseChapterDate(date: String, formatter: SimpleDateFormat) : Long {
         return try {
-            SimpleDateFormat(format, Locale.ENGLISH).parse(date).time
+            formatter.parse(date).time
         } catch (e: ParseException) {
             0L
         }
@@ -140,8 +145,10 @@ class MangaHost : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val documentStr = document.toString()
-        val images = documentStr.substringAfter(SCRIPT_BEGIN).substringBefore(SCRIPT_END)
-            .replace(SCRIPT_REGEX.toRegex(), "")
+        val images = documentStr
+            .substringAfter(SCRIPT_BEGIN)
+            .substringBefore(SCRIPT_END)
+            .replace(SCRIPT_REGEX, "")
 
         val newDocument = Jsoup.parse(images)
         val referer = document.select("link[rel='canonical']").first()
@@ -160,19 +167,23 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
+
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_large")
+
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":")
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
 
-        private const val LANG_REGEX = "( )?\\((PT-)?BR\\)"
-        private const val IMAGE_REGEX = "_(small|medium)\\."
+        private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
+        private val IMAGE_REGEX = "_(small|medium)\\.".toRegex()
 
-        private const val DATE_FORMAT_OLD = "dd/MM/yyyy"
-        private const val DATE_FORMAT_NEW = "MMM d, yyyy"
+        private val DATE_FORMAT_OLD by lazy { SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH) }
+        private val DATE_FORMAT_NEW by lazy { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH) }
 
         private const val SCRIPT_BEGIN = "var images = ["
         private const val SCRIPT_END = "];"
-        private const val SCRIPT_REGEX = "[\",]"
+        private val SCRIPT_REGEX = "[\",]".toRegex()
     }
 }
