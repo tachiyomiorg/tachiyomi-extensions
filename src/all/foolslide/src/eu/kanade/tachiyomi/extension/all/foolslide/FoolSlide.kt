@@ -111,10 +111,11 @@ abstract class FoolSlide(
 
     open val mangaDetailsInfoSelector = "div.info"
 
+    // if there's no image on the details page, get the first page of the first chapter
     fun getDetailsThumbnail(document: Document, urlSelector: String = chapterUrlSelector): String? {
         return document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
         document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
-            .let { element -> client.newCall(allowAdult(GET(element, headers))).execute() }
+            .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
             .let { response -> pageListParse(response).first().imageUrl }
     }
 
