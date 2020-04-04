@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.mangahost
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
