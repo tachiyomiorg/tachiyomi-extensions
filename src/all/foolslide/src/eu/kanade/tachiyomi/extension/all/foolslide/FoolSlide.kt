@@ -110,7 +110,13 @@ abstract class FoolSlide(
     override fun mangaDetailsRequest(manga: SManga) = allowAdult(super.mangaDetailsRequest(manga))
 
     open val mangaDetailsInfoSelector = "div.info"
-    open val mangaDetailsThumbnailSelector = "div.thumbnail img"
+
+    fun getDetailsThumbnail(document: Document, urlSelector: String = chapterUrlSelector): String? {
+        return document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
+        document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
+            .let { element -> client.newCall(allowAdult(GET(element, headers))).execute() }
+            .let { response -> pageListParse(response).first().imageUrl }
+    }
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(mangaDetailsInfoSelector).first().text()
@@ -119,7 +125,7 @@ abstract class FoolSlide(
         manga.author = infoElement.substringAfter("Author:").substringBefore("Artist:")
         manga.artist = infoElement.substringAfter("Artist:").substringBefore("Synopsis:")
         manga.description = infoElement.substringAfter("Synopsis:")
-        manga.thumbnail_url = document.select(mangaDetailsThumbnailSelector).first()?.absUrl("src")
+        manga.thumbnail_url = getDetailsThumbnail(document)
 
         return manga
     }
