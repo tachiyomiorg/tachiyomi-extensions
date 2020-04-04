@@ -8,6 +8,8 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.lang.NumberFormatException
+import java.lang.UnsupportedOperationException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,7 +27,7 @@ class Mangahere : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client = super.client.newBuilder()
+    override val client: OkHttpClient = super.client.newBuilder()
             .cookieJar(object : CookieJar{
                 override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
                 override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
@@ -96,7 +98,7 @@ class Mangahere : ParsedHttpSource() {
                     }
 
                     url.addEncodedQueryParameter("genres", includeGenres.joinToString(","))
-                            .addEncodedQueryParameter("nogenres", excludeGenres.joinToString(","))
+                        .addEncodedQueryParameter("nogenres", excludeGenres.joinToString(","))
                 }
 
             }
@@ -193,86 +195,93 @@ class Mangahere : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val bar = document.select("script[src*=chapter_bar]")
-        if (!bar.isNullOrEmpty()){
-            val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
-            val duktape = Duktape.create()
-            val DeobfuscatedScript = duktape.evaluate(script).toString()
-            val urls = DeobfuscatedScript.substringAfter("newImgs=['").substringBefore("'];").split("','")
-            duktape.close()
-            val pages = mutableListOf<Page>()
-            urls.forEachIndexed { index, s ->
-                pages.add(Page(index, "", "http:$s"))
-            }
-            return pages
-        } else {
-
-        val html = document.html()
-        val link = document.location()
-
-        val pages = mutableListOf<Page>()
-
         val duktape = Duktape.create()
 
-        var secretKey = extractSecretKey(html, duktape)
+        // if-branch is for webtoon reader, else is for page-by-page
+        return if (bar.isNotEmpty()) {
+            val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
+            val deobfuscatedScript = duktape.evaluate(script).toString()
+            val urls = deobfuscatedScript.substringAfter("newImgs=['").substringBefore("'];").split("','")
+            duktape.close()
 
-        val chapterIdStartLoc =  html.indexOf("chapterid")
-        val chapterId = html.substring(
-                chapterIdStartLoc + 11,
-                html.indexOf(";", chapterIdStartLoc)).trim()
+            /*
+                last webtoon imageUrl is usually broken, working imageUrls are incremental (e.g. t001, t002, etc); if the difference between
+                the last two isn't 1 or doesn't have an Int at the end of the last imageUrl's filename, drop last Page
+             */
+            urls.mapIndexed { index, s -> Page(index, "", "http:$s") }.let { pages ->
+                val list = pages.takeLast(2).map { page ->
+                    try {
+                        page.imageUrl!!.substringBeforeLast(".").substringAfterLast("/").takeLast(2).toInt()
+                    } catch (_: NumberFormatException) {
+                        return pages.dropLast(1)
+                    }
+                }
+                when {
+                    list[0] == 0 && 100 - list[1] == 1 -> pages
+                    list[1] - list[0] == 1 -> pages
+                    else -> pages.dropLast(1)
+                }
+            }
+        } else {
+            val html = document.html()
+            val link = document.location()
 
-        val chapterPagesElement = document.select(".pager-list-left > span").first()
-        val pagesLinksElements = chapterPagesElement.select("a")
-        val pagesNumber = pagesLinksElements.get(pagesLinksElements.size - 2).attr("data-page").toInt()
+            var secretKey = extractSecretKey(html, duktape)
 
-        val pageBase = link.substring(0, link.lastIndexOf("/"))
+            val chapterIdStartLoc =  html.indexOf("chapterid")
+            val chapterId = html.substring(
+                    chapterIdStartLoc + 11,
+                    html.indexOf(";", chapterIdStartLoc)).trim()
 
-        for (i in 1..pagesNumber){
+            val chapterPagesElement = document.select(".pager-list-left > span").first()
+            val pagesLinksElements = chapterPagesElement.select("a")
+            val pagesNumber = pagesLinksElements[pagesLinksElements.size - 2].attr("data-page").toInt()
 
-            val pageLink = "${pageBase}/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
+            val pageBase = link.substring(0, link.lastIndexOf("/"))
 
-            var responseText = ""
+            IntRange(1, pagesNumber).map { i ->
 
-            for (tr in 1..3){
+                val pageLink = "${pageBase}/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
 
-                val request = Request.Builder()
-                        .url(pageLink)
-                        .addHeader("Referer",link)
-                        .addHeader("Accept","*/*")
-                        .addHeader("Accept-Language","en-US,en;q=0.9")
-                        .addHeader("Connection","keep-alive")
-                        .addHeader("Host","www.mangahere.cc")
-                        .addHeader("User-Agent", System.getProperty("http.agent") ?: "")
-                        .addHeader("X-Requested-With","XMLHttpRequest")
-                        .build()
+                var responseText = ""
 
-                val response = client.newCall(request).execute()
-                responseText = response.body()!!.string()
+                for (tr in 1..3){
 
-                if (responseText.isNotEmpty())
-                    break
-                else
-                    secretKey = ""
+                    val request = Request.Builder()
+                            .url(pageLink)
+                            .addHeader("Referer",link)
+                            .addHeader("Accept","*/*")
+                            .addHeader("Accept-Language","en-US,en;q=0.9")
+                            .addHeader("Connection","keep-alive")
+                            .addHeader("Host","www.mangahere.cc")
+                            .addHeader("User-Agent", System.getProperty("http.agent") ?: "")
+                            .addHeader("X-Requested-With","XMLHttpRequest")
+                            .build()
+
+                    val response = client.newCall(request).execute()
+                    responseText = response.body()!!.string()
+
+                    if (responseText.isNotEmpty())
+                        break
+                    else
+                        secretKey = ""
+
+                }
+
+                val deobfuscatedScript = duktape.evaluate(responseText.removePrefix("eval")).toString()
+
+                val baseLinkStartPos = deobfuscatedScript.indexOf("pix=") + 5
+                val baseLinkEndPos = deobfuscatedScript.indexOf(";", baseLinkStartPos) - 1
+                val baseLink = deobfuscatedScript.substring(baseLinkStartPos, baseLinkEndPos)
+
+                val imageLinkStartPos = deobfuscatedScript.indexOf("pvalue=") + 9
+                val imageLinkEndPos = deobfuscatedScript.indexOf("\"", imageLinkStartPos)
+                val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
+
+                Page(i - 1, "", "http:$baseLink$imageLink")
 
             }
-
-            val deobfuscatedScript = duktape.evaluate(responseText.removePrefix("eval")).toString()
-
-            val baseLinkStartPos = deobfuscatedScript.indexOf("pix=") + 5
-            val baseLinkEndPos = deobfuscatedScript.indexOf(";", baseLinkStartPos) - 1
-            val baseLink = deobfuscatedScript.substring(baseLinkStartPos, baseLinkEndPos)
-
-            val imageLinkStartPos = deobfuscatedScript.indexOf("pvalue=") + 9
-            val imageLinkEndPos = deobfuscatedScript.indexOf("\"", imageLinkStartPos)
-            val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
-
-            pages.add(Page(i, "", "http:$baseLink$imageLink"))
-
-        }
-
-        duktape.close()
-
-        return pages
-        }
+        }.also { duktape.close() }
     }
 
     private fun extractSecretKey(html: String, duktape: Duktape): String {
@@ -293,7 +302,7 @@ class Mangahere : ParsedHttpSource() {
 
     }
 
-    override fun imageUrlParse(document: Document) = document.getElementById("image").attr("src")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class Genre(title: String, val id: Int) : Filter.TriState(title)
 
