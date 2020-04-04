@@ -21,7 +21,7 @@ class Mangahere : ParsedHttpSource() {
 
     override val name = "Mangahere"
 
-    override val baseUrl = "http://www.mangahere.cc"
+    override val baseUrl = "https://www.mangahere.cc"
 
     override val lang = "en"
 
@@ -208,7 +208,7 @@ class Mangahere : ParsedHttpSource() {
                 last webtoon imageUrl is usually broken, working imageUrls are incremental (e.g. t001, t002, etc); if the difference between
                 the last two isn't 1 or doesn't have an Int at the end of the last imageUrl's filename, drop last Page
              */
-            urls.mapIndexed { index, s -> Page(index, "", "http:$s") }.let { pages ->
+            urls.mapIndexed { index, s -> Page(index, "", "https:$s") }.let { pages ->
                 val list = pages.takeLast(2).map { page ->
                     try {
                         page.imageUrl!!.substringBeforeLast(".").substringAfterLast("/").takeLast(2).toInt()
@@ -278,7 +278,7 @@ class Mangahere : ParsedHttpSource() {
                 val imageLinkEndPos = deobfuscatedScript.indexOf("\"", imageLinkStartPos)
                 val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
 
-                Page(i - 1, "", "http:$baseLink$imageLink")
+                Page(i - 1, "", "https:$baseLink$imageLink")
 
             }
         }.also { duktape.close() }
