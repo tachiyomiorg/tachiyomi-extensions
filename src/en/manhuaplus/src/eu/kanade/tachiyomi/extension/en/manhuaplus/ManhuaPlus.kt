@@ -117,7 +117,7 @@ class ManhuaPlus : ParsedHttpSource() {
 
     private fun String?.toDate(): Long {
         return try {
-            dateFormat.parse("$this +0800").time
+            dateFormat.parse("$this +0500").time
         } catch (_: Exception) {
             0L
         }
