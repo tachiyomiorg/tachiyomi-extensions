@@ -1,13 +1,10 @@
 package eu.kanade.tachiyomi.extension.zh.onemanhua
 
 import android.util.Base64
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.Headers
 import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -25,19 +22,6 @@ class Onemanhua : ParsedHttpSource() {
 
     private var decryptKey = "JRUIFMVJDIWE569j"
     private var imageServerUrl = "https://img.onemanhua.com/comic/"
-
-    // Inform server we're using Tachiyomi (Many other ways to detect Tachiyomi other than user-agent)
-    override fun headersBuilder(): Headers.Builder {
-        return Headers.Builder()
-            .add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
-    }
-
-    // Don't spam the server with your fast fingers
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
-
-    override val client: OkHttpClient = network.client.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor)
-        .build()
 
     // Common
     private var commonSelector = "li.fed-list-item"
