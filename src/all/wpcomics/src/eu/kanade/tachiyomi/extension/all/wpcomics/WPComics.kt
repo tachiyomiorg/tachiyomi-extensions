@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.manhuaplus
+package eu.kanade.tachiyomi.extension.all.wpcomics
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
@@ -15,13 +15,13 @@ import java.util.Locale
  * Will have to add that later if their catalog grows
  */
 
-class ManhuaPlus : ParsedHttpSource() {
-
-    override val name = "Manhua Plus"
-
-    override val baseUrl = "https://manhuaplus.com"
-
-    override val lang = "en"
+abstract class WPComics(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String,
+    private val dateFormat: SimpleDateFormat = SimpleDateFormat("HH:mm - dd/MM/yyyy Z", Locale.US),
+    private val gmtOffset: String? = "+0500"
+) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
@@ -87,7 +87,9 @@ class ManhuaPlus : ParsedHttpSource() {
                 status = info.select("li.status p.col-xs-8").text().toStatus()
                 genre = info.select("li.kind p.col-xs-8 a").joinToString { it.text() }
                 description = info.select("div.detail-content p").text()
-                thumbnail_url = info.select("div.col-image img").attr("abs:data-src")
+                thumbnail_url = info.select("div.col-image img").let {
+                    if (it.hasAttr("data-src")) it.attr("abs:data-src") else it.attr("abs:src")
+                }
             }
         }
     }
@@ -113,11 +115,9 @@ class ManhuaPlus : ParsedHttpSource() {
         }
     }
 
-    private val dateFormat = SimpleDateFormat("HH:mm - dd/MM/yyyy Z", Locale.US)
-
     private fun String?.toDate(): Long {
         return try {
-            dateFormat.parse("$this +0500").time
+            dateFormat.parse(this + if (gmtOffset != null) " $gmtOffset" else "").time
         } catch (_: Exception) {
             0L
         }
@@ -125,10 +125,20 @@ class ManhuaPlus : ParsedHttpSource() {
 
     // Pages
 
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.page-chapter > img").mapIndexed { i, img ->
-            Page(i, "", img.attr("abs:data-original"))
+    private fun imageOrNull(element: Element): String? {
+        return when {
+            element.attr("data-original").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:data-original")
+            element.attr("data-src").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:data-src")
+            element.attr("src").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:src")
+            else -> null
         }
+    }
+
+    open val pageListSelector = "div.page-chapter > img, li.blocks-gallery-item img"
+
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select(pageListSelector).mapIndexed { i, img -> (Page(i, "", imageOrNull(img))) }
+            .filterNot { it.imageUrl == null }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
