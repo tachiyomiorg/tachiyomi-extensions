@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.zh.bh3
 
-import android.util.Log
 import com.github.salomonbrys.kotson.float
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -8,7 +7,10 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -16,7 +18,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class BH3 : ParsedHttpSource() {
@@ -55,7 +57,7 @@ class BH3 : ParsedHttpSource() {
 
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.url = element.select("a").attr("href")
+        manga.url = "/book/" + element.select("div.container").attr("id")
         manga.title = element.select("div.container-title").text().trim()
         manga.thumbnail_url = element.select("img").attr("abs:src")
         return manga
