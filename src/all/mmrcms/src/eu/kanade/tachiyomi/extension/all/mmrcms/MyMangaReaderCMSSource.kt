@@ -2,12 +2,18 @@ package eu.kanade.tachiyomi.extension.all.mmrcms
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Base64
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -16,8 +22,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
-import android.util.Base64
+import java.util.Locale
 
 class MyMangaReaderCMSSource(override val lang: String,
                              override val name: String,
@@ -91,7 +96,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     private fun latestUpdatesSelector() = "div.mangalist div.manga-item"
     private fun latestUpdatesNextPageSelector() = "a[rel=next]"
     private fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a").first().attr("abs:href"))
+        url = element.select("a").first().attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
         title = element.select("a").first().text().trim()
         thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
     }
