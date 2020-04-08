@@ -15,6 +15,10 @@
                     android:pathPattern="/title/..*" />
                 <data
                     android:scheme="https"
+                    android:host="www.mangadex.org"
+                    android:pathPattern="/title/..*" />
+                <data
+                    android:scheme="https"
                     android:host="mangadex.org"
                     android:pathPattern="/manga/..*" />
                 <data
