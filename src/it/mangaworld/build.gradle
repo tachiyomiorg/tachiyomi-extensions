@@ -3,10 +3,10 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Mangaworld'
-    pkgNameSuffix = 'tv.mangaworld'
+    pkgNameSuffix = 'it.mangaworld'
     extClass = '.Mangaworld'
     extVersionCode = 1
-    libVersion = '1.3'
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"
