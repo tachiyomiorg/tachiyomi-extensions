@@ -36,6 +36,7 @@ class Komiku: ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("h3").text().trim()
+        thumbnail_url = element.select("img").attr("src")
     }
 
     override fun popularMangaNextPageSelector() = "a.next.popunder"
@@ -44,10 +45,7 @@ class Komiku: ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/page/$page", headers)
 
-    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a").attr("href"))
-        title = element.select("h3").text().trim()
-    }
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
