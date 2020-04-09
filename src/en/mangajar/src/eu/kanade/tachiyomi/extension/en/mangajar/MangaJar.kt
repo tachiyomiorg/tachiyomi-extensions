@@ -30,7 +30,7 @@ class MangaJar: ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "article div.post-description > a"
+    override fun popularMangaSelector() = "article:has(div.post-description)"
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga?sortBy=popular&page=$page")
@@ -43,8 +43,9 @@ class MangaJar: ParsedHttpSource() {
     }
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
+        setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("p.card-title.js-card-title").text()
+        thumbnail_url = element.select("img").attr("src")
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
