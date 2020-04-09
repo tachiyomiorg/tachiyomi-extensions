@@ -9,11 +9,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
-
-/**
- * Small catalog at time of extension's creation, can't be sure how $page will be used in requests
- * Will have to add that later if their catalog grows
- */
+import java.util.Calendar
 
 abstract class WPComics(
     override val name: String,
@@ -29,8 +25,10 @@ abstract class WPComics(
 
     // Popular
 
+    open val popularPath = "hot"
+
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/hot/", headers)
+        return GET("$baseUrl/$popularPath" + if (page > 1) "?page=$page" else "", headers)
     }
 
     override fun popularMangaSelector() = "div.items div.item"
@@ -41,17 +39,17 @@ abstract class WPComics(
                 title = it.text()
                 setUrlWithoutDomain(it.attr("abs:href"))
             }
-            thumbnail_url = element.select("div.image:first-of-type img").attr("abs:src")
+            thumbnail_url = imageOrNull(element.select("div.image:first-of-type img").first())
 
         }
     }
 
-    override fun popularMangaNextPageSelector(): String? = null
+    override fun popularMangaNextPageSelector() = "a.next-page"
 
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET(baseUrl, headers)
+        return GET(baseUrl + if (page > 1) "?page=$page" else "", headers)
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -63,7 +61,7 @@ abstract class WPComics(
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/?s=$query&post_type=comics")
+        return GET("$baseUrl/?s=$query&post_type=comics&page=$page")
     }
 
     override fun searchMangaSelector() = "div.items div.item div.image a"
@@ -72,7 +70,7 @@ abstract class WPComics(
         return SManga.create().apply {
             title = element.attr("title")
             setUrlWithoutDomain(element.attr("href"))
-            thumbnail_url = element.select("img").attr("abs:data-src")
+            thumbnail_url = imageOrNull(element.select("img").first())
         }
     }
 
@@ -87,9 +85,7 @@ abstract class WPComics(
                 status = info.select("li.status p.col-xs-8").text().toStatus()
                 genre = info.select("li.kind p.col-xs-8 a").joinToString { it.text() }
                 description = info.select("div.detail-content p").text()
-                thumbnail_url = info.select("div.col-image img").let {
-                    if (it.hasAttr("data-src")) it.attr("abs:data-src") else it.attr("abs:src")
-                }
+                thumbnail_url = imageOrNull(info.select("div.col-image img").first())
             }
         }
     }
@@ -117,7 +113,21 @@ abstract class WPComics(
 
     private fun String?.toDate(): Long {
         return try {
-            dateFormat.parse(this + if (gmtOffset != null) " $gmtOffset" else "").time
+            if (this?.contains("ago", ignoreCase = true) == true) {
+                val trimmedDate = this.substringBefore(" ago").removeSuffix("s").split(" ")
+                val calendar = Calendar.getInstance()
+
+                when (trimmedDate[1]) {
+                    "day" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }
+                    "hour" -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }
+                    "minute" -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }
+                    "second" -> calendar.apply { add(Calendar.SECOND, -trimmedDate[0].toInt()) }
+                }
+
+                calendar.timeInMillis
+            } else {
+                dateFormat.parse(if (gmtOffset == null) this?.substringAfterLast(" ") else "$this $gmtOffset").time
+            }
         } catch (_: Exception) {
             0L
         }
@@ -125,6 +135,7 @@ abstract class WPComics(
 
     // Pages
 
+    // sources sometimes have an image element with an empty attr that isn't really an image
     private fun imageOrNull(element: Element): String? {
         return when {
             element.attr("data-original").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:data-original")
@@ -137,8 +148,8 @@ abstract class WPComics(
     open val pageListSelector = "div.page-chapter > img, li.blocks-gallery-item img"
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(pageListSelector).mapIndexed { i, img -> (Page(i, "", imageOrNull(img))) }
-            .filterNot { it.imageUrl == null }
+        return document.select(pageListSelector).mapNotNull { img -> imageOrNull(img) }
+            .mapIndexed { i, image -> Page(i, "", image)}
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
