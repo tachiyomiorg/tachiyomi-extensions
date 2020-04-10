@@ -18,6 +18,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.lang.UnsupportedOperationException
 import java.util.concurrent.TimeUnit
 
 abstract class WPMangaStream(override val name: String, override val baseUrl: String, override val lang: String) : ConfigurableSource, ParsedHttpSource() {
@@ -131,7 +132,7 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.limit img").attr("src")
+        manga.thumbnail_url = element.select("div.limit img").attr("abs:src")
         element.select("div.bsx > a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
@@ -148,19 +149,13 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.spe").first()
-        val descElement = document.select(".infox > div.desc").first()
         val sepName = infoElement.select(".spe > span:contains(Author)").last()
         val manga = SManga.create()
         manga.author = sepName?.ownText() ?:"N/A"
         manga.artist = sepName?.ownText() ?:"N/A"
-        val genres = mutableListOf<String>()
-        infoElement.select(".spe > span:nth-child(1) > a").forEach { element ->
-            val genre = element.text()
-            genres.add(genre)
-        }
-        manga.genre = genres.joinToString(", ")
+        manga.genre = infoElement.select(".spe > span:nth-child(1) > a").joinToString { it.text() }
         manga.status = parseStatus(infoElement.select(".spe > span:nth-child(2)").text())
-        manga.description = descElement.select("p").text()
+        manga.description = document.select(".infox > div.desc").first().select("p").text()
         manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
 
         return manga
@@ -199,7 +194,7 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         val pages = mutableListOf<Page>()
         var i = 0
         document.select("div#readerarea img").forEach { element ->
-            val url = element.attr("src")
+            val url = element.attr("abs:src")
             i++
             if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
@@ -208,7 +203,7 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         return pages
     }
 
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun imageRequest(page: Page): Request {
         val headers = Headers.Builder()
@@ -226,19 +221,13 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         return GET(getImageUrl(page.imageUrl!!, getShowThumbnail()), headers.build())
     }
 
-    private fun getImageUrl(baseUrl: String, quality: Int): String {
-        var url = baseUrl
-        when(quality){
-            LOW_QUALITY -> {
-                url = url.replace("https://", "")
-                url = "https://images.weserv.nl/?w=300&q=70&url=" + url
-            }
-            MID_QUALITY -> {
-                url = url.replace("https://", "")
-                url = "https://images.weserv.nl/?w=600&q=70&url=" + url
-            }
+    private fun getImageUrl(originalUrl: String, quality: Int): String {
+        val url = originalUrl.substringAfter("//")
+        return when (quality) {
+            LOW_QUALITY -> "https://images.weserv.nl/?w=300&q=70&url=$url"
+            MID_QUALITY -> "https://images.weserv.nl/?w=600&q=70&url=$url"
+            else -> originalUrl
         }
-        return url
     }
 
     private class AuthorFilter : Filter.Text("Author")

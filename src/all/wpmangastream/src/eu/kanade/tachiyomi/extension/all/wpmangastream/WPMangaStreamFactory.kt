@@ -2,17 +2,24 @@ package eu.kanade.tachiyomi.extension.all.wpmangastream
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.Interceptor
+import okhttp3.HttpUrl
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import java.util.Calendar
 
 class WPMangaStreamFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -25,12 +32,19 @@ class WPMangaStreamFactory : SourceFactory {
         KomikIndo(),
         MaidManga(),
         SekteKomik(),
-        MangaSwat()
+        MangaSwat(),
+        MangaRaw()
     )
 }
 
-class SekteKomik() : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
-class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id")
+class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
+class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id") {
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("div#readerarea img").map { it.attr("abs:src") }
+            .filterNot { it.contains("/.filerun") }
+            .mapIndexed { i, image -> Page(i, "", image) }
+    }
+}
 class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id")
 class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
 class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikcast.com", "id") {
@@ -940,8 +954,6 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
-
     override fun getFilterList() = FilterList(
         Filter.Header("You can combine filter."),
         Filter.Separator(),
@@ -970,7 +982,7 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
 }
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
-    private class sucuri(): Interceptor {
+    private class Sucuri: Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val originalRequest = chain.request()
             val response = chain.proceed(originalRequest)
@@ -978,16 +990,12 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
             return response
         }
     }
-    override val client: OkHttpClient = super.client.newBuilder().addInterceptor(sucuri()).build()
-    
-    //Popular
-    //Latest
-    //Search
-    //Details
+    override val client: OkHttpClient = super.client.newBuilder().addInterceptor(Sucuri()).build()
+
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         thumbnail_url = document.select("div.thumb img.lazyload").attr("data-src")
         title = document.select("div.infox h1").text()
-        genre = document.select("div.spe [rel=tag]").map { it.text() }.joinToString(", ")
+        genre = document.select("div.spe [rel=tag]").joinToString(", ") { it.text() }
         status = when (document.select("span:contains(الحالة)").text().substringAfter(":").trim()) {
             "Ongoing" -> SManga.ONGOING
             "Completed" -> SManga.COMPLETED
@@ -997,9 +1005,6 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
         artist = author
         description = document.select("div[itemprop=articleBody]").text()
     }
-
-    //Chapters
-    //Pages and Images
     override fun pageListRequest(chapter: SChapter): Request {
         return GET(baseUrl + chapter.url + "?/", headers) //Bypass "linkvertise" ads
     }
@@ -1011,4 +1016,37 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
     override fun imageRequest(page: Page): Request {
         return GET( page.imageUrl!! , headers)
     }
+}
+
+class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/search?order=popular&page=$page", headers)
+    override fun popularMangaSelector() = "div.bsx"
+    override fun popularMangaFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            element.select("div.bigor > a").let {
+                setUrlWithoutDomain(it.attr("href"))
+                title = it.text()
+            }
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
+    }
+    override fun popularMangaNextPageSelector() = "a[rel=next]"
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/search?order=update&page=$page", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request
+        = GET("$baseUrl/search?s=$query&page=$page")
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        return client.newCall(pageListRequest(chapter))
+            .asObservableSuccess()
+            .map { response ->
+                pageListParse(response, baseUrl + chapter.url.removeSuffix("/"))
+            }
+    }
+    private fun pageListParse(response: Response, chapterUrl: String): List<Page> {
+        return response.asJsoup().select("span.page-link").first().ownText().substringAfterLast(" ").toInt()
+            .let { lastNum -> IntRange(1, lastNum) }
+            .map { num -> Page(num, "$chapterUrl/$num") }
+    }
+    override fun imageUrlParse(document: Document) = document.select("a.img-block img").attr("abs:src")
+    override fun getFilterList(): FilterList = FilterList()
 }
