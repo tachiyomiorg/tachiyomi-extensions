@@ -18,4 +18,7 @@ class LeitorNet : MangasProject("Leitor.net", "https://leitor.net") {
     override val id: Long = 2225174659569980836
 }
 
-class MangaLivre : MangasProject("MangaLivre", "https://mangalivre.net")
+class MangaLivre : MangasProject("MangaLivre", "https://mangalivre.net") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 4762777556012432014
+}
