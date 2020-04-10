@@ -32,7 +32,7 @@ abstract class FMReader(
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64) Gecko/20100101 Firefox/69.0")
+        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64) Gecko/20100101 Firefox/75.0")
         add("Referer", baseUrl)
     }
 
@@ -65,9 +65,9 @@ abstract class FMReader(
                     url.addQueryParameter("ungenre", ungenre)
                 }
                 is SortBy -> {
-                    url.addQueryParameter("sort", when {
-                        filter.state?.index == 0 -> "name"
-                        filter.state?.index == 1 -> "views"
+                    url.addQueryParameter("sort", when (filter.state?.index) {
+                        0 -> "name"
+                        1 -> "views"
                         else -> "last_update"
                     })
                     if (filter.state?.ascending == true)
@@ -109,21 +109,15 @@ abstract class FMReader(
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        element.select("h3 a").let {
-            manga.setUrlWithoutDomain(it.attr("abs:href"))
-            manga.title = it.text()
-        }
-        manga.thumbnail_url = element.select("img").let {
-            if (it.hasAttr("src")) {
-                it.attr("abs:src")
-            } else {
-                it.attr("abs:data-original")
+        return SManga.create().apply {
+            element.select("h3 a").let {
+                setUrlWithoutDomain(it.attr("abs:href"))
+                title = it.text()
+            }
+            thumbnail_url = element.select("img").let {
+                if (it.hasAttr("src")) it.attr("abs:src") else it.attr("abs:data-original")
             }
         }
-
-        return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
@@ -142,23 +136,27 @@ abstract class FMReader(
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
         val infoElement = document.select("div.row").first()
 
-        manga.author = infoElement.select("li a.btn-info").text()
-        manga.genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
-        manga.status = parseStatus(infoElement.select("li a.btn-success").first().text())
-        manga.description = document.select("div.row ~ div.row p").text().trim()
-        manga.thumbnail_url = infoElement.select("img.thumbnail").attr("abs:src")
-
-        return manga
+        return SManga.create().apply {
+            author = infoElement.select("li a.btn-info").text()
+            genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
+            status = parseStatus(infoElement.select("li a.btn-success").first()?.text())
+            description = document.select("div.row ~ div.row p").text().trim()
+            thumbnail_url = infoElement.select("img.thumbnail").attr("abs:src")
+        }
     }
 
     // languages: en, vi, tr
-    fun parseStatus(status: String): Int = when (status.toLowerCase()) {
-        "completed", "complete", "incomplete", "đã hoàn thành", "tamamlandı" -> SManga.COMPLETED
-        "ongoing", "on going", "updating", "chưa hoàn thành", "đang cập nhật", "devam ediyor" -> SManga.ONGOING
-        else -> SManga.UNKNOWN
+    fun parseStatus(status: String?): Int {
+        val completedWords = setOf("completed", "complete", "incomplete", "đã hoàn thành", "tamamlandı", "hoàn thành")
+        val ongoingWords = setOf("ongoing", "on going", "updating", "chưa hoàn thành", "đang cập nhật", "devam ediyor", "Đang tiến hành")
+        return when {
+            status == null -> SManga.UNKNOWN
+            completedWords.any { it.equals(status, ignoreCase = true) } -> SManga.COMPLETED
+            ongoingWords.any { it.equals(status, ignoreCase = true) } -> SManga.ONGOING
+            else -> SManga.UNKNOWN
+        }
     }
 
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
@@ -168,15 +166,13 @@ abstract class FMReader(
     open val chapterTimeSelector = "time"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-
-        element.select(chapterUrlSelector).first().let {
-            chapter.setUrlWithoutDomain(it.attr("abs:href"))
-            chapter.name = it.text()
+        return SChapter.create().apply {
+            element.select(chapterUrlSelector).first().let {
+                setUrlWithoutDomain(it.attr("abs:href"))
+                name = it.text()
+            }
+            date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }
-        chapter.date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
-
-        return chapter
     }
 
     // gets the number from "1 day ago"

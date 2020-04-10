@@ -30,7 +30,6 @@ class FMReaderFactory : SourceFactory {
         MangaTiki(),
         MangaBone(),
         YoloManga(),
-        AiLoveManga(),
         ReadComicOnlineOrg(),
         HanaScan(),
         RawLH(),
@@ -41,7 +40,8 @@ class FMReaderFactory : SourceFactory {
         Comicastle(),
         Manhwa18Net(),
         Manhwa18NetRaw(),
-        MangaBorn()
+        MangaBorn(),
+        SayTruyen()
     )
 }
 
@@ -56,30 +56,6 @@ class MangaTiki : FMReader("MangaTiki", "https://mangatiki.com", "ja")
 class MangaBone : FMReader("MangaBone", "https://mangabone.com", "en")
 class YoloManga : FMReader("Yolo Manga", "https://yolomanga.ca", "es") {
     override fun chapterListSelector() = "div#tab-chapper ~ div#tab-chapper table tr"
-}
-
-class AiLoveManga : FMReader("AiLoveManga", "https://ailovemanga.com", "vi") {
-    override val requestPath = "danh-sach-truyen.html"
-    // TODO: could add a genre search (different URL paths for genres)
-    override fun getFilterList() = FilterList()
-
-    // I don't know why, but I have to override searchMangaRequest to make it work for this source
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/$requestPath?name=$query&page=$page")
-
-    override fun chapterListSelector() = "div#tab-chapper table tr"
-    override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
-        val infoElement = document.select("div.container:has(img)").first()
-
-        manga.author = infoElement.select("a.btn-info").first().text()
-        manga.artist = infoElement.select("a.btn-info + a").text()
-        manga.genre = infoElement.select("a.btn-danger").joinToString { it.text() }
-        manga.status = parseStatus(infoElement.select("a.btn-success").text())
-        manga.description = document.select("div.col-sm-8 p").text().trim()
-        manga.thumbnail_url = infoElement.select("img").attr("abs:src")
-
-        return manga
-    }
 }
 
 class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconline.org", "en") {
@@ -336,4 +312,25 @@ class MangaBorn : FMReader("MangaBorn", "https://hellxlight.com", "en") {
     override fun chapterListSelector() = "div.chapter_list li"
     override val pageListImageSelector = "div.panel-read-story img"
     override fun getFilterList() = FilterList()
+}
+
+class SayTruyen : FMReader("Say Truyen", "https://saytruyen.com", "vi") {
+    override fun mangaDetailsParse(document: Document): SManga {
+        val info = document.select("div.row").first()
+        return SManga.create().apply {
+            author = info.select("div.row li:has(b:contains(Tác giả)) small").text()
+            genre = info.select("div.row li:has(b:contains(Thể loại)) small a").joinToString { it.text() }
+            status = parseStatus(info.select("div.row li:has(b:contains(Tình trạng)) a").text())
+            description = document.select("div.description").text()
+            thumbnail_url = info.select("img.thumbnail").attr("abs:src")
+        }
+    }
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return response.asJsoup().let { document ->
+            document.select(chapterListSelector()).map { chapterFromElement(it).apply {
+                scanlator = document.select("div.row li:has(b:contains(Nhóm dịch)) small").text()
+            } }
+        }
+    }
+    override fun pageListParse(document: Document): List<Page> = super.pageListParse(document).onEach { it.imageUrl!!.trim() }
 }
