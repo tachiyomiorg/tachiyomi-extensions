@@ -3,13 +3,22 @@ package eu.kanade.tachiyomi.extension.all.madara
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -86,7 +95,11 @@ class MadaraFactory : SourceFactory {
         MangaLord(),
         PornComix(),
         MangaRead(),
-        UnknownScans()
+        UnknownScans(),
+        Manga68(),
+        ManhuaBox(),
+        RaiderScans(),
+        PojokManga()
     )
 }
 
@@ -530,3 +543,25 @@ class PornComix : Madara("PornComix", "https://www.porncomixonline.net", "en")
 class MangaRead : Madara("Manga Read", "https://mangaread.co", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
 class UnknownScans : Madara("Unknown Scans", "https://unknoscans.com", "en")
+
+class Manga68 : Madara("Manga68", "https://manga68.com", "en") {
+    override val pageListParseSelector = "div.page-break, div.text-left p"
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select(pageListParseSelector).mapIndexed { index, element ->
+            Page(index, "", element.select("img").first()?.let {
+                it.absUrl(/*if (it.hasAttr("data-lazy-src")) "data-lazy-src" else */if (it.hasAttr("data-src")) "data-src" else "src")
+            })
+        }.filter { it.imageUrl!!.startsWith("http") }
+    }
+}
+
+class ManhuaBox : Madara("ManhuaBox", "https://manhuabox.net", "en") {
+    override val pageListParseSelector = "div.page-break, div.text-left p img"
+}
+
+class RaiderScans : Madara("Raider Scans", "https://raiderscans.com", "en")
+
+class PojokManga : Madara("Pojok Manga", "https://pojokmanga.com", "id", SimpleDateFormat("MMM dd, yyyy", Locale.US))
+
+
+
