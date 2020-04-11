@@ -45,10 +45,15 @@ abstract class MangasProject(
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
+
+    // Use internal headers to allow "Open in WebView" to work.
+    private fun sourceHeadersBuilder(): Headers.Builder = headersBuilder()
         .add("X-Requested-With", "XMLHttpRequest")
 
+    private val sourceHeaders: Headers by lazy { sourceHeadersBuilder().build() }
+
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/home/most_read?page=$page", headers)
+        return GET("$baseUrl/home/most_read?page=$page", sourceHeaders)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -69,7 +74,7 @@ abstract class MangasProject(
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/home/releases?page=$page", headers)
+        return GET("$baseUrl/home/releases?page=$page", sourceHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -94,7 +99,7 @@ abstract class MangasProject(
             .add("search", query)
             .build()
 
-        return POST("$baseUrl/lib/search/series.json", headers, form)
+        return POST("$baseUrl/lib/search/series.json", sourceHeaders, form)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -116,14 +121,6 @@ abstract class MangasProject(
         url = obj["link"].string
         author = obj["author"].string
         artist = obj["artist"].string
-    }
-
-    override fun mangaDetailsRequest(manga: SManga): Request {
-        val newHeaders = headersBuilder()
-            .removeAll("X-Requested-With")
-            .build()
-
-        return GET(baseUrl + manga.url, newHeaders)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -180,7 +177,7 @@ abstract class MangasProject(
     }
 
     private fun chapterListRequestPaginated(mangaUrl: String, id: String, page: Int): Request {
-        val newHeaders = headersBuilder()
+        val newHeaders = sourceHeadersBuilder()
             .set("Referer", baseUrl + mangaUrl)
             .build()
 
@@ -241,14 +238,13 @@ abstract class MangasProject(
     override fun pageListRequest(chapter: SChapter): Request {
         val newHeaders = headersBuilder()
             .set("Referer", baseUrl + chapter.url)
-            .removeAll("X-Requested-With")
             .build()
 
         return GET(baseUrl + chapter.url, newHeaders)
     }
 
     private fun pageListApiRequest(chapterUrl: String, token: String): Request {
-        val newHeaders = headersBuilder()
+        val newHeaders = sourceHeadersBuilder()
             .set("Referer", chapterUrl)
             .build()
 
@@ -267,7 +263,7 @@ abstract class MangasProject(
             return result
 
         val document = result.asJsoup()
-        val token = document.select("script[src*=\"reader.\"]")
+        val token = document.select("script[src*=\"reader.\"]").first()
             ?.let {
                 HttpUrl.parse(it.attr("abs:src"))!!
                     .queryParameter("token")
@@ -292,7 +288,6 @@ abstract class MangasProject(
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
             .set("Referer", page.url)
-            .removeAll("X-Requested-With")
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
