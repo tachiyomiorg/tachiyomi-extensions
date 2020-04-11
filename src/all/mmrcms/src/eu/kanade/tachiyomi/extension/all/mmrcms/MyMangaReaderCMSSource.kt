@@ -80,18 +80,19 @@ class MyMangaReaderCMSSource(override val lang: String,
         }
     }
 
+    private val latestTitles = mutableSetOf<String>()
+
     override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(latestUpdatesSelector()).map { element ->
-            latestUpdatesFromElement(element)
-        }.distinctBy { manga -> manga.url }
+        if (document.location().contains("page=1")) latestTitles.clear()
 
-        val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
-            document.select(selector).first()
-        } != null
+        val mangas = document.select(latestUpdatesSelector()).map { element -> latestUpdatesFromElement(element) }
+            .distinctBy { manga -> manga.title }
+            .filterNot { manga -> manga.title in latestTitles }
+            .also { list -> latestTitles.addAll(list.map { it.title }) }
 
-        return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, document.select(latestUpdatesNextPageSelector()) != null)
     }
     private fun latestUpdatesSelector() = "div.mangalist div.manga-item"
     private fun latestUpdatesNextPageSelector() = "a[rel=next]"
@@ -165,7 +166,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     @SuppressLint("DefaultLocale")
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val document = response.asJsoup()
-        title = document.select("h2.listmanga-header, h2.widget-title").first().text().trim()
+        document.select("h2.listmanga-header, h2.widget-title").firstOrNull()?.text()?.trim()?.let { title = it }
         thumbnail_url = coverGuess(document.select(".row [class^=img-responsive]").firstOrNull()?.attr("abs:src"), document.location())
         description = document.select(".row .well p").text().trim()
 
