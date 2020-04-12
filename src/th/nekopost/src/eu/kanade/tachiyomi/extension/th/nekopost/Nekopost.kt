@@ -187,13 +187,13 @@ class Nekopost() : ParsedHttpSource() {
         StatusFilter()
     )
 
-    private class GenreFilter : Filter.Group<GenreCheckbox>("Genre", NPUtils.Genre.values().map { genre -> GenreCheckbox(genre) })
+    private class GenreFilter : Filter.Group<GenreCheckbox>("Genre", NPUtils.Genre.map { genre -> GenreCheckbox(genre.first) })
 
-    private class GenreCheckbox(genre: NPUtils.Genre) : Filter.CheckBox(genre.title, false)
+    private class GenreCheckbox(genre: String) : Filter.CheckBox(genre, false)
 
-    private class StatusFilter : Filter.Group<StatusCheckbox>("Status", NPUtils.Status.values().map { status -> StatusCheckbox(status) })
+    private class StatusFilter : Filter.Group<StatusCheckbox>("Status", NPUtils.Status.map { status -> StatusCheckbox(status.first) })
 
-    private class StatusCheckbox(status: NPUtils.Status) : Filter.CheckBox(status.title, false)
+    private class StatusCheckbox(status: String) : Filter.CheckBox(status, false)
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
         element.select(".project_info").select("a").let {
@@ -218,10 +218,10 @@ class Nekopost() : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (page > 1) throw Error("No more page")
 
-        val genreList: Array<NPUtils.Genre> = try {
-            (filters.find { filter -> filter is GenreFilter } as GenreFilter).state.filter { checkbox -> checkbox.state }.map { checkbox ->
-                NPUtils.Genre.getGenre(checkbox.name)!!
-            }.toTypedArray()
+        var queryString = query
+
+        val genreList: Array<String> = try {
+            (filters.find { filter -> filter is GenreFilter } as GenreFilter).state.filter { checkbox -> checkbox.state }.map { checkbox -> checkbox.name }.toTypedArray()
         } catch (e: Exception) {
             emptyArray<String>()
         }.let {
@@ -235,10 +235,8 @@ class Nekopost() : ParsedHttpSource() {
             }
         }
 
-        val statusList: Array<NPUtils.Status> = try {
-            (filters.find { filter -> filter is StatusFilter } as StatusFilter).state.filter { checkbox -> checkbox.state }.map { checkbox ->
-                NPUtils.Status.getStatus(checkbox.name)!!
-            }.toTypedArray()
+        val statusList: Array<String> = try {
+            (filters.find { filter -> filter is StatusFilter } as StatusFilter).state.filter { checkbox -> checkbox.state }.map { checkbox -> checkbox.name }.toTypedArray()
         } catch (e: Exception) {
             emptyArray()
         }

@@ -14,61 +14,55 @@ object NPUtils {
 
     fun convertDateStringToEpoch(dateStr: String, format: String = "yyyy-MM-dd"): Long = SimpleDateFormat(format, Locale("th")).parse(dateStr).time
 
-    fun getSearchQuery(keyword: String = "", genreList: Array<Genre>, statusList: Array<Status>): String {
+    fun getSearchQuery(keyword: String = "", genreList: Array<String>, statusList: Array<String>): String {
         val keywordQuery = "ip_keyword=$keyword"
 
-        val genreQuery = genreList.joinToString("&") { genre -> "ip_genre[]=${genre.genre}" }
+        val genreQuery = genreList.joinToString("&") { genre -> "ip_genre[]=${getValueOf(Genre, genre)}" }
 
         val statusQuery = statusList.let {
-            if (it.isNotEmpty()) it
-            else Status.values()
-        }.joinToString("&") { status -> "ip_status[]=${status.status}" }
+            if (it.isNotEmpty()) it.map { status -> getValueOf(Status, status) }
+            else Status.map { status -> status.second }
+        }.joinToString("&") { status -> "ip_status[]=$status" }
 
         val typeQuery = "ip_type[]=m"
 
         return "$keywordQuery&$genreQuery&$statusQuery&$typeQuery"
     }
 
-    enum class Genre(val title: String, val genre: Int) {
-        ACTION("Action", 2),
-        ADVENTURE("Adventure", 13),
-        COMEDY("Comedy", 8),
-        DOUJINSHI("Doujinshi", 37),
-        DRAMA("Drama", 3),
-        FANTASY("Fantasy", 1),
-        GENDER_BENDER("Gender Bender", 26),
-        GRUME("Grume", 41),
-        HORROR("Horror", 47),
-        ISEKAI("Isekai", 44),
-        MYSTERY("Mystery", 32),
-        ONE_SHORT("One short", 48),
-        ROMANCE("Romance", 10),
-        SCHOOL_LIFE("School Life", 43),
-        SCI_FI("Sci-fi", 7),
-        SECOND_LIFE("Second Life", 45),
-        SEINEN("Seinen", 49),
-        SHOUJO("Shoujo", 42),
-        SHOUNEN("Shounen", 46),
-        SLICE_OF_LIFE("Slice of Life", 9),
-        SPORT("Sport", 5),
-        TRAP("Trap", 25),
-        YAOI("Yaoi", 23),
-        YURI("Yuri", 24);
+    val Genre = arrayOf(
+        Pair("Fantasy", 1),
+        Pair("Action", 2),
+        Pair("Drama", 3),
+        Pair("Sport", 5),
+        Pair("Sci-fi", 7),
+        Pair("Comedy", 8),
+        Pair("Slice of Life", 9),
+        Pair("Romance", 10),
+        Pair("Adventure", 13),
+        Pair("Yaoi", 23),
+        Pair("Yuri", 24),
+        Pair("Trap", 25),
+        Pair("Gender Bender", 26),
+        Pair("Mystery", 32),
+        Pair("Doujinshi", 37),
+        Pair("Grume", 41),
+        Pair("Shoujo", 42),
+        Pair("School Life", 43),
+        Pair("Isekai", 44),
+        Pair("Shounen", 46),
+        Pair("Second Life", 45),
+        Pair("Horror", 47),
+        Pair("One short", 48),
+        Pair("Seinen", 49)
+    ).sortedWith(compareBy { it.first }).toTypedArray()
 
-        companion object {
-            fun getGenre(title: String): Genre? = values().find { genre -> genre.title == title }
-        }
-    }
+    val Status = arrayOf(
+        Pair("Ongoing", 1),
+        Pair("Completed", 2),
+        Pair("Licensed", 3)
+    )
 
-    enum class Status(val title: String, val status: Int) {
-        ONGOING("Ongoing", 1),
-        COMPLETED("Completed", 2),
-        LICENSED("Licensed", 3);
-
-        companion object {
-            fun getStatus(title: String): Status? = values().find { Status -> Status.title == title }
-        }
-    }
+    fun <T, F, S> getValueOf(array: Array<T>, name: F): S? where T : Pair<F, S> = array.find { genre -> genre.first == name }?.second
 
     val monthList: Array<String> = arrayOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 }
