@@ -10,14 +10,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.RequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -359,6 +362,25 @@ abstract class Madara(
 
     open fun detailsThumbnail(element: Element): String {
         return element.absUrl(if (element.hasAttr("data-src")) "data-src" else "src")
+    }
+
+    private fun getXhrChapters(mangaId: String): Document {
+        val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8").build()
+        val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
+        return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val dataIdSelector = "div#manga-chapters-holder"
+
+        return document.select(chapterListSelector())
+            .let { elements ->
+                if (elements.isEmpty() && !document.select(dataIdSelector).isNullOrEmpty())
+                    getXhrChapters(document.select(dataIdSelector).attr("data-id")).select(chapterListSelector())
+                        else Elements()
+            }
+            .map { chapterFromElement(it) }
     }
 
     override fun chapterListSelector() = "li.wp-manga-chapter"
