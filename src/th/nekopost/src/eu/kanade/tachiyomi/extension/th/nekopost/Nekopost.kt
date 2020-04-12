@@ -15,6 +15,7 @@ import org.jsoup.nodes.Element
 import java.net.URL
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 
 class Nekopost() : ParsedHttpSource() {
     override val baseUrl: String = "https://www.nekopost.net/manga/"
@@ -30,6 +31,9 @@ class Nekopost() : ParsedHttpSource() {
     override val name: String = "Nekopost"
 
     override val supportsLatest: Boolean = true
+
+    private var latestMangaList: HashSet<String> = HashSet()
+    private var popularMangaList: HashSet<String> = HashSet()
 
     override fun chapterListSelector(): String = ".bg-card.card.pb-2 tr"
 
@@ -52,7 +56,12 @@ class Nekopost() : ParsedHttpSource() {
             val currentDate = Calendar.getInstance(Locale("th"))
 
             dateText.contains(currentDate.get(Calendar.DATE).toString()) && dateText.contains(NPUtils.monthList[currentDate.get(Calendar.MONTH)])
-        }.map { element -> latestUpdatesFromElement(element) }.distinctBy { manga -> manga.url }
+        }.map { element -> latestUpdatesFromElement(element) }.filter { manga ->
+            if (!latestMangaList.contains(manga.url)) {
+                latestMangaList.add(manga.url)
+                true
+            } else false
+        }
 
         val hasNextPage = mangas.isNotEmpty()
 
@@ -70,7 +79,10 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector(): String? = "*"
 
-    override fun latestUpdatesRequest(page: Int): Request = GET("$mangaListUrl/${page - 1}")
+    override fun latestUpdatesRequest(page: Int): Request {
+        if (page == 1) latestMangaList = HashSet()
+        return GET("$mangaListUrl/${page - 1}")
+    }
 
     override fun latestUpdatesSelector(): String = "a[href]"
 
@@ -140,7 +152,12 @@ class Nekopost() : ParsedHttpSource() {
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(popularMangaSelector()).map { element -> popularMangaFromElement(element) }.distinctBy { manga -> manga.url }
+        val mangas = document.select(popularMangaSelector()).map { element -> popularMangaFromElement(element) }.filter { manga ->
+            if (!popularMangaList.contains(manga.url)) {
+                popularMangaList.add(manga.url)
+                true
+            } else false
+        }
 
         val hasNextPage = true
 
@@ -151,7 +168,10 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
 
-    override fun popularMangaRequest(page: Int): Request = latestUpdatesRequest(page)
+    override fun popularMangaRequest(page: Int): Request {
+        if (page == 1) popularMangaList = HashSet()
+        return GET("$mangaListUrl/${page - 1}")
+    }
 
     override fun popularMangaSelector(): String = latestUpdatesSelector()
 
