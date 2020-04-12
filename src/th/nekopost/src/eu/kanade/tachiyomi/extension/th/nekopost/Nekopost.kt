@@ -86,6 +86,7 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun latestUpdatesSelector(): String = "a[href]"
 
+    @ExperimentalStdlibApi
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         document.select(".bg-card.card").first().let {
             title = it.select(".card-title.text-silver").text()
@@ -106,7 +107,13 @@ class Nekopost() : ParsedHttpSource() {
             }
 
             description = it.select(".bg-secondary").text().trim()
-            genre = it.select("td[colspan='2'][valign='top']").first().text().replace("Category:", "").trim()
+            genre = it.select("td[colspan='2'][valign='top']").first().text()
+                .replace("Category:", "")
+                .split(",").joinToString(", ") { genre ->
+                    genre.trim().split("_").joinToString(" ") { str ->
+                        if (str.toLowerCase(Locale.getDefault()) == "of") str else str.capitalize(Locale.getDefault())
+                    }
+                }
         }
     }
 
@@ -188,24 +195,21 @@ class Nekopost() : ParsedHttpSource() {
 
     private class StatusCheckbox(status: NPUtils.Status) : Filter.CheckBox(status.title, false)
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        Log.v("Nekopost", element.select("img").attr("data-original"))
-        return SManga.create().apply {
-            element.select(".project_info").select("a").let {
-                title = it.text()
+    override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
+        element.select(".project_info").select("a").let {
+            title = it.text()
             setUrlWithoutDomain(NPUtils.getMangaOrChapterAlias(it.attr("href")))
-            }
-            thumbnail_url = element.select("img").attr("data-original").let { url ->
-                if (url === "") fallbackImageUrl
-                else url
-            }
+        }
+        thumbnail_url = element.select("img").attr("data-original").let { url ->
+            if (url === "") fallbackImageUrl
+            else url
+        }
 
-            status = when (element.select(".status").text()) {
-                "On Going" -> SManga.ONGOING
-                "Completed" -> SManga.COMPLETED
-                "Licensed" -> SManga.LICENSED
-                else -> SManga.UNKNOWN
-            }
+        status = when (element.select(".status").text()) {
+            "On Going" -> SManga.ONGOING
+            "Completed" -> SManga.COMPLETED
+            "Licensed" -> SManga.LICENSED
+            else -> SManga.UNKNOWN
         }
     }
 
@@ -219,7 +223,16 @@ class Nekopost() : ParsedHttpSource() {
                 NPUtils.Genre.getGenre(checkbox.name)!!
             }.toTypedArray()
         } catch (e: Exception) {
-            emptyArray()
+            emptyArray<String>()
+        }.let {
+            when {
+                it.isNotEmpty() -> it
+                NPUtils.getValueOf(NPUtils.Genre, query) == null -> it
+                else ->{
+                    queryString = ""
+                    arrayOf(query)
+                }
+            }
         }
 
         val statusList: Array<NPUtils.Status> = try {
@@ -230,7 +243,7 @@ class Nekopost() : ParsedHttpSource() {
             emptyArray()
         }
 
-        return GET("$searchUrl?${NPUtils.getSearchQuery(query, genreList, statusList)}")
+        return GET("$searchUrl?${NPUtils.getSearchQuery(queryString, genreList, statusList)}")
     }
 
     override fun searchMangaSelector(): String = ".list_project .item"
