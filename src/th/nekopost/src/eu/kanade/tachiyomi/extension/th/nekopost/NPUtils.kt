@@ -5,8 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 object NPUtils {
-    private val urlWithoutDomainFromFullUrlRegex: Regex
-        get() = Regex("^https://www\\.nekopost\\.net/manga/(.*)$")
+    private val urlWithoutDomainFromFullUrlRegex: Regex = Regex("^https://www\\.nekopost\\.net/manga/(.*)$")
 
 
     fun getUrlWithoutDomainFromFullUrl(url: String): String {

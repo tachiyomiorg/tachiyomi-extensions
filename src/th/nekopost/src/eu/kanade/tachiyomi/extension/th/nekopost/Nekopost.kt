@@ -17,24 +17,19 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 class Nekopost() : ParsedHttpSource() {
-    override val baseUrl: String
-        get() = "https://www.nekopost.net/manga/"
-    private val mangaListUrl: String
-        get() = "https://www.nekopost.net/project/ajax_load_update/m/"
-    private val chapterContentUrl: String
-        get() = "https://www.nekopost.net/reader/loadChapterContent/"
-    private val chapterImageUrl: String
-        get() = "https://www.nekopost.net/file_server/collectManga/"
-    private val fallbackImageUrl: String
-        get() = "https://www.nekopost.net/images/no_image.jpg"
-    private val searchUrl: String
-        get() = "https://www.nekopost.net/search/"
-    override val lang: String
-        get() = "th"
-    override val name: String
-        get() = "Nekopost"
-    override val supportsLatest: Boolean
-        get() = true
+    override val baseUrl: String = "https://www.nekopost.net/manga/"
+
+    private val mangaListUrl: String = "https://www.nekopost.net/project/ajax_load_update/m/"
+    private val chapterContentUrl: String = "https://www.nekopost.net/reader/loadChapterContent/"
+    private val chapterImageUrl: String = "https://www.nekopost.net/file_server/collectManga/"
+    private val searchUrl: String = "https://www.nekopost.net/search/"
+
+    private val fallbackImageUrl: String = "https://www.nekopost.net/images/no_image.jpg"
+
+    override val lang: String = "th"
+    override val name: String = "Nekopost"
+
+    override val supportsLatest: Boolean = true
 
     override fun chapterListSelector(): String = ".bg-card.card.pb-2 tr"
 
