@@ -56,7 +56,7 @@ class Nekopost() : ParsedHttpSource() {
             val dateText = element.select(".date").text().trim()
             val currentDate = Calendar.getInstance(Locale("th"))
 
-            dateText.contains(currentDate.get(Calendar.DATE).toString()) && dateText.contains(NPUtils.monthMap[currentDate.get(Calendar.MONTH)])
+            dateText.contains(currentDate.get(Calendar.DATE).toString()) && dateText.contains(NPUtils.monthList[currentDate.get(Calendar.MONTH)])
         }.map { element -> latestUpdatesFromElement(element) }.distinctBy { manga -> manga.url }
 
         val hasNextPage = mangas.isNotEmpty()
