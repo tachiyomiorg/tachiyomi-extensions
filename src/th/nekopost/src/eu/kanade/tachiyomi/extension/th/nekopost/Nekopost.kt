@@ -77,7 +77,7 @@ class Nekopost() : ParsedHttpSource() {
         }
     }
 
-    override fun latestUpdatesNextPageSelector(): String? = "*"
+    override fun latestUpdatesNextPageSelector(): String? = throw Exception("Unused")
 
     override fun latestUpdatesRequest(page: Int): Request {
         if (page == 1) latestMangaList = HashSet()
@@ -166,7 +166,7 @@ class Nekopost() : ParsedHttpSource() {
             } else false
         }
 
-        val hasNextPage = true
+        val hasNextPage = mangas.isNotEmpty()
 
         return MangasPage(mangas, hasNextPage)
     }
