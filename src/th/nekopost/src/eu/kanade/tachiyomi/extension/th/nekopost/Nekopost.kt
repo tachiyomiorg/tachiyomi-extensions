@@ -35,7 +35,7 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         element.select("a").first().let {
-            setUrlWithoutDomain(NPUtils.getUrlWithoutDomainFromFullUrl(it.attr("href")))
+            setUrlWithoutDomain(NPUtils.getMangaOrChapterAlias(it.attr("href")))
             name = it.text()
         }
         date_upload = NPUtils.convertDateStringToEpoch(element.select("b").last().nextSibling().toString().trim())
@@ -60,7 +60,7 @@ class Nekopost() : ParsedHttpSource() {
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        setUrlWithoutDomain(NPUtils.getUrlWithoutDomainFromFullUrl(element.select("a").attr("href")))
+        setUrlWithoutDomain(NPUtils.getMangaOrChapterAlias(element.select("a").attr("href")))
         title = element.select(".info > b").text().trim()
         thumbnail_url = element.select(".img img").first().attr("src").replace("preview", "cover").let { url ->
             if (url === "") fallbackImageUrl
@@ -99,7 +99,7 @@ class Nekopost() : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return JSONArray(URL("$chapterContentUrl${NPUtils.getUrlWithoutDomainFromFullUrl(document.location())}").readText()).let { chapterContentJSON ->
+        return JSONArray(URL("$chapterContentUrl${NPUtils.getMangaOrChapterAlias(document.location())}").readText()).let { chapterContentJSON ->
             try {
                 val pageListJSON = chapterContentJSON.getJSONArray(3)
                 val chapterDataJson = chapterContentJSON.getJSONObject(1)
@@ -173,7 +173,7 @@ class Nekopost() : ParsedHttpSource() {
         return SManga.create().apply {
             element.select(".project_info").select("a").let {
                 title = it.text()
-                setUrlWithoutDomain(NPUtils.getUrlWithoutDomainFromFullUrl(it.attr("href")))
+            setUrlWithoutDomain(NPUtils.getMangaOrChapterAlias(it.attr("href")))
             }
             thumbnail_url = element.select("img").attr("data-original").let { url ->
                 if (url === "") fallbackImageUrl

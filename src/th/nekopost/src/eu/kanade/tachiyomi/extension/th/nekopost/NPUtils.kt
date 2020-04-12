@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.th.nekopost
 
-import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -8,7 +7,7 @@ object NPUtils {
     private val urlWithoutDomainFromFullUrlRegex: Regex = Regex("^https://www\\.nekopost\\.net/manga/(.*)$")
 
 
-    fun getUrlWithoutDomainFromFullUrl(url: String): String {
+    fun getMangaOrChapterAlias(url: String): String {
         val (urlWithoutDomain) = urlWithoutDomainFromFullUrlRegex.find(url)!!.destructured
         return urlWithoutDomain
     }
