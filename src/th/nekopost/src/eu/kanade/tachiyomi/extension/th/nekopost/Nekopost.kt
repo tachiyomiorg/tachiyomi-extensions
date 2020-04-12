@@ -99,7 +99,7 @@ class Nekopost() : ParsedHttpSource() {
             }
 
             description = it.select(".bg-secondary").text().trim()
-            genre = it.select("td[colspan='2'][valign='top']").first().select(".text-silver").first().nextSibling().toString().trim()
+            genre = it.select("td[colspan='2'][valign='top']").first().text().replace("Category:", "").trim()
         }
     }
 
