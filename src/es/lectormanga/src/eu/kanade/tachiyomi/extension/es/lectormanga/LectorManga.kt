@@ -2,34 +2,19 @@ package eu.kanade.tachiyomi.extension.es.lectormanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import android.support.v7.preference.*
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.FormBody
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
-import java.util.concurrent.TimeUnit
+import java.util.*
 
 /**
  * Note: this source is similar to TuMangaOnline.
@@ -43,16 +28,6 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     override val lang = "es"
     override val supportsLatest = true
 
-    //Client
-
-    private val rateLimitInterceptor = RateLimitInterceptor(1)
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor)
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .retryOnConnectionFailure(true)
-        .followRedirects(true)
-        .build()
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
@@ -88,25 +63,10 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     //Latest
 
-    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
-    override fun latestUpdatesNextPageSelector(): String? = null
-    override fun latestUpdatesSelector() = "div.table-responsive:first-child td[scope=row]:nth-child(5n-3)"
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        val mangas = document.select(latestUpdatesSelector())
-            .distinctBy { it.select("td").text().trim() }
-            .map { latestUpdatesFromElement(it) }
-        val hasNextPage = false
-        return MangasPage(mangas, hasNextPage)
-    }
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-
-        val manga = SManga.create()
-        manga.setUrlWithoutDomain(element.select("a").first().attr("href"))
-        manga.title = element.select("td").text().trim()
-        return manga
-    }
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&page=$page", headers)
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     //Search
 
@@ -127,11 +87,15 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
                 is FilterBy -> {
                     url.addQueryParameter("filter_by", filter.toUriPart())
                 }
-                is OrderBy -> {
-                    url.addQueryParameter("order_item", filter.toUriPart())
-                }
-                is OrderDir -> {
-                    url.addQueryParameter("order_dir", filter.toUriPart())
+                is SortBy -> {
+                    if (filter.state != null) {
+                        url.addQueryParameter("order_item", SORTABLES[filter.state!!.index].second)
+                        url.addQueryParameter(
+                            "order_dir",
+                            if (filter.state!!.ascending) { "asc" } else { "desc" }
+                        )
+
+                    }
                 }
                 is WebcomicFilter -> {
                     url.addQueryParameter("webcomic", when (filter.state) {
@@ -195,7 +159,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     //Chapters
 
-    override fun chapterListParse(response: Response): List<SChapter> {
+    override fun chapterListParse(response: Response): List<SChapter> = mutableListOf<SChapter>().apply {
         time = serverTime() //Get time when the chapter page is opened
 
         val document = response.asJsoup()
@@ -207,20 +171,19 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         }
 
         // Regular list of chapters
-        val chapters = mutableListOf<SChapter>()
         val dupselect = getduppref()!!
         val chapterNames = document.select("#chapters h4.text-truncate")
         val chapterNumbers = chapterNames.map { it.text().substringAfter("Capítulo").substringBefore("|").trim().toFloat() }
         val chapterInfos = document.select("#chapters .chapter-list")
+
         chapterNames.forEachIndexed { index, _ ->
             val scanlator = chapterInfos[index].select("li")
             if (dupselect == "one") {
-                scanlator.last { chapters.add(regularChapterFromElement(chapterNames[index].text(), it, chapterNumbers[index], chapterUrl)) }
+                scanlator.last { add(regularChapterFromElement(chapterNames[index].text(), it, chapterNumbers[index], chapterUrl)) }
             } else {
-                scanlator.forEach { chapters.add(regularChapterFromElement(chapterNames[index].text(), it, chapterNumbers[index], chapterUrl)) }
+                scanlator.forEach { add(regularChapterFromElement(chapterNames[index].text(), it, chapterNumbers[index], chapterUrl)) }
             }
         }
-        return chapters
     }
 
     override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
@@ -236,22 +199,23 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             ?: 0
     }
 
-    private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, chapterUrl: String): SChapter {
-        val chapter = SChapter.create()
-        chapter.url = "$chapterUrl#${info.select("div.row > .text-right > form").attr("id")}"
-        chapter.name = chapterName
-        chapter.scanlator = info.select("div.col-md-6.text-truncate")?.text()
-        chapter.date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let { parseChapterDate(it) }
-            ?: 0
-        chapter.chapter_number = number
-        return chapter
+    private fun regularChapterFromElement(chapterName: String, info: Element, number: Float, chapterUrl: String) = SChapter.create().apply {
+        url = "$chapterUrl#${info.select("div.row > .text-right > form").attr("id")}"
+        name = chapterName
+        scanlator = info.select("div.col-md-6.text-truncate")?.text()
+        date_upload = info.select("span.badge.badge-primary.p-2").first()?.text()?.let {
+            parseChapterDate(it)
+        } ?: 0
+        chapter_number = number
     }
 
-    private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)?.time
-        ?: 0
+    private fun parseChapterDate(date: String): Long {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            .parse(date)?.time ?: 0
+    }
 
     //Utilities
-    
+
     private var time = serverTime() //Grab time at app launch, can be updated
     private fun serverTime(): String {
         val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
@@ -262,12 +226,11 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     //Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-
         val (chapterURL, chapterID) = chapter.url.split("#")
         val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
         if (!response.isSuccessful) throw Exception("Lector Manga HTTP Error ${response.code()}")
         val document = response.asJsoup()
-        val geturl = document.select("form#$chapterID").attr("action") + "/$time" //Get redirect URL
+        val getUrl = document.select("form#$chapterID").attr("action") + "/$time" //Get redirect URL
         val token = document.select("form#$chapterID input").attr("value") //Get token
         val method = document.select("form#$chapterID").attr("method") //Check POST or GET
         time = serverTime() //Update time for next chapter
@@ -286,18 +249,18 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             else -> throw UnsupportedOperationException("Lector Manga something else broke.")
         }
 
-        val newurl = getBuilder(geturl, getHeaders, formBody, method)
+        val newUrl = getBuilder(getUrl, getHeaders, formBody, method)
 
         // Get /cascade instead of /paginate to get all pages at once
-        val url = if (getPageMethod() == "cascade" && newurl.contains("paginated")) {
-            newurl.substringBefore("paginated") + "cascade"
-        } else if (getPageMethod() == "paginated" && newurl.contains("cascade")) {
-            newurl.substringBefore("cascade") + "paginated"
-        } else newurl
+        val url = if (getPageMethod() == "cascade" && newUrl.contains("paginated")) {
+            newUrl.substringBefore("paginated") + "cascade"
+        } else if (getPageMethod() == "paginated" && newUrl.contains("cascade")) {
+            newUrl.substringBefore("cascade") + "paginated"
+        } else newUrl
 
         val headers = headersBuilder()
             .add("User-Agent", userAgent)
-            .add("Referer", newurl)
+            .add("Referer", newUrl)
             .build()
 
         return GET(url, headers)
@@ -324,7 +287,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     //Filters
 
-    private class Types : UriPartFilter("Tipo", arrayOf(
+    private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
         Pair("Ver todo", ""),
         Pair("Manga", "manga"),
         Pair("Manhua", "manhua"),
@@ -335,7 +298,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         Pair("Oel", "oel")
     ))
 
-    private class Demography : UriPartFilter("Demografía", arrayOf(
+    private class Demography : UriPartFilter("Filtrar por demografía", arrayOf(
         Pair("Ver todo", ""),
         Pair("Seinen", "seinen"),
         Pair("Shoujo", "shoujo"),
@@ -344,24 +307,17 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         Pair("Kodomo", "kodomo")
     ))
 
-    private class FilterBy : UriPartFilter("Ordenar por", arrayOf(
+    private class FilterBy : UriPartFilter("Campo de orden", arrayOf(
         Pair("Título", "title"),
         Pair("Autor", "author"),
         Pair("Compañia", "company")
     ))
 
-    private class OrderBy : UriPartFilter("Ordenar por", arrayOf(
-        Pair("Me gusta", "likes_count"),
-        Pair("Alfabético", "alphabetically"),
-        Pair("Puntuación", "score"),
-        Pair("Creación", "creation"),
-        Pair("Fecha estreno", "release_date")
-    ))
-
-    private class OrderDir : UriPartFilter("Ordenar por", arrayOf(
-        Pair("DESC", "desc"),
-        Pair("ASC", "asc")
-    ))
+    class SortBy : Filter.Sort(
+        "Ordenar por",
+        SORTABLES.map { it.first }.toTypedArray(),
+        Selection(0, false)
+    )
 
     private class WebcomicFilter : Filter.TriState("Webcomic")
     private class FourKomaFilter : Filter.TriState("Yonkoma")
@@ -369,15 +325,14 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     private class EroticFilter : Filter.TriState("Erótico")
 
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Géneros", genres)
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Filtrar por géneros", genres)
 
     override fun getFilterList() = FilterList(
         Types(),
         Demography(),
         Filter.Separator(),
         FilterBy(),
-        OrderBy(),
-        OrderDir(),
+        SortBy(),
         Filter.Separator(),
         WebcomicFilter(),
         FourKomaFilter(),
@@ -386,8 +341,10 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         GenreList(getGenreList())
     )
 
-    // Array.from(document.querySelectorAll('#advancedSearch .custom-checkbox')).map(a => `Genre("${a.querySelector('label').innerText}", "${a.querySelector('input').value}")`).join(',\n')
+    // Array.from(document.querySelectorAll('#advancedSearch .custom-checkbox'))
+    // .map(a => `Genre("${a.querySelector('label').innerText}", "${a.querySelector('input').value}")`).join(',\n')
     // on https://lectormanga.com/library
+    // Last revision 13/04/2020
     private fun getGenreList() = listOf(
         Genre("Acción", "1"),
         Genre("Aventura", "2"),
@@ -480,6 +437,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(PAGEGET_PREF, entry).commit()
             }
         }
+
         screen.addPreference(deduppref)
         screen.addPreference(pageMethod)
     }
@@ -514,19 +472,26 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(PAGEGET_PREF, entry).commit()
             }
         }
+
         screen.addPreference(deduppref)
         screen.addPreference(pageMethod)
-
     }
 
     private fun getduppref() = preferences.getString(DEDUP_PREF, "all")
     private fun getPageMethod() = preferences.getString(PAGEGET_PREF, "cascade")
-
 
     companion object {
         private const val DEDUP_PREF_Title = "Chapter List Scanlator Preference"
         private const val DEDUP_PREF = "deduppref"
         private const val PAGEGET_PREF_Title = "Método para obtener imágenes"
         private const val PAGEGET_PREF = "pagemethodpref"
+
+        private val SORTABLES = listOf(
+            Pair("Me gusta", "likes_count"),
+            Pair("Alfabético", "alphabetically"),
+            Pair("Puntuación", "score"),
+            Pair("Creación", "creation"),
+            Pair("Fecha estreno", "release_date")
+        )
     }
 }
