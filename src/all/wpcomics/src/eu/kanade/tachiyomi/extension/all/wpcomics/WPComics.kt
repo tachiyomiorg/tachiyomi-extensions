@@ -149,6 +149,7 @@ abstract class WPComics(
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListSelector).mapNotNull { img -> imageOrNull(img) }
+            .distinct()
             .mapIndexed { i, image -> Page(i, "", image)}
     }
 
