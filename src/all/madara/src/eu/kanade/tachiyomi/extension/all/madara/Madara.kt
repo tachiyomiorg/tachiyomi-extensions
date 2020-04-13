@@ -20,7 +20,6 @@ import okhttp3.Response
 import okhttp3.RequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
 import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -59,7 +58,7 @@ abstract class Madara(
             }
 
             select("img").first()?.let {
-                manga.thumbnail_url = it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
+                manga.thumbnail_url = imageFromElement(it)
             }
         }
 
@@ -304,7 +303,7 @@ abstract class Madara(
                 manga.title = it.ownText()
             }
             select("img").first()?.let {
-                manga.thumbnail_url = it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
+                manga.thumbnail_url = imageFromElement(it)
             }
         }
 
@@ -338,7 +337,7 @@ abstract class Madara(
                 }
             }
             select("div.summary_image img").first()?.let {
-                manga.thumbnail_url = detailsThumbnail(it)
+                manga.thumbnail_url = imageFromElement(it)
             }
             select("div.summary-content").last()?.let {
                 manga.status = when (it.text()) {
@@ -360,8 +359,13 @@ abstract class Madara(
         return manga
     }
 
-    open fun detailsThumbnail(element: Element): String {
-        return element.absUrl(if (element.hasAttr("data-src")) "data-src" else "src")
+    private fun imageFromElement(element: Element): String? {
+        return when {
+            element.hasAttr("data-src") -> element.attr("abs:data-src")
+            element.hasAttr("data-lazy-src") -> element.attr("abs:data-lazy-src")
+            element.hasAttr("srcset") -> element.attr("abs:srcset").substringBefore(" ")
+            else -> element.attr("abs:src")
+        }
     }
 
     private fun getXhrChapters(mangaId: String): Document {
@@ -378,7 +382,7 @@ abstract class Madara(
             .let { elements ->
                 if (elements.isEmpty() && !document.select(dataIdSelector).isNullOrEmpty())
                     getXhrChapters(document.select(dataIdSelector).attr("data-id")).select(chapterListSelector())
-                        else Elements()
+                        else elements
             }
             .map { chapterFromElement(it) }
     }
