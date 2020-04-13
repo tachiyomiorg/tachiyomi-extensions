@@ -94,7 +94,6 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
                             "order_dir",
                             if (filter.state!!.ascending) { "asc" } else { "desc" }
                         )
-
                     }
                 }
                 is WebcomicFilter -> {
