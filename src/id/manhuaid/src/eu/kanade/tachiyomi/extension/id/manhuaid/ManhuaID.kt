@@ -21,7 +21,7 @@ class ManhuaID: ParsedHttpSource() {
 
     override val name = "ManhuaID"
 
-    override val baseUrl = "http://manhuaid.com"
+    override val baseUrl = "https://manhuaid.com"
 
     override val lang = "id"
 
