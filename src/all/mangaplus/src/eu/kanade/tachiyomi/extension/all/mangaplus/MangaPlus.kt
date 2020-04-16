@@ -6,6 +6,9 @@ import android.os.Build
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
+import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
+import androidx.preference.ListPreference as AndroidXListPreference
+import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
@@ -36,15 +39,15 @@ abstract class MangaPlus(
 
     override val name = "Manga Plus by Shueisha"
 
-    override val baseUrl = "https://jumpg-webapi.tokyo-cdn.com/api"
+    override val baseUrl = "https://mangaplus.shueisha.co.jp"
 
     override val supportsLatest = true
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("Origin", WEB_URL)
-        .add("Referer", WEB_URL)
+        .add("Origin", baseUrl)
+        .add("Referer", baseUrl)
         .add("User-Agent", USER_AGENT)
-        .add("SESSION-TOKEN", UUID.randomUUID().toString())
+        .add("Session-Token", UUID.randomUUID().toString())
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addInterceptor { imageIntercept(it) }
@@ -67,7 +70,11 @@ abstract class MangaPlus(
         get() = if (preferences.getBoolean("${SPLIT_PREF_KEY}_$lang", SPLIT_PREF_DEFAULT_VALUE)) "yes" else "no"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/title_list/ranking", headers)
+        val newHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/manga_list/hot")
+            .build()
+
+        return GET("$API_URL/title_list/ranking", newHeaders)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -90,7 +97,11 @@ abstract class MangaPlus(
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/web/web_home?lang=$internalLang", headers)
+        val newHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/updates")
+            .build()
+
+        return GET("$API_URL/web/web_home?lang=$internalLang", newHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -121,7 +132,11 @@ abstract class MangaPlus(
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/title_list/all", headers)
+        val newHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/manga_list/all")
+            .build()
+
+        return GET("$API_URL/title_list/all", newHeaders)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -144,8 +159,13 @@ abstract class MangaPlus(
     }
 
     private fun titleDetailsRequest(manga: SManga): Request {
-        val mangaId = manga.url.substringAfterLast("/")
-        return GET("$baseUrl/title_detail?title_id=$mangaId", headers)
+        val titleId = manga.url.substringAfterLast("/")
+
+        val newHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/titles/$titleId")
+            .build()
+
+        return GET("$API_URL/title_detail?title_id=$titleId", newHeaders)
     }
 
     // Workaround to allow "Open in browser" use the real URL.
@@ -157,8 +177,10 @@ abstract class MangaPlus(
             }
     }
 
-    // Always returns the real URL for the "Open in browser".
-    override fun mangaDetailsRequest(manga: SManga): Request = GET(WEB_URL + manga.url, headers)
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        // Remove the '#' and map to the new url format used in website.
+        return GET(baseUrl + manga.url.substring(1), headers)
+    }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val result = response.asProto()
@@ -206,7 +228,18 @@ abstract class MangaPlus(
 
     override fun pageListRequest(chapter: SChapter): Request {
         val chapterId = chapter.url.substringAfterLast("/")
-        return GET("$baseUrl/manga_viewer?chapter_id=$chapterId&split=$splitImages&img_quality=$imageResolution", headers)
+
+        val newHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/viewer/$chapterId")
+            .build()
+
+        val url = HttpUrl.parse("$API_URL/manga_viewer")!!.newBuilder()
+            .addQueryParameter("chapter_id", chapterId)
+            .addQueryParameter("split", splitImages)
+            .addQueryParameter("img_quality", imageResolution)
+            .toString()
+
+        return GET(url, newHeaders)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -215,31 +248,31 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
+        val referer = response.request().header("Referer")!!
+
         return result.success.mangaViewer!!.pages
             .mapNotNull { it.page }
             .mapIndexed { i, page ->
                 val encryptionKey = if (page.encryptionKey == null) "" else "&encryptionKey=${page.encryptionKey}"
-                Page(i, "", "${page.imageUrl}$encryptionKey")
+                Page(i, referer, "${page.imageUrl}$encryptionKey")
             }
     }
 
-    override fun fetchImageUrl(page: Page): Observable<String> {
-        return Observable.just(page.imageUrl!!)
-    }
+    override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
 
     override fun imageUrlParse(response: Response): String = ""
 
     override fun imageRequest(page: Page): Request {
-        val newHeaders = Headers.Builder()
-            .add("Referer", WEB_URL)
-            .add("User-Agent", USER_AGENT)
+        val newHeaders = headersBuilder()
+            .removeAll("Origin")
+            .set("Referer", page.url)
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val resolutionPref = androidx.preference.ListPreference(screen.context).apply {
+    override fun setupPreferenceScreen(screen: AndroidXPreferenceScreen) {
+        val resolutionPref = AndroidXListPreference(screen.context).apply {
             key = "${RESOLUTION_PREF_KEY}_$lang"
             title = RESOLUTION_PREF_TITLE
             entries = RESOLUTION_PREF_ENTRIES
@@ -254,7 +287,7 @@ abstract class MangaPlus(
                 preferences.edit().putString("${RESOLUTION_PREF_KEY}_$lang", entry).commit()
             }
         }
-        val splitPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+        val splitPref = AndroidXCheckBoxPreference(screen.context).apply {
             key = "${SPLIT_PREF_KEY}_$lang"
             title = SPLIT_PREF_TITLE
             summary = SPLIT_PREF_SUMMARY
@@ -305,22 +338,28 @@ abstract class MangaPlus(
     private fun imageIntercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 
-        if (!request.url().queryParameterNames().contains("encryptionKey")) {
+        if (request.url().queryParameter("encryptionKey") == null)
             return chain.proceed(request)
-        }
 
         val encryptionKey = request.url().queryParameter("encryptionKey")!!
 
         // Change the url and remove the encryptionKey to avoid detection.
-        val newUrl = request.url().newBuilder().removeAllQueryParameters("encryptionKey").build()
-        request = request.newBuilder().url(newUrl).build()
+        val newUrl = request.url().newBuilder()
+            .removeAllQueryParameters("encryptionKey")
+            .build()
+        request = request.newBuilder()
+            .url(newUrl)
+            .build()
 
         val response = chain.proceed(request)
 
         val contentType = response.header("Content-Type", "image/jpeg")!!
         val image = decodeImage(encryptionKey, response.body()!!.bytes())
         val body = ResponseBody.create(MediaType.parse(contentType), image)
-        return response.newBuilder().body(body).build()
+
+        return response.newBuilder()
+            .body(body)
+            .build()
     }
 
     private fun decodeImage(encryptionKey: String, image: ByteArray): ByteArray {
@@ -385,9 +424,9 @@ abstract class MangaPlus(
     }
 
     companion object {
-        private const val WEB_URL = "https://mangaplus.shueisha.co.jp"
+        private const val API_URL = "https://jumpg-webapi.tokyo-cdn.com/api"
         private const val IMAGES_WESERV_URL = "https://images.weserv.nl"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.92 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
 

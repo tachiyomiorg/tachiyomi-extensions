@@ -10,12 +10,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.RequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -56,7 +58,7 @@ abstract class Madara(
             }
 
             select("img").first()?.let {
-                manga.thumbnail_url = it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
+                manga.thumbnail_url = imageFromElement(it)
             }
         }
 
@@ -301,7 +303,7 @@ abstract class Madara(
                 manga.title = it.ownText()
             }
             select("img").first()?.let {
-                manga.thumbnail_url = it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
+                manga.thumbnail_url = imageFromElement(it)
             }
         }
 
@@ -335,7 +337,7 @@ abstract class Madara(
                 }
             }
             select("div.summary_image img").first()?.let {
-                manga.thumbnail_url = detailsThumbnail(it)
+                manga.thumbnail_url = imageFromElement(it)
             }
             select("div.summary-content").last()?.let {
                 manga.status = when (it.text()) {
@@ -357,8 +359,32 @@ abstract class Madara(
         return manga
     }
 
-    open fun detailsThumbnail(element: Element): String {
-        return element.absUrl(if (element.hasAttr("data-src")) "data-src" else "src")
+    private fun imageFromElement(element: Element): String? {
+        return when {
+            element.hasAttr("data-src") -> element.attr("abs:data-src")
+            element.hasAttr("data-lazy-src") -> element.attr("abs:data-lazy-src")
+            element.hasAttr("srcset") -> element.attr("abs:srcset").substringBefore(" ")
+            else -> element.attr("abs:src")
+        }
+    }
+
+    private fun getXhrChapters(mangaId: String): Document {
+        val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8").build()
+        val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
+        return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val dataIdSelector = "div#manga-chapters-holder"
+
+        return document.select(chapterListSelector())
+            .let { elements ->
+                if (elements.isEmpty() && !document.select(dataIdSelector).isNullOrEmpty())
+                    getXhrChapters(document.select(dataIdSelector).attr("data-id")).select(chapterListSelector())
+                        else elements
+            }
+            .map { chapterFromElement(it) }
     }
 
     override fun chapterListSelector() = "li.wp-manga-chapter"

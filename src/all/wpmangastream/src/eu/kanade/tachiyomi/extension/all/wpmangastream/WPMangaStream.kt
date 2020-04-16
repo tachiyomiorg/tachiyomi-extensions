@@ -19,9 +19,17 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.lang.UnsupportedOperationException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
-abstract class WPMangaStream(override val name: String, override val baseUrl: String, override val lang: String) : ConfigurableSource, ParsedHttpSource() {
+abstract class WPMangaStream(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String,
+    private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
+) : ConfigurableSource, ParsedHttpSource() {
     override val supportsLatest = true
 
     companion object {
@@ -168,15 +176,50 @@ abstract class WPMangaStream(override val name: String, override val baseUrl: St
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "div.bxcl ul li"
+    override fun chapterListSelector() = "div.bxcl ul li, div.cl ul li"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select(".lchx > a").first()
+        val urlElement = element.select(".lchx > a, span.leftoff a").first()
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
-        chapter.date_upload = 0
+        chapter.date_upload = element.select("span.rightoff, time").firstOrNull()?.text()?.let { parseChapterDate(it) } ?: 0
         return chapter
+    }
+
+    fun parseChapterDate(date: String): Long {
+        return if (date.contains("ago")) {
+            val value = date.split(' ')[0].toInt()
+            when {
+                "min" in date -> Calendar.getInstance().apply {
+                    add(Calendar.MINUTE, value * -1)
+                }.timeInMillis
+                "hour" in date -> Calendar.getInstance().apply {
+                    add(Calendar.HOUR_OF_DAY, value * -1)
+                }.timeInMillis
+                "day" in date -> Calendar.getInstance().apply {
+                    add(Calendar.DATE, value * -1)
+                }.timeInMillis
+                "week" in date -> Calendar.getInstance().apply {
+                    add(Calendar.DATE, value * 7 * -1)
+                }.timeInMillis
+                "month" in date -> Calendar.getInstance().apply {
+                    add(Calendar.MONTH, value * -1)
+                }.timeInMillis
+                "year" in date -> Calendar.getInstance().apply {
+                    add(Calendar.YEAR, value * -1)
+                }.timeInMillis
+                else -> {
+                    0L
+                }
+            }
+        } else {
+            try {
+                dateFormat.parse(date).time
+            } catch (_: Exception) {
+                0L
+            }
+        }
     }
 
     override fun prepareNewChapter(chapter: SChapter, manga: SManga) {

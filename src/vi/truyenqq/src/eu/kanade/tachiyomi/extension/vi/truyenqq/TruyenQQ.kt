@@ -4,6 +4,7 @@ import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.*
@@ -24,6 +25,9 @@ class TruyenQQ : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", baseUrl)
+    }
 
     // Popular
     override fun popularMangaRequest(page: Int): Request {

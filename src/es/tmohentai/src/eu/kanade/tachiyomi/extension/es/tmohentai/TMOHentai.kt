@@ -17,7 +17,7 @@ class TMOHentai : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/section/hentai?view=list&page=$page&order=publication_date&order-dir=asc&search%5BsearchText%5D=&search%5BsearchBy%5D=name&type=all", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/section/all?view=list&page=$page&order=popularity&order-dir=desc&search[searchText]=&search[searchBy]=name&type=all", headers)
 
     override fun popularMangaSelector() = "table > tbody > tr[data-toggle=popover]"
 
@@ -31,7 +31,7 @@ class TMOHentai : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "a[rel=next]"
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/filter/all?view=list&page=$page")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/section/all?view=list&page=$page&order=publication_date&order-dir=desc&search[searchText]=&search[searchBy]=name&type=all", headers)
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
@@ -75,10 +75,9 @@ class TMOHentai : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/section/hentai?view=list")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/section/all?view=list")!!.newBuilder()
 
         url.addQueryParameter("search[searchText]", query)
-        url.addQueryParameter("search[searchBy]", "name")
         url.addQueryParameter("page", page.toString())
 
         filters.forEach { filter ->
@@ -86,16 +85,22 @@ class TMOHentai : ParsedHttpSource() {
                 is Types -> {
                     url.addQueryParameter("type", filter.toUriPart())
                 }
-                is OrderBy -> {
-                    url.addQueryParameter("order", filter.toUriPart())
-                }
-                is OrderDir -> {
-                    url.addQueryParameter("order-dir", filter.toUriPart())
-                }
                 is GenreList -> {
                     filter.state
                             .filter { genre -> genre.state }
                             .forEach { genre -> url.addQueryParameter("genders[]", genre.id) }
+                }
+                is FilterBy -> {
+                    url.addQueryParameter("search[searchBy]", filter.toUriPart())
+                }
+                is SortBy -> {
+                    if (filter.state != null) {
+                        url.addQueryParameter("order", SORTABLES[filter.state!!.index].second)
+                        url.addQueryParameter(
+                            "order-dir",
+                            if (filter.state!!.ascending) { "asc" } else { "desc" }
+                        )
+                    }
                 }
             }
         }
@@ -110,15 +115,16 @@ class TMOHentai : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)
+
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Géneros", genres)
 
     override fun getFilterList() = FilterList(
-            Types(),
-            Filter.Separator(),
-            OrderBy(),
-            OrderDir(),
-            Filter.Separator(),
-            GenreList(getGenreList())
+        Types(),
+        Filter.Separator(),
+        FilterBy(),
+        SortBy(),
+        Filter.Separator(),
+        GenreList(getGenreList())
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
@@ -126,7 +132,7 @@ class TMOHentai : ParsedHttpSource() {
         fun toUriPart() = vals[state].second
     }
 
-    private class Types : UriPartFilter("Tipo", arrayOf(
+    private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
             Pair("Ver todos", "all"),
             Pair("Manga", "hentai"),
             Pair("Light Hentai", "light-hentai"),
@@ -135,18 +141,21 @@ class TMOHentai : ParsedHttpSource() {
             Pair("Other", "otro")
     ))
 
-    private class OrderBy : UriPartFilter("Ordenar por", arrayOf(
-            Pair("Alfabético", "alphabetic"),
-            Pair("Creación", "publication_date"),
-            Pair("Popularidad", "popularity")
+    private class FilterBy : UriPartFilter("Campo de orden", arrayOf(
+        Pair("Nombre", "name"),
+        Pair("Artista", "artist"),
+        Pair("Revista", "magazine"),
+        Pair("Tag", "tag")
     ))
 
-    private class OrderDir : UriPartFilter("Ordenar por", arrayOf(
-            Pair("ASC", "asc"),
-            Pair("DESC", "desc")
-    ))
+    class SortBy : Filter.Sort(
+        "Ordenar por",
+        SORTABLES.map { it.first }.toTypedArray(),
+        Selection(2, false)
+    )
 
-    // Array.from(document.querySelectorAll('#advancedSearch .list-group .list-group-item')).map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
+    // Array.from(document.querySelectorAll('#advancedSearch .list-group .list-group-item'))
+    // .map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
     // https://tmohentai.com/section/hentai
     private fun getGenreList() = listOf(
             Genre("Romance", "1"),
@@ -196,4 +205,13 @@ class TMOHentai : ParsedHttpSource() {
             Genre("Tsundere", "45"),
             Genre("Yandere", "46")
     )
+
+    companion object {
+        private val SORTABLES = listOf(
+            Pair("Alfabético", "alphabetic"),
+            Pair("Creación", "publication_date"),
+            Pair("Popularidad", "popularity")
+        )
+    }
+
 }

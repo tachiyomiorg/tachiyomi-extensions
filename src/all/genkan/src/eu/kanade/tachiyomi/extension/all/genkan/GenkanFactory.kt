@@ -14,8 +14,9 @@ class GenkanFactory : SourceFactory {
         ReaperScans(),
         TheNonamesScans(),
         HatigarmScans(),
-        EdelgardeScans(), 
-        SecretScans()
+        EdelgardeScans(),
+        SecretScans(),
+        MethodScans()
     )
 }
 
@@ -36,3 +37,4 @@ class HatigarmScans : GenkanOriginal("Hatigarm Scans", "https://hatigarmscanz.ne
 }
 class EdelgardeScans : Genkan("Edelgarde Scans", "https://edelgardescans.com", "en") 
 class SecretScans : GenkanOriginal("SecretScans", "https://secretscans.co", "en")
+class MethodScans : Genkan("Method Scans", "https://methodscans.com", "en")

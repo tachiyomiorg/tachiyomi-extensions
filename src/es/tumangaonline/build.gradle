@@ -5,12 +5,11 @@ ext {
     appName = 'Tachiyomi: TuMangaOnline'
     pkgNameSuffix = 'es.tumangaonline'
     extClass = '.TuMangaOnline'
-    extVersionCode = 25
+    extVersionCode = 26
     libVersion = '1.2'
 }
 
 dependencies {
-    implementation project(':lib-ratelimit')
     compileOnly project(':preference-stub')
     compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }

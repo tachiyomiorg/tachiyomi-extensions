@@ -8,10 +8,9 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.nodes.TextNode
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 
 class Nudemoon : ParsedHttpSource() {
@@ -167,20 +166,13 @@ class Nudemoon : ParsedHttpSource() {
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url, headers)
-    }
-
     override fun pageListParse(response: Response): List<Page> {
-        val document = response.asJsoup()
-        val resPages = mutableListOf<Page>()
-        val imgScript = document.select("script:containsData(var images)").first().html()
+        val imgScript = response.asJsoup().select("script:containsData(var images)").first().data()
 
-        Regex("images\\[(\\d+)].src\\s=\\s'.(.*)'").findAll(imgScript).forEach {
-            resPages.add(Page(it.groupValues[1].toInt(), imageUrl = baseUrl + it.groupValues[2]))
-        }
+        return Regex("""images\[(\d+)].src\s=\s'(http.*)'""").findAll(imgScript).map {
+            Page(it.groupValues[1].toInt(), imageUrl = it.groupValues[2])
+        }.toList()
 
-        return resPages
     }
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")

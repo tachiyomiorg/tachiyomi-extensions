@@ -175,9 +175,6 @@ class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club", "ko")
 class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com", "en",
     dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
-    override fun detailsThumbnail(element: Element): String {
-        return if (element.hasAttr("data-lazy-src")) element.attr("abs:data-lazy-src") else super.detailsThumbnail(element)
-    }
 }
 
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com", "en")
@@ -269,7 +266,7 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
 
-class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
+class Hiperdex : Madara("Hiperdex", "https://hiperdex.net", "en") {
     override fun getGenreList() = listOf(
         Genre("Adult", "adult"),
         Genre("Action", "action"),

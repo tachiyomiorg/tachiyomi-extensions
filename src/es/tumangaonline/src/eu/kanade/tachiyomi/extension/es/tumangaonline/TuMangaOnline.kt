@@ -4,33 +4,21 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.FormBody
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
-    
+
     //Info
 
     override val name = "TuMangaOnline"
@@ -40,14 +28,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     //Client
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1, 1)
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor)
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .retryOnConnectionFailure(true)
-        .followRedirects(true)
-        .build()!!
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
@@ -61,7 +41,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .headers(headers)
             .url(url)
             .method(method, formBody)
-            //.post(formBody)
             .build()
 
         return client.newCall(req)
@@ -69,9 +48,6 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .request()
             .url()
             .toString()
-        /*.execute()
-        .body()!!
-        .string()*/
     }
 
     //Popular
@@ -89,27 +65,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     //Latest
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest_uploads?page=$page&uploads_mode=thumbnail", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&filter_by=title&_page=1&page=$page", headers)
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
-    override fun latestUpdatesSelector() = "div.upload-file-row"
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        val mangas = document.select(latestUpdatesSelector())
-            .distinctBy { it.select("div.thumbnail-title > h4.text-truncate").text().trim() }
-            .map { latestUpdatesFromElement(it) }
-        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
-            document.select(selector).first()
-        } != null
-        return MangasPage(mangas, hasNextPage)
-    }
-
-    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        element.select("div.upload-file-row > a").let {
-            setUrlWithoutDomain(it.attr("href"))
-            title = it.select("div.thumbnail-title > h4.text-truncate").text()
-            thumbnail_url = it.select("div.thumbnail > style").toString().substringAfter("url('").substringBefore("');")
-        }
-    }
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     //Search
 
@@ -131,11 +90,14 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
                 is FilterBy -> {
                     url.addQueryParameter("filter_by", filter.toUriPart())
                 }
-                is OrderBy -> {
-                    url.addQueryParameter("order_item", filter.toUriPart())
-                }
-                is OrderDir -> {
-                    url.addQueryParameter("order_dir", filter.toUriPart())
+                is SortBy -> {
+                    if (filter.state != null) {
+                        url.addQueryParameter("order_item", SORTABLES[filter.state!!.index].second)
+                        url.addQueryParameter(
+                            "order_dir",
+                            if (filter.state!!.ascending) { "asc" } else { "desc" }
+                        )
+                    }
                 }
                 is WebcomicFilter -> {
                     url.addQueryParameter("webcomic", when (filter.state) {
@@ -217,7 +179,11 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         // Regular list of chapters
         val chapters = mutableListOf<SChapter>()
         document.select(regularChapterListSelector()).forEach { chapelement ->
-            val chapternumber = chapelement.select("a.btn-collapse").text().substringBefore(":").substringAfter("Capítulo").trim().toFloat()
+            val chapternumber = chapelement.select("a.btn-collapse").text()
+                .substringBefore(":")
+                .substringAfter("Capítulo")
+                .trim()
+                .toFloat()
             val chaptername = chapelement.select("div.col-10.text-truncate").text()
             val scanelement = chapelement.select("ul.chapter-list > li")
             val dupselect = getduppref()!!
@@ -231,6 +197,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
+
     override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Not used")
 
     private fun oneShotChapterListSelector() = "div.chapter-list-element > ul.list-group li.list-group-item"
@@ -318,7 +285,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     //Filters
 
-    private class Types : UriPartFilter("Tipo", arrayOf(
+    private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
         Pair("Ver todo", ""),
         Pair("Manga", "manga"),
         Pair("Manhua", "manhua"),
@@ -329,7 +296,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         Pair("Oel", "oel")
     ))
 
-    private class Demography : UriPartFilter("Demografía", arrayOf(
+    private class Demography : UriPartFilter("Filtrar por demografía", arrayOf(
         Pair("Ver todo", ""),
         Pair("Seinen", "seinen"),
         Pair("Shoujo", "shoujo"),
@@ -338,24 +305,17 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         Pair("Kodomo", "kodomo")
     ))
 
-    private class FilterBy : UriPartFilter("Ordenar por", arrayOf(
+    private class FilterBy : UriPartFilter("Campo de orden", arrayOf(
         Pair("Título", "title"),
         Pair("Autor", "author"),
         Pair("Compañia", "company")
     ))
 
-    private class OrderBy : UriPartFilter("Ordenar por", arrayOf(
-        Pair("Me gusta", "likes_count"),
-        Pair("Alfabético", "alphabetically"),
-        Pair("Puntuación", "score"),
-        Pair("Creación", "creation"),
-        Pair("Fecha estreno", "release_date")
-    ))
-
-    private class OrderDir : UriPartFilter("Ordenar por", arrayOf(
-        Pair("ASC", "asc"),
-        Pair("DESC", "desc")
-    ))
+    class SortBy : Filter.Sort(
+        "Ordenar por",
+        SORTABLES.map { it.first }.toTypedArray(),
+        Selection(0, false)
+    )
 
     private class WebcomicFilter : Filter.TriState("Webcomic")
     private class FourKomaFilter : Filter.TriState("Yonkoma")
@@ -363,15 +323,14 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private class EroticFilter : Filter.TriState("Erótico")
 
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Géneros", genres)
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Filtrar por géneros", genres)
 
     override fun getFilterList() = FilterList(
         Types(),
         Demography(),
         Filter.Separator(),
         FilterBy(),
-        OrderBy(),
-        OrderDir(),
+        SortBy(),
         Filter.Separator(),
         WebcomicFilter(),
         FourKomaFilter(),
@@ -380,8 +339,10 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         GenreList(getGenreList())
     )
 
-    // Array.from(document.querySelectorAll('#books-genders .col-auto .custom-control')).map(a => `Genre("${a.querySelector('label').innerText}", "${a.querySelector('input').value}")`).join(',\n')
+    // Array.from(document.querySelectorAll('#books-genders .col-auto .custom-control'))
+    // .map(a => `Genre("${a.querySelector('label').innerText}", "${a.querySelector('input').value}")`).join(',\n')
     // on https://tumangaonline.me/library
+    // Last revision 13/04/2020
     private fun getGenreList() = listOf(
         Genre("Acción", "1"),
         Genre("Aventura", "2"),
@@ -474,6 +435,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(PAGEGET_PREF, entry).commit()
             }
         }
+
         screen.addPreference(deduppref)
         screen.addPreference(pageMethod)
     }
@@ -508,19 +470,27 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(PAGEGET_PREF, entry).commit()
             }
         }
+
         screen.addPreference(deduppref)
         screen.addPreference(pageMethod)
-
     }
 
     private fun getduppref() = preferences.getString(DEDUP_PREF, "all")
     private fun getPageMethod() = preferences.getString(PAGEGET_PREF, "cascade")
-
 
     companion object {
         private const val DEDUP_PREF_Title = "Chapter List Scanlator Preference"
         private const val DEDUP_PREF = "deduppref"
         private const val PAGEGET_PREF_Title = "Método para obtener imágenes"
         private const val PAGEGET_PREF = "pagemethodpref"
+
+        private val SORTABLES = listOf(
+            Pair("Me gusta", "likes_count"),
+            Pair("Alfabético", "alphabetically"),
+            Pair("Puntuación", "score"),
+            Pair("Creación", "creation"),
+            Pair("Fecha estreno", "release_date"),
+            Pair("Núm. Capítulos", "num_chapters")
+        )
     }
 }

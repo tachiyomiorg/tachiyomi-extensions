@@ -37,12 +37,16 @@ class MangaHost : ParsedHttpSource() {
             thumbnail_url = element.select("img.manga")
                 .attr(if (lazy) "data-path" else "src")
                 .toLargeUrl()
-            setUrlWithoutDomain(element.attr("href"))
+            setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
         }
 
     override fun popularMangaRequest(page: Int): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/mangas" + (if (page == 1) "" else "/mais-visualizados/page/${page - 1}"))
+            .build()
+
         val pageStr = if (page != 1) "/page/$page" else ""
-        return GET("$baseUrl/mangas/mais-visualizados$pageStr", headers)
+        return GET("$baseUrl/mangas/mais-visualizados$pageStr", newHeaders)
     }
 
     override fun popularMangaSelector(): String = "div.thumbnail div a.pull-left"
@@ -52,8 +56,12 @@ class MangaHost : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "div.wp-pagenavi:has(a.nextpostslink)"
 
     override fun latestUpdatesRequest(page: Int): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", baseUrl + (if (page == 1) "" else "/lancamentos/page/${page - 1}"))
+            .build()
+
         val pageStr = if (page != 1) "/page/$page" else ""
-        return GET("$baseUrl/lancamentos$pageStr", headers)
+        return GET("$baseUrl/lancamentos$pageStr", newHeaders)
     }
 
     override fun latestUpdatesSelector() = "table.table-lancamentos > tbody > tr > td:eq(0) > a"
@@ -111,7 +119,7 @@ class MangaHost : ParsedHttpSource() {
             return SChapter.create().apply {
                 name = element.attr("data-original-title").withoutLanguage()
                 scanlator = content.select("small.clearfix strong").text()
-                date_upload = parseChapterDate(date, DATE_FORMAT_NEW)
+                date_upload = DATE_FORMAT_NEW.tryParseTime(date)
                 chapter_number = element.text().toFloatOrNull() ?: 1f
                 setUrlWithoutDomain(content.select("div.clearfix a").attr("href"))
             }
@@ -124,16 +132,8 @@ class MangaHost : ParsedHttpSource() {
         return SChapter.create().apply {
             name = firstColumn.select("a").text().withoutLanguage()
             scanlator = secondColumn.text()
-            date_upload = parseChapterDate(thirdColumn.text(), DATE_FORMAT_OLD)
+            date_upload = DATE_FORMAT_OLD.tryParseTime(thirdColumn.text())
             setUrlWithoutDomain(firstColumn.select("a").attr("href"))
-        }
-    }
-
-    private fun parseChapterDate(date: String, formatter: SimpleDateFormat) : Long {
-        return try {
-            formatter.parse(date).time
-        } catch (e: ParseException) {
-            0L
         }
     }
 
@@ -170,9 +170,17 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private fun SimpleDateFormat.tryParseTime(date: String) : Long {
+        return try {
+            parse(date).time
+        } catch (e: ParseException) {
+            0L
+        }
+    }
+
     private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
 
-    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_large")
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_large.")
 
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":")
 
