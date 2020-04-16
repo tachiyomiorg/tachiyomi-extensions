@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Request
 import org.jsoup.nodes.Element
@@ -14,7 +15,8 @@ class WPComicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         ManhuaPlus(),
         ManhuaES(),
-        MangaSum()
+        MangaSum(),
+        XoxoComics()
     )
 }
 
@@ -52,4 +54,22 @@ private class MangaSum : WPComics("MangaSum", "https://mangasum.com", "en", Simp
      * TODO - chapter dates come in 3 flavors: relative dates less than a month, time + month/day (current year is implied),
      * and MM/dd/yy; see about getting all 3 working (currently at 2/3)
      */
+}
+
+private class XoxoComics : WPComics("XOXO Comics", "https://xoxocomics.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/comic-updates?page=$page", headers)
+    override fun latestUpdatesSelector() = "li.row"
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            element.select("h3 a").let {
+                title = it.text()
+                setUrlWithoutDomain(it.attr("href"))
+            }
+            thumbnail_url = element.select("img").attr("data-original")
+        }
+    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return GET("$baseUrl/search?keyword=$query&page=$page", headers)
+    }
+    override fun pageListRequest(chapter: SChapter): Request = GET(baseUrl + "${chapter.url}/all")
 }

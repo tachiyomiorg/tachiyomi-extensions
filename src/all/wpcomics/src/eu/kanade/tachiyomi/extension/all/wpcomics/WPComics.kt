@@ -44,7 +44,7 @@ abstract class WPComics(
         }
     }
 
-    override fun popularMangaNextPageSelector() = "a.next-page"
+    override fun popularMangaNextPageSelector() = "a.next-page, a[rel=next]"
 
     // Latest
 
@@ -137,10 +137,19 @@ abstract class WPComics(
 
     // sources sometimes have an image element with an empty attr that isn't really an image
     private fun imageOrNull(element: Element): String? {
+        fun Element.hasValidAttr(attr: String): Boolean {
+            val regex = Regex("""https?://.*""", RegexOption.IGNORE_CASE)
+            return when {
+                this.attr(attr).isNullOrBlank() -> false
+                this.attr("abs:$attr").matches(regex) -> true
+                else -> false
+            }
+        }
+
         return when {
-            element.attr("data-original").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:data-original")
-            element.attr("data-src").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:data-src")
-            element.attr("src").contains(Regex("""\.(jpg|png)""", RegexOption.IGNORE_CASE)) -> element.attr("abs:src")
+            element.hasValidAttr("data-original") -> element.attr("abs:data-original")
+            element.hasValidAttr("data-src") -> element.attr("abs:data-src")
+            element.hasValidAttr("src") -> element.attr("abs:src")
             else -> null
         }
     }

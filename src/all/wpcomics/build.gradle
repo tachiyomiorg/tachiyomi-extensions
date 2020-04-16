@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: WP-Comics'
     pkgNameSuffix = 'all.wpcomics'
     extClass = '.WPComicsFactory'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
