@@ -1,7 +1,19 @@
 package eu.kanade.tachiyomi.extension.th.nekopost
 
+import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
+
+class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList<E>(c) {
+    override fun isEmpty(): Boolean = mangaList.isEmpty()
+
+    fun isNotEmpty(): Boolean = mangaList.isNotEmpty()
+
+    fun isListEmpty(): Boolean = super.isEmpty()
+
+    fun isListNotEmpty(): Boolean = !isListEmpty()
+
+}
 
 object NPUtils {
     private val urlWithoutDomainFromFullUrlRegex: Regex = Regex("^https://www\\.nekopost\\.net/manga/(.*)$")

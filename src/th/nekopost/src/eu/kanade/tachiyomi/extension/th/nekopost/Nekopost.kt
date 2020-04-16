@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.th.nekopost
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
@@ -12,6 +12,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.net.URL
 import java.util.*
 import kotlin.collections.ArrayList
@@ -48,22 +49,41 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = ".bg-card.card .p-3.text-white img"
 
+    private var latestUpdatePageOffset: Int = 0
+
+    override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
+        return client.newCall(latestUpdatesRequest(page + latestUpdatePageOffset))
+            .asObservableSuccess()
+            .concatMap { response ->
+                latestUpdatesParse(response).let {
+                    if ((it.mangas as NPArrayList<SManga>).isListEmpty() && it.mangas.isNotEmpty()) {
+                        latestUpdatePageOffset++
+                        fetchLatestUpdates(page)
+                    } else Observable.just(it)
+                }
+            }
+    }
+
     override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(latestUpdatesSelector()).filter { element ->
+        val mangaList = document.select(latestUpdatesSelector()).filter { element ->
             val dateText = element.select(".date").text().trim()
             val currentDate = Calendar.getInstance(Locale("th"))
 
             dateText.contains(currentDate.get(Calendar.DATE).toString()) && dateText.contains(NPUtils.monthList[currentDate.get(Calendar.MONTH)])
-        }.map { element -> latestUpdatesFromElement(element) }.filter { manga ->
-            if (!latestMangaList.contains(manga.url)) {
-                latestMangaList.add(manga.url)
-                true
-            } else false
         }
 
-        val hasNextPage = mangas.isNotEmpty()
+        val mangas = NPArrayList(
+            mangaList.map { element -> latestUpdatesFromElement(element) }.filter { manga ->
+                if (!latestMangaList.contains(manga.url)) {
+                    latestMangaList.add(manga.url)
+                    true
+                } else false
+            },
+            mangaList)
+
+        val hasNextPage = mangaList.isNotEmpty()
 
         return MangasPage(mangas, hasNextPage)
     }
@@ -80,7 +100,10 @@ class Nekopost() : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = throw Exception("Unused")
 
     override fun latestUpdatesRequest(page: Int): Request {
-        if (page == 1) latestMangaList = HashSet()
+        if (page == 1) {
+            latestMangaList = HashSet()
+            latestUpdatePageOffset = 0
+        }
         return GET("$mangaListUrl/${page - 1}")
     }
 
@@ -156,17 +179,36 @@ class Nekopost() : ParsedHttpSource() {
         }
     }
 
+    private var popularMangaPageOffset: Int = 0
+
+    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        return client.newCall(popularMangaRequest(page + popularMangaPageOffset))
+            .asObservableSuccess()
+            .concatMap { response ->
+                popularMangaParse(response).let {
+                    if ((it.mangas as NPArrayList<SManga>).isListEmpty() && it.mangas.isNotEmpty()) {
+                        popularMangaPageOffset++
+                        fetchPopularManga(page)
+                    } else Observable.just(it)
+                }
+            }
+    }
+
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(popularMangaSelector()).map { element -> popularMangaFromElement(element) }.filter { manga ->
-            if (!popularMangaList.contains(manga.url)) {
-                popularMangaList.add(manga.url)
-                true
-            } else false
-        }
+        val mangaList = document.select(popularMangaSelector())
 
-        val hasNextPage = mangas.isNotEmpty()
+        val mangas = NPArrayList(
+            mangaList.map { element -> popularMangaFromElement(element) }.filter { manga ->
+                if (!popularMangaList.contains(manga.url)) {
+                    popularMangaList.add(manga.url)
+                    true
+                } else false
+            },
+            mangaList)
+
+        val hasNextPage = mangaList.isNotEmpty()
 
         return MangasPage(mangas, hasNextPage)
     }
@@ -176,7 +218,10 @@ class Nekopost() : ParsedHttpSource() {
     override fun popularMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
 
     override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) popularMangaList = HashSet()
+        if (page == 1) {
+            popularMangaList = HashSet()
+            popularMangaPageOffset = 0
+        }
         return GET("$mangaListUrl/${page - 1}")
     }
 
@@ -228,7 +273,7 @@ class Nekopost() : ParsedHttpSource() {
             when {
                 it.isNotEmpty() -> it
                 NPUtils.getValueOf(NPUtils.Genre, query) == null -> it
-                else ->{
+                else -> {
                     queryString = ""
                     arrayOf(query)
                 }
