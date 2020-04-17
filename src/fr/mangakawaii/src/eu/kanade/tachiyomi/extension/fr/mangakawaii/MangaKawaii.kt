@@ -9,13 +9,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 
 class MangaKawaii : ParsedHttpSource() {
@@ -25,6 +26,9 @@ class MangaKawaii : ParsedHttpSource() {
     override val lang = "fr"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
+    override fun headersBuilder(): Headers.Builder {
+        return Headers.Builder().add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0")
+    }
 
     override fun popularMangaSelector() = "a.manga-block-item__content"
     override fun latestUpdatesSelector() = ".manga-list li div.updates__left"
