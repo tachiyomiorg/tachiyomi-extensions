@@ -197,6 +197,25 @@ class Mangahere : ParsedHttpSource() {
         val bar = document.select("script[src*=chapter_bar]")
         val duktape = Duktape.create()
 
+        /*
+            function to drop last imageUrl if it's broken/unneccesary, working imageUrls are incremental (e.g. t001, t002, etc); if the difference between
+            the last two isn't 1 or doesn't have an Int at the end of the last imageUrl's filename, drop last Page
+        */
+        fun List<Page>.dropLastIfBroken(): List<Page> {
+            val list = this.takeLast(2).map { page ->
+                try {
+                    page.imageUrl!!.substringBeforeLast(".").substringAfterLast("/").takeLast(2).toInt()
+                } catch (_: NumberFormatException) {
+                    return this.dropLast(1)
+                }
+            }
+            return when {
+                list[0] == 0 && 100 - list[1] == 1 -> this
+                list[1] - list[0] == 1 -> this
+                else -> this.dropLast(1)
+            }
+        }
+
         // if-branch is for webtoon reader, else is for page-by-page
         return if (bar.isNotEmpty()) {
             val script = document.select("script:containsData(function(p,a,c,k,e,d))").html().removePrefix("eval")
@@ -204,24 +223,7 @@ class Mangahere : ParsedHttpSource() {
             val urls = deobfuscatedScript.substringAfter("newImgs=['").substringBefore("'];").split("','")
             duktape.close()
 
-            /*
-                last webtoon imageUrl is usually broken, working imageUrls are incremental (e.g. t001, t002, etc); if the difference between
-                the last two isn't 1 or doesn't have an Int at the end of the last imageUrl's filename, drop last Page
-             */
-            urls.mapIndexed { index, s -> Page(index, "", "https:$s") }.let { pages ->
-                val list = pages.takeLast(2).map { page ->
-                    try {
-                        page.imageUrl!!.substringBeforeLast(".").substringAfterLast("/").takeLast(2).toInt()
-                    } catch (_: NumberFormatException) {
-                        return pages.dropLast(1)
-                    }
-                }
-                when {
-                    list[0] == 0 && 100 - list[1] == 1 -> pages
-                    list[1] - list[0] == 1 -> pages
-                    else -> pages.dropLast(1)
-                }
-            }
+            urls.mapIndexed { index, s -> Page(index, "", "https:$s") }
         } else {
             val html = document.html()
             val link = document.location()
@@ -281,7 +283,9 @@ class Mangahere : ParsedHttpSource() {
                 Page(i - 1, "", "https:$baseLink$imageLink")
 
             }
-        }.also { duktape.close() }
+        }
+            .dropLastIfBroken()
+            .also { duktape.close() }
     }
 
     private fun extractSecretKey(html: String, duktape: Duktape): String {
