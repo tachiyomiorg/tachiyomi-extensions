@@ -165,13 +165,9 @@ class Readmangatoday : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.content-list img").forEachIndexed{ i, img ->
-            pages.add(Page(i, "", img.attr("abs:src")))
+        return document.select("div.content-list > img").mapIndexed{ i, img ->
+            Page(i, "", img.attr("abs:src"))
         }
-
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
