@@ -46,7 +46,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val name = "ManaMoa"
 
     // This keeps updating: https://twitter.com/manamoa24
-    private val defaultBaseUrl = "https://manamoa29.net"
+    private val defaultBaseUrl = "https://manamoa34.net"
     override val baseUrl by lazy { getCurrentBaseUrl() }
 
     override val lang: String = "ko"
@@ -226,13 +226,13 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         val pages = mutableListOf<Page>()
 
         try {
-            val element = document.select("div.col-md-9.at-col.at-main script").html()
+            val element = document.toString()
             val cdnHandler = CDNUrlHandler(element)
 
             val imageUrl = element.substringBetween("var img_list = [", "];")
             val imageUrls = cdnHandler.replace(JSONArray("[$imageUrl]"))
 
-            val imageUrl1 = element.substringAfter("var img_list1 = [", "];")
+            val imageUrl1 = element.substringBetween("var img_list1 = [", "];")
             val imageUrls1 = cdnHandler.replace(JSONArray("[$imageUrl1]"))
 
             val decoder = ImageDecoder(element)
@@ -240,12 +240,12 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             (imageUrls.indices)
                 .map {
                     imageUrls[it] + try {
-                        "!!${imageUrls1[it]}?quick"
+                        "!!${imageUrls1[it]}"
                     } catch (_: Exception) {
                         ""
                     }
                 }
-                    .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
+                .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}")) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
