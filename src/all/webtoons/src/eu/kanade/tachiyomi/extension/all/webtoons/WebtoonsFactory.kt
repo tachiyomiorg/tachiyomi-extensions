@@ -73,7 +73,7 @@ class WebtoonsThai: WebtoonsDefault("th") {
     }
 }
 
-class WebtoonsChineseTraditional: WebtoonsDefault("zh", "zh-hant") {
+class WebtoonsChineseTraditional: WebtoonsDefault("zh", "zh-hant", "zh_TW") {
     override fun chapterParseDate(date: String): Long {
         return SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE).parse(date).time
     }

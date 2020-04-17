@@ -9,7 +9,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
 
-abstract class Webtoons(override val lang: String, open val langCode: String = lang) : ParsedHttpSource() {
+abstract class Webtoons(
+    override val lang: String,
+    open val langCode: String = lang,
+    open val localeForCookie: String = lang
+) : ParsedHttpSource() {
 
     override val name = "Webtoons.com"
 
@@ -27,6 +31,8 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
                         .path("/")
                         .name("ageGatePass")
                         .value("true")
+                        .name("locale")
+                        .value(localeForCookie)
                         .build()
                 )
             }

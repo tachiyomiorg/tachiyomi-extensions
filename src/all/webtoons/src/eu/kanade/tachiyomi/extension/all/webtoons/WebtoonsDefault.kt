@@ -9,7 +9,11 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
 
-open class WebtoonsDefault(override val lang: String, override val langCode: String = lang) : Webtoons(lang, langCode) {
+open class WebtoonsDefault(
+    override val lang: String,
+    override val langCode: String = lang,
+    override val localeForCookie: String = lang
+) : Webtoons(lang, langCode, lang) {
 
     override fun chapterListSelector() = "ul#_episodeList > li[id*=episode]"
 
