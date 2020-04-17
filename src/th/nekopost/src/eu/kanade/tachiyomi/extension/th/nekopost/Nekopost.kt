@@ -52,6 +52,11 @@ class Nekopost() : ParsedHttpSource() {
     private var latestUpdatePageOffset: Int = 0
 
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
+        if (page == 1) {
+            latestMangaList = HashSet()
+            latestUpdatePageOffset = 0
+        }
+
         return client.newCall(latestUpdatesRequest(page + latestUpdatePageOffset))
             .asObservableSuccess()
             .concatMap { response ->
@@ -99,13 +104,7 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector(): String? = throw Exception("Unused")
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        if (page == 1) {
-            latestMangaList = HashSet()
-            latestUpdatePageOffset = 0
-        }
-        return GET("$mangaListUrl/${page - 1}")
-    }
+    override fun latestUpdatesRequest(page: Int): Request = GET("$mangaListUrl/${page - 1}")
 
     override fun latestUpdatesSelector(): String = "a[href]"
 
@@ -182,6 +181,11 @@ class Nekopost() : ParsedHttpSource() {
     private var popularMangaPageOffset: Int = 0
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        if (page == 1) {
+            popularMangaList = HashSet()
+            popularMangaPageOffset = 0
+        }
+
         return client.newCall(popularMangaRequest(page + popularMangaPageOffset))
             .asObservableSuccess()
             .concatMap { response ->
@@ -217,13 +221,7 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
 
-    override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) {
-            popularMangaList = HashSet()
-            popularMangaPageOffset = 0
-        }
-        return GET("$mangaListUrl/${page - 1}")
-    }
+    override fun popularMangaRequest(page: Int): Request = GET("$mangaListUrl/${page - 1}")
 
     override fun popularMangaSelector(): String = latestUpdatesSelector()
 
