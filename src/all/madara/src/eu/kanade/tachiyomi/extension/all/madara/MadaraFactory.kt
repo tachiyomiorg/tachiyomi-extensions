@@ -99,7 +99,8 @@ class MadaraFactory : SourceFactory {
         Manga68(),
         ManhuaBox(),
         RaiderScans(),
-        PojokManga()
+        PojokManga(),
+        TopManhua()
     )
 }
 
@@ -560,5 +561,6 @@ class RaiderScans : Madara("Raider Scans", "https://raiderscans.com", "en")
 
 class PojokManga : Madara("Pojok Manga", "https://pojokmanga.com", "id", SimpleDateFormat("MMM dd, yyyy", Locale.US))
 
-
-
+class TopManhua : Madara("Top Manhua", "https://topmanhua.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US)) {
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+}
