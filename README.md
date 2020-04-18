@@ -25,3 +25,7 @@ Contributions are welcome!
 Check out the repo's [issue backlog](https://github.com/inorichi/tachiyomi-extensions/issues) for source requests and bug reports.
 
 To get started with development, see [CONTRIBUTING.md](https://github.com/inorichi/tachiyomi-extensions/blob/master/CONTRIBUTING.md).
+
+
+## New Line
+    Make decision
