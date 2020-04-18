@@ -21,69 +21,31 @@ class MangaBoxFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         Mangakakalot(),
         Manganelo(),
-        Mangafree(),
         Mangabat(),
         MangaOnl()
         //ChapterManga()
     )
 }
 
-//TODO: Alternate search/filters for some sources that don't use query parameters
+/**
+ * Base MangaBox class allows for genre search using query parameters in URLs
+ * MangaBoxPathedGenres class extends base class, genre search only uses path segments in URLs
+ */
 
-class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
-    override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
-}
-
-class Manganelo : MangaBox("Manganelo", "https://manganelo.com", "en") {
-    // Nelo's date format is part of the base class
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/genre-all/$page?type=topview", headers)
-    override fun popularMangaSelector() = "div.content-genres-item"
-    override val latestUrlPath = "genre-all/"
-    override fun searchMangaSelector() = "div.search-story-item, div.content-genres-item"
-    override fun getFilterList() = FilterList()
-}
-
-class Mangafree : MangaBox("Mangafree", "http://mangafree.online", "en") {
-    override val popularUrlPath = "hotmanga/"
-    override val latestUrlPath = "latest/"
-    override fun popularMangaParse(response: Response): MangasPage {
-        return response.asJsoup().let { document ->
-            val mangas = document.select(popularMangaSelector()).map { popularMangaFromElement(it) }
-
-            val hasNextPage = document.select("script:containsData(setpagination)").last().data()
-                .substringAfter("setPagination(").substringBefore(")").split(",").let {
-                    it[0] != it[1]
-                }
-            MangasPage(mangas, hasNextPage)
-        }
-    }
-    override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
-    override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
-    override fun chapterListSelector() = "div#ContentPlaceHolderLeft_list_chapter_comic div.row"
-    override fun getFilterList() = FilterList()
-}
-
-class Mangabat : MangaBox("Mangabat", "https://mangabat.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga-list-all/$page?type=topview", headers)
-    override fun popularMangaSelector() = "div.list-story-item"
-    override val latestUrlPath = "manga-list-all/"
-    override fun searchMangaSelector() = "div.list-story-item"
-}
-
-class MangaOnl : MangaBox("MangaOnl", "https://mangaonl.com", "en") {
-    override val popularUrlPath = "story-list-ty-topview-st-all-ca-all-"
-    override val latestUrlPath = "story-list-ty-latest-st-all-ca-all-"
-    override fun popularMangaSelector() = "div.story_item"
-    override val mangaDetailsMainSelector = "div.panel_story_info, ${super.mangaDetailsMainSelector}" //Some manga link to Nelo
-    override val thumbnailSelector = "img.story_avatar, ${super.thumbnailSelector}"
-    override val descriptionSelector = "div.panel_story_info_description, ${super.descriptionSelector}"
-    override fun chapterListSelector() = "div.chapter_list_title + ul li, ${super.chapterListSelector()}"
-    override val pageListSelector = "div.container_readchapter img, ${super.pageListSelector}"
+abstract class MangaBoxPathedGenres(
+    name: String,
+    baseUrl: String,
+    lang: String,
+    dateformat: SimpleDateFormat = SimpleDateFormat("MMM-dd-yy", Locale.ENGLISH)
+) : MangaBox(name, baseUrl, lang, dateformat) {
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
-        GenreFilter()
+        GenreFilter(getGenrePairs())
     )
+    class GenreFilter(genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
+    // Pair("path_segment/", "display name")
+    abstract fun getGenrePairs(): Array<Pair<String, String>>
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
             GET("$baseUrl/$simpleQueryPath${normalizeSearchQuery(query)}?page=$page", headers)
@@ -100,7 +62,80 @@ class MangaOnl : MangaBox("MangaOnl", "https://mangaonl.com", "en") {
             GET(url + page, headers)
         }
     }
-    private class GenreFilter : UriPartFilter("Category", arrayOf(
+}
+
+class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
+    override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
+}
+
+class Manganelo : MangaBoxPathedGenres("Manganelo", "https://manganelo.com", "en") {
+    // Nelo's date format is part of the base class
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/genre-all/$page?type=topview", headers)
+    override fun popularMangaSelector() = "div.content-genres-item"
+    override val latestUrlPath = "genre-all/"
+    override fun searchMangaSelector() = "div.search-story-item, div.content-genres-item"
+    override fun getGenrePairs() = arrayOf(
+        Pair("genre-all/", "All"),
+        Pair("genre-2/", "Action"),
+        Pair("genre-3/", "Adult"),
+        Pair("genre-4/", "Adventure"),
+        Pair("genre-6/", "Comedy"),
+        Pair("genre-7/", "Cooking"),
+        Pair("genre-9/", "Doujinshi"),
+        Pair("genre-10/", "Drama"),
+        Pair("genre-11/", "Ecchi"),
+        Pair("genre-12/", "Fantasy"),
+        Pair("genre-13/", "Gender bender"),
+        Pair("genre-14/", "Harem"),
+        Pair("genre-15/", "Historical"),
+        Pair("genre-16/", "Horror"),
+        Pair("genre-45/", "Isekai"),
+        Pair("genre-17/", "Josei"),
+        Pair("genre-44/", "Manhua"),
+        Pair("genre-43/", "Manhwa"),
+        Pair("genre-19/", "Martial arts"),
+        Pair("genre-20/", "Mature"),
+        Pair("genre-21/", "Mecha"),
+        Pair("genre-22/", "Medical"),
+        Pair("genre-24/", "Mystery"),
+        Pair("genre-25/", "One shot"),
+        Pair("genre-26/", "Psychological"),
+        Pair("genre-27/", "Romance"),
+        Pair("genre-28/", "School life"),
+        Pair("genre-29/", "Sci fi"),
+        Pair("genre-30/", "Seinen"),
+        Pair("genre-31/", "Shoujo"),
+        Pair("genre-32/", "Shoujo ai"),
+        Pair("genre-33/", "Shounen"),
+        Pair("genre-34/", "Shounen ai"),
+        Pair("genre-35/", "Slice of life"),
+        Pair("genre-36/", "Smut"),
+        Pair("genre-37/", "Sports"),
+        Pair("genre-38/", "Supernatural"),
+        Pair("genre-39/", "Tragedy"),
+        Pair("genre-40/", "Webtoons"),
+        Pair("genre-41/", "Yaoi"),
+        Pair("genre-42/", "Yuri")
+    )
+}
+
+class Mangabat : MangaBox("Mangabat", "https://mangabat.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga-list-all/$page?type=topview", headers)
+    override fun popularMangaSelector() = "div.list-story-item"
+    override val latestUrlPath = "manga-list-all/"
+    override fun searchMangaSelector() = "div.list-story-item"
+}
+
+class MangaOnl : MangaBoxPathedGenres("MangaOnl", "https://mangaonl.com", "en") {
+    override val popularUrlPath = "story-list-ty-topview-st-all-ca-all-"
+    override val latestUrlPath = "story-list-ty-latest-st-all-ca-all-"
+    override fun popularMangaSelector() = "div.story_item"
+    override val mangaDetailsMainSelector = "div.panel_story_info, ${super.mangaDetailsMainSelector}" //Some manga link to Nelo
+    override val thumbnailSelector = "img.story_avatar, ${super.thumbnailSelector}"
+    override val descriptionSelector = "div.panel_story_info_description, ${super.descriptionSelector}"
+    override fun chapterListSelector() = "div.chapter_list_title + ul li, ${super.chapterListSelector()}"
+    override val pageListSelector = "div.container_readchapter img, ${super.pageListSelector}"
+    override fun getGenrePairs() = arrayOf(
         Pair("story-list-ty-latest-st-all-ca-all-", "ALL"),
         Pair("story-list-ty-latest-st-all-ca-2-", "Action"),
         Pair("story-list-ty-latest-st-all-ca-3-", "Adult"),
@@ -142,7 +177,7 @@ class MangaOnl : MangaBox("MangaOnl", "https://mangaonl.com", "en") {
         Pair("story-list-ty-latest-st-all-ca-40-", "Webtoons"),
         Pair("story-list-ty-latest-st-all-ca-41-", "Yaoi"),
         Pair("story-list-ty-latest-st-all-ca-42-", "Yuri")
-    ))
+    )
 }
 
 class ChapterManga : MangaBox("ChapterManga", "https://chaptermanga.com", "en", SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH)) {
