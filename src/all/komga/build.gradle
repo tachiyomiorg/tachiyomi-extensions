@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     appName = 'Tachiyomi: Komga'
     pkgNameSuffix = 'all.komga'
-    extClass = '.Komga'
-    extVersionCode = 8
+    extClass = '.KomgaFactory'
+    extVersionCode = 9
     libVersion = '1.2'
 }
 

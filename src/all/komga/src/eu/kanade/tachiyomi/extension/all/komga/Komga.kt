@@ -8,12 +8,26 @@ import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
-import eu.kanade.tachiyomi.extension.all.komga.dto.*
+import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.*
+import okhttp3.Credentials
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -22,7 +36,7 @@ import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.*
 
-open class Komga : ConfigurableSource, HttpSource() {
+open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/api/v1/series?page=${page - 1}", headers)
 
@@ -178,7 +192,7 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private var libraries = emptyList<LibraryDto>()
 
-    override val name = "Komga"
+    override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
     override val supportsLatest = true
 
