@@ -209,6 +209,25 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         }
     }
 
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/g/$id", headers)
+
+    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
+        val details = mangaDetailsParse(response)
+        details.url = "/g/$id/"
+        return MangasPage(listOf(details), false)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val id = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(searchMangaByIdRequest(id))
+                .asObservableSuccess()
+                .map { response -> searchMangaByIdParse(response, id) }
+        } else {
+            super.fetchSearchManga(page, query, filters)
+        }
+    }
+
     override fun chapterListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
     override fun pageListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
@@ -284,7 +303,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         GenreGroup(),
         AdvancedGroup()
     )
-    
+
     class Watched : Filter.CheckBox("Watched List"), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if(state)
@@ -366,6 +385,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
     companion object {
         const val QUERY_PREFIX = "?f_apply=Apply+Filter"
+        const val PREFIX_ID_SEARCH = "id:"
         const val TR_SUFFIX = "TR"
     }
 }
