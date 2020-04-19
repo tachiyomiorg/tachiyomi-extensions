@@ -42,7 +42,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterLists?page=$page&sortBy=views&asc=false", headers)
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val uri = Uri.parse("$baseUrl/search").buildUpon()
+        val uri = Uri.parse("$baseUrl/search2").buildUpon()
             .appendQueryParameter("query", query)
         return GET(uri.toString(), headers)
     }
