@@ -146,7 +146,7 @@ class ReadM : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
     override fun pageListParse(document: Document): List<Page> = document.select("div.ch-images img").mapIndexed { index, element ->
-        Page(index, "", element.attr("abs:data-src"))
+        Page(index, "", element.attr("abs:src"))
     }
 
     //Filters
