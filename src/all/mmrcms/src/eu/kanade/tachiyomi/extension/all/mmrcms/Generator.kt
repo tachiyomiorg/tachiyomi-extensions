@@ -99,6 +99,7 @@ class Generator {
                 }
             }
         }
+        println("Number of sources successfully generated: ${number - 1}")
         if (!DRY_RUN) {
             val writer = PrintWriter(relativePath)
             writer.write(buffer.toString())
@@ -258,6 +259,7 @@ class Generator {
             Triple("ru", "Japit Comics","https://j-comics.ru"),
             Triple("tr", "Puzzmos", "https://puzzmos.com"),
             Triple("fr", "Scan-1", "https://www.scan-1.com"),
+            Triple("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
             //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             //Changed CMS
