@@ -72,6 +72,7 @@ class MadaraFactory : SourceFactory {
         MangazukiOnline(),
         ManhuaBox(),
         Manhuasnet(),
+        ManhuaUS(),
         ManwahentaiMe(),
         ManwhaClub(),
         ManyToon(),
@@ -562,3 +563,7 @@ class TopManhua : Madara("Top Manhua", "https://topmanhua.com", "en", SimpleDate
 }
 
 class ManyToonClub : Madara("ManyToonClub", "https://manytoon.club", "ko")
+
+class ManhuaUS: Madara("ManhuaUS", "https://manhuaus.com", "en") {
+    override val pageListParseSelector = "li.blocks-gallery-item"
+}
