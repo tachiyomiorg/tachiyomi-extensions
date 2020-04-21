@@ -27,7 +27,7 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
 
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            element.select("div.image a").let {
+            element.select("div.overlay a").let {
                 title = it.attr("title")
                 setUrlWithoutDomain(it.attr("href"))
             }
