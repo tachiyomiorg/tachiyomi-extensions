@@ -134,7 +134,10 @@ class Renascans : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
 
         document.select("div.col-xs-12 img")?.forEach {
-            pages.add(Page(pages.size, "", it.attr("data-src")))
+            var page = it.attr("data-src")
+            if (page.isNotEmpty()) {
+                pages.add(Page(pages.size, "", page))
+            }
         }
 
         return pages
