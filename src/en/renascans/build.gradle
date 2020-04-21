@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Renaissance Scans'
     pkgNameSuffix = 'en.renascans'
     extClass = '.Renascans'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
