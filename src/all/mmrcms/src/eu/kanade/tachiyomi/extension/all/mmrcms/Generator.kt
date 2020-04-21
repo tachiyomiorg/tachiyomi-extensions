@@ -12,6 +12,7 @@ import java.io.PrintWriter
 import java.security.cert.CertificateException
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
@@ -216,10 +217,13 @@ class Generator {
         // Create all-trusting host name verifier
         // Install the all-trusting host verifier
 
-        val builder = OkHttpClient.Builder()
-        builder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
-        builder.hostnameVerifier { _, _ -> true }
-        return builder.build()
+        return OkHttpClient.Builder()
+            .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+            .hostnameVerifier { _, _ -> true }
+            .connectTimeout(1, TimeUnit.MINUTES)
+            .readTimeout(1, TimeUnit.MINUTES)
+            .writeTimeout(1, TimeUnit.MINUTES)
+            .build()
     }
 
 
@@ -247,11 +251,13 @@ class Generator {
             Triple("es", "submanga", "https://submanga.li"),
             Triple("es", "Mangadoor", "https://mangadoor.com"),
             Triple("es", "Mangas.pw", "https://mangas.in"),
-            Triple("es", "Tumangaonline.co", "http://tumangaonline.fun"),
+            Triple("es", "Tumangaonline.co", "http://tumangaonline.uno"),
             Triple("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
             Triple("es", "Universo Yuri", "https://universoyuri.com"),
             Triple("pl", "Phoenix-Scans", "https://phoenix-scans.pl"),
             Triple("ru", "Japit Comics","https://j-comics.ru"),
+            Triple("tr", "Puzzmos", "https://puzzmos.com"),
+            Triple("fr", "Scan-1", "https://www.scan-1.com"),
             //NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             //Changed CMS
