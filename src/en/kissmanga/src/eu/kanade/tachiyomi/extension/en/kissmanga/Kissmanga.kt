@@ -39,7 +39,7 @@ class Kissmanga : ParsedHttpSource() {
 
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder()
-                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36")
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36")
     }
 
     override fun popularMangaSelector() = "table.listing tr:gt(1)"
@@ -182,7 +182,7 @@ class Kissmanga : ParsedHttpSource() {
             }
 
             // Finally find all the urls and decrypt them in JS.
-            p = Pattern.compile("""lstImages.push\((.*)\);""")
+            p = Pattern.compile("""lstIA.push\((.*)\);""")
             m = p.matcher(body)
 
             var i = 0
