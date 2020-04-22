@@ -118,8 +118,13 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         fun List<SChapter>.getMissingChapters(allChapters: List<SChapter>): List<SChapter> {
-            val chapterNums = this.map { it.chapter_number }
-            return allChapters.filter { it.chapter_number !in chapterNums }.distinctBy { it.chapter_number }
+            // search for missing chapters only if the option is selected
+            return if(getSourceWithMissing() == "include") {
+                val chapterNums = this.map { it.chapter_number }
+                allChapters.filter { it.chapter_number !in chapterNums }.distinctBy { it.chapter_number }
+            } else {
+                emptyList()
+            }
         }
 
         fun List<SChapter>.filterOrAll(source: String): List<SChapter>{
@@ -470,7 +475,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val myPref = androidx.preference.ListPreference(screen.context).apply {
+        val sourcePref = androidx.preference.ListPreference(screen.context).apply {
             key = SOURCE_PREF_TITLE
             title = SOURCE_PREF_TITLE
             entries = sourceArray.map { it.first }.toTypedArray()
@@ -484,11 +489,26 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(SOURCE_PREF, entry).commit()
             }
         }
-        screen.addPreference(myPref)
+        val sourceWithMissing = androidx.preference.ListPreference(screen.context).apply {
+            key = SOURCE_WITH_MISSING_TITLE
+            title = SOURCE_WITH_MISSING_TITLE
+            entries = arrayOf("Include", "Exclude")
+            entryValues = arrayOf("include", "exclude")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SOURCE_WITH_MISSING, entry).commit()
+            }
+        }
+        screen.addPreference(sourcePref)
+        screen.addPreference(sourceWithMissing)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val myPref = ListPreference(screen.context).apply {
+        val sourcePref = ListPreference(screen.context).apply {
             key = SOURCE_PREF_TITLE
             title = SOURCE_PREF_TITLE
             entries = sourceArray.map { it.first }.toTypedArray()
@@ -502,13 +522,32 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
                 preferences.edit().putString(SOURCE_PREF, entry).commit()
             }
         }
-        screen.addPreference(myPref)
+        val sourceWithMissing = ListPreference(screen.context).apply {
+            key = SOURCE_WITH_MISSING_TITLE
+            title = SOURCE_WITH_MISSING_TITLE
+            entries = arrayOf("Include", "Exclude")
+            entryValues = arrayOf("include", "exclude")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SOURCE_WITH_MISSING, entry).commit()
+            }
+        }
+        screen.addPreference(sourcePref)
+        screen.addPreference(sourceWithMissing)
     }
+
     private fun getSourcePref(): String? = preferences.getString(SOURCE_PREF, "all")
+    private fun getSourceWithMissing(): String? = preferences.getString(SOURCE_WITH_MISSING, "include")
 
     companion object {
         private const val SOURCE_PREF_TITLE = "Chapter List Source"
         private const val SOURCE_PREF = "Manga_Park_Source"
+        private const val SOURCE_WITH_MISSING_TITLE = "Include Missing Chapters"
+        private const val SOURCE_WITH_MISSING = "Manga_Park_Source_With_Missing"
         private val sourceArray = arrayOf(
             Pair("All sources, all chapters","all"),
             Pair("Source with most chapters","most"),
