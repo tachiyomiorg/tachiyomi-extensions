@@ -182,7 +182,10 @@ class Kissmanga : ParsedHttpSource() {
             }
 
             // Finally find all the urls and decrypt them in JS.
-            p = Pattern.compile("""lstOLA.push\((.*)\);""")
+            // To fix this randomize thing
+            var x = Pattern.compile("(.*)[(]wrapKA")
+            var y = x.matcher(body)
+            p = Pattern.compile("""$y.group(1)\((.*)\);""")
             m = p.matcher(body)
 
             var i = 0
