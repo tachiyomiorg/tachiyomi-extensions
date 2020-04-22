@@ -161,6 +161,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         // Get the chapter number or create a unique one if it's not available
         val searchName = Regex("""\b\d+\.?\d?\b""").findAll(name)
         val checkVolumeInfo = Regex("""^vol""", RegexOption.IGNORE_CASE).find(name)
+        val checkVolumeTBD = Regex("""^vol.*tbd""", RegexOption.IGNORE_CASE).containsMatchIn(name)
         val chapterNumberTemp = if (checkVolumeInfo == null) {
             if (searchName.count() > 0) {
                 searchName.elementAt(0).value.toFloatOrNull()
@@ -168,7 +169,14 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
                 null
             }
         } else {
-            if (searchName.count() > 1) {
+            if (checkVolumeTBD) {
+                if (searchName.count() > 0) {
+                    searchName.elementAt(0).value.toFloatOrNull()
+                } else {
+                    null
+                }
+            }
+            else if (searchName.count() > 1) {
                 searchName.elementAt(1).value.toFloatOrNull()
             } else {
                 null
