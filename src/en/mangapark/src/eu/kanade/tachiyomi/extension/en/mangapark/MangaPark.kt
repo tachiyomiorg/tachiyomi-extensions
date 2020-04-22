@@ -159,7 +159,22 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
         name = element.select(".tit > a").first().text()
         // Get the chapter number or create a unique one if it's not available
-        chapter_number = Regex("""\b\d+\.?\d?\b""").find(name)?.value?.toFloatOrNull() ?: ".${name.hashCode().absoluteValue}".toFloat()
+        val searchName = Regex("""\b\d+\.?\d?\b""").findAll(name)
+        val checkVolumeInfo = Regex("""^vol""", RegexOption.IGNORE_CASE).find(name)
+        val chapterNumberTemp = if (checkVolumeInfo == null) {
+            if (searchName.count() > 0) {
+                searchName.elementAt(0).value.toFloatOrNull()
+            } else {
+                null
+            }
+        } else {
+            if (searchName.count() > 1) {
+                searchName.elementAt(1).value.toFloatOrNull()
+            } else {
+                null
+            }
+        }
+        chapter_number = chapterNumberTemp ?: ".${name.hashCode().absoluteValue}".toFloat()
         date_upload = parseDate(element.select(".time").first().text().trim())
         scanlator = source
     }
