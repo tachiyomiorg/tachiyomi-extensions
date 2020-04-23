@@ -3,9 +3,9 @@ apply plugin: 'kotlin-android'
 
 ext {
     appName = 'Tachiyomi: Dragon Ball Multiverse'
-    pkgNameSuffix = 'en.dragonball_multiverse'
-    extClass = '.DbMultiverse'
-    extVersionCode = 3
+    pkgNameSuffix = 'all.dragonball_multiverse'
+    extClass = '.DbMFactory'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 

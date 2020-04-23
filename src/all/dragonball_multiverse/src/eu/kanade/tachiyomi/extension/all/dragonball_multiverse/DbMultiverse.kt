@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.dragonball_multiverse
+package eu.kanade.tachiyomi.extension.all.dragonball_multiverse
 
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -13,12 +13,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-open class DbMultiverse : ParsedHttpSource() {
+abstract class DbMultiverse(override val lang: String) : ParsedHttpSource() {
 
     override val name = "Dragon Ball Multiverse"
     override val baseUrl = "https://www.dragonball-multiverse.com"
     override val supportsLatest = false
-    override val lang = "en"
 
     private fun chapterFromElement(element: Element, name: String): SChapter {
         val chapter = SChapter.create()
@@ -65,7 +64,7 @@ open class DbMultiverse : ParsedHttpSource() {
     private fun createManga(document: Document?) = SManga.create().apply {
         title = name
         status = SManga.ONGOING
-        url = "/en/chapters.html"
+        url = "/${lang.replace("-", "_")}/chapters.html"
         description = "Dragon Ball Multiverse (DBM) is a free online comic, made by a whole team of fans. It's our personal sequel to DBZ."
         thumbnail_url = document?.select("div[ch=\"1\"] img")?.attr("abs:src")
     }
@@ -82,7 +81,7 @@ open class DbMultiverse : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector(): String? = throw UnsupportedOperationException()
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
 
     override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException()
 
