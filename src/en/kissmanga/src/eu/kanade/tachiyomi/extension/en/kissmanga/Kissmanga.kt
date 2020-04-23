@@ -183,11 +183,11 @@ class Kissmanga : ParsedHttpSource() {
 
             // Finally find all the urls and decrypt them in JS.
             // To fix this randomize thing
-            p = Pattern.compile("(.*)[(]wrapKA")
-            m = p.patcher(body)
+            p = Pattern.compile("(.*)[(]wrapKA") // Change this one if it doesn't match 
+            m = p.matcher(body)
             val x = "$m.group(1)"
             p = Pattern.compile("""$x\((.*)\)""")
-            m = p.patcher(body)
+            m = p.matcher(body)
 
             var i = 0
             while (m.find()) {
