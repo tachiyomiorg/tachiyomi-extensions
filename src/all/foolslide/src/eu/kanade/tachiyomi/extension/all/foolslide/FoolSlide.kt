@@ -88,10 +88,12 @@ abstract class FoolSlide(
     override fun latestUpdatesNextPageSelector() = "div.next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val searchHeaders = headersBuilder().add("Content-Type", "application/x-www-form-urlencoded").build()
+
         val form = FormBody.Builder()
             .add("search", query)
 
-        return POST("$baseUrl$urlModifier/search/", headers, form.build())
+        return POST("$baseUrl$urlModifier/search/", searchHeaders, form.build())
     }
 
     override fun searchMangaSelector() = "div.group"

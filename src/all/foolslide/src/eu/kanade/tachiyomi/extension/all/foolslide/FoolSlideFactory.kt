@@ -39,7 +39,8 @@ class FoolSlideFactory : SourceFactory {
         HelveticaScans(),
         KirishimaFansub(),
         PowerMangaIT(),
-        BaixarHentai()
+        BaixarHentai(),
+        HNIScantrad()
     )
 }
 
@@ -146,3 +147,5 @@ class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.ne
         }
     }
 }
+
+class HNIScantrad : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "fr", "/lel")
