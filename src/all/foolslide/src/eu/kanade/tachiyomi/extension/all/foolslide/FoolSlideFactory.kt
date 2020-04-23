@@ -7,8 +7,10 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Request
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 
 class FoolSlideFactory : SourceFactory {
@@ -42,17 +44,20 @@ class FoolSlideFactory : SourceFactory {
 }
 
 class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
+    val SLUG_REGEX = "(?:/read/)([\\w\\d-]+?)(?:/)".toRegex()
+    override fun pageListRequest(chapter: SChapter): Request {
+        val (slug) = SLUG_REGEX.find(chapter.url)!!.destructured
+        var (major, minor) = chapter.chapter_number.toString().split(".")
+        if (major == "-1") major = "0" // Some oneshots don't have a chapter
+        return GET("$baseUrl$urlModifier/api/reader/chapter?comic_stub=$slug&chapter=$major&subchapter=$minor")
+    }
+
     override fun pageListParse(document: Document): List<Page> {
-        val doc = document.toString()
-        var jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
-        if (jsonstr.contains("JSON.parse")) {
-            val base64Json = jsonstr.substringAfter("JSON.parse(atob(\"").substringBefore("\"));")
-            jsonstr = String(Base64.decode(base64Json, Base64.DEFAULT))
-        }
-        val json = JsonParser().parse(jsonstr).asJsonArray
-        val pages = mutableListOf<Page>()
+        val pagesJson = JSONObject(document.body().ownText())
+        val json = JsonParser().parse(pagesJson.getString("pages")).asJsonArray
+        val pages = ArrayList<Page>()
         json.forEach {
-            pages.add(Page(pages.size, "", it["url"].asString))
+            pages.add(Page(pages.size, "", JsonParser().parse(it.toString())["url"].asString))
         }
         return pages
     }
