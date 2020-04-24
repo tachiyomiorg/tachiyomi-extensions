@@ -235,6 +235,7 @@ class Tsumino: ParsedHttpSource() {
     class ExcludeParodiesFilter : Filter.CheckBox("Exclude parodies")
 
     enum class SortType {
+        Popularity,
         Newest,
         Oldest,
         Alphabetical,
@@ -243,7 +244,6 @@ class Tsumino: ParsedHttpSource() {
         Views,
         Random,
         Comments,
-        Popularity
     }
 
     enum class LengthType(val id: Int) {
