@@ -20,28 +20,20 @@ class WPComicsFactory : SourceFactory {
     )
 }
 
-private class ManhuaPlus : WPComics("Manhua Plus", "https://manhuaplus.com", "en")
+private class ManhuaPlus : WPComics("Manhua Plus", "https://manhuaplus.com", "en") {
+    override val pageListSelector: String = "div.chapter-detail img, ${super.pageListSelector}"
+}
 
 private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", SimpleDateFormat("HH:mm - dd/MM/yyyy Z", Locale.US), "+0700") {
     override val popularPath = "category-comics/manga"
 
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            element.select("div.overlay a").let {
-                title = it.attr("title")
-                setUrlWithoutDomain(it.attr("href"))
-            }
-            thumbnail_url = element.select("div.image img").attr("abs:src")
-        }
-    }
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            element.select("a.head").let {
+            element.select("div.overlay a:has(h2)").let {
                 title = it.text()
                 setUrlWithoutDomain(it.attr("href"))
             }
-            thumbnail_url = element.select("img").attr("abs:src")
+            thumbnail_url = element.select("img").firstOrNull()?.attr("abs:src")
         }
     }
 
@@ -50,10 +42,6 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
 
 private class MangaSum : WPComics("MangaSum", "https://mangasum.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/genres?keyword=$query&page=$page", headers)
-    /**
-     * TODO - chapter dates come in 3 flavors: relative dates less than a month, time + month/day (current year is implied),
-     * and MM/dd/yy; see about getting all 3 working (currently at 2/3)
-     */
 }
 
 private class XoxoComics : WPComics("XOXO Comics", "https://xoxocomics.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {

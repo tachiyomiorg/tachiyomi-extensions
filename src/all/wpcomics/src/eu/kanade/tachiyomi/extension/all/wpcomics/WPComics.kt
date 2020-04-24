@@ -111,6 +111,8 @@ abstract class WPComics(
         }
     }
 
+    private val currentYear by lazy { Calendar.getInstance(Locale.US)[1].toString().takeLast(2) }
+
     private fun String?.toDate(): Long {
         return try {
             if (this?.contains("ago", ignoreCase = true) == true) {
@@ -126,7 +128,15 @@ abstract class WPComics(
 
                 calendar.timeInMillis
             } else {
-                dateFormat.parse(if (gmtOffset == null) this?.substringAfterLast(" ") else "$this $gmtOffset").time
+                (if (gmtOffset == null) this?.substringAfterLast(" ") else "$this $gmtOffset")?.let {
+                    // timestamp has year
+                    if (Regex("""\d+/\d+/\d\d""").find(it)?.value != null) {
+                        dateFormat.parse(it).time
+                    } else {
+                        // MangaSum - timestamp sometimes doesn't have year (current year implied)
+                        dateFormat.parse("$it/$currentYear").time
+                    }
+                } ?: 0L
             }
         } catch (_: Exception) {
             0L
