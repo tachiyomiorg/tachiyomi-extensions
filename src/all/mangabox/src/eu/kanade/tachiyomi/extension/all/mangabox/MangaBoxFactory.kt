@@ -64,7 +64,7 @@ abstract class MangaBoxPathedGenres(
     }
 }
 
-class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
+class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalots.com", "en") {
     override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
 }
 
