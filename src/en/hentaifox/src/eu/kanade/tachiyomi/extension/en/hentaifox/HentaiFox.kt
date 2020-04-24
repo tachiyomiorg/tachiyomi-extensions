@@ -66,7 +66,7 @@ class HentaiFox : ParsedHttpSource() {
             filters.forEach { filter ->
                 when (filter) {
                     is GenreFilter -> {
-                        url += "${filter.toUriPart()}/"
+                        url += "${filter.toUriPart()}/pag/$page/"
                     }
                 }
             }
