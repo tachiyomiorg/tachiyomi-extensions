@@ -46,7 +46,6 @@ class DbMFactory : SourceFactory {
     )
 }
 
-class DbMultiverseEN : DbMultiverse("en")
 class DbMultiverseFR : DbMultiverse("fr")
 class DbMultiverseJP : DbMultiverse("jp")
 class DbMultiverseCN : DbMultiverse("cn")
