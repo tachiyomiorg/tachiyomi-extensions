@@ -115,22 +115,21 @@ abstract class FoolSlide(
 
     // if there's no image on the details page, get the first page of the first chapter
     fun getDetailsThumbnail(document: Document, urlSelector: String = chapterUrlSelector): String? {
-        return document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
+        return document.select("div.thumbnail img, table.thumb img").firstOrNull()?.attr("abs:src") ?:
         document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
             .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
             .let { response -> pageListParse(response).first().imageUrl }
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select(mangaDetailsInfoSelector).first().text()
-
-        val manga = SManga.create()
-        manga.author = infoElement.substringAfter("Author:").substringBefore("Artist:")
-        manga.artist = infoElement.substringAfter("Artist:").substringBefore("Synopsis:")
-        manga.description = infoElement.substringAfter("Synopsis:")
-        manga.thumbnail_url = getDetailsThumbnail(document)
-
-        return manga
+        return SManga.create().apply {
+            document.select(mangaDetailsInfoSelector).firstOrNull()?.text()?.let { infoElement ->
+                author = infoElement.substringAfter("Author:").substringBefore("Artist:")
+                artist = infoElement.substringAfter("Artist:").substringBefore("Synopsis:")
+                description = infoElement.substringAfter("Synopsis:")
+            }
+            thumbnail_url = getDetailsThumbnail(document)
+        }
     }
 
     /**
