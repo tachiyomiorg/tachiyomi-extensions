@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import java.io.File
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -86,13 +85,6 @@ class SeriManga : ParsedHttpSource() {
     override fun chapterListSelector() = "ul.spl-list > li"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        val filename = "/sdcard/SeriManga.txt"
-        val file = File(filename)
-
-        file.printWriter().use { out ->
-            out.println(element)
-        }
-
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = "${element.select("span").first().text()}: ${element.select("span").get(1).text()}"
         date_upload = dateFormat.parse(element.select("span").get(2).ownText()).time ?: 0
