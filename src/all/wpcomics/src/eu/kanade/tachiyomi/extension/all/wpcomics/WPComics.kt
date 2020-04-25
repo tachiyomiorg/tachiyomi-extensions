@@ -26,6 +26,8 @@ abstract class WPComics(
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    private fun List<String>.doesInclude(thisWord: String): Boolean = this.any { it.contains(thisWord, ignoreCase = true) }
+
     // Popular
 
     open val popularPath = "hot"
@@ -92,11 +94,15 @@ abstract class WPComics(
         }
     }
 
-    private fun String?.toStatus() = when {
-        this == null -> SManga.UNKNOWN
-        this.contains("Updating", ignoreCase = true) -> SManga.ONGOING
-        this.contains("Complete", ignoreCase = true) -> SManga.COMPLETED
-        else -> SManga.UNKNOWN
+    private fun String?.toStatus(): Int {
+        val ongoingWords = listOf("Ongoing", "Updating", "Đang tiến hành")
+        val completedWords = listOf("Complete", "Hoàn thành")
+        return when {
+            this == null -> SManga.UNKNOWN
+            ongoingWords.doesInclude(this) -> SManga.ONGOING
+            completedWords.doesInclude(this) -> SManga.COMPLETED
+            else -> SManga.UNKNOWN
+        }
     }
 
     // Chapters
@@ -116,21 +122,29 @@ abstract class WPComics(
     private val currentYear by lazy { Calendar.getInstance(Locale.US)[1].toString().takeLast(2) }
 
     private fun String?.toDate(): Long {
+        this ?: return 0
+
+        val secondWords = listOf("second", "giây")
+        val minuteWords = listOf("minute", "phút")
+        val hourWords = listOf("hour", "giờ")
+        val dayWords = listOf("day", "ngày")
+        val agoWords = listOf("ago", "trước")
+
         return try {
-            if (this?.contains("ago", ignoreCase = true) == true) {
+            if (agoWords.any { this.contains(it, ignoreCase = true) }) {
                 val trimmedDate = this.substringBefore(" ago").removeSuffix("s").split(" ")
                 val calendar = Calendar.getInstance()
 
-                when (trimmedDate[1]) {
-                    "day" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }
-                    "hour" -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }
-                    "minute" -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }
-                    "second" -> calendar.apply { add(Calendar.SECOND, -trimmedDate[0].toInt()) }
+                when {
+                    dayWords.doesInclude(trimmedDate[1]) -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }
+                    hourWords.doesInclude(trimmedDate[1]) -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }
+                    minuteWords.doesInclude(trimmedDate[1]) -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }
+                    secondWords.doesInclude(trimmedDate[1]) -> calendar.apply { add(Calendar.SECOND, -trimmedDate[0].toInt()) }
                 }
 
                 calendar.timeInMillis
             } else {
-                (if (gmtOffset == null) this?.substringAfterLast(" ") else "$this $gmtOffset")?.let {
+                (if (gmtOffset == null) this.substringAfterLast(" ") else "$this $gmtOffset").let {
                     // timestamp has year
                     if (Regex("""\d+/\d+/\d\d""").find(it)?.value != null) {
                         dateFormat.parse(it).time
@@ -138,7 +152,7 @@ abstract class WPComics(
                         // MangaSum - timestamp sometimes doesn't have year (current year implied)
                         dateFormat.parse("$it/$currentYear").time
                     }
-                } ?: 0L
+                }
             }
         } catch (_: Exception) {
             0L

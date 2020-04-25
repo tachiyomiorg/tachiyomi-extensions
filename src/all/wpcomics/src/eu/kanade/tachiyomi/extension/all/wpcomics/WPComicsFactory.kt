@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import java.text.SimpleDateFormat
@@ -16,7 +17,8 @@ class WPComicsFactory : SourceFactory {
         ManhuaPlus(),
         ManhuaES(),
         MangaSum(),
-        XoxoComics()
+        XoxoComics(),
+        NhatTruyen()
     )
 }
 
@@ -60,4 +62,9 @@ private class XoxoComics : WPComics("XOXO Comics", "https://xoxocomics.com", "en
         return GET("$baseUrl/search?keyword=$query&page=$page", headers)
     }
     override fun pageListRequest(chapter: SChapter): Request = GET(baseUrl + "${chapter.url}/all")
+}
+
+private class NhatTruyen : WPComics("NhatTruyen", "http://nhattruyen.com", "vi", SimpleDateFormat("dd/MM/yy", Locale.getDefault()), null) {
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/the-loai?keyword=$query&page=$page", headers)
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().add("Referer", baseUrl).build())
 }
