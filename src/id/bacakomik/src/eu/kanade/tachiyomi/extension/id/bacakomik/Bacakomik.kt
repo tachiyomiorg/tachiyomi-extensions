@@ -1,14 +1,18 @@
 package eu.kanade.tachiyomi.extension.id.bacakomik
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import eu.kanade.tachiyomi.source.model.*
-import java.text.SimpleDateFormat
-import java.util.*
-import java.text.ParseException
 
 class Bacakomik : ParsedHttpSource() {
     override val name = "Bacakomik"
@@ -259,6 +263,4 @@ override fun mangaDetailsParse(document: Document): SManga {
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
-
 }

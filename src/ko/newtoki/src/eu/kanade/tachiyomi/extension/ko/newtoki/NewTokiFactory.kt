@@ -5,11 +5,11 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.Date
 
 /**
  * Source changes domain names approximately once every 10 days (e.g. newtoki31.net to newtoki32.net)

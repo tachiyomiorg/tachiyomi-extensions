@@ -1,13 +1,42 @@
 package eu.kanade.tachiyomi.extension.pt.superhentais
 
-import com.github.salomonbrys.kotson.*
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.jsonArray
+import com.github.salomonbrys.kotson.jsonObject
+import com.github.salomonbrys.kotson.obj
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.emptyList
+import kotlin.collections.first
+import kotlin.collections.forEach
+import kotlin.collections.isNotEmpty
+import kotlin.collections.joinToString
+import kotlin.collections.listOf
+import kotlin.collections.map
+import kotlin.collections.mapIndexed
+import kotlin.collections.mapOf
+import kotlin.collections.mutableListOf
+import kotlin.collections.plus
+import kotlin.collections.plusAssign
+import kotlin.collections.set
+import kotlin.collections.toMutableMap
+import kotlin.collections.toTypedArray
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -38,7 +67,7 @@ class SuperHentais : ParsedHttpSource() {
         filterGenreDel: List<String> = emptyList(),
         typeUrl: String = "hentai-manga",
         page: Int = 1
-    ) : Request {
+    ): Request {
         val filters = jsonObject(
             "filter_data" to filterData.toUrlQueryParams(),
             "filter_genre_add" to jsonArray(filterGenreAdd),
@@ -64,7 +93,7 @@ class SuperHentais : ParsedHttpSource() {
         return POST("$baseUrl/inc/paginator.inc.php", newHeaders, form)
     }
 
-    private fun genericMangaFromElement(element: Element, imageAttr: String = "src") : SManga = SManga.create().apply {
+    private fun genericMangaFromElement(element: Element, imageAttr: String = "src"): SManga = SManga.create().apply {
         title = element.select("img").first().attr("alt")
         thumbnail_url = element.select("img").first().attr(imageAttr).changeSize()
         setUrlWithoutDomain(element.attr("href"))
@@ -200,7 +229,7 @@ class SuperHentais : ParsedHttpSource() {
 
         val chapters = mutableListOf<SChapter>()
 
-        for (page in 1 .. totalPage) {
+        for (page in 1..totalPage) {
             val result = client.newCall(chapterListPaginatedRequest(idCategory, page, totalPage, mangaUrl)).execute()
             val apiResponse = result.asJsonObject()
 
@@ -243,7 +272,7 @@ class SuperHentais : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div.capituloViewBox img.lazy")
-            .mapIndexed { i, element -> Page(i, "", element.absUrl("data-src"))}
+            .mapIndexed { i, element -> Page(i, "", element.absUrl("data-src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -253,7 +282,7 @@ class SuperHentais : ParsedHttpSource() {
     private class ContentFilter : Filter.Select<String>("Tipo de Conteúdo",
         CONTENT_LIST.map { it.third }.toTypedArray())
 
-    private class LetterFilter: Filter.Select<String>("Letra inicial", LETTER_LIST)
+    private class LetterFilter : Filter.Select<String>("Letra inicial", LETTER_LIST)
 
     private class StatusFilter : Filter.Select<String>("Status",
         STATUS_LIST.map { it.second }.toTypedArray())
@@ -382,13 +411,13 @@ class SuperHentais : ParsedHttpSource() {
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
-    private fun Map<String, String>.toUrlQueryParams() : String =
+    private fun Map<String, String>.toUrlQueryParams(): String =
         map { (k, v) -> "$k=$v" }.joinToString("&")
 
     private fun FormBody.value(name: String): String {
         return (0 until size())
             .first { name(it) == name }
-            .let{ value(it) }
+            .let { value(it) }
     }
 
     companion object {
@@ -413,7 +442,7 @@ class SuperHentais : ParsedHttpSource() {
         )
 
         private val LETTER_LIST = listOf("Todas", "Caracteres Especiais")
-            .plus(('A' .. 'Z').map { it.toString() })
+            .plus(('A'..'Z').map { it.toString() })
             .toTypedArray()
 
         private val CONTENT_LIST = listOf(

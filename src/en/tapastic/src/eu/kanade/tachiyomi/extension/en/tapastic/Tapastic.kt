@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.tapastic
 
 import android.net.Uri
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -10,22 +9,22 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class Tapastic : ParsedHttpSource() {
 
-    //Info
+    // Info
     override val lang = "en"
     override val supportsLatest = true
     override val name = "Tapastic"
     override val baseUrl = "https://tapas.io"
 
-    //Popular
+    // Popular
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/comics?b=POPULAR&g=&f=NONE&pageNumber=$page&pageSize=20&")
@@ -38,7 +37,7 @@ class Tapastic : ParsedHttpSource() {
         thumbnail_url = element.select(".item__thumb img").attr("src")
     }
 
-    //Latest
+    // Latest
 
     override fun latestUpdatesRequest(page: Int): Request =
         GET("$baseUrl/comics?b=FRESH&g=&f=NONE&pageNumber=$page&pageSize=20&")
@@ -48,10 +47,10 @@ class Tapastic : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga =
         popularMangaFromElement(element)
 
-    //Search
+    // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //If there is any search text, use text search, otherwise use filter search
+        // If there is any search text, use text search, otherwise use filter search
         val uri = if (query.isNotBlank()) {
             Uri.parse("$baseUrl/search")
                 .buildUpon()
@@ -59,14 +58,14 @@ class Tapastic : ParsedHttpSource() {
                 .appendQueryParameter("q", query)
         } else {
             val uri = Uri.parse("$baseUrl/comics").buildUpon()
-            //Append uri filters
+            // Append uri filters
             filters.forEach {
                 if (it is UriFilter)
                     it.addToUri(uri)
             }
             uri
         }
-        //Append page number
+        // Append page number
         uri.appendQueryParameter("pageNumber", page.toString())
         return GET(uri.toString())
     }
@@ -86,7 +85,7 @@ class Tapastic : ParsedHttpSource() {
         thumbnail_url = element.select(".item__thumb img, .thumb-wrap img").attr("src")
     }
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         title = document.select(".desc__title").text().trim()
@@ -98,7 +97,7 @@ class Tapastic : ParsedHttpSource() {
         thumbnail_url = document.select("div.header__thumb img").attr("src")
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListRequest(manga: SManga): Request {
         return GET(baseUrl + manga.url + "?sort_order=desc", headers)
@@ -144,7 +143,7 @@ class Tapastic : ParsedHttpSource() {
         return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date)?.time ?: 0
     }
 
-    //Pages
+    // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
         if (chapter.url == "locked") throw Exception("Chapter Locked. If logged in, refresh chapter list.")
@@ -160,10 +159,10 @@ class Tapastic : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) =
         throw UnsupportedOperationException("This method should not be called!")
 
-    //Filters
+    // Filters
 
     override fun getFilterList() = FilterList(
-        //Tapastic does not support genre filtering and text search at the same time
+        // Tapastic does not support genre filtering and text search at the same time
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
         FilterFilter(),
@@ -225,9 +224,11 @@ class Tapastic : ParsedHttpSource() {
      * If an entry is selected it is appended as a query parameter onto the end of the URI.
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
-    //vals: <name, display>
+    // vals: <name, display>
     private open class UriSelectFilter(
-        displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
         val firstIsUnspecified: Boolean = true,
         defaultValue: Int = 0
     ) :

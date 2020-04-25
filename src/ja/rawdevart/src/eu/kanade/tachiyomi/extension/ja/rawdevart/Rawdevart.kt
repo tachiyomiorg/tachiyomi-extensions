@@ -1,14 +1,22 @@
 package eu.kanade.tachiyomi.extension.ja.rawdevart
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
 class Rawdevart : ParsedHttpSource() {
 
@@ -152,7 +160,7 @@ class Rawdevart : ParsedHttpSource() {
         manga.genre = genres.joinToString(", ")
         manga.description = infoElement.select("div.description").text()
             .substringAfter("Description ")
-        manga.thumbnail_url =infoElement.select("img.img-fluid.not-lazy").attr("abs:src")
+        manga.thumbnail_url = infoElement.select("img.img-fluid.not-lazy").attr("abs:src")
 
         return manga
     }
@@ -217,7 +225,7 @@ class Rawdevart : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class AuthorFilter : Filter.Text("Author")
 

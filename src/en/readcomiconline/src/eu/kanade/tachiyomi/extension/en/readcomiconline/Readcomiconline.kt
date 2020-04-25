@@ -7,8 +7,15 @@ import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -17,9 +24,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.regex.Pattern
 
 class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
@@ -205,7 +209,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
             Genre("Zombies")
     )
     // Preferences Code
-    
+
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val qualitypref = androidx.preference.ListPreference(screen.context).apply {
             key = QUALITY_PREF_Title
@@ -223,8 +227,6 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         }
         screen.addPreference(qualitypref)
     }
-
-    
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val qualitypref = ListPreference(screen.context).apply {

@@ -1,18 +1,22 @@
 package eu.kanade.tachiyomi.extension.ru.selfmanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.regex.Pattern
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.regex.Pattern
 
 class Selfmanga : ParsedHttpSource() {
 
@@ -195,7 +199,6 @@ class Selfmanga : ParsedHttpSource() {
             Category(getCategoryList()),
             GenreList(getGenreList())
     )
-
 
     private fun getCategoryList() = listOf(
             Genre("Артбук", "el_5894"),

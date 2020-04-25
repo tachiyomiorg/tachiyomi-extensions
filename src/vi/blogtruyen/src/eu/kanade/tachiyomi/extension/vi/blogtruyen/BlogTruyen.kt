@@ -9,6 +9,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -16,8 +18,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class BlogTruyen : ParsedHttpSource() {
 
@@ -82,7 +82,7 @@ class BlogTruyen : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "div.paging:last-child:not(.current_page)"
 
-    override fun latestUpdatesNextPageSelector() =  "ul.pagination.paging.list-unstyled > li:nth-last-child(2) > a"
+    override fun latestUpdatesNextPageSelector() = "ul.pagination.paging.list-unstyled > li:nth-last-child(2) > a"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var temp = "$baseUrl/timkiem/nangcao/1/0"
@@ -174,7 +174,6 @@ class BlogTruyen : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
-
 
     private class Status : Filter.Select<String>("Status", arrayOf("Sao cũng được", "Đang tiến hành", "Đã hoàn thành", "Tạm ngưng"))
     private class Author : Filter.Text("Tác giả")

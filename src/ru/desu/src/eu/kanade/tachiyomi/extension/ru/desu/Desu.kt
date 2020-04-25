@@ -1,14 +1,19 @@
 package eu.kanade.tachiyomi.extension.ru.desu
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.util.ArrayList
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.*
 
 class Desu : HttpSource() {
     override val name = "Desu"
@@ -59,7 +64,6 @@ class Desu : HttpSource() {
         }
     }
 
-
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/?limit=50&order=popular&page=$page")
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
@@ -76,7 +80,7 @@ class Desu : HttpSource() {
             when (filter) {
                 is OrderBy -> url += "&order=" + arrayOf("popular", "updated", "name")[filter.state]
                 is TypeList -> filter.state.forEach { type -> if (type.state) types.add(type) }
-                is GenreList -> filter.state.forEach {genre -> if (genre.state) genres.add(genre) }
+                is GenreList -> filter.state.forEach { genre -> if (genre.state) genres.add(genre) }
             }
         }
 
@@ -99,7 +103,7 @@ class Desu : HttpSource() {
         val count = nav.getInt("count")
         val limit = nav.getInt("limit")
         val page = nav.getInt("page")
-        return mangaPageFromJSON(obj.toString(), count > page*limit)
+        return mangaPageFromJSON(obj.toString(), count > page * limit)
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
@@ -127,7 +131,7 @@ class Desu : HttpSource() {
                 val id = obj2.getString("id")
                 url = "/$cid/chapter/$id"
                 chapter_number = ch.toFloat()
-                date_upload = obj2.getLong("date")*1000
+                date_upload = obj2.getLong("date") * 1000
             })
         }
         return ret
@@ -144,8 +148,8 @@ class Desu : HttpSource() {
         return ret
     }
 
-    override fun imageUrlParse(response: Response)
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun imageUrlParse(response: Response) =
+            throw UnsupportedOperationException("This method should not be called!")
 
     private class OrderBy : Filter.Select<String>("Сортировка",
             arrayOf("Популярность", "Дата", "Имя"))

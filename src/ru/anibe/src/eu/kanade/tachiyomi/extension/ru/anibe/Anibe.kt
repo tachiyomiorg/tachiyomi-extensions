@@ -1,16 +1,22 @@
 package eu.kanade.tachiyomi.extension.ru.anibe
 
+import com.github.salomonbrys.kotson.fromJson
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.keys
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import com.google.gson.Gson
-import com.github.salomonbrys.kotson.*
-import okhttp3.Response
-import com.google.gson.JsonObject
 
 class Anibe : ParsedHttpSource() {
 
@@ -49,7 +55,7 @@ class Anibe : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "Unneeded"
 
-    override fun popularMangaFromElement(element: Element): SManga = throw  UnsupportedOperationException("Not used")
+    override fun popularMangaFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
 
     override fun popularMangaNextPageSelector() = "Unneeded"
 
@@ -91,7 +97,7 @@ class Anibe : ParsedHttpSource() {
         manga.author = jsonManga["author"].asString
         val status = jsonManga["status"].asString
         manga.status = parseStatus(status)
-        manga.genre = jsonManga["genre"].toString().substringAfter("[").substringBefore("]").replace("\"" ,"").replace("," ," ")
+        manga.genre = jsonManga["genre"].toString().substringAfter("[").substringBefore("]").replace("\"", "").replace(",", " ")
         manga.description = jsonManga["description"].asString
         manga.thumbnail_url = jsonManga["cover"].asString
         return manga
@@ -114,7 +120,7 @@ class Anibe : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val allChapters = mutableListOf<SChapter>()
         val jsonManga = gson.fromJson<JsonObject>(response.body()!!.string())
-        val jsonChapters = jsonManga["episodes"].asJsonObject.keys().sortedWith(Comparator<String>{ a, b ->
+        val jsonChapters = jsonManga["episodes"].asJsonObject.keys().sortedWith(Comparator<String> { a, b ->
             when {
                 a.substringBefore("_").toInt() < b.substringBefore("_").toInt() -> 1
                 a.substringBefore("_").toInt() > b.substringBefore("_").toInt() -> -1
@@ -133,9 +139,9 @@ class Anibe : ParsedHttpSource() {
         return allChapters
     }
 
-    override fun chapterListSelector() = throw  UnsupportedOperationException("Not used")
+    override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
 
-    override fun chapterFromElement(element: Element): SChapter  = throw  UnsupportedOperationException("Not used")
+    override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
 
     // Pages
 
@@ -155,10 +161,9 @@ class Anibe : ParsedHttpSource() {
         return pages
     }
 
-    override fun pageListParse(document: Document): List<Page>  = throw  UnsupportedOperationException("Not used")
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

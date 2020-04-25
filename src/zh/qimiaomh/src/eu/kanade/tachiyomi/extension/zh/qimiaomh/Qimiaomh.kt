@@ -3,15 +3,19 @@ package eu.kanade.tachiyomi.extension.zh.qimiaomh
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.Random
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.concurrent.TimeUnit
 
 class Qimiaomh : ParsedHttpSource() {
     override val name: String = "奇妙漫画"
@@ -25,7 +29,6 @@ class Qimiaomh : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-
     // Popular
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/list-1------hits--$page.html", headers)
@@ -38,7 +41,7 @@ class Qimiaomh : ParsedHttpSource() {
         title = element.select("a").first().text()
     }
 
-    //Latest
+    // Latest
     override fun latestUpdatesRequest(page: Int): Request {
         return GET("$baseUrl/list-1------updatetime--$page.html", headers)
     }
@@ -46,16 +49,16 @@ class Qimiaomh : ParsedHttpSource() {
     override fun latestUpdatesSelector(): String = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Search
+    // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         throw Exception("不管用 (T_T)")
-        //Todo Filters
+        // Todo Filters
     }
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         title = document.select("h1.title").text()
@@ -72,7 +75,7 @@ class Qimiaomh : ParsedHttpSource() {
         }
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListSelector(): String = "div.comic-content-list ul.comic-content-c"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
@@ -80,10 +83,10 @@ class Qimiaomh : ParsedHttpSource() {
         name = element.select("li.tit").text().trim()
     }
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("dd/MM/yyyy", Locale.US ).parse(date).time
+        return SimpleDateFormat("dd/MM/yyyy", Locale.US).parse(date).time
     }
 
-    //Pages
+    // Pages
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         val script = document.select("script:containsData(var did =)").html()
@@ -101,5 +104,5 @@ class Qimiaomh : ParsedHttpSource() {
         throw Exception("Not Used")
     }
 
-    //Not Used
+    // Not Used
 }

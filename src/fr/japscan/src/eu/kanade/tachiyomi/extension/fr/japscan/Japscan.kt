@@ -19,6 +19,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -28,11 +33,6 @@ import okhttp3.ResponseBody
 import org.apache.commons.lang3.StringUtils
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class Japscan : ParsedHttpSource() {
 
@@ -101,8 +101,7 @@ class Japscan : ParsedHttpSource() {
         createKeysheet(doc, doc2)
     }
 
-
-    //Popular
+    // Popular
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/mangas/", headers)
     }
@@ -135,7 +134,7 @@ class Japscan : ParsedHttpSource() {
         return manga
     }
 
-    //Latest
+    // Latest
     override fun latestUpdatesRequest(page: Int): Request {
         return GET(baseUrl, headers)
     }
@@ -155,7 +154,7 @@ class Japscan : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Search
+    // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isEmpty()) {
             val uri = Uri.parse(baseUrl).buildUpon()
@@ -204,7 +203,6 @@ class Japscan : ParsedHttpSource() {
 
             return MangasPage(mangas, hasNextPage)
         }
-
     }
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
@@ -249,9 +247,8 @@ class Japscan : ParsedHttpSource() {
 
     override fun chapterListSelector() = "#chapters_list > div.collapse > div.chapters_list" +
         ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW),.badge:contains(VUS)))"
-    //JapScan sometimes uploads some "spoiler preview" chapters, containing 2 or 3 untranslated pictures taken from a raw. Sometimes they also upload full RAWs/US versions and replace them with a translation as soon as available.
-    //Those have a span.badge "SPOILER" or "RAW". The additional pseudo selector makes sure to exclude these from the chapter list.
-
+    // JapScan sometimes uploads some "spoiler preview" chapters, containing 2 or 3 untranslated pictures taken from a raw. Sometimes they also upload full RAWs/US versions and replace them with a translation as soon as available.
+    // Those have a span.badge "SPOILER" or "RAW". The additional pseudo selector makes sure to exclude these from the chapter list.
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a").first()
@@ -259,7 +256,7 @@ class Japscan : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.ownText()
-        //Using ownText() doesn't include childs' text, like "VUS" or "RAW" badges, in the chapter name.
+        // Using ownText() doesn't include childs' text, like "VUS" or "RAW" badges, in the chapter name.
         chapter.date_upload = element.select("> span").text().trim().let { parseChapterDate(it) }
         return chapter
     }
@@ -284,7 +281,6 @@ class Japscan : ParsedHttpSource() {
             pageUrls.add(pages[i].attr("data-img").substring("https://c.japscan.co/".length, pages[i].attr("data-img").length - 4))
         }
 
-
         val az = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray()
         val ks = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray()
 
@@ -292,7 +288,6 @@ class Japscan : ParsedHttpSource() {
             for (j in 0 until realPageUrls[i].length) {
                 if (realPageUrls[i][j] != pageUrls[i][j]) {
                     ks[az.indexOf(pageUrls[i][j])] = realPageUrls[i][j]
-
                 }
             }
         keysheet = ks.joinToString("")
@@ -369,7 +364,7 @@ class Japscan : ParsedHttpSource() {
         return output.toByteArray()
     }
 
-    //Filters
+    // Filters
     private class TextField(name: String) : Filter.Text(name)
 
     private class PageList(pages: Array<Int>) : Filter.Select<Int>("Page #", arrayOf(0, *pages))

@@ -1,27 +1,30 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadb
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.util.regex.Pattern
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.regex.Pattern
 
-class ManhuaDB: ParsedHttpSource() {
+class ManhuaDB : ParsedHttpSource() {
 
     override val baseUrl = "https://www.manhuadb.com"
 
-    override val lang  = "zh"
+    override val lang = "zh"
 
     override val name = "漫画DB"
 
     override val supportsLatest = true
 
-    override fun headersBuilder(): Headers.Builder
-        = super.headersBuilder().add("Referer", "https://www.manhuadb.com")
+    override fun headersBuilder(): Headers.Builder =
+        super.headersBuilder().add("Referer", "https://www.manhuadb.com")
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.attr("title")
@@ -59,7 +62,7 @@ class ManhuaDB: ParsedHttpSource() {
             "已完结" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        genre = document.select("ul.tags > li a").joinToString{ it.text() }
+        genre = document.select("ul.tags > li a").joinToString { it.text() }
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -71,7 +74,7 @@ class ManhuaDB: ParsedHttpSource() {
             var path = document.select("ol.breadcrumb > li:eq(2) > a").attr("href")
             path = path.substring(1, path.length - 5)
             for (i in 0 until page)
-            pages.add(Page(i, "$baseUrl/${path}_p${i+1}.html"))
+            pages.add(Page(i, "$baseUrl/${path}_p${i + 1}.html"))
         }
         return pages
     }

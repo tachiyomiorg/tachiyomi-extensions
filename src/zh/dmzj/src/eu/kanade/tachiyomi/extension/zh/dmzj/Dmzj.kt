@@ -2,11 +2,16 @@ package eu.kanade.tachiyomi.extension.zh.dmzj
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.util.ArrayList
 import okhttp3.Request
 import okhttp3.Response
-import java.util.*
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -62,7 +67,7 @@ class Dmzj : HttpSource() {
                 title = obj.getString("title")
                 thumbnail_url = obj.getString("cover")
                 author = obj.optString("authors")
-                status = when(obj.getString("status")) {
+                status = when (obj.getString("status")) {
                     "已完结" -> SManga.COMPLETED
                     "连载中" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
@@ -73,11 +78,11 @@ class Dmzj : HttpSource() {
         return MangasPage(ret, arr.length() != 0)
     }
 
-    override fun popularMangaRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/0/${page-1}.json")
+    override fun popularMangaRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/0/${page - 1}.json")
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
 
-    override fun latestUpdatesRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/1/${page-1}.json")
+    override fun latestUpdatesRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/1/${page - 1}.json")
 
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
@@ -98,7 +103,7 @@ class Dmzj : HttpSource() {
 
             val order = filters.filter { it is SortFilter }.map { (it as UriPartFilter).toUriPart() }.joinToString("")
 
-            return myGet("http://v2.api.dmzj.com/classify/$params/$order/${page-1}.json")
+            return myGet("http://v2.api.dmzj.com/classify/$params/$order/${page - 1}.json")
         }
     }
 
@@ -131,7 +136,7 @@ class Dmzj : HttpSource() {
             tmparr.add(arr.getJSONObject(i).getString("tag_name"))
         }
         genre = tmparr.joinToString(", ")
-        status = when(obj.getJSONArray("status").getJSONObject(0).getInt("tag_id")) {
+        status = when (obj.getJSONArray("status").getJSONObject(0).getInt("tag_id")) {
             2310 -> SManga.COMPLETED
             2309 -> SManga.ONGOING
             else -> SManga.UNKNOWN
@@ -153,16 +158,16 @@ class Dmzj : HttpSource() {
                 val chapter = arr2.getJSONObject(j)
                 ret.add(SChapter.create().apply {
                     name = "$prefix: ${chapter.getString("chapter_title")}"
-                    date_upload = chapter.getString("updatetime").toLong()*1000 //milliseconds
-                    //V3API url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
-                    url = "http://m.dmzj.com/chapinfo/$cid/${chapter.getString("chapter_id")}.html" //From m_readerBg.js 
+                    date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
+                    // V3API url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
+                    url = "http://m.dmzj.com/chapinfo/$cid/${chapter.getString("chapter_id")}.html" // From m_readerBg.js
                 })
             }
         }
         return ret
     }
-    
-    override fun pageListRequest(chapter: SChapter) = GET( chapter.url, headers) //Bypass base url
+
+    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers) // Bypass base url
 
     override fun pageListParse(response: Response): List<Page> {
         val obj = JSONObject(response.body()!!.string())
@@ -174,9 +179,9 @@ class Dmzj : HttpSource() {
         return ret
     }
 
-    //Unused, we can get image urls directly from the chapter page
-    override fun imageUrlParse(response: Response)
-            = throw UnsupportedOperationException("This method should not be called!")
+    // Unused, we can get image urls directly from the chapter page
+    override fun imageUrlParse(response: Response) =
+            throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
             SortFilter(),
@@ -259,12 +264,15 @@ class Dmzj : HttpSource() {
             Pair("青年", "3264")
     ))
 
-    //Headers
-    override fun headersBuilder()
-            = super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
+    // Headers
+    override fun headersBuilder() =
+            super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
 
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>,
-                                     defaultValue: Int = 0) :
+    private open class UriPartFilter(
+        displayName: String,
+        val vals: Array<Pair<String, String>>,
+        defaultValue: Int = 0
+    ) :
             Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
     }

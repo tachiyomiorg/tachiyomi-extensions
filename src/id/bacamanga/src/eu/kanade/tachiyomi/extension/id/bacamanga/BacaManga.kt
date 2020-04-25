@@ -2,18 +2,26 @@ package eu.kanade.tachiyomi.extension.id.bacamanga
 
 import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.io.UnsupportedEncodingException
+import java.net.URLDecoder
+import java.text.SimpleDateFormat
+import java.util.Locale
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.io.UnsupportedEncodingException
-import java.net.URLDecoder
-import java.text.SimpleDateFormat
-import java.util.*
 
 class BacaManga : ParsedHttpSource() {
 
@@ -117,8 +125,8 @@ class BacaManga : ParsedHttpSource() {
         // Add date for latest chapter only
         document.select("script.yoast-schema-graph").html()
             .let {
-                val date = JSONObject(it).getJSONArray("@graph").
-                    getJSONObject(3).getString("dateModified")
+                val date = JSONObject(it).getJSONArray("@graph")
+                    .getJSONObject(3).getString("dateModified")
                 chapters[0].date_upload = parseDate(date)
             }
         return chapters

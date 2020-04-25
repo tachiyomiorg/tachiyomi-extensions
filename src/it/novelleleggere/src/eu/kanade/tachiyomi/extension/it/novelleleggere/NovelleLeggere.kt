@@ -13,13 +13,13 @@ import org.jsoup.nodes.Element
 
 class NovelleLeggere : ParsedHttpSource() {
 
-    //Info
+    // Info
     override val name: String = "Novelle Leggere"
     override val baseUrl: String = "https://www.novelleleggere.com"
     override val lang: String = "it"
     override val supportsLatest: Boolean = false
 
-    //Popular
+    // Popular
     override fun popularMangaRequest(page: Int): Request = GET(baseUrl)
 
     override fun popularMangaNextPageSelector(): String? = null
@@ -30,7 +30,7 @@ class NovelleLeggere : ParsedHttpSource() {
         setUrlWithoutDomain(a.attr("abs:href"))
     }
 
-    //Latest
+    // Latest
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Latest Not Supported")
 
     override fun latestUpdatesNextPageSelector(): String? = throw Exception("Latest Not Supported")
@@ -38,7 +38,7 @@ class NovelleLeggere : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga =
         throw Exception("Latest Not Supported")
 
-    //Search
+    // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
         throw Exception("Search Not Supported")
 
@@ -47,7 +47,7 @@ class NovelleLeggere : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga =
         throw Exception("Search Not Supported")
 
-    //Details
+    // Details
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         thumbnail_url = document.select("div.post-content img").first().attr("abs:src")
         title = document.select("div.post-content h3").text().trim()
@@ -56,7 +56,7 @@ class NovelleLeggere : ParsedHttpSource() {
                 .trim()
     }
 
-    //Chapters
+    // Chapters
     override fun chapterListSelector(): String =
         "div.post-content div:contains(Capitoli) div.su-spoiler-content ul li a"
 
@@ -69,7 +69,7 @@ class NovelleLeggere : ParsedHttpSource() {
         return super.chapterListParse(response).reversed()
     }
 
-    //Pages
+    // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("div.post-content p img").forEachIndexed { index, element ->
             add(Page(index, "", element.attr("abs:src").substringBefore("?")))
@@ -78,5 +78,4 @@ class NovelleLeggere : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String =
         throw Exception("ImgURL Parse Not Used")
-
 }

@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.pururin
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -61,8 +66,8 @@ class Pururin : ParsedHttpSource() {
         manga.genre = genres.joinToString(", ")
         manga.thumbnail_url = document.select("div.cover-wrapper v-lazy-image").attr("abs:src")
 
-        var tags  = ""
-        genres.forEach { tags+= " <$it>" }
+        var tags = ""
+        genres.forEach { tags += " <$it>" }
 
         manga.description = "Title: " + manga.title + "\n\n" + getDesc(document) + tags
 
@@ -75,7 +80,6 @@ class Pururin : ParsedHttpSource() {
         val magazine = infoElement.select("tr:has(td:contains(Convention)) a").text()
         val parodies = infoElement.select("tr:has(td:contains(Parody)) a").text()
         val pagess = infoElement.select("tr:has(td:contains(Pages)) td:eq(1)").text()
-
 
         if (magazine.isNotEmpty()) {
             stringBuilder.append("Magazine: ")
@@ -98,7 +102,7 @@ class Pururin : ParsedHttpSource() {
 
     override fun chapterListSelector() = "div.gallery-action a"
 
-    //TODO Make it work for collections
+    // TODO Make it work for collections
     override fun chapterFromElement(element: Element): SChapter {
 
         val chapter = SChapter.create()
@@ -116,8 +120,8 @@ class Pururin : ParsedHttpSource() {
         val id = galleryInfo.substringAfter("id&quot;:").substringBefore(',')
         val total: Int = (galleryInfo.substringAfter("total_pages&quot;:").substringBefore(',')).toInt()
 
-        for (i in 1 .. total) {
-            pages.add(Page(i,"", "https://cdn.pururin.io/assets/images/data/$id/$i.jpg"))
+        for (i in 1..total) {
+            pages.add(Page(i, "", "https://cdn.pururin.io/assets/images/data/$id/$i.jpg"))
         }
 
         return pages
@@ -185,4 +189,3 @@ class Pururin : ParsedHttpSource() {
 
     private class Tag(name: String) : Filter.Text(name)
 }
-

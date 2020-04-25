@@ -9,7 +9,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.FormBody
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -34,11 +40,10 @@ class ComX : ParsedHttpSource() {
                         .domain("com-x.life")
                         .path("/")
                         .name("antibot")
-                        .value("e28a31fb6bcbc2858bdf53fac455d54a")  // avoid - https://antibot.cloud/. Change cookie if userAgent changes
+                        .value("e28a31fb6bcbc2858bdf53fac455d54a") // avoid - https://antibot.cloud/. Change cookie if userAgent changes
                         .build())
                 }
             }
-
         })
         .build()
 
@@ -50,11 +55,9 @@ class ComX : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "ul.last-comix li"
 
-    override fun popularMangaRequest(page: Int): Request =
-              GET("$baseUrl/comix/page/$page/", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/comix/page/$page/", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request =
-            GET(baseUrl, headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -75,7 +78,6 @@ class ComX : ParsedHttpSource() {
         }
         return manga
     }
-
 
     override fun popularMangaNextPageSelector() = "div.nextprev:last-child"
 
@@ -114,8 +116,8 @@ class ComX : ParsedHttpSource() {
         if (!text.contains("Добавить описание на комикс")) {
             val fromRemove = "Отслеживать"
             val toRemove = "Читать комикс"
-            val desc = text.removeRange(0,  text.indexOf(fromRemove)+fromRemove.length)
-            manga.description = desc.removeRange(desc.indexOf(toRemove)+toRemove.length, desc.length)
+            val desc = text.removeRange(0, text.indexOf(fromRemove) + fromRemove.length)
+            manga.description = desc.removeRange(desc.indexOf(toRemove) + toRemove.length, desc.length)
         }
 
         val src = infoElement.select("img").attr("src")
@@ -139,11 +141,11 @@ class ComX : ParsedHttpSource() {
 
     override fun chapterListSelector() = "li[id^=cmx-]"
 
-    private fun chapterResponseParse(document: Document) : List<SChapter> {
+    private fun chapterResponseParse(document: Document): List<SChapter> {
         return document.select(chapterListSelector()).map { chapterFromElement(it) }
     }
 
-    private fun chapterPageListParse(document: Document) : List<String> {
+    private fun chapterPageListParse(document: Document): List<String> {
         return document.select("span[class=\"\"]").map { it -> it.text() }
     }
 
@@ -192,10 +194,9 @@ class ComX : ParsedHttpSource() {
         val urls: List<String> = html.substring(beginIndex + beginTag.length, endIndex)
                 .split(',')
 
-
         val pages = mutableListOf<Page>()
         for (i in urls.indices) {
-            pages.add(Page(i, "", link+(urls[i].removeSurrounding("'"))))
+            pages.add(Page(i, "", link + (urls[i].removeSurrounding("'"))))
         }
         return pages
     }

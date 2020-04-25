@@ -1,12 +1,19 @@
 package eu.kanade.tachiyomi.extension.id.komikcast
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import java.util.Calendar
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import eu.kanade.tachiyomi.source.model.*
-import java.util.*
 
 class Komikcast : ParsedHttpSource() {
 
@@ -37,7 +44,7 @@ class Komikcast : ParsedHttpSource() {
             url.toString()
         } else {
             val url = HttpUrl.parse("$baseUrl/daftar-komik/page/$page")!!.newBuilder()
-            var orderBy = ""
+            var orderBy: String
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is Status -> url.addQueryParameter("status", arrayOf("", "ongoing", "completed")[filter.state])

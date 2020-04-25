@@ -1,7 +1,11 @@
 package eu.kanade.tachiyomi.extension.zh.hanhankuman
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
@@ -85,7 +89,7 @@ class HanhanKuman : ParsedHttpSource() {
         manga.status = when (document.select("li:contains(状态)").text()?.substringAfterLast(":")?.trim()) {
             "连载" -> SManga.ONGOING
             "完结" -> SManga.COMPLETED
-            //"" -> SManga.LICENSED
+            // "" -> SManga.LICENSED
             else -> SManga.UNKNOWN
         }
         return manga
@@ -103,7 +107,7 @@ class HanhanKuman : ParsedHttpSource() {
         return pageListParse(response.asJsoup(), pathId, pathS)
     }
 
-    override fun pageListParse(document: Document):List<Page> = listOf()
+    override fun pageListParse(document: Document): List<Page> = listOf()
 
     fun pageListParse(document: Document, id: String, s: String): List<Page> {
         return document.select("#iPageHtm > a").mapIndexed { i, _ ->
@@ -122,13 +126,13 @@ class HanhanKuman : ParsedHttpSource() {
 
         val servers = document.select("#hdDomain").attr("value").split("|")
 
-        //img key decode
+        // img key decode
         return if (imgKey != "") {
             servers[0] + unsuan(imgKey!!)
         } else ""
     }
 
-    //https://stackoverflow.com/questions/2946067/what-is-the-java-equivalent-to-javascripts-string-fromcharcode
+    // https://stackoverflow.com/questions/2946067/what-is-the-java-equivalent-to-javascripts-string-fromcharcode
     fun fromCharCode(vararg codePoints: Int): String {
         return String(codePoints, 0, codePoints.size)
     }
@@ -167,7 +171,6 @@ class HanhanKuman : ParsedHttpSource() {
         return s
     }
 
-
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
@@ -177,7 +180,4 @@ class HanhanKuman : ParsedHttpSource() {
     private fun getGenreList() = arrayOf(
         "All"
     )
-
-
 }
-

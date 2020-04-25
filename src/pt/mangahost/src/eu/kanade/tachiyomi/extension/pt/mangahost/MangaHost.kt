@@ -1,8 +1,14 @@
 package eu.kanade.tachiyomi.extension.pt.mangahost
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
@@ -10,9 +16,6 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class MangaHost : ParsedHttpSource() {
 
@@ -74,7 +77,7 @@ class MangaHost : ParsedHttpSource() {
         val url = HttpUrl.parse("$baseUrl/find/")!!.newBuilder()
             .addQueryParameter("this", query)
 
-       return GET(url.toString(), headers)
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
@@ -104,9 +107,8 @@ class MangaHost : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector(): String
-        = "ul.list_chapters li a, " +
-          "table.table-hover:not(.table-mangas) > tbody > tr"
+    override fun chapterListSelector(): String =
+        "ul.list_chapters li a, table.table-hover:not(.table-mangas) > tbody > tr"
 
     override fun chapterFromElement(element: Element): SChapter {
         val isNewLayout = element.tagName() == "a"
@@ -170,7 +172,7 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun SimpleDateFormat.tryParseTime(date: String) : Long {
+    private fun SimpleDateFormat.tryParseTime(date: String): Long {
         return try {
             parse(date).time
         } catch (e: ParseException) {

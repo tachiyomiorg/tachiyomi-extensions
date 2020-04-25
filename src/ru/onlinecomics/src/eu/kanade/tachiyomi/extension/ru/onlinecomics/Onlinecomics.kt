@@ -1,19 +1,23 @@
 package eu.kanade.tachiyomi.extension.ru.onlinecomics
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
-class Onlinecomics: ParsedHttpSource() {
+class Onlinecomics : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga {
         throw Exception("Not used")
     }
@@ -65,7 +69,6 @@ class Onlinecomics: ParsedHttpSource() {
             popularMangaFromElement(element)
         }
 
-
         val hasNextPage = popularMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
@@ -108,13 +111,12 @@ class Onlinecomics: ParsedHttpSource() {
                     .joinToString("/", limit = 4, truncated = "")
                     .removeSuffix("/")
             manga.setUrlWithoutDomain(newUrl)
-            manga.title =  element.select("yass-span").text().split('/')[0]
+            manga.title = element.select("yass-span").text().split('/')[0]
             mangaList.add(manga)
         }
 
         val result = mangaList.filter { it.url.isNotEmpty() }.distinctBy { it.url }
         return MangasPage(result, false)
-
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -134,7 +136,7 @@ class Onlinecomics: ParsedHttpSource() {
                 "Жанры:"
             }
             val end = "Тип:"
-            val tempString = text.removeRange(0, text.indexOf(begin)+begin.length)
+            val tempString = text.removeRange(0, text.indexOf(begin) + begin.length)
             manga.genre = tempString.removeRange(tempString.indexOf(end), tempString.length).trim()
 
             manga.status = parseStatus(infoElement.text())
@@ -146,7 +148,6 @@ class Onlinecomics: ParsedHttpSource() {
             manga.description = document.select(".remark").text()
         }
         return manga
-
     }
 
     private fun parseStatus(element: String): Int = when {
@@ -159,7 +160,6 @@ class Onlinecomics: ParsedHttpSource() {
         val document = response.asJsoup()
         val chapterList = mutableListOf<SChapter>()
         chapterList.addAll(document.select(chapterListSelector()).map { chapterFromElement(it) })
-
 
         val lastPage: String? = document.select("div.navigationG .C").last()?.text()
         if (lastPage != null) {

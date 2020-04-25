@@ -1,20 +1,32 @@
 package eu.kanade.tachiyomi.extension.pt.hipercool
 
-import com.github.salomonbrys.kotson.*
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.jsonObject
+import com.github.salomonbrys.kotson.obj
+import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.*
-import rx.Observable
-import java.lang.Exception
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import okhttp3.Headers
+import okhttp3.MediaType
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import rx.Observable
 
 class Hipercool : HttpSource() {
     override val name = "HipercooL"
@@ -205,7 +217,7 @@ class Hipercool : HttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun parseChapterDate(date: String): Long {
         return try {
             SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
                     .parse(date.substringBefore("T"))
@@ -215,11 +227,11 @@ class Hipercool : HttpSource() {
         }
     }
 
-    private fun getThumbnailUrl(bookSlug: String, revision: Int): String
-        = "$STATIC_URL/books/$bookSlug/$bookSlug-cover.jpg?revision=$revision"
-        
-    private fun getPageUrl(bookSlug: String, chapterSlug: String, page: Int, revision: Int): String
-        = "$STATIC_URL/books/$bookSlug/$chapterSlug/$bookSlug-chapter-$chapterSlug-page-$page.jpg?revision=$revision"
+    private fun getThumbnailUrl(bookSlug: String, revision: Int): String =
+        "$STATIC_URL/books/$bookSlug/$bookSlug-cover.jpg?revision=$revision"
+
+    private fun getPageUrl(bookSlug: String, chapterSlug: String, page: Int, revision: Int): String =
+        "$STATIC_URL/books/$bookSlug/$chapterSlug/$bookSlug-chapter-$chapterSlug-page-$page.jpg?revision=$revision"
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 

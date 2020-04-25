@@ -2,19 +2,22 @@ package eu.kanade.tachiyomi.extension.fr.scantrad
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
-import java.util.Locale
-import java.text.SimpleDateFormat
 import rx.Observable
-import java.lang.Exception
 
 class Scantrad : ParsedHttpSource() {
 
@@ -71,7 +74,7 @@ class Scantrad : ParsedHttpSource() {
         manga.setUrlWithoutDomain(element.select("div.hmi-titre a").first().attr("abs:href"))
         manga.title = element.select("div.hmi-titre a").first().text()
         manga.thumbnail_url = element.select("img").attr("abs:src")
-        
+
         return manga
     }
 
@@ -197,5 +200,4 @@ class Scantrad : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

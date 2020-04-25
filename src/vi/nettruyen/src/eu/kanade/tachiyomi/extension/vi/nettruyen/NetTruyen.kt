@@ -2,18 +2,21 @@ package eu.kanade.tachiyomi.extension.vi.nettruyen
 
 import android.util.Log
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.util.Calendar
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.spec.IvParameterSpec
-
 
 class NetTruyen : ParsedHttpSource() {
 
@@ -26,8 +29,8 @@ class NetTruyen : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client = network.cloudflareClient.newBuilder().addInterceptor {
-        //Intercept any image requests and add a referer to them
-        //Enables bandwidth stealing feature
+        // Intercept any image requests and add a referer to them
+        // Enables bandwidth stealing feature
         val request =
                 if (it.request().url().host().contains("cloud"))
                     it.request().newBuilder().addHeader("Referer", baseUrl).build()
@@ -166,8 +169,8 @@ class NetTruyen : ParsedHttpSource() {
             val ivParameterSpec = IvParameterSpec(keyBytes)
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec)
             return String(cipher.doFinal(android.util.Base64.decode(strToDecrypt, android.util.Base64.DEFAULT)))
-        }catch (e: Exception){
-             Log.e("Decrypt", "Has error $e")
+        } catch (e: Exception) {
+            Log.e("Decrypt", "Has error $e")
         }
         return "https://www.upsieutoc.com/images/2019/09/20/1c1b688884689165b.png"
     }
@@ -177,7 +180,7 @@ class NetTruyen : ParsedHttpSource() {
         val scriptTag = document.select("#ctl00_divCenter > div > .container script").html()
         val keyIndex = scriptTag.indexOf("var k=") + 5
         val listIndex = scriptTag.indexOf("var l=") + 5
-        val key = scriptTag.substring(keyIndex + 2, scriptTag.indexOf('"', keyIndex+2))
+        val key = scriptTag.substring(keyIndex + 2, scriptTag.indexOf('"', keyIndex + 2))
         val list = scriptTag.substring(listIndex + 1, scriptTag.indexOf(";", listIndex))
         val jsonList = JSONArray(list)
 

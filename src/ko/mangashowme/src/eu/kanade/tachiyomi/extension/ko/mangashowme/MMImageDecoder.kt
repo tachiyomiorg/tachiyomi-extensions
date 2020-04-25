@@ -4,10 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
-import okhttp3.Interceptor
-import okhttp3.MediaType
-import okhttp3.Response
-import okhttp3.ResponseBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -15,7 +11,10 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.sin
 import kotlin.math.tan
-
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.Response
+import okhttp3.ResponseBody
 
 /*
  * `v1` means url padding of image host.
@@ -33,7 +32,6 @@ internal class ImageDecoder(scripts: String) {
         return "$url??$chapter;$cnt"
     }
 }
-
 
 internal class ImageDecoderInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -91,7 +89,7 @@ internal class ImageDecoderInterceptor : Interceptor {
         var cx = ManaMoa.V1_CX
         var cy = ManaMoa.V1_CY
 
-        //view_cnt / 10 > 30000 ? (this._CX = 1, this._CY = 6)  : view_cnt / 10 > 20000 ? this._CX = 1 : view_cnt / 10 > 10000 && (this._CY = 1)
+        // view_cnt / 10 > 30000 ? (this._CX = 1, this._CY = 6)  : view_cnt / 10 > 20000 ? this._CX = 1 : view_cnt / 10 > 10000 && (this._CY = 1)
         // DO NOT (AUTOMATICALLY) REPLACE TO when USING IDEA. seems it doesn't detect correct condition
         if (viewCnt > 30000) {
             cx = 1
@@ -102,7 +100,7 @@ internal class ImageDecoderInterceptor : Interceptor {
             cy = 1
         }
 
-        //decode image
+        // decode image
         val order = Array(cx * cy) { IntArray(2) }
         val oSize = order.size - 1
 
@@ -113,7 +111,7 @@ internal class ImageDecoderInterceptor : Interceptor {
 
         java.util.Arrays.sort(order) { a, b -> a[1].toDouble().compareTo(b[1].toDouble()) }
 
-        //create new bitmap
+        // create new bitmap
         val outputWidth = if (half == 0) input.width else input.width / 2
         val output = Bitmap.createBitmap(outputWidth, input.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)

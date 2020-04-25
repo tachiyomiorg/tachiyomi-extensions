@@ -1,13 +1,17 @@
 package eu.kanade.tachiyomi.extension.en.oglaf
 
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import org.jsoup.Jsoup
 
 class Oglaf : ParsedHttpSource() {
 
@@ -94,5 +98,4 @@ class Oglaf : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
     override fun latestUpdatesSelector(): String = throw Exception("Not used")
-
 }

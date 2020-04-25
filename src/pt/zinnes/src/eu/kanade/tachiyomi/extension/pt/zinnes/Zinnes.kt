@@ -1,15 +1,22 @@
 package eu.kanade.tachiyomi.extension.pt.zinnes
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class Zinnes : ParsedHttpSource() {
 
@@ -116,7 +123,7 @@ class Zinnes : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("This method should not be called!")
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun parseChapterDate(date: String): Long {
         return try {
             SimpleDateFormat("dd MMM, yyyy", Locale("pt", "BR")).parse(date).time
         } catch (e: ParseException) {

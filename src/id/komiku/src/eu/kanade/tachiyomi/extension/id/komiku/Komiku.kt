@@ -2,23 +2,16 @@ package eu.kanade.tachiyomi.extension.id.komiku
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
+import java.util.Calendar
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
-class Komiku: ParsedHttpSource() {
+class Komiku : ParsedHttpSource() {
     override val name = "Komiku"
 
     override val baseUrl = "https://komiku.co.id/"
@@ -65,7 +58,7 @@ class Komiku: ParsedHttpSource() {
         }
         thumbnail_url = document.select("div.ims > img").attr("src")
     }
-    
+
     private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Completed") -> SManga.COMPLETED
@@ -80,11 +73,11 @@ class Komiku: ParsedHttpSource() {
         setUrlWithoutDomain(element.select("a.popunder").attr("href"))
         name = element.select("a.popunder").attr("title")
 
-        //Has datetime attribute, but all are set to statt of current day for whatever reason, so parsing text instead
+        // Has datetime attribute, but all are set to statt of current day for whatever reason, so parsing text instead
         date_upload = parseRelativeDate(element.select("time").text().trim()) ?: 0
     }
 
-    //Used Google translate here
+    // Used Google translate here
     private fun parseRelativeDate(date: String): Long? {
         val trimmedDate = date.substringBefore(" lalu").removeSuffix("s").split(" ")
 
@@ -110,5 +103,5 @@ class Komiku: ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
-     override fun getFilterList() = FilterList()
+    override fun getFilterList() = FilterList()
 }

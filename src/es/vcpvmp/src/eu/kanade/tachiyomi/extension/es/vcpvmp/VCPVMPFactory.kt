@@ -1,7 +1,8 @@
 package eu.kanade.tachiyomi.extension.es.vcpvmp
 
-import eu.kanade.tachiyomi.source.*
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.SourceFactory
+import eu.kanade.tachiyomi.source.model.Filter
 
 class VCPVMPFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -363,7 +364,6 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
         Pair("Zoids Shinseiki Zero", "153"),
         Pair("Zombieland Saga", "2059")
     ))
-
 }
 
 open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :

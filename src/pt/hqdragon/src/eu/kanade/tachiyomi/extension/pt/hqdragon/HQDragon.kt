@@ -2,7 +2,11 @@ package eu.kanade.tachiyomi.extension.pt.hqdragon
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
@@ -65,12 +69,12 @@ class HQDragon : ParsedHttpSource() {
         val mangas = mutableListOf<SManga>()
 
         document.select(latestUpdatesSelector())
-            .forEach{ mangas.add(latestUpdatesFromElements(it, it.nextElementSibling())) }
+            .forEach { mangas.add(latestUpdatesFromElements(it, it.nextElementSibling())) }
 
         return MangasPage(mangas, document.select("a[href\$=5693-x-force-2018]").isEmpty())
     }
 
-    private fun latestUpdatesFromElements(imageElement: Element, titleElement: Element) : SManga {
+    private fun latestUpdatesFromElements(imageElement: Element, titleElement: Element): SManga {
         val manga = SManga.create()
 
         manga.thumbnail_url = imageElement.select("img").attr("src")
@@ -157,5 +161,4 @@ class HQDragon : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

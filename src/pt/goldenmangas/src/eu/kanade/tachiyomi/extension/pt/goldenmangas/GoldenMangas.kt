@@ -2,15 +2,21 @@ package eu.kanade.tachiyomi.extension.pt.goldenmangas
 
 import android.util.Log
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class GoldenMangas : ParsedHttpSource() {
 
@@ -124,7 +130,7 @@ class GoldenMangas : ParsedHttpSource() {
         val pages = chapImages.select("img[pag]")
 
         return pages
-            .mapIndexed { i, element -> Page(i, "", baseUrl + element.attr("src"))}
+            .mapIndexed { i, element -> Page(i, "", baseUrl + element.attr("src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -133,7 +139,7 @@ class GoldenMangas : ParsedHttpSource() {
 
     private fun removeLabel(text: String?): String = text!!.substringAfter(":").trim()
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun parseChapterDate(date: String): Long {
         return try {
             SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH).parse(date).time
         } catch (e: ParseException) {

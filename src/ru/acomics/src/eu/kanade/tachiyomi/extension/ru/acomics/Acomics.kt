@@ -1,14 +1,18 @@
 package eu.kanade.tachiyomi.extension.ru.acomics
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URLEncoder
 
 class AComics : ParsedHttpSource() {
 
@@ -18,15 +22,16 @@ class AComics : ParsedHttpSource() {
 
     override val lang = "ru"
 
-    val cookiesHeader by lazy {
+    private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
-        cookies.put("ageRestrict", "17")
+        cookies["ageRestrict"] = "17"
         buildCookies(cookies)
     }
 
-    fun buildCookies(cookies: Map<String, String>) = cookies.entries.map {
-        "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
-    }.joinToString(separator = "; ", postfix = ";")
+    private fun buildCookies(cookies: Map<String, String>) =
+        cookies.entries.joinToString(separator = "; ", postfix = ";") {
+            "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+        }
 
     override val client = network.client.newBuilder()
             .addNetworkInterceptor { chain ->
@@ -38,7 +43,6 @@ class AComics : ParsedHttpSource() {
 
                 chain.proceed(newReq)
             }.build()!!
-
 
     override val supportsLatest = true
 
@@ -114,7 +118,6 @@ class AComics : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(".about-summary").first()
         val manga = SManga.create()
@@ -149,7 +152,6 @@ class AComics : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val imageElement = document.select("img#mainImage").first()
         return listOf(Page(0, imageUrl = baseUrl + imageElement.attr("src")))
-
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -167,7 +169,6 @@ class AComics : ParsedHttpSource() {
             Rating("16+", 5),
             Rating("18+", 6)
     ))
-
 
     override fun getFilterList() = FilterList(
             Status(),
@@ -190,5 +191,4 @@ class AComics : ParsedHttpSource() {
             Genre("Стимпанк", 12),
             Genre("Супергерои", 13)
     )
-
 }

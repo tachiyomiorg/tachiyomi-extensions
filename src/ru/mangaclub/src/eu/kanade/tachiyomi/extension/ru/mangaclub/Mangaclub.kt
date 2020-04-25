@@ -9,17 +9,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class Mangaclub : ParsedHttpSource() {
 
-    //Info
+    // Info
 
     override val name: String = "MangaClub"
     override val baseUrl: String = "https://mangaclub.ru"
@@ -27,7 +27,7 @@ class Mangaclub : ParsedHttpSource() {
     override val supportsLatest: Boolean = true
     override val client: OkHttpClient = network.cloudflareClient
 
-    //Popular
+    // Popular
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/f/order_by=news_read/order=desc/page/$page/", headers)
@@ -42,7 +42,7 @@ class Mangaclub : ParsedHttpSource() {
         }
     }
 
-    //Latest
+    // Latest
 
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/", headers)
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -50,7 +50,7 @@ class Mangaclub : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga =
         popularMangaFromElement(element)
 
-    //Search
+    // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotBlank()) {
             val formBody = FormBody.Builder()
@@ -97,8 +97,7 @@ class Mangaclub : ParsedHttpSource() {
     override fun searchMangaSelector(): String = popularMangaSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-
-    //Details
+    // Details
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         thumbnail_url = document.select("img[title].img-responsive").attr("abs:src")
         title = document.select(".title").text().substringBefore("/").trim()
@@ -113,7 +112,7 @@ class Mangaclub : ParsedHttpSource() {
         genre = document.select("div.more-info a[href*=tags]").joinToString(", ") { it.text() }
     }
 
-    //Chapters
+    // Chapters
     override fun chapterListSelector(): String = ".chapter-main"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
@@ -127,8 +126,7 @@ class Mangaclub : ParsedHttpSource() {
         return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
     }
 
-
-    //Pages
+    // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select(".manga-lines-page a").forEach {
             add(Page(it.attr("data-p").toInt(), "", it.attr("abs:data-i")))
@@ -138,7 +136,7 @@ class Mangaclub : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String =
         throw Exception("imageUrlParse Not Used")
 
-    //Filters
+    // Filters
     private class Categories(values: Array<Pair<String, String>>) :
         Filter.Select<String>("Категории", values.map { it.first }.toTypedArray())
 

@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
-
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -9,15 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
-
 
 class MangaKawaii : ParsedHttpSource() {
 
@@ -66,7 +64,6 @@ class MangaKawaii : ParsedHttpSource() {
         return manga
     }
 
-
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.url = element.select("a.list-item__title").attr("href")
@@ -101,7 +98,7 @@ class MangaKawaii : ParsedHttpSource() {
         val element = body.select("script:containsData(Imagesrc)").toString()
         val regex = "(data-src).*[\"]".toRegex()
         val match = regex.findAll(element).map { it.value.substringAfter("data-src\", \" ").substringBefore("\"").trim() }
-        //throw Exception(match.elementAt(1))
+        // throw Exception(match.elementAt(1))
         val pages = mutableListOf<Page>()
         for (i in 0 until match.count()) {
             pages.add(Page(i, "", match.elementAt(i)))

@@ -1,14 +1,18 @@
 package eu.kanade.tachiyomi.extension.en.xkcd
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class Xkcd : ParsedHttpSource() {
 
@@ -57,7 +61,7 @@ class Xkcd : ParsedHttpSource() {
 
         // transforming filename from info.0.json isn't guaranteed to work, stick to html
         // if an HD image is available it'll be the srcset attribute
-        val image =  document.select("div#comic img").let {
+        val image = document.select("div#comic img").let {
             if (it.hasAttr("srcset")) it.attr("abs:srcset").substringBefore(" ")
                 else it.attr("abs:src")
         }
@@ -129,5 +133,4 @@ class Xkcd : ParsedHttpSource() {
         const val baseAltTextUrl = "https://fakeimg.pl/1500x2126/ffffff/000000/?text="
         const val baseAltTextPostUrl = "&font_size=42&font=museo"
     }
-
 }

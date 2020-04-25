@@ -1,6 +1,10 @@
 package eu.kanade.tachiyomi.extension.en.questionablecontent
 
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import okhttp3.Response
@@ -83,5 +87,4 @@ class QuestionableContent : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
     override fun latestUpdatesSelector(): String = throw Exception("Not used")
-
 }

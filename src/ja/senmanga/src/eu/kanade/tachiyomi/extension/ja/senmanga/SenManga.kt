@@ -2,13 +2,17 @@ package eu.kanade.tachiyomi.extension.ja.senmanga
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.util.Calendar
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
 
 /**
  * Sen Manga source
@@ -23,8 +27,8 @@ class SenManga : ParsedHttpSource() {
 
     @SuppressLint("DefaultLocale")
     override val client = super.client.newBuilder().addInterceptor {
-        //Intercept any image requests and add a referer to them
-        //Enables bandwidth stealing feature
+        // Intercept any image requests and add a referer to them
+        // Enables bandwidth stealing feature
         val request = if (it.request().url().pathSegments().firstOrNull()?.trim()?.toLowerCase() == "viewer") {
             it.request().newBuilder()
                     .addHeader("Referer", it.request().url().newBuilder()
@@ -129,11 +133,11 @@ class SenManga : ParsedHttpSource() {
         if (trimmedDate[2] != "ago") return 0
 
         val number = trimmedDate[0].toIntOrNull() ?: return 0
-        val unit = trimmedDate[1].removeSuffix("s") //Remove 's' suffix
+        val unit = trimmedDate[1].removeSuffix("s") // Remove 's' suffix
 
         val now = Calendar.getInstance()
 
-        //Map English unit to Java unit
+        // Map English unit to Java unit
         val javaUnit = when (unit) {
             "year" -> Calendar.YEAR
             "month" -> Calendar.MONTH
@@ -151,13 +155,13 @@ class SenManga : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return listOf(1 .. document.select("select[name=page] option:last-of-type").first().text().toInt()).flatten().map { i ->
+        return listOf(1..document.select("select[name=page] option:last-of-type").first().text().toInt()).flatten().map { i ->
             Page(i - 1, "", "${document.location().replace(baseUrl, "$baseUrl/viewer")}/$i")
         }
     }
 
-    override fun imageUrlParse(document: Document)
-            = throw UnsupportedOperationException("This method should not be called!")
+    override fun imageUrlParse(document: Document) =
+            throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
         GenreFilter(getGenreList()),

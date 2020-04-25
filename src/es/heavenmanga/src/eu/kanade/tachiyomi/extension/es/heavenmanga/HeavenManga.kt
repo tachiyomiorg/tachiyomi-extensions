@@ -1,13 +1,25 @@
 package eu.kanade.tachiyomi.extension.es.heavenmanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Locale
+import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
+import rx.Observable
 
 class HeavenManga : ParsedHttpSource() {
 
@@ -55,28 +67,27 @@ class HeavenManga : ParsedHttpSource() {
             val ext = ".html"
             var name: String
             filters.forEach { filter ->
-                when(filter) {
+                when (filter) {
                     is GenreFilter -> {
-                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
+                        if (filter.toUriPart().isNotBlank() && filter.state != 0) {
                             name = filter.toUriPart()
                             return GET("$baseUrl/genero/$name$ext$pageParameter", headers)
                         }
                     }
                     is AlphabeticoFilter -> {
-                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
+                        if (filter.toUriPart().isNotBlank() && filter.state != 0) {
                             name = filter.toUriPart()
                             return GET("$baseUrl/letra/$name$ext$pageParameter", headers)
                         }
                     }
                     is ListaCompletasFilter -> {
-                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
+                        if (filter.toUriPart().isNotBlank() && filter.state != 0) {
                             name = filter.toUriPart()
                             return GET("$baseUrl/$name$pageParameter", headers)
                         }
                     }
                 }
             }
-
         }
 
         return GET(searchUrl, headers)
@@ -123,6 +134,7 @@ class HeavenManga : ParsedHttpSource() {
                 setUrlWithoutDomain(it.attr("href"))
             }
             scanlator = element.select("span.pull-right").text()
+
         }
     }
 
@@ -277,7 +289,7 @@ class HeavenManga : ParsedHttpSource() {
      * Array.from(document.querySelectorAll('#t li a')).map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
      * on https://heavenmanga.com/top/
      * */
-    private class ListaCompletasFilter: UriPartFilter("Lista Completa", arrayOf(
+    private class ListaCompletasFilter : UriPartFilter("Lista Completa", arrayOf(
         Pair("Todo", ""),
         Pair("Lista Comis", "comic"),
         Pair("Lista Novelas", "novela"),
@@ -294,10 +306,8 @@ class HeavenManga : ParsedHttpSource() {
         ListaCompletasFilter()
     )
 
-
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
 }

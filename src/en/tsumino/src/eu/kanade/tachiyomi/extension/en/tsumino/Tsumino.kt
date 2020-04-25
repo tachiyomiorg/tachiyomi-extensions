@@ -5,13 +5,18 @@ import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getArtists
-import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getCollection
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getChapter
+import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getCollection
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getDesc
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
@@ -22,7 +27,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-class Tsumino: ParsedHttpSource() {
+class Tsumino : ParsedHttpSource() {
 
     override val name = "Tsumino"
 
@@ -59,7 +64,7 @@ class Tsumino: ParsedHttpSource() {
         return MangasPage(allManga, hasNextPage)
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga = throw  UnsupportedOperationException("Not used")
+    override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
 
     override fun latestUpdatesNextPageSelector() = "Not needed"
 
@@ -96,7 +101,7 @@ class Tsumino: ParsedHttpSource() {
                     add("Tags[$index][Exclude]", entry.exclude.toString())
                 }
 
-                if(f.filterIsInstance<ExcludeParodiesFilter>().first().state)
+                if (f.filterIsInstance<ExcludeParodiesFilter>().first().state)
                     add("Exclude[]", "6")
             }
             .build()
@@ -190,12 +195,12 @@ class Tsumino: ParsedHttpSource() {
                 pages.add(Page(i, "", data))
             }
         } else {
-            throw  UnsupportedOperationException("Error: Open in WebView and solve the Captcha!")
+            throw UnsupportedOperationException("Error: Open in WebView and solve the Captcha!")
         }
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     data class AdvSearchEntry(val type: Int, val text: String, val exclude: Boolean)
 
@@ -231,7 +236,7 @@ class Tsumino: ParsedHttpSource() {
 
     class SortFilter : Filter.Select<SortType>("Sort by", SortType.values())
     class LengthFilter : Filter.Select<LengthType>("Length", LengthType.values())
-    class MinimumRatingFilter : Filter.Select<String>("Minimum rating", (0 .. 5).map { "$it stars" }.toTypedArray())
+    class MinimumRatingFilter : Filter.Select<String>("Minimum rating", (0..5).map { "$it stars" }.toTypedArray())
     class ExcludeParodiesFilter : Filter.CheckBox("Exclude parodies")
 
     enum class SortType {

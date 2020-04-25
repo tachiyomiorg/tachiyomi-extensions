@@ -1,9 +1,12 @@
 package eu.kanade.tachiyomi.extension.zh.wuqimanga
 
-import android.util.Log
 import com.google.gson.Gson
+import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
@@ -11,7 +14,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import com.squareup.duktape.Duktape
 
 class WuqiManga : ParsedHttpSource() {
 
@@ -49,7 +51,6 @@ class WuqiManga : ParsedHttpSource() {
         return manga
     }
 
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return GET("$baseUrl/search/q_$query-p-$page", headers)
     }
@@ -85,10 +86,8 @@ class WuqiManga : ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter) = GET("$baseUrl/${chapter.url}", headers)
 
-
     override fun headersBuilder() = Headers.Builder().add("Referer", "$baseUrl/")
         .set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36")
-
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a")
@@ -123,7 +122,6 @@ class WuqiManga : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = ""
 
-
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
         response.asJsoup().select("div.chapter div.chapter-list>ul").asReversed().forEach {
@@ -156,5 +154,4 @@ class WuqiManga : ParsedHttpSource() {
     }
 
     override fun getFilterList() = FilterList()
-
 }

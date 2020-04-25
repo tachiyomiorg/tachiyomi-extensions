@@ -6,13 +6,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
 class MeDocTruyenTranh : ParsedHttpSource() {
 
@@ -51,7 +51,6 @@ class MeDocTruyenTranh : ParsedHttpSource() {
         return manga
     }
 
-
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         val jsonData = element.ownerDocument().select("#__NEXT_DATA__").first()!!.data()
@@ -80,7 +79,7 @@ class MeDocTruyenTranh : ParsedHttpSource() {
         manga.title = mangaDetail.getString("title")
         manga.author = mangaDetail.getJSONArray("author_list").getString(0)
         val genres = mutableListOf<String>()
-        for( i in 0 until mangaDetail.getJSONArray("category_list").length()){
+        for (i in 0 until mangaDetail.getJSONArray("category_list").length()) {
             genres.add(mangaDetail.getJSONArray("category_list").getString(i))
         }
         manga.genre = genres.joinToString(", ")
@@ -127,7 +126,6 @@ class MeDocTruyenTranh : ParsedHttpSource() {
         return chapters.asReversed()
     }
 
-
     private fun parseChapterDate(date: String): Long {
         // 2019-05-09T07:09:58
         val dateFormat = SimpleDateFormat(
@@ -135,7 +133,6 @@ class MeDocTruyenTranh : ParsedHttpSource() {
         val dateObject = dateFormat.parse(date)
         return dateObject.time
     }
-
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()

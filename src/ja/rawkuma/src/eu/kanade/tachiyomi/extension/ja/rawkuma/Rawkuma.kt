@@ -1,20 +1,24 @@
 package eu.kanade.tachiyomi.extension.ja.rawkuma
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 
-class Rawkuma: ParsedHttpSource() {
+class Rawkuma : ParsedHttpSource() {
 
     override val name = "Rawkuma"
 
@@ -28,9 +32,9 @@ class Rawkuma: ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "div.bsx a"
 
-    override fun latestUpdatesRequest(page: Int):  Request {
+    override fun latestUpdatesRequest(page: Int): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) "$baseUrl/manga/?order=update" else "$baseUrl/manga/page/$page/?order=update"
+        val builtUrl = if (page == 1) "$baseUrl/manga/?order=update" else "$baseUrl/manga/page/$page/?order=update"
         return GET(builtUrl)
     }
 
@@ -45,8 +49,8 @@ class Rawkuma: ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = "a.next"
 
-    override fun popularMangaRequest(page: Int):  Request {
-        val builtUrl =  if(page == 1) "$baseUrl/manga/?order=popular" else "$baseUrl/manga/page/$page/?order=popular"
+    override fun popularMangaRequest(page: Int): Request {
+        val builtUrl = if (page == 1) "$baseUrl/manga/?order=popular" else "$baseUrl/manga/page/$page/?order=popular"
         return GET(builtUrl)
     }
 
@@ -57,7 +61,7 @@ class Rawkuma: ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl =  if(page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
+        val builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
         val url = HttpUrl.parse(builtUrl)!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
@@ -197,7 +201,7 @@ class Rawkuma: ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
             Filter.Header("You can combine filter."),

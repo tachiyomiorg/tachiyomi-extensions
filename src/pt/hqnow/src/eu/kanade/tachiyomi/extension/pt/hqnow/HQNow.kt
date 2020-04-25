@@ -5,7 +5,12 @@ import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -151,33 +156,33 @@ class HQNow : HttpSource() {
     )
 
     private class LetterFilter : UriPartFilter("Letra", arrayOf(
-        Pair("---","<Selecione>"),
-        Pair("a","A"),
-        Pair("b","B"),
-        Pair("c","C"),
-        Pair("d","D"),
-        Pair("e","E"),
-        Pair("f","F"),
-        Pair("g","G"),
-        Pair("h","H"),
-        Pair("i","I"),
-        Pair("j","J"),
-        Pair("k","K"),
-        Pair("l","L"),
-        Pair("m","M"),
-        Pair("n","N"),
-        Pair("o","O"),
-        Pair("p","P"),
-        Pair("q","Q"),
-        Pair("r","R"),
-        Pair("s","S"),
-        Pair("t","T"),
-        Pair("u","U"),
-        Pair("v","V"),
-        Pair("w","W"),
-        Pair("x","X"),
-        Pair("y","Y"),
-        Pair("z","Z")
+        Pair("---", "<Selecione>"),
+        Pair("a", "A"),
+        Pair("b", "B"),
+        Pair("c", "C"),
+        Pair("d", "D"),
+        Pair("e", "E"),
+        Pair("f", "F"),
+        Pair("g", "G"),
+        Pair("h", "H"),
+        Pair("i", "I"),
+        Pair("j", "J"),
+        Pair("k", "K"),
+        Pair("l", "L"),
+        Pair("m", "M"),
+        Pair("n", "N"),
+        Pair("o", "O"),
+        Pair("p", "P"),
+        Pair("q", "Q"),
+        Pair("r", "R"),
+        Pair("s", "S"),
+        Pair("t", "T"),
+        Pair("u", "U"),
+        Pair("v", "V"),
+        Pair("w", "W"),
+        Pair("x", "X"),
+        Pair("y", "Y"),
+        Pair("z", "Z")
     ))
 
     open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :

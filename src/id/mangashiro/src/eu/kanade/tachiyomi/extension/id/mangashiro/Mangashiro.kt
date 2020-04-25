@@ -1,14 +1,18 @@
 package eu.kanade.tachiyomi.extension.id.mangashiro
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import eu.kanade.tachiyomi.source.model.*
-import java.text.SimpleDateFormat
-import java.util.*
-import java.text.ParseException
 
 class Mangashiro : ParsedHttpSource() {
 
@@ -32,7 +36,7 @@ class Mangashiro : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga = searchMangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
-    
+
     override fun popularMangaNextPageSelector() = "a.next.page-numbers"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
@@ -261,6 +265,4 @@ class Mangashiro : ParsedHttpSource() {
             Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
-
 }

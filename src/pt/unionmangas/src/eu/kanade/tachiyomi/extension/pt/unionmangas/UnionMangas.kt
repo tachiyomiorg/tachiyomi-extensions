@@ -8,8 +8,16 @@ import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -19,10 +27,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 class UnionMangas : ParsedHttpSource() {
 
@@ -126,11 +130,10 @@ class UnionMangas : ParsedHttpSource() {
         val elAuthor = infoElement.select("div.row:eq(2) div.col-md-8:eq(4)").first()
         val elArtist = infoElement.select("div.row:eq(2) div.col-md-8:eq(5)").first()
         val elGenre = infoElement.select("div.row:eq(2) div.col-md-8:eq(3)").first()
-        val elStatus =  infoElement.select("div.row:eq(2) div.col-md-8:eq(6)").first()
+        val elStatus = infoElement.select("div.row:eq(2) div.col-md-8:eq(6)").first()
         val elDescription = infoElement.select("div.row:eq(2) div.col-md-8:eq(8)").first()
         val imgThumbnail = infoElement.select(".img-thumbnail").first()
         val elTitle = infoElement.select("h2").first()
-
 
         return SManga.create().apply {
             title = elTitle!!.text().withoutLanguage()
@@ -164,7 +167,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img.img-responsive.img-manga")
             .filter { it.attr("src").contains("/leitor/") }
-            .mapIndexed { i, element -> Page(i, document.location(), element.absUrl("src"))}
+            .mapIndexed { i, element -> Page(i, document.location(), element.absUrl("src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -202,7 +205,7 @@ class UnionMangas : ParsedHttpSource() {
         }
     }
 
-    private fun SimpleDateFormat.tryParseTime(date: String) : Long {
+    private fun SimpleDateFormat.tryParseTime(date: String): Long {
         return try {
             parse(date).time
         } catch (e: ParseException) {

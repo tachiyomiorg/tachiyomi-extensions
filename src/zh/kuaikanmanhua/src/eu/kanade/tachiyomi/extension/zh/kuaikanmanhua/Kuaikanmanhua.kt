@@ -1,7 +1,16 @@
 package eu.kanade.tachiyomi.extension.zh.kuaikanmanhua
 
+import com.github.salomonbrys.kotson.fromJson
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -9,10 +18,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import com.github.salomonbrys.kotson.*
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 
 class Kuaikanmanhua : ParsedHttpSource() {
 
@@ -43,7 +48,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
 
         gson.fromJson<JsonArray>(document.select("script:containsData(datalist)").first().data()
             .substringAfter("dataList:").substringBefore("}],error"))
-            .forEach{ mangas.add(mangaFromJson(it.asJsonObject)) }
+            .forEach { mangas.add(mangaFromJson(it.asJsonObject)) }
 
         return MangasPage(mangas, document.select(popularMangaNextPageSelector()).isNotEmpty())
     }
@@ -96,7 +101,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
                     }
                 }
             }
-            GET("$baseUrl/tag/$genre?state=$status&page=$page",headers)
+            GET("$baseUrl/tag/$genre?state=$status&page=$page", headers)
         }
     }
 
@@ -156,13 +161,13 @@ class Kuaikanmanhua : ParsedHttpSource() {
 
         element.select("div.title a").let {
             chapter.url = it.attr("href")
-            chapter.name = it.text() + if (element.select("i.lockedIcon").isNotEmpty()) {" \uD83D\uDD12"} else {""}
+            chapter.name = it.text() + if (element.select("i.lockedIcon").isNotEmpty()) { " \uD83D\uDD12" } else { "" }
         }
         return chapter
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        if (chapter.url=="javascript:void(0);") {
+        if (chapter.url == "javascript:void(0);") {
             return throw Exception("[此章节为付费内容]")
         }
         return super.pageListRequest(chapter)
@@ -173,7 +178,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
 
         gson.fromJson<JsonArray>(document.select("script:containsData(comicImages)").first().data()
             .substringAfter("comicImages:").substringBefore("},nextComicInfo"))
-            .forEachIndexed{ i, json -> pages.add(Page(i, "", json.asJsonObject["url"].asString)) }
+            .forEachIndexed { i, json -> pages.add(Page(i, "", json.asJsonObject["url"].asString)) }
 
         return pages
     }
@@ -188,8 +193,8 @@ class Kuaikanmanhua : ParsedHttpSource() {
         GenreFilter()
     )
 
-    private class GenreFilter: UriPartFilter("题材", arrayOf(
-        Pair("全部","0"),
+    private class GenreFilter : UriPartFilter("题材", arrayOf(
+        Pair("全部", "0"),
         Pair("恋爱", "20"),
         Pair("古风", "46"),
         Pair("校园", "47"),
@@ -212,7 +217,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
         Pair("投稿", "76")
     ))
 
-    private class StatusFilter: UriPartFilter("类别", arrayOf(
+    private class StatusFilter : UriPartFilter("类别", arrayOf(
         Pair("全部", "1"),
         Pair("连载中", "2"),
         Pair("已完结", "3")

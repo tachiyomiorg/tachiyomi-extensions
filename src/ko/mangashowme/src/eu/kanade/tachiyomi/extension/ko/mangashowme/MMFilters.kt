@@ -6,7 +6,6 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.HttpUrl
 import okhttp3.Request
 
-
 // TODO: Completely Implement/Update Filters(Genre/Artist).
 private class TextField(name: String, val key: String) : Filter.Text(name)
 
@@ -18,7 +17,6 @@ private class SearchGenresList(genres: List<SearchCheckBox>) : Filter.Group<Sear
 private class SearchNamingList : Filter.Select<String>("Naming", searchNaming())
 private class SearchStatusList : Filter.Select<String>("Status", searchStatus())
 private class SearchOrderList : Filter.Select<String>("Order", order())
-
 
 // [`"Not Set"`, ...[...document.querySelectorAll(".categories ul[data-type='1'] li")].map((el, i) => `"${el.innerText.trim()}"`)].join(',\n')
 private fun searchNaming() = arrayOf(
