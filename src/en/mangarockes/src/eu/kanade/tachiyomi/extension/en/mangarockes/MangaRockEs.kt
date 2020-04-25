@@ -72,30 +72,17 @@ class MangaRockEs : ParsedHttpSource() {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search/${query.replace(" ", "+")}/$page", headers)
         } else {
-            val url = HttpUrl.parse("$baseUrl/manga")!!
-            // todo
-            var status = ""
-            var rank = ""
-            var orderBy = ""
-            var genres: Int
+            val url = HttpUrl.parse("$baseUrl/manga" + if (page > 1) "/$page" else "")!!.newBuilder()
             filters.forEach { filter ->
                 when (filter) {
-                    is StatusFilter -> {
-                        status = when (filter.state) {
-                            Filter.TriState.STATE_INCLUDE -> "completed"
-                            Filter.TriState.STATE_EXCLUDE -> "ongoing"
-                            else -> "all"
-                        }
-                    }
-                    is RankFilter -> {
-                        rank = filter.toUriPart()
-                    }
-                    is SortBy -> {
-                        orderBy = filter.toUriPart()
-                    }
+                    is StatusFilter -> url.addQueryParameter("status", filter.toUriPart())
+                    is RankFilter -> url.addQueryParameter("rank", filter.toUriPart())
+                    is SortBy -> url.addQueryParameter("sort", filter.toUriPart())
                     is GenreList -> {
-                        filter.state
-                            .forEach { genres = it.state }
+                        val genres = filter.state
+                            .filter { it.state }
+                            .joinToString(".") { it.uriPart }
+                        url.addQueryParameter("genres", genres)
                     }
                 }
             }
@@ -218,7 +205,11 @@ class MangaRockEs : ParsedHttpSource() {
 
     // Filters
 
-    private class StatusFilter : Filter.TriState("Completed")
+    private class StatusFilter : UriPartFilter("Status", arrayOf(
+        Pair("All", "all"),
+        Pair("Completed", "completed"),
+        Pair("Ongoing", "ongoing")
+    ))
 
     private class RankFilter : UriPartFilter("Rank", arrayOf(
             Pair("All", "all"),
@@ -240,7 +231,7 @@ class MangaRockEs : ParsedHttpSource() {
             Pair("Rank", "rank")
     ))
 
-    private class Genre(name: String, val id: String) : Filter.TriState(name)
+    private class Genre(name: String, val uriPart: String) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
@@ -256,53 +247,53 @@ class MangaRockEs : ParsedHttpSource() {
     // [...document.querySelectorAll('._2DMqI .mdl-checkbox')].map(n => `Genre("${n.querySelector('.mdl-checkbox__label').innerText}", "${n.querySelector('input').dataset.oid}")`).sort().join(',\n')
     // on https://mangarock.com/manga
     private fun getGenreList() = listOf(
-            Genre("4-koma", "mrs-genre-100117675"),
-            Genre("Action", "mrs-genre-304068"),
-            Genre("Adult", "mrs-genre-358370"),
-            Genre("Adventure", "mrs-genre-304087"),
-            Genre("Comedy", "mrs-genre-304069"),
-            Genre("Demons", "mrs-genre-304088"),
-            Genre("Doujinshi", "mrs-genre-304197"),
-            Genre("Drama", "mrs-genre-304177"),
-            Genre("Ecchi", "mrs-genre-304074"),
-            Genre("Fantasy", "mrs-genre-304089"),
-            Genre("Gender Bender", "mrs-genre-304358"),
-            Genre("Harem", "mrs-genre-304075"),
-            Genre("Historical", "mrs-genre-304306"),
-            Genre("Horror", "mrs-genre-304259"),
-            Genre("Isekai", "mrs-genre-100291868"),
-            Genre("Josei", "mrs-genre-304070"),
-            Genre("Kids", "mrs-genre-304846"),
-            Genre("Magic", "mrs-genre-304090"),
-            Genre("Martial Arts", "mrs-genre-304072"),
-            Genre("Mature", "mrs-genre-358371"),
-            Genre("Mecha", "mrs-genre-304245"),
-            Genre("Military", "mrs-genre-304091"),
-            Genre("Music", "mrs-genre-304589"),
-            Genre("Mystery", "mrs-genre-304178"),
-            Genre("One Shot", "mrs-genre-100018505"),
-            Genre("Parody", "mrs-genre-304786"),
-            Genre("Police", "mrs-genre-304236"),
-            Genre("Psychological", "mrs-genre-304176"),
-            Genre("Romance", "mrs-genre-304073"),
-            Genre("School Life", "mrs-genre-304076"),
-            Genre("Sci-Fi", "mrs-genre-304180"),
-            Genre("Seinen", "mrs-genre-304077"),
-            Genre("Shoujo Ai", "mrs-genre-304695"),
-            Genre("Shoujo", "mrs-genre-304175"),
-            Genre("Shounen Ai", "mrs-genre-304307"),
-            Genre("Shounen", "mrs-genre-304164"),
-            Genre("Slice of Life", "mrs-genre-304195"),
-            Genre("Smut", "mrs-genre-358372"),
-            Genre("Space", "mrs-genre-305814"),
-            Genre("Sports", "mrs-genre-304367"),
-            Genre("Super Power", "mrs-genre-305270"),
-            Genre("Supernatural", "mrs-genre-304067"),
-            Genre("Tragedy", "mrs-genre-358379"),
-            Genre("Vampire", "mrs-genre-304765"),
-            Genre("Webtoons", "mrs-genre-358150"),
-            Genre("Yaoi", "mrs-genre-304202"),
-            Genre("Yuri", "mrs-genre-304690")
+            Genre("4-koma", "4-koma"),
+            Genre("Action", "action"),
+            Genre("Adult", "adult"),
+            Genre("Adventure", "adventure"),
+            Genre("Comedy", "comedy"),
+            Genre("Demons", "demons"),
+            Genre("Doujinshi", "doujinshi"),
+            Genre("Drama", "drama"),
+            Genre("Ecchi", "ecchi"),
+            Genre("Fantasy", "fantasy"),
+            Genre("Gender Bender", "gender-bender"),
+            Genre("Harem", "harem"),
+            Genre("Historical", "historical"),
+            Genre("Horror", "horror"),
+            Genre("Isekai", "isekai"),
+            Genre("Josei", "josei"),
+            Genre("Kids", "kids"),
+            Genre("Magic", "magic"),
+            Genre("Martial Arts", "martial-arts"),
+            Genre("Mature", "mature"),
+            Genre("Mecha", "mecha"),
+            Genre("Military", "military"),
+            Genre("Music", "music"),
+            Genre("Mystery", "mystery"),
+            Genre("One Shot", "one-shot"),
+            Genre("Parody", "parody"),
+            Genre("Police", "police"),
+            Genre("Psychological", "psychological"),
+            Genre("Romance", "romance"),
+            Genre("School Life", "school-life"),
+            Genre("Sci-Fi", "sci-fi"),
+            Genre("Seinen", "seinen"),
+            Genre("Shoujo Ai", "shoujo-ai"),
+            Genre("Shoujo", "shoujo"),
+            Genre("Shounen Ai", "shounen-ai"),
+            Genre("Shounen", "shounen"),
+            Genre("Slice of Life", "slice-of-life"),
+            Genre("Smut", "smut"),
+            Genre("Space", "space"),
+            Genre("Sports", "sports"),
+            Genre("Super Power", "super-power"),
+            Genre("Supernatural", "supernatural"),
+            Genre("Tragedy", "tragedy"),
+            Genre("Vampire", "vampire"),
+            Genre("Webtoons", "webtoons"),
+            Genre("Yaoi", "yaoi"),
+            Genre("Yuri", "yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
