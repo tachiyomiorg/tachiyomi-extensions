@@ -1,19 +1,14 @@
 package eu.kanade.tachiyomi.extension.all.mangabox
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
-import okhttp3.RequestBody
 import okhttp3.Response
-import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -22,8 +17,8 @@ class MangaBoxFactory : SourceFactory {
         Mangakakalot(),
         Manganelo(),
         Mangabat(),
-        MangaOnl()
-        //ChapterManga()
+        MangaOnl(),
+        OtherMangakakalot()
     )
 }
 
@@ -45,7 +40,7 @@ abstract class MangaBoxPathedGenres(
     )
     class GenreFilter(genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
     // Pair("path_segment/", "display name")
-    abstract fun getGenrePairs(): Array<Pair<String, String>>
+    abstract override fun getGenrePairs(): Array<Pair<String, String>>
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
             GET("$baseUrl/$simpleQueryPath${normalizeSearchQuery(query)}?page=$page", headers)
@@ -180,54 +175,63 @@ class MangaOnl : MangaBoxPathedGenres("MangaOnl", "https://mangaonl.com", "en") 
     )
 }
 
-class ChapterManga : MangaBox("ChapterManga", "https://chaptermanga.com", "en", SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH)) {
-    override val popularUrlPath = "hot-manga-page-"
-    override val latestUrlPath = "read-latest-manga-page-"
-    override fun chapterListRequest(manga: SManga): Request {
-        val response = client.newCall(GET(baseUrl + manga.url, headers)).execute()
-        val cookie = response.headers("set-cookie")
-            .filter{ it.contains("laravel_session") }
-            .map{ it.substringAfter("=").substringBefore(";") }
-        val document = response.asJsoup()
-        val token = document.select("meta[name=\"csrf-token\"]").attr("content")
-        val script = document.select("script:containsData(manga_slug)").first()
-        val mangaSlug = script.data().substringAfter("manga_slug : \'").substringBefore("\'")
-        val mangaId = script.data().substringAfter("manga_id : \'").substringBefore("\'")
-        val tokenHeaders = headers.newBuilder()
-            .add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-            .add("X-CSRF-Token", token)
-            .add("Cookie", cookie.toString())
-            .build()
-        val body = RequestBody.create(null, "manga_slug=$mangaSlug&manga_id=$mangaId")
-
-        return POST("$baseUrl/get-chapter-list", tokenHeaders, body)
-    }
-    override fun chapterListSelector() = "div.row"
-    override fun chapterFromElement(element: Element): SChapter = super.chapterFromElement(element).apply {
-        chapter_number = Regex("""[Cc]hapter\s\d*""").find(name)?.value?.substringAfter(" ")?.toFloatOrNull() ?: 0F
-    }
-    // TODO chapterlistparse -- default chapter order could be better
-    override fun getFilterList() = FilterList()
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val site = baseUrl.substringAfter("//")
-        val searchHeaders = headers.newBuilder().add("Content-Type", "application/x-www-form-urlencoded").build()
-        val body = RequestBody.create(null, "q=site%3A$site+inurl%3A$site%2Fread-manga+${query.replace(" ", "+")}&b=&kl=us-en")
-
-        return POST("https://duckduckgo.com/html/", searchHeaders, body)
-    }
+class OtherMangakakalot : MangaBox("Mangakakalots (unoriginal)", "https://mangakakalots.com", "en") {
+    override fun searchMangaSelector(): String = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
     override fun searchMangaParse(response: Response): MangasPage {
-        val mangas = response.asJsoup().select(searchMangaSelector())
-            .filter{ it.text().startsWith("Read") }
-            .map{ searchMangaFromElement(it) }
+        val document = response.asJsoup()
+        val mangas = document.select(searchMangaSelector()).map { searchMangaFromElement(it) }
+        val hasNextPage = !response.request().url().toString()
+            .contains(document.select(searchMangaNextPageSelector()).attr("href"))
 
-        return MangasPage(mangas, false)
+        return MangasPage(mangas, hasNextPage)
     }
-    override fun searchMangaSelector() = "div.result h2 a"
-    override fun searchMangaFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            title = element.text().substringAfter("Read").substringBeforeLast("online").trim()
-            setUrlWithoutDomain(element.attr("href"))
-        }
-    }
+    override fun searchMangaNextPageSelector() = "div.group_page a:last-of-type"
+    override fun getStatusPairs() = arrayOf(
+        Pair("all", "ALL"),
+        Pair("Completed", "Completed"),
+        Pair("Ongoing", "Ongoing")
+    )
+    override fun getGenrePairs() = arrayOf(
+        Pair("all", "ALL"),
+        Pair("Action", "Action"),
+        Pair("Adult", "Adult"),
+        Pair("Adventure", "Adventure"),
+        Pair("Comedy", "Comedy"),
+        Pair("Cooking", "Cooking"),
+        Pair("Doujinshi", "Doujinshi"),
+        Pair("Drama", "Drama"),
+        Pair("Ecchi", "Ecchi"),
+        Pair("Fantasy", "Fantasy"),
+        Pair("Gender bender", "Gender bender"),
+        Pair("Harem", "Harem"),
+        Pair("Historical", "Historical"),
+        Pair("Horror", "Horror"),
+        Pair("Isekai", "Isekai"),
+        Pair("Josei", "Josei"),
+        Pair("Manhua", "Manhua"),
+        Pair("Manhwa", "Manhwa"),
+        Pair("Martial arts", "Martial arts"),
+        Pair("Mature", "Mature"),
+        Pair("Mecha", "Mecha"),
+        Pair("Medical", "Medical"),
+        Pair("Mystery", "Mystery"),
+        Pair("One shot", "One shot"),
+        Pair("Psychological", "Psychological"),
+        Pair("Romance", "Romance"),
+        Pair("School life", "School life"),
+        Pair("Sci fi", "Sci fi"),
+        Pair("Seinen", "Seinen"),
+        Pair("Shoujo", "Shoujo"),
+        Pair("Shoujo ai", "Shoujo ai"),
+        Pair("Shounen", "Shounen"),
+        Pair("Shounen ai", "Shounen ai"),
+        Pair("Slice of life", "Slice of life"),
+        Pair("Smut", "Smut"),
+        Pair("Sports", "Sports"),
+        Pair("Supernatural", "Supernatural"),
+        Pair("Tragedy", "Tragedy"),
+        Pair("Webtoons", "Webtoons"),
+        Pair("Yaoi", "Yaoi"),
+        Pair("Yuri", "Yuri")
+    )
 }
-

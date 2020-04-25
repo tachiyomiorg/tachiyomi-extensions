@@ -118,14 +118,9 @@ abstract class MangaBox (
             title = infoElement.select("h1, h2").first().text()
             author = infoElement.select("li:contains(author) a, td:containsOwn(author) + td").text()
             status = parseStatus(infoElement.select("li:contains(status), td:containsOwn(status) + td").text())
-            genre = infoElement.select("div.manga-info-top li:contains(genres)").let { kakalotE ->
-                if (kakalotE.isNotEmpty()) {
-                    kakalotE.text().substringAfter(": ")
-                } else {
-                    // Nelo
-                    infoElement.select("td:containsOwn(genres) + td a").joinToString { it.text() }
-                }
-            }
+            genre = infoElement.select("div.manga-info-top li:contains(genres)").firstOrNull()
+                ?.select("a")?.joinToString { it.text() } // kakalot
+                ?: infoElement.select("td:containsOwn(genres) + td a").joinToString { it.text() } // nelo
             description = document.select(descriptionSelector)?.first()?.ownText()
                 ?.replace("""^$title summary:\s""".toRegex(), "")
                 ?.replace("""<\s*br\s*\/?>""".toRegex(), "\n")
@@ -155,6 +150,7 @@ abstract class MangaBox (
             element.select("a").let {
                 url = it.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
                 name = it.text()
+                scanlator = HttpUrl.parse(it.attr("abs:href"))!!.host() // show where chapters are actually from
             }
             date_upload = parseChapterDate(element.select("span").last().text(), element.ownerDocument().location()) ?: 0
         }
@@ -228,8 +224,8 @@ abstract class MangaBox (
             Filter.Header("NOTE: Ignored if using text search!"),
             Filter.Separator(),
             SortFilter(),
-            StatusFilter(),
-            GenreFilter()
+            StatusFilter(getStatusPairs()),
+            GenreFilter(getGenrePairs())
     )
 
     private class SortFilter : UriPartFilter("Sort", arrayOf(
@@ -238,56 +234,60 @@ abstract class MangaBox (
             Pair("topview", "Top read")
     ))
 
-    private class StatusFilter : UriPartFilter("Status", arrayOf(
-            Pair("all", "ALL"),
-            Pair("completed", "Completed"),
-            Pair("ongoing", "Ongoing"),
-            Pair("drop", "Dropped")
-    ))
+    open class StatusFilter(val statusPairs: Array<Pair<String, String>>) : UriPartFilter("Status", statusPairs)
 
-    private class GenreFilter : UriPartFilter("Category", arrayOf(
-            Pair("all", "ALL"),
-            Pair("2", "Action"),
-            Pair("3", "Adult"),
-            Pair("4", "Adventure"),
-            Pair("6", "Comedy"),
-            Pair("7", "Cooking"),
-            Pair("9", "Doujinshi"),
-            Pair("10", "Drama"),
-            Pair("11", "Ecchi"),
-            Pair("12", "Fantasy"),
-            Pair("13", "Gender bender"),
-            Pair("14", "Harem"),
-            Pair("15", "Historical"),
-            Pair("16", "Horror"),
-            Pair("45", "Isekai"),
-            Pair("17", "Josei"),
-            Pair("44", "Manhua"),
-            Pair("43", "Manhwa"),
-            Pair("19", "Martial arts"),
-            Pair("20", "Mature"),
-            Pair("21", "Mecha"),
-            Pair("22", "Medical"),
-            Pair("24", "Mystery"),
-            Pair("25", "One shot"),
-            Pair("26", "Psychological"),
-            Pair("27", "Romance"),
-            Pair("28", "School life"),
-            Pair("29", "Sci fi"),
-            Pair("30", "Seinen"),
-            Pair("31", "Shoujo"),
-            Pair("32", "Shoujo ai"),
-            Pair("33", "Shounen"),
-            Pair("34", "Shounen ai"),
-            Pair("35", "Slice of life"),
-            Pair("36", "Smut"),
-            Pair("37", "Sports"),
-            Pair("38", "Supernatural"),
-            Pair("39", "Tragedy"),
-            Pair("40", "Webtoons"),
-            Pair("41", "Yaoi"),
-            Pair("42", "Yuri")
-    ))
+    open fun getStatusPairs() = arrayOf(
+        Pair("all", "ALL"),
+        Pair("completed", "Completed"),
+        Pair("ongoing", "Ongoing"),
+        Pair("drop", "Dropped")
+    )
+
+    private class GenreFilter(val genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
+
+    open fun getGenrePairs(): Array<Pair<String, String>> = arrayOf(
+        Pair("all", "ALL"),
+        Pair("2", "Action"),
+        Pair("3", "Adult"),
+        Pair("4", "Adventure"),
+        Pair("6", "Comedy"),
+        Pair("7", "Cooking"),
+        Pair("9", "Doujinshi"),
+        Pair("10", "Drama"),
+        Pair("11", "Ecchi"),
+        Pair("12", "Fantasy"),
+        Pair("13", "Gender bender"),
+        Pair("14", "Harem"),
+        Pair("15", "Historical"),
+        Pair("16", "Horror"),
+        Pair("45", "Isekai"),
+        Pair("17", "Josei"),
+        Pair("44", "Manhua"),
+        Pair("43", "Manhwa"),
+        Pair("19", "Martial arts"),
+        Pair("20", "Mature"),
+        Pair("21", "Mecha"),
+        Pair("22", "Medical"),
+        Pair("24", "Mystery"),
+        Pair("25", "One shot"),
+        Pair("26", "Psychological"),
+        Pair("27", "Romance"),
+        Pair("28", "School life"),
+        Pair("29", "Sci fi"),
+        Pair("30", "Seinen"),
+        Pair("31", "Shoujo"),
+        Pair("32", "Shoujo ai"),
+        Pair("33", "Shounen"),
+        Pair("34", "Shounen ai"),
+        Pair("35", "Slice of life"),
+        Pair("36", "Smut"),
+        Pair("37", "Sports"),
+        Pair("38", "Supernatural"),
+        Pair("39", "Tragedy"),
+        Pair("40", "Webtoons"),
+        Pair("41", "Yaoi"),
+        Pair("42", "Yuri")
+    )
 
     open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
