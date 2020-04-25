@@ -40,12 +40,6 @@ class SeriManga : ParsedHttpSource() {
         setUrlWithoutDomain(element.attr("href"))
         title = element.select("span.mlb-name").text()
         thumbnail_url = styleToUrl(element).removeSurrounding("'")
-        val filename = "/sdcard/SeriManga$title.txt"
-        val myfile = File(filename)
-
-        myfile.printWriter().use { out ->
-            out.println(thumbnail_url)
-        }
     }
 
     private fun styleToUrl(element: Element): String {
@@ -92,9 +86,15 @@ class SeriManga : ParsedHttpSource() {
     override fun chapterListSelector() = "ul.spl-list > li"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
+        val filename = "/sdcard/SeriManga.txt"
+        val file = File(filename)
+
+        file.printWriter().use { out ->
+            out.println(element)
+        }
+
         setUrlWithoutDomain(element.select("a").attr("href"))
-        name = element.select("span").get(1).text()
-        chapter_number = element.select("span").first().text().toFloat()
+        name = "${element.select("span").first().text()}: ${element.select("span").get(1).text()}"
         date_upload = dateFormat.parse(element.select("span").get(2).ownText()).time ?: 0
     }
 
