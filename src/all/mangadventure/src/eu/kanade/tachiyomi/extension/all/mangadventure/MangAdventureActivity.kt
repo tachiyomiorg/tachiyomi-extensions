@@ -12,7 +12,6 @@ import kotlin.system.exitProcess
  * intents and redirects them to the main Tachiyomi process.
  */
 class MangAdventureActivity : Activity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         intent?.data?.pathSegments?.takeIf { it.size > 1 }?.let {

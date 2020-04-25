@@ -91,6 +91,7 @@ abstract class MangAdventure(
                 is CategoryList -> cat.addAll(it.state.mapNotNull { c ->
                     Uri.encode(c.optString())
                 })
+                else -> Unit
             }
         }
         return GET("$uri&categories=${cat.joinToString(",")}", headers)
@@ -133,9 +134,7 @@ abstract class MangAdventure(
     override fun pageListParse(response: Response) =
         JSONObject(response.asString()).run {
             val url = getString("url")
-            // Workaround for a bug in MangAdventure < 0.6.3
             val root = getString("pages_root")
-                .replace("://media/series", "://reader")
             val arr = getJSONArray("pages_list")
             (0 until arr.length()).map {
                 Page(it, "$url${it + 1}", "$root${arr.getString(it)}")
@@ -237,7 +236,7 @@ abstract class MangAdventure(
      */
     inner class Status : Filter.Select<String>("Status", STATUSES) {
         /** Returns the [state] as a string. */
-        fun string() = values[state].toLowerCase()
+        fun string() = values[state].toLowerCase(Locale(lang))
     }
 
     /**
@@ -249,8 +248,8 @@ abstract class MangAdventure(
     inner class Category(name: String) : Filter.TriState(name) {
         /** Returns the [state] as a string, or null if [isIgnored]. */
         fun optString() = when (state) {
-            STATE_INCLUDE -> name.toLowerCase()
-            STATE_EXCLUDE -> "-" + name.toLowerCase()
+            STATE_INCLUDE -> name.toLowerCase(Locale(lang))
+            STATE_EXCLUDE -> "-" + name.toLowerCase(Locale(lang))
             else -> null
         }
     }

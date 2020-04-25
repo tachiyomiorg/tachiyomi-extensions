@@ -12,30 +12,41 @@ import org.json.JSONObject
 fun Response.asString(): String = body()!!.string()
 
 /**
+ * Formats the number according to [fmt].
+ *
+ * @param fmt A [DecimalFormat] string.
+ * @return A string representation of the number.
+ */
+fun Number.format(fmt: String): String = DecimalFormat(fmt).format(this)
+
+/**
  * Joins each value of a given [field] of the array using [sep].
  *
- * @param field
- * When its type is [Int], it is treated as the index of a [JSONArray].
+ * @param field The index of a [JSONArray].
  * When its type is [String], it is treated as the key of a [JSONObject].
  * @param sep The separator used to join the array.
- * @param T Must be either [Int] or [String].
- * @return The joined string, or null if the array is empty.
- * @throws IllegalArgumentException when [field] is of an invalid type.
+ * @return The joined string, or `null` if the array is empty.
  */
-fun <T> JSONArray.joinField(field: T, sep: String = ", "): String? {
-    require(field is Int || field is String) {
-        "field must be a String or Int"
-    }
-    return length().takeIf { it != 0 }?.let { len ->
-        (0 until len).joinToString(sep) {
-            when (field) {
-                is Int -> getJSONArray(it).getString(field)
-                is String -> getJSONObject(it).getString(field)
-                else -> "" // this is here to appease the compiler
-            }
+fun JSONArray.joinField(field: Int, sep: String = ", ") =
+    length().takeIf { it != 0 }?.run {
+        (0 until this).joinToString(sep) {
+            getJSONArray(it).getString(field)
         }
     }
-}
+
+/**
+ * Joins each value of a given [field] of the array using [sep].
+ *
+ * @param field The key of a [JSONObject].
+ * @param sep The separator used to join the array.
+ * @return The joined string, or `null` if the array is empty.
+ */
+fun JSONArray.joinField(field: String, sep: String = ", ") =
+    length().takeIf { it != 0 }?.run {
+        (0 until this).joinToString(sep) {
+            getJSONObject(it).getString(field)
+        }
+    }
 
 /** The slug of a manga. */
 val SManga.slug: String
@@ -74,7 +85,7 @@ fun SChapter.fromJSON(obj: JSONObject) = apply {
     scanlator = obj.getJSONArray("groups")?.joinField("name", " & ")
     name = obj.optString("full_title", buildString {
         obj.optInt("volume").let { if (it != 0) append("Vol. $it, ") }
-        append("Ch. ${DecimalFormat("#.#").format(chapter_number)}: ")
+        append("Ch. ${chapter_number.format("#.#")}: ")
         append(obj.getString("title"))
     })
     if (obj.getBoolean("final")) name += " [END]"
