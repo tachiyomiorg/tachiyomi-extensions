@@ -389,11 +389,13 @@ abstract class Madara(
 
     override fun chapterListSelector() = "li.wp-manga-chapter"
 
+    open val chapterUrlSelector = "a"
+
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
         with(element) {
-            select("a").first()?.let { urlElement ->
+            select(chapterUrlSelector).first()?.let { urlElement ->
                 chapter.url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if (!it.endsWith("?style=list")) "?style=list" else ""
                 }

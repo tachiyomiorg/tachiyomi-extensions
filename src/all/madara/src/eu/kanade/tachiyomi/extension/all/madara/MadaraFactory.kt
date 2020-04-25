@@ -103,7 +103,9 @@ class MadaraFactory : SourceFactory {
         YokaiJump(),
         YoManga(),
         ZinManga(),
-        ZManga()
+        ZManga(),
+        MangaGecesi(),
+        MangaWT()
     )
 }
 
@@ -270,7 +272,7 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
 
-class Hiperdex : Madara("Hiperdex", "https://hiperdex.net", "en") {
+class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     override fun getGenreList() = listOf(
         Genre("Adult", "adult"),
         Genre("Action", "action"),
@@ -567,3 +569,9 @@ class ManyToonClub : Madara("ManyToonClub", "https://manytoon.club", "ko")
 class ManhuaUS : Madara("ManhuaUS", "https://manhuaus.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
 }
+
+class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
+    override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
+}
+
+class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
