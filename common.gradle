@@ -1,6 +1,6 @@
 android {
     compileSdkVersion 27
-    buildToolsVersion '29.0.2'
+    buildToolsVersion '29.0.3'
 
     buildTypes {
         release {
