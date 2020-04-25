@@ -13,18 +13,18 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.TimeUnit
 
 class Honkaiimpact : ParsedHttpSource() {
 
-    //Info - Based of BH3
-    //This is the english version of the site
+    // Info - Based of BH3
+    // This is the english version of the site
     override val name = "Honkai Impact 3rd"
     override val baseUrl = "https://manga.honkaiimpact3.com"
     override val lang = "en"
@@ -36,23 +36,21 @@ class Honkaiimpact : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-    //Popular
+    // Popular
     override fun popularMangaSelector() = "a[href*=book]"
 
     override fun popularMangaNextPageSelector(): String? = null
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/book", headers)
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
-
-    //Latest
+    // Latest
     override fun latestUpdatesSelector() = throw Exception("Not Used")
 
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not Used")
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
-
-    //Search
+    // Search
     override fun searchMangaSelector() = throw Exception("Not Used")
 
     override fun searchMangaNextPageSelector(): String? = null
@@ -67,7 +65,7 @@ class Honkaiimpact : ParsedHttpSource() {
         return manga
     }
 
-    //Manga Details
+    // Manga Details
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         manga.thumbnail_url = document.select("img.cover").attr("abs:src")
@@ -76,7 +74,7 @@ class Honkaiimpact : ParsedHttpSource() {
         return manga
     }
 
-    //Chapters
+    // Chapters
     override fun chapterListSelector() = throw Exception("Not Used")
 
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
@@ -102,7 +100,7 @@ class Honkaiimpact : ParsedHttpSource() {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(date)?.time ?: 0
     }
 
-    //Manga Pages
+    // Manga Pages
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val body = response.asJsoup()
         body.select("img.lazy.comic_img")?.forEach {
@@ -112,6 +110,4 @@ class Honkaiimpact : ParsedHttpSource() {
 
     override fun pageListParse(document: Document) = throw Exception("Not Used")
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
-
 }
-

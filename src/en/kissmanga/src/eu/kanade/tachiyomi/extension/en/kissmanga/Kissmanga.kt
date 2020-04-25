@@ -10,6 +10,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -18,8 +20,6 @@ import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.regex.Pattern
 
 class Kissmanga : ParsedHttpSource() {
 
@@ -60,15 +60,15 @@ class Kissmanga : ParsedHttpSource() {
         element.select("td a:eq(0)").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             val title = it.text()
-            //check if cloudfire email obfuscation is affecting title name
+            // check if cloudfire email obfuscation is affecting title name
             if (title.contains("[email protected]", true)) {
                 try {
                     var str: String = it.html()
-                    //get the  number
+                    // get the  number
                     str = str.substringAfter("data-cfemail=\"")
                     str = str.substringBefore("\">[email")
                     val sb = StringBuilder()
-                    //convert number to char
+                    // convert number to char
                     val r = Integer.valueOf(str.substring(0, 2), 16)!!
                     var i = 2
                     while (i < str.length) {
@@ -76,10 +76,10 @@ class Kissmanga : ParsedHttpSource() {
                         sb.append(c)
                         i += 2
                     }
-                    //replace the new word into the title
+                    // replace the new word into the title
                     manga.title = title.replace("[email protected]", sb.toString(), true)
                 } catch (e: Exception) {
-                    //on error just default to obfuscated title
+                    // on error just default to obfuscated title
                     manga.title = title
                 }
             } else {
@@ -207,8 +207,8 @@ class Kissmanga : ParsedHttpSource() {
     private class Author : Filter.Text("Author")
     private class Genre(name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
-    private class SortTrending: Filter.CheckBox("View Trending Manga")
-    private class NewManga: Filter.CheckBox("View New Manga")
+    private class SortTrending : Filter.CheckBox("View Trending Manga")
+    private class NewManga : Filter.CheckBox("View New Manga")
 
     override fun getFilterList() = FilterList(
         Author(),

@@ -1,18 +1,23 @@
 package eu.kanade.tachiyomi.extension.en.mangasail
 
+import com.github.salomonbrys.kotson.fromJson
+import com.github.salomonbrys.kotson.get
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Locale
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.Jsoup.parse
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-import com.github.salomonbrys.kotson.*
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 
 class Mangasail : ParsedHttpSource() {
 
@@ -38,7 +43,6 @@ class Mangasail : ParsedHttpSource() {
             return GET("$baseUrl/directory/hot")
         } else {
             return GET("$baseUrl/directory/hot?page=" + (page - 1))
-
         }
     }
 
@@ -73,7 +77,7 @@ class Mangasail : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector(): String = "There is no next page"
 
-     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (page == 1) {
             return GET("$baseUrl/search/node/$query")
         } else {
@@ -96,7 +100,7 @@ class Mangasail : ParsedHttpSource() {
     }
 
     // Function to get data fragments from website
-    private fun getNodeDetail(node: String, field:String): String {
+    private fun getNodeDetail(node: String, field: String): String {
         val requestUrl = "$baseUrl/sites/all/modules/authcache/modules/authcache_p13n/frontcontroller/authcache.php?a[field][0]=$node:full:en&r=asm/field/node/$field&o[q]=node/$node"
         val call = client.newCall(GET(requestUrl, headers)).execute()
         val gson = Gson()
@@ -112,7 +116,7 @@ class Mangasail : ParsedHttpSource() {
     }
 
     // Get a page's node number so we can get data fragments for that page
-    private fun getNodeNumber (document: Document) : String {
+    private fun getNodeNumber(document: Document): String {
         return document.select("[rel=shortlink]").attr("href").split("/").last().replace("\"", "")
     }
 
@@ -174,8 +178,7 @@ class Mangasail : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

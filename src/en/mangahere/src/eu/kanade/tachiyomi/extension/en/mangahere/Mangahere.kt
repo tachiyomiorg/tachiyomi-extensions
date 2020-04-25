@@ -2,18 +2,24 @@ package eu.kanade.tachiyomi.extension.en.mangahere
 
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import java.lang.NumberFormatException
-import java.lang.UnsupportedOperationException
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
+import java.util.Calendar
+import java.util.Locale
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class Mangahere : ParsedHttpSource() {
 
@@ -28,7 +34,7 @@ class Mangahere : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = super.client.newBuilder()
-            .cookieJar(object : CookieJar{
+            .cookieJar(object : CookieJar {
                 override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
                 override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
                     return ArrayList<Cookie>().apply {
@@ -39,7 +45,6 @@ class Mangahere : ParsedHttpSource() {
                                 .value("1")
                                 .build()) }
                 }
-
             })
             .build()
 
@@ -79,7 +84,7 @@ class Mangahere : ParsedHttpSource() {
         val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
 
         filters.forEach {
-            when(it) {
+            when (it) {
 
                 is TypeList -> {
                     url.addEncodedQueryParameter("type", types[it.values[it.state]].toString())
@@ -100,7 +105,6 @@ class Mangahere : ParsedHttpSource() {
                     url.addEncodedQueryParameter("genres", includeGenres.joinToString(","))
                         .addEncodedQueryParameter("nogenres", excludeGenres.joinToString(","))
                 }
-
             }
         }
 
@@ -109,13 +113,13 @@ class Mangahere : ParsedHttpSource() {
                 .addEncodedQueryParameter("sort", null)
                 .addEncodedQueryParameter("stype", 1.toString())
                 .addEncodedQueryParameter("name", null)
-                .addEncodedQueryParameter("author_method","cw")
+                .addEncodedQueryParameter("author_method", "cw")
                 .addEncodedQueryParameter("author", null)
                 .addEncodedQueryParameter("artist_method", "cw")
                 .addEncodedQueryParameter("artist", null)
-                .addEncodedQueryParameter("rating_method","eq")
-                .addEncodedQueryParameter("rating",null)
-                .addEncodedQueryParameter("released_method","eq")
+                .addEncodedQueryParameter("rating_method", "eq")
+                .addEncodedQueryParameter("rating", null)
+                .addEncodedQueryParameter("released_method", "eq")
                 .addEncodedQueryParameter("released", null)
 
         return GET(url.toString(), headers)
@@ -169,7 +173,7 @@ class Mangahere : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return if ("Today" in date || " ago" in date){
+        return if ("Today" in date || " ago" in date) {
             Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
                 set(Calendar.MINUTE, 0)
@@ -230,7 +234,7 @@ class Mangahere : ParsedHttpSource() {
 
             var secretKey = extractSecretKey(html, duktape)
 
-            val chapterIdStartLoc =  html.indexOf("chapterid")
+            val chapterIdStartLoc = html.indexOf("chapterid")
             val chapterId = html.substring(
                     chapterIdStartLoc + 11,
                     html.indexOf(";", chapterIdStartLoc)).trim()
@@ -243,21 +247,21 @@ class Mangahere : ParsedHttpSource() {
 
             IntRange(1, pagesNumber).map { i ->
 
-                val pageLink = "${pageBase}/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
+                val pageLink = "$pageBase/chapterfun.ashx?cid=$chapterId&page=$i&key=$secretKey"
 
                 var responseText = ""
 
-                for (tr in 1..3){
+                for (tr in 1..3) {
 
                     val request = Request.Builder()
                             .url(pageLink)
-                            .addHeader("Referer",link)
-                            .addHeader("Accept","*/*")
-                            .addHeader("Accept-Language","en-US,en;q=0.9")
-                            .addHeader("Connection","keep-alive")
-                            .addHeader("Host","www.mangahere.cc")
+                            .addHeader("Referer", link)
+                            .addHeader("Accept", "*/*")
+                            .addHeader("Accept-Language", "en-US,en;q=0.9")
+                            .addHeader("Connection", "keep-alive")
+                            .addHeader("Host", "www.mangahere.cc")
                             .addHeader("User-Agent", System.getProperty("http.agent") ?: "")
-                            .addHeader("X-Requested-With","XMLHttpRequest")
+                            .addHeader("X-Requested-With", "XMLHttpRequest")
                             .build()
 
                     val response = client.newCall(request).execute()
@@ -267,7 +271,6 @@ class Mangahere : ParsedHttpSource() {
                         break
                     else
                         secretKey = ""
-
                 }
 
                 val deobfuscatedScript = duktape.evaluate(responseText.removePrefix("eval")).toString()
@@ -281,7 +284,6 @@ class Mangahere : ParsedHttpSource() {
                 val imageLink = deobfuscatedScript.substring(imageLinkStartPos, imageLinkEndPos)
 
                 Page(i - 1, "", "https:$baseLink$imageLink")
-
             }
         }
             .dropLastIfBroken()
@@ -303,15 +305,14 @@ class Mangahere : ParsedHttpSource() {
                 secretKeyStartLoc, secretKeyEndLoc)
 
         return duktape.evaluate(secretKeyResultScript).toString()
-
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class Genre(title: String, val id: Int) : Filter.TriState(title)
 
-    private class TypeList(types: Array<String>) : Filter.Select<String>("Type", types,0)
-    private class CompletionList(completions: Array<String>) : Filter.Select<String>("Completed series", completions,0)
+    private class TypeList(types: Array<String>) : Filter.Select<String>("Type", types, 0)
+    private class CompletionList(completions: Array<String>) : Filter.Select<String>("Completed series", completions, 0)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
@@ -327,7 +328,7 @@ class Mangahere : ParsedHttpSource() {
             "Any" to 0
     )
 
-    private val completions = arrayOf("Either","No","Yes")
+    private val completions = arrayOf("Either", "No", "Yes")
 
     private val genres = arrayListOf(
             Genre("Action", 1),
@@ -367,5 +368,4 @@ class Mangahere : ParsedHttpSource() {
             Genre("Shotacon", 35),
             Genre("Lolicon", 36)
     )
-
 }

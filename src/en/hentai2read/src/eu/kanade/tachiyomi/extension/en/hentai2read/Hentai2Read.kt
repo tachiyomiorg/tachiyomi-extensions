@@ -2,17 +2,22 @@ package eu.kanade.tachiyomi.extension.en.hentai2read
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.util.Calendar
+import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
-import java.util.regex.Pattern
 
 class Hentai2Read : ParsedHttpSource() {
 
@@ -44,11 +49,11 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/hentai-list/all/any/all/most-popular/$page/", headers)
+    override fun popularMangaRequest(page: Int) =
+        GET("$baseUrl/hentai-list/all/any/all/most-popular/$page/", headers)
 
-    override fun latestUpdatesRequest(page: Int)
-        = GET("$baseUrl/hentai-list/all/any/all/last-updated/$page/", headers)
+    override fun latestUpdatesRequest(page: Int) =
+        GET("$baseUrl/hentai-list/all/any/all/last-updated/$page/", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
@@ -99,7 +104,7 @@ class Hentai2Read : ParsedHttpSource() {
             }
             POST(searchUrl, headers, form.build())
         } else {
-            GET("$searchUrl/${base64String}", headers)
+            GET("$searchUrl/$base64String", headers)
         }
     }
 
@@ -134,7 +139,7 @@ class Hentai2Read : ParsedHttpSource() {
         manga.artist = infoElement.select("li:contains(Artist) > a")?.text()
         manga.genre = infoElement.select("li:contains(Category) > a, li:contains(Content) > a").joinToString(", ") { it.text() }
         manga.description = infoElement.select("li:contains(Storyline) > p")?.text()
-        manga.status = infoElement.select("li:contains(Status) > a")?.text().orEmpty().let {parseStatus(it)}
+        manga.status = infoElement.select("li:contains(Status) > a")?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("a#js-linkNext > img")?.attr("src")
         return manga
     }
@@ -281,7 +286,7 @@ class Hentai2Read : ParsedHttpSource() {
     // Tags : 355
     // $("div#tab-tag > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
-	// 360 Tags
+    // 360 Tags
     private fun getTagList() = listOf(
         Tag("Abortion", 529),
         Tag("Absent Parents", 1423),
@@ -648,7 +653,7 @@ class Hentai2Read : ParsedHttpSource() {
     // Doujins : 868
     // $("div#tab-doujin > div:has(a.block)").map((i, el) => `Tag("${$(el).select("a").first().text().trim()}", ${$(el).find("input").first().attr("value")})`).get().sort().join(",\n")
     // on https://hentai2read.com/hentai-search/"
-	// 1035 Doujin tags
+    // 1035 Doujin tags
     private fun getDoujinList() = listOf(
         Tag("3-gatsu no Lion", 2350),
         Tag("3x3 Eyes", 1118),
@@ -869,7 +874,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Dynasty Warriors", 1610),
         Tag("Dystopia", 810),
         Tag("Eiken", 2424),
-        Tag("Elf-san wa Yaserarenai",2521),
+        Tag("Elf-san wa Yaserarenai", 2521),
         Tag("Elsword", 2200),
         Tag("Emma", 1012),
         Tag("Endless Frontier", 2238),

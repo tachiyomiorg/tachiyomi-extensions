@@ -1,18 +1,22 @@
 package eu.kanade.tachiyomi.extension.en.holymanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
-abstract class HManga (
+abstract class HManga(
     override val name: String,
     override val baseUrl: String
 ) : ParsedHttpSource() {
@@ -80,8 +84,8 @@ abstract class HManga (
                             }
                     }
                     is GenreFilter -> {
-                        if(filter.toUriPart().isNotBlank() && filter.state != 0) {
-                            filter.toUriPart().let { genre = if(it == "completed") "completed" else "genre/$it" }
+                        if (filter.toUriPart().isNotBlank() && filter.state != 0) {
+                            filter.toUriPart().let { genre = if (it == "completed") "completed" else "genre/$it" }
                             ret = "$baseUrl/$genre/page-$page"
                         }
                     }
@@ -132,9 +136,9 @@ abstract class HManga (
 
         // Chapter list is paginated
         while (continueParsing) {
-            document.select(chapterListSelector()).map{ chapters.add(chapterFromElement(it)) }
+            document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
             // Next page of chapters
-            document.select("${latestUpdatesNextPageSelector()}:not([id])").let{
+            document.select("${latestUpdatesNextPageSelector()}:not([id])").let {
                 if (it.isNotEmpty()) {
                     document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
                 } else {
@@ -190,12 +194,12 @@ abstract class HManga (
         Filter.Header("Author name must be exact."),
         Filter.Separator("-----------------"),
         TextField("Author", "author"),
-        GenreFilter ()
+        GenreFilter()
     )
 
     // [...document.querySelectorAll('.sub-menu li a')].map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
     // from $baseUrl
-    private class GenreFilter: UriPartFilter("Genres",
+    private class GenreFilter : UriPartFilter("Genres",
         arrayOf(
             Pair("Choose a genre", ""),
             Pair("Action", "action"),

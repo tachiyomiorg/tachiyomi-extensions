@@ -12,13 +12,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class Mangahasu : ParsedHttpSource() {
 
@@ -126,8 +126,8 @@ class Mangahasu : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
 
-        //Grab All Pages from site
-        //Some images are place holders on new chapters.
+        // Grab All Pages from site
+        // Some images are place holders on new chapters.
 
         val pages = mutableListOf<Page>().apply {
             document.select("div.img img").forEach {
@@ -136,13 +136,13 @@ class Mangahasu : ParsedHttpSource() {
             }
         }
 
-        //Some images are not yet loaded onto Mangahasu's image server.
-        //Decode temporary URLs and replace placeholder images.
+        // Some images are not yet loaded onto Mangahasu's image server.
+        // Decode temporary URLs and replace placeholder images.
 
         val lstDUrls =
             document.select("script:containsData(lstDUrls)").html().substringAfter("lstDUrls")
                 .substringAfter("\"").substringBefore("\"")
-        if (lstDUrls != "W10=") { //Base64 = [] or empty file
+        if (lstDUrls != "W10=") { // Base64 = [] or empty file
             val decoded = String(Base64.decode(lstDUrls, Base64.DEFAULT))
             val json = JsonParser().parse(decoded).array
             json.forEach {

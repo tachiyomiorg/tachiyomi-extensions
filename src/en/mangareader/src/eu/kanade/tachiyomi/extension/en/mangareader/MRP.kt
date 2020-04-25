@@ -1,20 +1,24 @@
 package eu.kanade.tachiyomi.extension.en.mangareader
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Response
-import java.text.SimpleDateFormat
-import java.util.*
 
 abstract class MRP(
-        override val name: String,
-        override val baseUrl: String
+    override val name: String,
+    override val baseUrl: String
 ) : ParsedHttpSource() {
 
     override val lang = "en"
@@ -45,7 +49,7 @@ abstract class MRP(
             .substringAfterLast("/").substringBefore("\"")
 
         val manga = mutableListOf<SManga>()
-        document.select(popularMangaSelector()).map{manga.add(popularMangaFromElement(it))}
+        document.select(popularMangaSelector()).map { manga.add(popularMangaFromElement(it)) }
 
         return MangasPage(manga, document.select(nextPageSelector).hasText())
     }
@@ -57,7 +61,7 @@ abstract class MRP(
             .substringAfterLast("/").substringBefore("\"")
 
         val manga = mutableListOf<SManga>()
-        document.select(latestUpdatesSelector()).map{manga.add(latestUpdatesFromElement(it))}
+        document.select(latestUpdatesSelector()).map { manga.add(latestUpdatesFromElement(it)) }
 
         return MangasPage(manga, document.select(nextPageSelector).hasText())
     }
@@ -96,7 +100,7 @@ abstract class MRP(
     override fun latestUpdatesNextPageSelector() = "Not using this"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (page==1) {
+        return if (page == 1) {
             GET("$baseUrl/search/?w=$query&p", headers)
         } else {
             GET("$baseUrl/search/?w=$query&p=$nextPageNumber", headers)
@@ -173,5 +177,4 @@ abstract class MRP(
     }
 
     override fun getFilterList() = FilterList()
-
 }

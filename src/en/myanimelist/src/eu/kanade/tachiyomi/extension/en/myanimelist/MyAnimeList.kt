@@ -6,9 +6,20 @@ import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.CacheControl
+import okhttp3.Headers
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -55,8 +66,8 @@ class MyAnimeList : ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
 
-    override fun mangaDetailsRequest(manga: SManga): Request
-        = GET(baseUrl + manga.url, headers, CacheControl.FORCE_NETWORK)
+    override fun mangaDetailsRequest(manga: SManga): Request =
+        GET(baseUrl + manga.url, headers, CacheControl.FORCE_NETWORK)
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("div#content div.membership-manager table[width='100%'] tr").first()
@@ -104,7 +115,7 @@ class MyAnimeList : ParsedHttpSource() {
             .mapIndexed { i, fileName -> Page(i, "", "$imageBaseUrl/${fileName.string}?$queryParamsPart") }
     }
 
-    private fun imageIntercept(chain: Interceptor.Chain) : Response {
+    private fun imageIntercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val response = chain.proceed(request)
 
@@ -133,7 +144,7 @@ class MyAnimeList : ParsedHttpSource() {
      */
     private fun decodeImage(image: ByteArray): ByteArray {
         val n = image[1].toPositiveInt()
-        val i = image.slice(2 until 2 + n).map{ it.toPositiveInt() }
+        val i = image.slice(2 until 2 + n).map { it.toPositiveInt() }
         val r = image.drop(2 + n).map { it.toPositiveInt() }.toMutableList()
 
         for ((o, b) in r.iterator().withIndex()) {

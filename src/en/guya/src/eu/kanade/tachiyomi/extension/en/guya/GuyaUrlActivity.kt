@@ -40,5 +40,4 @@ class GuyaUrlActivity : Activity() {
         finish()
         exitProcess(0)
     }
-
 }

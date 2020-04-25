@@ -1,26 +1,34 @@
 package eu.kanade.tachiyomi.extension.en.guya
 
 import android.app.Application
-import eu.kanade.tachiyomi.source.model.*
-import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.ConfigurableSource
 import android.content.SharedPreferences
 import android.os.Build
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.extension.BuildConfig
-import okhttp3.*
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.online.HttpSource
+import java.io.IOException
+import java.util.HashMap
+import java.util.concurrent.TimeUnit
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.IOException
-import java.util.*
-import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 open class Guya() : ConfigurableSource, HttpSource() {
 
@@ -32,7 +40,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     private val scanlatorCacheUrl = "https://raw.githubusercontent.com/appu1232/guyamoe/master/api/data_cache/all_groups.json"
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent","(Android ${Build.VERSION.RELEASE}; " +
+        add("User-Agent", "(Android ${Build.VERSION.RELEASE}; " +
             "${Build.MANUFACTURER} ${Build.MODEL}) " +
             "Tachiyomi/${BuildConfig.VERSION_NAME} " +
             Build.ID)
@@ -61,7 +69,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/", headers))
             .asObservableSuccess()
-            .map {response ->
+            .map { response ->
                 mangaDetailsParse(response, manga)
             }
     }
@@ -131,7 +139,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return if ( query.startsWith(SLUG_PREFIX)) {
+        return if (query.startsWith(SLUG_PREFIX)) {
             val slug = query.removePrefix(SLUG_PREFIX)
             client.newCall(searchMangaRequest(page, query, filters))
                 .asObservableSuccess()
@@ -155,7 +163,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         throw Exception("Unused.")
     }
 
-    private fun searchMangaParseWithSlug(response: Response, slug: String) : MangasPage {
+    private fun searchMangaParseWithSlug(response: Response, slug: String): MangasPage {
         val results = JSONObject(response.body()!!.string())
         val mangaIter = results.keys()
         val truncatedJSON = JSONObject()
@@ -167,7 +175,6 @@ open class Guya() : ConfigurableSource, HttpSource() {
             if (mangaDetails.get("slug") == slug) {
                 truncatedJSON.put(mangaTitle, mangaDetails)
             }
-
         }
 
         return parseManga(truncatedJSON)
@@ -207,7 +214,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
             this.setDefaultValue("1")
 
-            setOnPreferenceChangeListener{_, newValue ->
+            setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue.toString()
                 preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
             }
@@ -233,7 +240,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
             this.setDefaultValue("1")
 
-            setOnPreferenceChangeListener{_, newValue ->
+            setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue.toString()
                 preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
             }
@@ -267,7 +274,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     // Helper function to get all the listings
-    private fun parseManga(payload: JSONObject) : MangasPage {
+    private fun parseManga(payload: JSONObject): MangasPage {
         val mangas = ArrayList<SManga>()
 
         val iter = payload.keys()
@@ -383,7 +390,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
             if (scanlatorMap.isEmpty() && !polling) {
                 polling = true
                 clientBuilder().newCall(GET(scanlatorCacheUrl, headers)).enqueue(
-                    object: Callback {
+                    object : Callback {
                         override fun onResponse(call: Call, response: Response) {
                             try {
                                 val json = JSONObject(response.body()!!.string())

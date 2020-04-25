@@ -1,7 +1,10 @@
 package eu.kanade.tachiyomi.extension.en.gunnerkriggcourt
 
-import android.util.Log
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import okhttp3.Response
@@ -54,14 +57,14 @@ class GunnerkriggCourt : ParsedHttpSource() {
             chapter_number = element.attr("value").toFloat()
             setUrlWithoutDomain("/?p=" + element.attr("value"))
             name = element.parent().previousElementSibling().text() + " (" + chapter_number.toInt() + ")"
-            //date_upload // Find by using hovertext above "Tom" on actual comic page
+            // date_upload // Find by using hovertext above "Tom" on actual comic page
         }
     }
 
     override fun pageListParse(document: Document): List<Page> =
         document.select(".comic_image").mapIndexed { i, element -> Page(i, "", baseUrl + element.attr("src")) }
 
-    //<editor-fold desc="Not Used">
+    // <editor-fold desc="Not Used">
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
 
     override fun popularMangaSelector(): String = throw Exception("Not used")
@@ -89,5 +92,5 @@ class GunnerkriggCourt : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
     override fun latestUpdatesSelector(): String = throw Exception("Not used")
-    //</editor-fold>
+    // </editor-fold>
 }

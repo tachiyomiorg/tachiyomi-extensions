@@ -1,18 +1,22 @@
 package eu.kanade.tachiyomi.extension.en.merakiscans
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import eu.kanade.tachiyomi.network.asObservableSuccess
-import okhttp3.OkHttpClient
-import rx.Observable
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import okhttp3.OkHttpClient
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import rx.Observable
 
 class MerakiScans : ParsedHttpSource() {
     override val name = "MerakiScans"
@@ -35,11 +39,11 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "#mangalisthome > #mangalistitem > #mangaitem > #manganame > a"
 
-    override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/manga", headers)
+    override fun popularMangaRequest(page: Int) =
+        GET("$baseUrl/manga", headers)
 
-    override fun latestUpdatesRequest(page: Int)
-        = GET(baseUrl, headers)
+    override fun latestUpdatesRequest(page: Int) =
+        GET(baseUrl, headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
@@ -55,12 +59,12 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
-            = GET("$baseUrl/manga", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) =
+            GET("$baseUrl/manga", headers)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
-    //This makes it so that if somebody searches for "views" it lists everything, also includes #'s.
+    // This makes it so that if somebody searches for "views" it lists everything, also includes #'s.
     private fun searchMangaSelector(query: String) = "#all > #listitem > a:contains($query)"
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
@@ -85,12 +89,12 @@ class MerakiScans : ParsedHttpSource() {
                 }
     }
 
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply{
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val infoElement = document.select("#content2")
-        author = infoElement.select("#detail_list > li:nth-child(5)").text().replace("Author:","").trim()
-        artist = infoElement.select("#detail_list > li:nth-child(7)").text().replace("Artist:","").trim()
+        author = infoElement.select("#detail_list > li:nth-child(5)").text().replace("Author:", "").trim()
+        artist = infoElement.select("#detail_list > li:nth-child(7)").text().replace("Artist:", "").trim()
         genre = infoElement.select("#detail_list > li:nth-child(11) > a").joinToString { it.text().trim() }
-        status = infoElement.select("#detail_list > li:nth-child(9)").text().replace("Status:","").trim().let {
+        status = infoElement.select("#detail_list > li:nth-child(9)").text().replace("Status:", "").trim().let {
             parseStatus(it)
         }
         description = infoElement.select("#detail_list > span").text().trim()
@@ -121,7 +125,7 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
-        val imgarray = doc.substringAfter("var images = [").substringBefore("];").split(",").map { it.replace("\"","") }
+        val imgarray = doc.substringAfter("var images = [").substringBefore("];").split(",").map { it.replace("\"", "") }
         val mangaslug = doc.substringAfter("var manga_slug = \"").substringBefore("\";")
         val chapnum = doc.substringAfter("var viewschapter = \"").substringBefore("\";")
 

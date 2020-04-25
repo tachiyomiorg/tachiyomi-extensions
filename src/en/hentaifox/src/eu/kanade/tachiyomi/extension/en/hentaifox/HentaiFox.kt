@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.hentaifox
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -107,7 +112,7 @@ class HentaiFox : ParsedHttpSource() {
             // page path with a marker at the end
             url = "${response.request().url().toString().replace("/gallery/", "/g/")}#"
             // number of pages
-            url+= response.asJsoup().select("[id=load_pages]").attr("value")
+            url += response.asJsoup().select("[id=load_pages]").attr("value")
         })
     }
 
@@ -120,7 +125,7 @@ class HentaiFox : ParsedHttpSource() {
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         // split the "url" to get the page path and number of pages
         return chapter.url.split("#").let { list ->
-            Observable.just(listOf(1 .. list[1].toInt()).flatten().map { Page(it, list[0] + "$it/") })
+            Observable.just(listOf(1..list[1].toInt()).flatten().map { Page(it, list[0] + "$it/") })
         }
     }
 
@@ -197,5 +202,4 @@ class HentaiFox : ParsedHttpSource() {
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
 }

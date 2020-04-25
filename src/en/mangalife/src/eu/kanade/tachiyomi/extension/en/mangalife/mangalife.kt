@@ -8,23 +8,27 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 /**
  * Source responds to requests with their full database as a JsonArray, then sorts/filters it client-side
  * We'll take the database on first requests, then do what we want with it
  */
-
 class MangaLife : HttpSource() {
 
     override val name = "MangaLife"
@@ -42,7 +46,7 @@ class MangaLife : HttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0")
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0")
 
     private val gson = GsonBuilder().setLenient().create()
 
@@ -83,7 +87,7 @@ class MangaLife : HttpSource() {
         val mangas = mutableListOf<SManga>()
         val endRange = ((page * 24) - 1).let { if (it <= directory.lastIndex) it else directory.lastIndex }
 
-        for (i in (((page - 1) * 24) .. endRange)){
+        for (i in (((page - 1) * 24)..endRange)) {
             mangas.add(SManga.create().apply {
                 title = directory[i]["s"].string
                 url = "/manga/${directory[i]["i"].string}"
@@ -201,20 +205,20 @@ class MangaLife : HttpSource() {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
-    private fun chapterURLEncode(e: String ):String {
+    private fun chapterURLEncode(e: String): String {
         var index = ""
-        val t = e.substring(0,1).toInt()
+        val t = e.substring(0, 1).toInt()
         if (1 != t) { index = "-index-$t" }
-        val n = e.substring(1,e.length-1)
+        val n = e.substring(1, e.length - 1)
         var suffix = ""
-        val path = e.substring(e.length-1).toInt()
-        if (0 != path) {suffix = ".$path"}
+        val path = e.substring(e.length - 1).toInt()
+        if (0 != path) { suffix = ".$path" }
         return "-chapter-$n$index$suffix.html"
     }
 
     private fun chapterImage(e: String): String {
-        val a = e.substring(1,e.length-1)
-        val b = e.substring(e.length-1).toInt()
+        val a = e.substring(1, e.length - 1)
+        val b = e.substring(e.length - 1).toInt()
         return if (b == 0) {
             a
         } else {
@@ -226,7 +230,7 @@ class MangaLife : HttpSource() {
         val vmChapters = response.asJsoup().select("script:containsData(MainFunction)").first().data()
             .substringAfter("vm.Chapters = ").substringBefore(";")
 
-        return gson.fromJson<JsonArray>(vmChapters).map{ json ->
+        return gson.fromJson<JsonArray>(vmChapters).map { json ->
             val indexChapter = json["Chapter"].string
             SChapter.create().apply {
                 name = json["ChapterName"].string.let { if (it.isNotEmpty()) it else "${json["Type"].string} ${chapterImage(indexChapter)}" }
@@ -258,7 +262,7 @@ class MangaLife : HttpSource() {
         var chNum = chapterImage(curChapter["Chapter"].string)
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
-            var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length-3) }
+            var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length - 3) }
             Page(i, "", path + "$chNum-$imageNum.png")
         }
     }
@@ -324,5 +328,4 @@ class MangaLife : HttpSource() {
             Genre("Yaoi"),
             Genre("Yuri")
     )
-
 }

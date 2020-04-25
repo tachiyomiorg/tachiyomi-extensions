@@ -12,4 +12,3 @@ class HMangaFactory : SourceFactory {
 
 class HolyManga : HManga("HolyManga", "http://w12.holymanga.net")
 class HeavenManga : HManga("HeavenManga", "http://ww8.heavenmanga.org")
-

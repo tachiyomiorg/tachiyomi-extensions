@@ -2,25 +2,29 @@ package eu.kanade.tachiyomi.extension.en.mangahub
 
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
 import com.github.salomonbrys.kotson.keys
+import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.Request
-import okhttp3.HttpUrl
-import okhttp3.RequestBody
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.net.URL
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class Mangahub : ParsedHttpSource() {
 
@@ -164,7 +168,7 @@ class Mangahub : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
-    //https://mangahub.io/search/page/1?q=a&order=POPULAR&genre=all
+    // https://mangahub.io/search/page/1?q=a&order=POPULAR&genre=all
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search/page/$page")?.newBuilder()!!.addQueryParameter("q", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
@@ -200,7 +204,7 @@ class Mangahub : ParsedHttpSource() {
         }
     }
 
-    private class OrderBy(orders: Array<Order>) : Filter.Select<Order>("Order", orders,0)
+    private class OrderBy(orders: Array<Order>) : Filter.Select<Order>("Order", orders, 0)
     private class GenreList(genres: Array<Genre>) : Filter.Select<Genre>("Genres", genres, 0)
 
     override fun getFilterList() = FilterList(
