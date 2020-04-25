@@ -1,18 +1,21 @@
 package eu.kanade.tachiyomi.extension.all.mangatoon
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
-open class MangaToon (
+open class MangaToon(
     override val lang: String,
     private val urllang: String
 ) : ParsedHttpSource() {
@@ -30,13 +33,12 @@ open class MangaToon (
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-
-    override fun popularMangaRequest(page: Int): Request{
-        val page0 = page-1
+    override fun popularMangaRequest(page: Int): Request {
+        val page0 = page - 1
         return GET("$baseUrl/$urllang/genre/hot?page=$page0", headers)
     }
-    override fun latestUpdatesRequest(page: Int): Request{
-        val page0 = page-1
+    override fun latestUpdatesRequest(page: Int): Request {
+        val page0 = page - 1
         return GET("$baseUrl/$urllang/genre/new?page=$page0", headers)
     }
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -44,10 +46,9 @@ open class MangaToon (
         return GET(url.toString(), headers)
     }
 
-    //override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    //override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
+    // override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
+    // override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url + "/episodes", headers)
-
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -74,14 +75,14 @@ open class MangaToon (
         val chapter = SChapter.create()
             chapter.url = element.select("a").first().attr("href")
             chapter.chapter_number = element.select("div.item-left").text().trim().toFloat()
-        val date= element.select("div.episode-date").text()
+        val date = element.select("div.episode-date").text()
             chapter.date_upload = parseDate(date)
-            chapter.name = if (chapter.chapter_number>20) {"\uD83D\uDD12 "} else {""} + element.select("div.episode-title").text().trim()
+            chapter.name = if (chapter.chapter_number> 20) { "\uD83D\uDD12 " } else { "" } + element.select("div.episode-title").text().trim()
         return chapter
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US ).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date).time
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -94,7 +95,7 @@ open class MangaToon (
         manga.genre = glist.joinToString(", ")
         manga.status = when (document.select("span.update-date")?.first()?.text()) {
             "Update" -> SManga.ONGOING
-            "End","完结" -> SManga.COMPLETED
+            "End", "完结" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
         return manga
@@ -107,13 +108,11 @@ open class MangaToon (
         for (i in 0 until elements.size) {
             pages.add(Page(i, "", elements[i].attr("abs:src")))
         }
-        if (pages.size ==1) throw Exception("Locked episode, download MangaToon APP and read for free!")
+        if (pages.size == 1) throw Exception("Locked episode, download MangaToon APP and read for free!")
         return pages
     }
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
-
 }
-

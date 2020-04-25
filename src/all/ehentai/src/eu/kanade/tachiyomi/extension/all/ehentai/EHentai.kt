@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
 import okhttp3.CacheControl
 import okhttp3.CookieJar
 import okhttp3.Headers
@@ -18,7 +19,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.net.URLEncoder
 
 open class EHentai(override val lang: String, private val ehLang: String) : HttpSource() {
 
@@ -32,12 +32,12 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         val doc = response.asJsoup()
         val parsedMangas = doc.select("table.itg td.glname").map {
             SManga.create().apply {
-                //Get title
+                // Get title
                 it.select("a")?.first()?.apply {
                     title = this.select(".glink").text()
                     url = ExGalleryMetadata.normalizeUrl(attr("href"))
                 }
-                //Get image
+                // Get image
                 it.parent().select(".glthumb img")?.first().apply {
                     thumbnail_url = this?.attr("data-src")?.nullIfBlank()
                         ?: this?.attr("src")
@@ -45,7 +45,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
             }
         }
 
-        //Add to page if required
+        // Add to page if required
         val hasNextPage = doc.select("a[onclick=return false]").last()?.text() == ">"
 
         return MangasPage(parsedMangas, hasNextPage)
@@ -66,8 +66,11 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     /**
      * Recursively fetch chapter pages
      */
-    private fun fetchChapterPage(chapter: SChapter, np: String,
-                                 pastUrls: List<String> = emptyList()): Observable<List<String>> {
+    private fun fetchChapterPage(
+        chapter: SChapter,
+        np: String,
+        pastUrls: List<String> = emptyList()
+    ): Observable<List<String>> {
         val urls = ArrayList(pastUrls)
         return chapterPageCall(np).flatMap {
             val jsoup = it.asJsoup()
@@ -92,9 +95,9 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     }
 
     override fun popularMangaRequest(page: Int) = latestUpdatesRequest(page)
-    //This source supports finding popular manga but will not respect language filters on the popular manga page!
-    //We currently display the latest updates instead until this is fixed
-    //override fun popularMangaRequest(page: Int) = exGet("$baseUrl/toplist.php?tl=15", page)
+    // This source supports finding popular manga but will not respect language filters on the popular manga page!
+    // We currently display the latest updates instead until this is fixed
+    // override fun popularMangaRequest(page: Int) = exGet("$baseUrl/toplist.php?tl=15", page)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl$QUERY_PREFIX").buildUpon()
@@ -138,7 +141,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
             altTitle = select("#gj").text().nullIfBlank()?.trim()
 
-            //Thumbnail is set as background of element in style attribute
+            // Thumbnail is set as background of element in style attribute
             thumbnailUrl = select("#gd1 div").attr("style").nullIfBlank()?.let {
                 it.substring(it.indexOf('(') + 1 until it.lastIndexOf(')'))
             }
@@ -146,7 +149,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
             uploader = select("#gdn").text().nullIfBlank()?.trim()
 
-            //Parse the table
+            // Parse the table
             select("#gdd tr").forEach {
                 it.select(".gdt1")
                     .text()
@@ -176,7 +179,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
                     }
             }
 
-            //Parse ratings
+            // Parse ratings
             ignore {
                 averageRating = select("#rating_label")
                     .text()
@@ -191,7 +194,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
                     ?.toInt()
             }
 
-            //Parse tags
+            // Parse tags
             tags.clear()
             select("#taglist tr").forEach {
                 val namespace = it.select(".tc").text().removeSuffix(":")
@@ -202,7 +205,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
                 tags[namespace] = currentTags
             }
 
-            //Copy metadata to manga
+            // Copy metadata to manga
             SManga.create().apply {
                 copyTo(this)
             }
@@ -238,8 +241,8 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
     private fun realImageUrlParse(response: Response, page: Page) = with(response.asJsoup()) {
         val currentImage = getElementById("img").attr("src")
-        //TODO We cannot currently do this as page.url is immutable
-        //Each press of the retry button will choose another server
+        // TODO We cannot currently do this as page.url is immutable
+        // Each press of the retry button will choose another server
         /*select("#loadfail").attr("onclick").nullIfBlank()?.let {
             page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 until it.lastIndexOf('\'')))
         }*/
@@ -251,13 +254,13 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
 
-        //Setup settings
+        // Setup settings
         val settings = mutableListOf<String>()
 
-        //Do not show popular right now pane as we can't parse it
+        // Do not show popular right now pane as we can't parse it
         settings += "prn_n"
 
-        //Exclude every other language except the one we have selected
+        // Exclude every other language except the one we have selected
         settings += "xl_" + languageMappings.filter { it.first != ehLang }
             .flatMap { it.second }
             .joinToString("x")
@@ -270,7 +273,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         buildCookies(cookies)
     }
 
-    //Headers
+    // Headers
     override fun headersBuilder() = super.headersBuilder().add("Cookie", cookiesHeader)!!
 
     private fun buildSettings(settings: List<String?>) = settings.filterNotNull().joinToString(separator = "-")
@@ -297,7 +300,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
             chain.proceed(newReq)
         }.build()!!
 
-    //Filters
+    // Filters
     override fun getFilterList() = FilterList(
         Watched(),
         GenreGroup(),
@@ -306,7 +309,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
     class Watched : Filter.CheckBox("Watched List"), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            if(state)
+            if (state)
                 builder.appendPath("watched")
         }
     }
@@ -349,7 +352,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         }
     }
 
-    //Explicit type arg for listOf() to workaround this: KT-16570
+    // Explicit type arg for listOf() to workaround this: KT-16570
     class AdvancedGroup : UriGroup<Filter<*>>("Advanced Options", listOf(
         AdvancedOption("Search Gallery Name", "f_sname", true),
         AdvancedOption("Search Gallery Tags", "f_stags", true),
@@ -362,7 +365,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         RatingOption()
     ))
 
-    //map languages to their internal ids
+    // map languages to their internal ids
     private val languageMappings = listOf(
         Pair("japanese", listOf("0", "1024", "2048")),
         Pair("english", listOf("1", "1025", "2049")),

@@ -7,7 +7,11 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -16,8 +20,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-
-abstract class SimplyHentai (
+abstract class SimplyHentai(
     override val lang: String,
     private val urlLang: String,
     private val searchLang: String
@@ -158,7 +161,7 @@ abstract class SimplyHentai (
 
     // Filters
 
-    private class SortOrder(sortPairs: List<Pair<String, String>>): Filter.Select<String>("Sort By", sortPairs.map { it.first }.toTypedArray())
+    private class SortOrder(sortPairs: List<Pair<String, String>>) : Filter.Select<String>("Sort By", sortPairs.map { it.first }.toTypedArray())
     private class SearchPair(name: String, val id: String = name) : Filter.CheckBox(name)
     private class GenreList(searchVal: List<SearchPair>) : Filter.Group<SearchPair>("Genres", searchVal)
     private class SeriesList(searchVal: List<SearchPair>) : Filter.Group<SearchPair>("Series", searchVal)

@@ -1,11 +1,11 @@
 package eu.kanade.tachiyomi.extension.all.mangaplus
 
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.protobuf.ProtoId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Serializer
+import kotlinx.serialization.protobuf.ProtoId
 
-@Serializer(forClass=MangaPlusResponse::class)
+@Serializer(forClass = MangaPlusResponse::class)
 object MangaPlusSerializer
 
 @Serializable

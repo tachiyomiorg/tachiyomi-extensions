@@ -33,5 +33,4 @@ class MangAdventureActivity : Activity() {
     private fun logInvalidIntent(intent: Intent) = Log.e(
         "MangAdventureActivity", "Failed to parse URI from intent: $intent"
     )
-
 }

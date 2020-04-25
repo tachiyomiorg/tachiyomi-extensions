@@ -5,13 +5,17 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.Interceptor
-import okhttp3.HttpUrl
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -801,7 +805,7 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
 }
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
-    private class Sucuri: Interceptor {
+    private class Sucuri : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val originalRequest = chain.request()
             val response = chain.proceed(originalRequest)
@@ -825,15 +829,15 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
         description = document.select("div[itemprop=articleBody]").text()
     }
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url + "?/", headers) //Bypass "linkvertise" ads
+        return GET(baseUrl + chapter.url + "?/", headers) // Bypass "linkvertise" ads
     }
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("div#readerarea img[data-src]").forEachIndexed { index, element ->
-            add(Page(index,"",element.attr("data-src")))
+            add(Page(index, "", element.attr("data-src")))
         }
     }
     override fun imageRequest(page: Page): Request {
-        return GET( page.imageUrl!! , headers)
+        return GET(page.imageUrl!!, headers)
     }
 }
 
@@ -851,8 +855,8 @@ class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
     }
     override fun popularMangaNextPageSelector() = "a[rel=next]"
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/search?order=update&page=$page", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request
-        = GET("$baseUrl/search?s=$query&page=$page")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
+        GET("$baseUrl/search?s=$query&page=$page")
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         return client.newCall(pageListRequest(chapter))

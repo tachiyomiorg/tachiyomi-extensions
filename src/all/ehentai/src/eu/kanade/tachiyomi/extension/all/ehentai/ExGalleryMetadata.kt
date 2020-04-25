@@ -18,7 +18,7 @@ class ExGalleryMetadata {
 
     var datePosted: Long? = null
     var parent: String? = null
-    var visible: String? = null //Not a boolean
+    var visible: String? = null // Not a boolean
     var language: String? = null
     var translated: Boolean? = null
     var size: Long? = null
@@ -33,7 +33,7 @@ class ExGalleryMetadata {
 
     companion object {
         private fun splitGalleryUrl(url: String) = url.let {
-            //Only parse URL if is full URL
+            // Only parse URL if is full URL
             val pathSegments = if (it.startsWith("http"))
                 Uri.parse(it).pathSegments
             else

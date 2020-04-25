@@ -8,6 +8,9 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.ArrayList
+import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -16,8 +19,6 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.select.Elements
-import java.text.SimpleDateFormat
-import java.util.*
 
 abstract class DynastyScans : ParsedHttpSource() {
 
@@ -109,7 +110,6 @@ abstract class DynastyScans : ParsedHttpSource() {
             manga.genre = genres.joinToString(", ")
         }
     }
-
 
     protected fun parseDescription(document: Document, manga: SManga) {
         manga.description = document.select("div.tags > div.row div.description").text()
@@ -228,5 +228,4 @@ abstract class DynastyScans : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request {
         return popularMangaRequest(page)
     }
-
 }

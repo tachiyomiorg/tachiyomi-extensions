@@ -1,15 +1,18 @@
 package eu.kanade.tachiyomi.extension.all.wpcomics
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.Calendar
 
 abstract class WPComics(
     override val name: String,
@@ -40,7 +43,6 @@ abstract class WPComics(
                 setUrlWithoutDomain(it.attr("abs:href"))
             }
             thumbnail_url = imageOrNull(element.select("div.image:first-of-type img").first())
-
         }
     }
 
@@ -169,7 +171,7 @@ abstract class WPComics(
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListSelector).mapNotNull { img -> imageOrNull(img) }
             .distinct()
-            .mapIndexed { i, image -> Page(i, "", image)}
+            .mapIndexed { i, image -> Page(i, "", image) }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

@@ -9,13 +9,22 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import java.util.Date
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.util.*
 
 open class NineHentai : ParsedHttpSource() {
 
@@ -92,25 +101,25 @@ open class NineHentai : ParsedHttpSource() {
         val chapterId = manga.url.substringAfter("/g/").toInt()
         chapter.url = "/g/$chapterId"
         chapter.name = "chapter"
-        //api doesnt return date so setting to current date for now
+        // api doesnt return date so setting to current date for now
         chapter.date_upload = Date().time
 
         return Observable.just(listOf(chapter))
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val includedTags =  mutableListOf<Tag>()
+        val includedTags = mutableListOf<Tag>()
         val excludedTags = mutableListOf<Tag>()
         var sort = 0
         for (filter in if (filters.isEmpty()) getFilterList() else filters) {
-            when(filter){
+            when (filter) {
                 is GenreList -> {
                     filter.state.forEach { f ->
                         if (!f.isIgnored()) {
                             if (f.isExcluded())
-                               excludedTags.add(f)
+                                excludedTags.add(f)
                             else
-                               includedTags.add(f)
+                                includedTags.add(f)
                         }
                     }
                 }
@@ -153,7 +162,7 @@ open class NineHentai : ParsedHttpSource() {
     }
 
     private fun buildRequestBody(searchText: String = "", page: Int, sort: Int = 0, includedTags: MutableList<Tag> = arrayListOf(), excludedTags: MutableList<Tag> = arrayListOf()): RequestBody {
-        val json = gson.toJson(mapOf("search" to SearchRequest(text = searchText, page = page-1, sort = sort, tag = mapOf("items" to Items(includedTags, excludedTags)))))
+        val json = gson.toJson(mapOf("search" to SearchRequest(text = searchText, page = page - 1, sort = sort, tag = mapOf("items" to Items(includedTags, excludedTags)))))
         return RequestBody.create(MEDIA_TYPE, json)
     }
 

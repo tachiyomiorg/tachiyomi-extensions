@@ -3,14 +3,14 @@ package eu.kanade.tachiyomi.extension.all.mangabox
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Request
-import okhttp3.Response
 import java.text.SimpleDateFormat
 import java.util.Locale
+import okhttp3.Request
+import okhttp3.Response
 
 class MangaBoxFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -125,7 +125,7 @@ class MangaOnl : MangaBoxPathedGenres("MangaOnl", "https://mangaonl.com", "en") 
     override val popularUrlPath = "story-list-ty-topview-st-all-ca-all-"
     override val latestUrlPath = "story-list-ty-latest-st-all-ca-all-"
     override fun popularMangaSelector() = "div.story_item"
-    override val mangaDetailsMainSelector = "div.panel_story_info, ${super.mangaDetailsMainSelector}" //Some manga link to Nelo
+    override val mangaDetailsMainSelector = "div.panel_story_info, ${super.mangaDetailsMainSelector}" // Some manga link to Nelo
     override val thumbnailSelector = "img.story_avatar, ${super.thumbnailSelector}"
     override val descriptionSelector = "div.panel_story_info_description, ${super.descriptionSelector}"
     override fun chapterListSelector() = "div.chapter_list_title + ul li, ${super.chapterListSelector()}"

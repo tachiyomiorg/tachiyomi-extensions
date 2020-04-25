@@ -9,7 +9,11 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -45,7 +49,6 @@ class BoredomSociety : ParsedHttpSource() {
                     popularMangaParse(response)
                 }
     }
-
 
     override fun popularMangaParse(response: Response): MangasPage {
         val jsonArray = getJsonArray(response)
@@ -95,10 +98,10 @@ class BoredomSociety : ParsedHttpSource() {
         val chapterName = mutableListOf<String>()
 
         if (!jsonElement["chapter_name"].string.startsWith("Chapter", true)) {
-            if (jsonElement["chapter_volume"].string?.isNotBlank()) {
+            if (jsonElement["chapter_volume"].string.isNotBlank()) {
                 chapterName.add("Vol. " + jsonElement["chapter_volume"].string)
             }
-            if (jsonElement["chapter_number"].string?.isNotBlank()) {
+            if (jsonElement["chapter_number"].string.isNotBlank()) {
                 chapterName.add("Ch. " + jsonElement["chapter_number"].string + " - ")
             }
         }
@@ -151,7 +154,6 @@ class BoredomSociety : ParsedHttpSource() {
         mutableChapters.reverse()
         return mutableChapters
     }
-
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
 
@@ -208,5 +210,4 @@ class BoredomSociety : ParsedHttpSource() {
         private const val ALL_URL = "/api/titles/"
         private const val CHAPTER_URL = "/api/chapter/"
     }
-
 }

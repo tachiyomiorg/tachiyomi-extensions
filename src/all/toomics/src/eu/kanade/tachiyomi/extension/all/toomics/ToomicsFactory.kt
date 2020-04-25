@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.all.toomics
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class ToomicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(

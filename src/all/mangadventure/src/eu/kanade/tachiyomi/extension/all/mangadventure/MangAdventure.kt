@@ -12,14 +12,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 /**
  * MangAdventure base source.
@@ -73,7 +73,9 @@ abstract class MangAdventure(
     override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
 
     override fun searchMangaRequest(
-        page: Int, query: String, filters: FilterList
+        page: Int,
+        query: String,
+        filters: FilterList
     ): Request {
         val uri = Uri.parse("$apiUrl/series/").buildUpon()
         if (query.startsWith(SLUG_QUERY)) {

@@ -22,6 +22,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import okhttp3.Credentials
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -33,8 +36,6 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.*
 
 open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
@@ -151,8 +152,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
             title = metadata.title
-            url = "/api/v1/series/${id}"
-            thumbnail_url = "$baseUrl/api/v1/series/${id}/thumbnail"
+            url = "/api/v1/series/$id"
+            thumbnail_url = "$baseUrl/api/v1/series/$id/thumbnail"
             status = when (metadata.status) {
                 "ONGOING" -> SManga.ONGOING
                 "ENDED" -> SManga.COMPLETED
@@ -239,8 +240,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
-                        , Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
                     res
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -267,8 +267,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
-                        , Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
                     res
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -295,7 +294,6 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     emptyList()
                 }
             }, {})
-
     }
 
     companion object {

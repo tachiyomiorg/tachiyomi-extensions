@@ -10,6 +10,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -17,8 +19,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -31,8 +31,8 @@ class MadaraFactory : SourceFactory {
         ChibiManga(),
         DisasterScans(),
         DoujinHentai(),
-        //Removed by request of site owner
-        //EarlyManga(),
+        // Removed by request of site owner
+        // EarlyManga(),
         FirstKissManga(),
         GetManhwa(),
         GoldenManga(),
@@ -351,7 +351,6 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         } else {
             super.searchMangaFromElement(element) // query search results
         }
-
     }
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
@@ -441,17 +440,16 @@ class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com", "en"
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
 
 class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", "pt-BR") {
-    override val popularMangaUrlSelector = "div.post-title a:not([target])" //Page has custom link to scan website
-    override fun chapterListParse(response: Response): List<SChapter> { //Chapters are listed old to new
+    override val popularMangaUrlSelector = "div.post-title a:not([target])" // Page has custom link to scan website
+    override fun chapterListParse(response: Response): List<SChapter> { // Chapters are listed old to new
         return super.chapterListParse(response).reversed()
     }
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListParseSelector).mapIndexed { index, element ->
-            Page(index, "", element.select("img").attr("data-src").trim())  //had to add trim because of white space in source
+            Page(index, "", element.select("img").attr("data-src").trim()) // had to add trim because of white space in source
         }
     }
-
 }
 
 class GoldenManga : Madara("موقع لترجمة المانجا", "https://golden-manga.ml", "ar", SimpleDateFormat("yyyy-MM-dd", Locale.US))
@@ -484,16 +482,16 @@ class NijiTranslations : Madara("Niji Translations", "https://niji-translations.
 
 class IchirinNoHanaYuri : Madara("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt")))
 
-class LilyManga: Madara("Lily Manga","https://lilymanga.com","en",SimpleDateFormat("yyyy-MM-dd", Locale.US))
+class LilyManga : Madara("Lily Manga", "https://lilymanga.com", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
-class MangaBob: Madara("MangaBob","https://mangabob.com","en")
+class MangaBob : Madara("MangaBob", "https://mangabob.com", "en")
 
-class ThreeSixtyFiveManga: Madara("365Manga","https://365manga.com","en") {
+class ThreeSixtyFiveManga : Madara("365Manga", "https://365manga.com", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
 
-class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en") {
+class DisasterScans : Madara("Disaster Scans", "https://disasterscans.com", "en") {
     override val popularMangaUrlSelector = "div.post-title a:last-child"
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -509,15 +507,15 @@ class DisasterScans: Madara("Disaster Scans","https://disasterscans.com","en") {
     }
 }
 
-class MangaKiss: Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US)) {
+class MangaKiss : Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US)) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
-class MangaDods: Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
+class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
-class MangaWOW: Madara("MangaWOW", "https://mangawow.com", "tr")
+class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
 
-class MangaStream: Madara("MangaStream", "https://www.mangastream.cc", "en")
+class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en")
 
 class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "pt-BR", SimpleDateFormat("dd 'de' MMM 'de' yyyy", Locale("pt", "BR"))) {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -526,7 +524,7 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "
         .add("Origin", baseUrl)
 
     // Only status and order by filter work.
-    override fun getFilterList(): FilterList = FilterList(super.getFilterList().slice(3 .. 4))
+    override fun getFilterList(): FilterList = FilterList(super.getFilterList().slice(3..4))
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"

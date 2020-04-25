@@ -1,7 +1,11 @@
 package eu.kanade.tachiyomi.extension.en.comicpunch
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -96,7 +100,7 @@ class Comicpunch : ParsedHttpSource() {
             manga.author = details.select("div.field-label:contains(publisher:) + div a").text()
             manga.genre = details.select("div.field-label:contains(genres:) + div a").joinToString { it.text() }
             manga.description = details.select("div.field-type-text-with-summary:not(:has(ul.splash))").text().let { desc ->
-                if (desc.isNotEmpty()) desc else  document.select("ul.splash li.summary").first()?.ownText()
+                if (desc.isNotEmpty()) desc else document.select("ul.splash li.summary").first()?.ownText()
             }
             manga.thumbnail_url = details.select("img").attr("abs:src") ?: document.select("li.pic img").attr("abs:src")
         }
@@ -149,5 +153,4 @@ class Comicpunch : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

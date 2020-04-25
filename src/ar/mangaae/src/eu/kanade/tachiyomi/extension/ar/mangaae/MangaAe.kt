@@ -128,7 +128,7 @@ class MangaAe : ParsedHttpSource() {
         element.select("a").let {
             // use full pages for easier links
             chapter.setUrlWithoutDomain(it.attr("href").removeSuffix("/1/") + "/0/full")
-            chapter.name = "\u061C" + it.text() //Add unicode ARABIC LETTER MARK to ensure all titles are right to left
+            chapter.name = "\u061C" + it.text() // Add unicode ARABIC LETTER MARK to ensure all titles are right to left
         }
         return chapter
     }
@@ -160,5 +160,4 @@ class MangaAe : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
         OrderByFilter()
     )
-
 }

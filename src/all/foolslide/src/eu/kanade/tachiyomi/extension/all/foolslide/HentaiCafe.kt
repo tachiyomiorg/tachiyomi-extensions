@@ -8,12 +8,12 @@ import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.net.URLEncoder
 
 class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga") {
     // We have custom latest updates logic so do not dedupe latest updates
@@ -121,8 +121,8 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
                 if (!response.isSuccessful) {
                     response.close()
                     // Better error message for invalid artist
-                    if (response.code() == 404
-                        && !filters.findInstance<ArtistFilter>()?.state.isNullOrBlank())
+                    if (response.code() == 404 &&
+                        !filters.findInstance<ArtistFilter>()?.state.isNullOrBlank())
                         error("Invalid artist!")
                     else throw Exception("HTTP error ${response.code()}")
                 }

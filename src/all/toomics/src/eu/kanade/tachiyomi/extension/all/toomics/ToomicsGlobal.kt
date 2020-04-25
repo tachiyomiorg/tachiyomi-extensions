@@ -2,24 +2,29 @@ package eu.kanade.tachiyomi.extension.all.toomics
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Headers
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import rx.Observable
 import java.net.URLDecoder
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
+import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import rx.Observable
 
-abstract class ToomicsGlobal(private val siteLang: String,
-                             private val dateFormat: SimpleDateFormat,
-                             override val lang: String = siteLang,
-                             displayName: String = "") : ParsedHttpSource() {
+abstract class ToomicsGlobal(
+    private val siteLang: String,
+    private val dateFormat: SimpleDateFormat,
+    override val lang: String = siteLang,
+    displayName: String = ""
+) : ParsedHttpSource() {
 
     override val name = "Toomics (Only free chapters)" + (if (displayName.isNotEmpty()) " ($displayName)" else "")
 
@@ -133,7 +138,7 @@ abstract class ToomicsGlobal(private val siteLang: String,
         val url = document.select("head meta[property='og:url']").attr("content")
 
         return document.select("div[id^=load_image_] img")
-            .mapIndexed { i, el -> Page(i, url, el.attr("abs:data-original"))}
+            .mapIndexed { i, el -> Page(i, url, el.attr("abs:data-original")) }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
@@ -146,7 +151,7 @@ abstract class ToomicsGlobal(private val siteLang: String,
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun parseChapterDate(date: String): Long {
         return try {
             dateFormat.parse(date).time
         } catch (e: ParseException) {

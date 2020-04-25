@@ -14,12 +14,12 @@ class MangadexDescription(private val internalLang: String) {
         else -> emptyList()
     }
 
-    fun clean(internalLang: String, description: String): String {
+    fun clean(description: String): String {
         val langList = ALL_LANGS.toMutableList()
 
-        //remove any languages before the ones provided in the langTextToCheck, if no matches or empty
+        // remove any languages before the ones provided in the langTextToCheck, if no matches or empty
         // just uses the original description, also removes the potential lang from all lang list
-        var newDescription = description;
+        var newDescription = description
         listOfLangs.forEach { it ->
             newDescription = newDescription.substringAfter(it)
             langList.remove(it)

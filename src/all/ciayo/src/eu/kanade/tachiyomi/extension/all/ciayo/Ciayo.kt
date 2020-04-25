@@ -20,17 +20,17 @@ import org.jsoup.nodes.Element
 
 abstract class Ciayo(override val lang: String) : HttpSource() {
 
-    //Info
+    // Info
     override val name: String = "Ciayo Comics"
     override val baseUrl: String = "https://www.ciayo.com"
     private val apiUrl = "https://vueserion.ciayo.com/3.3/comics"
     override val supportsLatest: Boolean = true
 
-    //Page Helpers
+    // Page Helpers
     private var next: String? = ""
     private var previous: String? = ""
 
-    //Popular
+    // Popular
     override fun popularMangaParse(response: Response): MangasPage {
         val body = response.body()!!.string()
         val json = JsonParser().parse(body)["c"]
@@ -67,7 +67,7 @@ abstract class Ciayo(override val lang: String) : HttpSource() {
         thumbnail_url = json["image"]["cover"].string
     }
 
-    //Latest
+    // Latest
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val body = response.body()!!.string()
@@ -101,7 +101,7 @@ abstract class Ciayo(override val lang: String) : HttpSource() {
 
     private fun latestUpdatesFromJson(json: JsonElement): SManga = popularMangaFromJson(json)
 
-    //Search
+    // Search
 
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -115,7 +115,6 @@ abstract class Ciayo(override val lang: String) : HttpSource() {
         } != null
 
         return MangasPage(mangas, hasNextPage)
-
     }
 
     private fun searchMangaSelector() = "div.ais-Hits li.ais-Hits-item"
@@ -126,14 +125,13 @@ abstract class Ciayo(override val lang: String) : HttpSource() {
             title = this.text().trim()
             url = this.attr("href")
         }
-
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return GET("$baseUrl/$lang/search?query=$query&page=$page")
     }
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
@@ -150,7 +148,7 @@ abstract class Ciayo(override val lang: String) : HttpSource() {
         }
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListRequest(manga: SManga): Request {
         val slug = manga.url.substringAfterLast("/")
@@ -169,19 +167,16 @@ abstract class Ciayo(override val lang: String) : HttpSource() {
                 date_upload = it["release_date"].long * 1000
             }
         }
-
     }
 
-    //Pages
+    // Pages
 
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val document = response.asJsoup()
         document.select("div.chapterViewer img").forEach {
             add(Page(size, "", it.attr("abs:src")))
         }
-
     }
 
     override fun imageUrlParse(response: Response): String = throw Exception("ImgParse Not Used")
-
 }

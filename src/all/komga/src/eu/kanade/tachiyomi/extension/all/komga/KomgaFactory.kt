@@ -11,5 +11,4 @@ class KomgaFactory : SourceFactory {
             Komga("2"),
             Komga("3")
         )
-
 }

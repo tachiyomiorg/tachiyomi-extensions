@@ -3,10 +3,10 @@ package eu.kanade.tachiyomi.extension.all.mangadventure
 import android.net.Uri
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import java.text.DecimalFormat
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
-import java.text.DecimalFormat
 
 /** Returns the body of a response as a `String`. */
 fun Response.asString(): String = body()!!.string()

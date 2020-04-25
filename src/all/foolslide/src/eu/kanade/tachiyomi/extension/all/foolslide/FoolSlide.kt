@@ -10,17 +10,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.FormBody
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.HashSet
 import java.util.Locale
+import okhttp3.FormBody
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 abstract class FoolSlide(
     override val name: String,
@@ -115,8 +115,8 @@ abstract class FoolSlide(
 
     // if there's no image on the details page, get the first page of the first chapter
     fun getDetailsThumbnail(document: Document, urlSelector: String = chapterUrlSelector): String? {
-        return document.select("div.thumbnail img, table.thumb img").firstOrNull()?.attr("abs:src") ?:
-        document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
+        return document.select("div.thumbnail img, table.thumb img").firstOrNull()?.attr("abs:src")
+        ?: document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
             .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
             .let { response -> pageListParse(response).first().imageUrl }
     }
@@ -167,11 +167,11 @@ abstract class FoolSlide(
         if (lcDate.endsWith(" ago"))
             parseRelativeDate(lcDate)?.let { return it }
 
-        //Handle 'yesterday' and 'today', using midnight
+        // Handle 'yesterday' and 'today', using midnight
         var relativeDate: Calendar? = null
         if (lcDate.startsWith("yesterday")) {
             relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
+            relativeDate.add(Calendar.DAY_OF_MONTH, -1) // yesterday
             relativeDate.set(Calendar.HOUR_OF_DAY, 0)
             relativeDate.set(Calendar.MINUTE, 0)
             relativeDate.set(Calendar.SECOND, 0)
@@ -184,7 +184,7 @@ abstract class FoolSlide(
             relativeDate.set(Calendar.MILLISECOND, 0)
         } else if (lcDate.startsWith("tomorrow")) {
             relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, +1) //tomorrow
+            relativeDate.add(Calendar.DAY_OF_MONTH, +1) // tomorrow
             relativeDate.set(Calendar.HOUR_OF_DAY, 0)
             relativeDate.set(Calendar.MINUTE, 0)
             relativeDate.set(Calendar.SECOND, 0)

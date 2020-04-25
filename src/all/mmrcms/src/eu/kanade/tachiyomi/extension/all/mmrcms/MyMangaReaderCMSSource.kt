@@ -16,22 +16,24 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Element
 
-class MyMangaReaderCMSSource(override val lang: String,
-                             override val name: String,
-                             override val baseUrl: String,
-                             override val supportsLatest: Boolean,
-                             private val itemUrl: String,
-                             private val categoryMappings: List<Pair<String, String>>,
-                             private val tagMappings: List<Pair<String, String>>?) : HttpSource() {
+class MyMangaReaderCMSSource(
+    override val lang: String,
+    override val name: String,
+    override val baseUrl: String,
+    override val supportsLatest: Boolean,
+    private val itemUrl: String,
+    private val categoryMappings: List<Pair<String, String>>,
+    private val tagMappings: List<Pair<String, String>>?
+) : HttpSource() {
     private val jsonParser = JsonParser()
     private val itemUrlPath = Uri.parse(itemUrl).pathSegments.firstOrNull()
     private val parsedBaseUrl = Uri.parse(baseUrl)
@@ -49,7 +51,7 @@ class MyMangaReaderCMSSource(override val lang: String,
         }
     }
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //Query overrides everything
+        // Query overrides everything
         val url: Uri.Builder
         if (query.isNotBlank()) {
             url = Uri.parse("$baseUrl/search")!!.buildUpon()
@@ -67,7 +69,7 @@ class MyMangaReaderCMSSource(override val lang: String,
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
         return if (response.request().url().queryParameter("query")?.isNotBlank() == true) {
-            //If a search query was specified, use search instead!
+            // If a search query was specified, use search instead!
             MangasPage(jsonParser
                     .parse(response.body()!!.string())["suggestions"].array
                     .map {
@@ -120,7 +122,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                 if (urlElement.size == 0) {
                     url = getUrlWithoutBaseUrl(it.select("a").attr("href"))
                     title = it.select("div.caption").text()
-                    it.select("div.caption div").text().let { if (it.isNotEmpty()) title = title.substringBefore(it)} // To clean submanga's titles without breaking hentaishark's
+                    it.select("div.caption div").text().let { if (it.isNotEmpty()) title = title.substringBefore(it) } // To clean submanga's titles without breaking hentaishark's
                 } else {
                     url = getUrlWithoutBaseUrl(urlElement.attr("href"))
                     title = urlElement.text().trim()
@@ -175,19 +177,19 @@ class MyMangaReaderCMSSource(override val lang: String,
         thumbnail_url = coverGuess(document.select(".row [class^=img-responsive]").firstOrNull()?.attr("abs:src"), document.location())
         description = document.select(".row .well p").text().trim()
 
-        val detailAuthor = setOf("author(s)","autor(es)","auteur(s)","著作","yazar(lar)","mangaka(lar)","pengarang/penulis","pengarang","penulis","autor","المؤلف","перевод", "autor/autorzy")
-        val detailArtist = setOf("artist(s)","artiste(s)","sanatçi(lar)","artista(s)","artist(s)/ilustrator","الرسام","seniman", "rysownik/rysownicy")
-        val detailGenre = setOf("categories","categorías","catégories","ジャンル","kategoriler","categorias","kategorie","التصنيفات","жанр","kategori", "tagi")
-        val detailStatus = setOf("status","statut","estado","状態","durum","الحالة","статус")
-        val detailStatusComplete = setOf("complete","مكتملة","complet","completo", "zakończone")
-        val detailStatusOngoing = setOf("ongoing","مستمرة","en cours","em lançamento", "prace w toku")
-        val detailDescription = setOf("description","resumen")
+        val detailAuthor = setOf("author(s)", "autor(es)", "auteur(s)", "著作", "yazar(lar)", "mangaka(lar)", "pengarang/penulis", "pengarang", "penulis", "autor", "المؤلف", "перевод", "autor/autorzy")
+        val detailArtist = setOf("artist(s)", "artiste(s)", "sanatçi(lar)", "artista(s)", "artist(s)/ilustrator", "الرسام", "seniman", "rysownik/rysownicy")
+        val detailGenre = setOf("categories", "categorías", "catégories", "ジャンル", "kategoriler", "categorias", "kategorie", "التصنيفات", "жанр", "kategori", "tagi")
+        val detailStatus = setOf("status", "statut", "estado", "状態", "durum", "الحالة", "статус")
+        val detailStatusComplete = setOf("complete", "مكتملة", "complet", "completo", "zakończone")
+        val detailStatusOngoing = setOf("ongoing", "مستمرة", "en cours", "em lançamento", "prace w toku")
+        val detailDescription = setOf("description", "resumen")
 
         for (element in document.select(".row .dl-horizontal dt")) {
             when (element.text().trim().toLowerCase()) {
                 in detailAuthor -> author = element.nextElementSibling().text()
                 in detailArtist -> artist = element.nextElementSibling().text()
-                in detailGenre-> genre = element.nextElementSibling().select("a").joinToString {
+                in detailGenre -> genre = element.nextElementSibling().select("a").joinToString {
                     it.text().trim()
                 }
                 in detailStatus -> status = when (element.nextElementSibling().text().trim().toLowerCase()) {
@@ -231,7 +233,7 @@ class MyMangaReaderCMSSource(override val lang: String,
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each chapter.
      */
     private fun chapterListSelector() = "ul[class^=chapters] > li:not(.btn), table.table tr"
-    //Some websites add characters after "chapters" thus the need of checking classes that starts with "chapters"
+    // Some websites add characters after "chapters" thus the need of checking classes that starts with "chapters"
 
     /**
      * Returns a chapter from the given element.
@@ -243,7 +245,7 @@ class MyMangaReaderCMSSource(override val lang: String,
 
         try {
             val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
-            //Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
+            // Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
             val url = titleWrapper.getElementsByTag("a").attr("href")
 
             // Ensure chapter actually links to a manga
@@ -278,7 +280,7 @@ class MyMangaReaderCMSSource(override val lang: String,
         return null
     }
 
-    private fun parseDate (dateText: String): Long {
+    private fun parseDate(dateText: String): Long {
         return try {
             DATE_FORMAT.parse(dateText).time
         } catch (e: ParseException) {
@@ -299,7 +301,7 @@ class MyMangaReaderCMSSource(override val lang: String,
                 // Mangas.pw encodes some of their urls, decode them
                 if (url.contains("mangas.pw") && url.contains("img.php")) {
                     url = url.substringAfter("i=")
-                    repeat (5) {
+                    repeat(5) {
                         url = Base64.decode(url, Base64.DEFAULT).toString(Charsets.UTF_8).substringBefore("=")
                     }
                 }
@@ -348,10 +350,14 @@ class MyMangaReaderCMSSource(override val lang: String,
      * If an entry is selected it is appended as a query parameter onto the end of the URI.
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
-    //vals: <name, display>
-    open class UriSelectFilter(displayName: String, private val uriParam: String, private val vals: Array<Pair<String, String>>,
-                               private val firstIsUnspecified: Boolean = true,
-                               defaultValue: Int = 0) :
+    // vals: <name, display>
+    open class UriSelectFilter(
+        displayName: String,
+        private val uriParam: String,
+        private val vals: Array<Pair<String, String>>,
+        private val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)

@@ -13,5 +13,3 @@ class CiayoFactory : SourceFactory {
 class CiayoID : Ciayo("id")
 
 class CiayoEN : Ciayo("en")
-
-

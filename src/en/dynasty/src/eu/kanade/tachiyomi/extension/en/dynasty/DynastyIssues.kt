@@ -24,5 +24,4 @@ class DynastyIssues : DynastyScans() {
         parseDescription(document, manga)
         return manga
     }
-
 }

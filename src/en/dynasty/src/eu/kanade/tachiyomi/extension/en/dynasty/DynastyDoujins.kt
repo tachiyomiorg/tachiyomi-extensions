@@ -72,5 +72,4 @@ class DynastyDoujins : DynastyScans() {
     override fun imageUrlParse(document: Document): String {
         return document.select("div.image img").attr("abs:src")
     }
-
 }

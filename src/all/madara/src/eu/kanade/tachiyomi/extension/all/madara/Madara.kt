@@ -11,22 +11,22 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.CacheControl
-import okhttp3.FormBody
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.RequestBody
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import okhttp3.CacheControl
+import okhttp3.FormBody
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import rx.Observable
 
 abstract class Madara(
     override val name: String,
@@ -178,8 +178,8 @@ abstract class Madara(
                             genreInclude.add(it.id)
                         }
                     }
-                    if(genreInclude.isNotEmpty()){
-                        genreInclude.forEach{ genre ->
+                    if (genreInclude.isNotEmpty()) {
+                        genreInclude.forEach { genre ->
                             url.addQueryParameter("genre[]", genre)
                         }
                     }
@@ -207,64 +207,64 @@ abstract class Madara(
 
     open fun getGenreList() = listOf(
         Genre("Adventure", "Adventure"),
-        Genre( "Action",  "action"),
-        Genre( "Adventure",  "adventure"),
-        Genre( "Cars",  "cars"),
-        Genre( "4-Koma",  "4-koma"),
-        Genre( "Comedy",  "comedy"),
-        Genre( "Completed",  "completed"),
-        Genre( "Cooking",  "cooking"),
-        Genre( "Dementia",  "dementia"),
-        Genre( "Demons",  "demons"),
-        Genre( "Doujinshi",  "doujinshi"),
-        Genre( "Drama",  "drama"),
-        Genre( "Ecchi",  "ecchi"),
-        Genre( "Fantasy",  "fantasy"),
-        Genre( "Game",  "game"),
-        Genre( "Gender Bender",  "gender-bender"),
-        Genre( "Harem",  "harem"),
-        Genre( "Historical",  "historical"),
-        Genre( "Horror",  "horror"),
-        Genre( "Isekai",  "isekai"),
-        Genre( "Josei",  "josei"),
-        Genre( "Kids",  "kids"),
-        Genre( "Magic",  "magic"),
-        Genre( "Manga",  "manga"),
-        Genre( "Manhua",  "manhua"),
-        Genre( "Manhwa",  "manhwa"),
-        Genre( "Martial Arts",  "martial-arts"),
-        Genre( "Mature",  "mature"),
-        Genre( "Mecha",  "mecha"),
-        Genre( "Military",  "military"),
-        Genre( "Music",  "music"),
-        Genre( "Mystery",  "mystery"),
-        Genre( "Old Comic",  "old-comic"),
-        Genre( "One Shot",  "one-shot"),
-        Genre( "Oneshot",  "oneshot"),
-        Genre( "Parodi",  "parodi"),
-        Genre( "Parody",  "parody"),
-        Genre( "Police",  "police"),
-        Genre( "Psychological",  "psychological"),
-        Genre( "Romance",  "romance"),
-        Genre( "Samurai",  "samurai"),
-        Genre( "School",  "school"),
-        Genre( "School Life",  "school-life"),
-        Genre( "Sci-Fi",  "sci-fi"),
-        Genre( "Seinen",  "seinen"),
-        Genre( "Shoujo",  "shoujo"),
-        Genre( "Shoujo Ai",  "shoujo-ai"),
-        Genre( "Shounen",  "shounen"),
-        Genre( "Shounen ai",  "shounen-ai"),
-        Genre( "Slice of Life",  "slice-of-life"),
-        Genre( "Sports",  "sports"),
-        Genre( "Super Power",  "super-power"),
-        Genre( "Supernatural",  "supernatural"),
-        Genre( "Thriller",  "thriller"),
-        Genre( "Tragedy",  "tragedy"),
-        Genre( "Vampire",  "vampire"),
-        Genre( "Webtoons",  "webtoons"),
-        Genre( "Yaoi",  "yaoi"),
-        Genre( "Yuri",  "yuri")
+        Genre("Action", "action"),
+        Genre("Adventure", "adventure"),
+        Genre("Cars", "cars"),
+        Genre("4-Koma", "4-koma"),
+        Genre("Comedy", "comedy"),
+        Genre("Completed", "completed"),
+        Genre("Cooking", "cooking"),
+        Genre("Dementia", "dementia"),
+        Genre("Demons", "demons"),
+        Genre("Doujinshi", "doujinshi"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Kids", "kids"),
+        Genre("Magic", "magic"),
+        Genre("Manga", "manga"),
+        Genre("Manhua", "manhua"),
+        Genre("Manhwa", "manhwa"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Military", "military"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("Old Comic", "old-comic"),
+        Genre("One Shot", "one-shot"),
+        Genre("Oneshot", "oneshot"),
+        Genre("Parodi", "parodi"),
+        Genre("Parody", "parody"),
+        Genre("Police", "police"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("Samurai", "samurai"),
+        Genre("School", "school"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-Fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Shounen ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yaoi", "yaoi"),
+        Genre("Yuri", "yuri")
     )
 
     override fun getFilterList() = FilterList(
@@ -422,10 +422,10 @@ abstract class Madara(
             date.endsWith(" ago", ignoreCase = true) -> {
                 parseRelativeDate(date)
             }
-            //Handle 'yesterday' and 'today', using midnight
+            // Handle 'yesterday' and 'today', using midnight
             date.startsWith("year", ignoreCase = true) -> {
                 Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_MONTH, -1) //yesterday
+                    add(Calendar.DAY_OF_MONTH, -1) // yesterday
                     set(Calendar.HOUR_OF_DAY, 0)
                     set(Calendar.MINUTE, 0)
                     set(Calendar.SECOND, 0)

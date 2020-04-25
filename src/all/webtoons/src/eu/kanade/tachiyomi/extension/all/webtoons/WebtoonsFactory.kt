@@ -51,7 +51,7 @@ class WebtoonsFactory : SourceFactory {
 
 class WebtoonsEnglish : WebtoonsDefault("en")
 
-class WebtoonsIndonesian: WebtoonsDefault("in", "id") {
+class WebtoonsIndonesian : WebtoonsDefault("in", "id") {
     override val name: String = "Webtoons.com (Indonesian)"
 
     // Android seems to be unable to parse Indonesian dates; we'll use a short hard-coded table
@@ -67,13 +67,13 @@ class WebtoonsIndonesian: WebtoonsDefault("in", "id") {
     }
 }
 
-class WebtoonsThai: WebtoonsDefault("th") {
+class WebtoonsThai : WebtoonsDefault("th") {
     override fun chapterParseDate(date: String): Long {
         return SimpleDateFormat("d MMM yyyy", Locale("th")).parse(date).time
     }
 }
 
-class WebtoonsChineseTraditional: WebtoonsDefault("zh", "zh-hant", "zh_TW") {
+class WebtoonsChineseTraditional : WebtoonsDefault("zh", "zh-hant", "zh_TW") {
     override fun chapterParseDate(date: String): Long {
         return SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE).parse(date).time
     }

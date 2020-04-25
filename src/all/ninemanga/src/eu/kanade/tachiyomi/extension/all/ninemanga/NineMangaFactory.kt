@@ -4,13 +4,13 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.Headers
-import okhttp3.Request
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
+import okhttp3.Request
+import org.jsoup.nodes.Element
 
 class NineMangaFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -27,7 +27,7 @@ class NineMangaFactory : SourceFactory {
 class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en") {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("a.bookname").let {
-            url = it.attr("abs:href").replace("www","en").substringAfter(baseUrl)
+            url = it.attr("abs:href").replace("www", "en").substringAfter(baseUrl)
             title = it.text()
         }
         thumbnail_url = element.select("img").attr("abs:src")
@@ -772,7 +772,7 @@ fun parseChapterDateByLang(date: String): Long {
                     "minutos" -> Calendar.MINUTE // ES
                     "horas" -> Calendar.HOUR
 
-                    //"minutos" -> Calendar.MINUTE // BR
+                    // "minutos" -> Calendar.MINUTE // BR
                     "hora" -> Calendar.HOUR
 
                     "минут" -> Calendar.MINUTE // RU

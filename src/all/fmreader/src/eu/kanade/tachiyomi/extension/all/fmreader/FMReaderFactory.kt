@@ -11,16 +11,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
 import okhttp3.FormBody
+import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.Headers
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.net.URLEncoder
 
 class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -72,8 +72,8 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
                 .add("dqh_firewall", URLEncoder.encode(request.url().toString().substringAfter(baseUrl), "utf-8"))
                 .build()
             val cookie = response.headers("set-cookie")[0].split(" ")
-                .filter {it.contains("__cfduid") || it.contains("PHPSESSID") }
-                .joinToString("; ") {it.substringBefore(";")}
+                .filter { it.contains("__cfduid") || it.contains("PHPSESSID") }
+                .joinToString("; ") { it.substringBefore(";") }
             headers.newBuilder().add("Cookie", cookie).build()
             client.newCall(POST(request.url().toString(), headers, body)).execute()
         } else {

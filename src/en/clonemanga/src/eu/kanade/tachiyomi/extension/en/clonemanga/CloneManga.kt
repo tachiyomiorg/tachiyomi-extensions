@@ -1,8 +1,11 @@
 package eu.kanade.tachiyomi.extension.en.clonemanga
 
-
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
@@ -10,7 +13,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-
 
 class CloneManga : ParsedHttpSource() {
 
@@ -66,7 +68,7 @@ class CloneManga : ParsedHttpSource() {
             .toInt()
         val chapters = ArrayList<SChapter>()
 
-        for(i in 1..numChapters) {
+        for (i in 1..numChapters) {
             val chapter = SChapter.create().apply {
                 url = "$series&page=$i"
                 name = "Chapter $i"
@@ -120,5 +122,4 @@ class CloneManga : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request { throw Exception("Not used") }
 
     override fun searchMangaSelector(): String { throw Exception("Not used") }
-
 }
