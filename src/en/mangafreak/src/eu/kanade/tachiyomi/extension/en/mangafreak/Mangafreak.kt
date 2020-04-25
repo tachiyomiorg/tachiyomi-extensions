@@ -132,7 +132,7 @@ class Mangafreak : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String {
-        return throw Exception("Not Used")
+        throw Exception("Not Used")
     }
 
     // Filter

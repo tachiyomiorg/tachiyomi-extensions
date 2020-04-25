@@ -100,9 +100,9 @@ class HanhanKuman : ParsedHttpSource() {
 
         val re = Regex(""".*\/(.*?)\/\d+\.html\?s=(\d+)""")
 
-        val matches = re.find(url)?.groups
-        val pathId = matches!!.get(1)!!.value
-        val pathS = matches!!.get(2)!!.value
+        val matches = re.find(url)?.groups!!
+        val pathId = matches[1]!!.value
+        val pathS = matches[2]!!.value
 
         return pageListParse(response.asJsoup(), pathId, pathS)
     }

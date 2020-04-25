@@ -168,7 +168,7 @@ class Kuaikanmanhua : ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter): Request {
         if (chapter.url == "javascript:void(0);") {
-            return throw Exception("[此章节为付费内容]")
+            throw Exception("[此章节为付费内容]")
         }
         return super.pageListRequest(chapter)
     }

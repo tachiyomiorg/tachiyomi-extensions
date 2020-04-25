@@ -2,23 +2,15 @@ package eu.kanade.tachiyomi.extension.id.mangakita
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
-class MangaKita: ParsedHttpSource() {
+class MangaKita : ParsedHttpSource() {
     override val name = "MangaKita"
 
     override val baseUrl = "https://mangakita.net"
@@ -33,7 +25,7 @@ class MangaKita: ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga-list", headers)
 
-    //The page I'm getting these from has no thumbnails
+    // The page I'm getting these from has no thumbnails
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
         title = element.attr("title")
@@ -44,7 +36,7 @@ class MangaKita: ParsedHttpSource() {
     override fun latestUpdatesSelector() = "div.latestSeries"
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/$page", headers)
-    
+
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").first().attr("href"))
         title = element.select("p.clamp2").first().ownText()
