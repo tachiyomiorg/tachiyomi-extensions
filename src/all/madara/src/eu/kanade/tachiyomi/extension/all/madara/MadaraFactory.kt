@@ -567,6 +567,7 @@ class ManyToonClub : Madara("ManyToonClub", "https://manytoon.club", "ko")
 
 class ManhuaUS : Madara("ManhuaUS", "https://manhuaus.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
 
 class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
