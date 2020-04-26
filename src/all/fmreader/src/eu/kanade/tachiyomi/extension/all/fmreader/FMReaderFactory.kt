@@ -13,7 +13,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
 import java.net.URLEncoder
 import okhttp3.FormBody
-import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -51,7 +50,9 @@ class FMReaderFactory : SourceFactory {
 class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en")
 
 class MangaHato : FMReader("MangaHato", "https://mangahato.com", "ja")
-class ManhwaScan : FMReader("ManhwaScan", "https://manhwascan.com", "en")
+class ManhwaScan : FMReader("ManhwaScan", "https://manhwascan.com", "en") {
+    override fun getImgAttr(element: Element?): String? = element?.attr("abs:src")
+}
 class MangaTiki : FMReader("MangaTiki", "https://mangatiki.com", "ja")
 class MangaBone : FMReader("MangaBone", "https://mangabone.com", "en")
 class YoloManga : FMReader("Yolo Manga", "https://yolomanga.ca", "es") {
@@ -96,13 +97,14 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
 
 class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
-    // Referer header needs to be chapter URL or not set at all
-    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().removeAll("Referer").build())
+    // Referer needs to be chapter URL
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
 }
 
 class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
-    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+    // Referer needs to be chapter URL
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
 }
 
 class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {

@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.en.hentai2read
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -10,6 +11,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.lang.UnsupportedOperationException
 import java.util.Calendar
 import java.util.regex.Pattern
 import okhttp3.FormBody
@@ -18,6 +20,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class Hentai2Read : ParsedHttpSource() {
 
@@ -71,8 +74,18 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var searchUrl = "$baseUrl/hentai-list/advanced-search"
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        val search = requestSearch(page, query, filters)
+        return client.newCall(search.first)
+            .asObservableSuccess()
+            .map { response ->
+                parseSearch(response, page, search.second)
+            }
+    }
+
+    private fun requestSearch(page: Int, query: String, filters: FilterList): Pair<Request, String?> {
+        val searchUrl = "$baseUrl/hentai-list/advanced-search"
+        var sortOrder: String? = null
 
         return if (page == 1) {
             val form = FormBody.Builder().apply {
@@ -98,18 +111,24 @@ class Hentai2Read : ParsedHttpSource() {
                                 Filter.TriState.STATE_EXCLUDE -> add("chk_wpm_pag_mng_sch_mng_tag_exc[]", tag.id.toString())
                             }
                         }
-                        is SortOrder -> searchUrl += filter.toUriPart()
+                        is SortOrder -> sortOrder = filter.toUriPart()
                     }
                 }
             }
-            POST(searchUrl, headers, form.build())
+            Pair(POST(searchUrl, headers, form.build()), sortOrder)
         } else {
-            GET("$searchUrl/$base64String", headers)
+            Pair(GET("$searchUrl/$base64String", headers), sortOrder)
         }
     }
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
+    // If the user wants to search by a sort order other than alphabetical, we have to make another call
+    private fun parseSearch(response: Response, page: Int, sortOrder: String?): MangasPage {
+        val document = if (page == 1 && sortOrder != null) {
+            response.asJsoup().select("li.dropdown li:contains($sortOrder) a").first().attr("abs:href")
+                .let { client.newCall(GET(it, headers)).execute().asJsoup() }
+        } else {
+            response.asJsoup()
+        }
 
         val mangas = document.select(searchMangaSelector()).map { element ->
             searchMangaFromElement(element)
@@ -122,6 +141,8 @@ class Hentai2Read : ParsedHttpSource() {
 
         return MangasPage(mangas, hasNextPage)
     }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used")
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -215,8 +236,8 @@ class Hentai2Read : ParsedHttpSource() {
     private class TagSearchMode : Filter.Select<String>("Tag Search Mode", arrayOf("AND", "OR"))
     private class Tag(name: String, val id: Int) : Filter.TriState(name)
     private class TagList(title: String, tags: List<Tag>) : Filter.Group<Tag>(title, tags)
-    private class SortOrder(values: Array<Pair<String, String>>) : UriPartFilter("Order", values)
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+    private class SortOrder(values: Array<Pair<String, String?>>) : UriPartFilter("Order", values)
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String?>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
@@ -246,8 +267,9 @@ class Hentai2Read : ParsedHttpSource() {
     )
 
     private fun getSortOrder() = arrayOf(
-        Pair("Most Popular", "/any/all/most-popular"),
-        Pair("Last Updated", "/any/all/last-updated")
+        Pair("Alphabetical", null),
+        Pair("Most Popular", "most popular"),
+        Pair("Last Updated", "last updated")
     )
 
     // Categories : 27

@@ -432,7 +432,7 @@ class PlotTwistScan : Madara("Plot Twist No Fansub", "https://www.plotwistscan.c
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).asReversed()
 }
 
-class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
+class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en", SimpleDateFormat("MM/dd/yyyy", Locale.US))
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 

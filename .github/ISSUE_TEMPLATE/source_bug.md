@@ -20,7 +20,6 @@ I acknowledge that:
 ---
 
 ### Device information
-* Tachiyomi extension version: ?
 * Tachiyomi version: ?
 * Android version: ?
 

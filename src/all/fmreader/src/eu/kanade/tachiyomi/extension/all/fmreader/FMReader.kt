@@ -17,6 +17,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 
 /**
  * For sites based on the Flat-Manga CMS
@@ -34,6 +35,19 @@ abstract class FMReader(
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64) Gecko/20100101 Firefox/75.0")
         add("Referer", baseUrl)
+    }
+
+    private fun Elements.imgAttr(): String? = getImgAttr(this.firstOrNull())
+
+    private fun Element.imgAttr(): String? = getImgAttr(this)
+
+    open fun getImgAttr(element: Element?): String? {
+        return when {
+            element == null -> null
+            element.hasAttr("data-original") -> element.attr("abs:data-original")
+            element.hasAttr("data-src") -> element.attr("abs:data-src")
+            else -> element.attr("abs:src")
+        }
     }
 
     open val requestPath = "manga-list.html"
@@ -114,9 +128,7 @@ abstract class FMReader(
                 setUrlWithoutDomain(it.attr("abs:href"))
                 title = it.text()
             }
-            thumbnail_url = element.select("img").let {
-                if (it.hasAttr("src")) it.attr("abs:src") else it.attr("abs:data-original")
-            }
+            thumbnail_url = element.select("img").imgAttr()
         }
     }
 
@@ -143,7 +155,7 @@ abstract class FMReader(
             genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
             status = parseStatus(infoElement.select("li a.btn-success").first()?.text())
             description = document.select("div.row ~ div.row p").text().trim()
-            thumbnail_url = infoElement.select("img.thumbnail").attr("abs:src")
+            thumbnail_url = infoElement.select("img.thumbnail").imgAttr()
         }
     }
 
@@ -233,7 +245,7 @@ abstract class FMReader(
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListImageSelector).mapIndexed { i, img ->
-            Page(i, "", img.attr("abs:data-src").let { if (it.isNotEmpty()) it else img.attr("abs:src") })
+            Page(i, document.location(), img.imgAttr())
         }
     }
 

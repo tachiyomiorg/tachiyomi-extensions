@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.pt.superhentais
+package eu.kanade.tachiyomi.extension.pt.supermangas
 
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.int
@@ -18,25 +18,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.emptyList
-import kotlin.collections.first
-import kotlin.collections.forEach
-import kotlin.collections.isNotEmpty
-import kotlin.collections.joinToString
-import kotlin.collections.listOf
-import kotlin.collections.map
-import kotlin.collections.mapIndexed
-import kotlin.collections.mapOf
-import kotlin.collections.mutableListOf
-import kotlin.collections.plus
-import kotlin.collections.plusAssign
-import kotlin.collections.set
-import kotlin.collections.toMutableMap
-import kotlin.collections.toTypedArray
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -46,13 +27,15 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-class SuperHentais : ParsedHttpSource() {
+typealias Content = Triple<String, String, String>
 
-    override val name = "Super Hentais"
+abstract class SuperMangasGeneric(
+    override val name: String,
+    override val baseUrl: String,
+    private val listPath: String = "lista"
+) : ParsedHttpSource() {
 
-    override val baseUrl = "https://superhentais.com"
-
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -61,11 +44,30 @@ class SuperHentais : ParsedHttpSource() {
         .add("Origin", baseUrl)
         .add("Referer", baseUrl)
 
+    protected open val defaultFilter = mutableMapOf(
+        "filter_display_view" to "lista",
+        "filter_letter" to "0",
+        "filter_order" to "more_access",
+        "filter_type_content" to "100",
+        "filter_genre_model" to "yes",
+        "filter_status" to "0",
+        "filter_size_start" to "0",
+        "filter_size_final" to "0",
+        "filter_date" to "0",
+        "filter_date_ordem" to "0",
+        "filter_censure" to "0",
+        "filter_idade" to "",
+        "filter_dub" to "0",
+        "filter_viewed" to "0"
+    )
+
+    protected open val contentList: List<Content> = listOf()
+
     private fun genericPaginatedRequest(
-        filterData: Map<String, String> = DEFAULT_FILTER,
+        typeUrl: String,
+        filterData: Map<String, String> = defaultFilter,
         filterGenreAdd: List<String> = emptyList(),
         filterGenreDel: List<String> = emptyList(),
-        typeUrl: String = "hentai-manga",
         page: Int = 1
     ): Request {
         val filters = jsonObject(
@@ -87,7 +89,7 @@ class SuperHentais : ParsedHttpSource() {
             .add("Content-Type", form.contentType().toString())
             .add("Content-Length", form.contentLength().toString())
             .add("Host", "www." + baseUrl.substringAfter("//"))
-            .set("Referer", "$baseUrl/hentai-manga")
+            .set("Referer", "$baseUrl/$typeUrl")
             .build()
 
         return POST("$baseUrl/inc/paginator.inc.php", newHeaders, form)
@@ -99,7 +101,7 @@ class SuperHentais : ParsedHttpSource() {
         setUrlWithoutDomain(element.attr("href"))
     }
 
-    override fun popularMangaRequest(page: Int): Request = genericPaginatedRequest(page = page)
+    override fun popularMangaRequest(page: Int): Request = genericPaginatedRequest(listPath, page = page)
 
     override fun popularMangaParse(response: Response): MangasPage {
         val result = response.asJsonObject()
@@ -116,7 +118,9 @@ class SuperHentais : ParsedHttpSource() {
         val requestBody = response.request().body() as FormBody
         val totalPage = result["total_page"].string.toInt()
         val page = requestBody.value("page").toInt()
-        return MangasPage(mangas, page < totalPage)
+        val hasNextPage = page < totalPage
+
+        return MangasPage(mangas, hasNextPage)
     }
 
     override fun popularMangaSelector(): String = "article.box_view.list div.grid_box div.grid_image.grid_image_vertical a"
@@ -126,10 +130,10 @@ class SuperHentais : ParsedHttpSource() {
     override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val filterData = DEFAULT_FILTER.toMutableMap()
-        filterData["filter_order"] = "date-desc"
+        val filterData = defaultFilter.toMutableMap()
+            .apply { this["filter_order"] = "date-desc" }
 
-        return genericPaginatedRequest(filterData, page = page)
+        return genericPaginatedRequest(listPath, filterData, page = page)
     }
 
     override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
@@ -140,26 +144,27 @@ class SuperHentais : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
+    protected open fun searchMangaWithQueryRequest(query: String): Request {
+        val searchUrl = HttpUrl.parse("$baseUrl/busca")!!.newBuilder()
+            .addEncodedQueryParameter("parametro", query)
+            .toString()
+
+        return GET(searchUrl, headers)
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotEmpty()) {
-            val filterList = if (filters.isNotEmpty()) filters else getFilterList()
-            val contentIndex = (filterList[0] as ContentFilter).state
-            val searchUrl = HttpUrl.parse("$baseUrl/busca")!!.newBuilder()
-                .addQueryParameter("formato", CONTENT_LIST[contentIndex].second)
-                .addEncodedQueryParameter("parametro", query)
-                .toString()
-
-            return GET(searchUrl, headers)
+            return searchMangaWithQueryRequest(query)
         }
 
-        val newFilterData = DEFAULT_FILTER.toMutableMap()
+        val newFilterData = defaultFilter.toMutableMap()
         val filterGenreAdd = mutableListOf<String>()
         val filterGenreDel = mutableListOf<String>()
 
         filters.forEach { filter ->
             when (filter) {
                 is ContentFilter -> {
-                    newFilterData["filter_type_content"] = CONTENT_LIST[filter.state].first
+                    newFilterData["filter_type_content"] = contentList[filter.state].first
                 }
                 is LetterFilter -> {
                     newFilterData["filter_letter"] =
@@ -194,7 +199,7 @@ class SuperHentais : ParsedHttpSource() {
             }
         }
 
-        return genericPaginatedRequest(newFilterData, filterGenreAdd, filterGenreDel, page = page)
+        return genericPaginatedRequest(listPath, newFilterData, filterGenreAdd, filterGenreDel, page = page)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -233,6 +238,8 @@ class SuperHentais : ParsedHttpSource() {
             val result = client.newCall(chapterListPaginatedRequest(idCategory, page, totalPage, mangaUrl)).execute()
             val apiResponse = result.asJsonObject()
 
+            if (apiResponse["codigo"].int == 0) break
+
             chapters += Jsoup.parse(apiResponse["body"].asJsonArray.joinToString("") { it.string })
                 .select(chapterListSelector())
                 .map { chapterFromElement(it) }
@@ -241,15 +248,17 @@ class SuperHentais : ParsedHttpSource() {
         return chapters
     }
 
-    private fun chapterListPaginatedRequest(idCategory: Int, page: Int, totalPage: Int, mangaUrl: String): Request {
-        val form = FormBody.Builder()
+    protected open fun chapterListPaginatedBody(idCategory: Int, page: Int, totalPage: Int): FormBody.Builder {
+        return FormBody.Builder()
             .add("id_cat", idCategory.toString())
             .add("page", page.toString())
             .add("limit", "50")
             .add("total_page", totalPage.toString())
             .add("order_video", "desc")
-            .add("type", "book")
-            .build()
+    }
+
+    private fun chapterListPaginatedRequest(idCategory: Int, page: Int, totalPage: Int, mangaUrl: String): Request {
+        val form = chapterListPaginatedBody(idCategory, page, totalPage).build()
 
         val newHeaders = headersBuilder()
             .add("X-Requested-With", "XMLHttpRequest")
@@ -272,140 +281,44 @@ class SuperHentais : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div.capituloViewBox img.lazy")
-            .mapIndexed { i, element -> Page(i, "", element.absUrl("data-src")) }
+            .mapIndexed { i, element ->
+                Page(i, document.location(), element.absUrl("data-src"))
+            }
     }
 
     override fun imageUrlParse(document: Document) = ""
 
-    private class Tag(val id: String, name: String) : Filter.TriState(name)
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", page.url)
+            .build()
 
-    private class ContentFilter : Filter.Select<String>("Tipo de Conteúdo",
-        CONTENT_LIST.map { it.third }.toTypedArray())
+        return GET(page.imageUrl!!, newHeaders)
+    }
 
-    private class LetterFilter : Filter.Select<String>("Letra inicial", LETTER_LIST)
+    protected class Tag(val id: String, name: String) : Filter.TriState(name)
 
-    private class StatusFilter : Filter.Select<String>("Status",
+    protected class ContentFilter(contents: List<Content>) : Filter.Select<String>(
+        "Tipo de Conteúdo",
+        contents.map { it.third }.toTypedArray())
+
+    protected class LetterFilter : Filter.Select<String>("Letra inicial", LETTER_LIST)
+
+    protected class StatusFilter : Filter.Select<String>("Status",
         STATUS_LIST.map { it.second }.toTypedArray())
 
-    private class CensureFilter : Filter.Select<String>("Censura",
+    protected class CensureFilter : Filter.Select<String>("Censura",
         CENSURE_LIST.map { it.second }.toTypedArray())
 
-    private class SortFilter : Filter.Sort("Ordem",
+    protected class SortFilter : Filter.Sort("Ordem",
         SORT_LIST.map { it.third }.toTypedArray(), Selection(2, false))
 
-    private class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Gêneros", genres)
-    private class ExclusiveModeFilter : Filter.CheckBox("Modo Exclusivo", true)
-
-    override fun getFilterList() = FilterList(
-        ContentFilter(),
-        Filter.Header("Filtros abaixo são ignorados na busca!"),
-        LetterFilter(),
-        StatusFilter(),
-        CensureFilter(),
-        SortFilter(),
-        GenreFilter(getGenreList()),
-        ExclusiveModeFilter()
-    )
+    protected class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Gêneros", genres)
+    protected class ExclusiveModeFilter : Filter.CheckBox("Modo Exclusivo", true)
 
     // [...document.querySelectorAll(".filter_genre.list-item")]
     //     .map(el => `Tag("${el.getAttribute('data-value')}", "${el.innerText}")`).join(',\n')
-    private fun getGenreList() = listOf(
-        Tag("33", "Ação"),
-        Tag("100", "Ahegao"),
-        Tag("64", "Anal"),
-        Tag("7", "Artes Marciais"),
-        Tag("134", "Ashikoki"),
-        Tag("233", "Aventura"),
-        Tag("57", "Bara"),
-        Tag("3", "BDSM"),
-        Tag("267", "Big Ass"),
-        Tag("266", "Big Cock"),
-        Tag("268", "Blowjob"),
-        Tag("88", "Boquete"),
-        Tag("95", "Brinquedos"),
-        Tag("156", "Bukkake"),
-        Tag("120", "Chikan"),
-        Tag("68", "Comédia"),
-        Tag("140", "Cosplay"),
-        Tag("265", "Creampie"),
-        Tag("241", "Dark Skin"),
-        Tag("212", "Demônio"),
-        Tag("169", "Drama"),
-        Tag("144", "Dupla Penetração"),
-        Tag("184", "Enfermeira"),
-        Tag("126", "Eroge"),
-        Tag("160", "Esporte"),
-        Tag("245", "Facial"),
-        Tag("30", "Fantasia"),
-        Tag("251", "Femdom"),
-        Tag("225", "Ficção Científica"),
-        Tag("273", "FootJob"),
-        Tag("270", "Forçado"),
-        Tag("51", "Futanari"),
-        Tag("106", "Gang Bang"),
-        Tag("240", "Gender Bender"),
-        Tag("67", "Gerakuro"),
-        Tag("254", "Gokkun"),
-        Tag("236", "Golden Shower"),
-        Tag("204", "Gore"),
-        Tag("234", "Grávida"),
-        Tag("148", "Grupo"),
-        Tag("2", "Gyaru"),
-        Tag("17", "Harém"),
-        Tag("8", "Histórico"),
-        Tag("250", "Horror"),
-        Tag("27", "Incesto"),
-        Tag("61", "Jogos Eróticos"),
-        Tag("5", "Josei"),
-        Tag("48", "Kemono"),
-        Tag("98", "Kemonomimi"),
-        Tag("252", "Lactação"),
-        Tag("177", "Magia"),
-        Tag("92", "Maid"),
-        Tag("110", "Masturbação"),
-        Tag("162", "Mecha"),
-        Tag("243", "Menage"),
-        Tag("154", "Milf"),
-        Tag("115", "Mind Break"),
-        Tag("248", "Mind Control"),
-        Tag("238", "Mistério"),
-        Tag("112", "Moe"),
-        Tag("200", "Monstros"),
-        Tag("79", "Nakadashi"),
-        Tag("46", "Netorare"),
-        Tag("272", "Óculos"),
-        Tag("1", "Oral"),
-        Tag("77", "Paizuri"),
-        Tag("237", "Paródia"),
-        Tag("59", "Peitões"),
-        Tag("274", "Pelos Pubianos"),
-        Tag("72", "Pettanko"),
-        Tag("36", "Policial"),
-        Tag("192", "Professora"),
-        Tag("4", "Psicológico"),
-        Tag("152", "Punição"),
-        Tag("242", "Raio-X"),
-        Tag("45", "Romance"),
-        Tag("253", "Seinen"),
-        Tag("271", "Sex Toys"),
-        Tag("93", "Sexo Público"),
-        Tag("55", "Shotacon"),
-        Tag("9", "Shoujo Ai"),
-        Tag("13", "Shounen ai"),
-        Tag("239", "Slice of Life"),
-        Tag("25", "Sobrenatural"),
-        Tag("96", "Superpoder"),
-        Tag("158", "Tentáculos"),
-        Tag("31", "Terror"),
-        Tag("249", "Thriller"),
-        Tag("217", "Vampiros"),
-        Tag("84", "Vanilla"),
-        Tag("23", "Vida Escolar"),
-        Tag("40", "Virgem"),
-        Tag("247", "Voyeur"),
-        Tag("6", "Yaoi"),
-        Tag("10", "Yuri")
-    )
+    protected abstract fun getGenreList(): List<Tag>
 
     private fun String.changeSize(): String = substringBefore("&w=280") + "&w512"
 
@@ -424,35 +337,9 @@ class SuperHentais : ParsedHttpSource() {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
         private val JSON_PARSER by lazy { JsonParser() }
 
-        private val DEFAULT_FILTER = mapOf(
-            "filter_display_view" to "lista",
-            "filter_letter" to "0",
-            "filter_order" to "more_access",
-            "filter_type_content" to "5",
-            "filter_genre_model" to "yes",
-            "filter_status" to "0",
-            "filter_size_start" to "0",
-            "filter_size_final" to "0",
-            "filter_date" to "0",
-            "filter_date_ordem" to "0",
-            "filter_censure" to "0",
-            "filter_idade" to "",
-            "filter_dub" to "0",
-            "filter_viewed" to "0"
-        )
-
         private val LETTER_LIST = listOf("Todas", "Caracteres Especiais")
             .plus(('A'..'Z').map { it.toString() })
             .toTypedArray()
-
-        private val CONTENT_LIST = listOf(
-            Triple("5", "hentai-manga", "Hentai Manga"),
-            Triple("6", "hq-ero", "HQ Ero"),
-            Triple("7", "parody-hentai-manga", "Parody Manga"),
-            Triple("8", "parody-hq-ero", "Parody HQ"),
-            Triple("9", "doujinshi", "Doujinshi"),
-            Triple("10", "manhwa-ero", "Manhwa")
-        )
 
         private val STATUS_LIST = listOf(
             Pair("0", "Sem filtro"),
