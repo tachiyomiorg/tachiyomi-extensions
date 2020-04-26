@@ -73,7 +73,6 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
             for (filter in if (filters.isEmpty()) getFilterList() else filters) {
                 when (filter) {
-                    is Author -> add("authorArtist", filter.state)
                     is Status -> add("status", arrayOf("", "Completed", "Ongoing")[filter.state])
                     is GenreList -> filter.state.forEach { genre -> add("genres", genre.state.toString()) }
                 }
@@ -136,12 +135,10 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     private class Status : Filter.TriState("Completed")
-    private class Author : Filter.Text("Author")
     private class Genre(name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Author(),
             Status(),
             GenreList(getGenreList())
     )
