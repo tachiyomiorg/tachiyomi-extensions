@@ -93,12 +93,11 @@ class SeriManga : ParsedHttpSource() {
                 if (it.isNotEmpty()) {
                     document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
                 } else {
-                         continueParsing = false
-                     }
-           }
+                    continueParsing = false     
+                }
+            }
         }
-
-       return chapters
+        return chapters
     }
 
     override fun chapterListSelector() = "ul.spl-list > li"
