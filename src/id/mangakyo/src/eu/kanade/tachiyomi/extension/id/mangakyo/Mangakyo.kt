@@ -15,7 +15,7 @@ import org.jsoup.nodes.Element
 class Mangakyo : ParsedHttpSource() {
     override val name: String = "Mangakyo"
     override val lang: String = "id"
-    override val baseUrl: String = "https://www.mangakyo.com"
+    override val baseUrl: String = "https://www.mangakyo.me"
     override val supportsLatest: Boolean = true
     override val client: OkHttpClient = network.cloudflareClient
 
@@ -72,7 +72,7 @@ class Mangakyo : ParsedHttpSource() {
             "Completed" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        description = document.select("span.desc p").map { it.text() }.joinToString("\n")
+        description = document.select("span.desc p").joinToString("\n") { it.text() }
     }
 
     // Chapter
