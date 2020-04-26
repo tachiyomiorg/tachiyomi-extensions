@@ -82,6 +82,15 @@ class SeriManga : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val chapters = mutableListOf<SChapter>()              var document = response.asJsoup()                     var continueParsing = true
+
+        while (continueParsing) {                                 document.select(chapterListSelector()).map{ chapters.add(chapterFromElement(it)) }                          document.select(popularMangaNextPageSelector()).let{
+                if (it.isNotEmpty()) {
+                    document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()                        } else {                                                  continueParsing = false                           }                                                 }                                                 }                                             
+        return chapters
+    }
+
     override fun chapterListSelector() = "ul.spl-list > li"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
