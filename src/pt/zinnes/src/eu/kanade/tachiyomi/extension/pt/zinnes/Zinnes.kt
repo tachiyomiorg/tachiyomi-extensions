@@ -20,11 +20,14 @@ import org.jsoup.nodes.Element
 
 class Zinnes : ParsedHttpSource() {
 
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 568551799323473384
+
     override val name = "Zinnes"
 
     override val baseUrl = "https://www.zinnes.com.br"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = false
 
@@ -132,7 +135,7 @@ class Zinnes : ParsedHttpSource() {
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
 
         private val ID_REGEX = "var titulo = \\{\"id\":\"(\\d+)\"".toRegex()
         private val FILES_REGEX = "var arquivos = \\[(.*)\\];".toRegex()

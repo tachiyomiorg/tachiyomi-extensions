@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.goldenmangas
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -20,11 +19,14 @@ import org.jsoup.nodes.Element
 
 class GoldenMangas : ParsedHttpSource() {
 
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 6858719406079923084
+
     override val name = "Golden Mangás"
 
     override val baseUrl = "https://goldenmanga.top"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -59,7 +61,6 @@ class GoldenMangas : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "div.col-sm-12.atualizacao > div.row"
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        Log.d("golden", element.html())
         val infoElement = element.select("div.col-sm-10.col-xs-8 h3").first()
         val thumb = element.select("a:first-child div img").first().attr("src")
 
@@ -148,7 +149,7 @@ class GoldenMangas : ParsedHttpSource() {
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
-        private val FLAG_REGEX = "\\((Pt-br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
+        private val FLAG_REGEX = "\\((Pt[-/]br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
     }
 }

@@ -142,7 +142,10 @@ class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.n
 
 class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
 
-class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt") {
+class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 8908032188831949972
+
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             title = document.select("h1.title").text()

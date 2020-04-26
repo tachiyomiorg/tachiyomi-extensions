@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: HipercooL'
     pkgNameSuffix = 'pt.hipercool'
     extClass = '.Hipercool'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
