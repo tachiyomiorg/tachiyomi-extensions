@@ -15,7 +15,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -127,25 +126,14 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url + "&quality=${qualitypref()}", headers)
 
     override fun pageListParse(response: Response): List<Page> {
-        val pages = mutableListOf<Page>()
-        //language=RegExp
-        val p = Pattern.compile("""lstImages.push\("(.+?)"""")
-        val m = p.matcher(response.body()!!.string())
-
-        var i = 0
-        while (m.find()) {
-            pages.add(Page(i++, "", m.group(1)))
-        }
-        return pages
+        return Regex("""lstImages\.push\("(http.*)"\)""").findAll(response.body()!!.string())
+            .toList()
+            .mapIndexed { i, mr -> Page(i, "", mr.groupValues[1]) }
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        throw Exception("Not used")
-    }
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
-    override fun imageUrlRequest(page: Page) = GET(page.url)
-
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     private class Status : Filter.TriState("Completed")
     private class Author : Filter.Text("Author")
