@@ -106,7 +106,8 @@ class MadaraFactory : SourceFactory {
         ZManga(),
         MangaGecesi(),
         MangaWT(),
-        DecadenceScans()
+        DecadenceScans(),
+        MangaStein()
     )
 }
 
