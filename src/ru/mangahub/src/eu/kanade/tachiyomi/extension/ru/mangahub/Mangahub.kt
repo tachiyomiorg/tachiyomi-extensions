@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.mangahub
 
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -26,6 +27,8 @@ open class Mangahub : ParsedHttpSource() {
     override val supportsLatest = true
 
     private val rateLimitInterceptor = RateLimitInterceptor(2)
+
+    private val jsonParser = JsonParser()
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor).build()
@@ -111,11 +114,13 @@ open class Mangahub : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pictures = document.select("div.row > div > div.mb-4").attr("data-js-scans").replace("&quot;", "\"").replace("\\/", "/")
-        val r = Regex("""\/\/([\w\.\/])+""")
+        val chapInfo = document.select("reader").attr("data-reader-store").replace("&quot;", "\"").replace("\\/", "/")
+        val chapter = jsonParser.parse(chapInfo).asJsonObject
+        val scans = chapter["scans"].asJsonArray
+
         val pages = mutableListOf<Page>()
-        for ((index, value) in r.findAll(pictures).withIndex()) {
-            pages.add(Page(index = index, imageUrl = "https:${value.value}"))
+        scans.mapIndexed { i, page ->
+            pages.add(Page(i, "", "https:${page.asJsonObject.get("src").asString}"))
         }
 
         return pages

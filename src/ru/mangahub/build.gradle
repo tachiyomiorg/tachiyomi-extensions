@@ -5,12 +5,13 @@ ext {
     appName = 'Tachiyomi: Mangahub'
     pkgNameSuffix = 'ru.mangahub'
     extClass = '.Mangahub'
-    extVersionCode = 7
+    extVersionCode = 8
     libVersion = '1.2'
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
+    compileOnly 'com.google.code.gson:gson:2.8.2'
 }
 
 apply from: "$rootDir/common.gradle"
