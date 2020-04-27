@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -15,6 +16,7 @@ import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -96,7 +98,7 @@ abstract class MangaBox(
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = "a.page_select + a:not(.page_last), a.page-select + a:not(.page-last)"
 
     open val mangaDetailsMainSelector = "div.manga-info-top, div.panel-story-info"
 
@@ -111,17 +113,22 @@ abstract class MangaBox(
         return super.mangaDetailsRequest(manga)
     }
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select(mangaDetailsMainSelector)
+    private fun checkForRedirectMessage(document: Document) {
+        if (document.select("body").text().startsWith("REDIRECT :"))
+            throw Exception("Source URL has changed")
+    }
 
+    override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
-            title = infoElement.select("h1, h2").first().text()
-            author = infoElement.select("li:contains(author) a, td:containsOwn(author) + td").text()
-            status = parseStatus(infoElement.select("li:contains(status), td:containsOwn(status) + td").text())
-            genre = infoElement.select("div.manga-info-top li:contains(genres)").firstOrNull()
-                ?.select("a")?.joinToString { it.text() } // kakalot
-                ?: infoElement.select("td:containsOwn(genres) + td a").joinToString { it.text() } // nelo
-            description = document.select(descriptionSelector)?.first()?.ownText()
+            document.select(mangaDetailsMainSelector).firstOrNull()?.let { infoElement ->
+                title = infoElement.select("h1, h2").first().text()
+                author = infoElement.select("li:contains(author) a, td:containsOwn(author) + td").text()
+                status = parseStatus(infoElement.select("li:contains(status), td:containsOwn(status) + td").text())
+                genre = infoElement.select("div.manga-info-top li:contains(genres)").firstOrNull()
+                    ?.select("a")?.joinToString { it.text() } // kakalot
+                    ?: infoElement.select("td:containsOwn(genres) + td a").joinToString { it.text() } // nelo
+            } ?: checkForRedirectMessage(document)
+            description = document.select(descriptionSelector)?.firstOrNull()?.ownText()
                 ?.replace("""^$title summary:\s""".toRegex(), "")
                 ?.replace("""<\s*br\s*\/?>""".toRegex(), "\n")
                 ?.replace("<[^>]*>".toRegex(), "")
@@ -141,6 +148,14 @@ abstract class MangaBox(
             return GET(manga.url, headers)
         }
         return super.chapterListRequest(manga)
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+
+        return document.select(chapterListSelector())
+            .map { chapterFromElement(it) }
+            .also { if (it.isEmpty()) checkForRedirectMessage(document) }
     }
 
     override fun chapterListSelector() = "div.chapter-list div.row, ul.row-content-chapter li"
