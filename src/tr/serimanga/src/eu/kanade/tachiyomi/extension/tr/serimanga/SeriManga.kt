@@ -6,11 +6,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -80,6 +82,24 @@ class SeriManga : ParsedHttpSource() {
         status.contains("CONTINUES") -> SManga.ONGOING
         status.contains("Tamamlanmış") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val chapters = mutableListOf<SChapter>()
+        var document = response.asJsoup()
+        var continueParsing = true
+
+        while (continueParsing) {       
+            document.select(chapterListSelector()).map{ chapters.add(chapterFromElement(it)) }
+            document.select(popularMangaNextPageSelector()).let{
+                if (it.isNotEmpty()) {
+                    document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
+                } else {
+                    continueParsing = false
+                }
+            }
+        }
+        return chapters
     }
 
     override fun chapterListSelector() = "ul.spl-list > li"

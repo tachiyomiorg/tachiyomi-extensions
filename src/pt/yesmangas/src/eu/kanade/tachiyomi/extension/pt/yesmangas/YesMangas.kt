@@ -15,11 +15,14 @@ import org.jsoup.nodes.Element
 
 class YesMangas : ParsedHttpSource() {
 
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 7187189302580957274
+
     override val name = "YES Mangás"
 
     override val baseUrl = "https://yesmangas1.com"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -120,7 +123,7 @@ class YesMangas : ParsedHttpSource() {
     private fun removeLabel(info: String) = info.substringAfter(":")
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
 
         private const val SCRIPT_BEGIN = "var images = ["
