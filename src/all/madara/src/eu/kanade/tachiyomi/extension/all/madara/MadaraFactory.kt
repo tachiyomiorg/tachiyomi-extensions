@@ -107,7 +107,8 @@ class MadaraFactory : SourceFactory {
         MangaGecesi(),
         MangaWT(),
         DecadenceScans(),
-        MangaStein()
+        MangaStein(),
+        MangaRockTeam()
     )
 }
 
@@ -403,7 +404,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
 
 class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
-    override fun chapterListSelector() = "li.wp-manga-chapter:not(:has(img))" // Filter fake chapters
+    override fun chapterListSelector() = "li.wp-manga-chapter:not(.premium-block)" // Filter fake chapters
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
@@ -580,3 +581,5 @@ class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
 class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.com", "en")
 
 class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
+
+class MangaRockTeam : Madara("Manga Rock Team", "https://mangarockteam.com", "en")
