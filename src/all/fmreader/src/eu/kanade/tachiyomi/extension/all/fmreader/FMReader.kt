@@ -37,7 +37,7 @@ abstract class FMReader(
         add("Referer", baseUrl)
     }
 
-    private fun Elements.imgAttr(): String? = getImgAttr(this.firstOrNull())
+    protected fun Elements.imgAttr(): String? = getImgAttr(this.firstOrNull())
 
     private fun Element.imgAttr(): String? = getImgAttr(this)
 
