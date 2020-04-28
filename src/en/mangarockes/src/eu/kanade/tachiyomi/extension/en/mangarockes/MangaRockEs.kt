@@ -6,7 +6,12 @@ import com.google.gson.JsonArray
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.MediaType
+import okhttp3.ResponseBody
+import okhttp3.HttpUrl
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -153,11 +158,13 @@ class MangaRockEs : ParsedHttpSource() {
     private val gson by lazy { Gson() }
 
     override fun pageListParse(response: Response): List<Page> {
-        val array = Regex("""mangaData = (\[.*]);""", RegexOption.IGNORE_CASE)
-            .find(response.body()!!.string())?.groupValues?.get(1) ?: throw Exception ("mangaData array not found")
-        return gson.fromJson<JsonArray>(array).mapIndexed { i, jsonElement ->
-            Page(i, "", jsonElement.asJsonObject["url"].asString)
+        val responseString = response.body()!!.string()
+        return Regex("""mangaData = (\[.*]);""", RegexOption.IGNORE_CASE).find(responseString)?.groupValues?.get(1)?.let { array ->
+            gson.fromJson<JsonArray>(array)
+                .mapIndexed { i, jsonElement -> Page(i, "", jsonElement.asJsonObject["url"].asString) }
         }
+            ?: Regex("""getManga\(\d+, '(http.*)',""").findAll(responseString).toList()
+                .mapIndexed { i, mr -> Page(i, "", mr.groupValues[1]) }
     }
 
     override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("This method should not be called!")
