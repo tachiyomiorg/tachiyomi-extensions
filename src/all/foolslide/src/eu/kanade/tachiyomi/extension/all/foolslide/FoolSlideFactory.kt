@@ -43,7 +43,10 @@ class FoolSlideFactory : SourceFactory {
         PowerMangaIT(),
         BaixarHentai(),
         HNIScantrad(),
-        HNIScantradEN()
+        HNIScantradEN(),
+        PhoenixScans(),
+        GTO(),
+        Kangaryu()
     )
 }
 
@@ -184,4 +187,24 @@ class HNIScantradEN : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "en"
             Page(i, "", "$baseUrl$urlModifier/${mr.groupValues[1]}")
         }
     }
+}
+
+class PhoenixScans : FoolSlide("The Phoenix Scans", "https://www.phantomreader.com", "it", "/reader")
+
+class GTO : FoolSlide("GTO The Great Site", "https://www.gtothegreatsite.net", "it", "/reader")
+
+class Kangaryu : FoolSlide("Kangaryu", "https://kangaryu-team.fr", "fr") {
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers).also { latestUpdatesUrls.clear() }
+    override fun latestUpdatesSelector() = "div.card"
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            element.select("div.card-text a").let {
+                title = it.text()
+                setUrlWithoutDomain(it.attr("href"))
+            }
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
+    }
+    override fun latestUpdatesNextPageSelector(): String? = null
+    override val mangaDetailsInfoSelector = "div.info:not(.comic)"
 }
