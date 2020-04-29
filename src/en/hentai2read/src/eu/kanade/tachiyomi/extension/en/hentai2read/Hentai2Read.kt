@@ -45,7 +45,7 @@ class Hentai2Read : ParsedHttpSource() {
             Pattern.compile("""about (\d+\s+\w+\s+ago)""")
         }
 
-        lateinit var base64String: String
+        lateinit var nextSearchPage: String
     }
 
     override fun popularMangaSelector() = "div.book-grid-item"
@@ -117,7 +117,7 @@ class Hentai2Read : ParsedHttpSource() {
             }
             Pair(POST(searchUrl, headers, form.build()), sortOrder)
         } else {
-            Pair(GET("$searchUrl/$base64String", headers), sortOrder)
+            Pair(GET(nextSearchPage, headers), sortOrder)
         }
     }
 
@@ -135,7 +135,7 @@ class Hentai2Read : ParsedHttpSource() {
         }
 
         val hasNextPage = document.select(searchMangaNextPageSelector()).firstOrNull()?.let {
-            base64String = it.attr("href").substringAfter("/advanced-search/").substringBefore("/")
+            nextSearchPage = it.attr("abs:href")
             true
         } ?: false
 
