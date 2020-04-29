@@ -48,10 +48,10 @@ class JuinJutsuReader : ParsedHttpSource() {
             .map { latestUpdatesFromElement(it) }
         val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
             document.select(selector).first()
-         } != null
+        } != null
 
-         return MangasPage(mangas, hasNextPage)
-     }
+        return MangasPage(mangas, hasNextPage)
+    }
 
     override fun latestUpdatesSelector() = "div.title_manga > a"
 
