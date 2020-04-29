@@ -43,14 +43,15 @@ class JuinJutsuReader : ParsedHttpSource() {
 
 
     //An attempt to minimise duplicates - taken from TuMangaOnline.kt
-     
     override fun latestUpdatesParse(response: Response): MangasPage {
-         val document = response.asJsoup()                     val mangas = document.select(latestUpdatesSelector())
+         val document = response.asJsoup()
+         val mangas = document.select(latestUpdatesSelector())
             .distinctBy { it.attr("title").trim() }
             .map { latestUpdatesFromElement(it) }
          val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
             document.select(selector).first()
          } != null
+
          return MangasPage(mangas, hasNextPage)
      }
 
