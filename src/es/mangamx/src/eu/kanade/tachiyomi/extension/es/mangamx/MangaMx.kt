@@ -31,6 +31,8 @@ open class MangaMx : ParsedHttpSource() {
     override val baseUrl = "https://manga-mx.com"
     override val lang = "es"
     override val supportsLatest = true
+    override val client = network.cloudflareClient
+
     private var csrfToken = ""
 
     // Popular
