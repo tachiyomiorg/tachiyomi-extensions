@@ -46,7 +46,10 @@ class FoolSlideFactory : SourceFactory {
         HNIScantradEN(),
         PhoenixScans(),
         GTO(),
-        Kangaryu()
+        Kangaryu(),
+        FallenWorldOrder(),
+        NIFTeam(),
+        TuttoAnimeManga()
     )
 }
 
@@ -208,3 +211,9 @@ class Kangaryu : FoolSlide("Kangaryu", "https://kangaryu-team.fr", "fr") {
     override fun latestUpdatesNextPageSelector(): String? = null
     override val mangaDetailsInfoSelector = "div.info:not(.comic)"
 }
+
+class FallenWorldOrder : FoolSlide("Fall World Reader", "https://faworeader.altervista.org", "it", "/slide")
+
+class NIFTeam : FoolSlide("NIFTeam", "http://read-nifteam.info", "it", "/slide")
+
+class TuttoAnimeManga : FoolSlide("TuttoAnimeManga", "https://tuttoanimemanga.net", "it", "/slide")
