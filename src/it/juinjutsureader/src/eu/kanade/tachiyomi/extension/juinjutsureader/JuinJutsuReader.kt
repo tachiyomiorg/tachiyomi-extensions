@@ -41,6 +41,19 @@ class JuinJutsuReader : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = ".next"
 
+
+    //An attempt to minimise duplicates - taken from TuMangaOnline.kt
+     
+    override fun latestUpdatesParse(response: Response): MangasPage {
+         val document = response.asJsoup()                     val mangas = document.select(latestUpdatesSelector())
+            .distinctBy { it.attr("title").trim() }
+            .map { latestUpdatesFromElement(it) }
+         val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
+            document.select(selector).first()
+         } != null
+         return MangasPage(mangas, hasNextPage)
+     }
+
     override fun latestUpdatesSelector() = "div.title_manga > a"
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest/$page", headers)
@@ -112,13 +125,32 @@ class JuinJutsuReader : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = element.select("a").attr("title")
-        date_upload = dateFormat.parse(element.select(".meta_r").text()).time ?: 0
+        date_upload = parseChapterDate(element.select(".meta_r").text()) ?: 0
     }
 
     companion object {
         val dateFormat by lazy {
             SimpleDateFormat("yyyy.MM.dd")
         }
+    }
+
+    private fun parseChapterDate(string: String): Long? {
+        return if (string.contains("Ieri")) {
+            parseRelativeDate(string) ?: 0
+        } else {
+            dateFormat.parse(string).time
+        }
+    }
+
+    private fun parseRelativeDate(date: String): Long? {
+        val calendar = Calendar.getInstance()
+
+        when (date) {
+            "Oggi" -> calendar.apply { add(Calendar.DAY_OF_MONTH, 0) }
+            "Ieri" -> calendar.apply { add(Calendar.DAY_OF_MONTH, - 1) }
+        }
+
+        return calendar.timeInMillis
     }
 
     private fun pageListSelector() = "a[href*=page]:not([onclick])"
