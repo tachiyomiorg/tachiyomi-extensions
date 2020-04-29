@@ -40,15 +40,13 @@ class JuinJutsuReader : ParsedHttpSource() {
     }
 
     override fun popularMangaNextPageSelector() = ".next"
-
-
     //An attempt to minimise duplicates - taken from TuMangaOnline.kt
     override fun latestUpdatesParse(response: Response): MangasPage {
-         val document = response.asJsoup()
-         val mangas = document.select(latestUpdatesSelector())
+        val document = response.asJsoup()
+        val mangas = document.select(latestUpdatesSelector())
             .distinctBy { it.attr("title").trim() }
             .map { latestUpdatesFromElement(it) }
-         val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
+        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
             document.select(selector).first()
          } != null
 
@@ -136,7 +134,7 @@ class JuinJutsuReader : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long? {
-        return if (string.contains("Ieri")) {
+        return if ((string.contains("Ieri")) || (string.contains("Oggi"))) {
             parseRelativeDate(string) ?: 0
         } else {
             dateFormat.parse(string).time
