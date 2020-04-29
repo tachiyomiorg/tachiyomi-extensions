@@ -136,7 +136,7 @@ class JuinJutsuReader : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long? {
-        return if (string.contains("Ieri")) {
+        return if ((string.contains("Ieri") || (string.contains("Oggi")) {
             parseRelativeDate(string) ?: 0
         } else {
             dateFormat.parse(string).time
