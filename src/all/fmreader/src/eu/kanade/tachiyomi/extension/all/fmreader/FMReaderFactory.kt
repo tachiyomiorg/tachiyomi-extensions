@@ -33,7 +33,6 @@ class FMReaderFactory : SourceFactory {
         HanaScan(),
         RawLH(),
         Manhwa18(),
-        TruyenTranhLH(),
         EighteenLHPlus(),
         MangaTR(),
         Comicastle(),
@@ -119,11 +118,8 @@ class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
     override fun getGenreList() = getAdultGenreList()
 }
 
-class TruyenTranhLH : FMReader("TruyenTranhLH", "https://truyentranhlh.net", "vi") {
-    override val requestPath = "danh-sach-truyen.html"
-}
-
 class EighteenLHPlus : FMReader("18LHPlus", "https://18lhplus.com", "en") {
+    override fun popularMangaNextPageSelector() = "div.col-lg-8 div.btn-group:first-of-type"
     override fun getGenreList() = getAdultGenreList()
 }
 
