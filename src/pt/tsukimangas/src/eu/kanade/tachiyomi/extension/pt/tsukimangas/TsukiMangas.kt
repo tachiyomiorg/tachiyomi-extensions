@@ -241,7 +241,7 @@ class TsukiMangas : HttpSource() {
             .set("Referer", baseUrl + chapter.url)
             .build()
 
-        return GET("$baseUrl/api/" + chapter.url, newHeaders)
+        return GET("$baseUrl/api" + chapter.url, newHeaders)
     }
 
     override fun pageListParse(response: Response): List<Page> {
