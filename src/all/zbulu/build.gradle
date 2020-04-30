@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: HolyManga & HeavenManga'
-    pkgNameSuffix = 'en.holymanga'
-    extClass = '.HMangaFactory'
-    extVersionCode = 3
+    appName = 'Tachiyomi: zBulu'
+    pkgNameSuffix = 'all.zbulu'
+    extClass = '.ZbuluFactory'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 

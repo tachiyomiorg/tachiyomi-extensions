@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.holymanga
+package eu.kanade.tachiyomi.extension.all.zbulu
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -10,43 +10,54 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-abstract class HManga(
+abstract class Zbulu(
     override val name: String,
-    override val baseUrl: String
+    override val baseUrl: String,
+    override val lang: String = "en"
 ) : ParsedHttpSource() {
-
-    override val lang = "en"
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(1, TimeUnit.MINUTES)
+        .readTimeout(1, TimeUnit.MINUTES)
+        .writeTimeout(1, TimeUnit.MINUTES)
+        .build()
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0")
+        .add("Content-Encoding", "identity")
+
+    // Decreases calls, helps with Cloudflare
+    private fun String.addTrailingSlash() = if (!this.endsWith("/")) "$this/" else this
 
     // Popular
 
-    // This returns 12 manga or so, main browsing for this source should be through latest
     override fun popularMangaRequest(page: Int): Request {
-        return GET(baseUrl, headers)
+        return GET("$baseUrl/manga-list/page-$page/", headers)
     }
 
-    override fun popularMangaSelector() = "section#popular div.entry.vertical"
+    override fun popularMangaSelector() = "div.comics-grid > div.entry"
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("h2 a").let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
+        return SManga.create().apply {
+            element.select("h3 a").let {
+                setUrlWithoutDomain(it.attr("href").addTrailingSlash())
+                title = it.text()
+            }
+            thumbnail_url = element.select("img").first().attr("abs:src")
         }
-        manga.thumbnail_url = element.select("img").first().attr("src")
-        return manga
     }
 
-    override fun popularMangaNextPageSelector() = "Not needed"
+    override fun popularMangaNextPageSelector() = "a.next:has(i.fa-angle-right)"
 
     // Latest
 
@@ -54,19 +65,11 @@ abstract class HManga(
         return GET("$baseUrl/latest-update/page-$page/", headers)
     }
 
-    override fun latestUpdatesSelector() = "div.comics-grid > div.entry"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("h3 a").let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        manga.thumbnail_url = element.select("img").first().attr("src")
-        return manga
-    }
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = "a.next:has(i.fa-angle-right)"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     // Search
 
@@ -78,7 +81,7 @@ abstract class HManga(
             lateinit var genre: String
             filters.forEach { filter ->
                 when (filter) {
-                    is TextField -> {
+                    is AuthorField -> {
                             if (filter.state.isNotBlank()) {
                                 ret = "$baseUrl/author/${filter.state.replace(" ", "-")}/page-$page"
                             }
@@ -107,15 +110,14 @@ abstract class HManga(
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.single-comic").first()
 
-        val manga = SManga.create()
-        manga.title = infoElement.select("h1").first().text()
-        manga.author = infoElement.select("div.author a").text()
-        val status = infoElement.select("div.update span[style]").text()
-        manga.status = parseStatus(status)
-        manga.genre = infoElement.select("div.genre").text().substringAfter("Genre(s): ")
-        manga.description = infoElement.select("div.comic-description p").text()
-        manga.thumbnail_url = infoElement.select("img").attr("src")
-        return manga
+        return SManga.create().apply {
+            title = infoElement.select("h1").first().text()
+            author = infoElement.select("div.author a").text()
+            status = parseStatus(infoElement.select("div.update span[style]").text())
+            genre = infoElement.select("div.genre a").joinToString { it.text() }
+            description = infoElement.select("div.comic-description p").text()
+            thumbnail_url = infoElement.select("img").attr("abs:src")
+        }
     }
 
     private fun parseStatus(status: String?) = when {
@@ -131,34 +133,26 @@ abstract class HManga(
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
-        var document = response.asJsoup()
-        var continueParsing = true
 
-        // Chapter list is paginated
-        while (continueParsing) {
+        // Chapter list may be paginated, get recursively
+        fun addChapters(document: Document) {
             document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
-            // Next page of chapters
-            document.select("${latestUpdatesNextPageSelector()}:not([id])").let {
-                if (it.isNotEmpty()) {
-                    document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
-                } else {
-                    continueParsing = false
-                }
-            }
+            document.select("${latestUpdatesNextPageSelector()}:not([id])").firstOrNull()
+                ?.let { addChapters(client.newCall(GET(it.attr("abs:href").addTrailingSlash(), headers)).execute().asJsoup()) }
         }
+
+        addChapters(response.asJsoup())
         return chapters
     }
 
     override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-
-        element.select("a").let {
-            chapter.setUrlWithoutDomain(it.attr("href"))
-            chapter.name = it.text()
+        return SChapter.create().apply {
+            element.select("a").let {
+                setUrlWithoutDomain(it.attr("href").addTrailingSlash())
+                name = it.text()
+            }
+            date_upload = element.select("div.chapter-date")?.text()?.let { parseChapterDate(it) } ?: 0
         }
-        chapter.date_upload = parseChapterDate(element.select("div.chapter-date").text())
-
-        return chapter
     }
 
     companion object {
@@ -174,26 +168,22 @@ abstract class HManga(
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.chapter-content img").forEach {
-            pages.add(Page(pages.size, "", it.attr("src")))
+        return document.select("div.chapter-content img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:src"))
         }
-
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     // Filters
 
-    private class TextField(name: String, val key: String) : Filter.Text(name)
+    private class AuthorField : Filter.Text("Author")
 
     override fun getFilterList() = FilterList(
         Filter.Header("Cannot combine search types!"),
         Filter.Header("Author name must be exact."),
         Filter.Separator("-----------------"),
-        TextField("Author", "author"),
+        AuthorField(),
         GenreFilter()
     )
 
