@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
+import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -108,7 +109,10 @@ class MadaraFactory : SourceFactory {
         MangaWT(),
         DecadenceScans(),
         MangaStein(),
-        MangaRockTeam()
+        MangaRockTeam(),
+        MixedManga(),
+        ManhuasWorld(),
+        ArazNovel()
     )
 }
 
@@ -583,3 +587,14 @@ class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.
 class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
 
 class MangaRockTeam : Madara("Manga Rock Team", "https://mangarockteam.com", "en")
+
+class MixedManga : Madara("Mixed Manga", "https://mixedmanga.com", "en") {
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+}
+
+class ManhuasWorld : Madara("Manhuas World", "https://manhuasworld.com", "en")
+
+class ArazNovel : Madara("ArazNovel", "https://www.araznovel.com", "tr", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())) {
+    override fun formBuilder(page: Int, popular: Boolean): FormBody.Builder = super.formBuilder(page, popular)
+        .add("vars[meta_query][0][0][value]", "manga")
+}
