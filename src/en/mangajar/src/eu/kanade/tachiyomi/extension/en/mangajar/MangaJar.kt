@@ -2,23 +2,19 @@ package eu.kanade.tachiyomi.extension.en.mangajar
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
-class MangaJar: ParsedHttpSource() {
+class MangaJar : ParsedHttpSource() {
 
     override val name = "MangaJar"
 
@@ -89,14 +85,13 @@ class MangaJar: ParsedHttpSource() {
         date_upload = parseChapterDate(element.select("span.chapter-date").text().trim()) ?: 0
     }
 
-    //The following date related code is taken directly from Genkan.kt
+    // The following date related code is taken directly from Genkan.kt
     companion object {
         val dateFormat by lazy {
             SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
         }
     }
 
-   
     private fun parseChapterDate(string: String): Long? {
         return if ("ago" in string) {
             parseRelativeDate(string) ?: 0

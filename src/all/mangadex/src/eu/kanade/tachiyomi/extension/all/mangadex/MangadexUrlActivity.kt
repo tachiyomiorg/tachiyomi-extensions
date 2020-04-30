@@ -41,5 +41,4 @@ class MangadexUrlActivity : Activity() {
         finish()
         exitProcess(0)
     }
-
 }

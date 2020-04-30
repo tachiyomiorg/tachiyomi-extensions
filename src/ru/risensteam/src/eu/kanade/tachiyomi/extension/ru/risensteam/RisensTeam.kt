@@ -20,7 +20,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-
 class RisensTeam : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> = throw Exception("Not Used")
 
@@ -37,18 +36,18 @@ class RisensTeam : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/manga/page/$page/", headers)
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request{
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return POST(baseUrl, headers, buildRequestBody(query, page))
     }
 
-    private fun buildRequestBody(query: String, page: Int): RequestBody{
+    private fun buildRequestBody(query: String, page: Int): RequestBody {
         return MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("do", "search")
                 .addFormDataPart("subaction", "search")
                 .addFormDataPart("story", query)
                 .addFormDataPart("catlist[]", "33")
-                .addFormDataPart("search_start", (page-1).toString())
+                .addFormDataPart("search_start", (page - 1).toString())
                 .build()
     }
 
@@ -60,7 +59,7 @@ class RisensTeam : ParsedHttpSource() {
         val manga = SManga.create()
         val coverElem = element.select(".card-img-top").first()
         val imgUrl = coverElem.attr("src")
-        manga.thumbnail_url = baseUrl + if(imgUrl.contains("/pagespeed_static/")) coverElem.attr("data-pagespeed-lazy-src") else imgUrl
+        manga.thumbnail_url = baseUrl + if (imgUrl.contains("/pagespeed_static/")) coverElem.attr("data-pagespeed-lazy-src") else imgUrl
         manga.setUrlWithoutDomain(element.select("b-link").first().attr("to"))
         manga.title = coverElem.attr("alt").split('/').first().replace("(Манга)", "").trim()
 
@@ -86,7 +85,7 @@ class RisensTeam : ParsedHttpSource() {
         manga.thumbnail_url = baseUrl + document.select("b-img[fluid]").first().attr("src")
         manga.genre = document.select("td:containsOwn(Жанр:) + td > a").joinToString { it.ownText() }
         manga.description = document.select(".news-body").text()
-        manga.status = when(document.select("td:containsOwn(Состояние:) + td").first().ownText()){
+        manga.status = when (document.select("td:containsOwn(Состояние:) + td").first().ownText()) {
             "Выход продолжается" -> SManga.ONGOING
             "Выход завершён", "Выход завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN

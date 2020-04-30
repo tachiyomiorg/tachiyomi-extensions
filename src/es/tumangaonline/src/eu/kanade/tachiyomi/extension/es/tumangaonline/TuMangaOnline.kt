@@ -6,27 +6,35 @@ import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Locale
+import okhttp3.FormBody
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.*
 
 class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
-    //Info
+    // Info
 
     override val name = "TuMangaOnline"
     override val baseUrl = "https://lectortmo.com"
     override val lang = "es"
     override val supportsLatest = true
 
-    //Client
+    // Client
 
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
     override fun headersBuilder(): Headers.Builder {
@@ -50,7 +58,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             .toString()
     }
 
-    //Popular
+    // Popular
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&filter_by=title&_page=1&page=$page", headers)
     override fun popularMangaNextPageSelector() = "a.page-link"
@@ -63,21 +71,21 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    //Latest
+    // Latest
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&filter_by=title&_page=1&page=$page", headers)
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    //Search
+    // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/library")!!.newBuilder()
 
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
-        url.addQueryParameter("_page", "1") //Extra Query to Prevent Scrapping aka without it = 403
+        url.addQueryParameter("_page", "1") // Extra Query to Prevent Scrapping aka without it = 403
 
         filters.forEach { filter ->
             when (filter) {
@@ -142,7 +150,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("h5.card-title").let {
@@ -165,7 +173,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
@@ -224,18 +232,18 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)?.time
         ?: 0
 
-    //Pages
+    // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
+        val response = client.newCall(GET(chapterURL, headers)).execute() // Get chapter page for current token
         if (!response.isSuccessful) throw Exception("TMO HTTP Error ${response.code()}")
         val document = response.asJsoup()
         val script = document.select("script:containsData(submitChapterForm)").html()
         val tmotk = script.substringAfter("action+\"").substringBefore("\"}")
-        val geturl = document.select("form#$chapterID").attr("action") + tmotk //Get redirect URL
-        val token = document.select("form#$chapterID input").attr("value") //Get token
-        val method = document.select("form#$chapterID").attr("method") //Check POST or GET
+        val geturl = document.select("form#$chapterID").attr("action") + tmotk // Get redirect URL
+        val token = document.select("form#$chapterID input").attr("value") // Get token
+        val method = document.select("form#$chapterID").attr("method") // Check POST or GET
 
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
@@ -283,7 +291,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         return document.select("div.viewer-container > div.img-container > img.viewer-image").attr("src")
     }
 
-    //Filters
+    // Filters
 
     private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
         Pair("Ver todo", ""),

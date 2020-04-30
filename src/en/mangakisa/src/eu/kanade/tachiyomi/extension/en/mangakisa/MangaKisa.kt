@@ -1,22 +1,26 @@
 package eu.kanade.tachiyomi.extension.en.mangakisa
 
-import android.net.Uri
 import android.app.Application
 import android.content.SharedPreferences
+import android.net.Uri
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.util.*
-import java.util.concurrent.TimeUnit
-
 
 class MangaKisa : ConfigurableSource, ParsedHttpSource() {
 
@@ -45,23 +49,22 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun popularMangaRequest(page: Int): Request {
-        val page0 = page-1
+        val page0 = page - 1
         val popselect = getpoppref()
         return GET("$baseUrl/$popselect/$page0", headers)
-
     }
     override fun latestUpdatesRequest(page: Int): Request {
-        val page0 = page-1
+        val page0 = page - 1
         val latestselect = getlastestpref()
         return GET("$baseUrl/$latestselect/$page0", headers)
     }
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val page0 = page-1
+        val page0 = page - 1
         val uri = if (query.isNotBlank()) {
             Uri.parse("$baseUrl/search?q=$query").buildUpon()
         } else {
             val uri = Uri.parse("$baseUrl/").buildUpon()
-            //Append uri filters
+            // Append uri filters
             filters.forEach {
                 if (it is UriFilter)
                     it.addToUri(uri)
@@ -78,7 +81,7 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
-    override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
         private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.select(".an").first().attr("href"))
@@ -92,7 +95,7 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
         chapter.setUrlWithoutDomain("/" + element.select("a").attr("href"))
         chapter.chapter_number = element.select("[class*=infoept2] > div").text().toFloat()
         chapter.name = "Chapter " + element.select("[class*=infoept2] > div").text().trim()
-        chapter.date_upload = parseRelativeDate(element.select("[class*=infoept3] > div").text()) ?:0
+        chapter.date_upload = parseRelativeDate(element.select("[class*=infoept3] > div").text()) ?: 0
         return chapter
     }
 
@@ -128,7 +131,7 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
             "Completed" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        manga.thumbnail_url = baseUrl + "/" +  document.select(".infopicbox > img").attr("src")
+        manga.thumbnail_url = baseUrl + "/" + document.select(".infopicbox > img").attr("src")
         return manga
     }
 
@@ -145,16 +148,20 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
-    //Filter List Code
+    // Filter List Code
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
         GenreFilter()
     )
 
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                           val firstIsUnspecified: Boolean = true,
-                                           defaultValue: Int = 0) :
+    private open class UriSelectFilter(
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
@@ -167,7 +174,7 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
         fun addToUri(uri: Uri.Builder)
     }
 
-    private class GenreFilter : UriSelectFilter("Genre","genres", arrayOf(
+    private class GenreFilter : UriSelectFilter("Genre", "genres", arrayOf(
         Pair("all", "ALL"),
         Pair("action", "Action "),
         Pair("adult", "Adult "),
@@ -281,14 +288,10 @@ class MangaKisa : ConfigurableSource, ParsedHttpSource() {
     private fun getpoppref() = preferences.getString(BROWSE_PREF, "popular")
     private fun getlastestpref() = preferences.getString(LATEST_PREF, "latest")
 
-
     companion object {
         private const val LATEST_PREF_Title = "Latest Manga Selector"
         private const val LATEST_PREF = "latestmangaurl"
         private const val BROWSE_PREF_Title = "Popular Manga Selector"
         private const val BROWSE_PREF = "popularmangaurl"
     }
-
 }
-
-

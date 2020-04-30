@@ -8,21 +8,36 @@ import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
-import eu.kanade.tachiyomi.extension.all.komga.dto.*
+import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import okhttp3.Credentials
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.*
 
-open class Komga : ConfigurableSource, HttpSource() {
+open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/api/v1/series?page=${page - 1}", headers)
 
@@ -137,8 +152,8 @@ open class Komga : ConfigurableSource, HttpSource() {
     private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
             title = metadata.title
-            url = "/api/v1/series/${id}"
-            thumbnail_url = "$baseUrl/api/v1/series/${id}/thumbnail"
+            url = "/api/v1/series/$id"
+            thumbnail_url = "$baseUrl/api/v1/series/$id/thumbnail"
             status = when (metadata.status) {
                 "ONGOING" -> SManga.ONGOING
                 "ENDED" -> SManga.COMPLETED
@@ -178,7 +193,7 @@ open class Komga : ConfigurableSource, HttpSource() {
 
     private var libraries = emptyList<LibraryDto>()
 
-    override val name = "Komga"
+    override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
     override val supportsLatest = true
 
@@ -225,8 +240,7 @@ open class Komga : ConfigurableSource, HttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
-                        , Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
                     res
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -253,8 +267,7 @@ open class Komga : ConfigurableSource, HttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting."
-                        , Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
                     res
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -281,7 +294,6 @@ open class Komga : ConfigurableSource, HttpSource() {
                     emptyList()
                 }
             }, {})
-
     }
 
     companion object {

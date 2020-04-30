@@ -9,9 +9,15 @@ import android.widget.Toast
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -19,8 +25,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * NewToki Source
@@ -30,7 +34,6 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override val lang: String = "ko"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
-
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
 
@@ -70,7 +73,6 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/$boardName" + (if (page > 1) "/p$page" else "") + "?stx=$query")
-
 
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.view-title > .view-content").first()
@@ -161,7 +163,6 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         }
     }
 
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         try {
@@ -181,15 +182,13 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         return pages
     }
 
-
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
     override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
 
-
-    //We are able to get the image URL directly from the page list
+    // We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList()

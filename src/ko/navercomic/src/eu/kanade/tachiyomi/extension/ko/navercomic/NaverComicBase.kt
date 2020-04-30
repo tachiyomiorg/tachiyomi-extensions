@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
 abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() {
     override val lang: String = "ko"
@@ -131,7 +131,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         return pages
     }
 
-    //We are able to get the image URL directly from the page list
+    // We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList()

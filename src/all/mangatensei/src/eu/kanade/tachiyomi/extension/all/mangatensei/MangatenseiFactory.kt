@@ -155,5 +155,3 @@ class BatotoSpanish : OtherSite("Bato.to", "https://bato.to", "es", "spanish")
 class BatotoThai : OtherSite("Bato.to", "https://bato.to", "th", "thai")
 class BatotoTurkish : OtherSite("Bato.to", "https://bato.to", "tr", "turkish")
 class BatotoVietnamese : OtherSite("Bato.to", "https://bato.to", "vi", "vietnamese")
-
-

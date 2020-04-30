@@ -1,9 +1,14 @@
 package eu.kanade.tachiyomi.extension.id.maidmanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -11,7 +16,6 @@ import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
 
 class MaidManga : ParsedHttpSource() {
 
@@ -27,9 +31,9 @@ class MaidManga : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "h2:contains(Update Chapter) + div.row div.col-12"
 
-    override fun latestUpdatesRequest(page: Int):  Request {
+    override fun latestUpdatesRequest(page: Int): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) baseUrl else "$baseUrl/page/$page/"
+        val builtUrl = if (page == 1) baseUrl else "$baseUrl/page/$page/"
         return GET(builtUrl)
     }
 
@@ -45,8 +49,8 @@ class MaidManga : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = "a:containsOwn(Berikutnya)"
 
-    override fun popularMangaRequest(page: Int):  Request {
-        val builtUrl =  if(page == 1) "$baseUrl/advanced-search/?order=popular" else "$baseUrl/advanced-search/page/$page/?order=popular"
+    override fun popularMangaRequest(page: Int): Request {
+        val builtUrl = if (page == 1) "$baseUrl/advanced-search/?order=popular" else "$baseUrl/advanced-search/page/$page/?order=popular"
         return GET(builtUrl)
     }
 
@@ -64,7 +68,7 @@ class MaidManga : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl =  if(page == 1) "$baseUrl/advanced-search/" else "$baseUrl/advanced-search/page/$page/"
+        val builtUrl = if (page == 1) "$baseUrl/advanced-search/" else "$baseUrl/advanced-search/page/$page/"
         val url = HttpUrl.parse(builtUrl)!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
@@ -166,8 +170,8 @@ class MaidManga : ParsedHttpSource() {
         // Add date for latest chapter only
         document.select("script.yoast-schema-graph").html()
             .let {
-                val date = JSONObject(it).getJSONArray("@graph").
-                    getJSONObject(3).getString("dateModified")
+                val date = JSONObject(it).getJSONArray("@graph")
+                    .getJSONObject(3).getString("dateModified")
                 chapters[0].date_upload = parseDate(date)
             }
         return chapters
@@ -203,7 +207,7 @@ class MaidManga : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
             Filter.Header("You can combine filter."),
@@ -244,7 +248,7 @@ class MaidManga : ParsedHttpSource() {
             Tag("4-koma", "4-Koma"),
             Tag("4-koma-comedy", "4-Koma Comedy"),
             Tag("action", "Action"),
-            Tag("adult" ,"Adult"),
+            Tag("adult", "Adult"),
             Tag("adventure", "Adventure"),
             Tag("comedy", "Comedy"),
             Tag("demons", "Demons"),

@@ -2,16 +2,21 @@ package eu.kanade.tachiyomi.extension.ru.mangachan
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
 class Mangachan : ParsedHttpSource() {
 
@@ -30,14 +35,13 @@ class Mangachan : ParsedHttpSource() {
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor).build()
 
-
     override fun popularMangaRequest(page: Int): Request =
             GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var pageNum = 1
         when {
-            page <  1 -> pageNum = 1
+            page < 1 -> pageNum = 1
             page >= 1 -> pageNum = page
         }
         val url = if (query.isNotEmpty()) {
@@ -226,13 +230,11 @@ class Mangachan : ParsedHttpSource() {
             arrayOf("Дата", "Популярность", "Имя", "Главы"),
             Filter.Sort.Selection(1, false))
 
-
     override fun getFilterList() = FilterList(
             Status(),
             OrderBy(),
             GenreList(getGenreList())
     )
-
 
     /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")]
     *  .map(el => `Genre("${el.getAttribute('href').substr(6)}")`).join(',\n')

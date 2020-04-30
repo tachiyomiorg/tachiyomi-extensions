@@ -2,7 +2,11 @@ package eu.kanade.tachiyomi.extension.pt.mangayabu
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -119,7 +123,7 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img.img-responsive.img-manga")
-            .mapIndexed { i, element -> Page(i, "", element.absUrl("src"))}
+            .mapIndexed { i, element -> Page(i, "", element.absUrl("src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""

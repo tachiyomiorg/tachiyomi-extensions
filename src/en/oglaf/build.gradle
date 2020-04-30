@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Oglaf'
     pkgNameSuffix = 'en.oglaf'
     extClass = '.Oglaf'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

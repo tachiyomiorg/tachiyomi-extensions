@@ -2,7 +2,11 @@ package eu.kanade.tachiyomi.extension.es.zahard
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -28,7 +32,7 @@ class Zahard : ParsedHttpSource() {
             throw Exception("Source does not support search")
         } else {
             val uri = Uri.parse("$baseUrl/").buildUpon()
-            //Append uri filters
+            // Append uri filters
             filters.forEach {
                 if (it is UriFilter)
                     it.addToUri(uri)
@@ -38,9 +42,9 @@ class Zahard : ParsedHttpSource() {
         }
     }
 
-    override fun mangaDetailsRequest(manga: SManga) = GET( manga.url, headers)
+    override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
     override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET( chapter.url, headers)
+    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -88,7 +92,7 @@ class Zahard : ParsedHttpSource() {
     override fun latestUpdatesSelector() = throw Exception("Not used")
     override fun latestUpdatesNextPageSelector() = throw Exception("Not used")
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
-    override fun imageUrlParse(document: Document) = throw Exception ("Not Used")
+    override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Filters are ignored if using text search."),
@@ -96,14 +100,14 @@ class Zahard : ParsedHttpSource() {
         TypeFilter(),
         GenreFilter()
     )
-    private class TypeFilter : UriSelectFilter("Type","biblioteca", arrayOf(
+    private class TypeFilter : UriSelectFilter("Type", "biblioteca", arrayOf(
         Pair("all", "All"),
         Pair("manga", "Manga"),
         Pair("manhwa", "Manhwa"),
         Pair("manhua", "Manhua")
         ))
 
-    private class GenreFilter : UriSelectFilter("Genre","genero", arrayOf(
+    private class GenreFilter : UriSelectFilter("Genre", "genero", arrayOf(
         Pair("all", "ALL"),
         Pair("accion", "Acción"),
         Pair("aventura", "Aventura"),
@@ -157,9 +161,13 @@ class Zahard : ParsedHttpSource() {
         Pair("Comics", "Comics")
         ))
 
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                           val firstIsUnspecified: Boolean = true,
-                                           defaultValue: Int = 0) :
+    private open class UriSelectFilter(
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
@@ -174,6 +182,4 @@ class Zahard : ParsedHttpSource() {
     private interface UriFilter {
         fun addToUri(uri: Uri.Builder)
     }
-
 }
-

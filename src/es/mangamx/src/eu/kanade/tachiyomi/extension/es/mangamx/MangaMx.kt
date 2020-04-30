@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.es.mangamx
 
-
 import android.net.Uri
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
@@ -8,20 +7,25 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 open class MangaMx : ParsedHttpSource() {
 
-    //Info
+    // Info
 
     override val name = "MangaMx"
     override val baseUrl = "https://manga-mx.com"
@@ -29,7 +33,7 @@ open class MangaMx : ParsedHttpSource() {
     override val supportsLatest = true
     private var csrfToken = ""
 
-    //Popular
+    // Popular
 
     override fun popularMangaRequest(page: Int) =
         GET("$baseUrl/directorio?filtro=visitas&p=$page", headers)
@@ -57,7 +61,7 @@ open class MangaMx : ParsedHttpSource() {
         return MangasPage(mangas, hasNextPage)
     }
 
-    //Latest
+    // Latest
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/recientes?p=$page", headers)
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -70,7 +74,7 @@ open class MangaMx : ParsedHttpSource() {
         }
     }
 
-    //Search
+    // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotBlank()) {
@@ -83,7 +87,7 @@ open class MangaMx : ParsedHttpSource() {
             return POST("$baseUrl/buscar", searchHeaders, formBody)
         } else {
             val uri = Uri.parse("$baseUrl/directorio").buildUpon()
-            //Append uri filters
+            // Append uri filters
             for (filter in filters) {
                 when (filter) {
                     is StatusFilter -> uri.appendQueryParameter(
@@ -146,7 +150,7 @@ open class MangaMx : ParsedHttpSource() {
         thumbnail_url = jsonElement["img"].string.replace("/thumb", "/cover")
     }
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -161,13 +165,13 @@ open class MangaMx : ParsedHttpSource() {
         manga.genre = document.select("div#categ a").joinToString(", ") { it.text() }
         manga.status = when (document.select("span#desarrollo")?.first()?.text()) {
             "En desarrollo" -> SManga.ONGOING
-            //"Completed" -> SManga.COMPLETED
+            // "Completed" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
         return manga
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListSelector(): String = "div#c_list a"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
@@ -181,7 +185,7 @@ open class MangaMx : ParsedHttpSource() {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(date)?.time ?: 0
     }
 
-    //Pages
+    // Pages
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         val script = document.select("script:containsData(hojas)").html()
@@ -195,8 +199,8 @@ open class MangaMx : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
-    //Filters
-    
+    // Filters
+
     override fun getFilterList() = FilterList(
         Filter.Header("NOTA: ¡Ignorado si usa la búsqueda de texto!"),
         Filter.Separator(),
@@ -206,7 +210,6 @@ open class MangaMx : ParsedHttpSource() {
         AdultFilter("Adulto", adultArray),
         OrderFilter("Orden", orderArray)
     )
-
 
     private class StatusFilter(name: String, values: Array<Pair<String, String>>) :
         Filter.Select<String>(name, values.map { it.first }.toTypedArray())
@@ -251,4 +254,3 @@ open class MangaMx : ParsedHttpSource() {
         Pair("Ascendente", "asc")
     )
 }
-

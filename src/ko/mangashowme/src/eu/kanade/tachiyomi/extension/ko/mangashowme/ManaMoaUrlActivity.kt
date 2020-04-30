@@ -31,5 +31,4 @@ class ManaMoaUrlActivity : Activity() {
         finish()
         exitProcess(0)
     }
-
 }

@@ -1,15 +1,26 @@
 package eu.kanade.tachiyomi.extension.all.webtoons
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.util.Calendar
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
 
-abstract class Webtoons(override val lang: String, open val langCode: String = lang) : ParsedHttpSource() {
+abstract class Webtoons(
+    override val lang: String,
+    open val langCode: String = lang,
+    open val localeForCookie: String = lang
+) : ParsedHttpSource() {
 
     override val name = "Webtoons.com"
 
@@ -27,10 +38,11 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
                         .path("/")
                         .name("ageGatePass")
                         .value("true")
+                        .name("locale")
+                        .value(localeForCookie)
                         .build()
                 )
             }
-
         })
         .build()
 
@@ -76,7 +88,7 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         }
 
         // Process each row
-        for (i in 1 .. maxChild) {
+        for (i in 1..maxChild) {
             document.select("div#dailyList > div li:nth-child($i) a").map { mangas.add(popularMangaFromElement(it)) }
         }
 
@@ -98,9 +110,9 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
         return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga  = popularMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() : String? = null
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
@@ -160,5 +172,4 @@ abstract class Webtoons(override val lang: String, open val langCode: String = l
     }
 
     override fun imageUrlParse(document: Document): String = document.select("img").first().attr("src")
-
 }

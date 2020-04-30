@@ -2,26 +2,37 @@ package eu.kanade.tachiyomi.extension.es.lectormanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.*
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import okhttp3.FormBody
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * Note: this source is similar to TuMangaOnline.
  */
 class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
-    //Info
+    // Info
 
     override val name = "LectorManga"
     override val baseUrl = "https://lectormanga.com"
@@ -49,7 +60,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             .toString()
     }
 
-    //Popular
+    // Popular
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&type=&filter_by=title&page=$page", headers)
     override fun popularMangaNextPageSelector() = ".pagination .page-item:not(.disabled) a[rel='next']"
@@ -60,15 +71,14 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         thumbnail_url = element.select("img").attr("src")
     }
 
-
-    //Latest
+    // Latest
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&page=$page", headers)
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    //Search
+    // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/library")!!.newBuilder()
@@ -139,7 +149,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         genre = document.select("a.py-2").joinToString(", ") {
@@ -156,10 +166,10 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> = mutableListOf<SChapter>().apply {
-        time = serverTime() //Get time when the chapter page is opened
+        time = serverTime() // Get time when the chapter page is opened
 
         val document = response.asJsoup()
         val chapterUrl = response.request().url().toString()
@@ -213,26 +223,26 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             .parse(date)?.time ?: 0
     }
 
-    //Utilities
+    // Utilities
 
-    private var time = serverTime() //Grab time at app launch, can be updated
+    private var time = serverTime() // Grab time at app launch, can be updated
     private fun serverTime(): String {
         val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-        formatter.timeZone = TimeZone.getTimeZone("GMT+1") //Convert time to match server
+        formatter.timeZone = TimeZone.getTimeZone("GMT+1") // Convert time to match server
         return formatter.format(Date())
     }
 
-    //Pages
+    // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
         val (chapterURL, chapterID) = chapter.url.split("#")
-        val response = client.newCall(GET(chapterURL, headers)).execute() //Get chapter page for current token
+        val response = client.newCall(GET(chapterURL, headers)).execute() // Get chapter page for current token
         if (!response.isSuccessful) throw Exception("Lector Manga HTTP Error ${response.code()}")
         val document = response.asJsoup()
-        val getUrl = document.select("form#$chapterID").attr("action") + "/$time" //Get redirect URL
-        val token = document.select("form#$chapterID input").attr("value") //Get token
-        val method = document.select("form#$chapterID").attr("method") //Check POST or GET
-        time = serverTime() //Update time for next chapter
+        val getUrl = document.select("form#$chapterID").attr("action") + "/$time" // Get redirect URL
+        val token = document.select("form#$chapterID input").attr("value") // Get token
+        val method = document.select("form#$chapterID").attr("method") // Check POST or GET
+        time = serverTime() // Update time for next chapter
 
         val getHeaders = headersBuilder()
             .add("User-Agent", userAgent)
@@ -275,7 +285,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
             }
         } else {
             val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
-            val url = document.baseUri().substringBefore("/paginated") //Accounts for url ending in number "/paginated/1"
+            val url = document.baseUri().substringBefore("/paginated") // Accounts for url ending in number "/paginated/1"
             pageList.forEach {
                 add(Page(it, "$url/paginated/$it"))
             }
@@ -284,7 +294,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = document.select("img.viewer-image").attr("src")
 
-    //Filters
+    // Filters
 
     private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
         Pair("Ver todo", ""),

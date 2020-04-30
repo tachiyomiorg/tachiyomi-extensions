@@ -12,14 +12,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 /**
  * MangAdventure base source.
@@ -73,7 +73,9 @@ abstract class MangAdventure(
     override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
 
     override fun searchMangaRequest(
-        page: Int, query: String, filters: FilterList
+        page: Int,
+        query: String,
+        filters: FilterList
     ): Request {
         val uri = Uri.parse("$apiUrl/series/").buildUpon()
         if (query.startsWith(SLUG_QUERY)) {
@@ -89,6 +91,7 @@ abstract class MangAdventure(
                 is CategoryList -> cat.addAll(it.state.mapNotNull { c ->
                     Uri.encode(c.optString())
                 })
+                else -> Unit
             }
         }
         return GET("$uri&categories=${cat.joinToString(",")}", headers)
@@ -131,9 +134,7 @@ abstract class MangAdventure(
     override fun pageListParse(response: Response) =
         JSONObject(response.asString()).run {
             val url = getString("url")
-            // Workaround for a bug in MangAdventure < 0.6.3
             val root = getString("pages_root")
-                .replace("://media/series", "://reader")
             val arr = getJSONArray("pages_list")
             (0 until arr.length()).map {
                 Page(it, "$url${it + 1}", "$root${arr.getString(it)}")
@@ -235,7 +236,7 @@ abstract class MangAdventure(
      */
     inner class Status : Filter.Select<String>("Status", STATUSES) {
         /** Returns the [state] as a string. */
-        fun string() = values[state].toLowerCase()
+        fun string() = values[state].toLowerCase(Locale(lang))
     }
 
     /**
@@ -247,8 +248,8 @@ abstract class MangAdventure(
     inner class Category(name: String) : Filter.TriState(name) {
         /** Returns the [state] as a string, or null if [isIgnored]. */
         fun optString() = when (state) {
-            STATE_INCLUDE -> name.toLowerCase()
-            STATE_EXCLUDE -> "-" + name.toLowerCase()
+            STATE_INCLUDE -> name.toLowerCase(Locale(lang))
+            STATE_EXCLUDE -> "-" + name.toLowerCase(Locale(lang))
             else -> null
         }
     }

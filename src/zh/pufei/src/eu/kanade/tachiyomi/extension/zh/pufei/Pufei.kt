@@ -51,7 +51,7 @@ class Pufei : ParsedHttpSource() {
     override val baseUrl = "http://m.ipufei.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = "http://res.img.220012.net/"  //Alternative: "http://res.img.ipufei.com/"
+    val imageServer = "http://res.img.220012.net/" // Alternative: "http://res.img.ipufei.com/"
 
     override val client: OkHttpClient
         get() = network.client.newBuilder()
@@ -62,7 +62,7 @@ class Pufei : ParsedHttpSource() {
         val originalResponse: Response = chain.proceed(chain.request())
         if (originalResponse.headers("Content-Type").contains("application/octet-stream") && originalResponse.request().url().toString().contains(".jpg")) {
             val orgBody = originalResponse.body()!!.bytes()
-            val newBody = ResponseBody.create(MediaType.parse("image/jpeg"),orgBody)
+            val newBody = ResponseBody.create(MediaType.parse("image/jpeg"), orgBody)
             originalResponse.newBuilder()
                 .body(newBody)
                 .build()
@@ -178,11 +178,7 @@ class Pufei : ParsedHttpSource() {
             latestUpdatesFromElement(element)
         }
 
-        val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, false)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -192,11 +188,7 @@ class Pufei : ParsedHttpSource() {
             popularMangaFromElement(element)
         }
 
-        val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, false)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -217,4 +209,3 @@ class Pufei : ParsedHttpSource() {
     }
     // patch finish
 }
-

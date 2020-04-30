@@ -4,12 +4,13 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.Request
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
+import okhttp3.Request
+import org.jsoup.nodes.Element
 
 class NineMangaFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -26,7 +27,7 @@ class NineMangaFactory : SourceFactory {
 class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en") {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("a.bookname").let {
-            url = it.attr("abs:href").replace("www","en").substringAfter(baseUrl)
+            url = it.attr("abs:href").replace("www", "en").substringAfter(baseUrl)
             title = it.text()
         }
         thumbnail_url = element.select("img").attr("abs:src")
@@ -448,6 +449,10 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
 }
 
 class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Accept-Language", "es-ES,es;q=0.9,en;q=0.8,gl;q=0.7")
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/75")
+
     // ES, FR, RU don't return results for searches with an apostrophe
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
@@ -767,7 +772,7 @@ fun parseChapterDateByLang(date: String): Long {
                     "minutos" -> Calendar.MINUTE // ES
                     "horas" -> Calendar.HOUR
 
-                    //"minutos" -> Calendar.MINUTE // BR
+                    // "minutos" -> Calendar.MINUTE // BR
                     "hora" -> Calendar.HOUR
 
                     "минут" -> Calendar.MINUTE // RU

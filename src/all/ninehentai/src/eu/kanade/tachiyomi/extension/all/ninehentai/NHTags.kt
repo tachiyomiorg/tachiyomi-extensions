@@ -1520,5 +1520,4 @@ object NHTags {
             Tag(id = 21354, name = "Zinkurou"),
             Tag(id = 290, name = "Zombie")
     )
-
 }

@@ -8,8 +8,16 @@ import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -18,11 +26,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.lang.UnsupportedOperationException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 abstract class WPMangaStream(
     override val name: String,
@@ -87,7 +90,6 @@ abstract class WPMangaStream(
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
-
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga/page/$page/?order=popular", headers)
@@ -159,8 +161,8 @@ abstract class WPMangaStream(
         val infoElement = document.select("div.spe").first()
         val sepName = infoElement.select(".spe > span:contains(Author)").last()
         val manga = SManga.create()
-        manga.author = sepName?.ownText() ?:"N/A"
-        manga.artist = sepName?.ownText() ?:"N/A"
+        manga.author = sepName?.ownText() ?: "N/A"
+        manga.artist = sepName?.ownText() ?: "N/A"
         manga.genre = infoElement.select(".spe > span:nth-child(1) > a").joinToString { it.text() }
         manga.status = parseStatus(infoElement.select(".spe > span:nth-child(2)").text())
         manga.description = document.select(".infox > div.desc").first().select("p").text()

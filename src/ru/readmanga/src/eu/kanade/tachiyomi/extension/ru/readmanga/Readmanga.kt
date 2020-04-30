@@ -3,17 +3,25 @@ package eu.kanade.tachiyomi.extension.ru.readmanga
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.regex.Pattern
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.regex.Pattern
 
 class Readmanga : ParsedHttpSource() {
 
@@ -96,26 +104,16 @@ class Readmanga : ParsedHttpSource() {
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().replace(" ,", ",")
         manga.description = infoElement.select("div.manga-description").text()
-        manga.status = parseStatus(infoElement)
+        manga.status = parseStatus(infoElement.html())
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga
     }
 
-    private fun parseStatus(element: Element): Int {
-        val hiddenWarningMessage = element.select("span.hide > h3").first()
-        val html = element.html()
-        return if (hiddenWarningMessage != null) {
-            when {
-                html.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
-                html.contains("<h1 class=\"names\"> Сингл") || html.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
-                else -> SManga.UNKNOWN
-            }
-        } else {
-            when {
-                html.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
-                else -> SManga.UNKNOWN
-            }
-        }
+    private fun parseStatus(element: String): Int = when {
+        element.contains("Запрещена публикация произведения по копирайту") -> SManga.LICENSED
+        element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
+        element.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
+        else -> SManga.UNKNOWN
     }
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {

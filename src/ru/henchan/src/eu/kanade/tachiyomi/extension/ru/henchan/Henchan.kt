@@ -8,19 +8,23 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.*
-
 
 class Henchan : ParsedHttpSource() {
 
@@ -52,8 +56,8 @@ class Henchan : ParsedHttpSource() {
         } else {
             var genres = ""
             var order = ""
-            filters.forEach {filter ->
-                when(filter){
+            filters.forEach { filter ->
+                when (filter) {
                     is GenreList -> {
                         filter.state
                                 .filter { !it.isIgnored() }
@@ -65,7 +69,7 @@ class Henchan : ParsedHttpSource() {
             }
 
             if (genres.isNotEmpty()) {
-                filters.forEach {filter ->
+                filters.forEach { filter ->
                     when (filter) {
                         is OrderBy -> {
                             order = filter.toUriPartWithGenres()
@@ -73,8 +77,8 @@ class Henchan : ParsedHttpSource() {
                     }
                 }
                 "$baseUrl/tags/${genres.dropLast(1)}&sort=manga$order?offset=${20 * (page - 1)}"
-            }else{
-                filters.forEach {filter ->
+            } else {
+                filters.forEach { filter ->
                     when (filter) {
                         is OrderBy -> {
                             order = filter.toUriPartWithoutGenres()
@@ -97,8 +101,8 @@ class Henchan : ParsedHttpSource() {
         val isExHenManga = this.contains("/manganew_thumbs_blur/")
         val regex = "(?<=/)manganew_thumbs\\w*?(?=/)".toRegex(RegexOption.IGNORE_CASE)
         return this.replace(regex, "showfull_retina/manga")
-            .replace("_".plus(URL(baseUrl).host), "_hentaichan.ru") //domain-related replacing for very old mangas
-            .plus(if(isExHenManga) {"#"} else {""})// # for later so we know what type manga is it
+            .replace("_".plus(URL(baseUrl).host), "_hentaichan.ru") // domain-related replacing for very old mangas
+            .plus(if (isExHenManga) { "#" } else { "" }) // # for later so we know what type manga is it
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -148,7 +152,7 @@ class Henchan : ParsedHttpSource() {
         val document = response.asJsoup()
 
         // exhentai chapter
-        if(responseUrl.contains("/manga/")){
+        if (responseUrl.contains("/manga/")) {
             val chap = SChapter.create()
             chap.setUrlWithoutDomain(responseUrl)
             chap.name = document.select("a.title_top_a").text()
@@ -170,7 +174,7 @@ class Henchan : ParsedHttpSource() {
                 .replace("\\\"", "\"")
                 .replace("\\'", "'")
             chap.chapter_number = 1F
-            chap.date_upload = Date().time //setting to current date because of a sorting in the "Recent updates" section
+            chap.date_upload = Date().time // setting to current date because of a sorting in the "Recent updates" section
             return listOf(chap)
         }
 
@@ -203,7 +207,7 @@ class Henchan : ParsedHttpSource() {
         val chapterName = element.select("h2 a").attr("title")
         chapter.name = chapterName
         chapter.chapter_number = "(глава\\s|часть\\s)(\\d+)".toRegex(RegexOption.IGNORE_CASE).find(chapterName)?.groupValues?.get(2)?.toFloat() ?: 0F
-        chapter.date_upload = Date().time //setting to current date because of a sorting in the "Recent updates" section
+        chapter.date_upload = Date().time // setting to current date because of a sorting in the "Recent updates" section
         return chapter
     }
 
@@ -222,7 +226,7 @@ class Henchan : ParsedHttpSource() {
 
     private fun Document.parseJsonArray(): JsonArray {
         val imgScript = this.select("script:containsData(fullimg)").first().toString()
-        val imgString =  imgScript.substring(imgScript.indexOf('{'), imgScript.lastIndexOf('}') + 1).replace("&quot;", "\"")
+        val imgString = imgScript.substring(imgScript.indexOf('{'), imgScript.lastIndexOf('}') + 1).replace("&quot;", "\"")
         return gson.fromJson<JsonObject>(imgString)["fullimg"].array
     }
 
@@ -240,8 +244,8 @@ class Henchan : ParsedHttpSource() {
 
     private open class UriPartFilter(displayName: String, sortNames: Array<String>, val withGenres: Array<Pair<String, String>>, val withoutGenres: Array<Pair<String, String>>) :
             Filter.Sort(displayName, sortNames, Selection(1, false)) {
-        fun toUriPartWithGenres() = if(state!!.ascending) withGenres[state!!.index].first else withGenres[state!!.index].second
-        fun toUriPartWithoutGenres() = if(state!!.ascending) withoutGenres[state!!.index].first else withoutGenres[state!!.index].second
+        fun toUriPartWithGenres() = if (state!!.ascending) withGenres[state!!.index].first else withGenres[state!!.index].second
+        fun toUriPartWithoutGenres() = if (state!!.ascending) withoutGenres[state!!.index].first else withoutGenres[state!!.index].second
     }
 
     override fun getFilterList() = FilterList(

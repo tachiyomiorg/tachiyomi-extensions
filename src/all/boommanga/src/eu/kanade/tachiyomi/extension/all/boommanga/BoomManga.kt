@@ -1,26 +1,29 @@
 package eu.kanade.tachiyomi.extension.all.boommanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
-open class BoomManga (
+open class BoomManga(
     override val name: String,
     override val baseUrl: String,
     override val lang: String
 ) : ParsedHttpSource() {
 
-    //override val name = "BoomManga"
-    //override val baseUrl = "https://m.boommanga.com/"
-    //override val lang = "en"
+    // override val name = "BoomManga"
+    // override val baseUrl = "https://m.boommanga.com/"
+    // override val lang = "en"
     override val supportsLatest = true
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/category?sort=heat&page=$page", headers)
@@ -39,10 +42,9 @@ open class BoomManga (
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-
-    override fun mangaDetailsRequest(manga: SManga) = GET( manga.url, headers)
+    override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
     override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET( chapter.url, headers)
+    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -69,7 +71,7 @@ open class BoomManga (
         val chapter = SChapter.create()
             chapter.url = element.select("a").attr("href")
             chapter.chapter_number = element.select("[data-num]").attr("data-num").toFloat()
-            val date= element.select(".date").text()
+            val date = element.select(".date").text()
             if (date.isNotBlank()) { chapter.date_upload = parseDate(date) }
             chapter.name = nameselector(element).trim()
         return chapter
@@ -82,7 +84,7 @@ open class BoomManga (
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US ).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US).parse(date).time
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -124,10 +126,7 @@ open class BoomManga (
         return url
     }
 
-
     override fun pageListParse(document: Document) = throw Exception("Not used")
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
-
 }
-

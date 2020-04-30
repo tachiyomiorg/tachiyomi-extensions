@@ -1,13 +1,17 @@
 package eu.kanade.tachiyomi.extension.all.noisemanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.lang.Exception
 
 abstract class NoiseManga(override val lang: String) : ParsedHttpSource() {
 
@@ -90,7 +94,7 @@ abstract class NoiseManga(override val lang: String) : ParsedHttpSource() {
                     .substringAfterLast(", ")
                     .substringBeforeLast(" ")
             }
-            .mapIndexed { i, imgUrl -> Page(i, "", imgUrl)}
+            .mapIndexed { i, imgUrl -> Page(i, "", imgUrl) }
     }
 
     override fun imageUrlParse(document: Document) = ""

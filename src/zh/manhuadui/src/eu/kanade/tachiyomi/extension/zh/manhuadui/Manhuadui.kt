@@ -3,16 +3,20 @@ package eu.kanade.tachiyomi.extension.zh.manhuadui
 import android.util.Base64
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class Manhuadui : ParsedHttpSource() {
 
@@ -115,14 +119,13 @@ class Manhuadui : ParsedHttpSource() {
     fun decryptAES(value: String, key: String, iv: String): String? {
         try {
             val secretKey = SecretKeySpec(key.toByteArray(), "AES")
-            val iv = IvParameterSpec(iv.toByteArray())
+            val ivParams = IvParameterSpec(iv.toByteArray())
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParams)
 
             val code = Base64.decode(value, Base64.NO_WRAP)
 
             return String(cipher.doFinal(code))
-
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -130,7 +133,7 @@ class Manhuadui : ParsedHttpSource() {
         return null
     }
 
-    fun decrypt(code : String):String?{
+    fun decrypt(code: String): String? {
         val key = "123456781234567G"
         val iv = "ABCDEF1G34123412"
 
@@ -147,7 +150,7 @@ class Manhuadui : ParsedHttpSource() {
             it.evaluate(imgCode!! + """.join('|')""") as String
         }
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            //Log.i("Tachidebug", "img => ${imageServer[0]}/$imgPath$imgStr")
+            // Log.i("Tachidebug", "img => ${imageServer[0]}/$imgPath$imgStr")
             if (imgStr.startsWith("http://images.dmzj.com")) {
                 Page(i, "", "https://mhcdn.manhuazj.com/showImage.php?url=$imgStr")
             } else {
@@ -201,10 +204,12 @@ class Manhuadui : ParsedHttpSource() {
         Pair("新作", "xinzuo")
     ))
 
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>,
-                                     defaultValue: Int = 0) :
+    private open class UriPartFilter(
+        displayName: String,
+        val vals: Array<Pair<String, String>>,
+        defaultValue: Int = 0
+    ) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
     }
 }
-

@@ -3,9 +3,9 @@ package eu.kanade.tachiyomi.extension.en.mangapark
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
+import android.net.Uri
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -15,6 +15,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.math.absoluteValue
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -22,11 +26,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-import kotlin.math.absoluteValue
-
 
 class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
@@ -51,7 +50,6 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = directoryNextPageSelector
 
-
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest")
 
     override fun latestUpdatesSelector() = directorySelector
@@ -59,7 +57,6 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
-
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
@@ -122,7 +119,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             return allChapters.filter { it.chapter_number !in chapterNums }.distinctBy { it.chapter_number }
         }
 
-        fun List<SChapter>.filterOrAll(source: String): List<SChapter>{
+        fun List<SChapter>.filterOrAll(source: String): List<SChapter> {
             val chapters = this.filter { it.scanlator!!.contains(source) }
             return if (chapters.isNotEmpty()) {
                 (chapters + chapters.getMissingChapters(this)).sortedByDescending { it.chapter_number }
@@ -171,22 +168,22 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         val lcDate = date.toLowerCase()
         if (lcDate.endsWith("ago")) return parseRelativeDate(lcDate)
 
-        //Handle 'yesterday' and 'today'
+        // Handle 'yesterday' and 'today'
         var relativeDate: Calendar? = null
         if (lcDate.startsWith("yesterday")) {
             relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
+            relativeDate.add(Calendar.DAY_OF_MONTH, -1) // yesterday
         } else if (lcDate.startsWith("today")) {
             relativeDate = Calendar.getInstance()
         }
 
         relativeDate?.let {
-            //Since the date is not specified, it defaults to 1970!
+            // Since the date is not specified, it defaults to 1970!
             val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' '))
             val cal = Calendar.getInstance()
             cal.time = time
 
-            //Copy time to relative date
+            // Copy time to relative date
             it.set(Calendar.HOUR_OF_DAY, cal.get(Calendar.HOUR_OF_DAY))
             it.set(Calendar.MINUTE, cal.get(Calendar.MINUTE))
             return it.timeInMillis
@@ -208,11 +205,11 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             "a" -> 1
             else -> trimmedDate[0].toIntOrNull() ?: return 0
         }
-        val unit = trimmedDate[1].removeSuffix("s") //Remove 's' suffix
+        val unit = trimmedDate[1].removeSuffix("s") // Remove 's' suffix
 
         val now = Calendar.getInstance()
 
-        //Map English unit to Java unit
+        // Map English unit to Java unit
         val javaUnit = when (unit) {
             "year" -> Calendar.YEAR
             "month" -> Calendar.MONTH
@@ -245,7 +242,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         return pages
     }
 
-    //Unused, we can get image urls directly from the chapter page
+    // Unused, we can get image urls directly from the chapter page
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
@@ -425,7 +422,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     private class YearFilter : UriSelectFilter("Release year", "years",
             arrayOf(Pair("any", "Any"),
-                    //Get all years between today and 1946
+                    // Get all years between today and 1946
                     *(Calendar.getInstance().get(Calendar.YEAR) downTo 1946).map {
                         Pair(it.toString(), it.toString())
                     }.toTypedArray()
@@ -445,10 +442,14 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
      * If an entry is selected it is appended as a query parameter onto the end of the URI.
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
-    //vals: <name, display>
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                       val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0) :
+    // vals: <name, display>
+    private open class UriSelectFilter(
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
             Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
@@ -510,15 +511,14 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         private const val SOURCE_PREF_TITLE = "Chapter List Source"
         private const val SOURCE_PREF = "Manga_Park_Source"
         private val sourceArray = arrayOf(
-            Pair("All sources, all chapters","all"),
-            Pair("Source with most chapters","most"),
-            Pair("Smart list","smart"),
-            Pair("Prioritize source: Rock","rock"),
-            Pair("Prioritize source: Duck","duck"),
-            Pair("Prioritize source: Mini","mini"),
-            Pair("Prioritize source: Fox","fox"),
-            Pair("Prioritize source: Panda","panda")
+            Pair("All sources, all chapters", "all"),
+            Pair("Source with most chapters", "most"),
+            Pair("Smart list", "smart"),
+            Pair("Prioritize source: Rock", "rock"),
+            Pair("Prioritize source: Duck", "duck"),
+            Pair("Prioritize source: Mini", "mini"),
+            Pair("Prioritize source: Fox", "fox"),
+            Pair("Prioritize source: Panda", "panda")
         )
     }
-
 }

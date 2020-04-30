@@ -11,16 +11,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
 import okhttp3.FormBody
+import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.Headers
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.net.URLEncoder
 
 class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -72,8 +72,8 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
                 .add("dqh_firewall", URLEncoder.encode(request.url().toString().substringAfter(baseUrl), "utf-8"))
                 .build()
             val cookie = response.headers("set-cookie")[0].split(" ")
-                .filter {it.contains("__cfduid") || it.contains("PHPSESSID") }
-                .joinToString("; ") {it.substringBefore(";")}
+                .filter { it.contains("__cfduid") || it.contains("PHPSESSID") }
+                .joinToString("; ") { it.substringBefore(";") }
             headers.newBuilder().add("Cookie", cookie).build()
             client.newCall(POST(request.url().toString(), headers, body)).execute()
         } else {
@@ -96,6 +96,8 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
 
 class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
+    // Referer header needs to be chapter URL or not set at all
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().removeAll("Referer").build())
 }
 
 class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
@@ -166,16 +168,12 @@ class MangaTR : FMReader("Manga-TR", "https://manga-tr.com", "tr") {
     override val chapterTimeSelector = "td[align=right]"
     private val chapterListHeaders = headers.newBuilder().add("X-Requested-With", "XMLHttpRequest").build()
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return if (manga.status != SManga.LICENSED) {
-            val requestUrl = "$baseUrl/cek/fetch_pages_manga.php?manga_cek=${manga.url.substringAfter("manga-").substringBefore(".")}"
-            client.newCall(GET(requestUrl, chapterListHeaders))
-                .asObservableSuccess()
-                .map { response ->
-                    chapterListParse(response, requestUrl)
-                }
-        } else {
-            Observable.error(Exception("Licensed - No chapters to show"))
-        }
+        val requestUrl = "$baseUrl/cek/fetch_pages_manga.php?manga_cek=${manga.url.substringAfter("manga-").substringBefore(".")}"
+        return client.newCall(GET(requestUrl, chapterListHeaders))
+            .asObservableSuccess()
+            .map { response ->
+                chapterListParse(response, requestUrl)
+            }
     }
 
     private fun chapterListParse(response: Response, requestUrl: String): List<SChapter> {
@@ -201,16 +199,6 @@ class MangaTR : FMReader("Manga-TR", "https://manga-tr.com", "tr") {
     }
 
     override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/${chapter.url.substringAfter("cek/")}", headers)
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.chapter-content select:first-of-type option").forEachIndexed { i, imgPage ->
-            pages.add(Page(i, "$baseUrl/${imgPage.attr("value")}"))
-        }
-        return pages.dropLast(1) // last page is a comments page
-    }
-
-    override fun imageUrlParse(document: Document): String = document.select("img.chapter-img").attr("abs:src").trim()
 }
 
 class Comicastle : FMReader("Comicastle", "https://www.comicastle.org", "en") {

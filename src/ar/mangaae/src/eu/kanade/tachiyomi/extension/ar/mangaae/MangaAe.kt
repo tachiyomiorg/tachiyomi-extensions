@@ -32,7 +32,7 @@ class MangaAe : ParsedHttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:54.0) Gecko/20100101 Firefox/73.0")
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:54.0) Gecko/20100101 Firefox/75.0")
         .add("Referer", baseUrl)
 
     // Popular
@@ -71,10 +71,8 @@ class MangaAe : ParsedHttpSource() {
         } else {
             lazysrc
         }
-        element.select("a")[2].let {
-            setUrlWithoutDomain(it.attr("abs:href"))
-            title = it.text()
-        }
+        setUrlWithoutDomain(element.select("a:has(img)").attr("href"))
+        title = element.select("a").last().text()
     }
 
     override fun latestUpdatesNextPageSelector(): String? = null
@@ -128,7 +126,7 @@ class MangaAe : ParsedHttpSource() {
         element.select("a").let {
             // use full pages for easier links
             chapter.setUrlWithoutDomain(it.attr("href").removeSuffix("/1/") + "/0/full")
-            chapter.name = "\u061C" + it.text() //Add unicode ARABIC LETTER MARK to ensure all titles are right to left
+            chapter.name = "\u061C" + it.text() // Add unicode ARABIC LETTER MARK to ensure all titles are right to left
         }
         return chapter
     }
@@ -160,5 +158,4 @@ class MangaAe : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
         OrderByFilter()
     )
-
 }

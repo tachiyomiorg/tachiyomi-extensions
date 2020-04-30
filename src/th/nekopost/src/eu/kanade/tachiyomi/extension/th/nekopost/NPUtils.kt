@@ -2,7 +2,19 @@ package eu.kanade.tachiyomi.extension.th.nekopost
 
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.ArrayList
+import java.util.Locale
+import org.jsoup.nodes.Element
+
+class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList<E>(c) {
+    override fun isEmpty(): Boolean = mangaList.isEmpty()
+
+    fun isNotEmpty(): Boolean = mangaList.isNotEmpty()
+
+    fun isListEmpty(): Boolean = super.isEmpty()
+
+    fun isListNotEmpty(): Boolean = !isListEmpty()
+}
 
 class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList<E>(c) {
     override fun isEmpty(): Boolean = mangaList.isEmpty()
@@ -17,7 +29,6 @@ class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList
 
 object NPUtils {
     private val urlWithoutDomainFromFullUrlRegex: Regex = Regex("^https://www\\.nekopost\\.net/manga/(.*)$")
-
 
     fun getMangaOrChapterAlias(url: String): String {
         val (urlWithoutDomain) = urlWithoutDomainFromFullUrlRegex.find(url)!!.destructured

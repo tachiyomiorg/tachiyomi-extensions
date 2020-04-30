@@ -7,14 +7,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 open class Mangatensei(override val lang: String, private val Mtlang: String) : ParsedHttpSource() {
 
@@ -270,7 +270,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class AuthorFilter : Filter.Text("Author / Artist")
     private class StyleFilter(genres: List<Tag>) : Filter.Group<Tag>("Styles", genres)
@@ -392,10 +392,9 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
     }
 
     private class Tag(name: String) : Filter.CheckBox(name)
-
 }
 
-abstract class OtherSite(private val sourceName: String, private val sourceBaseUrl: String, private val tachiLang: String, private val sourceLang: String): Mangatensei(tachiLang, sourceLang) {
+abstract class OtherSite(private val sourceName: String, private val sourceBaseUrl: String, private val tachiLang: String, private val sourceLang: String) : Mangatensei(tachiLang, sourceLang) {
     override val name = sourceName
 
     override val baseUrl = sourceBaseUrl

@@ -2,17 +2,20 @@ package eu.kanade.tachiyomi.extension.zh.onemanhua
 
 import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
-import okhttp3.Request
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import java.lang.Error
 import java.util.ArrayList
 import java.util.regex.Pattern
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
+import okhttp3.HttpUrl
+import okhttp3.Request
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class Onemanhua : ParsedHttpSource() {
     override val lang = "zh"
@@ -112,7 +115,7 @@ class Onemanhua : ParsedHttpSource() {
             }
             author = detailElements[1].select("a").first().text()
 
-            genre = detailElements[4].select("a").joinToString{ it.text() }
+            genre = detailElements[4].select("a").joinToString { it.text() }
             description = detailElements[5].select(".fed-part-esan").first().text().trim()
         }
 
@@ -146,7 +149,7 @@ class Onemanhua : ParsedHttpSource() {
             var startImg = getStartImg(decryptedData)
             var totalPages = getTotalPages(decryptedData)
 
-            for(i in startImg..totalPages) {
+            for (i in startImg..totalPages) {
                 result.add(Page(i, "", "${imageServerUrl}${imgRelativePath}${"%04d".format(i)}.jpg"))
             }
         }

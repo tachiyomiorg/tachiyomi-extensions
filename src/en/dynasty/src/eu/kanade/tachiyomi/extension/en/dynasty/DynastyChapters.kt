@@ -5,12 +5,12 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
 class DynastyChapters : DynastyScans() {
     override val name = "Dynasty-Chapters"
@@ -96,5 +96,4 @@ class DynastyChapters : DynastyScans() {
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
     override fun latestUpdatesParse(response: Response) = searchMangaParse(response)
-
 }

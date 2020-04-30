@@ -11,4 +11,4 @@ class NoiseMangaFactory : SourceFactory {
 }
 
 class NoiseMangaEnglish : NoiseManga("en")
-class NoiseMangaPortuguese: NoiseManga("pt")
+class NoiseMangaPortuguese : NoiseManga("pt")

@@ -1,17 +1,20 @@
 package eu.kanade.tachiyomi.extension.ru.nudemoon
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Locale
-
 
 class Nudemoon : ParsedHttpSource() {
 
@@ -30,14 +33,14 @@ class Nudemoon : ParsedHttpSource() {
             GET("$baseUrl/all_manga?date&rowstart=${30 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //Search by query on this site works really badly, i don't even sure of the need to implement it
+        // Search by query on this site works really badly, i don't even sure of the need to implement it
         val url = if (query.isNotEmpty()) {
             "$baseUrl/search?stext=${URLEncoder.encode(query, "CP1251")}&rowstart=${30 * (page - 1)}"
-        }else{
+        } else {
             var genres = ""
             var order = ""
             for (filter in if (filters.isEmpty()) getFilterList() else filters) {
-                when(filter){
+                when (filter) {
                     is GenreList -> {
                         filter.state.forEach { f ->
                             if (f.state) {
@@ -52,17 +55,17 @@ class Nudemoon : ParsedHttpSource() {
                 for (filter in filters) {
                     when (filter) {
                         is OrderBy -> {
-                            //The site has no ascending order
+                            // The site has no ascending order
                             order = arrayOf("&date", "&views", "&like")[filter.state!!.index]
                         }
                     }
                 }
                 "$baseUrl/tags/${genres.dropLast(1)}$order&rowstart=${30 * (page - 1)}"
-            }else{
+            } else {
                 for (filter in filters) {
                     when (filter) {
                         is OrderBy -> {
-                            //The site has no ascending order
+                            // The site has no ascending order
                             order = arrayOf("all_manga?date", "all_manga?views", "all_manga?like")[filter.state!!.index]
                         }
                     }
@@ -83,7 +86,7 @@ class Nudemoon : ParsedHttpSource() {
         val manga = SManga.create()
 
         manga.thumbnail_url = element.select("img[class^=news]").attr("abs:src")
-        element.select("a:has(h2)").let{
+        element.select("a:has(h2)").let {
             manga.title = it.text()
             manga.setUrlWithoutDomain(it.attr("href"))
         }
@@ -115,7 +118,7 @@ class Nudemoon : ParsedHttpSource() {
 
     override fun chapterListRequest(manga: SManga): Request {
 
-        val chapterUrl = if(manga.title.contains("\\s#\\d+".toRegex()))
+        val chapterUrl = if (manga.title.contains("\\s#\\d+".toRegex()))
             "/vse_glavy/" + manga.title.split("\\s#\\d+".toRegex())[0].replace("\\W".toRegex(), "_")
         else
             manga.url
@@ -129,11 +132,11 @@ class Nudemoon : ParsedHttpSource() {
         val responseUrl = response.request().url().toString()
         val document = response.asJsoup()
 
-        if(!responseUrl.contains("/vse_glavy/")){
+        if (!responseUrl.contains("/vse_glavy/")) {
             return listOf(chapterFromElement(document))
         }
 
-        //Order chapters by its number 'cause on the site they are in random order
+        // Order chapters by its number 'cause on the site they are in random order
         return document.select(chapterListSelector()).sortedByDescending {
             val regex = "#(\\d+)".toRegex()
             val chapterName = it.select("img[class^=news]").first().parent().attr("title")
@@ -147,13 +150,13 @@ class Nudemoon : ParsedHttpSource() {
         val infoElem = element.select("tr[valign=top]").first().parent()
         val chapterName = infoElem.select("h1, h2").text()
         var chapterUrl = infoElem.select("a[title]:has(img)").attr("href")
-        if(!chapterUrl.contains("-online")) {
+        if (!chapterUrl.contains("-online")) {
             chapterUrl = chapterUrl.replace("/\\d+".toRegex(), "$0-online")
         } else {
             chapter.chapter_number = 1F
         }
 
-        chapter.setUrlWithoutDomain(if(!chapterUrl.startsWith("/")) "/$chapterUrl" else chapterUrl)
+        chapter.setUrlWithoutDomain(if (!chapterUrl.startsWith("/")) "/$chapterUrl" else chapterUrl)
         chapter.name = chapterName
         chapter.date_upload = infoElem.text().substringAfter("Дата:").substringBefore("Просмотров").trim().let {
             try {
@@ -172,7 +175,6 @@ class Nudemoon : ParsedHttpSource() {
         return Regex("""images\[(\d+)].src\s=\s'(http.*)'""").findAll(imgScript).map {
             Page(it.groupValues[1].toInt(), imageUrl = it.groupValues[2])
         }.toList()
-
     }
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")

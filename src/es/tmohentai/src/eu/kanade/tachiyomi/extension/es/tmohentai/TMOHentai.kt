@@ -1,9 +1,14 @@
 package eu.kanade.tachiyomi.extension.es.tmohentai
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.HttpUrl
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -39,7 +44,7 @@ class TMOHentai : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val parsedInformation = document.select("div.row > div.panel.panel-primary").text()
         val authorAndArtist = parsedInformation.substringAfter("Groups").substringBefore("Magazines").trim()
 
@@ -213,5 +218,4 @@ class TMOHentai : ParsedHttpSource() {
             Pair("Popularidad", "popularity")
         )
     }
-
 }

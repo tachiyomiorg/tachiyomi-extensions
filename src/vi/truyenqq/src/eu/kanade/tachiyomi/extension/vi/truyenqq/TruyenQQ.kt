@@ -2,16 +2,19 @@ package eu.kanade.tachiyomi.extension.vi.truyenqq
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.concurrent.TimeUnit
 
 class TruyenQQ : ParsedHttpSource() {
     override val name: String = "TruyenQQ"
@@ -41,7 +44,7 @@ class TruyenQQ : ParsedHttpSource() {
         title = element.select(".title-book a").text()
     }
 
-    //Latest
+    // Latest
     override fun latestUpdatesRequest(page: Int): Request {
         return GET("$baseUrl/truyen-moi-cap-nhat/trang-$page.html", headers)
     }
@@ -49,19 +52,19 @@ class TruyenQQ : ParsedHttpSource() {
     override fun latestUpdatesSelector(): String = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Search
+    // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/tim-kiem/trang-$page.html").buildUpon()
-            .appendQueryParameter("q",query)
+            .appendQueryParameter("q", query)
         return GET(uri.toString(), headers)
 
-        //Todo Filters
+        // Todo Filters
     }
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         title = document.select("h1").text()
@@ -73,12 +76,12 @@ class TruyenQQ : ParsedHttpSource() {
         thumbnail_url = document.select("div.left img").attr("src")
         status = when (document.select(".info-item:eq(2)").text().substringAfter(":").trim()) {
             "Đang Cập Nhật" -> SManga.ONGOING
-            //"" -> SManga.COMPLETED
+            // "" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListSelector(): String = "div.works-chapter-list div.works-chapter-item"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
@@ -88,18 +91,18 @@ class TruyenQQ : ParsedHttpSource() {
         chapter_number = name.substringAfter("Chương").trim().toFloat()
     }
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("dd/MM/yyyy", Locale.US ).parse(date).time
+        return SimpleDateFormat("dd/MM/yyyy", Locale.US).parse(date).time
     }
 
-    //Pages
+    // Pages
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("img.lazy").forEachIndexed { index, element ->
-            add(Page(index,"",element.attr("abs:src"))) }
+            add(Page(index, "", element.attr("abs:src"))) }
     }
     override fun imageUrlParse(document: Document): String {
         throw Exception("Not Used")
     }
 
-    //Not Used
+    // Not Used
 }

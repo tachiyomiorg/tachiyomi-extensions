@@ -1,18 +1,21 @@
 package eu.kanade.tachiyomi.extension.en.mangacruzers
 
-import android.net.Uri
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.TimeUnit
-
 
 class mangacruzers : ParsedHttpSource() {
 
@@ -27,8 +30,8 @@ class mangacruzers : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
-    override fun popularMangaSelector() = "tr"//"td > a:not(a[href*=Cruzers])"
-    override fun latestUpdatesSelector() = throw Exception ("Not Used")
+    override fun popularMangaSelector() = "tr" // "td > a:not(a[href*=Cruzers])"
+    override fun latestUpdatesSelector() = throw Exception("Not Used")
     override fun searchMangaSelector() = popularMangaSelector()
     override fun chapterListSelector() = "div.flex.items-center > div.flex.flex-col:not(.items-center), tbody.no-border-x > tr"
 
@@ -37,19 +40,17 @@ class mangacruzers : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/read-manga/", headers)
-    override fun latestUpdatesRequest(page: Int) = throw Exception ("Not Used")
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception ("Not Used")
-
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Not Used")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("Not Used")
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
         val mangas = mutableListOf<SManga>()
         val element = document.select(popularMangaSelector())
-        for (i in 1 until element.size-2) {
+        for (i in 1 until element.size - 2) {
             mangas.add(mangaFromElement(element[i]))
         }
         return MangasPage(mangas, false)
-
     }
 
     override fun mangaDetailsRequest(manga: SManga) = chapterListRequest(manga)
@@ -67,18 +68,18 @@ class mangacruzers : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
-    override fun searchMangaFromElement(element: Element)= mangaFromElement(element)
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
         private fun mangaFromElement(element: Element): SManga {
             val manga = SManga.create()
                 manga.url = element.select("a").attr("abs:href")
                 manga.title = element.select("td").first().text().trim()
-               
+
         return manga
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("MMM dd, yyyy", Locale.US ).parse(date).time
+        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date).time
     }
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
@@ -89,7 +90,7 @@ class mangacruzers : ParsedHttpSource() {
             date_upload = parseDate(td[1].text())
         } else {
             val substring = element.select("div.text-xs").text()
-            name = element.select("a").text() + if (!substring.isNullOrBlank()) { " - $substring" } else {""}
+            name = element.select("a").text() + if (!substring.isNullOrBlank()) { " - $substring" } else { "" }
         }
     }
 
@@ -110,9 +111,7 @@ class mangacruzers : ParsedHttpSource() {
 
         return pages
     }
-    
+
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 }
-
-

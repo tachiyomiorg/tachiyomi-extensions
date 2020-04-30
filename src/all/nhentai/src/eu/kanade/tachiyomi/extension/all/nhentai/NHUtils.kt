@@ -1,8 +1,8 @@
 package eu.kanade.tachiyomi.extension.all.nhentai
 
+import java.text.SimpleDateFormat
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
 
 object NHUtils {
     fun getArtists(document: Document): String {

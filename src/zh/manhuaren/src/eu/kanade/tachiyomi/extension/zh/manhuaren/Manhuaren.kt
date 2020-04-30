@@ -1,22 +1,27 @@
 package eu.kanade.tachiyomi.extension.zh.manhuaren
 
 import android.text.format.DateFormat
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.Headers
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.HttpUrl
-import okhttp3.CacheControl
-import org.json.JSONArray
-import org.json.JSONObject
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.ArrayList
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit.MINUTES
-
+import okhttp3.CacheControl
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
+import org.json.JSONArray
+import org.json.JSONObject
 
 class Manhuaren : HttpSource() {
     override val lang = "zh"
@@ -66,7 +71,6 @@ class Manhuaren : HttpSource() {
         add("Referer", "http://www.dm5.com/dm5api/")
         add("clubReferer", "http://mangaapi.manhuaren.com/")
     }
-
 
     private fun hashString(type: String, input: String): String {
         val HEX_CHARS = "0123456789abcdef"
@@ -233,7 +237,7 @@ class Manhuaren : HttpSource() {
             val obj = arr.getJSONObject(i)
             ret.add(SChapter.create().apply {
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                name = if (obj.getInt("isMustPay")==1) {"(锁) "} else {""} + getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
+                name = if (obj.getInt("isMustPay") == 1) { "(锁) " } else { "" } + getChapterName(type, obj.getString("sectionName"), obj.getString("sectionTitle"))
                 date_upload = dateFormat.parse(obj.getString("releaseTime")).time
                 chapter_number = obj.getInt("sectionSort").toFloat()
                 url = "/v1/manga/getRead?mangaSectionId=${obj.getInt("sectionId")}"
@@ -352,5 +356,4 @@ class Manhuaren : HttpSource() {
         fun getId() = vals[state].id
         fun getType() = vals[state].type
     }
-
 }

@@ -2,15 +2,22 @@ package eu.kanade.tachiyomi.extension.it.hentaifantasy
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.regex.Pattern
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 class HentaiFantasy : ParsedHttpSource() {
     override val name = "HentaiFantasy"
@@ -35,8 +42,8 @@ class HentaiFantasy : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "div.list > div.group > div.title > a"
 
-    override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/most_downloaded/$page/", headers)
+    override fun popularMangaRequest(page: Int) =
+        GET("$baseUrl/most_downloaded/$page/", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -49,8 +56,8 @@ class HentaiFantasy : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesRequest(page: Int)
-        = GET("$baseUrl/latest/$page/", headers)
+    override fun latestUpdatesRequest(page: Int) =
+        GET("$baseUrl/latest/$page/", headers)
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         return popularMangaFromElement(element)
@@ -68,7 +75,7 @@ class HentaiFantasy : ParsedHttpSource() {
                 is TagList -> filter.state
                     .filter { it.state }
                     .map {
-                        paths.add(it.name.toLowerCase().replace(" ", "_"));
+                        paths.add(it.name.toLowerCase().replace(" ", "_"))
                         it.id.toString()
                     }
                     .forEach { tags.add(it) }
@@ -93,12 +100,12 @@ class HentaiFantasy : ParsedHttpSource() {
         var searchPath = if (!searchTags) {
             "search"
         } else if (paths.size == 1) {
-            "tag/${paths[0]}/${page}"
+            "tag/${paths[0]}/$page"
         } else {
             "search_tags"
         }
 
-        return POST("${baseUrl}/${searchPath}", headers, form.build())
+        return POST("$baseUrl/$searchPath", headers, form.build())
     }
 
     override fun searchMangaFromElement(element: Element): SManga {

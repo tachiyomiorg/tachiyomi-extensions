@@ -11,6 +11,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -18,21 +22,17 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 class Hiveworks : ParsedHttpSource() {
 
-    //Info
+    // Info
 
     override val name = "Hiveworks Comics"
     override val baseUrl = "https://hiveworkscomics.com"
     override val lang = "en"
     override val supportsLatest = true
 
-    //Client
+    // Client
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
@@ -52,7 +52,7 @@ class Hiveworks : ParsedHttpSource() {
 
         val mangas = document.select(popularMangaSelector()).filterNot {
             val url = it.select("a.comiclink").first().attr("abs:href")
-            url.contains("sparklermonthly.com") || url.contains("explosm.net") //Filter Unsupported Comics
+            url.contains("sparklermonthly.com") || url.contains("explosm.net") // Filter Unsupported Comics
         }.map { element ->
             popularMangaFromElement(element)
         }
@@ -76,7 +76,6 @@ class Hiveworks : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
 
-
     // Search
     // Source's website doesn't appear to have a search function; so searching locally
 
@@ -85,7 +84,7 @@ class Hiveworks : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse(baseUrl).buildUpon()
         if (filters.isNotEmpty()) uri.appendPath("home")
-        //Append uri filters
+        // Append uri filters
         filters.forEach { filter ->
             when (filter) {
                 is UriFilter -> filter.addToUri(uri)
@@ -168,10 +167,9 @@ class Hiveworks : ParsedHttpSource() {
             ?.let { mangaFromElement(it) } ?: SManga.create()
     }
 
-
     // Chapters
 
-    //Included to call custom error codes
+    // Included to call custom error codes
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return if (manga.status != SManga.LICENSED) {
             client.newCall(chapterListRequest(manga))
@@ -221,7 +219,7 @@ class Hiveworks : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
 
-    //Pages
+    // Pages
 
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
     override fun pageListParse(response: Response): List<Page> {
@@ -233,7 +231,7 @@ class Hiveworks : ParsedHttpSource() {
             pages.add(Page(pages.size, "", it.attr("src")))
         }
 
-        //Site specific pages can be added here
+        // Site specific pages can be added here
         when {
             "smbc-comics" in url -> {
                 pages.add(Page(pages.size, "", document.select("div#aftercomic img").attr("src")))
@@ -248,7 +246,7 @@ class Hiveworks : ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
-    //Filters
+    // Filters
 
     override fun getFilterList() = FilterList(
         Filter.Header("Only one filter can be used at a time"),
@@ -269,10 +267,13 @@ class Hiveworks : ParsedHttpSource() {
     private class KidsFilter : Filter.CheckBox("Kids Comics")
     private class CompletedFilter : Filter.CheckBox("Completed Comics")
 
-
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                       val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0) :
+    private open class UriSelectFilter(
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
@@ -364,9 +365,9 @@ class Hiveworks : ParsedHttpSource() {
         Pair("z-a", "Z-A")
     ))
 
-    //Other Code
+    // Other Code
 
-    //Builds Image from mouse tooltip text
+    // Builds Image from mouse tooltip text
     private fun smbcTextHandler(document: Document): String {
         val title = document.select("title").text().trim()
         val altText = document.select("div#cc-comicbody img").attr("title")
@@ -400,7 +401,7 @@ class Hiveworks : ParsedHttpSource() {
         return "https://fakeimg.pl/1500x2126/ffffff/000000/?text=$builder&font_size=42&font=museo"
     }
 
-    //Used to throw custom error codes for http codes
+    // Used to throw custom error codes for http codes
     private fun Call.asObservableSuccess(): Observable<Response> {
         return asObservable().doOnNext { response ->
             if (!response.isSuccessful) {
@@ -412,7 +413,4 @@ class Hiveworks : ParsedHttpSource() {
             }
         }
     }
-
 }
-
-

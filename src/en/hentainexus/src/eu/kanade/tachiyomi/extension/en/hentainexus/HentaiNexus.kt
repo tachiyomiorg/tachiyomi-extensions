@@ -1,14 +1,17 @@
 package eu.kanade.tachiyomi.extension.en.hentainexus
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.net.URLEncoder
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.StringBuilder
-import java.net.URLEncoder
 
 class HentaiNexus : ParsedHttpSource() {
 
@@ -55,7 +58,7 @@ class HentaiNexus : ParsedHttpSource() {
         }
 
         filters.findInstance<ArtistFilter>()?.let { f ->
-            if(f.state.isNotBlank()) {
+            if (f.state.isNotBlank()) {
                 requireNoUrl()
                 url = "/"
                 queryString = "q=artist:%22${URLEncoder.encode(f.state, "UTF-8")}%22"
@@ -63,14 +66,14 @@ class HentaiNexus : ParsedHttpSource() {
         }
 
         filters.findInstance<TagFilter>()?.let { f ->
-            if(f.state.isNotBlank()) {
+            if (f.state.isNotBlank()) {
                 requireNoUrl()
                 url = "/"
                 queryString = "q=tag:%22${URLEncoder.encode(f.state, "UTF-8")}%22"
             }
         }
 
-        if(query.isNotBlank()) {
+        if (query.isNotBlank()) {
             requireNoUrl()
             url = "/"
             queryString = "q=" + URLEncoder.encode(query, "UTF-8")
@@ -83,8 +86,8 @@ class HentaiNexus : ParsedHttpSource() {
 
     private fun pagedRequest(url: String, page: Int, queryString: String? = null): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) url else "${url}page/$page"
-        return GET(if(queryString != null) "$builtUrl?$queryString" else builtUrl)
+        val builtUrl = if (page == 1) url else "${url}page/$page"
+        return GET(if (queryString != null) "$builtUrl?$queryString" else builtUrl)
     }
 
     override fun searchMangaSelector() = latestUpdatesSelector()

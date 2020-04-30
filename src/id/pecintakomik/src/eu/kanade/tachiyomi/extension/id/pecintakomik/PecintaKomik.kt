@@ -1,16 +1,20 @@
 package eu.kanade.tachiyomi.extension.id.pecintakomik
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
 class PecintaKomik : ParsedHttpSource() {
 
@@ -24,9 +28,9 @@ class PecintaKomik : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun latestUpdatesRequest(page: Int):  Request {
+    override fun latestUpdatesRequest(page: Int): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) baseUrl else "$baseUrl/page/$page/"
+        val builtUrl = if (page == 1) baseUrl else "$baseUrl/page/$page/"
         return GET(builtUrl)
     }
 
@@ -44,8 +48,8 @@ class PecintaKomik : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = "a.next"
 
-    override fun popularMangaRequest(page: Int):  Request {
-        val builtUrl =  if(page == 1) "$baseUrl/advanced-search/?order=popular" else "$baseUrl/advanced-search/page/$page/?order=popular"
+    override fun popularMangaRequest(page: Int): Request {
+        val builtUrl = if (page == 1) "$baseUrl/advanced-search/?order=popular" else "$baseUrl/advanced-search/page/$page/?order=popular"
         return GET(builtUrl)
     }
 
@@ -63,7 +67,7 @@ class PecintaKomik : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl = if(page == 1) "$baseUrl/advanced-search/" else "$baseUrl/advanced-search/page/$page/"
+        val builtUrl = if (page == 1) "$baseUrl/advanced-search/" else "$baseUrl/advanced-search/page/$page/"
         var types: String? = null
         fun requireNoType() = require(types == null) {
             "You cannot combine type with other filters!"
@@ -74,13 +78,13 @@ class PecintaKomik : ParsedHttpSource() {
         filters.forEach { filter ->
             when (filter) {
                 is AuthorFilter -> {
-                    if(filter.state.isNotBlank()) {
+                    if (filter.state.isNotBlank()) {
                         requireNoType()
                         url.addQueryParameter("author", filter.state)
                     }
                 }
                 is YearFilter -> {
-                    if(filter.state.isNotBlank()) {
+                    if (filter.state.isNotBlank()) {
                         requireNoType()
                         url.addQueryParameter("yearx", filter.state)
                     }
@@ -91,18 +95,18 @@ class PecintaKomik : ParsedHttpSource() {
                         Filter.TriState.STATE_EXCLUDE -> "ongoing"
                         else -> ""
                     }
-                    if(status.isNotEmpty()) {
+                    if (status.isNotEmpty()) {
                         requireNoType()
                         url.addQueryParameter("status", status)
                     }
                 }
                 is TypeFilter -> {
-                    if(filter.state != 0) {
-                    types = if(page == 1) "$baseUrl/types/${filter.toUriPart()}/"  else "$baseUrl/types/${filter.toUriPart()}/page/$page/"
+                    if (filter.state != 0) {
+                    types = if (page == 1) "$baseUrl/types/${filter.toUriPart()}/" else "$baseUrl/types/${filter.toUriPart()}/page/$page/"
                     }
                 }
                 is OrderByFilter -> {
-                    if(filter.state != 0) {
+                    if (filter.state != 0) {
                         requireNoType()
                         url.addQueryParameter("order", filter.toUriPart())
                     }
@@ -212,7 +216,7 @@ class PecintaKomik : ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
             Filter.Header("Type filter cannot be combined."),

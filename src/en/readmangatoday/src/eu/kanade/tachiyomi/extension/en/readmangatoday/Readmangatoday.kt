@@ -2,14 +2,18 @@ package eu.kanade.tachiyomi.extension.en.readmangatoday
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.util.Calendar
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
 
 class Readmangatoday : ParsedHttpSource() {
 
@@ -165,13 +169,9 @@ class Readmangatoday : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.content-list img").forEachIndexed{ i, img ->
-            pages.add(Page(i, "", img.attr("abs:src")))
+        return document.select("div.content-list > img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:src"))
         }
-
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

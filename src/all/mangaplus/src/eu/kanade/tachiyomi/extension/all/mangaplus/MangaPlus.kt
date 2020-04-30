@@ -14,8 +14,13 @@ import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.util.UUID
 import kotlinx.serialization.protobuf.ProtoBuf
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -28,8 +33,6 @@ import okhttp3.ResponseBody
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.lang.Exception
-import java.util.UUID
 
 abstract class MangaPlus(
     override val lang: String,
@@ -390,7 +393,7 @@ abstract class MangaPlus(
     }
 
     private val ErrorResult.langPopup: Popup
-        get() = when(lang) {
+        get() = when (lang) {
             "es" -> spanishPopup
             else -> englishPopup
         }

@@ -1,6 +1,32 @@
-(CATALOGUE) SOURCE REQUESTS:
-  One source per issue, create more issues if you have more websites
-  Check for duplicates, use search (in issues, not the global one)
-  Put the name of the site as Title, replace this text with clickable link to the site
-BUGS:
-  Provide tachiyomi version as well as version of source the report is about
+**PLEASE READ THIS**
+
+I acknowledge that:
+
+- I have updated to the latest version of the app (stable is v0.8.5)
+- I have updated all extensions
+- If this is an issue with the app itself, that I should be opening an issue in https://github.com/inorichi/tachiyomi
+- I have searched the existing issues for duplicates
+- For source requests, I have checked the list of existing extensions including the multi-source spreadsheet: https://tachiyomi.org/extensions/
+
+**DELETE THIS SECTION IF YOU HAVE READ AND ACKNOWLEDGED IT**
+
+---
+
+### Device information
+* Tachiyomi version: ?
+* Android version: ?
+* Device: ?
+
+### Source information
+* Source name: ?
+* Source extension version: ?
+
+## Steps to reproduce
+1. First step
+2. Second step
+
+## Issue/Request
+?
+
+## Other details
+Additional details and attachments.

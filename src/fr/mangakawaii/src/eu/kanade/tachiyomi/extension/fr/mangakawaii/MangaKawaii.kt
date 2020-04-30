@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
-
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -9,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
-
 
 class MangaKawaii : ParsedHttpSource() {
 
@@ -25,6 +24,9 @@ class MangaKawaii : ParsedHttpSource() {
     override val lang = "fr"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
+    override fun headersBuilder(): Headers.Builder {
+        return Headers.Builder().add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0")
+    }
 
     override fun popularMangaSelector() = "a.manga-block-item__content"
     override fun latestUpdatesSelector() = ".manga-list li div.updates__left"
@@ -38,7 +40,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterLists?page=$page&sortBy=views&asc=false", headers)
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val uri = Uri.parse("$baseUrl/search").buildUpon()
+        val uri = Uri.parse("$baseUrl/search2").buildUpon()
             .appendQueryParameter("query", query)
         return GET(uri.toString(), headers)
     }
@@ -61,7 +63,6 @@ class MangaKawaii : ParsedHttpSource() {
         manga.title = element.select("a").text().trim()
         return manga
     }
-
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -97,7 +98,7 @@ class MangaKawaii : ParsedHttpSource() {
         val element = body.select("script:containsData(Imagesrc)").toString()
         val regex = "(data-src).*[\"]".toRegex()
         val match = regex.findAll(element).map { it.value.substringAfter("data-src\", \" ").substringBefore("\"").trim() }
-        //throw Exception(match.elementAt(1))
+        // throw Exception(match.elementAt(1))
         val pages = mutableListOf<Page>()
         for (i in 0 until match.count()) {
             pages.add(Page(i, "", match.elementAt(i)))

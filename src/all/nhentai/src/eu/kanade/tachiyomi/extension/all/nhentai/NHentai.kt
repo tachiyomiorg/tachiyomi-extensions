@@ -53,7 +53,7 @@ open class NHentai(
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    private var displayFullTitle: Boolean = when(preferences.getString(TITLE_PREF, "full")){
+    private var displayFullTitle: Boolean = when (preferences.getString(TITLE_PREF, "full")) {
         "full" -> true
         else -> false
     }
@@ -67,7 +67,7 @@ open class NHentai(
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
-                displayFullTitle = when(newValue){
+                displayFullTitle = when (newValue) {
                     "full" -> true
                     else -> false
                 }
@@ -75,7 +75,7 @@ open class NHentai(
             }
         }
 
-        if(!preferences.contains(TITLE_PREF))
+        if (!preferences.contains(TITLE_PREF))
             preferences.edit().putString(TITLE_PREF, "full").apply()
 
         screen.addPreference(serverPref)
@@ -90,7 +90,7 @@ open class NHentai(
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
-                displayFullTitle = when(newValue){
+                displayFullTitle = when (newValue) {
                     "full" -> true
                     else -> false
                 }
@@ -98,7 +98,7 @@ open class NHentai(
             }
         }
 
-        if(!preferences.contains(TITLE_PREF))
+        if (!preferences.contains(TITLE_PREF))
             preferences.edit().putString(TITLE_PREF, "full").apply()
 
         screen.addPreference(serverPref)
@@ -259,5 +259,4 @@ open class NHentai(
         const val PREFIX_ID_SEARCH = "id:"
         private const val TITLE_PREF = "Display manga title as:"
     }
-
 }

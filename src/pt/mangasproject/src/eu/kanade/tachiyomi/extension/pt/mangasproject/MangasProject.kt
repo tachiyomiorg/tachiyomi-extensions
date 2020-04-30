@@ -7,9 +7,17 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -19,11 +27,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.lang.Exception
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 abstract class MangasProject(
     override val name: String,
@@ -227,7 +230,7 @@ abstract class MangasProject(
         }
     }
 
-    private fun parseChapterDate(date: String?) : Long {
+    private fun parseChapterDate(date: String?): Long {
         return try {
             DATE_FORMATTER.parse(date).time
         } catch (e: ParseException) {
@@ -278,7 +281,7 @@ abstract class MangasProject(
 
         return result["images"].array
             .filter { it.string.startsWith("http") }
-            .mapIndexed { i, obj -> Page(i, chapterUrl, obj.string)}
+            .mapIndexed { i, obj -> Page(i, chapterUrl, obj.string) }
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)

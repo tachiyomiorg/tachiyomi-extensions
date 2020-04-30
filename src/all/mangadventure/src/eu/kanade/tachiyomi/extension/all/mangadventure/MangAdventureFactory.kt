@@ -2,10 +2,10 @@ package eu.kanade.tachiyomi.extension.all.mangadventure
 
 import eu.kanade.tachiyomi.source.SourceFactory
 
+/** [MangAdventure] source factory. */
 class MangAdventureFactory : SourceFactory {
     override fun createSources() = listOf(
-        ArcRelight(),
-        DecadenceScans()
+        ArcRelight()
     )
 
     /** Arc-Relight source. */
@@ -28,10 +28,5 @@ class MangAdventureFactory : SourceFactory {
             "Supernatural",
             "Tragedy"
         )
-    )
-
-    /** Decadence Scans source. */
-    class DecadenceScans : MangAdventure(
-        "Decadence Scans", "https://reader.decadencescans.com"
     )
 }

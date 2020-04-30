@@ -13,10 +13,23 @@ import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -24,12 +37,6 @@ import org.jsoup.select.Elements
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
-
 
 /**
  * ManaMoa Source
@@ -46,7 +53,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override val name = "ManaMoa"
 
     // This keeps updating: https://twitter.com/manamoa24
-    private val defaultBaseUrl = "https://manamoa29.net"
+    private val defaultBaseUrl = "https://manamoa34.net"
     override val baseUrl by lazy { getCurrentBaseUrl() }
 
     override val lang: String = "ko"
@@ -118,7 +125,6 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
         searchComplexFilterMangaRequestBuilder(baseUrl, page, query, filters)
 
-
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.left-info").first()
         val thumbnailElement = info.select("div.manga-thumbnail").first()
@@ -127,7 +133,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
 
         val mangaStatus = info.select("div.recommend")
         val mangaLike = mangaStatus.select(".fa-thumbs-up").trimText("0")
-        //val mangaViews = trimElementText(mangaStatus.select(".fa-smile-o"), "0")
+        // val mangaViews = trimElementText(mangaStatus.select(".fa-smile-o"), "0")
         val mangaComments = mangaStatus.select(".fa-comment").trimText("0")
         val mangaBookmarks = info.select(".fa-bookmark").trimText("0")
         val mangaChaptersLike = mangaElementsSum(document.select(".title i.fa.fa-thumbs-up > span"))
@@ -145,7 +151,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         manga.description =
             "\uD83D\uDCDD: $publishTypeText\n" +
                 "👍: $mangaLike ($mangaChaptersLike)\n" +
-                //"\uD83D\uDD0D: $mangaViews\n" +
+                // "\uD83D\uDD0D: $mangaViews\n" +
                 "\uD83D\uDCAC: $mangaComments ($mangaChaptersComments)\n" +
                 "\uD83D\uDD16: $mangaBookmarks"
         manga.author = authorText
@@ -218,21 +224,20 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-
     // They are using full url in every links.
     // There's possibility to using another domain for serve manga(s). Like marumaru.
-    //override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
+    // override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
         try {
-            val element = document.select("div.col-md-9.at-col.at-main script").html()
-            val cdnHandler = CDNUrlHandler(element)
+            val element = document.toString()
+            val cdnHandler = MMCDNUrlHandler(element)
 
             val imageUrl = element.substringBetween("var img_list = [", "];")
             val imageUrls = cdnHandler.replace(JSONArray("[$imageUrl]"))
 
-            val imageUrl1 = element.substringAfter("var img_list1 = [", "];")
+            val imageUrl1 = element.substringBetween("var img_list1 = [", "];")
             val imageUrls1 = cdnHandler.replace(JSONArray("[$imageUrl1]"))
 
             val decoder = ImageDecoder(element)
@@ -240,12 +245,12 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             (imageUrls.indices)
                 .map {
                     imageUrls[it] + try {
-                        "!!${imageUrls1[it]}?quick"
+                        "!!${imageUrls1[it]}"
                     } catch (_: Exception) {
                         ""
                     }
                 }
-                    .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}?quick")) }
+                .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}")) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -276,7 +281,6 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         return GET(page.imageUrl!!, requestHeaders)
     }
 
-
     // Latest not supported
     override fun latestUpdatesSelector() = ".post-row > div.media.post-list"
 
@@ -287,9 +291,9 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         // TODO: Make Clear Regex.
         val chapterRegex = Regex("""((?:\s+)(?:(?:(?:[0-9]+권)?(?:[0-9]+부)?(?:[0-9]*?시즌[0-9]*?)?)?(?:\s*)(?:(?:[0-9]+)(?:[-.](?:[0-9]+))?)?(?:\s*[~,]\s*)?(?:[0-9]+)(?:[-.](?:[0-9]+))?)(?:화))""")
         val title = rawTitle.trim().replace(chapterRegex, "")
-        //val regexSpecialChapter = Regex("(부록|단편|외전|.+편)")
-        //val lastTitleWord = excludeChapterTitle.split(" ").last()
-        //val title = excludeChapterTitle.replace(lastTitleWord, lastTitleWord.replace(regexSpecialChapter, ""))
+        // val regexSpecialChapter = Regex("(부록|단편|외전|.+편)")
+        // val lastTitleWord = excludeChapterTitle.split(" ").last()
+        // val title = excludeChapterTitle.replace(lastTitleWord, lastTitleWord.replace(regexSpecialChapter, ""))
 
         val manga = SManga.create()
         manga.url = linkElement.attr("href")
@@ -302,8 +306,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/bbs/board.php?bo_table=manga" + if (page > 1) "&page=$page" else "")
     override fun latestUpdatesNextPageSelector() = "ul.pagination > li:not(.disabled)"
 
-
-    //We are able to get the image URL directly from the page list
+    // We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     private fun urlFinder(style: String): String {
@@ -341,7 +344,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
-        val autoFetchUrlPref = androidx.preference.CheckBoxPreference (screen.context).apply {
+        val autoFetchUrlPref = androidx.preference.CheckBoxPreference(screen.context).apply {
             key = AUTOFETCH_URL_PREF_TITLE
             title = AUTOFETCH_URL_PREF_TITLE
             summary = AUTOFETCH_URL_PREF_SUMMARY
@@ -462,21 +465,21 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
                 }
 
                 val request: Request = Request.Builder().get()
-                    //.url("https://mnmnmnmnm.xyz/")
+                    // .url("https://mnmnmnmnm.xyz/")
                     .url("http://52.74.159.59")
                     .build()
 
                 val future = CallbackFuture()
                 network.client
-                    //.newBuilder()
-                    //.addInterceptor(DDOSGuardInterceptor())
-                    //.build()!!
+                    // .newBuilder()
+                    // .addInterceptor(DDOSGuardInterceptor())
+                    // .build()!!
                     .newCall(request).enqueue(future)
 
                 val response = future.get()!!
                 return "https://${response.request().url().host()}"
-                //val code = response.body().toString().substringBetween("manamoa", ".net")
-                //return "https://manamoa$code.net"
+                // val code = response.body().toString().substringBetween("manamoa", ".net")
+                // return "https://manamoa$code.net"
             } catch (e: Exception) {
                 e.printStackTrace()
                 return prefBaseUrl
@@ -485,7 +488,6 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             return prefBaseUrl
         }
     }
-
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
     private fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)

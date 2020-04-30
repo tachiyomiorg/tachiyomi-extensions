@@ -86,5 +86,3 @@ class MyMangaReaderCMSSources : SourceFactory {
         it["id"].string to it["name"].string
     }
 }
-
-
