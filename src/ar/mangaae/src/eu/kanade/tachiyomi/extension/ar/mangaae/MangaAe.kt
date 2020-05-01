@@ -19,7 +19,7 @@ class MangaAe : ParsedHttpSource() {
 
     override val name = "مانجا العرب"
 
-    override val baseUrl = "https://www.mangaae.com"
+    override val baseUrl = "https://mngaar.com"
 
     override val lang = "ar"
 
@@ -106,7 +106,7 @@ class MangaAe : ParsedHttpSource() {
         author = infoElement.select("div.manga-details-author h4")[0].text()
         artist = author
         status = parseStatus(infoElement.select("div.manga-details-extended h4")[1].text())
-        genre = infoElement.select("div.manga-details-extended a[href*=tag]").map { it.text() }.joinToString(", ")
+        genre = infoElement.select("div.manga-details-extended a[href*=tag]").joinToString(", ") { it.text() }
         description = infoElement.select("div.manga-details-extended h4")[2].text()
         thumbnail_url = infoElement.select("img.manga-cover").attr("src")
     }
