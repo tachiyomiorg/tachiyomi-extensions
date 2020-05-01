@@ -1,6 +1,13 @@
 package eu.kanade.tachiyomi.extension.ko.jmana
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.EditTextPreference
+import android.support.v7.preference.PreferenceScreen
+import android.widget.Toast
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -15,34 +22,32 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 /**
  * JMana Source
  **/
-class JMana : ParsedHttpSource() {
+class JMana : ConfigurableSource, ParsedHttpSource() {
     override val name = "JMana"
-    override val baseUrl = "https://mangahide.com"
+    override val baseUrl: String by lazy { getPrefBaseUrl()!!.removeSuffix("/") }
     override val lang: String = "ko"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "div.conts > ul > li"
+    private fun String.cleaned() = this.replace(" ", "%20").replace(Regex("/[0-9]+(?!.*?/)"), "")
+
+    override fun popularMangaSelector() = "div.conts > ul > li a"
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val linkElement = element.select("a")
-        val titleElement = element.select(".titBox > span").first()
-        val link = linkElement.attr("href")
-                .replace(" ", "%20")
-                .replace(Regex("/[0-9]+(?!.*?/)"), "")
-
-        val manga = SManga.create()
-        manga.setUrlWithoutDomain(link)
-        manga.title = titleElement.text()
-        manga.thumbnail_url = baseUrl + element.select(".imgBox img").attr("src")
-        return manga
+        return SManga.create().apply {
+            setUrlWithoutDomain(element.attr("href").cleaned())
+            title = element.select("span.price").text()
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
     }
 
-    override fun popularMangaNextPageSelector() = "div.page > ul > li"
+    override fun popularMangaNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
 
     // Do not add page parameter if page is 1 to prevent tracking.
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/comic_main_frame?tag=null&keyword=null&chosung=null&page=${page - 1}", headers)
@@ -62,7 +67,7 @@ class JMana : ParsedHttpSource() {
 
     override fun searchMangaSelector() = popularMangaSelector()
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
-    override fun searchMangaNextPageSelector() = popularMangaSelector()
+    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/comic_main_frame?page=${page - 1}&keyword=$query", headers)
 
@@ -91,12 +96,12 @@ class JMana : ParsedHttpSource() {
         val linkElement = element.select(".entry-title a")
         val rawName = linkElement.text()
 
-        val chapter = SChapter.create()
-        chapter.url = "/book_frame/" + linkElement.attr("href").substringAfter("/book/") + "?viewstyle=list"
-        chapter.chapter_number = parseChapterNumber(rawName)
-        chapter.name = rawName.trim()
-        chapter.date_upload = parseChapterDate(element.select("li.publish-date span").last().text())
-        return chapter
+        return SChapter.create().apply {
+            url = linkElement.attr("href").substringAfter(baseUrl) + "?viewstyle=list"
+            chapter_number = parseChapterNumber(rawName)
+            name = rawName.trim()
+            date_upload = parseChapterDate(element.select("li.publish-date span").last().text())
+        }
     }
 
     private fun parseChapterNumber(name: String): Float {
@@ -123,13 +128,9 @@ class JMana : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("ul.listType img").forEachIndexed { i, img ->
-            pages.add(Page(i, "", if (img.hasAttr("src")) img.attr("abs:src") else img.attr("abs:data-src")))
+        return document.select("ul.view img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:src"))
         }
-
-        return pages
     }
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/comic_recent", headers)
@@ -145,31 +146,86 @@ class JMana : ParsedHttpSource() {
         return MangasPage(mangas.distinctBy { it.url }, currentPage < lastPage)
     }
 
-    override fun latestUpdatesSelector() = "div.contents div.detail ul:not(:first-of-type) li"
+    override fun latestUpdatesSelector() = "div.contents div.detail ul:not(:first-of-type) li:has(a.btn)"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        element.select("a.btn").attr("href").let {
-            manga.title = it.substringAfterLast("/")
-            manga.setUrlWithoutDomain(it.replace(" ", "%20"))
+        return SManga.create().apply {
+            setUrlWithoutDomain(element.select("a.btn").attr("href").cleaned())
+            element.select("img").attr("abs:src").let {
+                thumbnail_url = it
+                title = it.substringAfterLast("/").substringBefore(".")
+            }
         }
-        manga.thumbnail_url = element.select("img").attr("abs:src")
-
-        return manga
     }
 
-    override fun latestUpdatesNextPageSelector() = null
+    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("This method should not be called!")
 
     // We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
-
-    override fun getFilterList() = FilterList()
 
     companion object {
         const val DETAIL_TITLE = "제목 : "
         const val DETAIL_GENRE = "장르 : "
         const val DETAIL_AUTHOR = "작가 : "
         const val DETAIL_DESCRIPTION = "설명 : "
+        const val DEFAULT_BASEURL = "https://jmana1.net"
+        private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
+        private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
+        private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
+        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
     }
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val baseUrlPref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(DEFAULT_BASEURL)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $DEFAULT_BASEURL"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val baseUrlPref = EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(DEFAULT_BASEURL)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $DEFAULT_BASEURL"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
+    }
+
+    private fun getPrefBaseUrl() = preferences.getString(BASE_URL_PREF, DEFAULT_BASEURL)
 }
