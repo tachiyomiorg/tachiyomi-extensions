@@ -1,8 +1,15 @@
 package eu.kanade.tachiyomi.extension.all.foolslide
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.EditTextPreference
+import android.support.v7.preference.PreferenceScreen
+import android.widget.Toast
 import com.github.salomonbrys.kotson.get
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -14,6 +21,8 @@ import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -49,7 +58,8 @@ class FoolSlideFactory : SourceFactory {
         Kangaryu(),
         FallenWorldOrder(),
         NIFTeam(),
-        TuttoAnimeManga()
+        TuttoAnimeManga(),
+        Customizable()
     )
 }
 
@@ -217,3 +227,73 @@ class FallenWorldOrder : FoolSlide("Fall World Reader", "https://faworeader.alte
 class NIFTeam : FoolSlide("NIFTeam", "http://read-nifteam.info", "it", "/slide")
 
 class TuttoAnimeManga : FoolSlide("TuttoAnimeManga", "https://tuttoanimemanga.net", "it", "/slide")
+
+class Customizable : ConfigurableSource, FoolSlide("Customizable", "", "other") {
+    override val baseUrl: String by lazy { getPrefBaseUrl() }
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val baseUrlPref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(DEFAULT_BASEURL)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $DEFAULT_BASEURL"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val baseUrlPref = EditTextPreference(screen.context).apply {
+            key = BASE_URL_PREF_TITLE
+            title = BASE_URL_PREF_TITLE
+            summary = BASE_URL_PREF_SUMMARY
+            this.setDefaultValue(DEFAULT_BASEURL)
+            dialogTitle = BASE_URL_PREF_TITLE
+            dialogMessage = "Default: $DEFAULT_BASEURL"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(baseUrlPref)
+    }
+
+    /**
+     *  Tell the user to include /directory/ in the URL even though we remove it
+     *  To increase the chance they input a usable URL
+     */
+    private fun getPrefBaseUrl() = preferences.getString(BASE_URL_PREF, DEFAULT_BASEURL)!!.substringBefore("/directory")
+
+    companion object {
+        private const val DEFAULT_BASEURL = "https://127.0.0.1"
+        private const val BASE_URL_PREF_TITLE = "Example URL: https://domain.com/path_to/directory/"
+        private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
+        private const val BASE_URL_PREF_SUMMARY = "Connect to a designated FoolSlide server"
+        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+    }
+}
