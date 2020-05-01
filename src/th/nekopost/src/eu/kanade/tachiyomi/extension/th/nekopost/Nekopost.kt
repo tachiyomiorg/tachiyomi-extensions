@@ -16,16 +16,18 @@ import java.util.Locale
 import kotlin.collections.set
 import okhttp3.Request
 import okhttp3.Response
+import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-class Nekopost() : ParsedHttpSource() {
+class Nekopost : ParsedHttpSource() {
     override val baseUrl: String = "https://www.nekopost.net/manga/"
 
     private val mangaListUrl: String = "https://www.nekopost.net/project/ajax_load_update/m/"
     private val baseFileUrl: String = "https://www.nekopost.net/file_server/"
+    private val legacyChapterDataUrl: String = "https://www.nekopost.net/reader/loadChapterContent/"
     private val searchUrl: String = "https://www.nekopost.net/search/"
 
     override val lang: String = "th"
@@ -82,64 +84,70 @@ class Nekopost() : ParsedHttpSource() {
 
         inner class ProjectData {
             inner class ProjectInfo {
-                var np_project_id: Int? = null
-                var np_name: String? = null
+                var np_project_id: Int = 0
+                var np_name: String = ""
                 var np_info: String? = null
-                var np_view: Int? = null
-                var np_no_chapter: Int? = null
+                var np_view: Int = 0
+                var np_no_chapter: Int = 0
                 var np_created_date: Long? = null
                 var np_updated_date: Long? = null
-                var np_status: Int? = null
+                var np_status: Int = 0
                 var np_author: String? = null
                 var np_artist: String? = null
             }
 
             inner class ChapterInfo {
-                var nc_chapter_id: Int? = null
-                var nc_chapter_no: Float? = null
-                var nc_chapter_name: String? = null
+                var nc_chapter_id: Int = 0
+                var nc_chapter_no: Float = 0f
+                var nc_chapter_name: String = ""
                 var nc_provider: String? = null
                 var nc_created_date: Long? = null
                 var nc_owner_id: Int? = null
-                var nc_data_file: String? = null
+                var nc_data_file: String = ""
+                var legacy_data_file: Boolean = false
 
-                fun getChapterJsonFolder(): String = "${baseFileUrl}collectManga/${info!!.np_project_id}/$nc_chapter_id/"
+                fun getChapterJsonFolder(): String = "${baseFileUrl}collectManga/${info.np_project_id}/$nc_chapter_id/"
 
                 val sChapter: NP.Chapter
                     get() = NP.Chapter().apply {
-                        if (nc_chapter_no!! - nc_chapter_no!!.toInt() == 0f) setUrlWithoutDomain("${info!!.np_project_id}/${nc_chapter_no!!.toInt()}")
-                        else setUrlWithoutDomain("${info!!.np_project_id}/$nc_chapter_no")
-                        name = nc_chapter_name!!
-                        date_upload = nc_created_date!!
-                        chapter_number = nc_chapter_no!!
+                        if (nc_chapter_no - nc_chapter_no.toInt() == 0f) setUrlWithoutDomain("${info.np_project_id}/${nc_chapter_no.toInt()}")
+                        else setUrlWithoutDomain("${info.np_project_id}/$nc_chapter_no")
+                        name = nc_chapter_name
+                        if (nc_created_date != null) date_upload = nc_created_date!!
+                        chapter_number = nc_chapter_no
                         scanlator = nc_provider
                         chapterData = this@ChapterInfo
                         projectData = this@ProjectData
-                    }
+                    }.also { chapterListMap[nc_chapter_no] = this }
             }
 
             inner class ProjectCate {
-                var npc_id: Int? = null
-                var npc_name: String? = null
-                var npc_name_link: String? = null
+                var npc_id: Int = 0
+                var npc_name: String = ""
+                var npc_name_link: String = ""
             }
 
             val sManga: NP.Manga
                 get() = NP.Manga().apply {
-                    setUrlWithoutDomain("${info!!.np_project_id}")
-                    title = info!!.np_name!!
-                    artist = info!!.np_artist
-                    author = info!!.np_author
-                    description = info!!.np_info
-                    genre = projectCate!!.map { it.npc_name }.joinToString(", ")
-                    status = info!!.np_status ?: 0
+                    setUrlWithoutDomain("${info.np_project_id}")
+                    title = info.np_name
+                    artist = info.np_artist
+                    author = info.np_author
+                    description = info.np_info
+                    genre = projectCate.joinToString(", ") { it.npc_name }
+                    status = info.np_status
                     thumbnail_url = getCoverUrl(this@ProjectData)
                     projectData = this@ProjectData
                 }
 
-            var info: ProjectInfo? = null
-            var chapterList: List<ChapterInfo>? = null
-            var projectCate: List<ProjectCate>? = null
+            fun getChapterData(chapterNo: Float): ChapterInfo? =
+                if (chapterListMap.contains(chapterNo)) chapterListMap[chapterNo]
+                else chapterList.find { it.nc_chapter_no == chapterNo }
+
+            var info: ProjectInfo = ProjectInfo()
+            var chapterList: List<ChapterInfo> = emptyList()
+            private val chapterListMap: HashMap<Float, ProjectParser.ProjectData.ChapterInfo> = HashMap()
+            var projectCate: List<ProjectCate> = emptyList()
         }
 
         private fun getProjectJsonFolder(projectID: Int): String = projectID.toDouble().let {
@@ -162,7 +170,7 @@ class Nekopost() : ParsedHttpSource() {
             else -> SManga.UNKNOWN
         }
 
-        fun getCoverUrl(projectData: ProjectData): String = "${baseFileUrl}collectManga/${projectData.info!!.np_project_id}/${projectData.info!!.np_project_id}_cover.jpg"
+        fun getCoverUrl(projectData: ProjectData): String = "${baseFileUrl}collectManga/${projectData.info.np_project_id}/${projectData.info.np_project_id}_cover.jpg"
 
         fun getProjectData(projectID: Int): ProjectData {
             return if (projectList.contains(projectID)) projectList[projectID]!!
@@ -201,7 +209,17 @@ class Nekopost() : ParsedHttpSource() {
                                         }
                                     }.joinToString("-").let { NPUtils.convertDateStringToEpoch(it) }
                                     nc_owner_id = chInfo.getString("nc_owner_id").toInt()
-                                    nc_data_file = chInfo.getString("nc_data_file")
+                                    nc_data_file = chInfo.getString("nc_data_file").let {
+                                        if (it.isNullOrBlank()) {
+                                            legacy_data_file = true
+                                            if (nc_chapter_no - nc_chapter_no.toInt() == 0f)
+                                                nc_chapter_no.toInt().toString()
+                                            else
+                                                nc_chapter_no.toString()
+                                        } else {
+                                            it
+                                        }
+                                    }
                                 })
                             }
 
@@ -233,7 +251,7 @@ class Nekopost() : ParsedHttpSource() {
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return if (manga.status != SManga.LICENSED) {
             Observable.just(
-                projectParser.getProjectData(manga.url.toInt()).chapterList!!.map { it.sChapter }
+                projectParser.getProjectData(manga.url.toInt()).chapterList.map { it.sChapter }
             )
         } else {
             Observable.error(Exception("Licensed - No chapters to show"))
@@ -309,16 +327,29 @@ class Nekopost() : ParsedHttpSource() {
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         val chData = chapter.url.split("/")
-        val ch = projectList[chData[0].toInt()]!!.chapterList!!.find { it.nc_chapter_no!! == chData[1].toFloat() }
+        val pj = projectParser.getProjectData(chData[0].toInt())
+        val ch = pj.getChapterData(chData[1].toFloat())!!
         val pageList: ArrayList<Page> = ArrayList()
 
-        JSONObject(URL("${ch!!.getChapterJsonFolder()}${ch.nc_data_file}").readText()).getJSONArray("pageItem").let { pageItem ->
-            for (pageIndex in 0 until pageItem.length()) {
-                pageList.add(pageItem.getJSONObject(pageIndex).let { pageData ->
-                    Page(pageData.getInt("pageNo") - 1,
-                        "",
-                        "${ch.getChapterJsonFolder()}${pageData.getString("fileName")}")
-                })
+        if (ch.legacy_data_file) {
+            JSONArray(URL("${legacyChapterDataUrl}${pj.info.np_project_id}/${ch.nc_data_file}").readText()).getJSONArray(3).let { pageItem ->
+                for (pageIndex in 0 until pageItem.length()) {
+                    pageList.add(pageItem.getJSONObject(pageIndex).let { pageData ->
+                        Page(pageData.getString("page_no").toInt() - 1,
+                            "",
+                            "${ch.getChapterJsonFolder()}${pageData.getString("value_url")}")
+                    })
+                }
+            }
+        } else {
+            JSONObject(URL("${ch.getChapterJsonFolder()}${ch.nc_data_file}").readText()).getJSONArray("pageItem").let { pageItem ->
+                for (pageIndex in 0 until pageItem.length()) {
+                    pageList.add(pageItem.getJSONObject(pageIndex).let { pageData ->
+                        Page(pageData.getInt("pageNo") - 1,
+                            "",
+                            "${ch.getChapterJsonFolder()}${pageData.getString("fileName")}")
+                    })
+                }
             }
         }
 
