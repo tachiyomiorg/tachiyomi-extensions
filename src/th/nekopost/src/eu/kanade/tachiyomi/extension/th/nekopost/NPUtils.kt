@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.th.nekopost
 
-import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Locale
@@ -14,17 +13,6 @@ class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList
     fun isListEmpty(): Boolean = super.isEmpty()
 
     fun isListNotEmpty(): Boolean = !isListEmpty()
-}
-
-class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList<E>(c) {
-    override fun isEmpty(): Boolean = mangaList.isEmpty()
-
-    fun isNotEmpty(): Boolean = mangaList.isNotEmpty()
-
-    fun isListEmpty(): Boolean = super.isEmpty()
-
-    fun isListNotEmpty(): Boolean = !isListEmpty()
-
 }
 
 object NPUtils {
@@ -87,5 +75,5 @@ object NPUtils {
 
     fun <T, F, S> getValueOf(array: Array<T>, name: F): S? where T : Pair<F, S> = array.find { genre -> genre.first == name }?.second
 
-    val monthList: Array<String> = arrayOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+    val monthList: List<String> = listOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 }
