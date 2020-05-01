@@ -65,22 +65,23 @@ abstract class Madara(
         return manga
     }
 
+    open fun formBuilder(page: Int, popular: Boolean) = FormBody.Builder().apply {
+        add("action", "madara_load_more")
+        add("page", (page - 1).toString())
+        add("template", "madara-core/content/content-archive")
+        add("vars[orderby]", "meta_value_num")
+        add("vars[paged]", "1")
+        add("vars[posts_per_page]", "20")
+        add("vars[post_type]", "wp-manga")
+        add("vars[post_status]", "publish")
+        add("vars[meta_key]", if (popular) "_wp_manga_views" else "_latest_update")
+        add("vars[order]", "desc")
+        add("vars[sidebar]", if (popular) "full" else "right")
+        add("vars[manga_archives_item_layout]", "big_thumbnail")
+    }
+
     override fun popularMangaRequest(page: Int): Request {
-        val form = FormBody.Builder().apply {
-            add("action", "madara_load_more")
-            add("page", (page - 1).toString())
-            add("template", "madara-core/content/content-archive")
-            add("vars[orderby]", "meta_value_num")
-            add("vars[paged]", "1")
-            add("vars[posts_per_page]", "20")
-            add("vars[post_type]", "wp-manga")
-            add("vars[post_status]", "publish")
-            add("vars[meta_key]", "_wp_manga_views")
-            add("vars[order]", "desc")
-            add("vars[sidebar]", "full")
-            add("vars[manga_archives_item_layout]", "big_thumbnail")
-        }
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
+        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun popularMangaNextPageSelector(): String? = "body:not(:has(.no-posts))"
@@ -95,21 +96,7 @@ abstract class Madara(
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val form = FormBody.Builder().apply {
-            add("action", "madara_load_more")
-            add("page", (page - 1).toString())
-            add("template", "madara-core/content/content-archive")
-            add("vars[orderby]", "meta_value_num")
-            add("vars[paged]", "1")
-            add("vars[posts_per_page]", "20")
-            add("vars[post_type]", "wp-manga")
-            add("vars[post_status]", "publish")
-            add("vars[meta_key]", "_latest_update")
-            add("vars[order]", "desc")
-            add("vars[sidebar]", "right")
-            add("vars[manga_archives_item_layout]", "big_thumbnail")
-        }
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, form.build(), CacheControl.FORCE_NETWORK)
+        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -368,7 +355,7 @@ abstract class Madara(
         }
     }
 
-    private fun getXhrChapters(mangaId: String): Document {
+    protected fun getXhrChapters(mangaId: String): Document {
         val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8").build()
         val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
         return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()

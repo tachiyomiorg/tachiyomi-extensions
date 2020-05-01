@@ -29,18 +29,22 @@ import okhttp3.Response
 import rx.Observable
 
 class Hipercool : HttpSource() {
+
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 5898568703656160
+
     override val name = "HipercooL"
 
     override val baseUrl = "https://hiper.cool"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-            .add("User-Agent", USER_AGENT)
-            .add("Referer", baseUrl)
-            .add("X-Requested-With", "XMLHttpRequest")
+        .add("User-Agent", USER_AGENT)
+        .add("Referer", baseUrl)
+        .add("X-Requested-With", "XMLHttpRequest")
 
     private fun generalListMangaParse(obj: JsonObject): SManga {
         val book = obj["_book"].obj
@@ -70,8 +74,8 @@ class Hipercool : HttpSource() {
             return MangasPage(emptyList(), false)
 
         val latestMangas = result
-                .map { latestMangaItemParse(it.obj) }
-                .distinctBy { it.title }
+            .map { latestMangaItemParse(it.obj) }
+            .distinctBy { it.title }
 
         return MangasPage(latestMangas, result.size() == 40)
     }
@@ -101,8 +105,8 @@ class Hipercool : HttpSource() {
             return MangasPage(emptyList(), false)
 
         val searchMangas = result
-                .map { searchMangaItemParse(it.obj) }
-                .distinctBy { it.title }
+            .map { searchMangaItemParse(it.obj) }
+            .distinctBy { it.title }
 
         return MangasPage(searchMangas, result.size() == 40)
     }
@@ -112,10 +116,10 @@ class Hipercool : HttpSource() {
     // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return client.newCall(mangaDetailsApiRequest(manga))
-                .asObservableSuccess()
-                .map { response ->
-                    mangaDetailsParse(response).apply { initialized = true }
-                }
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
     }
 
     private fun mangaDetailsApiRequest(manga: SManga): Request {
@@ -128,19 +132,19 @@ class Hipercool : HttpSource() {
         val result = response.asJsonObject()
 
         val artists = result["tags"].array
-                .filter { it["label"].string == "Artista" }
-                .flatMap { it["values"].array }
-                .joinToString("; ") { it["label"].string }
+            .filter { it["label"].string == "Artista" }
+            .flatMap { it["values"].array }
+            .joinToString("; ") { it["label"].string }
 
         val authors = result["tags"].array
-                .filter { it["label"].string == "Autor" }
-                .flatMap { it["values"].array }
-                .joinToString("; ") { it["label"].string }
+            .filter { it["label"].string == "Autor" }
+            .flatMap { it["values"].array }
+            .joinToString("; ") { it["label"].string }
 
         val tags = result["tags"].array
-                .filter { it["label"].string == "Tags" }
-                .flatMap { it["values"].array }
-                .joinToString(", ") { it["label"].string }
+            .filter { it["label"].string == "Tags" }
+            .flatMap { it["values"].array }
+            .joinToString(", ") { it["label"].string }
 
         return SManga.create().apply {
             title = result["title"].string
@@ -162,8 +166,8 @@ class Hipercool : HttpSource() {
             return emptyList()
 
         return result["chapters"].array
-                .map { chapterListItemParse(result, it.obj) }
-                .reversed()
+            .map { chapterListItemParse(result, it.obj) }
+            .reversed()
     }
 
     private fun chapterListItemParse(book: JsonObject, obj: JsonObject): SChapter = SChapter.create().apply {
@@ -208,11 +212,11 @@ class Hipercool : HttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = Headers.Builder()
-                .apply {
-                    add("Referer", page.url)
-                    add("User-Agent", USER_AGENT)
-                }
-                .build()
+            .apply {
+                add("Referer", page.url)
+                add("User-Agent", USER_AGENT)
+            }
+            .build()
 
         return GET(page.imageUrl!!, newHeaders)
     }
@@ -220,8 +224,8 @@ class Hipercool : HttpSource() {
     private fun parseChapterDate(date: String): Long {
         return try {
             SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-                    .parse(date.substringBefore("T"))
-                    .time
+                .parse(date.substringBefore("T"))
+                .time
         } catch (e: ParseException) {
             0L
         }
@@ -239,7 +243,7 @@ class Hipercool : HttpSource() {
 
     companion object {
         private const val STATIC_URL = "https://static.hiper.cool"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
 
         private const val CHAPTER_REGEX = "\\/books\\/(.*)\\/(.*)\\?images=(\\d+)&revision=(\\d+)\$"
 

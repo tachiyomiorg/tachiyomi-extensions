@@ -27,4 +27,8 @@ class ToomicsSpanish : ToomicsGlobal("es", SimpleDateFormat("d MMM, yyyy", Local
 class ToomicsItalian : ToomicsGlobal("it", SimpleDateFormat("d MMM, yyyy", Locale.ITALIAN))
 class ToomicsGerman : ToomicsGlobal("de", SimpleDateFormat("d. MMM yyyy", Locale.GERMAN))
 class ToomicsFrench : ToomicsGlobal("fr", SimpleDateFormat("dd MMM. yyyy", Locale.ENGLISH))
-class ToomicsPortuguese : ToomicsGlobal("por", SimpleDateFormat("d 'de' MMM 'de' yyyy", Locale("pt", "BR")), "pt")
+
+class ToomicsPortuguese : ToomicsGlobal("por", SimpleDateFormat("d 'de' MMM 'de' yyyy", Locale("pt", "BR")), "pt-BR") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 4488498756724948818
+}

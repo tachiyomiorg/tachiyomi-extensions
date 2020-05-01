@@ -17,11 +17,14 @@ import rx.Observable
 
 class MangaYabu : ParsedHttpSource() {
 
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 7152688036023311164
+
     override val name = "MangaYabu!"
 
     override val baseUrl = "https://mangayabu.com"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -33,7 +36,7 @@ class MangaYabu : ParsedHttpSource() {
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         return super.fetchPopularManga(page)
             .map {
-                MangasPage(it.mangas.distinctBy { m -> m.title }, it.hasNextPage)
+                MangasPage(it.mangas.distinctBy { m -> m.url }, it.hasNextPage)
             }
     }
 
@@ -52,7 +55,7 @@ class MangaYabu : ParsedHttpSource() {
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         return super.fetchLatestUpdates(page)
             .map {
-                MangasPage(it.mangas.distinctBy { m -> m.title }, it.hasNextPage)
+                MangasPage(it.mangas.distinctBy { m -> m.url }, it.hasNextPage)
             }
     }
 
@@ -145,7 +148,7 @@ class MangaYabu : ParsedHttpSource() {
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
 
         private val SLUG_EXCEPTIONS = mapOf(
             "the-promised-neverland-yakusoku-no-neverland" to "yakusoku-no-neverland-the-promised-neverland"

@@ -39,7 +39,7 @@ abstract class FoolSlide(
         return GET("$baseUrl$urlModifier/directory/$page/", headers)
     }
 
-    private val latestUpdatesUrls = HashSet<String>()
+    val latestUpdatesUrls = HashSet<String>()
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
@@ -85,7 +85,7 @@ abstract class FoolSlide(
 
     override fun popularMangaNextPageSelector() = "div.next"
 
-    override fun latestUpdatesNextPageSelector() = "div.next"
+    override fun latestUpdatesNextPageSelector(): String? = "div.next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val searchHeaders = headersBuilder().add("Content-Type", "application/x-www-form-urlencoded").build()

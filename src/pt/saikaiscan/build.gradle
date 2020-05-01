@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Saikai Scan'
     pkgNameSuffix = 'pt.saikaiscan'
     extClass = '.SaikaiScan'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

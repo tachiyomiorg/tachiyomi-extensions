@@ -27,11 +27,14 @@ import rx.Observable
 
 class CentralDeMangas : ParsedHttpSource() {
 
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 711589261250964163
+
     override val name = "Central de Mangás"
 
     override val baseUrl = "http://centraldemangas.online"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -192,7 +195,7 @@ class CentralDeMangas : ParsedHttpSource() {
     private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body()!!.string()).array
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
         private const val COVER_CDN = "http://capas.centraldemangas.com.br"
 
         private const val SCRIPT_URL_BEGIN = "var urlSulfix = '"

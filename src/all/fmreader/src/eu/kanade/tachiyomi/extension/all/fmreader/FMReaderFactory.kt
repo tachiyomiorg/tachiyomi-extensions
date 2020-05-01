@@ -13,7 +13,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
 import java.net.URLEncoder
 import okhttp3.FormBody
-import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -34,14 +33,14 @@ class FMReaderFactory : SourceFactory {
         HanaScan(),
         RawLH(),
         Manhwa18(),
-        TruyenTranhLH(),
         EighteenLHPlus(),
         MangaTR(),
         Comicastle(),
         Manhwa18Net(),
         Manhwa18NetRaw(),
         MangaBorn(),
-        SayTruyen()
+        SayTruyen(),
+        EpikManga()
     )
 }
 
@@ -51,7 +50,9 @@ class FMReaderFactory : SourceFactory {
 class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en")
 
 class MangaHato : FMReader("MangaHato", "https://mangahato.com", "ja")
-class ManhwaScan : FMReader("ManhwaScan", "https://manhwascan.com", "en")
+class ManhwaScan : FMReader("ManhwaScan", "https://manhwascan.com", "en") {
+    override fun getImgAttr(element: Element?): String? = element?.attr("abs:src")
+}
 class MangaTiki : FMReader("MangaTiki", "https://mangatiki.com", "ja")
 class MangaBone : FMReader("MangaBone", "https://mangabone.com", "en")
 class YoloManga : FMReader("Yolo Manga", "https://yolomanga.ca", "es") {
@@ -96,13 +97,14 @@ class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconl
 
 class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
-    // Referer header needs to be chapter URL or not set at all
-    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().removeAll("Referer").build())
+    // Referer needs to be chapter URL
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
 }
 
 class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
-    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
+    // Referer needs to be chapter URL
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
 }
 
 class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
@@ -116,11 +118,8 @@ class Manhwa18 : FMReader("Manhwa18", "https://manhwa18.com", "en") {
     override fun getGenreList() = getAdultGenreList()
 }
 
-class TruyenTranhLH : FMReader("TruyenTranhLH", "https://truyentranhlh.net", "vi") {
-    override val requestPath = "danh-sach-truyen.html"
-}
-
 class EighteenLHPlus : FMReader("18LHPlus", "https://18lhplus.com", "en") {
+    override fun popularMangaNextPageSelector() = "div.col-lg-8 div.btn-group:first-of-type"
     override fun getGenreList() = getAdultGenreList()
 }
 
@@ -321,4 +320,44 @@ class SayTruyen : FMReader("Say Truyen", "https://saytruyen.com", "vi") {
         }
     }
     override fun pageListParse(document: Document): List<Page> = super.pageListParse(document).onEach { it.imageUrl!!.trim() }
+}
+
+class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=views&sorting-type=DESC&Sayfa=$page", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=lastUpdate&sorting-type=DESC&Sayfa=$page", headers)
+    override fun popularMangaNextPageSelector() = "ul.pagination li.active + li:not(.disabled)"
+    // search wasn't working on source's website
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
+    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/seri-listesi?type=text", headers)
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        val mangas = response.asJsoup().select("div.char.col-lg-4 a")
+            .filter { it.text().contains(query, ignoreCase = true) }
+            .map {
+                SManga.create().apply {
+                    setUrlWithoutDomain(it.attr("href"))
+                    title = it.text()
+                }
+            }
+        return MangasPage(mangas, false)
+    }
+    override fun mangaDetailsParse(document: Document): SManga {
+        val infoElement = document.select("div.col-md-9 div.row").first()
+
+        return SManga.create().apply {
+            status = parseStatus(infoElement.select("h4:contains(Durum:)").firstOrNull()?.ownText())
+            author = infoElement.select("h4:contains(Yazar:)").firstOrNull()?.ownText()
+            artist = infoElement.select("h4:contains(Çizer:)").firstOrNull()?.ownText()
+            genre = infoElement.select("h4:contains(Türler:) a").joinToString { it.text() }
+            thumbnail_url = infoElement.select("img.thumbnail").imgAttr()
+            description = document.select("div.col-md-12 p").text()
+        }
+    }
+    override fun chapterListSelector() = "table.table tbody tr"
+    override fun getFilterList(): FilterList = FilterList()
 }

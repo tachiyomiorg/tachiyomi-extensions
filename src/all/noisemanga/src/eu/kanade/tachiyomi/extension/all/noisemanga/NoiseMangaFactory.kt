@@ -11,4 +11,8 @@ class NoiseMangaFactory : SourceFactory {
 }
 
 class NoiseMangaEnglish : NoiseManga("en")
-class NoiseMangaPortuguese : NoiseManga("pt")
+
+class NoiseMangaPortuguese : NoiseManga("pt-BR") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 8279458690164834090
+}
