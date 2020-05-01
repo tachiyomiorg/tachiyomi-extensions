@@ -355,7 +355,7 @@ abstract class Madara(
         }
     }
 
-    private fun getXhrChapters(mangaId: String): Document {
+    protected fun getXhrChapters(mangaId: String): Document {
         val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8").build()
         val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
         return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()

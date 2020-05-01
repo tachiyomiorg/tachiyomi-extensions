@@ -112,7 +112,8 @@ class MadaraFactory : SourceFactory {
         MangaRockTeam(),
         MixedManga(),
         ManhuasWorld(),
-        ArazNovel()
+        ArazNovel(),
+        MangaByte()
     )
 }
 
@@ -597,4 +598,19 @@ class ManhuasWorld : Madara("Manhuas World", "https://manhuasworld.com", "en")
 class ArazNovel : Madara("ArazNovel", "https://www.araznovel.com", "tr", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())) {
     override fun formBuilder(page: Int, popular: Boolean): FormBody.Builder = super.formBuilder(page, popular)
         .add("vars[meta_query][0][0][value]", "manga")
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return getXhrChapters(response.asJsoup().select("div#manga-chapters-holder").attr("data-id")).let { document ->
+            document.select("li.parent").let { elements ->
+                if (!elements.isNullOrEmpty()) {
+                    elements.reversed()
+                        .map { volumeElement -> volumeElement.select(chapterListSelector()).map { chapterFromElement(it) } }
+                        .flatten()
+                } else {
+                    document.select(chapterListSelector()).map { chapterFromElement(it) }
+                }
+            }
+        }
+    }
 }
+
+class MangaByte : Madara("Manga Byte", "https://mangabyte.com", "en")
