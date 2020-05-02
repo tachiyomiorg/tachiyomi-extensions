@@ -59,7 +59,8 @@ class FoolSlideFactory : SourceFactory {
         FallenWorldOrder(),
         NIFTeam(),
         TuttoAnimeManga(),
-        Customizable()
+        Customizable(),
+        TortugaCeviri()
     )
 }
 
@@ -297,3 +298,5 @@ class Customizable : ConfigurableSource, FoolSlide("Customizable", "", "other") 
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
     }
 }
+
+class TortugaCeviri : FoolSlide("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr", "/okuma")

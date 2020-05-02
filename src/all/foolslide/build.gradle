@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: FoolSlide (multiple sources)'
     pkgNameSuffix = 'all.foolslide'
     extClass = '.FoolSlideFactory'
-    extVersionCode = 44
+    extVersionCode = 45
     libVersion = '1.2'
 }
 
