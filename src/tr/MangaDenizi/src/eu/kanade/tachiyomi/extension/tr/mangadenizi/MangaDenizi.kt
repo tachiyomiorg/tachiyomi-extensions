@@ -60,7 +60,7 @@ class MangaDenizi : ParsedHttpSource() {
             document.select(selector).first()
         } != null
 
-         return MangasPage(mangas, hasNextPage)
+        return MangasPage(mangas, hasNextPage)
     }
 
     override fun searchMangaSelector() = "Unused"
