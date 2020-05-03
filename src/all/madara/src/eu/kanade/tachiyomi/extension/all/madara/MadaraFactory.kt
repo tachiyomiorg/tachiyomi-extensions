@@ -115,6 +115,7 @@ class MadaraFactory : SourceFactory {
         ArazNovel(),
         MangaByte(),
         ManhwaRaw()
+        GuncelManga()
     )
 }
 
@@ -617,3 +618,5 @@ class ArazNovel : Madara("ArazNovel", "https://www.araznovel.com", "tr", SimpleD
 class MangaByte : Madara("Manga Byte", "https://mangabyte.com", "en")
 
 class ManhwaRaw : Madara("Manhwa Raw", "https://manhwaraw.com", "ko")
+
+class GuncelManga : Madara("GuncelManga", "https://guncelmanga.com", "tr")
