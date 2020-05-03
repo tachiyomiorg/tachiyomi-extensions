@@ -114,7 +114,7 @@ class MadaraFactory : SourceFactory {
         ManhuasWorld(),
         ArazNovel(),
         MangaByte(),
-        ManhwaRaw()
+        ManhwaRaw(),
         GuncelManga()
     )
 }
