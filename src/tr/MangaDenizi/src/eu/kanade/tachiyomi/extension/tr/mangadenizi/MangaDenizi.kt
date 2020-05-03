@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -98,7 +99,7 @@ class MangaDenizi : ParsedHttpSource() {
         status = document.select(".label.label-success").let {
             parseStatus(it.text())
         }
-        thumbnail_url = document.select("img.img-responsive").attr("src")
+        thumbnail_url = document.select("img.img-responsive").attr("abs:src")
     }
 
     private fun parseStatus(status: String) = when {
@@ -117,7 +118,7 @@ class MangaDenizi : ParsedHttpSource() {
 
     companion object {
         val dateFormat by lazy {
-            SimpleDateFormat("dd MMM. yyyy")
+            SimpleDateFormat("dd MMM. yyyy", Locale.US)
         }
     }
 
