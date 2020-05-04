@@ -72,7 +72,7 @@ class Mangahub : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.title = document.select("h1._3xnDj").first().text()
+        manga.title = document.select("h1._3xnDj").first().ownText()
         manga.author = document.select("._3QCtP > div:nth-child(2) > div:nth-child(1) > span:nth-child(2)")?.first()?.text()
         manga.artist = document.select("._3QCtP > div:nth-child(2) > div:nth-child(2) > span:nth-child(2)")?.first()?.text()
         manga.genre = document.select("._3Czbn a")?.joinToString { it.text() }
