@@ -297,7 +297,7 @@ abstract class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector() = "div.nav-previous, nav.navigation-ajax"
+    override fun searchMangaNextPageSelector(): String? = "div.nav-previous, nav.navigation-ajax"
 
     // Manga Details Parse
 

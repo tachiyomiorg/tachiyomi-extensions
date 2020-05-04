@@ -32,8 +32,6 @@ class MadaraFactory : SourceFactory {
         ChibiManga(),
         DisasterScans(),
         DoujinHentai(),
-        // Removed by request of site owner
-        // EarlyManga(),
         FirstKissManga(),
         GetManhwa(),
         GoldenManga(),
@@ -66,7 +64,6 @@ class MadaraFactory : SourceFactory {
         Mangasushi(),
         MangaSY(),
         MangaTX(),
-        MangaWOW(),
         MangazukiClubJP(),
         MangazukiClubKO(),
         MangazukiMe(),
@@ -105,7 +102,6 @@ class MadaraFactory : SourceFactory {
         YoManga(),
         ZinManga(),
         ZManga(),
-        MangaGecesi(),
         MangaWT(),
         DecadenceScans(),
         MangaStein(),
@@ -115,7 +111,15 @@ class MadaraFactory : SourceFactory {
         ArazNovel(),
         MangaByte(),
         ManhwaRaw(),
-        GuncelManga()
+        GuncelManga(),
+        WeScans(),
+        ArangScans(),
+        MangaHentai()
+
+        // Removed by request of site owner
+        // EarlyManga(),
+        // MangaGecesi(),
+        // MangaWOW(),
     )
 }
 
@@ -523,8 +527,6 @@ class MangaKiss : Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateF
 
 class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
-class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
-
 class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en")
 
 class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "pt-BR", SimpleDateFormat("dd 'de' MMM 'de' yyyy", Locale("pt", "BR"))) {
@@ -579,10 +581,6 @@ class ManhuaUS : Madara("ManhuaUS", "https://manhuaus.com", "en") {
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
 
-class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
-    override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
-}
-
 class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
 
 class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.com", "en")
@@ -620,3 +618,16 @@ class MangaByte : Madara("Manga Byte", "https://mangabyte.com", "en")
 class ManhwaRaw : Madara("Manhwa Raw", "https://manhwaraw.com", "ko")
 
 class GuncelManga : Madara("GuncelManga", "https://guncelmanga.com", "tr")
+
+class WeScans : Madara("WeScans", "https://wescans.xyz", "en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manhua/manga/?m_orderby=views", headers)
+    override fun popularMangaNextPageSelector(): String? = null
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manhua/manga/?m_orderby=latest", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/manhua/?s=$query&post_type=wp-manga")
+    override fun searchMangaNextPageSelector(): String? = null
+    override fun getFilterList(): FilterList = FilterList()
+}
+
+class ArangScans : Madara("Arang Scans", "https://www.arangscans.xyz", "en")
+
+class MangaHentai : Madara("Manga Hentai", "https://mangahentai.me", "en")
