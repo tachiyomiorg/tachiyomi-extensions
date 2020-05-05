@@ -38,9 +38,18 @@ android {
         versionName "$libVersion.$extVersionCode"
         setProperty("archivesBaseName", "tachiyomi-$pkgNameSuffix-v$versionName")
         manifestPlaceholders = [
-                appName: appName,
+                appName : appName,
                 extClass: extClass,
         ]
+    }
+
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
 }
 
@@ -49,7 +58,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compileOnly "com.github.tachiyomiorg:extensions-lib:$libVersion"
     compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
     compileOnly 'io.reactivex:rxjava:1.3.6'
