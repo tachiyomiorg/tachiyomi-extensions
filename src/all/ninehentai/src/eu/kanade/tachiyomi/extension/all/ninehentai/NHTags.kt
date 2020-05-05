@@ -1519,5 +1519,5 @@ object NHTags {
             Tag(id = 24430, name = "Ziggurat"),
             Tag(id = 21354, name = "Zinkurou"),
             Tag(id = 290, name = "Zombie")
-    )
+    ).sortedBy { it.name }
 }
