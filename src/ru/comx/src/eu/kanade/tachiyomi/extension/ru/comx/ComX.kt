@@ -4,16 +4,15 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Cookie
-import okhttp3.CookieJar
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -28,23 +27,10 @@ class ComX : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:72.0) Gecko/20100101 Firefox/72.0" // in case of change regenerate antibot cookie
+    private val userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:72.0) Gecko/20100101 Firefox/72.0"
 
-    override val client = super.client.newBuilder()
-        .addNetworkInterceptor(RateLimitInterceptor(4))
-        .cookieJar(object : CookieJar {
-            override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
-            override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
-                return ArrayList<Cookie>().apply {
-                    add(Cookie.Builder()
-                        .domain("com-x.life")
-                        .path("/")
-                        .name("antibot")
-                        .value("e28a31fb6bcbc2858bdf53fac455d54a") // avoid - https://antibot.cloud/. Change cookie if userAgent changes
-                        .build())
-                }
-            }
-        })
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addNetworkInterceptor(RateLimitInterceptor(2))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -58,6 +44,22 @@ class ComX : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/comix/page/$page/", headers)
 
     override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(popularMangaSelector()).map { element ->
+            popularMangaFromElement(element)
+        }
+
+        if (mangas.isEmpty()) throw UnsupportedOperationException("Error: Open in WebView and solve the Antirobot!")
+
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
