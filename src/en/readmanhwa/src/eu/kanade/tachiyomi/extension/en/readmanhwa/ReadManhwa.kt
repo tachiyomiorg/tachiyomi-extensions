@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -71,18 +72,20 @@ class ReadManhwa : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = "$baseUrl/api/comics"
-        if (query.isNotBlank()) {
-            url += "?page=$page&q=$query&sort=uploaded_at&order=desc&duration=day"
-        } else {
+        val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
+            .addQueryParameter("per_page", "18")
+            .addQueryParameter("page", page.toString())
+            .addQueryParameter("order", "desc")
+            .addQueryParameter("q", query)
+
             filters.forEach { filter ->
                 when (filter) {
-                    is GenreFilter -> url += "?per_page=18&tags=${filter.toUriPart()}&page=$page&q=&sort=popularity&order=desc"
-                    is DurationFilter -> url += "&duration=${filter.toUriPart()}"
+                    is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
+                    is GenreFilter -> url.addQueryParameter("tags", filter.toUriPart())
+                    is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
                 }
             }
-        }
-        return GET(url, headers)
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -178,15 +181,16 @@ class ReadManhwa : HttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
-        Filter.Separator(),
         GenreFilter(getGenreList()),
-        DurationFilter(getDurationList())
+        DurationFilter(getDurationList()),
+        SortFilter(getSortList())
     )
 
     private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
 
     private class DurationFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Duration", pairs)
+
+    private class SortFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Sorted by", pairs)
 
     open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
@@ -256,5 +260,10 @@ class ReadManhwa : HttpSource() {
         Pair("Month", "month"),
         Pair("Week", "week"),
         Pair("Day", "day")
+    )
+
+    private fun getSortList() = arrayOf(
+        Pair("Popularity", "popularity"),
+        Pair("Date", "uploaded_at")
     )
 }
