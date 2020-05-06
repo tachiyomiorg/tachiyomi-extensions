@@ -123,10 +123,10 @@ abstract class FoolSlide(
 
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
-            document.select(mangaDetailsInfoSelector).firstOrNull()?.text()?.let { infoElement ->
-                author = infoElement.substringAfter("Author:").substringBefore("Artist:")
-                artist = infoElement.substringAfter("Artist:").substringBefore("Synopsis:")
-                description = infoElement.substringAfter("Synopsis:")
+            document.select(mangaDetailsInfoSelector).firstOrNull()?.html()?.let { infoHtml ->
+                author = Regex("""Author</b>:\s?([^\n<]*)[\n<]""").find(infoHtml)?.groupValues?.get(1)
+                artist = Regex("""Artist</b>:\s?([^\n<]*)[\n<]""").find(infoHtml)?.groupValues?.get(1)
+                description = Regex("""(Synopsis|Description)</b>:\s?([^\n<]*)[\n<]""").find(infoHtml)?.groupValues?.get(2)
             }
             thumbnail_url = getDetailsThumbnail(document)
         }
