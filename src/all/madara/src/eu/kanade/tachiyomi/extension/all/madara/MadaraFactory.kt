@@ -114,7 +114,8 @@ class MadaraFactory : SourceFactory {
         GuncelManga(),
         WeScans(),
         ArangScans(),
-        MangaHentai()
+        MangaHentai(),
+        MangaPhoenix()
 
         // Removed by request of site owner
         // EarlyManga(),
@@ -631,3 +632,5 @@ class WeScans : Madara("WeScans", "https://wescans.xyz", "en") {
 class ArangScans : Madara("Arang Scans", "https://www.arangscans.xyz", "en")
 
 class MangaHentai : Madara("Manga Hentai", "https://mangahentai.me", "en")
+
+class MangaPhoenix : Madara("Manga Phoenix", "https://mangaphoenix.com/", "tr")
