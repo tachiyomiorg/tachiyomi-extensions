@@ -9,6 +9,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -70,14 +71,33 @@ class ReadManhwa : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=$query&sort=uploaded_at&order=desc&duration=day", headers)
+        var url = "$baseUrl/api/comics"
+        if (query.isNotBlank()) {
+            url += "?page=$page&q=$query&sort=uploaded_at&order=desc&duration=day"
+        } else {
+            filters.forEach { filter ->
+                when (filter) {
+                    is GenreFilter -> url += "?per_page=18&tags=${filter.toUriPart()}&page=$page&q=&sort=popularity&order=desc"
+                    is DurationFilter -> url += "&duration=${filter.toUriPart()}"
+                }
+            }
+        }
+        return GET(url, headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
 
     // Details
 
-    override fun mangaDetailsRequest(manga: SManga): Request {
+    // Workaround to allow "Open in browser" to use the real URL
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> =
+        client.newCall(apiMangaDetailsRequest(manga)).asObservableSuccess()
+            .map { mangaDetailsParse(it).apply { initialized = true } }
+
+    // Return the real URL for "Open in browser"
+    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}", headers)
+
+    private fun apiMangaDetailsRequest(manga: SManga): Request {
         return GET("$baseUrl/api/comics/${manga.url}", headers)
     }
 
@@ -154,4 +174,87 @@ class ReadManhwa : HttpSource() {
     }
 
     override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
+
+    // Filters
+
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        GenreFilter(getGenreList()),
+        DurationFilter(getDurationList())
+    )
+
+    private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
+
+    private class DurationFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Duration", pairs)
+
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    private fun getGenreList() = arrayOf(
+        Pair("All", "0"),
+        Pair("Action", "14"),
+        Pair("Adult", "27"),
+        Pair("Adventure", "6"),
+        Pair("Angst", "50"),
+        Pair("BL", "20"),
+        Pair("Comedy", "1"),
+        Pair("Completed", "53"),
+        Pair("Crime", "18"),
+        Pair("Cultivation", "37"),
+        Pair("Drama", "2"),
+        Pair("Ecchi", "46"),
+        Pair("Fantasy", "8"),
+        Pair("GL", "42"),
+        Pair("Gender Bender", "35"),
+        Pair("Gossip", "12"),
+        Pair("Harem", "7"),
+        Pair("Historical", "33"),
+        Pair("Horror", "19"),
+        Pair("Incest", "10"),
+        Pair("Isekai", "28"),
+        Pair("Josei", "48"),
+        Pair("M", "43"),
+        Pair("Manhua", "38"),
+        Pair("Manhwa", "40"),
+        Pair("Martial arts", "26"),
+        Pair("Mature", "30"),
+        Pair("Medical", "24"),
+        Pair("Modern", "51"),
+        Pair("Mystery", "15"),
+        Pair("NTR", "32"),
+        Pair("Philosophical", "44"),
+        Pair("Post Apocalyptic", "49"),
+        Pair("Psychological", "16"),
+        Pair("Romance", "3"),
+        Pair("Rpg", "41"),
+        Pair("School LIfe", "11"),
+        Pair("Sci Fi", "9"),
+        Pair("Seinen", "31"),
+        Pair("Shoujo", "36"),
+        Pair("Shounen", "29"),
+        Pair("Slice of Life", "4"),
+        Pair("Smut", "13"),
+        Pair("Sports", "5"),
+        Pair("Superhero", "45"),
+        Pair("Supernatural", "22"),
+        Pair("Suspense", "47"),
+        Pair("Thriller", "17"),
+        Pair("TimeTravel", "52"),
+        Pair("Tragedy", "23"),
+        Pair("Vanilla", "34"),
+        Pair("Webtoon", "39"),
+        Pair("Yaoi", "21"),
+        Pair("Yuri", "25")
+    )
+
+    private fun getDurationList() = arrayOf(
+        Pair("All time", "all"),
+        Pair("Year", "year"),
+        Pair("Month", "month"),
+        Pair("Week", "week"),
+        Pair("Day", "day")
+    )
 }
