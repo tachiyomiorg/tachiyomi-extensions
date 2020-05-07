@@ -11,6 +11,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -20,13 +21,9 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override val supportsLatest: Boolean = true
 
-    private fun newHeaders() = super.headersBuilder()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept-Language", "es-ES,es;q=0.9,en;q=0.8,gl;q=0.7")
-        .add("Host", baseUrl.substringAfterLast("/")) // like: es.ninemanga.com
-        .add("Connection", "keep-alive")
-        .add("Upgrade-Insecure-Requests", "1")
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
-        .build()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/75")
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/list/New-Update/", headers) // "$baseUrl/category/updated_$page.html"
 
@@ -107,15 +104,11 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         return 0L
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, newHeaders())
-
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("select#page").first().select("option").forEach {
             add(Page(size, baseUrl + it.attr("value")))
         }
     }
-
-    override fun imageUrlRequest(page: Page) = GET(page.url, newHeaders())
 
     override fun imageUrlParse(document: Document) = document.select("div.pic_box img.manga_pic").first().attr("src").orEmpty()
 
