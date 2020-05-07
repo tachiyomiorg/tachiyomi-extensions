@@ -11,6 +11,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import java.io.IOException
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -32,7 +34,8 @@ class WPMangaStreamFactory : SourceFactory {
         MaidManga(),
         SekteKomik(),
         MangaSwat(),
-        MangaRaw()
+        MangaRaw(),
+        SekteDoujin()
     )
 }
 
@@ -103,25 +106,6 @@ class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikca
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
         }
-        return manga
-    }
-
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.spe").first()
-        val sepName = infoElement.select(".spe > span:nth-child(4)").last()
-        val manga = SManga.create()
-        manga.author = sepName.ownText()
-        manga.artist = sepName.ownText()
-        val genres = mutableListOf<String>()
-        infoElement.select(".spe > span:nth-child(1) > a").forEach { element ->
-            val genre = element.text()
-            genres.add(genre)
-        }
-        manga.genre = genres.joinToString(", ")
-        manga.status = parseStatus(infoElement.select(".spe > span:nth-child(2)").text())
-        manga.description = document.select("div[^itemprop]").last().text()
-        manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
-
         return manga
     }
 
@@ -202,12 +186,6 @@ class WestManga : WPMangaStream("West Manga (WP Manga Stream)", "https://westman
         manga.description = descElement.select("p").text()
         manga.thumbnail_url = document.select(".topinfo > img").attr("src")
         return manga
-    }
-
-    @SuppressLint("DefaultLocale")
-    override fun parseStatus(element: String): Int = when {
-        element.toLowerCase().contains("publishing") -> SManga.ONGOING
-        else -> SManga.UNKNOWN
     }
 
     private class SortByFilter : UriPartFilter("Sort By", arrayOf(
@@ -390,7 +368,7 @@ class KomikGo : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div.reading-content * img").mapIndexed { i, img ->
-            Page(i, "", img.let { if (it.hasAttr("data-src")) it.attr("abs:data-src") else it.attr("abs:src") })
+            Page(i, "", img.imgAttr())
         }
     }
 
@@ -805,39 +783,41 @@ class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.mai
 }
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
+    /**
+     * Use IOException or the app crashes!
+     * x-sucuri-cache header is never present on images; specify webpages or glide won't load images!
+     */
     private class Sucuri : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
-            val originalRequest = chain.request()
-            val response = chain.proceed(originalRequest)
-            if (response.headers().get("x-sucuri-cache").isNullOrEmpty()) throw Exception("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
+            val response = chain.proceed(chain.request())
+            if (response.header("x-sucuri-cache").isNullOrEmpty() && response.request().url().toString().contains("//mangaswat.com"))
+                throw IOException("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
             return response
         }
     }
     override val client: OkHttpClient = super.client.newBuilder().addInterceptor(Sucuri()).build()
 
-    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
-        thumbnail_url = document.select("div.thumb img.lazyload").attr("data-src")
-        title = document.select("div.infox h1").text()
-        genre = document.select("div.spe [rel=tag]").joinToString(", ") { it.text() }
-        status = when (document.select("span:contains(الحالة)").text().substringAfter(":").trim()) {
-            "Ongoing" -> SManga.ONGOING
-            "Completed" -> SManga.COMPLETED
-            else -> SManga.UNKNOWN
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Referer", baseUrl)
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0")
+        .add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+
+    override fun popularMangaNextPageSelector() = "div.hpage a.r"
+
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            document.select("div.bigcontent").firstOrNull()?.let { infoElement ->
+                genre = infoElement.select("span:contains(التصنيف) a").joinToString { it.text() }
+                status = parseStatus(infoElement.select("span:contains(الحالة)").firstOrNull()?.ownText())
+                author = infoElement.select("span:contains(المؤلف) i").firstOrNull()?.ownText()
+                artist = author
+                description = infoElement.select("div.desc").text()
+                thumbnail_url = infoElement.select("img").imgAttr()
+            }
         }
-        author = document.select("span:contains(المؤلف)").text().substringAfter(":").trim()
-        artist = author
-        description = document.select("div[itemprop=articleBody]").text()
     }
     override fun pageListRequest(chapter: SChapter): Request {
         return GET(baseUrl + chapter.url + "?/", headers) // Bypass "linkvertise" ads
-    }
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div#readerarea img[data-src]").forEachIndexed { index, element ->
-            add(Page(index, "", element.attr("data-src")))
-        }
-    }
-    override fun imageRequest(page: Page): Request {
-        return GET(page.imageUrl!!, headers)
     }
 }
 
@@ -858,6 +838,8 @@ class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
         GET("$baseUrl/search?s=$query&page=$page")
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun mangaDetailsParse(document: Document): SManga = super.mangaDetailsParse(document)
+        .apply { description = document.select("div.bottom").firstOrNull()?.ownText() }
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         return client.newCall(pageListRequest(chapter))
             .asObservableSuccess()
@@ -873,3 +855,5 @@ class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
     override fun imageUrlParse(document: Document): String = document.select("a.img-block img").attr("abs:src")
     override fun getFilterList(): FilterList = FilterList()
 }
+
+class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id")
