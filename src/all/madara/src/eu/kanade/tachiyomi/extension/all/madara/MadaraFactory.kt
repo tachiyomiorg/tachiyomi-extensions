@@ -115,7 +115,10 @@ class MadaraFactory : SourceFactory {
         WeScans(),
         ArangScans(),
         MangaHentai(),
-        MangaPhoenix()
+        MangaPhoenix(),
+        FirstKissManhua(),
+        HeroManhua(),
+        MartialScans()
 
         // Removed by request of site owner
         // EarlyManga(),
@@ -579,7 +582,6 @@ class ManyToonClub : Madara("ManyToonClub", "https://manytoon.club", "ko")
 
 class ManhuaUS : Madara("ManhuaUS", "https://manhuaus.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
-    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
 
 class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
@@ -633,4 +635,30 @@ class ArangScans : Madara("Arang Scans", "https://www.arangscans.xyz", "en")
 
 class MangaHentai : Madara("Manga Hentai", "https://mangahentai.me", "en")
 
-class MangaPhoenix : Madara("Manga Phoenix", "https://mangaphoenix.com/", "tr")
+class MangaPhoenix : Madara("Manga Phoenix", "https://mangaphoenix.com", "tr")
+
+class FirstKissManhua : Madara("1st Kiss Manhua", "https://1stkissmanhua.com", "en", SimpleDateFormat("d MMM yyyy", Locale.US)) {
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().add("Referer", "https://1stkissmanga.com").build())
+}
+
+class HeroManhua : Madara("Hero Manhua", "https://heromanhua.com", "en")
+
+class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+
+        with(element) {
+            select(popularMangaUrlSelector).last()?.let {
+                manga.setUrlWithoutDomain(it.attr("href"))
+                manga.title = it.ownText()
+            }
+
+            select("img").last()?.let {
+                manga.thumbnail_url = imageFromElement(it)
+            }
+        }
+
+        return manga
+    }
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+}
