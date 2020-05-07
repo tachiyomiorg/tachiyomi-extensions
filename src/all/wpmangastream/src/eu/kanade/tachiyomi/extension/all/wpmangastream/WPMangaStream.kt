@@ -274,7 +274,7 @@ abstract class WPMangaStream(
 
     private class YearFilter : Filter.Text("Year")
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
+    protected class TypeFilter : UriPartFilter("Type", arrayOf(
         Pair("Default", ""),
         Pair("Manga", "Manga"),
         Pair("Manhwa", "Manhwa"),
