@@ -55,7 +55,7 @@ dependencies {
 }
 ```
 
-Notice that we're using `compileOnly` instead of `implementation`, since the app already contains it. You could use `implementation` instead, if it's a new dependency, or you prefer not to rely on whatever the main app has (at the expensive of app size).
+Notice that we're using `compileOnly` instead of `implementation`, since the app already contains it. You could use `implementation` instead, if it's a new dependency, or you prefer not to rely on whatever the main app has (at the expense of app size).
 
 ### Core stubs and libraries
 
