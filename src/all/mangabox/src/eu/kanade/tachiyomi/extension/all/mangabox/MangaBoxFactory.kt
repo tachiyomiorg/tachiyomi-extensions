@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Request
@@ -60,6 +61,7 @@ abstract class MangaBoxPathedGenres(
 }
 
 class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder().set("Referer", "https://manganelo.com") // for covers
     override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
 }
 
