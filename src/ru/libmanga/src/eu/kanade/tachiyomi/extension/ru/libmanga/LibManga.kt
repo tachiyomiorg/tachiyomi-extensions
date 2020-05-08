@@ -179,6 +179,14 @@ class LibManga : ConfigurableSource, HttpSource() {
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
         val manga = SManga.create()
+        val rawCategory = document.select(".info-list__row:has(strong:contains(Тип)) > span").text()
+        val category = if (rawCategory.isNotEmpty() && rawCategory != "Комикс западный") {
+            rawCategory.toLowerCase()
+        } else if (rawCategory == "Комикс западный") {
+            "комикс"
+        } else {
+            "манга"
+        }
         if (document.html().contains("Манга удалена по просьбе правообладателей")) {
             manga.status = SManga.LICENSED
             return manga
@@ -197,7 +205,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        manga.genre = body.select(".info-list__row:has(strong:contains(Жанры)) > a").joinToString { it.text() }
+        manga.genre = body.select(".info-list__row:has(strong:contains(Жанры)) > a").joinToString { it.text() }.split(",").plusElement(category).joinToString { it.trim() }
         manga.description = body.select(".info-desc__content").text()
         return manga
     }
