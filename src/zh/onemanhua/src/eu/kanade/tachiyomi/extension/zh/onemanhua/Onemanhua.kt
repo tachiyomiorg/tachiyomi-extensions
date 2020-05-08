@@ -19,7 +19,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Onemanhua : ParsedHttpSource() {
-    override val id = 6859784796898756729 // name used to be "One漫画"
+    override val id = 8252565807829914103 // name used to be "One漫画"
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "OH漫画 (One漫画)"
