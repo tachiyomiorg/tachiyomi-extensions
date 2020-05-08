@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.myreadingmanga
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -22,7 +23,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
+open class MyReadingManga(override val lang: String, private val siteLang: String) : ParsedHttpSource() {
 
     // Basic Info
     override val name = "MyReadingManga"
@@ -37,17 +38,26 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     // Popular - Random
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/search/?wpsolr_sort=sort_by_random&wpsolr_page=$page", headers) // Random Manga as returned by search
+        return GET("$baseUrl/search/?wpsolr_sort=sort_by_random&wpsolr_page=$page&wpsolr_fq[0]=lang_str:$siteLang", headers) // Random Manga as returned by search
     }
 
-    override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
-    override fun popularMangaSelector() = searchMangaSelector()
-    override fun popularMangaParse(response: Response) = searchMangaParse(response)
+    override fun popularMangaNextPageSelector() = throw Exception("Not used")
+    override fun popularMangaSelector() = throw Exception("Not used")
+    private var processedSoFar = 0
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        if (document.location().contains("page=1")) processedSoFar = 0
+        val mangas = document.select(searchMangaSelector()).map { searchMangaFromElement(it) }
+            .also { processedSoFar += it.count() }
+        val totalResults = Regex("""(\d+)""").find(document.select("div.res_info").text())?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        return MangasPage(mangas, processedSoFar < totalResults)
+    }
     override fun popularMangaFromElement(element: Element) = searchMangaFromElement(element)
 
     // Latest
+    @SuppressLint("DefaultLocale")
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/page/$page/", headers) // Home Page - Latest Manga
+        return GET("$baseUrl/lang/${siteLang.toLowerCase()}" + if (page > 1) "/page/$page/" else "", headers) // Home Page - Latest Manga
     }
 
     override fun latestUpdatesNextPageSelector() = "li.pagination-next"
@@ -77,6 +87,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         val uri = if (query.isNotBlank()) {
             Uri.parse("$baseUrl/search/").buildUpon()
                 .appendQueryParameter("search", query)
+                .appendQueryParameter("wpsolr_fq[0]", "lang_str:$siteLang")
                 .appendQueryParameter("wpsolr_page", page.toString())
         } else {
             val uri = Uri.parse("$baseUrl/").buildUpon()
@@ -136,7 +147,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             return MangasPage(mangas, hasNextPage)
         }
     }
-
     override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img")?.first())
 
     // Build Manga From Element
@@ -186,7 +196,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         manga.artist = cleanAuthor(document.select("h1").text())
         val glist = document.select(".entry-header p a[href*=genre]").map { it.text() }
         manga.genre = glist.joinToString(", ")
-        val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.map { it.text() }?.joinToString("\n")
+        val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.joinToString("\n") { it.text() }
         manga.description = document.select("h1").text() + if (extendedDescription.isNullOrEmpty()) "" else "\n\n$extendedDescription"
         manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
             "Ongoing" -> SManga.ONGOING
@@ -207,6 +217,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     // Start Chapter Get
     override fun chapterListSelector() = ".entry-pagination a"
 
+    @SuppressLint("DefaultLocale")
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val chapters = mutableListOf<SChapter>()
@@ -264,16 +275,16 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
     // Filter Parsing, grabs pages as document and filters out Genres, Popular Tags, and Categories, Parings, and Scan Groups
-    private var filtersCached = false
+    protected var filtersCached = false
 
     // Grabs page containing filters and puts it into cache
-    private fun filterAssist(url: String): String {
+    protected fun filterAssist(url: String): String {
         val response = client.newCall(GET(url, headers)).execute()
         return response.body()!!.string()
     }
 
     // Returns page from cache to reduce calls to website
-    private fun getCache(url: String): Document? {
+    protected fun getCache(url: String): Document? {
         val response = client.newCall(GET(url, headers, CacheControl.FORCE_CACHE)).execute()
         return if (response.isSuccessful) {
             filtersCached = true
@@ -285,14 +296,14 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
     }
 
     // Parses page for filter
-    private fun returnFilter(document: Document?, css: String, attributekey: String): Array<Pair<String, String>> {
+    protected fun returnFilter(document: Document?, css: String, attributekey: String): Array<Pair<String, String>> {
         return document?.select(css)?.map { Pair(it.attr(attributekey).substringBeforeLast("/").substringAfterLast("/"), it.text()) }?.toTypedArray()
             ?: arrayOf(Pair("", "Press 'Reset' to try again"))
     }
 
     // Generates the filter lists for app
     override fun getFilterList(): FilterList {
-        val filterList = FilterList(
+        return FilterList(
             // MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
@@ -302,12 +313,11 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             PairingFilter(returnFilter(getCache("$baseUrl/pairing/"), ".links a", "abs:href")),
             ScanGroupFilter(returnFilter(getCache("$baseUrl/group/"), ".links a", "abs:href"))
         )
-        return filterList
     }
 
     private class GenreFilter(GENRES: Array<Pair<String, String>>) : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("", "Any"), *GENRES))
     private class TagFilter(POPTAG: Array<Pair<String, String>>) : UriSelectFilterPath("Popular Tags", "tag", arrayOf(Pair("", "Any"), *POPTAG))
-    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterShortPath("Categories", "cat", arrayOf(Pair("", "Any"), *CATID))
+    private class CatFilter(CATID: Array<Pair<String, String>>) : UriSelectFilterShortPath("Categories", arrayOf(Pair("", "Any"), *CATID))
     private class PairingFilter(PAIR: Array<Pair<String, String>>) : UriSelectFilterPath("Pairing", "pairing", arrayOf(Pair("", "Any"), *PAIR))
     private class ScanGroupFilter(GROUP: Array<Pair<String, String>>) : UriSelectFilterPath("Scanlation Group", "group", arrayOf(Pair("", "Any"), *GROUP))
 
@@ -334,7 +344,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     private open class UriSelectFilterShortPath(
         displayName: String,
-        val uriParam: String,
         val vals: Array<Pair<String, String>>,
         val firstIsUnspecified: Boolean = true,
         defaultValue: Int = 0
