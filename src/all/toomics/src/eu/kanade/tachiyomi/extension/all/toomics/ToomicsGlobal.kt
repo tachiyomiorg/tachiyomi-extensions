@@ -93,7 +93,7 @@ abstract class ToomicsGlobal(
                 val toonId = element.select("a").attr("onclick")
                     .substringAfter("Base.setDisplay('A', '")
                     .substringBefore("'")
-                    .let { URLDecoder.decode(it, "UTF-8") }
+                    .let { url -> URLDecoder.decode(url, "UTF-8") }
                     .substringAfter("?toon=")
                     .substringBefore("&")
                 url = "/$siteLang/webtoon/episode/toon/$toonId"

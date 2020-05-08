@@ -98,15 +98,9 @@ class Generator {
             }
         }
         println("Number of sources successfully generated: ${number - 1}")
-        if (!DRY_RUN) {
-            val writer = PrintWriter(relativePath)
-            writer.write(buffer.toString())
-            writer.close()
-        } else {
-            val writer = PrintWriter(relativePathTest)
-            writer.write(buffer.toString())
-            writer.close()
-        }
+        val writer = PrintWriter(relativePath)
+        writer.write(buffer.toString())
+        writer.close()
     }
 
     private fun getDocument(url: String, printStackTrace: Boolean = true): Document? {
@@ -223,7 +217,6 @@ class Generator {
     }
 
     companion object {
-        const val DRY_RUN = false
         val sources = listOf(
             Triple("ar", "مانجا اون لاين", "https://onma.me"),
             Triple("en", "Read Comics Online", "https://readcomicsonline.ru"),
@@ -311,7 +304,6 @@ class Generator {
             // Triple("tr", "ManhuaTR", "http://www.manhua-tr.com"),
 
         val relativePath = System.getProperty("user.dir") + "/src/all/mmrcms/src/eu/kanade/tachiyomi/extension/all/mmrcms/GeneratedSources.kt"
-        val relativePathTest = System.getProperty("user.dir") + "/src/all/mmrcms/TestGeneratedSources.kt"
 
         @JvmStatic
         fun main(args: Array<String>) {

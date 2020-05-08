@@ -186,7 +186,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
         manga.artist = cleanAuthor(document.select("h1").text())
         val glist = document.select(".entry-header p a[href*=genre]").map { it.text() }
         manga.genre = glist.joinToString(", ")
-        val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.map { it.text() }?.joinToString("\n")
+        val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.joinToString("\n") { it.text() }
         manga.description = document.select("h1").text() + if (extendedDescription.isNullOrEmpty()) "" else "\n\n$extendedDescription"
         manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
             "Ongoing" -> SManga.ONGOING
@@ -292,7 +292,7 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
 
     // Generates the filter lists for app
     override fun getFilterList(): FilterList {
-        val filterList = FilterList(
+        return FilterList(
             // MRM does not support genre filtering and text search at the same time
             Filter.Header("NOTE: Filters are ignored if using text search."),
             Filter.Header("Only one filter can be used at a time."),
@@ -302,7 +302,6 @@ open class MyReadingManga(override val lang: String) : ParsedHttpSource() {
             PairingFilter(returnFilter(getCache("$baseUrl/pairing/"), ".links a", "abs:href")),
             ScanGroupFilter(returnFilter(getCache("$baseUrl/group/"), ".links a", "abs:href"))
         )
-        return filterList
     }
 
     private class GenreFilter(GENRES: Array<Pair<String, String>>) : UriSelectFilterPath("Genre", "genre", arrayOf(Pair("", "Any"), *GENRES))

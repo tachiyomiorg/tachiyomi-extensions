@@ -23,9 +23,10 @@ class ManManga : BoomManga("ManManga", "https://m.manmanga.com", "en") {
     override fun nameselector(element: Element) = element.select("a").attr("alt")
     override fun authorget(document: Document) = document.select(".author").text().substringAfter("：").trim()
     override fun thumbnailget(document: Document) = document.select(".bg-box .bg").attr("style").substringAfter("'").substringBefore("'")
-    override fun genreget(document: Document) = document.select(".tags span").map {
+    override fun genreget(document: Document) = document.select(".tags span").joinToString(", ") {
         it.text().trim()
-    }.joinToString(", ")
+    }
+
     override fun statusget(document: Document) = when (document.select(".type").text().substringAfter("：").trim()) {
         "Ongoing" -> SManga.ONGOING
         "Completed" -> SManga.COMPLETED
@@ -36,9 +37,10 @@ class TwinsComics : BoomManga("TwinsComics", "https://m.twinscomics.com", "en") 
     override fun nameselector(element: Element) = element.select("a").attr("alt")
     override fun authorget(document: Document) = document.select(".author").text().substringAfter("：").trim()
     override fun thumbnailget(document: Document) = document.select(".bg-box .bg").attr("style").substringAfter("'").substringBefore("'")
-    override fun genreget(document: Document) = document.select(".tags span").map {
+    override fun genreget(document: Document) = document.select(".tags span").joinToString(", ") {
         it.text().trim()
-    }.joinToString(", ")
+    }
+
     override fun statusget(document: Document) = when (document.select(".type").text().substringAfter("：").trim()) {
         "Ongoing" -> SManga.ONGOING
         "Completed" -> SManga.COMPLETED
@@ -52,9 +54,10 @@ class ManMangazh : BoomManga("ManManga", "https://m.manmanga.com/cn", "zh") {
     override fun nameselector(element: Element) = element.select("a").attr("alt")
     override fun authorget(document: Document) = document.select(".author").text().substringAfter("：").trim()
     override fun thumbnailget(document: Document) = document.select(".bg-box .bg").attr("style").substringAfter("'").substringBefore("'")
-    override fun genreget(document: Document) = document.select(".tags span").map {
+    override fun genreget(document: Document) = document.select(".tags span").joinToString(", ") {
         it.text().trim()
-    }.joinToString(", ")
+    }
+
     override fun statusget(document: Document) = when (document.select(".type").text().substringAfter("：").trim()) {
         "连载中" -> SManga.ONGOING
         // "Completed" -> SManga.COMPLETED
@@ -66,9 +69,10 @@ class TwinsComicszh : BoomManga("TwinsComics", "https://m.twinscomics.com/cn", "
     override fun nameselector(element: Element) = element.select("a").attr("alt")
     override fun authorget(document: Document) = document.select(".author").text().substringAfter("：").trim()
     override fun thumbnailget(document: Document) = document.select(".bg-box .bg").attr("style").substringAfter("'").substringBefore("'")
-    override fun genreget(document: Document) = document.select(".tags span").map {
+    override fun genreget(document: Document) = document.select(".tags span").joinToString(", ") {
         it.text().trim()
-    }.joinToString(", ")
+    }
+
     override fun statusget(document: Document) = when (document.select(".type").text().substringAfter("：").trim()) {
         "连载中" -> SManga.ONGOING
         // "Completed" -> SManga.COMPLETED

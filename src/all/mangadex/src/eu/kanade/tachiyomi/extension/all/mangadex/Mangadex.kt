@@ -50,9 +50,6 @@ abstract class Mangadex(
     private val internalLang: String
 ) : ConfigurableSource, ParsedHttpSource() {
 
-    init {
-    }
-
     override val name = "MangaDex"
 
     override val baseUrl = "https://www.mangadex.org"

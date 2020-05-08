@@ -26,7 +26,7 @@ import uy.kohesive.injekt.api.get
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-        JaminisBox(),
+        JaiminisBox(),
         SenseScans(),
         KireiCake(),
         SilentSky(),
@@ -64,10 +64,10 @@ class FoolSlideFactory : SourceFactory {
     )
 }
 
-class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
-    val SLUG_REGEX = "(?:/read/)([\\w\\d-]+?)(?:/)".toRegex()
+class JaiminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
+    private val slugRegex = "(?:/read/)([\\w\\d-]+?)(?:/)".toRegex()
     override fun pageListRequest(chapter: SChapter): Request {
-        val (slug) = SLUG_REGEX.find(chapter.url)!!.destructured
+        val (slug) = slugRegex.find(chapter.url)!!.destructured
         var (major, minor) = chapter.chapter_number.toString().split(".")
         if (major == "-1") major = "0" // Some oneshots don't have a chapter
         return GET("$baseUrl$urlModifier/api/reader/chapter?comic_stub=$slug&chapter=$major&subchapter=$minor")
