@@ -74,7 +74,6 @@ class INKR : HttpSource() {
         // Filter
         if (query.isBlank()) {
             var status = ""
-            var rank = ""
             var orderBy = ""
             val genres = jsonObject()
             filters.forEach { filter ->
@@ -85,9 +84,6 @@ class INKR : HttpSource() {
                             Filter.TriState.STATE_EXCLUDE -> "ongoing"
                             else -> "all"
                         }
-                    }
-                    is RankFilter -> {
-                        rank = filter.toUriPart()
                     }
                     is SortBy -> {
                         orderBy = filter.toUriPart()
@@ -103,7 +99,6 @@ class INKR : HttpSource() {
             val body = RequestBody.create(jsonType, jsonObject(
                     "status" to status,
                     "genres" to genres,
-                    "rank" to rank,
                     "order" to orderBy
             ).toString())
             return POST("$apiUrl/mrs_filter", headers, body)
@@ -304,20 +299,6 @@ class INKR : HttpSource() {
 
     private class StatusFilter : Filter.TriState("Completed")
 
-    private class RankFilter : UriPartFilter("Rank", arrayOf(
-            Pair("All", "all"),
-            Pair("1 - 999", "1-999"),
-            Pair("1k - 2k", "1000-2000"),
-            Pair("2k - 3k", "2000-3000"),
-            Pair("3k - 4k", "3000-4000"),
-            Pair("4k - 5k", "4000-5000"),
-            Pair("5k - 6k", "5000-6000"),
-            Pair("6k - 7k", "6000-7000"),
-            Pair("7k - 8k", "7000-8000"),
-            Pair("8k - 9k", "8000-9000"),
-            Pair("9k - 19k", "9000-10000"),
-            Pair("10k - 11k", "10000-11000")
-    ))
 
     private class SortBy : UriPartFilter("Sort by", arrayOf(
             Pair("Name", "name"),
@@ -332,7 +313,6 @@ class INKR : HttpSource() {
             Filter.Header("NOTE: Ignored if using text search!"),
             Filter.Separator(),
             StatusFilter(),
-            RankFilter(),
             SortBy(),
             GenreList(getGenreList())
     )
@@ -340,53 +320,27 @@ class INKR : HttpSource() {
     // [...document.querySelectorAll('._2DMqI .mdl-checkbox')].map(n => `Genre("${n.querySelector('.mdl-checkbox__label').innerText}", "${n.querySelector('input').dataset.oid}")`).sort().join(',\n')
     // on https://mangarock.com/manga
     private fun getGenreList() = listOf(
-            Genre("4-koma", "mrs-genre-100117675"),
             Genre("Action", "mrs-genre-304068"),
-            Genre("Adult", "mrs-genre-358370"),
             Genre("Adventure", "mrs-genre-304087"),
             Genre("Comedy", "mrs-genre-304069"),
-            Genre("Demons", "mrs-genre-304088"),
-            Genre("Doujinshi", "mrs-genre-304197"),
             Genre("Drama", "mrs-genre-304177"),
             Genre("Ecchi", "mrs-genre-304074"),
             Genre("Fantasy", "mrs-genre-304089"),
-            Genre("Gender Bender", "mrs-genre-304358"),
-            Genre("Harem", "mrs-genre-304075"),
             Genre("Historical", "mrs-genre-304306"),
             Genre("Horror", "mrs-genre-304259"),
-            Genre("Isekai", "mrs-genre-100291868"),
-            Genre("Josei", "mrs-genre-304070"),
-            Genre("Kids", "mrs-genre-304846"),
             Genre("Magic", "mrs-genre-304090"),
             Genre("Martial Arts", "mrs-genre-304072"),
-            Genre("Mature", "mrs-genre-358371"),
             Genre("Mecha", "mrs-genre-304245"),
             Genre("Military", "mrs-genre-304091"),
             Genre("Music", "mrs-genre-304589"),
-            Genre("Mystery", "mrs-genre-304178"),
-            Genre("One Shot", "mrs-genre-100018505"),
-            Genre("Parody", "mrs-genre-304786"),
-            Genre("Police", "mrs-genre-304236"),
             Genre("Psychological", "mrs-genre-304176"),
             Genre("Romance", "mrs-genre-304073"),
             Genre("School Life", "mrs-genre-304076"),
-            Genre("Sci-Fi", "mrs-genre-304180"),
-            Genre("Seinen", "mrs-genre-304077"),
-            Genre("Shoujo Ai", "mrs-genre-304695"),
-            Genre("Shoujo", "mrs-genre-304175"),
             Genre("Shounen Ai", "mrs-genre-304307"),
-            Genre("Shounen", "mrs-genre-304164"),
             Genre("Slice of Life", "mrs-genre-304195"),
-            Genre("Smut", "mrs-genre-358372"),
-            Genre("Space", "mrs-genre-305814"),
             Genre("Sports", "mrs-genre-304367"),
-            Genre("Super Power", "mrs-genre-305270"),
             Genre("Supernatural", "mrs-genre-304067"),
-            Genre("Tragedy", "mrs-genre-358379"),
-            Genre("Vampire", "mrs-genre-304765"),
-            Genre("Webtoons", "mrs-genre-358150"),
-            Genre("Yaoi", "mrs-genre-304202"),
-            Genre("Yuri", "mrs-genre-304690")
+            Genre("Vampire", "mrs-genre-304765")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
