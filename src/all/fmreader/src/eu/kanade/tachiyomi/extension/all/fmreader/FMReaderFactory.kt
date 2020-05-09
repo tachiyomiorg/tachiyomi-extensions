@@ -40,7 +40,8 @@ class FMReaderFactory : SourceFactory {
         Manhwa18NetRaw(),
         MangaBorn(),
         SayTruyen(),
-        EpikManga()
+        EpikManga(),
+        ManhuaScan()
     )
 }
 
@@ -361,3 +362,5 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
     override fun chapterListSelector() = "table.table tbody tr"
     override fun getFilterList(): FilterList = FilterList()
 }
+
+class ManhuaScan : FMReader("ManhuaScan", "https://manhuascan.com", "en")
