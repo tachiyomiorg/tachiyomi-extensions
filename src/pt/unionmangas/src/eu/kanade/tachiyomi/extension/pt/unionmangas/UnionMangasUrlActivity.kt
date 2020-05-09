@@ -8,8 +8,8 @@ import android.util.Log
 import kotlin.system.exitProcess
 
 /**
- * Springboard that accepts https://unionleitor.top/perfil-manga/xxxxxx intents and redirects them to
- * the main Tachiyomi process.
+ * Springboard that accepts https://unionleitor.top/perfil-manga/xxxxxx intents
+ * and redirects them to the main Tachiyomi process.
  */
 class UnionMangasUrlActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {

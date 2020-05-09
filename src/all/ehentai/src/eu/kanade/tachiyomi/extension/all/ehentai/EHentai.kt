@@ -75,8 +75,8 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         return chapterPageCall(np).flatMap {
             val jsoup = it.asJsoup()
             urls += parseChapterPage(jsoup)
-            nextPageUrl(jsoup)?.let {
-                fetchChapterPage(chapter, it, urls)
+            nextPageUrl(jsoup)?.let { string ->
+                fetchChapterPage(chapter, string, urls)
             } ?: Observable.just(urls)
         }
     }
@@ -119,8 +119,8 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     } ?: url, additionalHeaders?.let {
         val headers = headers.newBuilder()
         it.toMultimap().forEach { (t, u) ->
-            u.forEach {
-                headers.add(t, it)
+            u.forEach { string ->
+                headers.add(t, string)
             }
         }
         headers.build()
@@ -198,9 +198,9 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
             tags.clear()
             select("#taglist tr").forEach {
                 val namespace = it.select(".tc").text().removeSuffix(":")
-                val currentTags = it.select("div").map {
-                    Tag(it.text().trim(),
-                        it.hasClass("gtl"))
+                val currentTags = it.select("div").map { element ->
+                    Tag(element.text().trim(),
+                        element.hasClass("gtl"))
                 }
                 tags[namespace] = currentTags
             }

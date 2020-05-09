@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangabox
 
+import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -13,6 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +37,9 @@ abstract class MangaBox(
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
+
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
+        .add("Referer", baseUrl) // for covers
 
     open val popularUrlPath = "manga_list?type=topview&category=all&state=all&page="
 
@@ -130,7 +135,7 @@ abstract class MangaBox(
             } ?: checkForRedirectMessage(document)
             description = document.select(descriptionSelector)?.firstOrNull()?.ownText()
                 ?.replace("""^$title summary:\s""".toRegex(), "")
-                ?.replace("""<\s*br\s*\/?>""".toRegex(), "\n")
+                ?.replace("""<\s*br\s*/?>""".toRegex(), "\n")
                 ?.replace("<[^>]*>".toRegex(), "")
             thumbnail_url = document.select(thumbnailSelector).attr("abs:src")
         }
@@ -213,21 +218,26 @@ abstract class MangaBox(
                     src
                 }
             }
-            Page(i, "", url)
+            Page(i, document.location(), url)
         }
+    }
+
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     // Based on change_alias JS function from Mangakakalot's website
+    @SuppressLint("DefaultLocale")
     open fun normalizeSearchQuery(query: String): String {
         var str = query.toLowerCase()
-        str = str.replace("à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ".toRegex(), "a")
-        str = str.replace("è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ".toRegex(), "e")
-        str = str.replace("ì|í|ị|ỉ|ĩ".toRegex(), "i")
-        str = str.replace("ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ".toRegex(), "o")
-        str = str.replace("ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ".toRegex(), "u")
-        str = str.replace("ỳ|ý|ỵ|ỷ|ỹ".toRegex(), "y")
+        str = str.replace("[àáạảãâầấậẩẫăằắặẳẵ]".toRegex(), "a")
+        str = str.replace("[èéẹẻẽêềếệểễ]".toRegex(), "e")
+        str = str.replace("[ìíịỉĩ]".toRegex(), "i")
+        str = str.replace("[òóọỏõôồốộổỗơờớợởỡ]".toRegex(), "o")
+        str = str.replace("[ùúụủũưừứựửữ]".toRegex(), "u")
+        str = str.replace("[ỳýỵỷỹ]".toRegex(), "y")
         str = str.replace("đ".toRegex(), "d")
         str = str.replace("""!|@|%|\^|\*|\(|\)|\+|=|<|>|\?|/|,|\.|:|;|'| |"|&|#|\[|]|~|-|$|_""".toRegex(), "_")
         str = str.replace("_+_".toRegex(), "_")
@@ -249,7 +259,7 @@ abstract class MangaBox(
             Pair("topview", "Top read")
     ))
 
-    open class StatusFilter(val statusPairs: Array<Pair<String, String>>) : UriPartFilter("Status", statusPairs)
+    open class StatusFilter(statusPairs: Array<Pair<String, String>>) : UriPartFilter("Status", statusPairs)
 
     open fun getStatusPairs() = arrayOf(
         Pair("all", "ALL"),
@@ -258,7 +268,7 @@ abstract class MangaBox(
         Pair("drop", "Dropped")
     )
 
-    private class GenreFilter(val genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
+    private class GenreFilter(genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
 
     open fun getGenrePairs(): Array<Pair<String, String>> = arrayOf(
         Pair("all", "ALL"),
@@ -304,7 +314,7 @@ abstract class MangaBox(
         Pair("42", "Yuri")
     )
 
-    open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
         fun toUriPart() = vals[state].first
     }

@@ -98,11 +98,17 @@ class Mintmanga : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div.leftContent").first()
+        val rawCategory = infoElement.select("span.elem_category").text()
+        val category = if (rawCategory.isNotEmpty()) {
+            rawCategory.toLowerCase()
+        } else {
+            "манга"
+        }
 
         val manga = SManga.create()
         manga.author = infoElement.select("span.elem_author").first()?.text()
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
-        manga.genre = infoElement.select("span.elem_genre").text().replace(" ,", ",")
+        manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
         manga.description = infoElement.select("div.manga-description").text()
         manga.status = parseStatus(infoElement.html())
         manga.thumbnail_url = infoElement.select("img").attr("data-full")

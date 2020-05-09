@@ -174,7 +174,7 @@ open class NineHentai : ParsedHttpSource() {
 
     private class Sorting : Filter.Sort("Sorting",
             arrayOf("Newest", "Popular Right now", "Most Fapped", "Most Viewed", "By Title"),
-            Filter.Sort.Selection(1, false))
+            Selection(1, false))
 
     override fun getFilterList() = FilterList(
             Sorting(),

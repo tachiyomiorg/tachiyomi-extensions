@@ -58,8 +58,10 @@ repositories {
 }
 
 dependencies {
+    // Lib 1.2, but using specific commit so we don't need to bump up the version
+    compileOnly "com.github.tachiyomiorg:extensions-lib:84bfb8d"
+
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    compileOnly "com.github.tachiyomiorg:extensions-lib:$libVersion"
     compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
     compileOnly 'io.reactivex:rxjava:1.3.6'
     compileOnly 'org.jsoup:jsoup:1.10.2'

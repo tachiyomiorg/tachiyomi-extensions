@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: OneManHua'
+    appName = 'Tachiyomi: OhManhua (OneManHua)'
     pkgNameSuffix = 'zh.onemanhua'
     extClass = '.Onemanhua'
-    extVersionCode = 1
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

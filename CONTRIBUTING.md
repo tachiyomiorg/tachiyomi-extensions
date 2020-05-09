@@ -61,17 +61,8 @@ Notice that we're using `compileOnly` instead of `implementation`, since the app
 
 #### Extensions library
 
-Extensions rely on stubs defined in [tachiyomi-extensions-lib](https://github.com/inorichi/tachiyomi-extensions-lib), which simply provides some interfaces for compiling extensions. These interfaces match what's found in the main Tachiyomi app. The exact version used is configured with `libVersion`. The latest version should be preferred.
+Extensions rely on stubs defined in [tachiyomi-extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which simply provides some interfaces for compiling extensions. These interfaces match what's found in the main Tachiyomi app. The exact version used is configured with `libVersion`. The latest version should be preferred.
 
-#### Preference stub
-
-[`preference-stub`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/preference-stub) provides the [`ConfigurableSource` interface](https://github.com/inorichi/tachiyomi-extensions/blob/master/lib/preference-stub/src/main/java/eu/kanade/tachiyomi/source/ConfigurableSource.java) for extensions, as well as stubs for Android preferences.
-
-```
-dependencies {
-    compileOnly project(':preference-stub')
-}
-```
 
 #### Duktape stub
 
@@ -107,7 +98,7 @@ The structure for an extension is very strict.  In the future 1.x release this w
 - fetchPopularManga (Optional to override)
     - This method takes the results from a manga listing page and parses it.
 - popularMangaRequest (Must be overridden)
-   - The GET/POST for the HTML Page of the manga listings  
+   - The GET/POST for the HTML Page of the manga listings
 - popularMangaParse (Optional to override)
    - parses the manga listing page returns boolean if has another page, and the manga objects as MangasPage
 - popularMangaSelector (must be overridden)
@@ -116,10 +107,10 @@ The structure for an extension is very strict.  In the future 1.x release this w
     - jsoup selectors to parse the individual manga html on the page (most sites this is just link, title, cover url)
 - popularMangaNextPageSelector (must be overridden)
    - jsoup css selector to see if there is a another page after current one
-       
+
  This will provide the initial viewing once a user clicks into a manga you will need to override mangaDetailsParse and this is where you need to parse the actual manga site's manga page and parse the standard info (title, author, description etc etc)
- 
- ###### Note: 
+
+ ###### Note:
  Must be overriden are required to be overridden even if you override the parent method and its not being called anymore.  (for example i override popularMangaParse and dont need popularMangaNextPage selector  I would just override in the extension and throw a not used exception)
 
 

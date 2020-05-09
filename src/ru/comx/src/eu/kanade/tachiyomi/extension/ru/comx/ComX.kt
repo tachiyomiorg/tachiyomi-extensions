@@ -109,7 +109,7 @@ class ComX : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = infoElement.select("p:eq(2)").text().removePrefix("Издатель: ")
         manga.genre = infoElement.select("p:eq(3)").text()
-                .removePrefix("Жанр: ")
+                .removePrefix("Жанр: ").split(",").plusElement("Комикс").joinToString { it.trim() }
 
         manga.status = parseStatus(infoElement.select("p:eq(4)").text()
                 .removePrefix("Статус: "))

@@ -61,7 +61,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     favorites?.let { detailsDesc += "Favorited: $it times\n" }
     averageRating?.let {
         detailsDesc += "Rating: $it"
-        ratingCount?.let { detailsDesc += " ($it)" }
+        ratingCount?.let { count -> detailsDesc += " ($count)" }
         detailsDesc += "\n"
     }
 
