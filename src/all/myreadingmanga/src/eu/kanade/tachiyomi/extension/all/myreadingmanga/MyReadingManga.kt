@@ -23,11 +23,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-open class MyReadingManga(override val lang: String, private val siteLang: String) : ParsedHttpSource() {
+open class MyReadingManga(override val lang: String, private val siteLang: String, private val latestLang: String) : ParsedHttpSource() {
 
     // Basic Info
     override val name = "MyReadingManga"
-    override val baseUrl = "https://myreadingmanga.info"
+    final override val baseUrl = "https://myreadingmanga.info"
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
@@ -41,45 +41,25 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
         return GET("$baseUrl/search/?wpsolr_sort=sort_by_random&wpsolr_page=$page&wpsolr_fq[0]=lang_str:$siteLang", headers) // Random Manga as returned by search
     }
 
+    override fun popularMangaParse(response: Response): MangasPage {
+        if (!filtersCached) {
+            cachedPagesUrls.onEach { filterAssist(it.value) }
+            filtersCached = true
+        }
+        return searchMangaParse(response)
+    }
     override fun popularMangaNextPageSelector() = throw Exception("Not used")
     override fun popularMangaSelector() = throw Exception("Not used")
-    private var processedSoFar = 0
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        if (document.location().contains("page=1")) processedSoFar = 0
-        val mangas = document.select(searchMangaSelector()).map { searchMangaFromElement(it) }
-            .also { processedSoFar += it.count() }
-        val totalResults = Regex("""(\d+)""").find(document.select("div.res_info").text())?.groupValues?.get(1)?.toIntOrNull() ?: 0
-        return MangasPage(mangas, processedSoFar < totalResults)
-    }
-    override fun popularMangaFromElement(element: Element) = searchMangaFromElement(element)
+    override fun popularMangaFromElement(element: Element) = throw Exception("Not used")
 
     // Latest
     @SuppressLint("DefaultLocale")
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/lang/${siteLang.toLowerCase()}" + if (page > 1) "/page/$page/" else "", headers) // Home Page - Latest Manga
+        return GET("$baseUrl/lang/${latestLang.toLowerCase()}" + if (page > 1) "/page/$page/" else "", headers) // Home Page - Latest Manga
     }
 
     override fun latestUpdatesNextPageSelector() = "li.pagination-next"
     override fun latestUpdatesSelector() = "article"
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        val mangas = mutableListOf<SManga>()
-        val list = document.select(latestUpdatesSelector()).filter { element ->
-            val select = element.select("a[rel=bookmark]")
-            select.text().contains("[$lang", true)
-        }
-        for (element in list) {
-            mangas.add(latestUpdatesFromElement(element))
-        }
-
-        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
-            document.select(selector).first()
-        } != null
-
-        return MangasPage(mangas, hasNextPage)
-    }
-
     override fun latestUpdatesFromElement(element: Element) = buildManga(element.select("a[rel]").first(), element.select("a.entry-image-link img").first())
 
     // Search
@@ -98,16 +78,16 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
         return GET(uri.toString(), headers)
     }
 
-    override fun searchMangaNextPageSelector(): String? = null
+    override fun searchMangaNextPageSelector(): String? = throw Exception("Not used")
     override fun searchMangaSelector() = "div.results-by-facets div[id*=res]"
+    private var mangaParsedSoFar = 0
     override fun searchMangaParse(response: Response): MangasPage {
-        // Filter Assist - Caches Pages required for filter parsing
-        if (!filtersCached) {
-            filterAssist(baseUrl)
-            filterAssist("$baseUrl/cats/")
-            filtersCached = true
-        }
-        return popularMangaParse(response)
+        val document = response.asJsoup()
+        if (document.location().contains("page=1")) mangaParsedSoFar = 0
+        val mangas = document.select(searchMangaSelector()).map { searchMangaFromElement(it) }
+            .also { mangaParsedSoFar += it.count() }
+        val totalResults = Regex("""(\d+)""").find(document.select("div.res_info").text())?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        return MangasPage(mangas, mangaParsedSoFar < totalResults)
     }
     override fun searchMangaFromElement(element: Element) = buildManga(element.select("a").first(), element.select("img")?.first())
 
@@ -156,8 +136,7 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
         val manga = SManga.create()
         manga.author = cleanAuthor(document.select("h1").text())
         manga.artist = cleanAuthor(document.select("h1").text())
-        val glist = document.select(".entry-header p a[href*=genre]").map { it.text() }
-        manga.genre = glist.joinToString(", ")
+        manga.genre = document.select(".entry-header p a[href*=genre]").joinToString(", ") { it.text() }
         val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)")?.joinToString("\n") { it.text() }
         manga.description = document.select("h1").text() + if (extendedDescription.isNullOrEmpty()) "" else "\n\n$extendedDescription"
         manga.status = when (document.select("a[href*=status]")?.first()?.text()) {
@@ -263,14 +242,23 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
             ?: arrayOf("Press 'Reset' to try again")
     }
 
+    // URLs for the pages we need to cache
+    private val cachedPagesUrls = hashMapOf(
+        Pair("genres", baseUrl),
+        Pair("tags", baseUrl),
+        Pair("categories", "$baseUrl/cats/"),
+        Pair("pairings", "$baseUrl/pairing/"),
+        Pair("groups", "$baseUrl/group/")
+    )
+
     // Generates the filter lists for app
     override fun getFilterList(): FilterList {
         return FilterList(
-            GenreFilter(returnFilter(getCache(baseUrl), ".tagcloud a[href*=/genre/]")),
-            TagFilter(returnFilter(getCache(baseUrl), ".tagcloud a[href*=/tag/]")),
-            CatFilter(returnFilter(getCache("$baseUrl/cats/"), ".links a")),
-            PairingFilter(returnFilter(getCache("$baseUrl/pairing/"), ".links a")),
-            ScanGroupFilter(returnFilter(getCache("$baseUrl/group/"), ".links a"))
+            GenreFilter(returnFilter(getCache(cachedPagesUrls["genres"]!!), ".tagcloud a[href*=/genre/]")),
+            TagFilter(returnFilter(getCache(cachedPagesUrls["tags"]!!), ".tagcloud a[href*=/tag/]")),
+            CatFilter(returnFilter(getCache(cachedPagesUrls["categories"]!!), ".links a")),
+            PairingFilter(returnFilter(getCache(cachedPagesUrls["pairings"]!!), ".links a")),
+            ScanGroupFilter(returnFilter(getCache(cachedPagesUrls["groups"]!!), ".links a"))
         )
     }
 
