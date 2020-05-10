@@ -21,8 +21,9 @@ class Tapastic : ParsedHttpSource() {
     // Info
     override val lang = "en"
     override val supportsLatest = true
-    override val name = "Tapastic"
+    override val name = "Tapas" // originally Tapastic
     override val baseUrl = "https://tapas.io"
+    override val id = 3825434541981130345
 
     // Popular
 
@@ -76,12 +77,7 @@ class Tapastic : ParsedHttpSource() {
     override fun searchMangaSelector() = "${popularMangaSelector()}, .search-item-wrap"
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
         url = element.select(".item__thumb a, .title-section .title a").attr("href")
-        val browseTitle = element.select(".item__thumb img")
-        title = if (browseTitle != null) {
-            browseTitle.attr("alt")
-        } else {
-            element.select(".title-section .title a").text()
-        }
+        title = element.select(".item__thumb img").firstOrNull()?.attr("alt") ?: element.select(".title-section .title a").text()
         thumbnail_url = element.select(".item__thumb img, .thumb-wrap img").attr("src")
     }
 
@@ -117,7 +113,7 @@ class Tapastic : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "li.content__item"
+    override fun chapterListSelector() = "li.content__item:not(:has(.info__tag):contains(release date))" // filter future releases
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val lock = !element.select(".sp-ico-episode-lock, .sp-ico-schedule-white").isNullOrEmpty()
         name = if (lock) {
