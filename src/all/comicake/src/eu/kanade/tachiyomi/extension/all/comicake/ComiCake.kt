@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.all.comicake
 import android.os.Build
 import eu.kanade.tachiyomi.extensions.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -10,11 +11,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import rx.Observable
 
 abstract class ComiCake(
     override val name: String,
@@ -76,8 +79,21 @@ abstract class ComiCake(
         return MangasPage(mangas, !(response.getString("next").isNullOrEmpty() || response.getString("next") == "null"))
     }
 
-    override fun mangaDetailsRequest(manga: SManga): Request {
+    // Shenanigans to allow "open in webview" to show a webpage instead of JSON
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(apiMangaDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    private fun apiMangaDetailsRequest(manga: SManga): Request {
         return GET("$apiBase/comics/${manga.url}.json")
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET(manga.description!!.substringAfterLast("\n"))
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -95,7 +111,8 @@ abstract class ComiCake(
         thumbnail_url = obj.getString("cover")
         author = parseListNames(obj.getJSONArray("author"))
         artist = parseListNames(obj.getJSONArray("artist"))
-        description = obj.getString("description")
+        description = obj.getString("description") +
+            "\n\n${readerBase}series/${obj.getString("slug")}/" // webpage for "open in webview"
         genre = parseListNames(obj.getJSONArray("tags"))
         status = SManga.UNKNOWN
     }
@@ -129,7 +146,7 @@ abstract class ComiCake(
     private fun parseChapterJson(obj: JSONObject) = SChapter.create().apply {
         name = obj.getString("title") // title will always have content, vs. name that's an optional field
         chapter_number = (obj.getInt("chapter") + (obj.getInt("subchapter") / 10.0)).toFloat()
-        date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ").parse(obj.getString("published_at")).time
+        date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ", Locale.getDefault()).parse(obj.getString("published_at")).time
         // TODO scanlator field by adding team to expandable in CC (low priority given the use case of CC)
         url = obj.getString("manifest")
     }
@@ -163,6 +180,6 @@ abstract class ComiCake(
 
     companion object {
         private const val COMICAKE_DEFAULT_API_ENDPOINT = "/api" // Highly unlikely to change
-        private const val COMICAKE_DEFAULT_READER_ENDPOINT = "/r" // Can change based on CC config
+        private const val COMICAKE_DEFAULT_READER_ENDPOINT = "/r/" // Can change based on CC config
     }
 }
