@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.tapastic
 
+import android.app.Application
+import android.content.SharedPreferences
 import android.net.Uri
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -15,8 +20,61 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class Tapastic : ParsedHttpSource() {
+class Tapastic : ConfigurableSource, ParsedHttpSource() {
+
+    // Preferences Code
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_LOCKED_CHAPTERS_Title
+            title = SHOW_LOCKED_CHAPTERS_Title
+            entries = prefsEntires
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val chapterListPref = ListPreference(screen.context).apply {
+            key = SHOW_LOCKED_CHAPTERS_Title
+            title = SHOW_LOCKED_CHAPTERS_Title
+            entries = prefsEntires
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues.get(index) as String
+                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
+
+    private fun chapterListPref() = preferences.getString(SHOW_LOCKED_CHAPTERS, "free")
+
+    companion object {
+        private const val SHOW_LOCKED_CHAPTERS_Title = "Show or don't show future/locked chapters"
+        private const val SHOW_LOCKED_CHAPTERS = "tapas_locked_chapters"
+        private val prefsEntires = arrayOf("Show All", "Show free/currently available")
+        private val prefsEntryValues = arrayOf("all", "free")
+    }
 
     // Info
     override val lang = "en"
@@ -113,7 +171,8 @@ class Tapastic : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "li.content__item:not(:has(.info__tag):contains(release date))" // filter future releases
+    // filter future releases based on user's configuration
+    override fun chapterListSelector() = "li.content__item" + if (chapterListPref() == "free") ":not(:has(.info__tag):contains(release date))" else ""
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val lock = !element.select(".sp-ico-episode-lock, .sp-ico-schedule-white").isNullOrEmpty()
         name = if (lock) {
