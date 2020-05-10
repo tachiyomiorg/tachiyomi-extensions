@@ -118,7 +118,8 @@ class MadaraFactory : SourceFactory {
         MangaPhoenix(),
         FirstKissManhua(),
         HeroManhua(),
-        MartialScans()
+        MartialScans(),
+        MangaYosh()
 
         // Removed by request of site owner
         // EarlyManga(),
@@ -662,3 +663,5 @@ class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
     }
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 }
+
+class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateFormat("dd MMM yyyy", Locale.US))
