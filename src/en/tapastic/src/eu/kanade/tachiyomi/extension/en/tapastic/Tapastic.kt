@@ -35,7 +35,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
         val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
             key = SHOW_LOCKED_CHAPTERS_Title
             title = SHOW_LOCKED_CHAPTERS_Title
-            entries = prefsEntires
+            entries = prefsEntries
             entryValues = prefsEntryValues
             summary = "%s"
 
@@ -53,7 +53,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
         val chapterListPref = ListPreference(screen.context).apply {
             key = SHOW_LOCKED_CHAPTERS_Title
             title = SHOW_LOCKED_CHAPTERS_Title
-            entries = prefsEntires
+            entries = prefsEntries
             entryValues = prefsEntryValues
             summary = "%s"
 
@@ -72,7 +72,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     companion object {
         private const val SHOW_LOCKED_CHAPTERS_Title = "Show or don't show future/locked chapters"
         private const val SHOW_LOCKED_CHAPTERS = "tapas_locked_chapters"
-        private val prefsEntires = arrayOf("Show All", "Show free/currently available")
+        private val prefsEntries = arrayOf("Show All", "Show free/currently available")
         private val prefsEntryValues = arrayOf("all", "free")
     }
 
