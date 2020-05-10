@@ -72,14 +72,14 @@ class Mangafreak : ParsedHttpSource() {
             uri.appendPath("Genre")
             when (filter) {
                 is GenreList -> {
-                    uri.appendPath(filter.state.map {
+                    uri.appendPath(filter.state.joinToString("") {
                         when (it.state) {
                             Filter.TriState.STATE_IGNORE -> "0"
                             Filter.TriState.STATE_INCLUDE -> "1"
                             Filter.TriState.STATE_EXCLUDE -> "2"
                             else -> "0"
                         }
-                    }.joinToString(""))
+                    })
                 }
             }
             uri.appendEncodedPath("Status/0/Type/0")

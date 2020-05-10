@@ -73,7 +73,7 @@ class ManManga : ParsedHttpSource() {
             searchMangaFromElement(element)
         }
 
-        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = searchMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
@@ -92,9 +92,9 @@ class ManManga : ParsedHttpSource() {
         val getThumbnailUrl = document.select(".bg-box .bg").attr("style")
 
         author = document.select(".author").text().replace("Author：", "").trim()
-        genre = document.select(".tags span").map {
+        genre = document.select(".tags span").joinToString(", ") {
             it.text().trim()
-        }.joinToString(", ")
+        }
         status = document.select(".type").text().replace("Status：", "").trim().let {
             parseStatus(it)
         }
@@ -125,12 +125,12 @@ class ManManga : ParsedHttpSource() {
         if (document.select("ul.img-list > li.unloaded > img").toString().isNotEmpty()) {
             document.select("ul.img-list > li.unloaded > img").forEach {
                 val imgUrl = it.attr("data-src")
-                pages.add(Page(pages.size, "", "$imgUrl"))
+                pages.add(Page(pages.size, "", imgUrl))
             }
         } else {
             document.select("ul.img-list > li.loaded > img").forEach {
                 val imgUrl = it.attr("data-src")
-                pages.add(Page(pages.size, "", "$imgUrl"))
+                pages.add(Page(pages.size, "", imgUrl))
             }
         }
         return pages

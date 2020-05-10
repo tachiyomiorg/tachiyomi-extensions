@@ -92,7 +92,7 @@ class Mangahere : ParsedHttpSource() {
                 is CompletionList -> url.addEncodedQueryParameter("st", it.state.toString())
                 is GenreList -> {
 
-                    val genreFilter = filters.find { it is GenreList } as GenreList?
+                    val genreFilter = filters.find { filter -> filter is GenreList } as GenreList?
                     val includeGenres = ArrayList<Int>()
                     val excludeGenres = ArrayList<Int>()
                     genreFilter?.state?.forEach { genre ->

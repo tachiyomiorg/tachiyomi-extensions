@@ -31,7 +31,7 @@ class Mangasail : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    /* Site loads some mannga info (manga cover, author name, status, etc.) client side through JQuery
+    /* Site loads some manga info (manga cover, author name, status, etc.) client side through JQuery
     need to add this header for when we request these data fragments
     Also necessary for latest updates request */
     override fun headersBuilder() = super.headersBuilder().add("X-Authcache", "1")!!
@@ -39,10 +39,10 @@ class Mangasail : ParsedHttpSource() {
     override fun popularMangaSelector() = "tbody tr"
 
     override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/directory/hot")
+        return if (page == 1) {
+            GET("$baseUrl/directory/hot")
         } else {
-            return GET("$baseUrl/directory/hot?page=" + (page - 1))
+            GET("$baseUrl/directory/hot?page=" + (page - 1))
         }
     }
 
@@ -78,10 +78,10 @@ class Mangasail : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = "There is no next page"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (page == 1) {
-            return GET("$baseUrl/search/node/$query")
+        return if (page == 1) {
+            GET("$baseUrl/search/node/$query")
         } else {
-            return GET("$baseUrl/search/node/$query?page=" + (page - 1))
+            GET("$baseUrl/search/node/$query?page=" + (page - 1))
         }
     }
 

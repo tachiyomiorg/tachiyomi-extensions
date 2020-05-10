@@ -259,11 +259,11 @@ class MangaLife : HttpSource() {
             .let { if (it.isEmpty()) "" else "$it/" }
         val path = "$host/manga/$titleURI/$seasonURI"
 
-        var chNum = chapterImage(curChapter["Chapter"].string)
+        val chNum = chapterImage(curChapter["Chapter"].string)
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
-            var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length - 3) }
-            Page(i, "", path + "$chNum-$imageNum.png")
+            val imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length - 3) }
+            Page(i, "", "$path$chNum-$imageNum.png")
         }
     }
 

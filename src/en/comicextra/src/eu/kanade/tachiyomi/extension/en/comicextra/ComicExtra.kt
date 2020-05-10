@@ -130,20 +130,20 @@ class ComicExtra : ParsedHttpSource() {
     }
 
     private fun dateParse(dateAsString: String): Long {
-        var date: Date
-        try {
-            date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
+        val date: Date
+        date = try {
+            SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
         } catch (e: ParseException) {
             val m = datePattern.matcher(dateAsString)
 
             if (dateAsString != "Today" && m.matches()) {
                 val amount = m.group(1).toInt()
 
-                date = Calendar.getInstance().apply {
+                Calendar.getInstance().apply {
                     add(Calendar.DATE, -amount)
                 }.time
             } else if (dateAsString == "Today") {
-                date = Calendar.getInstance().time
+                Calendar.getInstance().time
             } else return 0
         }
 

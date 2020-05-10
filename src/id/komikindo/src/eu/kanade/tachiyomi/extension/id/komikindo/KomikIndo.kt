@@ -26,7 +26,7 @@ class KomikIndo : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request {
-        val url = if (page == 1) "$baseUrl" else "$baseUrl/page/$page"
+        val url = if (page == 1) baseUrl else "$baseUrl/page/$page"
         return GET(url, headers)
     }
 
@@ -37,7 +37,7 @@ class KomikIndo : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
-        if (!query.equals("")) {
+        if (query != "") {
             builtUrl = if (page == 1) "$baseUrl/search/$query/" else "$baseUrl/search/$query/page/$page/"
         } else if (filters.size > 0) {
             filters.forEach { filter ->
@@ -151,7 +151,7 @@ class KomikIndo : ParsedHttpSource() {
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }

@@ -139,7 +139,7 @@ override fun mangaDetailsParse(document: Document): SManga {
         document.select("div#chimg img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }

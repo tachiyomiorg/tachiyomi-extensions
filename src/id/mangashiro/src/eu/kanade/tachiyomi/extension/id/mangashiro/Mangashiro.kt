@@ -141,7 +141,7 @@ class Mangashiro : ParsedHttpSource() {
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }

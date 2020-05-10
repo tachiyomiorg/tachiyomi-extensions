@@ -218,7 +218,7 @@ class Rawdevart : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        var pages = mutableListOf<Page>()
+        val pages = mutableListOf<Page>()
         document.select("img.not-lazy[data-src]").forEachIndexed { i, img ->
             pages.add(Page(i, "", img.attr("data-src")))
         }

@@ -18,7 +18,7 @@ import rx.Observable
 class MangaMainac : ParsedHttpSource() {
 
     companion object {
-        val sourceList = listOf<Pair<String, String>>(
+        val sourceList = listOf(
             Pair("Boku No Hero Academia", "https://w15.readheroacademia.com"),
             Pair("One Punch Man", "https://w12.readonepunchman.net"),
             Pair("One Punch Man (webcomic)", "https://onewebcomic.net"),

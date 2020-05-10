@@ -2,18 +2,14 @@ package eu.kanade.tachiyomi.extension.en.mangakatana
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import okhttp3.OkHttpClient
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MangaKatana: ParsedHttpSource() {
     override val name = "MangaKatana"
@@ -57,9 +53,7 @@ class MangaKatana: ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         author = document.select(".author").text()
         description = document.select(".summary > p").text()
-        status = document.select(".value.status").let {
-            parseStatus(it.text())
-        }
+        status = parseStatus(document.select(".value.status").text())
         genre = document.select(".genres > a").joinToString { it.text() }
         thumbnail_url = document.select(".cover > img").attr("abs:data-src")
     }

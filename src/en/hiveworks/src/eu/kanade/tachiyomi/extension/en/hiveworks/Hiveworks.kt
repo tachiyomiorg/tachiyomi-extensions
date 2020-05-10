@@ -107,12 +107,16 @@ class Hiveworks : ParsedHttpSource() {
         val document = response.asJsoup()
 
         val selectManga = document.select(searchMangaSelector())
-        val mangas = if (url.endsWith("localSearch")) {
-            selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
-        } else if (url.contains("originals")) {
-            selectManga.map { element -> searchOriginalMangaFromElement(element) }
-        } else {
-            selectManga.map { element -> searchMangaFromElement(element) }
+        val mangas = when {
+            url.endsWith("localSearch") -> {
+                selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
+            }
+            url.contains("originals") -> {
+                selectManga.map { element -> searchOriginalMangaFromElement(element) }
+            }
+            else -> {
+                selectManga.map { element -> searchMangaFromElement(element) }
+            }
         }
 
         val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
