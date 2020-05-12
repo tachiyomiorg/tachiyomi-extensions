@@ -206,9 +206,10 @@ abstract class Mangadex(
         return clientBuilder()
     }
 
-    private var groupSearch = ""
+    private var groupSearch: String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (page == 1) groupSearch = null
         val genresToInclude = mutableListOf<String>()
         val genresToExclude = mutableListOf<String>()
 
@@ -302,8 +303,8 @@ abstract class Mangadex(
                 is ScanGroup -> {
                     groupSearch = when {
                         filter.state.isNotEmpty() && page == 1 -> "$baseUrl/groups/0/1/${filter.state}"
-                        filter.state.isNotEmpty() && page > 1 -> groupSearch.dropLast(1) + page
-                        else -> ""
+                        filter.state.isNotEmpty() && page > 1 -> "${groupSearch!!}/$page"
+                        else -> null
                     }
                 }
             }
@@ -318,23 +319,17 @@ abstract class Mangadex(
             urlToUse += "&tags_exc=" + genresToExclude.joinToString(",")
         }
 
-        return if (groupSearch.isNotEmpty()) {
-            GET(groupSearch, headersBuilder().build(), CacheControl.FORCE_NETWORK)
-        } else {
-            GET(urlToUse, headersBuilder().build(), CacheControl.FORCE_NETWORK)
-        }
+        return GET(groupSearch ?: urlToUse, headersBuilder().build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        if (response.request().url().toString().contains("/groups/")) {
-            response.asJsoup().select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a:nth-child(1)").attr("abs:href").let {
-                return if (it.isNotEmpty()) {
-                    groupSearch = "$it/manga/0/1"
-                    super.searchMangaParse(client.newCall(GET(groupSearch, headersBuilder().build())).execute())
-                } else {
-                    MangasPage(emptyList(), false)
+        return if (response.request().url().toString().contains("/groups/")) {
+            response.asJsoup().select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a").firstOrNull()?.attr("abs:href")
+                ?.let {
+                    groupSearch = "$it/manga/0"
+                    super.searchMangaParse(client.newCall(GET(groupSearch!!, headersBuilder().build())).execute())
                 }
-            }
+                ?: MangasPage(emptyList(), false)
         } else {
             val document = response.asJsoup()
             if (document.select("#login_button").isNotEmpty()) throw Exception("Log in via WebView to enable search")
@@ -347,7 +342,7 @@ abstract class Mangadex(
                 document.select(selector).first()
             } != null
 
-            return MangasPage(mangas, hasNextPage)
+            MangasPage(mangas, hasNextPage)
         }
     }
 
