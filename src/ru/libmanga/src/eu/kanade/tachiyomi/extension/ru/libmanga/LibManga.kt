@@ -9,7 +9,6 @@ import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullArray
-import com.github.salomonbrys.kotson.nullInt
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
@@ -169,11 +168,10 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private fun popularMangaFromElement(el: JsonElement) = SManga.create().apply {
+        val slug = el["slug"].string
         title = el["name"].string
-        thumbnail_url = "$baseUrl/uploads/" + if (el["cover"].nullInt != null)
-            "cover/${el["slug"].string}/cover/cover_250x350.jpg" else
-            "no-image.png"
-        url = "/" + el["slug"].string
+        thumbnail_url = "$baseUrl/uploads/cover/$slug/cover/cover_250x350.jpg"
+        url = "/$slug"
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
