@@ -76,7 +76,7 @@ class Mangahasu : ParsedHttpSource() {
                 is ArtistFilter -> url.addQueryParameter("artist", filter.state)
                 is StatusFilter -> url.addQueryParameter("status", filter.toUriPart())
                 is TypeFilter -> url.addQueryParameter("typeid", filter.toUriPart())
-                is GenreList -> {
+                is GenreFilter -> {
                     filter.state.forEach {
                         when (it.state) {
                             Filter.TriState.STATE_INCLUDE -> url.addQueryParameter("g_i[]", it.id)
@@ -183,7 +183,7 @@ class Mangahasu : ParsedHttpSource() {
         ArtistFilter(),
         StatusFilter(),
         TypeFilter(),
-        GenreList(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private class AuthorFilter : Filter.Text("Author")
@@ -209,7 +209,7 @@ class Mangahasu : ParsedHttpSource() {
     ))
 
     private class Genre(name: String, val id: String) : Filter.TriState(name)
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private fun getGenreList() = listOf(
         Genre("4-koma", "46"),
         Genre("Action", "1"),
