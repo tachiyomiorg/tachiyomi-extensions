@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Base64.decode as base64Decode
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -190,7 +189,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             rawCategory.isNotBlank() -> rawCategory.toLowerCase()
             else -> "манга"
         }
-        val genres = body.select(".info-list__row:has(strong:contains(Жанры)) > a").text()
+
+        val genres = body.select(".info-list__row:has(strong:contains(Жанры)) > a").map { it.text() }
         manga.title = document.select(".manga-title small").text().substringBefore("/").trim()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
@@ -204,7 +204,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        manga.genre = genres.split(",").plusElement(category).joinToString { it.trim() }
+        manga.genre = genres.plusElement(category).joinToString { it.trim() }
         manga.description = body.select(".info-desc__content").text()
         return manga
     }
@@ -255,8 +255,9 @@ class LibManga : ConfigurableSource, HttpSource() {
             .select("script:containsData(window.__info)")
             .first()
             .html()
-            .replace("window.__info = ", "")
-            .replace(";", "")
+            .trim()
+            .removePrefix("window.__info = ")
+            .removeSuffix(";")
 
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject
@@ -267,15 +268,15 @@ class LibManga : ConfigurableSource, HttpSource() {
         val imageServerUrl: String = servers[serverToUse].string
 
         // Get pages
-        val baseStr = document.select("span.pp")
+        val pagesArr = document
+            .select("script:containsData(window.__pg)")
             .first()
             .html()
-            .replace("<!--", "")
-            .replace("-->", "")
             .trim()
+            .removePrefix("window.__pg = ")
+            .removeSuffix(";")
 
-        val decodedArr = base64Decode(baseStr, android.util.Base64.DEFAULT)
-        val pagesJson = jsonParser.parse(String(decodedArr)).array
+        val pagesJson = jsonParser.parse(pagesArr).array
 
         val pages = mutableListOf<Page>()
         pagesJson.forEach { page ->
