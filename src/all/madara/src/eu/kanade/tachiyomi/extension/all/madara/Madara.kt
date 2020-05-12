@@ -19,6 +19,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.CacheControl
 import okhttp3.FormBody
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -80,8 +81,10 @@ abstract class Madara(
         add("vars[manga_archives_item_layout]", "big_thumbnail")
     }
 
+    open val formHeaders: Headers by lazy { headersBuilder().build() }
+
     override fun popularMangaRequest(page: Int): Request {
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
+        return POST("$baseUrl/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun popularMangaNextPageSelector(): String? = "body:not(:has(.no-posts))"
@@ -96,7 +99,7 @@ abstract class Madara(
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
+        return POST("$baseUrl/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()

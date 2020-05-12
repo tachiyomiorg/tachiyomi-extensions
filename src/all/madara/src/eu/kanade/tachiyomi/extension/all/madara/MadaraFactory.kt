@@ -442,7 +442,12 @@ class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
 
 class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar")
 
-class NightComic : Madara("Night Comic", "https://www.nightcomic.com", "en")
+class NightComic : Madara("Night Comic", "https://nightcomic.com", "en") {
+    override val formHeaders: Headers = headersBuilder()
+        .add("Content-Type", "application/x-www-form-urlencoded")
+        .add("X-MOD-SBB-CTYPE", "xhr")
+        .build()
+}
 
 class Toonily : Madara("Toonily", "https://toonily.com", "en")
 
@@ -532,7 +537,60 @@ class MangaKiss : Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateF
 
 class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
-class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en")
+class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en") {
+    override fun getGenreList() = listOf(
+        Genre("Action", "action-manga"),
+        Genre("Adventure", "adventure-manga"),
+        Genre("Bara", "bara-manga"),
+        Genre("BL Manga", "bl-manga"),
+        Genre("Comedy", "comedy-manga"),
+        Genre("Comics", "comics-online"),
+        Genre("Completed Manga", "completed-manga"),
+        Genre("Drama", "drama-manga"),
+        Genre("Ecchi", "ecchi-manga"),
+        Genre("Fantasy", "fantasy-manga"),
+        Genre("Gender Bender", "gender-bender-manga"),
+        Genre("Hardcore Yaoi", "hardcore-yaoi"),
+        Genre("Harem", "harem-manga"),
+        Genre("Hipercool", "hipercool"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror-manga"),
+        Genre("Incest", "incest-manga"),
+        Genre("Josei", "josei"),
+        Genre("Lolicon", "lolicon-manga"),
+        Genre("Manga", "manga"),
+        Genre("Manhua", "manhua"),
+        Genre("Manhwa", "manhwa-manga"),
+        Genre("Manhwa Hentai Manga", "manhwahentai"),
+        Genre("Martial Arts", "martial-arts-manga"),
+        Genre("Mature", "mature-manga"),
+        Genre("Mystery", "mystery"),
+        Genre("One shot", "one-shot"),
+        Genre("Psychological", "psychological-manga"),
+        Genre("Rape", "rape-manga"),
+        Genre("Reincarnation", "reincarnation-manga"),
+        Genre("Reverse Harem", "reverse-harem"),
+        Genre("Romance", "romance-manga"),
+        Genre("School Life", "read-school-life-manga"),
+        Genre("Sci-fi", "sci-fi"),
+        Genre("Seinen", "seinen-manga"),
+        Genre("Shotacon", "shotacon"),
+        Genre("Shoujo", "shoujo-manga"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen-manga"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Smut", "smut-manga"),
+        Genre("Soft Yaoi", "soft-yaoi"),
+        Genre("Soft Yuri", "soft-yuri"),
+        Genre("Sports", "sports-manga"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Webtoon", "webtoons"),
+        Genre("Yaoi", "yaoi-manga"),
+        Genre("Yuri", "yuri-manga")
+    )
+}
 
 class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "pt-BR", SimpleDateFormat("dd 'de' MMM 'de' yyyy", Locale("pt", "BR"))) {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
