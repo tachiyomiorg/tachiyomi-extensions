@@ -13,6 +13,7 @@ import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.Request
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -29,8 +30,6 @@ class Mangasee : ParsedHttpSource() {
     override val supportsLatest = true
 
     private val recentUpdatesPattern = Pattern.compile("(.*?)\\s(\\d+\\.?\\d*)\\s?(Completed)?")
-
-    private val indexPattern = Pattern.compile("-index-(.*?)-")
 
     override fun popularMangaSelector() = "div.requested > div.row"
 
@@ -140,29 +139,18 @@ class Mangasee : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val fullUrl = document.baseUri()
-        val url = fullUrl.substringBeforeLast('/')
-
-        val pages = mutableListOf<Page>()
-
-        val series = document.select("input.IndexName").first().attr("value")
-        val chapter = document.select("span.CurChapter").first().text()
-        var index = ""
-
-        val m = indexPattern.matcher(fullUrl)
-        if (m.find()) {
-            val indexNumber = m.group(1)
-            index = "-index-$indexNumber"
+        val pageArr = document.select("script:containsData(PageArr={)").first().data()
+            .substringAfter("PageArr=").substringBefore(";")
+        return JSONObject(pageArr).let { jsonObject ->
+            jsonObject.keys()
+                .asSequence()
+                .toList()
+                .filter { it.toIntOrNull() is Int }
+                .mapIndexed { i, key -> Page(i, "", jsonObject.getString(key)) }
         }
-
-        document.select("div.ContainerNav").first().select("select.PageSelect > option").forEach { _ ->
-            pages.add(Page(pages.size, "$url/$series-chapter-$chapter$index-page-${pages.size + 1}.html"))
-        }
-        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
-        return pages
     }
 
-    override fun imageUrlParse(document: Document): String = document.select("img.CurImage").attr("src")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun latestUpdatesNextPageSelector() = "button.requestMore"
 
