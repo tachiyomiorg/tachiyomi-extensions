@@ -60,13 +60,17 @@ class INKR : HttpSource() {
         return getMangasPageFromJsonList(list)
     }
 
-    override fun popularMangaRequest(page: Int) = GET("$apiUrl/mrs_latest")
+    override fun popularMangaRequest(page: Int): Request {
+        val jsonType = MediaType.parse("application/jsonType; charset=utf-8")
 
-    override fun popularMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
-        val list = getMangaListFromJson(res)
-        return getMangasPageFromJsonList(sortByRank(list))
+        val body = RequestBody.create(jsonType, jsonObject(
+                "status" to "all"
+        ).toString())
+        
+        return POST("$apiUrl/mrs_filter", headers, body)
     }
+
+    override fun popularMangaParse(response: Response) = searchMangaParse(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val jsonType = MediaType.parse("application/jsonType; charset=utf-8")
