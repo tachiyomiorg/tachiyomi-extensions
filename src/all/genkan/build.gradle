@@ -5,8 +5,8 @@ ext {
     appName = 'Tachiyomi: Genkan (multiple sources)'
     pkgNameSuffix = 'all.genkan'
     extClass = '.GenkanFactory'
-    extVersionCode = 18
-    libVersion = '1.2'
+    extVersionCode = 19
+    libVersion = '1.2.1'
 }
 
 apply from: "$rootDir/common.gradle"
