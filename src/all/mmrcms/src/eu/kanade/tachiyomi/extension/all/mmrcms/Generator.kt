@@ -247,6 +247,7 @@ class Generator {
             Triple("tr", "Puzzmos", "https://puzzmos.com"),
             Triple("fr", "Scan-1", "https://www.scan-1.com"),
             Triple("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
+            Triple("id", "MangaSusu", "https://www.mangasusu.mobi"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             // Changed CMS
