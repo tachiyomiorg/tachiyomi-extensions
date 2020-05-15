@@ -3,25 +3,16 @@ package eu.kanade.tachiyomi.extension.ru.mintmanga
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.regex.Pattern
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
 
 class Mintmanga : ParsedHttpSource() {
 
@@ -188,7 +179,7 @@ class Mintmanga : ParsedHttpSource() {
             }
             extra.containsMatchIn(chapter.name) -> // Extra chapters doesn't contain chapter number
                 chapter.chapter_number = -2f
-            single.containsMatchIn(chapter.name) -> // Oneshoots, doujinshi and other mangas with one chapter
+            single.containsMatchIn(chapter.name) -> // One-shots, doujinshi and other mangas with one chapter
                 chapter.chapter_number = 1f
         }
     }
@@ -196,17 +187,18 @@ class Mintmanga : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val html = response.body()!!.string()
         val beginIndex = html.indexOf("rm_h.init( [")
-        val endIndex = html.indexOf("], 0, false);", beginIndex)
+        var endIndex = html.indexOf("], 0, false);", beginIndex)
+        if (endIndex < 0) {
+            endIndex = html.indexOf("], 0, true);", beginIndex)
+        }
         val trimmedHtml = html.substring(beginIndex, endIndex)
 
-        val p = Pattern.compile("'.*?','.*?',\".*?\"")
-        val m = p.matcher(trimmedHtml)
+        val regex = "'.*?','.*?',\".*?\"".toRegex()
 
         val pages = mutableListOf<Page>()
 
-        var i = 0
-        while (m.find()) {
-            val urlParts = m.group().replace("[\"\']+".toRegex(), "").split(',')
+        regex.findAll(trimmedHtml).forEachIndexed { index, matchResult ->
+            val urlParts = matchResult.value.replace("[\"\']+".toRegex(), "").split(',')
             val url = if (urlParts[1].isEmpty() && urlParts[2].startsWith("/static/")) {
                 baseUrl + urlParts[2]
             } else {
@@ -216,7 +208,7 @@ class Mintmanga : ParsedHttpSource() {
                     urlParts[1] + urlParts[0] + urlParts[2]
                 }
             }
-            pages.add(Page(i++, "", url))
+            pages.add(Page(index, "", url))
         }
         return pages
     }
