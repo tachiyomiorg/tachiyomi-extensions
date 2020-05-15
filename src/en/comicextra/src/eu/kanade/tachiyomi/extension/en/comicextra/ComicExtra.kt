@@ -84,16 +84,13 @@ class ComicExtra : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
-        manga.title = document.select("span.title-1").text()
-        manga.thumbnail_url = document.select("div.movie-l-img > img").attr("src")
-
-        val status = document.select("dt:contains(Status:) + dd").text()
-        manga.status = parseStatus(status)
-        manga.author = document.select("dt:contains(Author:) + dd").text()
-        manga.description = document.select("div#film-content").text()
-
-        return manga
+        return SManga.create().apply {
+            title = document.select("div.movie-detail span.title-1").text()
+            thumbnail_url = document.select("div.movie-l-img > img").attr("src")
+            status = parseStatus(document.select("dt:contains(Status:) + dd").text())
+            author = document.select("dt:contains(Author:) + dd").text()
+            description = document.select("div#film-content").text()
+        }
     }
 
     private fun parseStatus(element: String): Int = when {
