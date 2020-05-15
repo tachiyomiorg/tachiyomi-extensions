@@ -104,7 +104,6 @@ class MadaraFactory : SourceFactory {
         ZManga(),
         MangaWT(),
         DecadenceScans(),
-        MangaStein(),
         MangaRockTeam(),
         MixedManga(),
         ManhuasWorld(),
@@ -119,12 +118,15 @@ class MadaraFactory : SourceFactory {
         FirstKissManhua(),
         HeroManhua(),
         MartialScans(),
-        MangaYosh()
+        MangaYosh(),
+        Reisubs(),
+        MangaReadOrg()
 
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
         // MangaWOW(),
+        // MangaStein(),
     )
 }
 
@@ -647,8 +649,6 @@ class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
 
 class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.com", "en")
 
-class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
-
 class MangaRockTeam : Madara("Manga Rock Team", "https://mangarockteam.com", "en")
 
 class MixedManga : Madara("Mixed Manga", "https://mixedmanga.com", "en") {
@@ -723,3 +723,7 @@ class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
 }
 
 class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateFormat("dd MMM yyyy", Locale.US))
+
+class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
+
+class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
