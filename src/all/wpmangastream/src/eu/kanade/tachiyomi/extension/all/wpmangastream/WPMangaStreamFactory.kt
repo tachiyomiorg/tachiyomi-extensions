@@ -35,7 +35,8 @@ class WPMangaStreamFactory : SourceFactory {
         SekteKomik(),
         MangaSwat(),
         MangaRaw(),
-        SekteDoujin()
+        SekteDoujin(),
+        NonStopScans()
     )
 }
 
@@ -918,3 +919,5 @@ class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
 }
 
 class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id")
+
+class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
