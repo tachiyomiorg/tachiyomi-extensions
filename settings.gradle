@@ -4,6 +4,9 @@ project(':lib-ratelimit').projectDir = new File("lib/ratelimit")
 include ':duktape-stub'
 project(':duktape-stub').projectDir = new File("lib/duktape-stub")
 
+include ':lib-dataimage'
+project(':lib-dataimage').projectDir = new File("lib/dataimage")
+
 new File(rootDir, "src").eachDir { dir ->
     dir.eachDir { subdir ->
         String name = ":${dir.name}-${subdir.name}"
