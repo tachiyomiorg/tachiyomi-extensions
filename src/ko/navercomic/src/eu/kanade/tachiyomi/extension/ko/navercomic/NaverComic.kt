@@ -59,7 +59,7 @@ class NaverChallenge : NaverComicChallengeBase("challenge") {
         while (document.select(paginationNextPageSelector).hasText()) {
             document.select(paginationNextPageSelector).let {
                 document = client.newCall(GET(it.attr("abs:href"))).execute().asJsoup()
-                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+                document.select(chapterListSelector()).map { element -> chapters.add(chapterFromElement(element)) }
             }
         }
         return chapters

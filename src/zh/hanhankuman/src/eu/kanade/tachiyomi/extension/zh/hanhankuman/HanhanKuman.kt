@@ -160,8 +160,8 @@ class HanhanKuman : ParsedHttpSource() {
         val k = sk.substring(0, sk.length - 1)
         val f = sk.substring(sk.length - 1)
 
-        for (i in 0 until k.length) {
-            s = s.replace(k.substring(i, i + 1), Integer.toString(i))
+        for (i in k.indices) {
+            s = s.replace(k.substring(i, i + 1), i.toString())
         }
         val ss = s.split(f.toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         s = ""

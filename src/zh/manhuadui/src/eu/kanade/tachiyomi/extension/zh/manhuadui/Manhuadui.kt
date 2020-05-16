@@ -41,17 +41,17 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query != "") {
+        return if (query != "") {
             val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
-            return GET(url.toString(), headers)
+            GET(url.toString(), headers)
         } else {
-            var params = filters.map {
+            val params = filters.map {
                 if (it is UriPartFilter) {
                     it.toUriPart()
                 } else ""
             }.filter { it != "" }.joinToString("-")
             val url = HttpUrl.parse("$baseUrl/list/$params/$page/")?.newBuilder()
-            return GET(url.toString(), headers)
+            GET(url.toString(), headers)
         }
     }
 

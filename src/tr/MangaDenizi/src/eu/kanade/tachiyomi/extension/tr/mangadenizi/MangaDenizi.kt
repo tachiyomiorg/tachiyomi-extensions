@@ -10,11 +10,9 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
-import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.json.JSONArray
 import org.json.JSONObject
 
 class MangaDenizi : ParsedHttpSource() {
@@ -96,9 +94,7 @@ class MangaDenizi : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         description = document.select(".well > p").text()
         genre = document.select("dd > a[href*=category]").joinToString { it.text() }
-        status = document.select(".label.label-success").let {
-            parseStatus(it.text())
-        }
+        status = parseStatus(document.select(".label.label-success").text())
         thumbnail_url = document.select("img.img-responsive").attr("abs:src")
     }
 

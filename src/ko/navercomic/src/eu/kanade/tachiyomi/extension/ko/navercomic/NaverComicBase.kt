@@ -55,7 +55,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         while (document.select(paginationNextPageSelector).isNotEmpty()) {
             document.select(paginationNextPageSelector).let {
                 document = client.newCall(chapterListRequest(it.attr("href"), nextPage)).execute().asJsoup()
-                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+                document.select(chapterListSelector()).map { element -> chapters.add(chapterFromElement(element)) }
                 nextPage++
             }
         }

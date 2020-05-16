@@ -105,10 +105,10 @@ class BlogTruyen : ParsedHttpSource() {
                 }
             }
         }
-        if (genres.isNotEmpty()) temp = temp + "/" + genres.joinToString(",")
-        else temp = "$temp/-1"
-        if (genresEx.isNotEmpty()) temp = temp + "/" + genresEx.joinToString(",")
-        else temp = "$temp/-1"
+        temp = if (genres.isNotEmpty()) temp + "/" + genres.joinToString(",")
+        else "$temp/-1"
+        temp = if (genresEx.isNotEmpty()) temp + "/" + genresEx.joinToString(",")
+        else "$temp/-1"
         val url = HttpUrl.parse(temp)!!.newBuilder()
         url.addQueryParameter("txt", query)
         if (aut.isNotEmpty()) url.addQueryParameter("aut", aut)

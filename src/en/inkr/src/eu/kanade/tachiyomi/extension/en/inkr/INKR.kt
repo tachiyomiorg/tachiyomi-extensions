@@ -66,7 +66,7 @@ class INKR : HttpSource() {
         val body = RequestBody.create(jsonType, jsonObject(
                 "status" to "all"
         ).toString())
-        
+
         return POST("$apiUrl/mrs_filter", headers, body)
     }
 
@@ -294,7 +294,7 @@ class INKR : HttpSource() {
 
         // Decrypt file content using XOR cipher with 101 as the key
         val cipherKey = 101.toByte()
-        for (r in 0 until data.size) {
+        for (r in data.indices) {
             buffer[r + 15] = cipherKey xor data[r]
         }
 
