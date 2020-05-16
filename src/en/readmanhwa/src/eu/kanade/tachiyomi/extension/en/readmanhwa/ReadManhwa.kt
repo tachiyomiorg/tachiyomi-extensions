@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.en.readmanhwa
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -108,12 +109,12 @@ class ReadManhwa : HttpSource() {
         val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
 
         return SManga.create().apply {
-            description = jsonObject["description"].string
-            status = jsonObject["status"].string.toStatus()
-            thumbnail_url = jsonObject["image_url"].string
-            genre = jsonObject["tags"].asJsonArray.joinToString { it["name"].string }
-            artist = jsonObject["artists"].asJsonArray.joinToString { it["name"].string }
-            author = jsonObject["authors"].asJsonArray.joinToString { it["name"].string }
+            description = jsonObject["description"].nullString
+            status = jsonObject["status"].nullString.toStatus()
+            thumbnail_url = jsonObject["image_url"].nullString
+            genre = try { jsonObject["tags"].asJsonArray.joinToString { it["name"].string } } catch (_: Exception) { null }
+            artist = try { jsonObject["artists"].asJsonArray.joinToString { it["name"].string } } catch (_: Exception) { null }
+            author = try { jsonObject["authors"].asJsonArray.joinToString { it["name"].string } } catch (_: Exception) { null }
         }
     }
 
