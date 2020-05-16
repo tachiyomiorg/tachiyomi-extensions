@@ -36,7 +36,8 @@ class WPMangaStreamFactory : SourceFactory {
         MangaSwat(),
         MangaRaw(),
         SekteDoujin(),
-        NonStopScans()
+        NonStopScans(),
+        KomikTap()
     )
 }
 
@@ -921,3 +922,13 @@ class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
 class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id")
 
 class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
+
+class KomikTap : WPMangaStream("KomikTap", "https://komiktap.xyz", "id") {
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun popularMangaNextPageSelector() = "a.r"
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/?page=$page&order=update", headers)
+    // Source's search is semi-broken, filtered search returns "no results" for page > 1
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/cari-manga/$query/page/$page/")
+    override fun searchMangaNextPageSelector() = "a.next.page-numbers"
+    override fun getFilterList() = FilterList()
+}
