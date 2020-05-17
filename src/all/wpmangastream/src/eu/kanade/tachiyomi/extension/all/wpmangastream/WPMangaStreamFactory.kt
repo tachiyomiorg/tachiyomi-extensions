@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.wpmangastream
 
-import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
@@ -466,150 +465,13 @@ class KomikGo : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com
         Genre("Yuri", "yuri")
     )
 }
+
 class KomikIndo : WPMangaStream("Komik Indo (WP Manga Stream)", "https://www.komikindo.web.id", "id") {
-
-    override fun popularMangaRequest(page: Int): Request {
-        val url = if (page == 1) baseUrl else "$baseUrl/page/$page"
-        return GET(url, headers)
-    }
-
-    override fun latestUpdatesRequest(page: Int): Request {
-        val url = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page"
-        return GET(url, headers)
-    }
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
-        if (query != "") {
-            builtUrl = if (page == 1) "$baseUrl/search/$query/" else "$baseUrl/search/$query/page/$page/"
-        } else if (filters.size > 0) {
-            filters.forEach { filter ->
-                when (filter) {
-                    is GenreListFilter -> {
-                        builtUrl = if (page == 1) "$baseUrl/genres/" + filter.toUriPart() else "$baseUrl/genres/" + filter.toUriPart() + "/page/$page/"
-                    }
-                }
-            }
-        }
-        val url = HttpUrl.parse(builtUrl)!!.newBuilder()
-        return GET(url.build().toString(), headers)
-    }
-
-    override fun popularMangaSelector() = "div.lchap > .lch > .ch"
-    override fun latestUpdatesSelector() = "div.ctf > div.lsmin > div.chl"
-    override fun searchMangaSelector() = latestUpdatesSelector()
-
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.thumbnail img").first().attr("src")
-        element.select("div.l > h3 > a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        return manga
-    }
-
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.thumbnail img").first().attr("src")
-        element.select("div.chlf > h2 > a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        return manga
-    }
-
-    override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
-
-    @SuppressLint("DefaultLocale")
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElm = document.select(".listinfo > ul > li")
-        val manga = SManga.create()
-        infoElm.forEach { elmt ->
-            val infoTitle = elmt.select("b").text().toLowerCase()
-            val infoContent = elmt.text()
-            when {
-                infoTitle.contains("status") -> manga.status = parseStatus(infoContent)
-                infoTitle.contains("author") -> manga.author = infoContent
-                infoTitle.contains("artist") -> manga.artist = infoContent
-                infoTitle.contains("genres") -> {
-                    val genres = mutableListOf<String>()
-                    elmt.select("a").forEach {
-                        val genre = it.text()
-                        genres.add(genre)
-                    }
-                    manga.genre = genres.joinToString(", ")
-                }
-            }
-        }
-        manga.description = document.select("div.rm > span > p:first-child").text()
-        manga.thumbnail_url = document.select("div.animeinfo .lm .imgdesc img:first-child").attr("src")
-        return manga
-    }
-
-    private class GenreListFilter : UriPartFilter("Genre", arrayOf(
-        Pair("Default", ""),
-        Pair("4-Koma", "4-koma"),
-        Pair("Action", "action"),
-        Pair("Adventure", "adventure"),
-        Pair("Comedy", "comedy"),
-        Pair("Cooking", "cooking"),
-        Pair("Crime", "crime"),
-        Pair("Dark Fantasy", "dark-fantasy"),
-        Pair("Demons", "demons"),
-        Pair("Drama", "drama"),
-        Pair("Ecchi", "ecchi"),
-        Pair("Fantasy", "fantasy"),
-        Pair("Game", "game"),
-        Pair("Gender Bender", "gender-bender"),
-        Pair("Harem", "harem"),
-        Pair("Historical", "historical"),
-        Pair("Horor", "horor"),
-        Pair("Horror", "horror"),
-        Pair("Isekai", "isekai"),
-        Pair("Josei", "josei"),
-        Pair("Komik Tamat", "komik-tamat"),
-        Pair("Life", "life"),
-        Pair("Magic", "magic"),
-        Pair("Manhua", "manhua"),
-        Pair("Martial Art", "martial-art"),
-        Pair("Martial Arts", "martial-arts"),
-        Pair("Mature", "mature"),
-        Pair("Mecha", "mecha"),
-        Pair("Military", "military"),
-        Pair("Music", "music"),
-        Pair("Mystery", "mystery"),
-        Pair("Post-Apocalyptic", "post-apocalyptic"),
-        Pair("Psychological", "psychological"),
-        Pair("Romance", "romance"),
-        Pair("School", "school"),
-        Pair("School Life", "school-life"),
-        Pair("Sci-Fi", "sci-fi"),
-        Pair("Seinen", "seinen"),
-        Pair("Shonen", "shonen"),
-        Pair("Shoujo", "shoujo"),
-        Pair("Shounen", "shounen"),
-        Pair("Slice of Life", "slice-of-life"),
-        Pair("Sports", "sports"),
-        Pair("Super Power", "super-power"),
-        Pair("Superheroes", "superheroes"),
-        Pair("Supernatural", "supernatural"),
-        Pair("Survival", "survival"),
-        Pair("Thriller", "thriller"),
-        Pair("Tragedy", "tragedy"),
-        Pair("Zombies", "zombies")
-    ))
-
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: filter will be ignored when using text search!"),
-        GenreListFilter()
-    )
-
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
-        fun toUriPart() = vals[state].second
-    }
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=latest", headers)
+    override fun popularMangaNextPageSelector() = "a.r"
 }
+
 class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.maid.my.id", "id") {
     override fun latestUpdatesSelector() = "h2:contains(Update Chapter) + div.row div.col-12"
     override fun latestUpdatesRequest(page: Int): Request {
