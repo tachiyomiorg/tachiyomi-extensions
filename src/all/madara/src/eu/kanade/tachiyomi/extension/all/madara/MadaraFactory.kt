@@ -728,4 +728,4 @@ class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
 
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
 
-class TurkceManga : Madara("Türkçe Manga", "https://turkcemanga.com", "tr")
+class TurkceManga : Madara("Türkçe Manga", "https://www.turkcemanga.com", "tr")
