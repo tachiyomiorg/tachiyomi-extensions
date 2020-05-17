@@ -70,9 +70,9 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     private fun chapterListPref() = preferences.getString(SHOW_LOCKED_CHAPTERS, "free")
 
     companion object {
-        private const val SHOW_LOCKED_CHAPTERS_Title = "Show or don't show future/locked chapters"
+        private const val SHOW_LOCKED_CHAPTERS_Title = "Tapas requires login/payment for some chapters"
         private const val SHOW_LOCKED_CHAPTERS = "tapas_locked_chapters"
-        private val prefsEntries = arrayOf("Show All", "Show free/currently available")
+        private val prefsEntries = arrayOf("Show all chapters (including pay-to-read)", "Only show free chapters")
         private val prefsEntryValues = arrayOf("all", "free")
     }
 
@@ -158,21 +158,34 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var document = response.asJsoup()
-        val baseUri = document.baseUri().substringBefore("?")
         val chapters = mutableListOf<SChapter>()
-        document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
-        var nextPage = document.select(".paging__button--next:not(.disabled)")
-        while (!nextPage.isNullOrEmpty()) {
-            document = client.newCall(GET(baseUri + nextPage.attr("href"))).execute().asJsoup()
-            document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
-            nextPage = document.select(".paging__button--next:not(.disabled)")
+
+        fun List<Element>.filterLocked(boolean: Boolean): List<Element> {
+            return if (boolean) this.filterNot { it.select("a").hasClass("js-locked") } else this
         }
+
+        // recursively build the chapter list
+        fun parseChapters(document: Document) {
+            document.select(chapterListSelector())
+                // filter out future releases
+                .filterNot { it.select("a").hasClass("js-coming-soon") }
+                .let { list ->
+                    // show/don't show locked chapters based on user's preferences
+                    if (chapterListPref() == "free") list.filterNot { it.select("a").hasClass("js-have-to-sign") }
+                        else list
+                }
+                .map { chapters.add(chapterFromElement(it)) }
+
+            document.select("a.paging__button--next").firstOrNull()?.let {
+                parseChapters(client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup())
+            }
+        }
+
+        parseChapters(response.asJsoup())
         return chapters
     }
 
-    // filter future releases based on user's configuration
-    override fun chapterListSelector() = "li.content__item" + if (chapterListPref() == "free") ":not(:has(.info__tag):contains(release date))" else ""
+    override fun chapterListSelector() = "li.content__item"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val lock = !element.select(".sp-ico-episode-lock, .sp-ico-schedule-white").isNullOrEmpty()
         name = if (lock) {
@@ -181,11 +194,8 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
             ""
         } + element.select(".info__title").text().trim()
 
-        url = if (lock) {
-            "locked"
-        } else {
-            element.select("a").first().attr("href")
-        }
+        setUrlWithoutDomain(element.select("a").attr("href"))
+
         chapter_number =
             element.select(".info__header").text().substringAfter("Episode")
                 .substringBefore("Early access").trim().toFloat()
@@ -200,14 +210,9 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
 
     // Pages
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        if (chapter.url == "locked") throw Exception("Chapter Locked. If logged in, refresh chapter list.")
-        return GET(baseUrl + chapter.url, headers)
-    }
-
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("img.content__img").forEach {
-            add(Page(size, "", if (it.hasAttr("data-src")) it.attr("abs:data-src") else it.attr("abs:src")))
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("img.content__img").mapIndexed { i, img ->
+            Page(i, "", img.let { if (it.hasAttr("data-src")) it.attr("abs:data-src") else it.attr("abs:src") })
         }
     }
 
