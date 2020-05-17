@@ -120,8 +120,8 @@ class MadaraFactory : SourceFactory {
         MartialScans(),
         MangaYosh(),
         Reisubs(),
-        MangaReadOrg()
-
+        MangaReadOrg(),
+        TurkceManga()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -727,3 +727,5 @@ class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateF
 class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
 
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
+
+class TurkceManga : Madara("Türkçe Manga", "https://turkcemanga.com", "tr")
