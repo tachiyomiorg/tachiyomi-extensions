@@ -11,9 +11,9 @@ import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Response
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.json.JSONObject
 
 class MangaDenizi : ParsedHttpSource() {
     override val name = "MangaDenizi"
@@ -42,7 +42,7 @@ class MangaDenizi : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest-release?page=$page", headers)
 
-    //No thumbnail on latest releases page
+    // No thumbnail on latest releases page
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
         title = element.text()
@@ -79,7 +79,7 @@ class MangaDenizi : ParsedHttpSource() {
         val results = response.getJSONArray("suggestions")
         val mangas = ArrayList<SManga>()
 
-        //No thumbnail here either
+        // No thumbnail here either
         for (i in 0 until results.length()) {
             val obj = results.getJSONObject(i)
             val manga = SManga.create()

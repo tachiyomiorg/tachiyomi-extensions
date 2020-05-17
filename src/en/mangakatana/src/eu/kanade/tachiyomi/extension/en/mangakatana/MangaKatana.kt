@@ -6,12 +6,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
-class MangaKatana: ParsedHttpSource() {
+class MangaKatana : ParsedHttpSource() {
     override val name = "MangaKatana"
 
     override val baseUrl = "https://mangakatana.com"
@@ -81,7 +81,7 @@ class MangaKatana: ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val html = document.toString()
 
-        //Thanks to https://github.com/manga-py/manga-py
+        // Thanks to https://github.com/manga-py/manga-py
         val regex = Regex("var\\s+\\w+\\s?=\\s?(\\[['\"].+?['\"]).?\\]\\s?;")
         val match = regex.find(html)?.destructured?.toList()?.get(0)?.removePrefix("[")
 
@@ -94,4 +94,3 @@ class MangaKatana: ParsedHttpSource() {
 
     override fun getFilterList() = FilterList()
 }
-

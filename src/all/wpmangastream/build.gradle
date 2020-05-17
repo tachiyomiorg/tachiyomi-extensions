@@ -11,6 +11,6 @@ ext {
 
 dependencies {
     implementation project(':lib-ratelimit')
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
+
 apply from: "$rootDir/common.gradle"

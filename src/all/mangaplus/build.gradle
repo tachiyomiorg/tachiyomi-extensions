@@ -13,9 +13,7 @@ ext {
 dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-protobuf:0.20.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0'
-    compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly project(':duktape-stub')
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

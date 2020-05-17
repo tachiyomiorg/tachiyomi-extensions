@@ -11,8 +11,6 @@ ext {
 
 dependencies {
     compileOnly project(':duktape-stub')
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
 }
 
 apply from: "$rootDir/common.gradle"

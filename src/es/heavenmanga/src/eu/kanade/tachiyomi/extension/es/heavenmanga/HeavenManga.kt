@@ -129,11 +129,10 @@ class HeavenManga : ParsedHttpSource() {
                 setUrlWithoutDomain(it.attr("href"))
             }
             scanlator = element.select("span.pull-right").text()
-
         }
     }
 
-    override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div.tab-summary").let { info ->
             genre = info.select("div.genres-content a").joinToString { it.text() }
             thumbnail_url = info.select("div.summary_image img").attr("abs:data-src")
@@ -151,7 +150,7 @@ class HeavenManga : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("script:containsData(pUrl)").first().data()
             .substringAfter("pUrl=[").substringBefore("\"},];").split("\"},")
-            .mapIndexed{ i, string -> Page(i, "", string.substringAfterLast("\"")) }
+            .mapIndexed { i, string -> Page(i, "", string.substringAfterLast("\"")) }
     }
 
     /**

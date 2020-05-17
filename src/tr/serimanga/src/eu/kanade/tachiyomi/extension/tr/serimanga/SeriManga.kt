@@ -88,8 +88,8 @@ class SeriManga : ParsedHttpSource() {
         var continueParsing = true
 
         while (continueParsing) {
-            document.select(chapterListSelector()).map{ chapters.add(chapterFromElement(it)) }
-            document.select(popularMangaNextPageSelector()).let{
+            document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+            document.select(popularMangaNextPageSelector()).let {
                 if (it.isNotEmpty()) {
                     document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
                 } else {
