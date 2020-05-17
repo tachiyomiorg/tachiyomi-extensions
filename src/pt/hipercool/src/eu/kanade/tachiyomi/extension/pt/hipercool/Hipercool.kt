@@ -187,8 +187,8 @@ class Hipercool : HttpSource() {
         val regex = CHAPTER_REGEX.toRegex()
         val results = regex.find(chapter.url)!!.groupValues
 
-        val bookSlug = results[1].toString()
-        val chapterSlug = results[2].toString()
+        val bookSlug = results[1]
+        val chapterSlug = results[2]
         val images = results[3].toInt()
         val revision = results[4].toInt()
         val pages = arrayListOf<Page>()

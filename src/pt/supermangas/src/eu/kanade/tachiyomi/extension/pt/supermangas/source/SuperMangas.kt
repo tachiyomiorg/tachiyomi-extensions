@@ -54,7 +54,7 @@ class SuperMangas : SuperMangasGeneric(
         Tag("30", "Ficção científica"),
         Tag("68", "Food"),
         Tag("72", "Gender Bender"),
-        Tag("25", "Harém‎"),
+        Tag("25", "Harém"),
         Tag("48", "Histórico"),
         Tag("50", "Horror"),
         Tag("75", "Isekai"),

@@ -233,7 +233,7 @@ class Mangachan : ParsedHttpSource() {
     private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Перевод завершен", "Выпуск завершен", "Онгоинг", "Новые главы"))
     private class OrderBy : Filter.Sort("Сортировка",
             arrayOf("Дата", "Популярность", "Имя", "Главы"),
-            Filter.Sort.Selection(1, false))
+            Selection(1, false))
 
     override fun getFilterList() = FilterList(
             Status(),

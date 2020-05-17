@@ -83,7 +83,7 @@ class Mintmanga : ParsedHttpSource() {
                 }
             }
         }
-        if (!query.isEmpty()) {
+        if (query.isNotEmpty()) {
             url.addQueryParameter("q", query)
         }
         return GET(url.toString().replace("=%3D", "="), headers)

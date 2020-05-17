@@ -33,7 +33,7 @@ fun bodyWithAutoCharset(response: Response, _charset: String? = null): String {
     var c = _charset
 
     if (c == null) {
-        var regexPat = Regex("""charset=(\w+)""")
+        val regexPat = Regex("""charset=(\w+)""")
         val match = regexPat.find(String(htmlBytes))
         c = match?.groups?.get(1)?.value
     }
@@ -151,7 +151,7 @@ class Pufei : ParsedHttpSource() {
         val imgbase64 = re.find(html)?.groups?.get(1)?.value
         val imgCode = String(Base64.decode(imgbase64, Base64.DEFAULT))
         val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode + """.join('|')""") as String
+            it.evaluate("$imgCode.join('|')") as String
         }
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
             Page(i, "", imageServer + imgStr)

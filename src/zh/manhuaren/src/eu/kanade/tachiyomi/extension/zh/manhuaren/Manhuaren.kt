@@ -40,7 +40,7 @@ class Manhuaren : HttpSource() {
         url.queryParameterNames().toSortedSet().forEach {
             if (it != "gsn") {
                 s += it
-                s += urlEncode(url.queryParameterValues(it).get(0))
+                s += urlEncode(url.queryParameterValues(it)[0])
             }
         }
         s += c
@@ -49,7 +49,7 @@ class Manhuaren : HttpSource() {
 
     private fun myGet(url: HttpUrl): Request {
         val now = DateFormat.format("yyyy-MM-dd+HH:mm:ss", Date()).toString()
-        val real_url = url.newBuilder()
+        val realUrl = url.newBuilder()
             .setQueryParameter("gsm", "md5")
             .setQueryParameter("gft", "json")
             .setQueryParameter("gts", now)
@@ -59,7 +59,7 @@ class Manhuaren : HttpSource() {
             .setQueryParameter("gui", "191909801")
             .setQueryParameter("gut", "0")
         return Request.Builder()
-            .url(real_url.setQueryParameter("gsn", generateGSNHash(real_url.build())).build())
+            .url(realUrl.setQueryParameter("gsn", generateGSNHash(realUrl.build())).build())
             .headers(headers)
             .cacheControl(cacheControl)
             .build()
@@ -73,7 +73,7 @@ class Manhuaren : HttpSource() {
     }
 
     private fun hashString(type: String, input: String): String {
-        val HEX_CHARS = "0123456789abcdef"
+        val hexChars = "0123456789abcdef"
         val bytes = MessageDigest
                 .getInstance(type)
                 .digest(input.toByteArray())
@@ -81,8 +81,8 @@ class Manhuaren : HttpSource() {
 
         bytes.forEach {
             val i = it.toInt()
-            result.append(HEX_CHARS[i shr 4 and 0x0f])
-            result.append(HEX_CHARS[i and 0x0f])
+            result.append(hexChars[i shr 4 and 0x0f])
+            result.append(hexChars[i and 0x0f])
         }
 
         return result.toString()

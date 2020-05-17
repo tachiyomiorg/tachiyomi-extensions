@@ -8,9 +8,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Locale
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -30,10 +28,10 @@ class SeriManga : ParsedHttpSource() {
     override fun popularMangaSelector() = "a.manga-list-bg"
 
     override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/mangalar", headers)
+        return if (page == 1) {
+            GET("$baseUrl/mangalar", headers)
         } else {
-            return GET("$baseUrl/mangalar?page=$page", headers)
+            GET("$baseUrl/mangalar?page=$page", headers)
         }
     }
 
@@ -89,9 +87,9 @@ class SeriManga : ParsedHttpSource() {
         var document = response.asJsoup()
         var continueParsing = true
 
-        while (continueParsing) {       
-            document.select(chapterListSelector()).map{ chapters.add(chapterFromElement(it)) }
-            document.select(popularMangaNextPageSelector()).let{
+        while (continueParsing) {
+            document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+            document.select(popularMangaNextPageSelector()).let {
                 if (it.isNotEmpty()) {
                     document = client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
                 } else {
@@ -106,8 +104,8 @@ class SeriManga : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
-        name = "${element.select("span").first().text()}: ${element.select("span").get(1).text()}"
-        date_upload = dateFormat.parse(element.select("span").get(2).ownText()).time ?: 0
+        name = "${element.select("span").first().text()}: ${element.select("span")[1].text()}"
+        date_upload = dateFormat.parse(element.select("span")[2].ownText()).time ?: 0
     }
 
     companion object {

@@ -148,7 +148,7 @@ class ComX : ParsedHttpSource() {
     }
 
     private fun chapterPageListParse(document: Document): List<String> {
-        return document.select("span[class=\"\"]").map { it -> it.text() }
+        return document.select("span[class=\"\"]").map { it.text() }
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {

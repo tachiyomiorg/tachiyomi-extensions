@@ -42,7 +42,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
             }
         }
@@ -60,7 +60,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
             }
         }

@@ -53,7 +53,7 @@ class wnacg : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var document = response.asJsoup()
+        val document = response.asJsoup()
         val chapters = mutableListOf<SChapter>()
         // create one chapter since it is single books
         chapters.add(createChapter("1", document.baseUri()))
@@ -84,7 +84,7 @@ class wnacg : ParsedHttpSource() {
         val galleryaid = client.newCall(GET(baseUrl + slideaid.select("script[src$=html]").attr("src"), headers)).execute().asJsoup().toString()
         val matchresult = regex.findAll(galleryaid).map { it.value }.toList()
         val pages = mutableListOf<Page>()
-        for (i in 0 until matchresult.size) {
+        for (i in matchresult.indices) {
             pages.add(Page(i, "", "https:" + matchresult[i]))
         }
         return pages

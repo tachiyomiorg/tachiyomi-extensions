@@ -130,7 +130,7 @@ class Anibe : ParsedHttpSource() {
             }
         })
 
-        for (i in 0 until jsonChapters.size) {
+        for (i in jsonChapters.indices) {
             val chapter = SChapter.create()
             chapter.name = "Chapter: " + jsonChapters.elementAt(i) // Key for chapter in JSON object
             chapter.url = "/posts/" + jsonManga["id"].asString + "?$i"

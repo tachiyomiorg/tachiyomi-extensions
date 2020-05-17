@@ -11,7 +11,6 @@ ext {
 
 dependencies {
     implementation project(':lib-ratelimit')
-    compileOnly 'com.google.code.gson:gson:2.8.2'
 }
 
 apply from: "$rootDir/common.gradle"

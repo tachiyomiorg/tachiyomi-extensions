@@ -33,7 +33,7 @@ class Desu : HttpSource() {
         val arr = JSONArray(json)
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
-            var obj = arr.getJSONObject(i)
+            val obj = arr.getJSONObject(i)
             ret.add(SManga.create().apply {
                 mangaFromJSON(obj, false)
             })
@@ -49,7 +49,7 @@ class Desu : HttpSource() {
         description = obj.getString("description")
         genre = if (chapter) {
             val jsonArray = obj.getJSONArray("genres")
-            var genreList = kotlin.collections.mutableListOf<String>()
+            val genreList = mutableListOf<String>()
             for (i in 0 until jsonArray.length()) {
                 genreList.add(jsonArray.getJSONObject(i).getString("russian"))
             }
@@ -74,8 +74,8 @@ class Desu : HttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var url = "$baseUrl/?limit=20&page=$page"
-        var types = mutableListOf<Type>()
-        var genres = mutableListOf<Genre>()
+        val types = mutableListOf<Type>()
+        val genres = mutableListOf<Genre>()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is OrderBy -> url += "&order=" + arrayOf("popular", "updated", "name")[filter.state]
@@ -84,13 +84,13 @@ class Desu : HttpSource() {
             }
         }
 
-        if (!types.isEmpty()) {
+        if (types.isNotEmpty()) {
             url += "&kinds=" + types.joinToString(",") { it.id }
         }
-        if (!genres.isEmpty()) {
+        if (genres.isNotEmpty()) {
             url += "&genres=" + genres.joinToString(",") { it.id }
         }
-        if (!query.isEmpty()) {
+        if (query.isNotEmpty()) {
             url += "&search=$query"
         }
         return GET(url)
@@ -123,10 +123,10 @@ class Desu : HttpSource() {
             ret.add(SChapter.create().apply {
                 val ch = obj2.getString("ch")
                 val title = if (obj2.getString("title") == "null") "" else obj2.getString("title")
-                if (title.isEmpty()) {
-                    name = "Глава $ch"
+                name = if (title.isEmpty()) {
+                    "Глава $ch"
                 } else {
-                    name = "$ch - $title"
+                    "$ch - $title"
                 }
                 val id = obj2.getString("id")
                 url = "/$cid/chapter/$id"
