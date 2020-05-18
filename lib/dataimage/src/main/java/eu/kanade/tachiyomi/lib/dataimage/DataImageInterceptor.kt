@@ -40,6 +40,8 @@ fun Element.dataImageAsUrlOrNull(attr: String): String? {
  * and builds a response with a valid image that Tachiyomi can display
  */
 class DataImageInterceptor : Interceptor {
+    private val mediaTypePattern = Regex("""(^[^;,]*)[;,]""")
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val url = chain.request().url().toString()
         return if (url.startsWith("https://127.0.0.1/?image")) {
@@ -49,7 +51,7 @@ class DataImageInterceptor : Interceptor {
             } else {
                 dataString.substringAfter(",").toByteArray()
             }
-            val mediaType = MediaType.parse(Regex("""(^[^;,]*)[;,]""").find(dataString)!!.value)
+            val mediaType = MediaType.parse(mediaTypePattern.find(dataString)!!.value)
             Response.Builder().body(ResponseBody.create(mediaType, byteArray))
                 .request(chain.request())
                 .protocol(Protocol.HTTP_1_0)
