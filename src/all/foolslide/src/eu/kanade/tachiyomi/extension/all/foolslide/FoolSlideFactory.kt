@@ -107,7 +107,7 @@ class Mangatellers : FoolSlide("Mangatellers", "http://www.mangatellers.gr", "en
     }
 }
 
-class IskultripScans : FoolSlide("Iskultrip Scans", "http://www.maryfaye.net", "en", "/reader")
+class IskultripScans : FoolSlide("Iskultrip Scans", "https://maryfaye.net", "en", "/reader")
 
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.xyz", "en", "/reader")
 
@@ -117,7 +117,7 @@ class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en"
 
 class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide")
 
-class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr", "fr", "/reader")
+class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://www.ajianoscantrad.fr", "fr", "/reader")
 
 class OneTimeScans : FoolSlide("One Time Scans", "https://reader.otscans.com", "en")
 
@@ -129,7 +129,7 @@ class Lilyreader : FoolSlide("Lilyreader", "https://manga.smuglo.li", "en")
 
 class Russification : FoolSlide("Русификация", "https://rusmanga.ru", "ru")
 
-class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
+class EvilFlowers : FoolSlide("Evil Flowers", "https://reader.evilflowers.com", "en")
 
 class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
@@ -156,11 +156,11 @@ class ZandynoFansub : FoolSlide("Zandy no Fansub", "https://zandynofansub.aishit
 
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
-class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
+class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://www.kirishimafansub.net", "es", "/lector")
 
 class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
 
-class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR") {
+class BaixarHentai : FoolSlide("Baixar Hentai", "https://baixarhentai.net", "pt-BR", "/listona") {
     // Hardcode the id because the language wasn't specific.
     override val id: Long = 8908032188831949972
 
