@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.mangatensei
+package eu.kanade.tachiyomi.extension.all.emerald
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -16,11 +16,12 @@ import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-open class Mangatensei(override val lang: String, private val Mtlang: String) : ParsedHttpSource() {
-
-    override val name = "Mangatensei"
-
-    override val baseUrl = "https://www.mangatensei.com"
+open class Emerald(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String,
+    private val Mtlang: String
+) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
@@ -30,9 +31,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
         .build()
 
     override fun latestUpdatesRequest(page: Int): Request {
-        // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl = "$baseUrl/browse?langs=$Mtlang&sort=update&page=$page"
-        return GET(builtUrl)
+        return GET("$baseUrl/browse?langs=$Mtlang&sort=update&page=$page")
     }
 
     override fun latestUpdatesSelector() = "div#series-list div.col-24"
@@ -50,8 +49,7 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
     override fun latestUpdatesNextPageSelector() = "div.browse-pager:contains(order) a.page-link:contains(»)"
 
     override fun popularMangaRequest(page: Int): Request {
-        val builtUrl = "$baseUrl/browse?langs=$Mtlang&sort=views_w&page=$page"
-        return GET(builtUrl)
+        return GET("$baseUrl/browse?langs=$Mtlang&sort=views_w&page=$page")
     }
 
     override fun popularMangaSelector() = latestUpdatesSelector()
@@ -392,10 +390,4 @@ open class Mangatensei(override val lang: String, private val Mtlang: String) : 
     }
 
     private class Tag(name: String) : Filter.CheckBox(name)
-}
-
-abstract class OtherSite(sourceName: String, sourceBaseUrl: String, tachiLang: String, sourceLang: String) : Mangatensei(tachiLang, sourceLang) {
-    override val name = sourceName
-
-    override val baseUrl = sourceBaseUrl
 }
