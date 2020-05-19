@@ -114,14 +114,13 @@ class MadaraFactory : SourceFactory {
         WeScans(),
         ArangScans(),
         MangaHentai(),
-        MangaPhoenix(),
+        MangaDiyari(),
         FirstKissManhua(),
         HeroManhua(),
         MartialScans(),
         MangaYosh(),
         Reisubs(),
-        MangaReadOrg(),
-        TurkceManga()
+        MangaReadOrg()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -739,7 +738,7 @@ class ArangScans : Madara("Arang Scans", "https://www.arangscans.xyz", "en")
 
 class MangaHentai : Madara("Manga Hentai", "https://mangahentai.me", "en")
 
-class MangaPhoenix : Madara("Manga Phoenix", "https://mangaphoenix.com", "tr")
+class MangaDiyari : Madara("Manga Diyarı", "https://mangadiyari.com", "tr")
 
 class FirstKissManhua : Madara("1st Kiss Manhua", "https://1stkissmanhua.com", "en", SimpleDateFormat("d MMM yyyy", Locale.US)) {
     override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().add("Referer", "https://1stkissmanga.com").build())
@@ -772,5 +771,3 @@ class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateF
 class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
 
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
-
-class TurkceManga : Madara("Türkçe Manga", "https://turkcemanga.com", "tr")
