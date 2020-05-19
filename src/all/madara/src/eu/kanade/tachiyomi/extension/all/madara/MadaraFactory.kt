@@ -729,6 +729,6 @@ class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
 
 class TurkceManga : Madara("Türkçe Manga", "https://www.turkcemanga.com", "tr") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga-2/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga-2/page/$page/?m_orderby=latest", headers)
 }
