@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Madokami'
     pkgNameSuffix = 'en.madokami'
     extClass = '.Madokami'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
