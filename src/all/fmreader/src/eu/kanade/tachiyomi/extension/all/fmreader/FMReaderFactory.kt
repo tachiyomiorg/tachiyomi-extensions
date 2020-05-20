@@ -37,7 +37,8 @@ class FMReaderFactory : SourceFactory {
         Manhwa18NetRaw(),
         SayTruyen(),
         EpikManga(),
-        ManhuaScan()
+        ManhuaScan(),
+        ManhwaSmut()
     )
 }
 
@@ -314,3 +315,5 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
 }
 
 class ManhuaScan : FMReader("ManhuaScan", "https://manhuascan.com", "en")
+
+class ManhwaSmut : FMReader("ManhwaSmut", "https://manhwasmut.com", "en")
