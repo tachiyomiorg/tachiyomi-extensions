@@ -753,7 +753,13 @@ class WeScans : Madara("WeScans", "https://wescans.xyz", "en") {
     override fun getFilterList(): FilterList = FilterList()
 }
 
-class ArangScans : Madara("Arang Scans", "https://www.arangscans.com", "en")
+class ArangScans : Madara("Arang Scans", "https://www.arangscans.com", "en") {
+    // has very few manga
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga?m_orderby=views", headers)
+    override fun popularMangaNextPageSelector(): String? = null
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga?m_orderby=latest", headers)
+    override fun latestUpdatesNextPageSelector(): String? = null
+}
 
 class MangaHentai : Madara("Manga Hentai", "https://mangahentai.me", "en")
 
