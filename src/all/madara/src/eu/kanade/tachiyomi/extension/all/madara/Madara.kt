@@ -128,8 +128,10 @@ abstract class Madara(
 
     // Search Manga
 
+    protected open fun searchPage(page: Int): String = "page/$page/"
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/page/$page/")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/${searchPage(page)}")!!.newBuilder()
         url.addQueryParameter("s", query)
         url.addQueryParameter("post_type", "wp-manga")
         filters.forEach { filter ->
@@ -161,22 +163,19 @@ abstract class Madara(
                         url.addQueryParameter("m_orderby", filter.toUriPart())
                     }
                 }
+                is GenreConditionFilter -> {
+                    url.addQueryParameter("op", filter.toUriPart())
+                }
                 is GenreList -> {
-                    val genreInclude = mutableListOf<String>()
-                    filter.state.forEach {
-                        if (it.state) {
-                            genreInclude.add(it.id)
+                    filter.state
+                        .filter { it.state }
+                        .let { list ->
+                            if (list.isNotEmpty()) { list.forEach { genre -> url.addQueryParameter("genre[]", genre.id) } }
                         }
-                    }
-                    if (genreInclude.isNotEmpty()) {
-                        genreInclude.forEach { genre ->
-                            url.addQueryParameter("genre[]", genre)
-                        }
-                    }
                 }
             }
         }
-        return GET(url.build().toString(), headers)
+        return GET(url.toString(), headers)
     }
 
     private class AuthorFilter : Filter.Text("Author")
@@ -191,6 +190,10 @@ abstract class Madara(
         Pair("Trending", "trending"),
         Pair("Most Views", "views"),
         Pair("New", "new-manga")
+    ))
+    private class GenreConditionFilter : UriPartFilter("Genre condition", arrayOf(
+        Pair("or", ""),
+        Pair("and", "1")
     ))
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
@@ -265,6 +268,7 @@ abstract class Madara(
         OrderByFilter(),
         Filter.Separator(),
         Filter.Header("Genres may not work for all sources"),
+        GenreConditionFilter(),
         GenreList(getGenreList())
     )
 
