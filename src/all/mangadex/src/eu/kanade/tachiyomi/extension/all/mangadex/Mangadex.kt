@@ -484,11 +484,11 @@ abstract class Mangadex(
         return chapters
     }
 
-    /**filter out the following chapters
-     * language doesn't match the chosen language
-     * future chapters
-     * chapters from manga plus since they have to be read in mangaplus extension
-     *
+    /**
+     * Filter out the following chapters:
+     *   language doesn't match the chosen language
+     *   Future chapters
+     *   Chapters from MangaPlus since they have to be read in MangaPlus extension
      */
     private fun shouldKeepChapter(chapterJson: JsonObject, now: Long): Boolean {
         return when {
@@ -567,7 +567,8 @@ abstract class Mangadex(
         }
 
         val server = getServer()
-        return GET("$baseUrl${chapter.url}?server=$server", headers)
+        val saver = getUseDataSaver()
+        return GET("$baseUrl${chapter.url}?server=$server&saver=$saver", headers)
     }
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
@@ -606,7 +607,7 @@ abstract class Mangadex(
     }
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val myPref = androidx.preference.ListPreference(screen.context).apply {
+        val r18Pref = androidx.preference.ListPreference(screen.context).apply {
             key = SHOW_R18_PREF_Title
             title = SHOW_R18_PREF_Title
 
@@ -648,14 +649,28 @@ abstract class Mangadex(
                 preferences.edit().putString(SERVER_PREF, entry).commit()
             }
         }
+        val dataSaverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = DATA_SAVER_PREF_Title
+            title = DATA_SAVER_PREF_Title
+            entries = arrayOf("Disable", "Enable")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
 
-        screen.addPreference(myPref)
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(DATA_SAVER_PREF, index).commit()
+            }
+        }
+
+        screen.addPreference(r18Pref)
         screen.addPreference(thumbsPref)
         screen.addPreference(serverPref)
+        screen.addPreference(dataSaverPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val myPref = ListPreference(screen.context).apply {
+        val r18Pref = ListPreference(screen.context).apply {
             key = SHOW_R18_PREF_Title
             title = SHOW_R18_PREF_Title
 
@@ -697,10 +712,24 @@ abstract class Mangadex(
                 preferences.edit().putString(SERVER_PREF, entry).commit()
             }
         }
+        val dataSaverPref = ListPreference(screen.context).apply {
+            key = DATA_SAVER_PREF_Title
+            title = DATA_SAVER_PREF_Title
+            entries = arrayOf("Disable", "Enable")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
 
-        screen.addPreference(myPref)
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(DATA_SAVER_PREF, index).commit()
+            }
+        }
+
+        screen.addPreference(r18Pref)
         screen.addPreference(thumbsPref)
         screen.addPreference(serverPref)
+        screen.addPreference(dataSaverPref)
     }
 
     private fun getShowR18(): Int = preferences.getInt(SHOW_R18_PREF, 0)
@@ -710,6 +739,7 @@ abstract class Mangadex(
         return preferences.getString(SERVER_PREF, default).takeIf { it in SERVER_PREF_ENTRY_VALUES }
             ?: default
     }
+    private fun getUseDataSaver(): Int = preferences.getInt(DATA_SAVER_PREF, 0)
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Tag(val id: String, name: String) : Filter.TriState(name)
@@ -877,6 +907,9 @@ abstract class Mangadex(
         private const val SERVER_PREF = "imageServer"
         private val SERVER_PREF_ENTRIES = arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
         private val SERVER_PREF_ENTRY_VALUES = arrayOf("0", "na", "na2", "row")
+
+        private const val DATA_SAVER_PREF_Title = "Data saver"
+        private const val DATA_SAVER_PREF = "dataSaver"
 
         private const val API_MANGA = "/api/manga/"
         private const val API_CHAPTER = "/api/chapter/"
