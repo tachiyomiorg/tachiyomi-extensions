@@ -45,7 +45,7 @@ import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-abstract class Mangadex(
+abstract class MangaDex(
     override val lang: String,
     private val internalLang: String
 ) : ConfigurableSource, ParsedHttpSource() {
