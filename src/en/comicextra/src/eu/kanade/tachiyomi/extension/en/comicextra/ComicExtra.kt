@@ -90,6 +90,7 @@ class ComicExtra : ParsedHttpSource() {
             status = parseStatus(document.select("dt:contains(Status:) + dd").text())
             author = document.select("dt:contains(Author:) + dd").text()
             description = document.select("div#film-content").text()
+            genre = document.select("dt.movie-dt:contains(Genres:) + dd a").joinToString { it.text() }
         }
     }
 
