@@ -122,7 +122,8 @@ class MadaraFactory : SourceFactory {
         TurkceManga(),
         EinherjarScan(),
         KnightNoScanlation(),
-        DoujinYosh()
+        DoujinYosh(),
+        Manga347()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -904,4 +905,8 @@ class DoujinYosh : Madara("DoujinYosh", "https://doujinyosh.work", "id") {
         Genre("Yaoi", "yaoi"),
         Genre("Yuri", "yuri")
     )
+}
+
+class Manga347 : Madara("Manga347", "https://manga347.com", "en", SimpleDateFormat("d MMM, yyyy", Locale.US)) {
+    override val pageListParseSelector = "li.blocks-gallery-item"
 }
