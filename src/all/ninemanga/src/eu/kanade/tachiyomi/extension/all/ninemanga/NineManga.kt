@@ -112,10 +112,6 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun imageUrlParse(document: Document) = document.select("div.pic_box img.manga_pic").first().attr("src").orEmpty()
 
-    /*override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/?name_sel=&wd=$query&author_sel=&author=&artist_sel=&artist=&category_id=&out_category_id=&completed_series=&page=$page.html", headers)
-    }*/
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search/")!!.newBuilder()
 
@@ -124,15 +120,28 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
         filters.forEach { filter ->
             when (filter) {
+                is QueryCBEFilter -> url.addQueryParameter("name_sel", filter.toUriPart())
+                is AuthorCBEFilter -> url.addQueryParameter("author_sel", filter.toUriPart())
+                is AuthorFilter -> url.addQueryParameter("author", filter.state)
+                is ArtistCBEFilter -> url.addQueryParameter("artist_sel", filter.toUriPart())
+                is ArtistFilter -> url.addQueryParameter("artist", filter.state)
                 is GenreList -> {
-                    filter.state
-                        .filter { genre -> genre.state }
-                        .forEach { genre -> url.addQueryParameter("category_id", genre.id) }
+                    var genreInclude = ""
+                    var genreExclude = ""
+                    filter.state.forEach {
+                        if (it.isIncluded()) genreInclude += "${it.id},"
+                        if (it.isExcluded()) genreExclude += "${it.id},"
+                    }
+                    url.addQueryParameter("category_id", genreInclude)
+                    url.addQueryParameter("out_category_id", genreExclude)
                 }
+                is CompletedFilter -> url.addQueryParameter("completed_series", filter.toUriPart())
             }
         }
 
-        return GET(url.build().toString(), headers)
+        url.addQueryParameter("type", "high")
+
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -141,11 +150,41 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    open class Genre(name: String, val id: String) : Filter.CheckBox(name)
+    open class Genre(name: String, val id: String) : Filter.TriState(name)
     open class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
 
+    class AuthorFilter : Filter.Text("Author")
+    class ArtistFilter : Filter.Text("Artist")
+
+    protected open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    protected open class ContainBeginEndFilter(name: String) : UriPartFilter(name, arrayOf(
+        Pair("Contain", "contain"),
+        Pair("Begin", "begin"),
+        Pair("End", "end")
+    ))
+
+    private class QueryCBEFilter : ContainBeginEndFilter("Query")
+    private class AuthorCBEFilter : ContainBeginEndFilter("Author")
+    private class ArtistCBEFilter : ContainBeginEndFilter("Artist")
+
+    private class CompletedFilter : UriPartFilter("Completed", arrayOf(
+        Pair("Either", "either"),
+        Pair("Yes", "yes"),
+        Pair("No", "no")
+    ))
+
     override fun getFilterList() = FilterList(
-        GenreList(getGenreList())
+        QueryCBEFilter(),
+        AuthorCBEFilter(),
+        AuthorFilter(),
+        ArtistCBEFilter(),
+        ArtistFilter(),
+        GenreList(getGenreList()),
+        CompletedFilter()
     )
 
     // $(document.querySelectorAll('.optionbox .typelist:nth-child(3) ul li.cate_list')).map((i, el)=>`Genre("${$(el).first().text().trim()}", "${$(el).attr("cate_id")}")`).get().sort().join(",\n")
