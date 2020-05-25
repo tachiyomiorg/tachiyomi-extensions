@@ -123,7 +123,8 @@ class MadaraFactory : SourceFactory {
         EinherjarScan(),
         KnightNoScanlation(),
         DoujinYosh(),
-        Manga347()
+        Manga347(),
+        RenaScans()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -910,3 +911,4 @@ class DoujinYosh : Madara("DoujinYosh", "https://doujinyosh.work", "id") {
 class Manga347 : Madara("Manga347", "https://manga347.com", "en", SimpleDateFormat("d MMM, yyyy", Locale.US)) {
     override val pageListParseSelector = "li.blocks-gallery-item"
 }
+class RenaScans : Madara("Renascence Scans (Renascans)", "https://new.renascans.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
