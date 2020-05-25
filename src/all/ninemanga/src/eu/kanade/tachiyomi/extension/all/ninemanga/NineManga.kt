@@ -49,7 +49,7 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div.bookintro").let {
-            title = it.select("li > span:not([class])").text()
+            title = it.select("li > span:not([class])").text().removeSuffix(" Manga")
             genre = it.select("li[itemprop=genre] a").joinToString { e -> e.text() }
             author = it.select("li a[itemprop=author]").text()
             status = parseStatus(it.select("li a.red").first().text())
