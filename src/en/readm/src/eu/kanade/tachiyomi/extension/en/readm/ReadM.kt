@@ -47,10 +47,10 @@ class ReadM : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/latest-releases/$page", headers)
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
-    override fun latestUpdatesSelector(): String = "ul.latest-updates li"
+    override fun latestUpdatesSelector(): String = "ul.latest-updates > li"
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("data-src")
-        element.select("a").first().apply {
+        thumbnail_url = element.select("img").attr("abs:data-src")
+        element.select("h2 a").first().apply {
             title = this.text().trim()
             url = this.attr("href")
         }
