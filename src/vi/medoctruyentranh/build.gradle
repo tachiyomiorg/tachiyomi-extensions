@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: MeDocTruyenTranh'
     pkgNameSuffix = 'vi.medoctruyentranh'
     extClass = '.MeDocTruyenTranh'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
