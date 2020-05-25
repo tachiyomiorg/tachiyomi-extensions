@@ -5,13 +5,16 @@ package eu.kanade.tachiyomi.extension.en.loadla
  * The Search part is mostly taken from the NHentai Extension
  */
 
-import eu.kanade.tachiyomi.extensions.BuildConfig
+import android.util.Log
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class LoadLa: ParsedHttpSource() {
 
@@ -24,33 +27,42 @@ class LoadLa: ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
-
     override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
 
     override fun chapterListSelector(): String = throw UnsupportedOperationException("Not used")
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        return listOf(SChapter.create().apply {
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return Observable.just(listOf(SChapter.create().apply {
             name = "Chapter"
-            setUrlWithoutDomain(response.request().url().encodedPath())
+            setUrlWithoutDomain(manga.url)
+        }))
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        log(response.request().url().encodedPath())
+        return listOf(SChapter.create().apply {
         })
     }
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi/${BuildConfig.VERSION_NAME} ${System.getProperty("http.agent")}")
+        add("Host", "box.load.la")
+        add("cookie", "__cfduid=d480d1fbc4be893d08c30851a5ab607c41587031301; xo=1")
         add("referer", "https://www.load.la/?o=1")
-        add("cookie", "cfduid=dc0aceff316236f74e38a99d76fa3802d1586980913; xo=1")
+//        add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.92 Safari/537.36")
+        add("accept", "*/*")
     }
 
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
-
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
-
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?re=&Series=&q=&num=${page * 33}&shownew=&pages=&color=&tag=&related=&art=&b=", headers)
-
     override fun latestUpdatesSelector(): String = popularMangaSelector()
+
+    override fun latestUpdatesRequest(page: Int): Request = debugRequest(GET("$baseUrl/?re=&Series=&q=&num=${page * 33}&shownew=&pages=&color=&tag=&related=&art=&b=", headers))
+
+    override fun mangaDetailsRequest(manga: SManga): Request = debugRequest(GET("$baseUrl${manga.url}", headers))
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         genre = document.select("div.pagination > .pagination_number").filter {
@@ -61,7 +73,7 @@ class LoadLa: ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter): Request {
         val url = chapter.url.replace("&o=", "&slideshow=play&o=")
         lastList = url
-        return GET("$baseUrl${url}", headers)
+        return debugRequest(GET("$baseUrl${url}", headersBuilder().add("referer", baseUrl+chapter.url).build()))
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -80,7 +92,7 @@ class LoadLa: ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val lHeaders = headersBuilder().add("referer", baseUrl + lastList).build()
-        return GET(page.imageUrl.toString(), lHeaders)
+        return debugRequest(GET(page.imageUrl.toString(), lHeaders))
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -94,6 +106,17 @@ class LoadLa: ParsedHttpSource() {
     override fun popularMangaNextPageSelector(): String? = ".pagination .pagination_number"
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?re=&Series=&q=&num=${page * 33}&shownew=&pages=&color=&tag=&related=&art=&b=365d", headers)
+//    override fun popularMangaRequest(page: Int): Request {
+//        val request = GET("$baseUrl/?o=1", headers)
+//       return debugRequest(request)
+//    }
+
+    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
+        client.newCall(popularMangaRequest((page))).asObservableSuccess().map { response ->
+            debugResponse(response)
+        }
+        return super.fetchPopularManga(page)
+    }
 
     override fun popularMangaSelector(): String = "td.search_gallery_item[style]:not([style=\"width:214px;border-color:#FF0000\"])"
 
@@ -119,7 +142,7 @@ class LoadLa: ParsedHttpSource() {
             if (f.state) url.addQueryParameter("color", "Color")
         }
 
-        return GET(url.toString(), headers)
+        return debugRequest(GET(url.toString(), headers))
     }
 
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -131,6 +154,22 @@ class LoadLa: ParsedHttpSource() {
         ColorFilter(),
         SizeFilter()
     )
+
+    fun log(content: String) {
+        Log.i("[Load.la]", content)
+    }
+
+    fun debugRequest(request: Request): Request {
+        log("url: ${request.url()}")
+        log("headers: ${request.headers()}")
+        return request
+    }
+
+    fun debugResponse(request: Response): Response {
+        log("headers: ${request.headers()}")
+        log("Body: ${request.body()}")
+        return request
+    }
 
     private class SortFilter : Filter.Select<String>("Sort", arrayOf("Popular", "Latest", "Rating"))
     private class ColorFilter : Filter.CheckBox("Color only")
