@@ -30,13 +30,14 @@ class WPMangaStreamFactory : SourceFactory {
         WestManga(),
         KomikGo(),
         KomikIndo(),
-        MaidManga(),
         SekteKomik(),
         MangaSwat(),
         MangaRaw(),
         SekteDoujin(),
         NonStopScans(),
-        KomikTap()
+        KomikTap(),
+        Matakomik(),
+        KomikindoCo()
     )
 }
 
@@ -472,180 +473,6 @@ class KomikIndo : WPMangaStream("Komik Indo (WP Manga Stream)", "https://www.kom
     override fun popularMangaNextPageSelector() = "a.r"
 }
 
-class MaidManga : WPMangaStream("Maid Manga (WP Manga Stream)", "https://www.maid.my.id", "id") {
-    override fun latestUpdatesSelector() = "h2:contains(Update Chapter) + div.row div.col-12"
-    override fun latestUpdatesRequest(page: Int): Request {
-        val builtUrl = if (page == 1) baseUrl else "$baseUrl/page/$page/"
-        return GET(builtUrl)
-    }
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        val item = element.select("h3 a")
-        val imgurl = element.select("div.limit img").attr("src").replace("?resize=100,140", "")
-        manga.url = item.attr("href")
-        manga.title = item.text()
-        manga.thumbnail_url = imgurl
-        return manga
-    }
-
-    override fun latestUpdatesNextPageSelector() = "a:containsOwn(Berikutnya)"
-
-    override fun popularMangaRequest(page: Int): Request {
-        val builtUrl = if (page == 1) "$baseUrl/advanced-search/?order=popular" else "$baseUrl/advanced-search/page/$page/?order=popular"
-        return GET(builtUrl)
-    }
-
-    override fun popularMangaSelector() = "div.row div.col-6"
-
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        val imgurl = element.select("div.card img").attr("src").replace("?resize=165,225", "")
-        manga.url = element.select("div.card a").attr("href")
-        manga.title = element.select("div.card img").attr("title")
-        manga.thumbnail_url = imgurl
-        return manga
-    }
-
-    override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl = if (page == 1) "$baseUrl/advanced-search/" else "$baseUrl/advanced-search/page/$page/"
-        val url = HttpUrl.parse(builtUrl)!!.newBuilder()
-        url.addQueryParameter("title", query)
-        url.addQueryParameter("page", page.toString())
-        filters.forEach { filter ->
-            when (filter) {
-                is AuthorFilter -> {
-                    url.addQueryParameter("author", filter.state)
-                }
-                is YearFilter -> {
-                    url.addQueryParameter("yearx", filter.state)
-                }
-                is StatusFilter -> {
-                    val status = when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "completed"
-                        Filter.TriState.STATE_EXCLUDE -> "ongoing"
-                        else -> ""
-                    }
-                    url.addQueryParameter("status", status)
-                }
-                is TypeFilter -> {
-                    url.addQueryParameter("type", filter.toUriPart())
-                }
-                is SortByFilter -> {
-                    url.addQueryParameter("order", filter.toUriPart())
-                }
-                is GenreListFilter -> {
-                    filter.state
-                        .filter { it.state != Filter.TriState.STATE_IGNORE }
-                        .forEach { url.addQueryParameter("genre[]", it.id) }
-                }
-            }
-        }
-        return GET(url.build().toString(), headers)
-    }
-
-    override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
-
-    override fun mangaDetailsRequest(manga: SManga): Request {
-        if (manga.url.startsWith("http")) {
-            return GET(manga.url, headers)
-        }
-        return super.mangaDetailsRequest(manga)
-    }
-
-    override fun mangaDetailsParse(document: Document): SManga {
-        val stringBuilder = StringBuilder()
-        val infoElement = document.select("div.infox")
-        val author = document.select("span:contains(author)").text().substringAfter("Author: ").substringBefore(" (")
-        val manga = SManga.create()
-        val genres = mutableListOf<String>()
-        val status = document.select("span:contains(Status)").text()
-        val desc = document.select("div.sinopsis p")
-        infoElement.select("div.gnr a").forEach { element ->
-            val genre = element.text()
-            genres.add(genre)
-        }
-        if (desc.size > 0) {
-            desc.forEach {
-                stringBuilder.append(it.text())
-                if (it != desc.last())
-                    stringBuilder.append("\n\n")
-            }
-            manga.description = stringBuilder.toString()
-        } else
-            manga.description = document.select("div.sinopsis").text()
-
-        manga.title = infoElement.select("h1").text()
-        manga.author = author
-        manga.artist = author
-        manga.status = parseStatus(status)
-        manga.genre = genres.joinToString(", ")
-        manga.description = stringBuilder.toString()
-        manga.thumbnail_url = document.select("div.bigcontent img").attr("src")
-        return manga
-    }
-
-    override fun chapterListRequest(manga: SManga): Request {
-        if (manga.url.startsWith("http")) {
-            return GET(manga.url, headers)
-        }
-        return super.chapterListRequest(manga)
-    }
-
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val document = response.asJsoup()
-        val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
-        // Add date for latest chapter only
-        document.select("ul.anf span:has(b:contains(release date))").text().substringAfter(": ")
-            .let { chapters[0].date_upload = parseChapterDate(it) }
-        return chapters
-    }
-
-    override fun pageListRequest(chapter: SChapter): Request {
-        if (chapter.url.startsWith("http")) {
-            return GET(chapter.url, headers)
-        }
-        return super.pageListRequest(chapter)
-    }
-
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        document.select("div#readerarea img").forEach {
-            val url = it.attr("src")
-            pages.add(Page(pages.size, "", url))
-        }
-        return pages
-    }
-
-    override fun getFilterList() = FilterList(
-        Filter.Header("You can combine filter."),
-        Filter.Separator(),
-        AuthorFilter(),
-        YearFilter(),
-        StatusFilter(),
-        TypeFilter(),
-        SortByFilter(),
-        GenreListFilter(getGenreList())
-    )
-
-    private class AuthorFilter : Filter.Text("Author")
-
-    private class YearFilter : Filter.Text("Year")
-
-    private class StatusFilter : Filter.TriState("Completed")
-
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
-        Pair("All", ""),
-        Pair("Manga", "Manga"),
-        Pair("Manhua", "Manhua"),
-        Pair("Manhwa", "Manhwa"),
-        Pair("One-Shot", "One-Shot"),
-        Pair("Doujin", "Doujin")
-    ))
-}
-
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
     /**
      * Use IOException or the app crashes!
@@ -794,3 +621,13 @@ class KomikTap : WPMangaStream("KomikTap", "https://komiktap.xyz", "id") {
     override fun searchMangaNextPageSelector() = "a.next.page-numbers"
     override fun getFilterList() = FilterList()
 }
+
+class Matakomik : WPMangaStream("Matakomik", "https://matakomik.com", "id") {
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("div#readerarea a").mapIndexed { i, a ->
+            Page(i, "", a.attr("abs:href"))
+        }
+    }
+}
+
+class KomikindoCo : WPMangaStream("Komikindo.co", "https://komikindo.co", "id")
