@@ -282,7 +282,7 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
 
-class Hiperdex : Madara("Hiperdex", "https://hiperdex.info", "en") {
+class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     override fun getGenreList() = listOf(
         Genre("Adult", "adult"),
         Genre("Action", "action"),
