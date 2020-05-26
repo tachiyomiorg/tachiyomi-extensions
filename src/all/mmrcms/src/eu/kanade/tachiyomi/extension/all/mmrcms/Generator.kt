@@ -248,6 +248,8 @@ class Generator {
             Triple("fr", "Scan-1", "https://www.scan-1.com"),
             Triple("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
             Triple("id", "MangaSusu", "https://www.mangasusu.mobi"),
+            Triple("id", "Komik Manga", "https://adm.komikmanga.com"),
+            Triple("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             // Changed CMS
