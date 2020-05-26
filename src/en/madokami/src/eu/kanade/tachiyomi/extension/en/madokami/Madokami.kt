@@ -15,6 +15,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.io.IOException
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
@@ -22,6 +23,7 @@ import java.util.Calendar
 import java.util.Locale
 import okhttp3.Credentials
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -47,6 +49,12 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         val credential = Credentials.basic(preferences.getString("username", "")!!, preferences.getString("password", "")!!)
         return request.newBuilder().header("Authorization", credential).build()
     }
+
+    override val client: OkHttpClient = super.client.newBuilder().addInterceptor { chain ->
+        val response = chain.proceed(chain.request())
+        if (response.code() == 401) throw IOException("You are currently logged out.\nGo to Extensions > Details to input your credentials.")
+        response
+    }.build()
 
     override fun latestUpdatesSelector() = "table.mobile-files-table tbody tr td:nth-child(1) a:nth-child(1)"
 
