@@ -61,7 +61,8 @@ class FoolSlideFactory : SourceFactory {
         TuttoAnimeManga(),
         Customizable(),
         TortugaCeviri(),
-        Rama()
+        Rama(),
+        Mabushimajo()
     )
 }
 
@@ -303,3 +304,5 @@ class Customizable : ConfigurableSource, FoolSlide("Customizable", "", "other") 
 class TortugaCeviri : FoolSlide("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr", "/okuma")
 
 class Rama : FoolSlide("Rama", "https://www.ramareader.it", "it", "/read")
+
+class Mabushimajo : FoolSlide("Mabushimajo", "http://mabushimajo.com", "tr", "/onlineokuma")
