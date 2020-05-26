@@ -124,7 +124,8 @@ class MadaraFactory : SourceFactory {
         KnightNoScanlation(),
         DoujinYosh(),
         Manga347(),
-        RenaScans()
+        RenaScans(),
+        WebtoonXYZ()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -799,6 +800,8 @@ class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
 class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateFormat("dd MMM yyyy", Locale.US))
 
 class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
+
+class WebtoonXYZ : Madara("WebtoonXYZ", "https://www.webtoon.xyz", "en")
 
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
 
