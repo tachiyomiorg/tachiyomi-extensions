@@ -1,7 +1,10 @@
 package eu.kanade.tachiyomi.extension.all.madara
 
 import android.annotation.SuppressLint
+import eu.kanade.tachiyomi.lib.dataimage.DataImageInterceptor
+import eu.kanade.tachiyomi.lib.dataimage.dataImageAsUrl
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
@@ -20,6 +23,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -125,7 +129,9 @@ class MadaraFactory : SourceFactory {
         DoujinYosh(),
         Manga347(),
         RenaScans(),
-        WebtoonXYZ()
+        WebtoonXYZ(),
+        QueensManga(),
+        DropeScan()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -260,7 +266,24 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
 
-class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en")
+class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(mangaDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response.asJsoup(), manga).apply { initialized = true }
+            }
+    }
+    private fun mangaDetailsParse(document: Document, manga: SManga): SManga {
+        return SManga.create().apply {
+            if (manga.thumbnail_url.isNullOrEmpty()) thumbnail_url = searchMangaParse(client.newCall(searchMangaRequest(1, manga.title, FilterList())).execute())
+                .mangas.firstOrNull()?.thumbnail_url
+            author = document.select("div.summary-heading-creator a").joinToString { it.text() }
+            genre = document.select("div.genres-content a").joinToString { it.text() }
+            description = document.select("div.description-summary p").joinToString("\n") { it.text() }
+        }
+    }
+}
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override val client: OkHttpClient = network.client
@@ -915,3 +938,20 @@ class Manga347 : Madara("Manga347", "https://manga347.com", "en", SimpleDateForm
     override val pageListParseSelector = "li.blocks-gallery-item"
 }
 class RenaScans : Madara("Renascence Scans (Renascans)", "https://new.renascans.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
+
+class QueensManga : Madara("QueensManga ملكات المانجا", "https://queensmanga.com", "ar") {
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(DataImageInterceptor())
+        .build()
+    override fun chapterListSelector(): String = "div.listing-chapters_wrap a"
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("picture > source").mapIndexed { i, source ->
+            Page(i, "", source.dataImageAsUrl("srcset"))
+        }
+    }
+}
+
+class DropeScan : Madara("Drope Scan", "https://dropescan.com", "pt-BR") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
+}
