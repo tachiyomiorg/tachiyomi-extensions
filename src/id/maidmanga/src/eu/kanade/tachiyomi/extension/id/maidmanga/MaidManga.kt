@@ -117,7 +117,8 @@ class MaidManga : ParsedHttpSource() {
         return SimpleDateFormat("MMM d, yyyy", Locale("id")).parse(date).time
     }
 
-    override fun chapterListSelector() = "ul.series-chapterlist div.flexch a"
+    // careful not to include download links
+    override fun chapterListSelector() = "ul.series-chapterlist div.flexch-infoz > a"
 
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
