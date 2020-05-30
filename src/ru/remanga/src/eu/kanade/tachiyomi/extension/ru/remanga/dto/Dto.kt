@@ -20,6 +20,12 @@ data class LibraryDto(
     val genres: List<GenresDto>,
     val img: ImgDto
 )
+
+data class StatusDto(
+    val id: Int,
+    val name: String
+)
+
 data class MangaDetDto(
     val id: Long,
     val en_name: String,
@@ -28,8 +34,10 @@ data class MangaDetDto(
     val description: String,
     val issue_year: Int,
     val img: ImgDto,
+    val type: GenresDto,
     val genres: List<GenresDto>,
-    val branches: List<BranchesDto>
+    val branches: List<BranchesDto>,
+    val status: StatusDto
 )
 data class PropsDto(
     val total_items: Int,
@@ -57,3 +65,13 @@ data class BookDto(
     val name: String,
     val upload_date: String
 )
+
+data class PagesDto(
+    val id: Int,
+    val link: String,
+    val page: Int,
+    val count_comments: Int
+)
+data class PageDto(
+    val pages: List<PagesDto>
+) 
