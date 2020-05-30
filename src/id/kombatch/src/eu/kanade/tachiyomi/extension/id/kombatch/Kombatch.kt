@@ -42,10 +42,6 @@ class Kombatch: ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a:has(img)").attr("href"))
         title = element.select("a.text-black-50").first().text()
-        val file = File("/sdcard/kombatch.txt")
-        file.printWriter().use { out ->
-            out.println(title)
-        }
         thumbnail_url = element.select("img").attr("abs:src")
     }
 
