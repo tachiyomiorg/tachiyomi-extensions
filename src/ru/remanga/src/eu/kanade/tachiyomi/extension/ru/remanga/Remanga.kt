@@ -17,13 +17,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class Remanga : HttpSource() {
     override val name = "Remanga"
@@ -133,7 +133,7 @@ class Remanga : HttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
-        return chapters.content.map { chapter ->
+        return chapters.content.filter { !it.is_paid }.map { chapter ->
             var chapterName = "${chapter.tome} - ${chapter.chapter.toInt()}"
             if (chapter.name.isNotBlank() && chapterName != chapterName) {
                 chapterName += "- $chapterName"

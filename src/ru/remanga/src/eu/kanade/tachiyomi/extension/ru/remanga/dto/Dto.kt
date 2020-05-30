@@ -63,7 +63,8 @@ data class BookDto(
     val tome: Int,
     val chapter: Float,
     val name: String,
-    val upload_date: String
+    val upload_date: String,
+    val is_paid: Boolean
 )
 
 data class PagesDto(
@@ -74,4 +75,4 @@ data class PagesDto(
 )
 data class PageDto(
     val pages: List<PagesDto>
-) 
+)
