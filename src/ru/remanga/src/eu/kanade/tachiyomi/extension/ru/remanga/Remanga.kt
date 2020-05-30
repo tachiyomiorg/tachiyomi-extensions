@@ -1,26 +1,29 @@
 package eu.kanade.tachiyomi.extension.ru.remanga
 
 import BookDto
+import BranchesDto
 import LibraryDto
 import MangaDetDto
+import PageDto
 import PageWrapperDto
 import SeriesWrapperDto
-import android.util.Log
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
+import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class Remanga : HttpSource() {
     override val name = "Remanga"
@@ -31,11 +34,15 @@ class Remanga : HttpSource() {
 
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/api/search/catalog/?ordering=rating&count=30&page=$page", headers)
+    private val count = 30
+
+    private var branches = mutableMapOf<String, List<BranchesDto>>()
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/api/search/catalog/?ordering=rating&count=$count&page=$page", headers)
 
     override fun popularMangaParse(response: Response): MangasPage = searchMangaParse(response)
 
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/api/titles/last-chapters/?page=$page&count=40", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/api/titles/last-chapters/?page=$page&count=$count", headers)
 
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
@@ -46,12 +53,14 @@ class Remanga : HttpSource() {
         }
         return MangasPage(mangas, !page.last)
     }
+
     private fun LibraryDto.toSManga(): SManga =
         SManga.create().apply {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
         }
+
     private fun parseDate(date: String?): Long =
         if (date == null)
             Date().time
@@ -71,29 +80,69 @@ class Remanga : HttpSource() {
         val url = HttpUrl.parse("$baseUrl/api/search/?query=$query&page=$page")!!.newBuilder()
         return GET(url.toString(), headers)
     }
-    private fun MangaDetDto.toSManga(): SManga =
-        SManga.create().apply {
+
+    private fun parseStatus(status: Int): Int {
+        return when (status) {
+            0 -> SManga.COMPLETED
+            1 -> SManga.ONGOING
+            else -> SManga.UNKNOWN
+        }
+    }
+
+    private fun MangaDetDto.toSManga(): SManga {
+        val o = this
+        return SManga.create().apply {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
+            this.description = o.description
+            genre = (genres + type).joinToString { it.name }
+            status = parseStatus(o.status.id)
         }
+    }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
-        Log.i("Response", series.toString())
+        branches[series.content.en_name] = series.content.branches
         return series.content.toSManga()
     }
-    override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl/api/titles/chapters/?branch_id=${manga.branch}", headers)
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
 
-        return page.content.map { book ->
+    private fun mangaBranches(manga: SManga): List<BranchesDto> {
+        val response = client.newCall(GET("$baseUrl/${manga.url}")).execute()
+        val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
+        branches[series.content.en_name] = series.content.branches
+        return series.content.branches
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        val branch = branches.getOrElse(manga.title) { mangaBranches(manga) }
+        return if (manga.status != SManga.LICENSED) {
+            client.newCall(chapterListRequest(branch[0].id))
+                .asObservableSuccess()
+                .map { response ->
+                    chapterListParse(response)
+                }
+        } else {
+            Observable.error(Exception("Licensed - No chapters to show"))
+        }
+    }
+
+    private fun chapterListRequest(branch: Long): Request {
+        return GET("$baseUrl/api/titles/chapters/?branch_id=$branch", headers)
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
+        return chapters.content.map { chapter ->
+            var chapterName = "${chapter.tome} - ${chapter.chapter.toInt()}"
+            if (chapter.name.isNotBlank() && chapterName != chapterName) {
+                chapterName += "- $chapterName"
+            }
             SChapter.create().apply {
-                chapter_number = book.chapter
-                name = book.name
-                url = "$baseUrl/api/titles/chapters/${book.id}"
-                date_upload = parseDate(book.upload_date)
+                chapter_number = chapter.chapter
+                name = chapterName
+                url = "/api/titles/chapters/${chapter.id}"
+                date_upload = parseDate(chapter.upload_date)
             }
         }.sortedByDescending { it.chapter_number }
     }
@@ -101,7 +150,10 @@ class Remanga : HttpSource() {
     override fun imageUrlParse(response: Response): String = ""
 
     override fun pageListParse(response: Response): List<Page> {
-        TODO("Not yet implemented")
+        val page = gson.fromJson<SeriesWrapperDto<PageDto>>(response.body()?.charStream()!!)
+        return page.content.pages.map {
+            Page(it.page, "", it.link)
+        }
     }
 
     private val gson by lazy { Gson() }
