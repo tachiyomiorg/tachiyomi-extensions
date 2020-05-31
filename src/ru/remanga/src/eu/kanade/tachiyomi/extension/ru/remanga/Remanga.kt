@@ -20,6 +20,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -33,6 +34,11 @@ class Remanga : HttpSource() {
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Tachiyomi")
+        add("Referer", baseUrl)
+    }
 
     private val count = 30
 
@@ -134,7 +140,7 @@ class Remanga : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
         return chapters.content.filter { !it.is_paid }.map { chapter ->
-            var chapterName = "${chapter.tome} - ${chapter.chapter.toInt()}"
+            var chapterName = "${chapter.tome} - ${chapter.chapter.toFloat()}"
             if (chapter.name.isNotBlank() && chapterName != chapterName) {
                 chapterName += "- $chapterName"
             }
