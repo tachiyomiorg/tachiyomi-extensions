@@ -24,6 +24,7 @@ import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.Jsoup
 import rx.Observable
 
 class Remanga : HttpSource() {
@@ -101,7 +102,7 @@ class Remanga : HttpSource() {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = o.description
+            this.description = Jsoup.parse(o.description).text()
             genre = (genres + type).joinToString { it.name }
             status = parseStatus(o.status.id)
         }
@@ -123,6 +124,7 @@ class Remanga : HttpSource() {
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         val branch = branches.getOrElse(manga.title) { mangaBranches(manga) }
         return if (manga.status != SManga.LICENSED) {
+            // Use only first branch for all cases
             client.newCall(chapterListRequest(branch[0].id))
                 .asObservableSuccess()
                 .map { response ->
@@ -137,16 +139,21 @@ class Remanga : HttpSource() {
         return GET("$baseUrl/api/titles/chapters/?branch_id=$branch", headers)
     }
 
+    private fun chapterName(book: BookDto): String {
+        val chapterId = if (book.chapter.rem(10) == 0f) book.chapter.toInt() else book.chapter
+        var chapterName = "${book.tome} - $chapterId"
+        if (book.name.isNotBlank() && chapterName != chapterName) {
+            chapterName += "- $chapterName"
+        }
+        return chapterName
+    }
+
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
         return chapters.content.filter { !it.is_paid }.map { chapter ->
-            var chapterName = "${chapter.tome} - ${chapter.chapter.toFloat()}"
-            if (chapter.name.isNotBlank() && chapterName != chapterName) {
-                chapterName += "- $chapterName"
-            }
             SChapter.create().apply {
                 chapter_number = chapter.chapter
-                name = chapterName
+                name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
             }
