@@ -140,7 +140,7 @@ class Remanga : HttpSource() {
     }
 
     private fun chapterName(book: BookDto): String {
-        val chapterId = if (book.chapter.rem(10) == 0f) book.chapter.toInt() else book.chapter
+        val chapterId = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
         var chapterName = "${book.tome} - $chapterId"
         if (book.name.isNotBlank() && chapterName != chapterName) {
             chapterName += "- $chapterName"
