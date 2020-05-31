@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.ru.remanga
 
 import BookDto
 import BranchesDto
+import GenresDto
 import LibraryDto
 import MangaDetDto
 import PageDto
@@ -96,6 +97,13 @@ class Remanga : HttpSource() {
         }
     }
 
+    private fun parseType(type: GenresDto): GenresDto {
+        return when (type.name) {
+            "Западный комикс" -> GenresDto(type.id, "Комикс")
+            else -> type
+        }
+    }
+
     private fun MangaDetDto.toSManga(): SManga {
         val o = this
         return SManga.create().apply {
@@ -103,7 +111,7 @@ class Remanga : HttpSource() {
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
             this.description = Jsoup.parse(o.description).text()
-            genre = (genres + type).joinToString { it.name }
+            genre = (genres + parseType(type)).joinToString { it.name }
             status = parseStatus(o.status.id)
         }
     }
