@@ -638,7 +638,7 @@ class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en") {
     )
 }
 
-class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "pt-BR", SimpleDateFormat("dd 'de' MMM 'de' yyyy", Locale("pt", "BR"))) {
+class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR", SimpleDateFormat("dd 'de' MMM 'de' yyyy", Locale("pt", "BR"))) {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
@@ -648,7 +648,7 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.com/newsite", "
     override fun getFilterList(): FilterList = FilterList(super.getFilterList().slice(3..4))
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36"
     }
 }
 
