@@ -46,6 +46,7 @@ class MyMangaReaderCMSSource(
     override val id: Long = when (name) {
         "Comic Space" -> 1847392744200215680
         "Mangás Yuri" -> 6456162511058446409
+        "AnimaRegia" -> 4378659695320121364
         else -> super.id
     }
 

@@ -250,6 +250,8 @@ class Generator {
             Triple("id", "MangaSusu", "https://www.mangasusu.mobi"),
             Triple("id", "Komik Manga", "https://adm.komikmanga.com"),
             Triple("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
+            Triple("pt-BR", "Remangas", "https://remangas.top"),
+            Triple("pt-BR", "AnimaRegia", "https://animaregia.net"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             // Changed CMS
