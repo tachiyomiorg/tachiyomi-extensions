@@ -161,7 +161,7 @@ class NineAnime : ParsedHttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
-        Filter.Header("Note: ignored is using text search!"),
+        Filter.Header("Note: ignored if using text search!"),
         Filter.Separator("-----------------"),
         GenreFilter()
     )
