@@ -4,11 +4,9 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
+import java.lang.UnsupportedOperationException
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -24,43 +22,13 @@ class Schlockmercenary : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    val books = listOf<MangasPage>()
-
-    override fun fetchPopularManga(page: Int): Observable<MangasPage> {
-        val manga = SManga.create()
-        manga.setUrlWithoutDomain("/archives")
-        manga.title = "xkcd"
-        manga.artist = "Randall Munroe"
-        manga.author = "Randall Munroe"
-        manga.status = SManga.ONGOING
-        manga.description = "A webcomic of romance, sarcasm, math and language"
-        manga.thumbnail_url = thumbnailUrl
-
-        return Observable.just(MangasPage(arrayListOf(manga), false))
-    }
-
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
 
     override fun chapterListSelector() = "ul.chapters > li > a"
 
-    override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-        chapter.url = element.attr("href")
-        chapter.name = element.text()
-        if (chapter.name.contains("prologue(s)", true)) {
-            chapter.chapter_number = 0F
-        } else if (chapter.name.contains("prologue", true)) {
-            chapter.chapter_number = 0.1F
-        } else if (chapter.name.contains("epilogue", true)) {
-            chapter.chapter_number = 1000F
-        } else {
-            val number = e
-            chapter.chapter_number =
-        }
-        chapter.chapter_number = number.toFloat()
-    }
+    override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Not used")
 
     // This is what gets the pages
     override fun pageListParse(document: Document): List<Page> {
@@ -69,37 +37,44 @@ class Schlockmercenary : ParsedHttpSource() {
 
     override fun imageUrlRequest(page: Page) = GET(page.url)
 
-    override fun imageUrlParse(document: Document) = throw Exception("Not used")
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/archives")
 
     override fun popularMangaSelector(): String = "div.archive-book"
 
-    override fun popularMangaNextPageSelector(): String? = throw Exception("Not used")
-
-    override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not used")
-
-    override fun searchMangaNextPageSelector(): String? = throw Exception("Not used")
-
-    override fun searchMangaSelector(): String = throw Exception("Not used")
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
-
-    override fun popularMangaFromElement(element: Element): SManga = throw Exception("Not used")
-
-    override fun mangaDetailsParse(document: Document): SManga = throw Exception("Not used")
-
-    override fun latestUpdatesNextPageSelector(): String? = throw Exception("Not used")
-
-    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Not used")
-
-    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
-
-    override fun latestUpdatesSelector(): String = throw Exception("Not used")
-
-    companion object {
-        const val thumbnailUrl = "https://fakeimg.pl/550x780/ffffff/6E7B91/?text=xkcd&font=museo"
-        const val baseAltTextUrl = "https://fakeimg.pl/1500x2126/ffffff/000000/?text="
-        const val baseAltTextPostUrl = "&font_size=42&font=museo"
+    override fun popularMangaFromElement(element: Element): SManga {
+        val book = element.select("h4 > a").first()
+        return SManga.create().apply {
+            url = book.attr("href")
+            title = book.text()
+            artist = "Howard Tayler"
+            author = "Howard Tayler"
+            // I'm not sure how to determine this quite yet, so I'll just hardcode the latest one to get something done
+//            status = if (book.text().contains("Book 20")) SManga.ONGOING else SManga.COMPLETED
+            status = SManga.UNKNOWN
+            description = element.select("p").first().text()
+            thumbnail_url = element.select("img").first().attr("src")
+        }
     }
+
+    override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaSelector(): String = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used")
+
+    override fun mangaDetailsParse(document: Document): SManga = throw UnsupportedOperationException("Not used")
+
+    override fun latestUpdatesNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
+
+    override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
+
+    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException("Not used")
+
+    override fun latestUpdatesSelector(): String = throw UnsupportedOperationException("Not used")
 }
