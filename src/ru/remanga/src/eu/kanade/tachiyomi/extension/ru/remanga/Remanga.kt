@@ -92,27 +92,34 @@ class Remanga : HttpSource() {
         }
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
+                is OrderBy -> {
+                    val ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "random")[filter.state!!.index]
+                    url.addQueryParameter("ordering", if (filter.state!!.ascending) "-$ord" else ord)
+                }
                 is CategoryList -> filter.state.forEach { category ->
                     if (category.state != Filter.TriState.STATE_IGNORE) {
-                        url.addQueryParameter(if (category.isIncluded()) "types" else "exclude_types", category.id)
+                        url.addQueryParameter(if (category.isIncluded()) "categories" else "exclude_categories", category.id)
+                    }
+                }
+                is TypeList -> filter.state.forEach { type ->
+                    if (type.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(if (type.isIncluded()) "types" else "exclude_types", type.id)
                     }
                 }
                 is StatusList -> filter.state.forEach { status ->
-                    if (status.state != false) {
+                    if (status.state) {
                         url.addQueryParameter("status", status.id)
+                    }
+                }
+                is AgeList -> filter.state.forEach { age ->
+                    if (age.state) {
+                        url.addQueryParameter("age_limit", age.id)
                     }
                 }
                 is GenreList -> filter.state.forEach { genre ->
                     if (genre.state != Filter.TriState.STATE_IGNORE) {
                         url.addQueryParameter(if (genre.isIncluded()) "genres" else "exclude_genres", genre.id)
                     }
-                }
-                is OrderBy -> {
-                    var ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "random")[filter.state!!.index]
-                    if (!filter.state!!.ascending) {
-                        ord = "-" + ord
-                    }
-                    url.addQueryParameter("ordering", ord)
                 }
             }
         }
@@ -210,26 +217,29 @@ class Remanga : HttpSource() {
     private class CheckFilter(name: String, val id: String) : Filter.CheckBox(name)
 
     private class CategoryList(categories: List<SearchFilter>) : Filter.Group<SearchFilter>("Категории", categories)
+    private class TypeList(types: List<SearchFilter>) : Filter.Group<SearchFilter>("Типы", types)
     private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус", statuses)
     private class GenreList(genres: List<SearchFilter>) : Filter.Group<SearchFilter>("Жанры", genres)
+    private class AgeList(ages: List<CheckFilter>) : Filter.Group<CheckFilter>("Возрастное ограничение", ages)
 
     override fun getFilterList() = FilterList(
-        CategoryList(getCategoryList()),
-        StatusList(getStatusList()),
+        OrderBy(),
         GenreList(getGenreList()),
-        OrderBy()
+        CategoryList(getCategoryList()),
+        TypeList(getTypeList()),
+        StatusList(getStatusList()),
+        AgeList(getAgeList())
     )
 
     private class OrderBy : Filter.Sort("Сортировка",
         arrayOf("Новизне", "Последним обновлениям", "Популярности", "Лайкам", "Просмотрам", "Мне повезет"),
         Selection(2, false))
-
-    /*
-    * Use console
-    * Object.entries(__FILTER_ITEMS__.types).map(([k, v]) => `SearchFilter("${v.label}", "${v.id}")`).join(',\n')
-    * on /manga-list
-    */
-    private fun getCategoryList() = listOf(
+    private fun getAgeList() = listOf(
+        CheckFilter("Для всех", "0"),
+        CheckFilter("16+", "1"),
+        CheckFilter("18+", "2")
+    )
+    private fun getTypeList() = listOf(
         SearchFilter("Манга", "0"),
         SearchFilter("Манхва", "1"),
         SearchFilter("Маньхуа", "2"),
@@ -240,22 +250,106 @@ class Remanga : HttpSource() {
         SearchFilter("Другое", "7")
     )
 
-    /*
-    * Use console
-    * Object.entries(__FILTER_ITEMS__.status).map(([k, v]) => `SearchFilter("${v.label}", "${v.id}")`).join(',\n')
-    * on /manga-list
-    */
     private fun getStatusList() = listOf(
         CheckFilter("Закончен", "0"),
         CheckFilter("Продолжается", "1"),
         CheckFilter("Заморожен", "2")
     )
-
-    /*
-    * Use console
-    * __FILTER_ITEMS__.genres.map(it => `SearchFilter("${it.name}", "${it.id}")`).join(',\n')
-    * on /manga-list
-    */
+    private fun getCategoryList() = listOf(
+        SearchFilter("алхимия", "47"),
+        SearchFilter("ангелы", "48"),
+        SearchFilter("антигерой", "26"),
+        SearchFilter("антиутопия", "49"),
+        SearchFilter("апокалипсис", "50"),
+        SearchFilter("аристократия", "117"),
+        SearchFilter("армия", "51"),
+        SearchFilter("артефакты", "52"),
+        SearchFilter("боги", "45"),
+        SearchFilter("борьба за власть", "52"),
+        SearchFilter("будущее", "55"),
+        SearchFilter("в цвете", "6"),
+        SearchFilter("вампиры", "112"),
+        SearchFilter("веб", "5"),
+        SearchFilter("вестерн", "56"),
+        SearchFilter("видеоигры", "35"),
+        SearchFilter("виртуальная реальность", "44"),
+        SearchFilter("владыка демонов", "57"),
+        SearchFilter("военные", "29"),
+        SearchFilter("волшебные существа", "59"),
+        SearchFilter("воспоминания из другого мира", "60"),
+        SearchFilter("врачи / доктора", "116"),
+        SearchFilter("выживание", "41"),
+        SearchFilter("гг женщина", "63"),
+        SearchFilter("гг мужчина", "64"),
+        SearchFilter("гг силён с самого начала", "110"),
+        SearchFilter("геймеры", "61"),
+        SearchFilter("гильдии", "62"),
+        SearchFilter("гяру", "28"),
+        SearchFilter("девушки-монстры", "37"),
+        SearchFilter("демоны", "15"),
+        SearchFilter("драконы", "66"),
+        SearchFilter("дружба", "67"),
+        SearchFilter("ёнкома", "62"),
+        SearchFilter("жестокий мир", "69"),
+        SearchFilter("животные компаньоны", "70"),
+        SearchFilter("завоевание мира", "71"),
+        SearchFilter("зверолюди", "19"),
+        SearchFilter("зомби", "14"),
+        SearchFilter("игровые элементы", "73"),
+        SearchFilter("исекай", "115"),
+        SearchFilter("квесты", "75"),
+        SearchFilter("космос", "76"),
+        SearchFilter("кулинария", "16"),
+        SearchFilter("культивация", "18"),
+        SearchFilter("лоли", "108"),
+        SearchFilter("магическая академия", "78"),
+        SearchFilter("магия", "22"),
+        SearchFilter("мафия", "24"),
+        SearchFilter("медицина", "17"),
+        SearchFilter("месть", "79"),
+        SearchFilter("монстры", "38"),
+        SearchFilter("музыка", "39"),
+        SearchFilter("навыки / способности", "80"),
+        SearchFilter("наёмники", "81"),
+        SearchFilter("насилие / жестокость", "82"),
+        SearchFilter("нежить", "83"),
+        SearchFilter("ниндзя", "30"),
+        SearchFilter("оборотни", "113"),
+        SearchFilter("обратный гарем", "40"),
+        SearchFilter("пародия", "85"),
+        SearchFilter("подземелья", "86"),
+        SearchFilter("политика", "87"),
+        SearchFilter("полиция", "32"),
+        SearchFilter("преступники / криминал", "36"),
+        SearchFilter("призраки / духи", "27"),
+        SearchFilter("прокачка", "118"),
+        SearchFilter("путешествия во времени", "43"),
+        SearchFilter("разумные расы", "88"),
+        SearchFilter("ранги силы", "68"),
+        SearchFilter("реинкарнация", "13"),
+        SearchFilter("роботы", "89"),
+        SearchFilter("рыцари", "90"),
+        SearchFilter("самураи", "33"),
+        SearchFilter("сборник", "10"),
+        SearchFilter("сингл", "11"),
+        SearchFilter("система", "91"),
+        SearchFilter("скрытие личности", "93"),
+        SearchFilter("спасение мира", "94"),
+        SearchFilter("средневековье", "25"),
+        SearchFilter("спасение мира", "94"),
+        SearchFilter("средневековье", "25"),
+        SearchFilter("стимпанк", "92"),
+        SearchFilter("супергерои", "95"),
+        SearchFilter("традиционные игры", "34"),
+        SearchFilter("тупой гг", "109"),
+        SearchFilter("умный гг", "111"),
+        SearchFilter("управление", "114"),
+        SearchFilter("философия", "97"),
+        SearchFilter("хентай", "12"),
+        SearchFilter("хикикомори", "21"),
+        SearchFilter("шантаж", "99"),
+        SearchFilter("эльфы", "46")
+    )
     private fun getGenreList() = listOf(
         SearchFilter("арт", "1"),
         SearchFilter("бдсм", "44"),
