@@ -33,6 +33,7 @@ class MadaraFactory : SourceFactory {
         AstralLibrary(),
         ATMSubs(),
         Azora(),
+        BoysLove(),
         ChibiManga(),
         DisasterScans(),
         DoujinHentai(),
@@ -78,6 +79,7 @@ class MadaraFactory : SourceFactory {
         ManwhaClub(),
         ManyToon(),
         ManyToonClub(),
+        ManyToonMe(),
         Milftoon(),
         MiracleScans(),
         NeoxScanlator(),
@@ -231,6 +233,10 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site", "en") {
 class YoManga : Madara("Yo Manga", "https://yomanga.info", "en")
 
 class ManyToon : Madara("ManyToon", "https://manytoon.com", "en")
+
+class ManyToonMe : Madara("ManyToon.me", "https://manytoon.me", "en")
+
+class BoysLove : Madara("BoysLove", "https://boyslove.me", "en")
 
 class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info", "en",
     dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)) {
