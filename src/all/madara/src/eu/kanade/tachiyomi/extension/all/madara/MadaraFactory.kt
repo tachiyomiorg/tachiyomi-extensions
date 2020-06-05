@@ -135,7 +135,8 @@ class MadaraFactory : SourceFactory {
         ManhwaTime(),
         MangaZen(),
         QueensManga(),
-        DropeScan()
+        DropeScan(),
+        TheTopComic()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -967,3 +968,5 @@ class DropeScan : Madara("Drope Scan", "https://dropescan.com", "pt-BR") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
+
+class TheTopComic : Madara("TheTopComic", "https://thetopcomic.com", "en")
