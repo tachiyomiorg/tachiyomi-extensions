@@ -3,7 +3,8 @@ data class GenresDto(
     val name: String
 )
 data class BranchesDto(
-    val id: Long
+    val id: Long,
+    val count_chapters: Int
 )
 data class ImgDto(
     val high: String,
@@ -75,4 +76,8 @@ data class PagesDto(
 )
 data class PageDto(
     val pages: List<PagesDto>
+)
+
+data class UserDto(
+    val access_token: String
 )

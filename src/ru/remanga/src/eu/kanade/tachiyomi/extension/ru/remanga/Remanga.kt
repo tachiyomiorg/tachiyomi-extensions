@@ -8,10 +8,18 @@ import MangaDetDto
 import PageDto
 import PageWrapperDto
 import SeriesWrapperDto
+import UserDto
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.EditTextPreference
+import android.support.v7.preference.PreferenceScreen
+import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -24,11 +32,18 @@ import java.util.Date
 import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import rx.Observable
-class Remanga : HttpSource() {
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+
+class Remanga : ConfigurableSource, HttpSource() {
     override val name = "Remanga"
 
     override val baseUrl = "https://remanga.org"
@@ -42,9 +57,40 @@ class Remanga : HttpSource() {
         add("Referer", baseUrl)
     }
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override val client: OkHttpClient =
+        network.client.newBuilder()
+            .authenticator { _, response ->
+                if (response.request().header("Authorization") != null) {
+                    null // Give up, we've already failed to authenticate.
+                } else {
+                    if (username.isEmpty() or password.isEmpty()) {
+                        return@authenticator null
+                    }
+                    val token = this.login(username, password)
+                    response.request().newBuilder()
+                        .addHeader("Authorization", "bearer $token")
+                        .build()
+                }
+            }
+            .build()
+
     private val count = 30
 
     private var branches = mutableMapOf<String, List<BranchesDto>>()
+
+    private fun login(username: String, password: String): String {
+        val jsonObject = JSONObject()
+        jsonObject.put("user", username)
+        jsonObject.put("password", password)
+        val body = RequestBody.create(MEDIA_TYPE, jsonObject.toString())
+        val response = client.newCall(POST("$baseUrl/api/users/login/", headers, body)).execute()
+        val user = gson.fromJson<SeriesWrapperDto<UserDto>>(response.body()?.charStream()!!)
+        return user.content.access_token
+    }
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/api/search/catalog/?ordering=rating&count=$count&page=$page", headers)
 
@@ -59,7 +105,7 @@ class Remanga : HttpSource() {
         val mangas = page.content.map {
             it.toSManga()
         }
-        return MangasPage(mangas, !page.last)
+        return MangasPage(mangas, page.props.page < page.props.total_pages)
     }
 
     private fun LibraryDto.toSManga(): SManga =
@@ -166,17 +212,24 @@ class Remanga : HttpSource() {
         return series.content.branches
     }
 
+    private fun selector(b: BranchesDto): Int = b.count_chapters
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         val branch = branches.getOrElse(manga.title) { mangaBranches(manga) }
-        return if (manga.status != SManga.LICENSED) {
-            // Use only first branch for all cases
-            client.newCall(chapterListRequest(branch[0].id))
-                .asObservableSuccess()
-                .map { response ->
-                    chapterListParse(response)
-                }
-        } else {
-            Observable.error(Exception("Licensed - No chapters to show"))
+        return when {
+            branch.isEmpty() -> {
+                return Observable.just(listOf())
+            }
+            manga.status == SManga.LICENSED -> {
+                Observable.error(Exception("Licensed - No chapters to show"))
+            }
+            else -> {
+                val branchId = branch.maxBy { selector(it) }!!.id
+                client.newCall(chapterListRequest(branchId))
+                    .asObservableSuccess()
+                    .map { response ->
+                        chapterListParse(response)
+                    }
+            }
         }
     }
 
@@ -213,6 +266,7 @@ class Remanga : HttpSource() {
             Page(it.page, "", it.link)
         }
     }
+
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
     private class CheckFilter(name: String, val id: String) : Filter.CheckBox(name)
 
@@ -234,11 +288,13 @@ class Remanga : HttpSource() {
     private class OrderBy : Filter.Sort("Сортировка",
         arrayOf("Новизне", "Последним обновлениям", "Популярности", "Лайкам", "Просмотрам", "Мне повезет"),
         Selection(2, false))
+
     private fun getAgeList() = listOf(
         CheckFilter("Для всех", "0"),
         CheckFilter("16+", "1"),
         CheckFilter("18+", "2")
     )
+
     private fun getTypeList() = listOf(
         SearchFilter("Манга", "0"),
         SearchFilter("Манхва", "1"),
@@ -255,6 +311,7 @@ class Remanga : HttpSource() {
         CheckFilter("Продолжается", "1"),
         CheckFilter("Заморожен", "2")
     )
+
     private fun getCategoryList() = listOf(
         SearchFilter("алхимия", "47"),
         SearchFilter("ангелы", "48"),
@@ -350,6 +407,7 @@ class Remanga : HttpSource() {
         SearchFilter("шантаж", "99"),
         SearchFilter("эльфы", "46")
     )
+
     private fun getGenreList() = listOf(
         SearchFilter("арт", "1"),
         SearchFilter("бдсм", "44"),
@@ -396,5 +454,70 @@ class Remanga : HttpSource() {
         SearchFilter("яой", "43")
     )
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+    }
+
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String): androidx.preference.EditTextPreference {
+        return androidx.preference.EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+    }
+
+    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
+        return EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+    }
+
+    private fun getPrefUsername(): String = preferences.getString(USERNAME_TITLE, USERNAME_DEFAULT)!!
+    private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
+
     private val gson by lazy { Gson() }
+    private val username by lazy { getPrefUsername() }
+    private val password by lazy { getPrefPassword() }
+
+    companion object {
+        private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private const val USERNAME_TITLE = "Username"
+        private const val USERNAME_DEFAULT = ""
+        private const val PASSWORD_TITLE = "Password"
+        private const val PASSWORD_DEFAULT = ""
+    }
 }
