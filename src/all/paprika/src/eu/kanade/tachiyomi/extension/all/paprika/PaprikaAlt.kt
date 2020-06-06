@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.paprika
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -15,11 +16,10 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-abstract class Paprika(
+abstract class PaprikaAlt(
     override val name: String,
     override val baseUrl: String,
     override val lang: String
@@ -32,18 +32,24 @@ abstract class Paprika(
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
+        Log.d("Paprika", "papular request: page=$page")
         return GET("$baseUrl/popular-manga?page=$page")
     }
 
-    override fun popularMangaSelector() = "div.media"
+    override fun popularMangaSelector() = "div.anipost"
 
     override fun popularMangaFromElement(element: Element): SManga {
+        Log.d("Paprika", "processing popular element")
         return SManga.create().apply {
-            element.select("a:has(h4)").let {
+
+            element.select("a:has(h2)").let {
                 setUrlWithoutDomain(it.attr("href"))
+                Log.d("Paprika", "manga url: $url")
                 title = it.text()
+                Log.d("Paprika", "manga title: $title")
             }
             thumbnail_url = element.select("img").attr("abs:src")
+            Log.d("Paprika", "manga thumb: $thumbnail_url")
         }
     }
 
@@ -65,9 +71,9 @@ abstract class Paprika(
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
-            GET("$baseUrl/search?q=$query&page=$page")
+            GET("$baseUrl/search?s=$query&post_type=manga&page=$page")
         } else {
-            val url = HttpUrl.parse("$baseUrl/mangas/")!!.newBuilder()
+            val url = HttpUrl.parse("$baseUrl/genres/")!!.newBuilder()
             filters.forEach { filter ->
                 when (filter) {
                     is GenreFilter -> url.addPathSegment(filter.toUriPart())
@@ -89,10 +95,10 @@ abstract class Paprika(
 
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
-            title = document.select("div.manga-detail h1").text()
-            thumbnail_url = document.select("div.manga-detail img").attr("abs:src")
-            document.select("div.media-body p").html().split("<br>").forEach {
-                with(Jsoup.parse(it).text()) {
+            title = document.select(".animeinfo .rm h1")[0].text()
+            thumbnail_url = document.select(".animeinfo .lm  img").attr("abs:src")
+            document.select(".listinfo li").forEach {
+                it.text().apply {
                     when {
                         this.startsWith("Author") -> author = this.substringAfter(":").trim()
                         this.startsWith("Artist") -> artist = this.substringAfter(":").trim()
@@ -101,7 +107,9 @@ abstract class Paprika(
                     }
                 }
             }
-            description = document.select("div.manga-content p").joinToString("\n") { it.text() }
+            description = document.select("#noidungm").joinToString("\n") { it.text() }
+
+            Log.d("Paprika", "mangaDetials")
         }
     }
 
@@ -114,29 +122,25 @@ abstract class Paprika(
 
     // Chapters
 
-    /**
-     * This theme has 3 chapter blocks: latest chapters with dates, all chapters without dates, and upcoming chapters
-     * Avoid parsing the upcoming chapters and filter out duplicate chapters
-     */
-
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val mangaTitle = document.select("div.manga-detail h1").text()
+        val mangaTitle = document.select(".animeinfo .rm h1")[0].text()
         return document.select(chapterListSelector()).map { chapterFromElement(it, mangaTitle) }.distinctBy { it.url }
     }
 
-    override fun chapterListSelector() = "div.total-chapter:has(h2) li"
+    override fun chapterListSelector() = ".animeinfo .rm .cl li"
 
     // never called
     override fun chapterFromElement(element: Element): SChapter { return SChapter.create() }
 
+    // changing the signature to pass the manga title in order to trim the title from chapter titles
     fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
         return SChapter.create().apply {
-            element.select("a").let {
+            element.select(".leftoff").let {
                 name = it.text().substringAfter(mangaTitle + " ")
-                setUrlWithoutDomain(it.attr("href"))
+                setUrlWithoutDomain(it.select("a").attr("href"))
             }
-            date_upload = element.select("div.small").firstOrNull()?.text().toDate()
+            date_upload = element.select(".rightoff").firstOrNull()?.text().toDate()
         }
     }
 
