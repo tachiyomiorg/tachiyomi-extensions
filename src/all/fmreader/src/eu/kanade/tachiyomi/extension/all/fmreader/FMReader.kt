@@ -195,7 +195,7 @@ abstract class FMReader(
             element.select(chapterUrlSelector).first().let {
                 setUrlWithoutDomain(it.attr("abs:href"))
                 name = it.text().substringAfter("$mangaTitle ")
-                Log.d("FMReader", "chapter name: $name")
+                //Log.d("FMReader", "chapter name: $name")
             }
             date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }
