@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.fmreader
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -101,7 +102,8 @@ abstract class FMReader(
         val mangas = document.select(popularMangaSelector()).map { popularMangaFromElement(it) }
 
         // check if there's a next page
-        val hasNextPage = (document.select(popularMangaNextPageSelector())?.first()?.text() ?: "").let {
+        val hasNextPage = (document.select(popularMangaNextPageSelector())?.first()?.text()
+            ?: "").let {
             if (it.contains(Regex("""\w*\s\d*\s\w*\s\d*"""))) {
                 it.split(" ").let { pageOf -> pageOf[1] != pageOf[3] } // current page not last page
             } else {
@@ -171,17 +173,29 @@ abstract class FMReader(
         }
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val mangaTitle = document.select(".manga-info h1").text()
+        return document.select(chapterListSelector()).map { chapterFromElement(it, mangaTitle) }.distinctBy { it.url }
+    }
+
+    // never called
+    override fun chapterFromElement(element: Element): SChapter {
+        return SChapter.create()
+    }
+
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
 
     open val chapterUrlSelector = "a"
 
     open val chapterTimeSelector = "time"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    open fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
         return SChapter.create().apply {
             element.select(chapterUrlSelector).first().let {
                 setUrlWithoutDomain(it.attr("abs:href"))
-                name = it.text()
+                name = it.text().substringAfter("$mangaTitle ")
+                Log.d("FMReader", "chapter name: $name")
             }
             date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }
