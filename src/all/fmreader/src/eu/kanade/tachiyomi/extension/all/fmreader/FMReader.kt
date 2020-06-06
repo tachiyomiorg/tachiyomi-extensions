@@ -181,7 +181,7 @@ abstract class FMReader(
 
     // never called
     override fun chapterFromElement(element: Element): SChapter {
-        return SChapter.create()
+        throw Exception("unreachable code was reached, you get a 1-UP!")
     }
 
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
