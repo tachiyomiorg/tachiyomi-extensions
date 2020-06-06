@@ -105,7 +105,7 @@ abstract class Paprika(
         }
     }
 
-    private fun String?.toStatus() = when {
+    fun String?.toStatus() = when {
         this == null -> SManga.UNKNOWN
         this.contains("Ongoing", ignoreCase = true) -> SManga.ONGOING
         this.contains("Completed", ignoreCase = true) -> SManga.COMPLETED
@@ -128,12 +128,14 @@ abstract class Paprika(
     override fun chapterListSelector() = "div.total-chapter:has(h2) li"
 
     // never called
-    override fun chapterFromElement(element: Element): SChapter { return SChapter.create() }
+    override fun chapterFromElement(element: Element): SChapter {
+        return SChapter.create()
+    }
 
-    fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
+    open fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
         return SChapter.create().apply {
             element.select("a").let {
-                name = it.text().substringAfter(mangaTitle + " ")
+                name = it.text().substringAfter("$mangaTitle ")
                 setUrlWithoutDomain(it.attr("href"))
             }
             date_upload = element.select("div.small").firstOrNull()?.text().toDate()
@@ -142,7 +144,7 @@ abstract class Paprika(
 
     private val currentYear by lazy { Calendar.getInstance(Locale.US)[1].toString().takeLast(2) }
 
-    private fun String?.toDate(): Long {
+    fun String?.toDate(): Long {
         this ?: return 0L
         return try {
             when {
@@ -187,7 +189,7 @@ abstract class Paprika(
         GenreFilter(getGenreList())
     )
 
-    private class OrderFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
+    class OrderFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
 
     private fun getOrderList() = arrayOf(
         Pair("Views", "2"),
@@ -195,7 +197,7 @@ abstract class Paprika(
         Pair("A-Z", "1")
     )
 
-    private class GenreFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
+    class GenreFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
 
     private fun getGenreList() = arrayOf(
         Pair("4 koma", "4-koma"),
