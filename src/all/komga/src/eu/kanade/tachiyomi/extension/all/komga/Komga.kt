@@ -35,7 +35,8 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
