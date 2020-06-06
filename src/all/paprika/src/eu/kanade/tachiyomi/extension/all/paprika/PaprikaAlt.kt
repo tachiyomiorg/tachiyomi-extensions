@@ -20,17 +20,16 @@ abstract class PaprikaAlt(
     override fun popularMangaSelector() = "div.anipost"
 
     override fun popularMangaFromElement(element: Element): SManga {
-        Log.d("Paprika", "processing popular element")
+        //Log.d("Paprika", "processing popular element")
         return SManga.create().apply {
-
             element.select("a:has(h2)").let {
                 setUrlWithoutDomain(it.attr("href"))
-                Log.d("Paprika", "manga url: $url")
                 title = it.text()
-                Log.d("Paprika", "manga title: $title")
+                //Log.d("Paprika", "manga url: $url")
+                //Log.d("Paprika", "manga title: $title")
             }
             thumbnail_url = element.select("img").attr("abs:src")
-            Log.d("Paprika", "manga thumb: $thumbnail_url")
+            //Log.d("Paprika", "manga thumb: $thumbnail_url")
         }
     }
 
@@ -66,7 +65,7 @@ abstract class PaprikaAlt(
             }
             description = document.select("#noidungm").joinToString("\n") { it.text() }
 
-            Log.d("Paprika", "mangaDetials")
+            //Log.d("Paprika", "mangaDetials")
         }
     }
 
@@ -77,11 +76,6 @@ abstract class PaprikaAlt(
     }
 
     override fun chapterListSelector() = ".animeinfo .rm .cl li"
-
-    // never called
-    override fun chapterFromElement(element: Element): SChapter {
-        return SChapter.create()
-    }
 
     // changing the signature to pass the manga title in order to trim the title from chapter titles
     override fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
