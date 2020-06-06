@@ -129,7 +129,7 @@ abstract class Paprika(
 
     // never called
     override fun chapterFromElement(element: Element): SChapter {
-        return SChapter.create()
+        throw Exception("unreachable code was reached!")
     }
 
     open fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
