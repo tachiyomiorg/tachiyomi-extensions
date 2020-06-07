@@ -163,6 +163,7 @@ class KillSixBillionDemons : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> = throw Exception("Not used")
 
+    //    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = throw Exception("Search functionality is not available.")
 
     override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not used")
