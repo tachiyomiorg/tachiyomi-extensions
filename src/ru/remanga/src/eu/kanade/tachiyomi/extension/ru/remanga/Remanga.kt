@@ -55,6 +55,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     override val supportsLatest = true
 
     var token: String = ""
+
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi")
         add("Referer", baseUrl)
@@ -263,7 +264,9 @@ class Remanga : ConfigurableSource, HttpSource() {
                 name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
-                scanlator = if (chapter.publishers.isNotEmpty()) { chapter.publishers.joinToString { it.name } } else null
+                scanlator = if (chapter.publishers.isNotEmpty()) {
+                    chapter.publishers.joinToString { it.name }
+                } else null
             }
         }
     }
@@ -275,6 +278,14 @@ class Remanga : ConfigurableSource, HttpSource() {
         return page.content.pages.map {
             Page(it.page, "", it.link)
         }
+    }
+
+    override fun imageRequest(page: Page): Request {
+        val refererHeaders = Headers.Builder().apply {
+            add("User-Agent", "Tachiyomi")
+            add("Referer", "https://img.remanga.org")
+        }.build()
+        return GET(page.imageUrl!!, refererHeaders)
     }
 
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
