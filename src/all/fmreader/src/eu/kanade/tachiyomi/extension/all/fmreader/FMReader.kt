@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.fmreader
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -179,9 +178,8 @@ abstract class FMReader(
         return document.select(chapterListSelector()).map { chapterFromElement(it, mangaTitle) }.distinctBy { it.url }
     }
 
-    // never called
     override fun chapterFromElement(element: Element): SChapter {
-        throw Exception("unreachable code was reached, you get a 1-UP!")
+        return chapterFromElement(element, "")
     }
 
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
@@ -190,12 +188,12 @@ abstract class FMReader(
 
     open val chapterTimeSelector = "time"
 
-    open fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
+    open fun chapterFromElement(element: Element, mangaTitle: String = ""): SChapter {
         return SChapter.create().apply {
             element.select(chapterUrlSelector).first().let {
                 setUrlWithoutDomain(it.attr("abs:href"))
                 name = it.text().substringAfter("$mangaTitle ")
-                //Log.d("FMReader", "chapter name: $name")
+                // Log.d("FMReader", "chapter name: $name")
             }
             date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }
