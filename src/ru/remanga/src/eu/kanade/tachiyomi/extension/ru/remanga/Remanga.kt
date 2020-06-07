@@ -263,7 +263,7 @@ class Remanga : ConfigurableSource, HttpSource() {
                 name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
-                scanlator = chapter.publishers.joinToString { it.name }
+                scanlator = if (chapter.publishers.isNotEmpty()) { chapter.publishers.joinToString { it.name } } else null
             }
         }
     }
