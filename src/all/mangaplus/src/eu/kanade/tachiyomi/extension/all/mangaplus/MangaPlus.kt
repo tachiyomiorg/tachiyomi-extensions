@@ -193,12 +193,13 @@ abstract class MangaPlus(
 
         val details = result.success.titleDetailView!!
         val title = details.title
+        val isCompleted = details.nonAppearanceInfo.contains(COMPLETE_REGEX)
 
         return SManga.create().apply {
             author = title.author
             artist = title.author
             description = details.overview + "\n\n" + details.viewingPeriodDescription
-            status = SManga.ONGOING
+            status = if (isCompleted) SManga.COMPLETED else SManga.ONGOING
             thumbnail_url = title.portraitImageUrl.toWeservUrl()
         }
     }
@@ -445,5 +446,7 @@ abstract class MangaPlus(
         private const val SPLIT_PREF_TITLE = "Split double pages"
         private const val SPLIT_PREF_SUMMARY = "Not all titles support disabling this."
         private const val SPLIT_PREF_DEFAULT_VALUE = true
+
+        private val COMPLETE_REGEX = "completado|complete".toRegex()
     }
 }

@@ -57,6 +57,7 @@ data class TitleDetailView(
     @ProtoId(5) val nextTimeStamp: Int = 0,
     @ProtoId(6) val updateTiming: UpdateTiming? = UpdateTiming.DAY,
     @ProtoId(7) val viewingPeriodDescription: String = "",
+    @ProtoId(8) val nonAppearanceInfo: String = "",
     @ProtoId(9) val firstChapterList: List<Chapter> = emptyList(),
     @ProtoId(10) val lastChapterList: List<Chapter> = emptyList(),
     @ProtoId(14) val isSimulReleased: Boolean = true,
@@ -129,37 +130,37 @@ const val DECODE_SCRIPT: String = """
             return helper.getProtobuf();
         throw new Error("Cannot find module: " + id);
     }
-    
+
     var protobuf = require("protobufjs");
-    
+
     var Root = protobuf.Root;
     var Type = protobuf.Type;
     var Field = protobuf.Field;
     var Enum = protobuf.Enum;
     var OneOf = protobuf.OneOf;
-    
+
     var Response = new Type("Response")
         .add(
             new OneOf("data")
                 .add(new Field("success", 1, "SuccessResult"))
                 .add(new Field("error", 2, "ErrorResult"))
         );
-        
+
     var ErrorResult = new Type("ErrorResult")
         .add(new Field("action", 1, "Action"))
         .add(new Field("englishPopup", 2, "Popup"))
         .add(new Field("spanishPopup", 3, "Popup"));
-        
+
     var Action = new Enum("Action")
         .add("DEFAULT", 0)
         .add("UNAUTHORIZED", 1)
         .add("MAINTAINENCE", 2)
         .add("GEOIP_BLOCKING", 3);
-        
+
     var Popup = new Type("Popup")
         .add(new Field("subject", 1, "string"))
         .add(new Field("body", 2, "string"));
-        
+
     var SuccessResult = new Type("SuccessResult")
         .add(new Field("isFeaturedUpdated", 1, "bool"))
         .add(
@@ -170,16 +171,16 @@ const val DECODE_SCRIPT: String = """
                   .add(new Field("mangaViewer", 10, "MangaViewer"))
                   .add(new Field("webHomeView", 11, "WebHomeView"))
           );
-          
+
     var TitleRankingView = new Type("TitleRankingView")
         .add(new Field("titles", 1, "Title", "repeated"));
-        
+
     var AllTitlesView = new Type("AllTitlesView")
         .add(new Field("titles", 1, "Title", "repeated"));
-        
+
     var WebHomeView = new Type("WebHomeView")
         .add(new Field("groups", 2, "UpdatedTitleGroup", "repeated"));
-        
+
     var TitleDetailView = new Type("TitleDetailView")
         .add(new Field("title", 1, "Title"))
         .add(new Field("titleImageUrl", 2, "string"))
@@ -192,7 +193,7 @@ const val DECODE_SCRIPT: String = """
         .add(new Field("lastChapterList", 10, "Chapter", "repeated"))
         .add(new Field("isSimulReleased", 14, "bool"))
         .add(new Field("chaptersDescending", 17, "bool"));
-        
+
     var UpdateTiming = new Enum("UpdateTiming")
         .add("NOT_REGULARLY", 0)
         .add("MONDAY", 1)
@@ -203,10 +204,10 @@ const val DECODE_SCRIPT: String = """
         .add("SATURDAY", 6)
         .add("SUNDAY", 7)
         .add("DAY", 8);
-        
+
     var MangaViewer = new Type("MangaViewer")
         .add(new Field("pages", 1, "Page", "repeated"));
-        
+
     var Title = new Type("Title")
         .add(new Field("titleId", 1, "uint32"))
         .add(new Field("name", 2, "string"))
@@ -215,21 +216,21 @@ const val DECODE_SCRIPT: String = """
         .add(new Field("landscapeImageUrl", 5, "string"))
         .add(new Field("viewCount", 6, "uint32"))
         .add(new Field("language", 7, "Language", {"default": 0}));
-        
+
     var Language = new Enum("Language")
         .add("ENGLISH", 0)
         .add("SPANISH", 1);
-        
+
     var UpdatedTitleGroup = new Type("UpdatedTitleGroup")
         .add(new Field("groupName", 1, "string"))
         .add(new Field("titles", 2, "UpdatedTitle", "repeated"));
-        
+
     var UpdatedTitle = new Type("UpdatedTitle")
         .add(new Field("title", 1, "Title"))
         .add(new Field("chapterId", 2, "uint32"))
         .add(new Field("chapterName", 3, "string"))
         .add(new Field("chapterSubtitle", 4, "string"));
-        
+
     var Chapter = new Type("Chapter")
         .add(new Field("titleId", 1, "uint32"))
         .add(new Field("chapterId", 2, "uint32"))
@@ -237,16 +238,16 @@ const val DECODE_SCRIPT: String = """
         .add(new Field("subTitle", 4, "string", "optional"))
         .add(new Field("startTimeStamp", 6, "uint32"))
         .add(new Field("endTimeStamp", 7, "uint32"));
-        
+
     var Page = new Type("Page")
         .add(new Field("page", 1, "MangaPage"));
-        
+
     var MangaPage = new Type("MangaPage")
         .add(new Field("imageUrl", 1, "string"))
         .add(new Field("width", 2, "uint32"))
         .add(new Field("height", 3, "uint32"))
         .add(new Field("encryptionKey", 5, "string", "optional"));
-        
+
     var root = new Root()
         .define("mangaplus")
         .add(Response)
@@ -267,13 +268,13 @@ const val DECODE_SCRIPT: String = """
         .add(Chapter)
         .add(Page)
         .add(MangaPage);
-        
+
     function decode(arr) {
         var Response = root.lookupType("Response");
         var message = Response.decode(arr);
         return Response.toObject(message, {defaults: true});
     }
-    
+
     (function () {
         return JSON.stringify(decode(BYTE_ARR)).replace(/\,\{\}/g, "");
     })();
