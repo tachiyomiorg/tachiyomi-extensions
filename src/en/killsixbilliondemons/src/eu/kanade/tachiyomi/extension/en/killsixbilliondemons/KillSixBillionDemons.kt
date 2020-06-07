@@ -124,7 +124,7 @@ class KillSixBillionDemons : HttpSource() {
             }
         }
 
-        return chapters
+        return chapters.reversed()
     }
 
     fun chapterListSelector(): String {
