@@ -248,9 +248,9 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun chapterName(book: BookDto): String {
         val chapterId = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
-        var chapterName = "${book.tome}-$chapterId"
+        var chapterName = "${book.tome}. Глава $chapterId"
         if (book.name.isNotBlank()) {
-            chapterName += " ${book.name}"
+            chapterName += " ${book.name.capitalize()}"
         }
         return chapterName
     }
