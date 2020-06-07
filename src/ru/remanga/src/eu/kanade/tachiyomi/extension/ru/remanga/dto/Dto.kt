@@ -2,10 +2,12 @@ data class GenresDto(
     val id: Int,
     val name: String
 )
+
 data class BranchesDto(
     val id: Long,
     val count_chapters: Int
 )
+
 data class ImgDto(
     val high: String,
     val mid: String,
@@ -40,6 +42,7 @@ data class MangaDetDto(
     val branches: List<BranchesDto>,
     val status: StatusDto
 )
+
 data class PropsDto(
     val total_items: Int,
     val total_pages: Int,
@@ -59,13 +62,20 @@ data class SeriesWrapperDto<T>(
     val props: PropsDto
 )
 
+data class PublisherDto(
+    val name: String,
+    val dir: String
+)
+
 data class BookDto(
     val id: Long,
     val tome: Int,
     val chapter: Float,
     val name: String,
     val upload_date: String,
-    val is_paid: Boolean
+    val is_paid: Boolean,
+    val is_bought: Boolean,
+    val publishers: List<PublisherDto>
 )
 
 data class PagesDto(
@@ -74,6 +84,7 @@ data class PagesDto(
     val page: Int,
     val count_comments: Int
 )
+
 data class PageDto(
     val pages: List<PagesDto>
 )

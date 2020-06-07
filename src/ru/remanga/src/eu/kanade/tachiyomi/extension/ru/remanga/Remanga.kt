@@ -13,6 +13,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -32,6 +33,7 @@ import java.util.Date
 import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -46,12 +48,13 @@ import uy.kohesive.injekt.api.get
 class Remanga : ConfigurableSource, HttpSource() {
     override val name = "Remanga"
 
-    override val baseUrl = "https://remanga.org"
+    override val baseUrl = "https://api.remanga.org"
 
     override val lang = "ru"
 
     override val supportsLatest = true
 
+    var token: String = ""
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi")
         add("Referer", baseUrl)
@@ -61,33 +64,39 @@ class Remanga : ConfigurableSource, HttpSource() {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
+    private fun authIntercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        if (username.isEmpty() or password.isEmpty()) {
+            return chain.proceed(request)
+        }
+
+        if (token.isEmpty()) {
+            token = this.login(chain, username, password)
+        }
+        val authRequest = request.newBuilder()
+            .addHeader("Authorization", "bearer $token")
+            .build()
+        return chain.proceed(authRequest)
+    }
+
     override val client: OkHttpClient =
         network.client.newBuilder()
-            .authenticator { _, response ->
-                if (response.request().header("Authorization") != null) {
-                    null // Give up, we've already failed to authenticate.
-                } else {
-                    if (username.isEmpty() or password.isEmpty()) {
-                        return@authenticator null
-                    }
-                    val token = this.login(username, password)
-                    response.request().newBuilder()
-                        .addHeader("Authorization", "bearer $token")
-                        .build()
-                }
-            }
+            .addInterceptor { authIntercept(it) }
             .build()
 
     private val count = 30
 
     private var branches = mutableMapOf<String, List<BranchesDto>>()
 
-    private fun login(username: String, password: String): String {
+    private fun login(chain: Interceptor.Chain, username: String, password: String): String {
         val jsonObject = JSONObject()
         jsonObject.put("user", username)
         jsonObject.put("password", password)
         val body = RequestBody.create(MEDIA_TYPE, jsonObject.toString())
-        val response = client.newCall(POST("$baseUrl/api/users/login/", headers, body)).execute()
+        val response = chain.proceed(POST("$baseUrl/api/users/login/", headers, body))
+        if (response.code() == 400) {
+            throw Exception("Failed to login")
+        }
         val user = gson.fromJson<SeriesWrapperDto<UserDto>>(response.body()?.charStream()!!)
         return user.content.access_token
     }
@@ -239,23 +248,24 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun chapterName(book: BookDto): String {
         val chapterId = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
-        var chapterName = "${book.tome} - $chapterId"
-        if (book.name.isNotBlank() && chapterName != chapterName) {
-            chapterName += "- $chapterName"
+        var chapterName = "${book.tome}-$chapterId"
+        if (book.name.isNotBlank()) {
+            chapterName += " ${book.name}"
         }
         return chapterName
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
-        return chapters.content.filter { !it.is_paid }.map { chapter ->
+        return chapters.content.filter { !it.is_paid or it.is_bought }.map { chapter ->
             SChapter.create().apply {
                 chapter_number = chapter.chapter
                 name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
+                scanlator = chapter.publishers.joinToString { it.name }
             }
-        }.sortedByDescending { it.chapter_number }
+        }
     }
 
     override fun imageUrlParse(response: Response): String = ""
@@ -456,10 +466,10 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
-        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password, true))
     }
 
-    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String): androidx.preference.EditTextPreference {
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String, isPassword: Boolean = false): androidx.preference.EditTextPreference {
         return androidx.preference.EditTextPreference(context).apply {
             key = title
             this.title = title
@@ -467,6 +477,11 @@ class Remanga : ConfigurableSource, HttpSource() {
             this.setDefaultValue(default)
             dialogTitle = title
 
+            if (isPassword) {
+                setOnBindEditTextListener {
+                    it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+            }
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
