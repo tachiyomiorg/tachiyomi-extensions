@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.text.InputType
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -19,7 +20,6 @@ import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.collections.ArrayList
 import okhttp3.Credentials
 import okhttp3.HttpUrl
 import okhttp3.Request
@@ -186,6 +186,10 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         val password = androidx.preference.EditTextPreference(screen.context).apply {
             key = "password"
             title = "Password"
+
+            setOnBindEditTextListener {
+                it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
 
             setOnPreferenceChangeListener { _, newValue ->
                 preferences.edit().putString(key, newValue as String).commit()

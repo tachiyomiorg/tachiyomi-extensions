@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -22,6 +23,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,6 +57,11 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
+                is UnreadOnly -> {
+                    if (filter.state) {
+                        url.addQueryParameter("read_status", "UNREAD")
+                    }
+                }
                 is LibraryGroup -> {
                     val libraryToInclude = mutableListOf<Long>()
                     filter.state.forEach { content ->
@@ -115,7 +122,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         return page.content.map { book ->
             SChapter.create().apply {
                 chapter_number = book.metadata.numberSort
-                name = "${book.metadata.title} (${book.size})"
+                name = "${decimalFormat.format(book.metadata.numberSort)} - ${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
@@ -183,9 +190,11 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Selection(0, true))
     private class StatusFilter(name: String) : Filter.CheckBox(name, false)
     private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
+    private class UnreadOnly : Filter.CheckBox("Unread only", false)
 
     override fun getFilterList(): FilterList =
         FilterList(
+            UnreadOnly(),
             LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name }),
             StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
             SeriesSort()
@@ -196,6 +205,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
     override val supportsLatest = true
+
+    private val decimalFormat: DecimalFormat by lazy { DecimalFormat("0.#") }
 
     override val baseUrl by lazy { getPrefBaseUrl() }
     private val username by lazy { getPrefUsername() }
@@ -226,16 +237,22 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
         screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
-        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password, true))
     }
 
-    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String): androidx.preference.EditTextPreference {
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String, isPassword: Boolean = false): androidx.preference.EditTextPreference {
         return androidx.preference.EditTextPreference(context).apply {
             key = title
             this.title = title
             summary = value
             this.setDefaultValue(default)
             dialogTitle = title
+
+            if (isPassword) {
+                setOnBindEditTextListener {
+                    it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+            }
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {

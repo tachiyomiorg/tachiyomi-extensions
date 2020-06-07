@@ -63,7 +63,7 @@ repositories {
 
 dependencies {
     // Lib 1.2, but using specific commit so we don't need to bump up the version
-    compileOnly "com.github.tachiyomiorg:extensions-lib:84bfb8d"
+    compileOnly "com.github.tachiyomiorg:extensions-lib:a596412"
 
     // These are provided by the app itself
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
