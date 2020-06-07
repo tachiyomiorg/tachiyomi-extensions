@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.killsixbilliondemons
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -53,7 +52,6 @@ class KillSixBillionDemons : HttpSource() {
     }
 
     fun popularMangaFromElement(element: Element): SManga {
-        Log.d("KSBD", "${element.text()}")
         return SManga.create().apply {
             title = element.text()
             thumbnail_url = "https://dummyimage.com/768x994/000/ffffff.jpg&text=$title"
@@ -61,7 +59,6 @@ class KillSixBillionDemons : HttpSource() {
             author = "Abbadon"
             status = SManga.UNKNOWN
             url = title // this url is not useful at all but must set to something unique or the app breaks!
-            Log.d("KSBD", "$url")
         }
     }
 
@@ -120,7 +117,6 @@ class KillSixBillionDemons : HttpSource() {
                         url = element.attr("value")
 
                         val textSplit = text.split(" ")
-                        Log.d("KSBD", "$textSplit")
 
                         name = "Chpater ${textSplit[0]}"
                     }
@@ -159,28 +155,14 @@ class KillSixBillionDemons : HttpSource() {
                 pageNum++
             }
         }
-        chapterPages.forEach { p -> Log.d("KSBD", "${p.imageUrl}") }
 
         return Observable.just(chapterPages)
     }
 
+    override fun imageUrlParse(response: Response): String  = throw Exception("Not used")
+
     override fun pageListParse(response: Response): List<Page> = throw Exception("Not used")
 
-    override fun imageUrlParse(response: Response): String {
-        TODO("Not yet implemented")
-    }
-
-    fun imageUrlParse(document: Document): String {
-        TODO("Not yet implemented")
-    }
-
-    fun searchMangaFromElement(element: Element): SManga {
-        TODO("Not yet implemented")
-    }
-
-    fun searchMangaNextPageSelector(): String? {
-        TODO("Not yet implemented")
-    }
 
     override fun searchMangaParse(response: Response): MangasPage {
         TODO("Not yet implemented")
@@ -190,7 +172,4 @@ class KillSixBillionDemons : HttpSource() {
         TODO("Not yet implemented")
     }
 
-    fun searchMangaSelector(): String {
-        TODO("Not yet implemented")
-    }
 }
