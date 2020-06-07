@@ -53,7 +53,7 @@ class KillSixBillionDemons : HttpSource() {
 
     fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            title = element.text()
+            title = element.text().substringBefore(" (")
             thumbnail_url = "https://dummyimage.com/768x994/000/ffffff.jpg&text=$title"
             artist = "Abbadon"
             author = "Abbadon"
@@ -159,10 +159,9 @@ class KillSixBillionDemons : HttpSource() {
         return Observable.just(chapterPages)
     }
 
-    override fun imageUrlParse(response: Response): String  = throw Exception("Not used")
+    override fun imageUrlParse(response: Response): String = throw Exception("Not used")
 
     override fun pageListParse(response: Response): List<Page> = throw Exception("Not used")
-
 
     override fun searchMangaParse(response: Response): MangasPage {
         TODO("Not yet implemented")
@@ -171,5 +170,4 @@ class KillSixBillionDemons : HttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         TODO("Not yet implemented")
     }
-
 }
