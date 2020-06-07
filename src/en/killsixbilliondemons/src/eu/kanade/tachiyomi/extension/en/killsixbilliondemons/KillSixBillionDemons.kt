@@ -163,11 +163,9 @@ class KillSixBillionDemons : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> = throw Exception("Not used")
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        TODO("Not yet implemented")
-    }
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = throw Exception("Search functionality is not available.")
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        TODO("Not yet implemented")
-    }
+    override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not used")
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
 }
