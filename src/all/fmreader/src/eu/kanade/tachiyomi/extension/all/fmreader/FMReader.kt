@@ -101,8 +101,7 @@ abstract class FMReader(
         val mangas = document.select(popularMangaSelector()).map { popularMangaFromElement(it) }
 
         // check if there's a next page
-        val hasNextPage = (document.select(popularMangaNextPageSelector())?.first()?.text()
-            ?: "").let {
+        val hasNextPage = (document.select(popularMangaNextPageSelector())?.first()?.text() ?: "").let {
             if (it.contains(Regex("""\w*\s\d*\s\w*\s\d*"""))) {
                 it.split(" ").let { pageOf -> pageOf[1] != pageOf[3] } // current page not last page
             } else {
@@ -193,7 +192,6 @@ abstract class FMReader(
             element.select(chapterUrlSelector).first().let {
                 setUrlWithoutDomain(it.attr("abs:href"))
                 name = it.text().substringAfter("$mangaTitle ")
-                // Log.d("FMReader", "chapter name: $name")
             }
             date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }
