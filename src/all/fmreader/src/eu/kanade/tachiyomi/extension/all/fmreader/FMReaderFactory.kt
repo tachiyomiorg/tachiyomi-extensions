@@ -24,11 +24,8 @@ import rx.Observable
 class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LHTranslation(),
-        MangaHato(),
-        ManhwaScan(),
-        MangaTiki(),
+        KissLove(),
         MangaBone(),
-        YoloManga(),
         ReadComicOnlineOrg(),
         HanaScan(),
         RawLH(),
@@ -38,9 +35,10 @@ class FMReaderFactory : SourceFactory {
         Comicastle(),
         Manhwa18Net(),
         Manhwa18NetRaw(),
-        MangaBorn(),
         SayTruyen(),
-        EpikManga()
+        EpikManga(),
+        ManhuaScan(),
+        ManhwaSmut()
     )
 }
 
@@ -49,15 +47,8 @@ class FMReaderFactory : SourceFactory {
 
 class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en")
 
-class MangaHato : FMReader("MangaHato", "https://mangahato.com", "ja")
-class ManhwaScan : FMReader("ManhwaScan", "https://manhwascan.com", "en") {
-    override fun getImgAttr(element: Element?): String? = element?.attr("abs:src")
-}
-class MangaTiki : FMReader("MangaTiki", "https://mangatiki.com", "ja")
+class KissLove : FMReader("KissLove", "https://kisslove.net", "ja")
 class MangaBone : FMReader("MangaBone", "https://mangabone.com", "en")
-class YoloManga : FMReader("Yolo Manga", "https://yolomanga.ca", "es") {
-    override fun chapterListSelector() = "div#tab-chapper ~ div#tab-chapper table tr"
-}
 
 class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconline.org", "en") {
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -262,45 +253,6 @@ class Manhwa18NetRaw : FMReader("Manhwa18.net Raw", "https://manhwa18.net", "ko"
     override fun getFilterList() = FilterList(super.getFilterList().filterNot { it == GenreList(getGenreList()) })
 }
 
-class MangaBorn : FMReader("MangaBorn", "https://hellxlight.com", "en") {
-    override val requestPath = "manga_list"
-    override val popularSort = "type=topview"
-    override fun popularMangaNextPageSelector() = "div.page-number a.select + a:not(.go-p-end)"
-    override fun popularMangaSelector() = "div.story-item"
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/${query.replace(" ", "_")}?page=$page", headers)
-    }
-    override fun searchMangaParse(response: Response): MangasPage {
-        return response.asJsoup().let { document ->
-            val mangas = document.select(searchMangaSelector()).map { searchMangaFromElement(it) }
-            MangasPage(mangas, document.select(searchMangaNextPageSelector()).isNotEmpty())
-        }
-    }
-    override fun searchMangaFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            element.select("h2 a").let {
-                setUrlWithoutDomain(it.attr("href"))
-                title = it.text()
-            }
-            thumbnail_url = element.select("img").attr("abs:src")
-        }
-    }
-    override fun mangaDetailsParse(document: Document): SManga {
-        return SManga.create().apply {
-            document.select("div.story_content").let { info ->
-                author = info.select("span:contains(Author) + a").text()
-                genre = info.select("span:contains(Genres) + a").joinToString { it.text() }
-                status = parseStatus(info.select("span:contains(Status) + a").text())
-                thumbnail_url = info.select("img.avatar").attr("abs:src")
-                description = info.select("div#story_discription > p").text()
-            }
-        }
-    }
-    override fun chapterListSelector() = "div.chapter_list li"
-    override val pageListImageSelector = "div.panel-read-story img"
-    override fun getFilterList() = FilterList()
-}
-
 class SayTruyen : FMReader("Say Truyen", "https://saytruyen.com", "vi") {
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.row").first()
@@ -361,3 +313,7 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
     override fun chapterListSelector() = "table.table tbody tr"
     override fun getFilterList(): FilterList = FilterList()
 }
+
+class ManhuaScan : FMReader("ManhuaScan", "https://manhuascan.com", "en")
+
+class ManhwaSmut : FMReader("ManhwaSmut", "https://manhwasmut.com", "en")

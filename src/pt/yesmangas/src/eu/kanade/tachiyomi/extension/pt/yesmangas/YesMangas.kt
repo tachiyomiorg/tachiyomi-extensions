@@ -76,12 +76,12 @@ class YesMangas : ParsedHttpSource() {
     override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        var container = document.select("div#descricao")
-        var statusEl = container.select("ul li:contains(Status)")
-        var authorEl = container.select("ul li:contains(Autor)")
-        var artistEl = container.select("ul li:contains(Desenho)")
-        var genresEl = container.select("ul li:contains(Categorias)")
-        var synopsis = container.select("article")
+        val container = document.select("div#descricao")
+        val statusEl = container.select("ul li:contains(Status)")
+        val authorEl = container.select("ul li:contains(Autor)")
+        val artistEl = container.select("ul li:contains(Desenho)")
+        val genresEl = container.select("ul li:contains(Categorias)")
+        val synopsis = container.select("article")
 
         return SManga.create().apply {
             status = parseStatus(removeLabel(statusEl.text()))
@@ -108,11 +108,11 @@ class YesMangas : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        var script = document.select("script").last().data()
-        var images = script.substringAfter(SCRIPT_BEGIN).substringBefore(SCRIPT_END)
+        val script = document.select("script").last().data()
+        val images = script.substringAfter(SCRIPT_BEGIN).substringBefore(SCRIPT_END)
                 .replace(SCRIPT_REGEX.toRegex(), "")
 
-        var newDocument = Jsoup.parse(images)
+        val newDocument = Jsoup.parse(images)
 
         return newDocument.select("a img")
                 .mapIndexed { i, el -> Page(i, "", el.attr("src")) }
@@ -128,6 +128,6 @@ class YesMangas : ParsedHttpSource() {
 
         private const val SCRIPT_BEGIN = "var images = ["
         private const val SCRIPT_END = "];"
-        private const val SCRIPT_REGEX = "\"|,"
+        private const val SCRIPT_REGEX = "[\",]"
     }
 }

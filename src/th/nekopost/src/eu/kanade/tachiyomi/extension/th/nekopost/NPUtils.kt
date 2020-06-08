@@ -75,5 +75,5 @@ object NPUtils {
 
     fun <T, F, S> getValueOf(array: Array<T>, name: F): S? where T : Pair<F, S> = array.find { genre -> genre.first == name }?.second
 
-    val monthList: Array<String> = arrayOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+    val monthList: List<String> = listOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 }

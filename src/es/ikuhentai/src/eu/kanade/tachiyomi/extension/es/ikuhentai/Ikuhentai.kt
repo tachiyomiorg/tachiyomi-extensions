@@ -56,7 +56,7 @@ class Ikuhentai : ParsedHttpSource() {
         url.addQueryParameter("post_type", "wp-manga")
         val pattern = "\\s+".toRegex()
         val q = query.replace(pattern, "+")
-        if (query.length > 0) {
+        if (query.isNotEmpty()) {
             url.addQueryParameter("s", q)
         } else {
             url.addQueryParameter("s", "")
@@ -166,7 +166,7 @@ class Ikuhentai : ParsedHttpSource() {
         document.select("div.reading-content * img").forEach { element ->
             val url = element.attr("data-src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }

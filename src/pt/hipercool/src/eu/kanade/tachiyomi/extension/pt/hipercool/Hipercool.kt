@@ -22,7 +22,9 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.MediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -41,54 +43,59 @@ class Hipercool : HttpSource() {
 
     override val supportsLatest = true
 
+    override val client: OkHttpClient = network.cloudflareClient
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
         .add("X-Requested-With", "XMLHttpRequest")
 
-    private fun generalListMangaParse(obj: JsonObject): SManga {
+    private fun genericMangaListParse(response: Response): MangasPage {
+        val result = response.asJsonArray()
+
+        if (result.size() == 0)
+            return MangasPage(emptyList(), false)
+
+        val mangaList = result
+            .map { genericMangaFromObject(it.obj) }
+            .distinctBy { it.title }
+
+        val hasNextPage = result.size() == DEFAULT_COUNT
+
+        return MangasPage(mangaList, hasNextPage)
+    }
+
+    private fun genericMangaFromObject(obj: JsonObject): SManga {
         val book = obj["_book"].obj
         val bookSlug = book["slug"].string
         val bookRevision = book["revision"]?.int ?: 1
 
         return SManga.create().apply {
             title = book["title"].string
-            thumbnail_url = getThumbnailUrl(bookSlug, bookRevision)
-            setUrlWithoutDomain("$baseUrl/books/$bookSlug")
+            thumbnail_url = bookSlug.toThumbnailUrl(bookRevision)
+            url = "/books/$bookSlug"
         }
     }
 
     // The source does not have popular mangas, so use latest instead.
     override fun popularMangaRequest(page: Int): Request = latestUpdatesRequest(page)
 
-    override fun popularMangaParse(response: Response): MangasPage = latestUpdatesParse(response)
+    override fun popularMangaParse(response: Response): MangasPage = genericMangaListParse(response)
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/books/chapters?start=${(page - 1) * 40}&count=40", headers)
+        val start = (page - 1) * DEFAULT_COUNT
+        return GET("$baseUrl/api/books/chapters?start=$start&count=$DEFAULT_COUNT", headers)
     }
 
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val result = response.asJsonArray()
-
-        if (result.size() == 0)
-            return MangasPage(emptyList(), false)
-
-        val latestMangas = result
-            .map { latestMangaItemParse(it.obj) }
-            .distinctBy { it.title }
-
-        return MangasPage(latestMangas, result.size() == 40)
-    }
-
-    private fun latestMangaItemParse(obj: JsonObject): SManga = generalListMangaParse(obj)
+    override fun latestUpdatesParse(response: Response): MangasPage = genericMangaListParse(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val mediaType = MediaType.parse("application/json; charset=utf-8")
 
         // Create json body.
         val json = jsonObject(
-            "start" to (page - 1) * 40,
-            "count" to 40,
+            "start" to (page - 1) * DEFAULT_COUNT,
+            "count" to DEFAULT_COUNT,
             "text" to query,
             "type" to "text"
         )
@@ -98,20 +105,7 @@ class Hipercool : HttpSource() {
         return POST("$baseUrl/api/books/chapters/search", headers, body)
     }
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val result = response.asJsonArray()
-
-        if (result.size() == 0)
-            return MangasPage(emptyList(), false)
-
-        val searchMangas = result
-            .map { searchMangaItemParse(it.obj) }
-            .distinctBy { it.title }
-
-        return MangasPage(searchMangas, result.size() == 40)
-    }
-
-    private fun searchMangaItemParse(obj: JsonObject): SManga = generalListMangaParse(obj)
+    override fun searchMangaParse(response: Response): MangasPage = genericMangaListParse(response)
 
     // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
@@ -148,7 +142,7 @@ class Hipercool : HttpSource() {
 
         return SManga.create().apply {
             title = result["title"].string
-            thumbnail_url = getThumbnailUrl(result["slug"].string, result["revision"].int)
+            thumbnail_url = result["slug"].string.toThumbnailUrl(result["revision"].int)
             description = result["synopsis"]?.string ?: ""
             artist = artists
             author = authors
@@ -174,29 +168,38 @@ class Hipercool : HttpSource() {
         name = obj["title"].string
         chapter_number = obj["title"].string.toFloatOrNull() ?: 0f
         // The property is written wrong.
-        date_upload = parseChapterDate(obj["publishied_at"].string)
+        date_upload = DATE_FORMATTER.tryParseTime(obj["publishied_at"].string)
 
-        val bookSlug = book["slug"].string
-        val chapterSlug = obj["slug"].string
-        val images = obj["images"].int
-        val revision = book["revision"].int
-        setUrlWithoutDomain("$baseUrl/books/$bookSlug/$chapterSlug?images=$images&revision=$revision")
+        val fullUrl = HttpUrl.parse("$baseUrl/books")!!.newBuilder()
+            .addPathSegment(book["slug"].string)
+            .addPathSegment(obj["slug"].string)
+            .addQueryParameter("images", obj["images"].int.toString())
+            .addQueryParameter("revision", book["revision"].int.toString())
+            .toString()
+
+        setUrlWithoutDomain(fullUrl)
     }
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        val regex = CHAPTER_REGEX.toRegex()
-        val results = regex.find(chapter.url)!!.groupValues
+        val chapterUrl = HttpUrl.parse(baseUrl + chapter.url)!!
 
-        val bookSlug = results[1].toString()
-        val chapterSlug = results[2].toString()
-        val images = results[3].toInt()
-        val revision = results[4].toInt()
+        val bookSlug = chapterUrl.pathSegments()[1]
+        val chapterSlug = chapterUrl.pathSegments()[2]
+        val images = chapterUrl.queryParameter("images")!!.toInt()
+        val revision = chapterUrl.queryParameter("revision")!!.toInt()
+
         val pages = arrayListOf<Page>()
 
         // Create the pages.
         for (i in 1..images) {
-            val url = getPageUrl(bookSlug, chapterSlug, i, revision)
-            pages += Page(i - 1, chapter.url, url)
+            val imageUrl = HttpUrl.parse("$STATIC_URL/books")!!.newBuilder()
+                .addPathSegment(bookSlug)
+                .addPathSegment(chapterSlug)
+                .addPathSegment("$bookSlug-chapter-$chapterSlug-page-$i.jpg")
+                .addQueryParameter("revision", revision.toString())
+                .toString()
+
+            pages += Page(i - 1, chapter.url, imageUrl)
         }
 
         return Observable.just(pages)
@@ -211,31 +214,27 @@ class Hipercool : HttpSource() {
     override fun imageUrlParse(response: Response): String = ""
 
     override fun imageRequest(page: Page): Request {
-        val newHeaders = Headers.Builder()
-            .apply {
-                add("Referer", page.url)
-                add("User-Agent", USER_AGENT)
-            }
+        val newHeaders = headersBuilder()
+            .set("Referer", baseUrl + page.url)
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun parseChapterDate(date: String): Long {
+    private fun SimpleDateFormat.tryParseTime(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-                .parse(date.substringBefore("T"))
-                .time
+            parse(date.substringBefore("T")).time
         } catch (e: ParseException) {
             0L
         }
     }
 
-    private fun getThumbnailUrl(bookSlug: String, revision: Int): String =
-        "$STATIC_URL/books/$bookSlug/$bookSlug-cover.jpg?revision=$revision"
-
-    private fun getPageUrl(bookSlug: String, chapterSlug: String, page: Int, revision: Int): String =
-        "$STATIC_URL/books/$bookSlug/$chapterSlug/$bookSlug-chapter-$chapterSlug-page-$page.jpg?revision=$revision"
+    private fun String.toThumbnailUrl(revision: Int): String =
+        HttpUrl.parse("$STATIC_URL/books")!!.newBuilder()
+            .addPathSegment(this)
+            .addPathSegment("$this-cover.jpg")
+            .addQueryParameter("revision", revision.toString())
+            .toString()
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
@@ -243,10 +242,13 @@ class Hipercool : HttpSource() {
 
     companion object {
         private const val STATIC_URL = "https://static.hiper.cool"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
 
-        private const val CHAPTER_REGEX = "\\/books\\/(.*)\\/(.*)\\?images=(\\d+)&revision=(\\d+)\$"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.141 Safari/537.36"
+
+        private const val DEFAULT_COUNT = 40
 
         private val JSON_PARSER by lazy { JsonParser() }
+
+        private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }
 }

@@ -35,7 +35,7 @@ class Hentai2Read : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     companion object {
-        val imageBaseUrl = "https://static.hentaicdn.com/hentai"
+        const val imageBaseUrl = "https://static.hentaicdn.com/hentai"
 
         val pagesUrlPattern by lazy {
             Pattern.compile("""'images' : \[\"(.*?)[,]?\"\]""")
@@ -1008,7 +1008,7 @@ class Hentai2Read : ParsedHttpSource() {
         Tag("Hatsukoi Limited", 969),
         Tag("Hayate no Gotoku", 1065),
         Tag("He is My Master", 1280),
-        Tag("Heartcatch​ Precure​!", 1791),
+        Tag("Heartcatch Precure!", 1791),
         Tag("Heartful Maman", 2531),
         Tag("Heavy Object", 2457),
         Tag("Hellsing", 2248),

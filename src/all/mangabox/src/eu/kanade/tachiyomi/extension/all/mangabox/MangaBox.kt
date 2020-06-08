@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangabox
 
+import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -13,6 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -36,6 +38,9 @@ abstract class MangaBox(
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
+        .add("Referer", baseUrl) // for covers
+
     open val popularUrlPath = "manga_list?type=topview&category=all&state=all&page="
 
     open val latestUrlPath = "manga_list?type=latest&category=all&state=all&page="
@@ -54,9 +59,9 @@ abstract class MangaBox(
         return GET("$baseUrl/$latestUrlPath$page", headers)
     }
 
-    override fun popularMangaFromElement(element: Element): SManga {
+    protected fun mangaFromElement(element: Element, urlSelector: String = "h3 a"): SManga {
         return SManga.create().apply {
-            element.select("h3 a").first().let {
+            element.select(urlSelector).first().let {
                 url = it.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
                 title = it.text()
             }
@@ -64,29 +69,46 @@ abstract class MangaBox(
         }
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun popularMangaFromElement(element: Element): SManga = mangaFromElement(element)
+
+    override fun latestUpdatesFromElement(element: Element): SManga = mangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "div.group_page, div.group-page a:not([href]) + a:not(:contains(Last))"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (query.isNotBlank()) {
+        return if (query.isNotBlank() && getAdvancedGenreFilters().isEmpty()) {
             GET("$baseUrl/$simpleQueryPath${normalizeSearchQuery(query)}?page=$page", headers)
         } else {
-            val url = HttpUrl.parse("$baseUrl/manga_list")!!.newBuilder()
-            url.addQueryParameter("page", page.toString())
-
-            filters.forEach { filter ->
-                when (filter) {
-                    is SortFilter -> {
-                        url.addQueryParameter("type", filter.toUriPart())
+            val url = HttpUrl.parse(baseUrl)!!.newBuilder()
+            if (getAdvancedGenreFilters().isNotEmpty()) {
+                url.addPathSegment("advanced_search")
+                url.addQueryParameter("page", page.toString())
+                url.addQueryParameter("keyw", normalizeSearchQuery(query))
+                var genreInclude = ""
+                var genreExclude = ""
+                filters.forEach { filter ->
+                    when (filter) {
+                        is KeywordFilter -> filter.toUriPart()?.let { url.addQueryParameter("keyt", it) }
+                        is SortFilter -> url.addQueryParameter("orby", filter.toUriPart())
+                        is StatusFilter -> url.addQueryParameter("sts", filter.toUriPart())
+                        is AdvGenreFilter -> {
+                            filter.state.forEach { if (it.isIncluded()) genreInclude += "_${it.id}" }
+                            filter.state.forEach { if (it.isExcluded()) genreExclude += "_${it.id}" }
+                        }
                     }
-                    is StatusFilter -> {
-                        url.addQueryParameter("state", filter.toUriPart())
-                    }
-                    is GenreFilter -> {
-                        url.addQueryParameter("category", filter.toUriPart())
+                }
+                url.addQueryParameter("g_i", genreInclude)
+                url.addQueryParameter("g_e", genreExclude)
+            } else {
+                url.addPathSegment("manga_list")
+                url.addQueryParameter("page", page.toString())
+                filters.forEach { filter ->
+                    when (filter) {
+                        is SortFilter -> url.addQueryParameter("type", filter.toUriPart())
+                        is StatusFilter -> url.addQueryParameter("state", filter.toUriPart())
+                        is GenreFilter -> url.addQueryParameter("category", filter.toUriPart())
                     }
                 }
             }
@@ -96,7 +118,7 @@ abstract class MangaBox(
 
     override fun searchMangaSelector() = ".panel_story_list .story_item"
 
-    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
     override fun searchMangaNextPageSelector() = "a.page_select + a:not(.page_last), a.page-select + a:not(.page-last)"
 
@@ -130,7 +152,7 @@ abstract class MangaBox(
             } ?: checkForRedirectMessage(document)
             description = document.select(descriptionSelector)?.firstOrNull()?.ownText()
                 ?.replace("""^$title summary:\s""".toRegex(), "")
-                ?.replace("""<\s*br\s*\/?>""".toRegex(), "\n")
+                ?.replace("""<\s*br\s*/?>""".toRegex(), "\n")
                 ?.replace("<[^>]*>".toRegex(), "")
             thumbnail_url = document.select(thumbnailSelector).attr("abs:src")
         }
@@ -160,6 +182,13 @@ abstract class MangaBox(
 
     override fun chapterListSelector() = "div.chapter-list div.row, ul.row-content-chapter li"
 
+    protected open val alternateChapterDateSelector = String()
+
+    private fun Element.selectDateFromElement(): Element {
+        val defaultChapterDateSelector = "span"
+        return this.select(defaultChapterDateSelector).lastOrNull() ?: this.select(alternateChapterDateSelector).last()
+    }
+
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
             element.select("a").let {
@@ -167,11 +196,11 @@ abstract class MangaBox(
                 name = it.text()
                 scanlator = HttpUrl.parse(it.attr("abs:href"))!!.host() // show where chapters are actually from
             }
-            date_upload = parseChapterDate(element.select("span").last().text(), element.ownerDocument().location()) ?: 0
+            date_upload = parseChapterDate(element.selectDateFromElement().text(), scanlator!!) ?: 0
         }
     }
 
-    private fun parseChapterDate(date: String, url: String): Long? {
+    private fun parseChapterDate(date: String, host: String): Long? {
         return if ("ago" in date) {
             val value = date.split(' ')[0].toIntOrNull()
             val cal = Calendar.getInstance()
@@ -183,7 +212,7 @@ abstract class MangaBox(
             }?.timeInMillis
         } else {
             try {
-                if (url.contains("manganelo")) {
+                if (host.contains("manganelo", ignoreCase = true)) {
                     // Nelo's date format
                     SimpleDateFormat("MMM dd,yy", Locale.ENGLISH).parse(date)
                 } else {
@@ -213,21 +242,26 @@ abstract class MangaBox(
                     src
                 }
             }
-            Page(i, "", url)
+            Page(i, document.location(), url)
         }
+    }
+
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     // Based on change_alias JS function from Mangakakalot's website
+    @SuppressLint("DefaultLocale")
     open fun normalizeSearchQuery(query: String): String {
         var str = query.toLowerCase()
-        str = str.replace("à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ".toRegex(), "a")
-        str = str.replace("è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ".toRegex(), "e")
-        str = str.replace("ì|í|ị|ỉ|ĩ".toRegex(), "i")
-        str = str.replace("ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ".toRegex(), "o")
-        str = str.replace("ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ".toRegex(), "u")
-        str = str.replace("ỳ|ý|ỵ|ỷ|ỹ".toRegex(), "y")
+        str = str.replace("[àáạảãâầấậẩẫăằắặẳẵ]".toRegex(), "a")
+        str = str.replace("[èéẹẻẽêềếệểễ]".toRegex(), "e")
+        str = str.replace("[ìíịỉĩ]".toRegex(), "i")
+        str = str.replace("[òóọỏõôồốộổỗơờớợởỡ]".toRegex(), "o")
+        str = str.replace("[ùúụủũưừứựửữ]".toRegex(), "u")
+        str = str.replace("[ỳýỵỷỹ]".toRegex(), "y")
         str = str.replace("đ".toRegex(), "d")
         str = str.replace("""!|@|%|\^|\*|\(|\)|\+|=|<|>|\?|/|,|\.|:|;|'| |"|&|#|\[|]|~|-|$|_""".toRegex(), "_")
         str = str.replace("_+_".toRegex(), "_")
@@ -235,32 +269,54 @@ abstract class MangaBox(
         return str
     }
 
-    override fun getFilterList() = FilterList(
+    override fun getFilterList() = if (getAdvancedGenreFilters().isNotEmpty()) {
+        FilterList(
+            KeywordFilter(getKeywordFilters()),
+            SortFilter(getSortFilters()),
+            StatusFilter(getStatusFilters()),
+            AdvGenreFilter(getAdvancedGenreFilters())
+        )
+    } else {
+        FilterList(
             Filter.Header("NOTE: Ignored if using text search!"),
             Filter.Separator(),
-            SortFilter(),
-            StatusFilter(getStatusPairs()),
-            GenreFilter(getGenrePairs())
+            SortFilter(getSortFilters()),
+            StatusFilter(getStatusFilters()),
+            GenreFilter(getGenreFilters())
+        )
+    }
+
+    private class KeywordFilter(vals: Array<Pair<String?, String>>) : UriPartFilter("Keyword search ", vals)
+    private class SortFilter(vals: Array<Pair<String?, String>>) : UriPartFilter("Order by", vals)
+    private class StatusFilter(vals: Array<Pair<String?, String>>) : UriPartFilter("Status", vals)
+    private class GenreFilter(vals: Array<Pair<String?, String>>) : UriPartFilter("Category", vals)
+
+    // For advanced search, specifically tri-state genres
+    private class AdvGenreFilter(vals: List<AdvGenre>) : Filter.Group<AdvGenre>("Category", vals)
+    class AdvGenre(val id: String?, name: String) : Filter.TriState(name)
+
+    // keyt query parameter
+    private fun getKeywordFilters(): Array<Pair<String?, String>> = arrayOf(
+        Pair(null, "Everything"),
+        Pair("title", "Title"),
+        Pair("alternative", "Alt title"),
+        Pair("author", "Author")
     )
 
-    private class SortFilter : UriPartFilter("Sort", arrayOf(
-            Pair("latest", "Latest"),
-            Pair("newest", "Newest"),
-            Pair("topview", "Top read")
-    ))
+    private fun getSortFilters(): Array<Pair<String?, String>> = arrayOf(
+        Pair("latest", "Latest"),
+        Pair("newest", "Newest"),
+        Pair("topview", "Top read")
+    )
 
-    open class StatusFilter(val statusPairs: Array<Pair<String, String>>) : UriPartFilter("Status", statusPairs)
-
-    open fun getStatusPairs() = arrayOf(
+    open fun getStatusFilters(): Array<Pair<String?, String>> = arrayOf(
         Pair("all", "ALL"),
         Pair("completed", "Completed"),
         Pair("ongoing", "Ongoing"),
         Pair("drop", "Dropped")
     )
 
-    private class GenreFilter(val genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
-
-    open fun getGenrePairs(): Array<Pair<String, String>> = arrayOf(
+    open fun getGenreFilters(): Array<Pair<String?, String>> = arrayOf(
         Pair("all", "ALL"),
         Pair("2", "Action"),
         Pair("3", "Adult"),
@@ -304,7 +360,10 @@ abstract class MangaBox(
         Pair("42", "Yuri")
     )
 
-    open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+    // To be overridden if using tri-state genres
+    protected open fun getAdvancedGenreFilters(): List<AdvGenre> = emptyList()
+
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String?, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
         fun toUriPart() = vals[state].first
     }

@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.es.heavenmanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -10,16 +9,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
-import rx.Observable
 
 class HeavenManga : ParsedHttpSource() {
 
@@ -29,7 +24,7 @@ class HeavenManga : ParsedHttpSource() {
 
     override val lang = "es"
 
-    // latest is broken on the site, it's the same as populaar so turning it off
+    // latest is broken on the site, it's the same as popular so turning it off
     override val supportsLatest = false
 
     override val client: OkHttpClient = network.cloudflareClient
@@ -134,11 +129,10 @@ class HeavenManga : ParsedHttpSource() {
                 setUrlWithoutDomain(it.attr("href"))
             }
             scanlator = element.select("span.pull-right").text()
-
         }
     }
 
-    override fun mangaDetailsParse(document: Document) =  SManga.create().apply {
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div.tab-summary").let { info ->
             genre = info.select("div.genres-content a").joinToString { it.text() }
             thumbnail_url = info.select("div.summary_image img").attr("abs:data-src")
@@ -156,7 +150,7 @@ class HeavenManga : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("script:containsData(pUrl)").first().data()
             .substringAfter("pUrl=[").substringBefore("\"},];").split("\"},")
-            .mapIndexed{ i, string -> Page(i, "", string.substringAfterLast("\"")) }
+            .mapIndexed { i, string -> Page(i, "", string.substringAfterLast("\"")) }
     }
 
     /**

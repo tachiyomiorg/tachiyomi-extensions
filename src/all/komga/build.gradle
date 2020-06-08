@@ -5,15 +5,11 @@ ext {
     appName = 'Tachiyomi: Komga'
     pkgNameSuffix = 'all.komga'
     extClass = '.KomgaFactory'
-    extVersionCode = 9
+    extVersionCode = 11
     libVersion = '1.2'
 }
 
 dependencies {
-    compileOnly project(':preference-stub')
-    compileOnly 'com.google.code.gson:gson:2.8.2'
-    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
     implementation 'io.reactivex:rxandroid:1.2.1'
     implementation 'io.reactivex:rxjava:1.3.6'
 }

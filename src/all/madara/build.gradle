@@ -5,8 +5,12 @@ ext {
     appName = 'Tachiyomi: Madara (multiple sources)'
     pkgNameSuffix = "all.madara"
     extClass = '.MadaraFactory'
-    extVersionCode = 88
+    extVersionCode = 106
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-dataimage')
 }
 
 apply from: "$rootDir/common.gradle"

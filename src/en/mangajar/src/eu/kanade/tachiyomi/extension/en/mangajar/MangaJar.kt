@@ -64,9 +64,7 @@ class MangaJar : ParsedHttpSource() {
         description = document.select("div.manga-description.entry > div").text()
         thumbnail_url = document.select("div.row > div > img").attr("src")
         genre = document.select("div.post-info > span > a[href*=genre]").joinToString { it.text() }
-        status = document.select("span:has(b)").get(1).text().let {
-            parseStatus(it)
-        }
+        status = parseStatus(document.select("span:has(b)")[1].text())
     }
 
     private fun parseStatus(status: String) = when {

@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.comicextra
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -42,7 +43,19 @@ class ComicExtra : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/comic-updates", headers)
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/comic-search?key=$query", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return if (query.isNotBlank()) {
+            GET("$baseUrl/comic-search?key=$query", headers)
+        } else {
+            var url = baseUrl
+            filters.forEach { filter ->
+                when (filter) {
+                    is GenreFilter -> url += "/${filter.toUriPart()}"
+                }
+            }
+            GET(url + if (page > 1) "/$page" else "", headers)
+        }
+    }
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("div.mb-right > h3 > a").attr("href"))
@@ -71,16 +84,14 @@ class ComicExtra : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
-        manga.title = document.select("span.title-1").text()
-        manga.thumbnail_url = document.select("div.movie-l-img > img").attr("src")
-
-        val status = document.select("dt:contains(Status:) + dd").text()
-        manga.status = parseStatus(status)
-        manga.author = document.select("dt:contains(Author:) + dd").text()
-        manga.description = document.select("div#film-content").text()
-
-        return manga
+        return SManga.create().apply {
+            title = document.select("div.movie-detail span.title-1").text()
+            thumbnail_url = document.select("div.movie-l-img > img").attr("src")
+            status = parseStatus(document.select("dt:contains(Status:) + dd").text())
+            author = document.select("dt:contains(Author:) + dd").text()
+            description = document.select("div#film-content").text()
+            genre = document.select("dt.movie-dt:contains(Genres:) + dd a").joinToString { it.text() }
+        }
     }
 
     private fun parseStatus(element: String): Int = when {
@@ -130,20 +141,20 @@ class ComicExtra : ParsedHttpSource() {
     }
 
     private fun dateParse(dateAsString: String): Long {
-        var date: Date
-        try {
-            date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
+        val date: Date
+        date = try {
+            SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
         } catch (e: ParseException) {
             val m = datePattern.matcher(dateAsString)
 
             if (dateAsString != "Today" && m.matches()) {
                 val amount = m.group(1).toInt()
 
-                date = Calendar.getInstance().apply {
+                Calendar.getInstance().apply {
                     add(Calendar.DATE, -amount)
                 }.time
             } else if (dateAsString == "Today") {
-                date = Calendar.getInstance().time
+                Calendar.getInstance().time
             } else return 0
         }
 
@@ -164,4 +175,79 @@ class ComicExtra : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Unused method was called somehow!")
+
+    // Filters
+
+    override fun getFilterList() = FilterList(
+        Filter.Header("Note: can't combine search types"),
+        Filter.Separator(),
+        GenreFilter(getGenreList)
+    )
+
+    private class GenreFilter(genrePairs: Array<Pair<String, String>>) : UriPartFilter("Category", genrePairs)
+
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    private val getGenreList = arrayOf(
+        Pair("Action", "action-comic"),
+        Pair("Adventure", "adventure-comic"),
+        Pair("Anthology", "anthology-comic"),
+        Pair("Anthropomorphic", "anthropomorphic-comic"),
+        Pair("Biography", "biography-comic"),
+        Pair("Black Mask Studios", "black-mask-studios-comic"),
+        Pair("Children", "children-comic"),
+        Pair("Comedy", "comedy-comic"),
+        Pair("Crime", "crime-comic"),
+        Pair("DC Comics", "dc-comics-comic"),
+        Pair("Dark Horse", "dark-horse-comic"),
+        Pair("Drama", "drama-comic"),
+        Pair("Family", "family-comic"),
+        Pair("Fantasy", "fantasy-comic"),
+        Pair("Fighting", "fighting-comic"),
+        Pair("First Second Books", "first-second-books-comic"),
+        Pair("Graphic Novels", "graphic-novels-comic"),
+        Pair("Historical", "historical-comic"),
+        Pair("Horror", "horror-comic"),
+        Pair("LEOMACS", "a><span-class=-comic"),
+        Pair("LGBTQ", "lgbtq-comic"),
+        Pair("Leading Ladies", "leading-ladies-comic"),
+        Pair("Literature", "literature-comic"),
+        Pair("Manga", "manga-comic"),
+        Pair("Martial Arts", "martial-arts-comic"),
+        Pair("Marvel", "marvel-comic"),
+        Pair("Mature", "mature-comic"),
+        Pair("Military", "military-comic"),
+        Pair("Movie Cinematic Link", "movie-cinematic-link-comic"),
+        Pair("Movies & TV", "movies-&-tv-comic"),
+        Pair("Music", "music-comic"),
+        Pair("Mystery", "mystery-comic"),
+        Pair("Mythology", "mythology-comic"),
+        Pair("New", "new-comic"),
+        Pair("Personal", "personal-comic"),
+        Pair("Political", "political-comic"),
+        Pair("Post-Apocalyptic", "post-apocalyptic-comic"),
+        Pair("Psychological", "psychological-comic"),
+        Pair("Pulp", "pulp-comic"),
+        Pair("Religious", "religious-comic"),
+        Pair("Robots", "robots-comic"),
+        Pair("Romance", "romance-comic"),
+        Pair("School Life", "school-life-comic"),
+        Pair("Sci-Fi", "sci-fi-comic"),
+        Pair("Slice of Life", "slice-of-life-comic"),
+        Pair("Sport", "sport-comic"),
+        Pair("Spy", "spy-comic"),
+        Pair("Superhero", "superhero-comic"),
+        Pair("Supernatural", "supernatural-comic"),
+        Pair("Suspense", "suspense-comic"),
+        Pair("Thriller", "thriller-comic"),
+        Pair("Vampires", "vampires-comic"),
+        Pair("Video Games", "video-games-comic"),
+        Pair("War", "war-comic"),
+        Pair("Western", "western-comic"),
+        Pair("Zombies", "zombies-comic"),
+        Pair("Zulema Scotto Lavina", "zulema-scotto-lavina-comic")
+    )
 }

@@ -101,7 +101,7 @@ class Dmzj : HttpSource() {
                 params = "0"
             }
 
-            val order = filters.filter { it is SortFilter }.map { (it as UriPartFilter).toUriPart() }.joinToString("")
+            val order = filters.filterIsInstance<SortFilter>().joinToString("") { (it as UriPartFilter).toUriPart() }
 
             return myGet("http://v2.api.dmzj.com/classify/$params/$order/${page - 1}.json")
         }

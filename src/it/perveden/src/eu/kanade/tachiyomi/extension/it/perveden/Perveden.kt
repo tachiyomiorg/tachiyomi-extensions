@@ -85,7 +85,7 @@ class Perveden : ParsedHttpSource() {
 
         author = infos.select("a[href^=/it/it-directory/?author]").first()?.text()
         artist = infos.select("a[href^=/it/it-directory/?artist]").first()?.text()
-        genre = infos.select("a[href^=/it/it-directory/?categoriesInc]").map { it.text() }.joinToString()
+        genre = infos.select("a[href^=/it/it-directory/?categoriesInc]").joinToString { it.text() }
         description = document.select("h2#mangaDescription").text()
         status = parseStatus(infos.select("h4:containsOwn(Stato)").first()?.nextSibling().toString())
         val img = infos.select("div.mangaImage2 > img").first()?.attr("src")
@@ -109,14 +109,16 @@ class Perveden : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long =
-            if ("Oggi" in date) {
+        when {
+            "Oggi" in date -> {
                 Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 0)
                     set(Calendar.MINUTE, 0)
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
-            } else if ("Ieri" in date) {
+            }
+            "Ieri" in date -> {
                 Calendar.getInstance().apply {
                     add(Calendar.DATE, -1)
                     set(Calendar.HOUR_OF_DAY, 0)
@@ -124,11 +126,13 @@ class Perveden : ParsedHttpSource() {
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
-            } else try {
+            }
+            else -> try {
                 SimpleDateFormat("d MMM yyyy", Locale.ITALIAN).parse(date).time
             } catch (e: ParseException) {
                 0L
             }
+        }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("option[value^=/it/it-manga/]").forEach {
@@ -142,7 +146,7 @@ class Perveden : ParsedHttpSource() {
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class GenreField(name: String, val key: String) : Filter.Text(name)
     private class OrderBy : Filter.Sort("Ordina per", arrayOf("Titolo manga", "Visite", "Capitoli", "Ultimo capitolo"),
-            Filter.Sort.Selection(1, false))
+            Selection(1, false))
 
     private class StatusList(statuses: List<NamedId>) : Filter.Group<NamedId>("Stato", statuses)
     private class Types(types: List<NamedId>) : Filter.Group<NamedId>("Tipo", types)

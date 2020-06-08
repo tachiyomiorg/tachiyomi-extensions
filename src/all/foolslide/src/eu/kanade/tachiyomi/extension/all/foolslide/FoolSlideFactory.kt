@@ -26,7 +26,7 @@ import uy.kohesive.injekt.api.get
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-        JaminisBox(),
+        JaiminisBox(),
         SenseScans(),
         KireiCake(),
         SilentSky(),
@@ -60,14 +60,16 @@ class FoolSlideFactory : SourceFactory {
         NIFTeam(),
         TuttoAnimeManga(),
         Customizable(),
-        TortugaCeviri()
+        TortugaCeviri(),
+        Rama(),
+        Mabushimajo()
     )
 }
 
-class JaminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
-    val SLUG_REGEX = "(?:/read/)([\\w\\d-]+?)(?:/)".toRegex()
+class JaiminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
+    private val slugRegex = "(?:/read/)([\\w\\d-]+?)(?:/)".toRegex()
     override fun pageListRequest(chapter: SChapter): Request {
-        val (slug) = SLUG_REGEX.find(chapter.url)!!.destructured
+        val (slug) = slugRegex.find(chapter.url)!!.destructured
         var (major, minor) = chapter.chapter_number.toString().split(".")
         if (major == "-1") major = "0" // Some oneshots don't have a chapter
         return GET("$baseUrl$urlModifier/api/reader/chapter?comic_stub=$slug&chapter=$major&subchapter=$minor")
@@ -106,7 +108,7 @@ class Mangatellers : FoolSlide("Mangatellers", "http://www.mangatellers.gr", "en
     }
 }
 
-class IskultripScans : FoolSlide("Iskultrip Scans", "http://www.maryfaye.net", "en", "/reader")
+class IskultripScans : FoolSlide("Iskultrip Scans", "https://maryfaye.net", "en", "/reader")
 
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.xyz", "en", "/reader")
 
@@ -116,7 +118,7 @@ class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en"
 
 class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide")
 
-class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://ajianoscantrad.fr", "fr", "/reader")
+class AjiaNoScantrad : FoolSlide("Ajia no Scantrad", "https://www.ajianoscantrad.fr", "fr", "/reader")
 
 class OneTimeScans : FoolSlide("One Time Scans", "https://reader.otscans.com", "en")
 
@@ -128,7 +130,7 @@ class Lilyreader : FoolSlide("Lilyreader", "https://manga.smuglo.li", "en")
 
 class Russification : FoolSlide("Русификация", "https://rusmanga.ru", "ru")
 
-class EvilFlowers : FoolSlide("Evil Flowers", "http://reader.evilflowers.com", "en")
+class EvilFlowers : FoolSlide("Evil Flowers", "https://reader.evilflowers.com", "en")
 
 class LupiTeam : FoolSlide("LupiTeam", "https://lupiteam.net", "it", "/reader") {
     override fun mangaDetailsParse(document: Document): SManga {
@@ -155,7 +157,7 @@ class ZandynoFansub : FoolSlide("Zandy no Fansub", "https://zandynofansub.aishit
 
 class HelveticaScans : FoolSlide("Helvetica Scans", "https://helveticascans.com", "en", "/r")
 
-class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://kirishimafansub.net", "es", "/lector")
+class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://www.kirishimafansub.net", "es", "/lector")
 
 class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
 
@@ -300,3 +302,7 @@ class Customizable : ConfigurableSource, FoolSlide("Customizable", "", "other") 
 }
 
 class TortugaCeviri : FoolSlide("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr", "/okuma")
+
+class Rama : FoolSlide("Rama", "https://www.ramareader.it", "it", "/read")
+
+class Mabushimajo : FoolSlide("Mabushimajo", "http://mabushimajo.com", "tr", "/onlineokuma")

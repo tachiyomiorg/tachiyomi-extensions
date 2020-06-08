@@ -127,7 +127,7 @@ class Neumanga : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = mangaInformationWrapper.select("span a[href*=author_search_mode]").first().text()
         manga.artist = mangaInformationWrapper.select("span a[href*=artist_search_mode]").first().text()
-        manga.genre = mangaInformationWrapper.select("a[href*=genre]").map { it.text() }.joinToString()
+        manga.genre = mangaInformationWrapper.select("a[href*=genre]").joinToString { it.text() }
         manga.thumbnail_url = mangaInformationWrapper.select("img.imagemg").first().attr("src")
         manga.description = document.select(".summary").first().textNodes()[1].toString()
         manga.status = parseStatus(mangaInformationWrapper.select("span a[href*=manga_status]").first().text())

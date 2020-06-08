@@ -171,17 +171,27 @@ abstract class FMReader(
         }
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val mangaTitle = document.select(".manga-info h1").text()
+        return document.select(chapterListSelector()).map { chapterFromElement(it, mangaTitle) }.distinctBy { it.url }
+    }
+
+    override fun chapterFromElement(element: Element): SChapter {
+        return chapterFromElement(element, "")
+    }
+
     override fun chapterListSelector() = "div#list-chapters p, table.table tr"
 
     open val chapterUrlSelector = "a"
 
     open val chapterTimeSelector = "time"
 
-    override fun chapterFromElement(element: Element): SChapter {
+    open fun chapterFromElement(element: Element, mangaTitle: String = ""): SChapter {
         return SChapter.create().apply {
             element.select(chapterUrlSelector).first().let {
                 setUrlWithoutDomain(it.attr("abs:href"))
-                name = it.text()
+                name = it.text().substringAfter("$mangaTitle ")
             }
             date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }

@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.wpmangastream
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
@@ -24,6 +23,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -91,6 +91,9 @@ abstract class WPMangaStream(
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
+    protected fun Element.imgAttr(): String = if (this.hasAttr("data-src")) this.attr("abs:data-src") else this.attr("abs:src")
+    protected fun Elements.imgAttr(): String = this.first().imgAttr()
+
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga/page/$page/?order=popular", headers)
     }
@@ -100,8 +103,7 @@ abstract class WPMangaStream(
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
-        val url = HttpUrl.parse(builtUrl)!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/manga/")!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
         filters.forEach { filter ->
@@ -142,7 +144,7 @@ abstract class WPMangaStream(
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.limit img").attr("abs:src")
+        manga.thumbnail_url = element.select("div.limit img").imgAttr()
         element.select("div.bsx > a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
@@ -158,23 +160,22 @@ abstract class WPMangaStream(
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.spe").first()
-        val sepName = infoElement.select(".spe > span:contains(Author)").last()
-        val manga = SManga.create()
-        manga.author = sepName?.ownText() ?: "N/A"
-        manga.artist = sepName?.ownText() ?: "N/A"
-        manga.genre = infoElement.select(".spe > span:nth-child(1) > a").joinToString { it.text() }
-        manga.status = parseStatus(infoElement.select(".spe > span:nth-child(2)").text())
-        manga.description = document.select(".infox > div.desc").first().select("p").text()
-        manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
-
-        return manga
+        return SManga.create().apply {
+            document.select("div.bigcontent, div.animefull").firstOrNull()?.let { infoElement ->
+                genre = infoElement.select("span:contains(Genres:) a").joinToString { it.text() }
+                status = parseStatus(infoElement.select("span:contains(Status:)").firstOrNull()?.ownText())
+                author = infoElement.select("span:contains(Author:)").firstOrNull()?.ownText()
+                artist = author
+                description = infoElement.select("div.desc p").joinToString("\n") { it.text() }
+                thumbnail_url = infoElement.select("div.thumb img").imgAttr()
+            }
+        }
     }
 
-    @SuppressLint("DefaultLocale")
-    internal open fun parseStatus(element: String): Int = when {
-        element.toLowerCase().contains("ongoing") -> SManga.ONGOING
-        element.toLowerCase().contains("completed") -> SManga.COMPLETED
+    protected fun parseStatus(element: String?): Int = when {
+        element == null -> SManga.UNKNOWN
+        listOf("ongoing", "publishing").any { it.contains(element, ignoreCase = true) } -> SManga.ONGOING
+        listOf("completed").any { it.contains(element, ignoreCase = true) } -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -236,16 +237,9 @@ abstract class WPMangaStream(
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        var i = 0
-        document.select("div#readerarea img").forEach { element ->
-            val url = element.attr("abs:src")
-            i++
-            if (url.isNotEmpty()) {
-                pages.add(Page(i, "", url))
-            }
-        }
-        return pages
+        return document.select("div#readerarea img")
+            .filterNot { it.attr("src").isNullOrEmpty() }
+            .mapIndexed { i, img -> Page(i, "", img.attr("abs:src")) }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
@@ -257,7 +251,7 @@ abstract class WPMangaStream(
             add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")
         }
 
-        if (page.imageUrl!!.contains("i0.wp.com")) {
+        if (page.imageUrl!!.contains(".wp.com")) {
             headers.apply {
                 add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
             }
@@ -279,7 +273,7 @@ abstract class WPMangaStream(
 
     private class YearFilter : Filter.Text("Year")
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
+    protected class TypeFilter : UriPartFilter("Type", arrayOf(
         Pair("Default", ""),
         Pair("Manga", "Manga"),
         Pair("Manhwa", "Manhwa"),

@@ -111,7 +111,7 @@ class Gufengmh : ParsedHttpSource() {
     // Filters
 
     override fun getFilterList(): FilterList {
-        val filterList = FilterList(
+        return FilterList(
             Filter.Header("如果使用文本搜索"),
             Filter.Header("过滤器将被忽略"),
             typefilter(),
@@ -120,7 +120,6 @@ class Gufengmh : ParsedHttpSource() {
             letterfilter(),
             statusfilter()
         )
-        return filterList
     }
 
     private class typefilter : UriSelectFilterPath("按类型", "filtertype", arrayOf(

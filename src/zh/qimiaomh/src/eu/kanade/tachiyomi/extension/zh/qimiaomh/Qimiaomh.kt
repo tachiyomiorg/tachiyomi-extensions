@@ -90,8 +90,8 @@ class Qimiaomh : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         val script = document.select("script:containsData(var did =)").html()
-        var did = script.substringAfter("var did = ").substringBefore(";")
-        var sid = script.substringAfter("var sid = ").substringBefore(";")
+        val did = script.substringAfter("var did = ").substringBefore(";")
+        val sid = script.substringAfter("var sid = ").substringBefore(";")
         val url = "$baseUrl/Action/Play/AjaxLoadImgUrl?did=$did&sid=$sid&tmp=${Random().nextFloat()}"
         val body = client.newCall(GET(url, headers)).execute().body()!!.string()
         val json = JsonParser().parse(body).asJsonObject

@@ -7,6 +7,7 @@ import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -15,6 +16,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -64,10 +66,27 @@ class Mangahasu : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET(
-            "$baseUrl/advanced-search.html?keyword=$query&author=&artist=&status=&typeid=&page=$page",
-            headers
-        )
+        val url = HttpUrl.parse("$baseUrl/advanced-search.html")!!.newBuilder()
+        url.addQueryParameter("keyword", query)
+        url.addQueryParameter("page", page.toString())
+
+        filters.forEach { filter ->
+            when (filter) {
+                is AuthorFilter -> url.addQueryParameter("author", filter.state)
+                is ArtistFilter -> url.addQueryParameter("artist", filter.state)
+                is StatusFilter -> url.addQueryParameter("status", filter.toUriPart())
+                is TypeFilter -> url.addQueryParameter("typeid", filter.toUriPart())
+                is GenreFilter -> {
+                    filter.state.forEach {
+                        when (it.state) {
+                            Filter.TriState.STATE_INCLUDE -> url.addQueryParameter("g_i[]", it.id)
+                            Filter.TriState.STATE_EXCLUDE -> url.addQueryParameter("g_e[]", it.id)
+                        }
+                    }
+                }
+            }
+        }
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector() =
@@ -156,4 +175,145 @@ class Mangahasu : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
+
+    // Filters
+
+    override fun getFilterList() = FilterList(
+        AuthorFilter(),
+        ArtistFilter(),
+        StatusFilter(),
+        TypeFilter(),
+        GenreFilter(getGenreList())
+    )
+
+    private class AuthorFilter : Filter.Text("Author")
+
+    private class ArtistFilter : Filter.Text("Artist")
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    private class TypeFilter : UriPartFilter("Type", arrayOf(
+        Pair("Any", ""),
+        Pair("Manga", "10"),
+        Pair("Manhwa", "12"),
+        Pair("Manhua", "19")
+    ))
+
+    private class StatusFilter : UriPartFilter("Status", arrayOf(
+        Pair("Any", ""),
+        Pair("Completed", "1"),
+        Pair("Ongoing", "2")
+    ))
+
+    private class Genre(name: String, val id: String) : Filter.TriState(name)
+    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    private fun getGenreList() = listOf(
+        Genre("4-koma", "46"),
+        Genre("Action", "1"),
+        Genre("Adaptation", "101"),
+        Genre("Adult", "2"),
+        Genre("Adventure", "3"),
+        Genre("Aliens", "103"),
+        Genre("Animals", "73"),
+        Genre("Anime", "57"),
+        Genre("Anthology", "99"),
+        Genre("Award Winning", "48"),
+        Genre("Bara", "60"),
+        Genre("Comedy", "4"),
+        Genre("Comic", "5"),
+        Genre("Cooking", "6"),
+        Genre("Crime", "92"),
+        Genre("Crossdressing", "86"),
+        Genre("Delinquents", "83"),
+        Genre("Demons", "51"),
+        Genre("Doujinshi", "7"),
+        Genre("Drama", "8"),
+        Genre("Ecchi", "9"),
+        Genre("Fan Colored", "107"),
+        Genre("Fantasy", "10"),
+        Genre("Full Color", "95"),
+        Genre("Game", "68"),
+        Genre("Gender Bender", "11"),
+        Genre("Genderswap", "81"),
+        Genre("Ghosts", "90"),
+        Genre("Gore", "100"),
+        Genre("Gyaru", "97"),
+        Genre("Harem", "12"),
+        Genre("Historical", "13"),
+        Genre("Horror", "14"),
+        Genre("Incest", "84"),
+        Genre("Isekai", "67"),
+        Genre("Josei", "15"),
+        Genre("Live Action", "59"),
+        Genre("Loli", "91"),
+        Genre("Lolicon", "16"),
+        Genre("Long Strip", "93"),
+        Genre("Mafia", "113"),
+        Genre("Magic", "55"),
+        Genre("Magical Girls", "89"),
+        Genre("Manga Reviews", "64"),
+        Genre("Martial Arts", "20"),
+        Genre("Mature", "21"),
+        Genre("Mecha", "22"),
+        Genre("Medical", "23"),
+        Genre("Military", "62"),
+        Genre("Monster Girls", "87"),
+        Genre("Monsters", "72"),
+        Genre("Music", "24"),
+        Genre("Mystery", "25"),
+        Genre("Ninja", "112"),
+        Genre("Office Workers", "80"),
+        Genre("Official Colored", "96"),
+        Genre("One shot", "26"),
+        Genre("Others", "114"),
+        Genre("Philosophical", "110"),
+        Genre("Police", "105"),
+        Genre("Post-Apocalyptic", "76"),
+        Genre("Psychological", "27"),
+        Genre("Reincarnation", "74"),
+        Genre("Reverse harem", "69"),
+        Genre("Romance", "28"),
+        Genre("Samurai", "108"),
+        Genre("School Life", "29"),
+        Genre("Sci-fi", "30"),
+        Genre("Seinen", "31"),
+        Genre("Seinen Supernatural", "66"),
+        Genre("Sexual Violence", "98"),
+        Genre("Shota", "104"),
+        Genre("Shotacon", "32"),
+        Genre("Shoujo", "33"),
+        Genre("Shoujo Ai", "34"),
+        Genre("Shoujoai", "63"),
+        Genre("Shounen", "35"),
+        Genre("Shounen Ai", "36"),
+        Genre("Shounenai", "61"),
+        Genre("Slice of Life", "37"),
+        Genre("Smut", "38"),
+        Genre("Sports", "39"),
+        Genre("Super power", "70"),
+        Genre("Superhero", "88"),
+        Genre("Supernatural", "40"),
+        Genre("Survival", "77"),
+        Genre("Thriller", "75"),
+        Genre("Time Travel", "78"),
+        Genre("Traditional Games", "111"),
+        Genre("Tragedy", "41"),
+        Genre("Uncategorized", "65"),
+        Genre("User Created", "102"),
+        Genre("Vampire", "58"),
+        Genre("Vampires", "82"),
+        Genre("Video Games", "85"),
+        Genre("Virtual Reality", "109"),
+        Genre("Web Comic", "94"),
+        Genre("Webtoon", "42"),
+        Genre("Webtoons", "56"),
+        Genre("Wuxia", "71"),
+        Genre("Yaoi", "43"),
+        Genre("Youkai", "106"),
+        Genre("Yuri", "44"),
+        Genre("Zombies", "79")
+    )
 }

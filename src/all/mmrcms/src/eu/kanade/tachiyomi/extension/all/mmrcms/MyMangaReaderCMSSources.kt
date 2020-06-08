@@ -55,7 +55,7 @@ class MyMangaReaderCMSSources : SourceFactory {
             val categories = mapToPairs(jsonObject["categories"].array)
             var tags = emptyList<Pair<String, String>>()
             if (jsonObject["tags"].isJsonArray) {
-                tags = jsonObject["tags"].asJsonArray.let { mapToPairs(it) }
+                tags = mapToPairs(jsonObject["tags"].asJsonArray)
             }
 
             MyMangaReaderCMSSource(

@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: Manga Ship'
+    pkgNameSuffix = 'tr.mangaship'
+    extClass = '.MangaShip'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-dataimage')
+}
+
+apply from: "$rootDir/common.gradle"
+

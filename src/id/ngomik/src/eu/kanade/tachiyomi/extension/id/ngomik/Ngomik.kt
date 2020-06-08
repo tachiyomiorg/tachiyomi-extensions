@@ -52,12 +52,10 @@ class Ngomik : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         title = document.select("h1[itemprop=headline]").text()
-        author = document.select("div.listinfo li").get(2).text().removePrefix("Author: ")
+        author = document.select("div.listinfo li")[2].text().removePrefix("Author: ")
         description = document.select(".desc").text()
         genre = document.select("div.gnr > a").joinToString { it.text() }
-        status = document.select("div.listinfo li").get(3).text().let {
-            parseStatus(it)
-        }
+        status = parseStatus(document.select("div.listinfo li")[3].text())
         thumbnail_url = document.select("div[itemprop=image] > img").attr("src")
     }
 

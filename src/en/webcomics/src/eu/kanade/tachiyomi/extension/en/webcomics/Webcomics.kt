@@ -122,8 +122,8 @@ class Webcomics : ParsedHttpSource() {
 
         /* Source only allows 20 chapters to be readable on their website, trying to read past
            that results in a page list empty error; so might as well not grab them. */
-        if (document.select("${chapterListSelector()}:nth-child(21)").isEmpty()) {
-            return document.select(chapterListSelector()).asReversed().map { chapterFromElement(it) }
+        return if (document.select("${chapterListSelector()}:nth-child(21)").isEmpty()) {
+            document.select(chapterListSelector()).asReversed().map { chapterFromElement(it) }
         } else {
             val chapters = mutableListOf<SChapter>()
             for (i in 1..20)
@@ -133,7 +133,7 @@ class Webcomics : ParsedHttpSource() {
             lockedNotification.name = "[Attention] Additional chapters are restricted by the source to their own app"
             lockedNotification.url = "wiki.html"
             chapters.add(lockedNotification)
-            return chapters.reversed()
+            chapters.reversed()
         }
     }
 

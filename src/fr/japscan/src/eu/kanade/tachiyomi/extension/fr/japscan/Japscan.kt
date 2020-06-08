@@ -285,7 +285,7 @@ class Japscan : ParsedHttpSource() {
         val ks = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray()
 
         for (i in 0 until realPageUrls.count())
-            for (j in 0 until realPageUrls[i].length) {
+            for (j in realPageUrls[i].indices) {
                 if (realPageUrls[i][j] != pageUrls[i][j]) {
                     ks[az.indexOf(pageUrls[i][j])] = realPageUrls[i][j]
                 }

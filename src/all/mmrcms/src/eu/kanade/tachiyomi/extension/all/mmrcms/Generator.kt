@@ -98,15 +98,9 @@ class Generator {
             }
         }
         println("Number of sources successfully generated: ${number - 1}")
-        if (!DRY_RUN) {
-            val writer = PrintWriter(relativePath)
-            writer.write(buffer.toString())
-            writer.close()
-        } else {
-            val writer = PrintWriter(relativePathTest)
-            writer.write(buffer.toString())
-            writer.close()
-        }
+        val writer = PrintWriter(relativePath)
+        writer.write(buffer.toString())
+        writer.close()
     }
 
     private fun getDocument(url: String, printStackTrace: Boolean = true): Document? {
@@ -223,7 +217,6 @@ class Generator {
     }
 
     companion object {
-        const val DRY_RUN = false
         val sources = listOf(
             Triple("ar", "مانجا اون لاين", "https://onma.me"),
             Triple("en", "Read Comics Online", "https://readcomicsonline.ru"),
@@ -236,8 +229,8 @@ class Generator {
             Triple("fr", "Scan OP", "https://scan-op.com"),
             Triple("id", "Komikid", "https://www.komikid.com"),
             Triple("pl", "ToraScans", "http://torascans.pl"),
-            Triple("pt", "Comic Space", "https://www.comicspace.com.br"),
-            Triple("pt", "Mangás Yuri", "https://mangasyuri.net"),
+            Triple("pt-BR", "Comic Space", "https://www.comicspace.com.br"),
+            Triple("pt-BR", "Mangás Yuri", "https://mangasyuri.net"),
             Triple("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),
             Triple("pl", "Nikushima", "http://azbivo.webd.pro"),
             Triple("tr", "MangaHanta", "http://mangahanta.com"),
@@ -254,6 +247,12 @@ class Generator {
             Triple("tr", "Puzzmos", "https://puzzmos.com"),
             Triple("fr", "Scan-1", "https://www.scan-1.com"),
             Triple("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
+            Triple("id", "MangaSusu", "https://www.mangasusu.mobi"),
+            Triple("id", "Komik Manga", "https://adm.komikmanga.com"),
+            Triple("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
+            Triple("pt-BR", "Remangas", "https://remangas.top"),
+            Triple("pt-BR", "AnimaRegia", "https://animaregia.net"),
+            Triple("tr", "NoxSubs", "https://noxsubs.com"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             // Changed CMS
@@ -311,7 +310,6 @@ class Generator {
             // Triple("tr", "ManhuaTR", "http://www.manhua-tr.com"),
 
         val relativePath = System.getProperty("user.dir") + "/src/all/mmrcms/src/eu/kanade/tachiyomi/extension/all/mmrcms/GeneratedSources.kt"
-        val relativePathTest = System.getProperty("user.dir") + "/src/all/mmrcms/TestGeneratedSources.kt"
 
         @JvmStatic
         fun main(args: Array<String>) {

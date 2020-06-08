@@ -68,8 +68,8 @@ class HentaiFantasy : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var tags = mutableListOf<String>()
-        var paths = mutableListOf<String>()
+        val tags = mutableListOf<String>()
+        val paths = mutableListOf<String>()
         for (filter in if (filters.isEmpty()) getFilterList() else filters) {
             when (filter) {
                 is TagList -> filter.state
@@ -82,7 +82,7 @@ class HentaiFantasy : ParsedHttpSource() {
             }
         }
 
-        var searchTags = tags.size > 0
+        val searchTags = tags.size > 0
         if (!searchTags && query.length < 3) {
             throw Exception("Inserisci almeno tre caratteri")
         }
@@ -97,7 +97,7 @@ class HentaiFantasy : ParsedHttpSource() {
             }
         }
 
-        var searchPath = if (!searchTags) {
+        val searchPath = if (!searchTags) {
             "search"
         } else if (paths.size == 1) {
             "tag/${paths[0]}/$page"
@@ -116,7 +116,7 @@ class HentaiFantasy : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        var genres = mutableListOf<String>()
+        val genres = mutableListOf<String>()
         document.select("div#tablelist > div.row").forEach { row ->
             when (row.select("div.cell > b").first().text().trim()) {
                 "Autore" -> manga.author = row.select("div.cell > a").text().trim()
@@ -149,17 +149,21 @@ class HentaiFantasy : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return if (date == "Oggi") {
-            Calendar.getInstance().timeInMillis
-        } else if (date == "Ieri") {
-            Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -1)
-            }.timeInMillis
-        } else {
-            try {
-                dateFormat.parse(date).time
-            } catch (e: ParseException) {
-                0L
+        return when (date) {
+            "Oggi" -> {
+                Calendar.getInstance().timeInMillis
+            }
+            "Ieri" -> {
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, -1)
+                }.timeInMillis
+            }
+            else -> {
+                try {
+                    dateFormat.parse(date).time
+                } catch (e: ParseException) {
+                    0L
+                }
             }
         }
     }

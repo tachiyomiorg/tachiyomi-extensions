@@ -58,11 +58,9 @@ class MangaKita : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select("div.row > div").get(5).ownText().trim()
+        author = document.select("div.row > div")[5].ownText().trim()
         genre = document.select("[rel=tag]").joinToString { it.text() }
-        status = document.select("div.row > div").get(10).ownText().let {
-            parseStatus(it)
-        }
+        status = parseStatus(document.select("div.row > div")[10].ownText())
         thumbnail_url = document.select("div#wrap img").attr("src")
     }
 

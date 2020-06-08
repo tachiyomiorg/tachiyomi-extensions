@@ -1,6 +1,6 @@
 ---
 name: "🧠 Meta feature request"
-title: "[Meta]"
+title: "[Meta] <short description>"
 about: "Suggest improvements to the project"
 labels: "meta"
 ---
@@ -14,6 +14,7 @@ I acknowledge that:
 - If this is an issue with the app itself, that I should be opening an issue in https://github.com/inorichi/tachiyomi
 - I have searched the existing issues for duplicates
 - For source requests, I have checked the list of existing extensions including the multi-source spreadsheet: https://tachiyomi.org/extensions/
+- I will fill out the title and the information in this template
 
 **DELETE THIS SECTION IF YOU HAVE READ AND ACKNOWLEDGED IT**
 

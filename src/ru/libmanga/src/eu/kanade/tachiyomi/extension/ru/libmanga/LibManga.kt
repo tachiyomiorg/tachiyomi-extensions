@@ -4,12 +4,10 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Base64.decode as base64Decode
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullArray
-import com.github.salomonbrys.kotson.nullInt
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
@@ -169,21 +167,30 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private fun popularMangaFromElement(el: JsonElement) = SManga.create().apply {
+        val slug = el["slug"].string
         title = el["name"].string
-        thumbnail_url = "$baseUrl/uploads/" + if (el["cover"].nullInt != null)
-            "cover/${el["slug"].string}/cover/cover_250x350.jpg" else
-            "no-image.png"
-        url = "/" + el["slug"].string
+        thumbnail_url = "$baseUrl/uploads/cover/$slug/cover/cover_250x350.jpg"
+        url = "/$slug"
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
         val manga = SManga.create()
+
         if (document.html().contains("Манга удалена по просьбе правообладателей")) {
             manga.status = SManga.LICENSED
             return manga
         }
+
         val body = document.select("div.section__body").first()
+        val rawCategory = body.select(".info-list__row:has(strong:contains(Тип)) > span").text()
+        val category = when {
+            rawCategory == "Комикс западный" -> "комикс"
+            rawCategory.isNotBlank() -> rawCategory.toLowerCase()
+            else -> "манга"
+        }
+
+        val genres = body.select(".info-list__row:has(strong:contains(Жанры)) > a").map { it.text() }
         manga.title = document.select(".manga-title small").text().substringBefore("/").trim()
         manga.thumbnail_url = body.select(".manga__cover").attr("src")
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
@@ -197,7 +204,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        manga.genre = body.select(".info-list__row:has(strong:contains(Жанры)) > a").joinToString { it.text() }
+        manga.genre = genres.plusElement(category).joinToString { it.trim() }
         manga.description = body.select(".info-desc__content").text()
         return manga
     }
@@ -248,8 +255,9 @@ class LibManga : ConfigurableSource, HttpSource() {
             .select("script:containsData(window.__info)")
             .first()
             .html()
-            .replace("window.__info = ", "")
-            .replace(";", "")
+            .trim()
+            .removePrefix("window.__info = ")
+            .removeSuffix(";")
 
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject
@@ -260,15 +268,15 @@ class LibManga : ConfigurableSource, HttpSource() {
         val imageServerUrl: String = servers[serverToUse].string
 
         // Get pages
-        val baseStr = document.select("span.pp")
+        val pagesArr = document
+            .select("script:containsData(window.__pg)")
             .first()
             .html()
-            .replace("<!--", "")
-            .replace("-->", "")
             .trim()
+            .removePrefix("window.__pg = ")
+            .removeSuffix(";")
 
-        val decodedArr = base64Decode(baseStr, android.util.Base64.DEFAULT)
-        val pagesJson = jsonParser.parse(String(decodedArr)).array
+        val pagesJson = jsonParser.parse(pagesArr).array
 
         val pages = mutableListOf<Page>()
         pagesJson.forEach { page ->

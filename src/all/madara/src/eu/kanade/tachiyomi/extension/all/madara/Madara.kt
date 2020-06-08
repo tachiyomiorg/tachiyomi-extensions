@@ -19,6 +19,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.CacheControl
 import okhttp3.FormBody
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -80,8 +81,10 @@ abstract class Madara(
         add("vars[manga_archives_item_layout]", "big_thumbnail")
     }
 
+    open val formHeaders: Headers by lazy { headersBuilder().build() }
+
     override fun popularMangaRequest(page: Int): Request {
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
+        return POST("$baseUrl/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun popularMangaNextPageSelector(): String? = "body:not(:has(.no-posts))"
@@ -96,7 +99,7 @@ abstract class Madara(
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return POST("$baseUrl/wp-admin/admin-ajax.php", headers, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
+        return POST("$baseUrl/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
     }
 
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -125,8 +128,10 @@ abstract class Madara(
 
     // Search Manga
 
+    protected open fun searchPage(page: Int): String = "page/$page/"
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/page/$page/")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/${searchPage(page)}")!!.newBuilder()
         url.addQueryParameter("s", query)
         url.addQueryParameter("post_type", "wp-manga")
         filters.forEach { filter ->
@@ -158,22 +163,19 @@ abstract class Madara(
                         url.addQueryParameter("m_orderby", filter.toUriPart())
                     }
                 }
+                is GenreConditionFilter -> {
+                    url.addQueryParameter("op", filter.toUriPart())
+                }
                 is GenreList -> {
-                    val genreInclude = mutableListOf<String>()
-                    filter.state.forEach {
-                        if (it.state) {
-                            genreInclude.add(it.id)
+                    filter.state
+                        .filter { it.state }
+                        .let { list ->
+                            if (list.isNotEmpty()) { list.forEach { genre -> url.addQueryParameter("genre[]", genre.id) } }
                         }
-                    }
-                    if (genreInclude.isNotEmpty()) {
-                        genreInclude.forEach { genre ->
-                            url.addQueryParameter("genre[]", genre)
-                        }
-                    }
                 }
             }
         }
-        return GET(url.build().toString(), headers)
+        return GET(url.toString(), headers)
     }
 
     private class AuthorFilter : Filter.Text("Author")
@@ -188,6 +190,10 @@ abstract class Madara(
         Pair("Trending", "trending"),
         Pair("Most Views", "views"),
         Pair("New", "new-manga")
+    ))
+    private class GenreConditionFilter : UriPartFilter("Genre condition", arrayOf(
+        Pair("or", ""),
+        Pair("and", "1")
     ))
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
@@ -262,6 +268,7 @@ abstract class Madara(
         OrderByFilter(),
         Filter.Separator(),
         Filter.Header("Genres may not work for all sources"),
+        GenreConditionFilter(),
         GenreList(getGenreList())
     )
 
@@ -346,7 +353,7 @@ abstract class Madara(
         return manga
     }
 
-    private fun imageFromElement(element: Element): String? {
+    protected fun imageFromElement(element: Element): String? {
         return when {
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("data-lazy-src") -> element.attr("abs:data-lazy-src")
@@ -356,7 +363,9 @@ abstract class Madara(
     }
 
     protected fun getXhrChapters(mangaId: String): Document {
-        val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8").build()
+        val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")
+            .add("Referer", baseUrl)
+            .build()
         val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
         return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()
     }

@@ -8,6 +8,7 @@ import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -24,6 +25,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class MyMangaReaderCMSSource(
     override val lang: String,
@@ -38,6 +40,16 @@ class MyMangaReaderCMSSource(
     private val itemUrlPath = Uri.parse(itemUrl).pathSegments.firstOrNull()
     private val parsedBaseUrl = Uri.parse(baseUrl)
 
+    /**
+     * Hardcode IDs for sources for which we altered name or lang
+     */
+    override val id: Long = when (name) {
+        "Comic Space" -> 1847392744200215680
+        "Mangás Yuri" -> 6456162511058446409
+        "AnimaRegia" -> 4378659695320121364
+        else -> super.id
+    }
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
@@ -50,6 +62,18 @@ class MyMangaReaderCMSSource(
             else -> GET("$baseUrl/filterList?page=$page&sortBy=views&asc=false", headers)
         }
     }
+
+    /**
+     * Search through a list of titles client-side or let the server do it
+     */
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (name == "Mangas.pw") {
+            selfSearch(query)
+        } else {
+            super.fetchSearchManga(page, query, filters)
+        }
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         // Query overrides everything
         val url: Uri.Builder
@@ -62,6 +86,26 @@ class MyMangaReaderCMSSource(
                     .forEach { it.addToUri(url) }
         }
         return GET(url.toString(), headers)
+    }
+
+    /**
+     * If the usual search engine isn't available, search through the list of titles with this
+     */
+    private fun selfSearch(query: String): Observable<MangasPage> {
+        return client.newCall(GET("$baseUrl/changeMangaList?type=text", headers))
+            .asObservableSuccess()
+            .map { response ->
+                val mangas = response.asJsoup().select("ul.manga-list a")
+                    .filter { it.text().contains(query, ignoreCase = true) }
+                    .map {
+                        SManga.create().apply {
+                            title = it.text()
+                            setUrlWithoutDomain(it.attr("abs:href"))
+                            thumbnail_url = coverGuess(null, it.attr("abs:href"))
+                        }
+                    }
+                MangasPage(mangas, false)
+            }
     }
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest-release?page=$page", headers)
@@ -335,15 +379,19 @@ class MyMangaReaderCMSSource(
     /**
      * Returns the list of filters for the source.
      */
-    override fun getFilterList() = FilterList(
-            if (tagMappings != null)
-                (getInitialFilterList() + UriSelectFilter("Tag",
-                        "tag",
-                        arrayOf("" to "Any",
-                                *tagMappings.toTypedArray()
-                        )))
-            else getInitialFilterList()
-    )
+    override fun getFilterList(): FilterList {
+        return when {
+            name == "Mangas.pw" -> FilterList()
+            tagMappings != null -> {
+                FilterList(getInitialFilterList() + UriSelectFilter("Tag",
+                    "tag",
+                    arrayOf("" to "Any",
+                        *tagMappings.toTypedArray()
+                    )))
+            }
+            else -> FilterList(getInitialFilterList())
+        }
+    }
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.

@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -21,10 +22,10 @@ import org.jsoup.nodes.Element
 class Manhuadui : ParsedHttpSource() {
 
     override val name = "漫画堆"
-    override val baseUrl = "https://www.manhuadui.com"
+    override val baseUrl = "https://www.manhuabei.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
+    private val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
 
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
@@ -35,23 +36,23 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
-    override fun headersBuilder() = super.headersBuilder()
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query != "") {
+        return if (query != "") {
             val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
-            return GET(url.toString(), headers)
+            GET(url.toString(), headers)
         } else {
-            var params = filters.map {
+            val params = filters.map {
                 if (it is UriPartFilter) {
                     it.toUriPart()
                 } else ""
             }.filter { it != "" }.joinToString("-")
             val url = HttpUrl.parse("$baseUrl/list/$params/$page/")?.newBuilder()
-            return GET(url.toString(), headers)
+            GET(url.toString(), headers)
         }
     }
 
@@ -116,7 +117,7 @@ class Manhuadui : ParsedHttpSource() {
     }
 
     // ref: https://jueyue.iteye.com/blog/1830792
-    fun decryptAES(value: String, key: String, iv: String): String? {
+    private fun decryptAES(value: String, key: String, iv: String): String? {
         try {
             val secretKey = SecretKeySpec(key.toByteArray(), "AES")
             val ivParams = IvParameterSpec(iv.toByteArray())
@@ -133,7 +134,7 @@ class Manhuadui : ParsedHttpSource() {
         return null
     }
 
-    fun decrypt(code: String): String? {
+    private fun decrypt(code: String): String? {
         val key = "123456781234567G"
         val iv = "ABCDEF1G34123412"
 

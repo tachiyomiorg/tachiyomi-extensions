@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.en.mangasail
 
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
@@ -31,7 +32,7 @@ class Mangasail : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    /* Site loads some mannga info (manga cover, author name, status, etc.) client side through JQuery
+    /* Site loads some manga info (manga cover, author name, status, etc.) client side through JQuery
     need to add this header for when we request these data fragments
     Also necessary for latest updates request */
     override fun headersBuilder() = super.headersBuilder().add("X-Authcache", "1")!!
@@ -39,11 +40,7 @@ class Mangasail : ParsedHttpSource() {
     override fun popularMangaSelector() = "tbody tr"
 
     override fun popularMangaRequest(page: Int): Request {
-        if (page == 1) {
-            return GET("$baseUrl/directory/hot")
-        } else {
-            return GET("$baseUrl/directory/hot?page=" + (page - 1))
-        }
+        return GET("$baseUrl/directory/hot" + if (page > 1) "/hot?page= + ${page - 1}" else "", headers)
     }
 
     override fun latestUpdatesSelector() = "ul#latest-list > li"
@@ -78,11 +75,7 @@ class Mangasail : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = "There is no next page"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (page == 1) {
-            return GET("$baseUrl/search/node/$query")
-        } else {
-            return GET("$baseUrl/search/node/$query?page=" + (page - 1))
-        }
+        return GET("$baseUrl/search/node/$query" + if (page > 1) "?page= + ${page - 1}" else "")
     }
 
     override fun searchMangaSelector() = "h3.title"
@@ -99,20 +92,21 @@ class Mangasail : ParsedHttpSource() {
         return manga
     }
 
+    private val gson by lazy { Gson() }
+
     // Function to get data fragments from website
-    private fun getNodeDetail(node: String, field: String): String {
+    private fun getNodeDetail(node: String, field: String): String? {
         val requestUrl = "$baseUrl/sites/all/modules/authcache/modules/authcache_p13n/frontcontroller/authcache.php?a[field][0]=$node:full:en&r=asm/field/node/$field&o[q]=node/$node"
-        val call = client.newCall(GET(requestUrl, headers)).execute()
-        val gson = Gson()
-        if (call.isSuccessful) {
+        val responseString = client.newCall(GET(requestUrl, headers)).execute().body()?.string() ?: return null
+        return with(gson.fromJson<JsonObject>(responseString)) {
             when (field) {
-                "field_image2" -> return gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString.substringAfter("src=\"").substringBefore("\"")
-                "field_status", "field_author", "field_artist" -> return gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString.substringAfter("even\">").substringBefore("</div>")
-                "body" -> return parse(gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString, baseUrl).select("p").text().substringAfter("summary: ")
-                "field_genres" -> return parse(gson.fromJson<JsonObject>(call.body()!!.string())["field"]["$node:full:en"].asString, baseUrl).select("a").text()
+                "field_image2" -> this["field"]["$node:full:en"].asString.substringAfter("src=\"").substringBefore("\"")
+                "field_status", "field_author", "field_artist" -> this["field"]["$node:full:en"].asString.substringAfter("even\">").substringBefore("</div>")
+                "body" -> parse(this["field"]["$node:full:en"].asString, baseUrl).select("p").text().substringAfter("summary: ")
+                "field_genres" -> parse(this["field"]["$node:full:en"].asString, baseUrl).select("a").text()
+                else -> null
             }
         }
-            return ""
     }
 
     // Get a page's node number so we can get data fragments for that page
@@ -120,41 +114,37 @@ class Mangasail : ParsedHttpSource() {
         return document.select("[rel=shortlink]").attr("href").split("/").last().replace("\"", "")
     }
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = "li.next a"
 
     // On source's website most of these details are loaded through JQuery
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.main-content-inner")
-        val manga = SManga.create()
-        manga.title = infoElement.select("h1").first().text()
-
-        val node = getNodeNumber(document)
-        manga.author = getNodeDetail(node, "field_author")
-        manga.artist = getNodeDetail(node, "field_artist")
-        manga.genre = getNodeDetail(node, "field_genres")
-        val status = getNodeDetail(node, "field_status")
-        manga.status = parseStatus(status)
-        manga.description = getNodeDetail(node, "body")
-        manga.thumbnail_url = getNodeDetail(node, "field_image2")
-        return manga
+        return SManga.create().apply {
+            title = document.select("div.main-content-inner").select("h1").first().text()
+            getNodeNumber(document).let { node ->
+                author = getNodeDetail(node, "field_author")
+                artist = getNodeDetail(node, "field_artist")
+                genre = getNodeDetail(node, "field_genres")?.replace(" ", ", ")
+                status = getNodeDetail(node, "field_status").toStatus()
+                description = getNodeDetail(node, "body")
+                thumbnail_url = getNodeDetail(node, "field_image2")
+            }
+        }
     }
 
-    private fun parseStatus(status: String?) = when {
-        status == null -> SManga.UNKNOWN
-        status.contains("Ongoing") -> SManga.ONGOING
-        status.contains("Completed") -> SManga.COMPLETED
+    private fun String?.toStatus() = when {
+        this == null -> SManga.UNKNOWN
+        this.contains("Ongoing") -> SManga.ONGOING
+        this.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
     override fun chapterListSelector() = "tbody tr"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a").first()
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
+        chapter.setUrlWithoutDomain(element.select("a").first().attr("href"))
         chapter.name = element.select("a").text()
-        chapter.date_upload = parseChapterDate(element.select("td + td").text()) ?: 0
+        chapter.date_upload = parseChapterDate(element.select("td + td").text())
         return chapter
     }
 
@@ -164,21 +154,17 @@ class Mangasail : ParsedHttpSource() {
         }
     }
 
-    private fun parseChapterDate(string: String): Long? {
-            return dateFormat.parse(string.substringAfter("on ")).time
+    private fun parseChapterDate(string: String): Long {
+        return dateFormat.parse(string.substringAfter("on ")).time
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div#images img")?.forEach {
-            pages.add(Page(pages.size, "", it.attr("src")))
+        val objectString = document.select("script:containsData(paths)").first().data()
+            .substringAfter(" ").substringBefore(");")
+        return gson.fromJson<JsonObject>(objectString)["showmanga"]["paths"].asJsonArray.mapIndexed { i, jsonElement ->
+            Page(i, "", jsonElement.string)
         }
-
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
-
-    override fun getFilterList() = FilterList()
 }

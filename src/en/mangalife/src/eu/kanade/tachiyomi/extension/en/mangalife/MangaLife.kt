@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.en.mangalife
 
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.string
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -233,7 +234,7 @@ class MangaLife : HttpSource() {
         return gson.fromJson<JsonArray>(vmChapters).map { json ->
             val indexChapter = json["Chapter"].string
             SChapter.create().apply {
-                name = json["ChapterName"].string.let { if (it.isNotEmpty()) it else "${json["Type"].string} ${chapterImage(indexChapter)}" }
+                name = json["ChapterName"].nullString.let { if (it.isNullOrEmpty()) "${json["Type"].string} ${chapterImage(indexChapter)}" else it }
                 url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
                     dateFormat.parse(json["Date"].string.substringBefore(" ")).time
@@ -259,11 +260,11 @@ class MangaLife : HttpSource() {
             .let { if (it.isEmpty()) "" else "$it/" }
         val path = "$host/manga/$titleURI/$seasonURI"
 
-        var chNum = chapterImage(curChapter["Chapter"].string)
+        val chNum = chapterImage(curChapter["Chapter"].string)
 
         return IntRange(1, pageTotal).mapIndexed { i, _ ->
-            var imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length - 3) }
-            Page(i, "", path + "$chNum-$imageNum.png")
+            val imageNum = (i + 1).toString().let { "000$it" }.let { it.substring(it.length - 3) }
+            Page(i, "", "$path$chNum-$imageNum.png")
         }
     }
 

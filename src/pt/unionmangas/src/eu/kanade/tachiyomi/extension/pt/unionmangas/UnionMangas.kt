@@ -7,7 +7,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -26,7 +25,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import rx.Observable
 
 class UnionMangas : ParsedHttpSource() {
 
@@ -52,7 +50,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/xz")
+        .add("Referer", "$baseUrl/xw")
 
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
@@ -100,6 +98,11 @@ class UnionMangas : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "div#linha-botao-mais"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val id = query.removePrefix(PREFIX_ID_SEARCH)
+            return GET("$baseUrl/perfil-manga/$id", headers)
+        }
+
         val newHeaders = headersBuilder()
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
@@ -111,6 +114,15 @@ class UnionMangas : ParsedHttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
+        val requestUrl = response.request().url().toString()
+
+        if (requestUrl.contains("perfil-manga")) {
+            val id = requestUrl.substringAfter("perfil-manga/")
+            val manga = mangaDetailsParse(response)
+                .apply { url = "/perfil-manga/$id" }
+            return MangasPage(listOf(manga), false)
+        }
+
         val result = response.asJsonObject()
 
         val mangas = result["items"].array
@@ -155,13 +167,17 @@ class UnionMangas : ParsedHttpSource() {
     override fun chapterListSelector() = "div.row.lancamento-linha"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        val firstColumn = element.select("div.col-md-6:eq(0)")
-        val secondColumn = element.select("div.col-md-6:eq(1)")
+        val firstColumn = element.select("div.col-md-6:eq(0)").first()!!
+        val secondColumn = element.select("div.col-md-6:eq(1)").first()
 
         name = firstColumn.select("a").first().text()
-        scanlator = secondColumn?.text()
+        scanlator = secondColumn?.select("a")?.joinToString { it.text() }
         date_upload = DATE_FORMATTER.tryParseTime(firstColumn.select("span").last()!!.text())
-        setUrlWithoutDomain(firstColumn.select("a").first().attr("href"))
+
+        // For some reason, setUrlWithoutDomain does not work when the url have spaces.
+        val absoluteUrlFixed = firstColumn.select("a").first().attr("href")
+            .replace(" ", "%20")
+        setUrlWithoutDomain(absoluteUrlFixed)
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -186,25 +202,6 @@ class UnionMangas : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = throw Exception("This method should not be called!")
 
-    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/perfil-manga/$id", headers)
-
-    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
-        val details = mangaDetailsParse(response)
-        details.url = "/perfil-manga/$id"
-        return MangasPage(listOf(details), false)
-    }
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return if (query.startsWith(PREFIX_ID_SEARCH)) {
-            val id = query.removePrefix(PREFIX_ID_SEARCH)
-            client.newCall(searchMangaByIdRequest(id))
-                .asObservableSuccess()
-                .map { response -> searchMangaByIdParse(response, id) }
-        } else {
-            super.fetchSearchManga(page, query, filters)
-        }
-    }
-
     private fun SimpleDateFormat.tryParseTime(date: String): Long {
         return try {
             parse(date).time
@@ -213,19 +210,21 @@ class UnionMangas : ParsedHttpSource() {
         }
     }
 
-    private fun String.withoutLanguage(): String = replace("(Pt-Br)", "", true).trim()
+    private fun String.withoutLanguage(): String = replace(LANGUAGE_REGEX, "").trim()
 
     private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
-        const val PREFIX_ID_SEARCH = "id:"
-
         private val DATE_FORMATTER by lazy { SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH) }
+
+        private val LANGUAGE_REGEX = "\\(Pt-Br\\)".toRegex(RegexOption.IGNORE_CASE)
+
+        const val PREFIX_ID_SEARCH = "id:"
     }
 }

@@ -8,7 +8,6 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import okhttp3.Headers
 import okhttp3.Request
 import org.jsoup.nodes.Element
 
@@ -449,10 +448,6 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
 }
 
 class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("Accept-Language", "es-ES,es;q=0.9,en;q=0.8,gl;q=0.7")
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/75")
-
     // ES, FR, RU don't return results for searches with an apostrophe
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return super.searchMangaRequest(page, query.substringBefore("\'"), filters)

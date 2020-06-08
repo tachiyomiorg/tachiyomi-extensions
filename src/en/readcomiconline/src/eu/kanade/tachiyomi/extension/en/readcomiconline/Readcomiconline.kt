@@ -206,7 +206,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(QUALITY_PREF, entry).commit()
             }
         }
@@ -224,7 +224,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(QUALITY_PREF, entry).commit()
             }
         }

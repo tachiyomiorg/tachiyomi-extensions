@@ -53,7 +53,7 @@ class ManhuaID : ParsedHttpSource() {
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select("table").first().select("td").get(3).text()
+        author = document.select("table").first().select("td")[3].text()
         title = document.select("title").text()
         description = document.select(".text-justify").text()
         genre = document.select("span.badge.badge-success.mr-1.mb-1").joinToString { it.text() }

@@ -203,7 +203,7 @@ abstract class GenkanOriginal(
 
         /* call another function if there's more pages to search
            not doing it this way can lead to a false "no results found"
-           if no matches are found on the first page but there are matcheszz
+           if no matches are found on the first page but there are matches
            on subsequent pages */
         nextPageSelectorElement = document.select(searchMangaNextPageSelector())
         while (nextPageSelectorElement.hasText()) {

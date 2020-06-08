@@ -83,44 +83,40 @@ class Mangahere : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
 
-        filters.forEach {
-            when (it) {
-
-                is TypeList -> {
-                    url.addEncodedQueryParameter("type", types[it.values[it.state]].toString())
-                }
-                is CompletionList -> url.addEncodedQueryParameter("st", it.state.toString())
+        filters.forEach { filter ->
+            when (filter) {
+                is TypeList -> url.addEncodedQueryParameter("type", types[filter.values[filter.state]].toString())
+                is CompletionList -> url.addEncodedQueryParameter("st", filter.state.toString())
                 is GenreList -> {
-
-                    val genreFilter = filters.find { it is GenreList } as GenreList?
-                    val includeGenres = ArrayList<Int>()
-                    val excludeGenres = ArrayList<Int>()
-                    genreFilter?.state?.forEach { genre ->
-                        if (genre.isIncluded())
-                            includeGenres.add(genre.id)
-                        else if (genre.isExcluded())
-                            excludeGenres.add(genre.id)
+                    val includeGenres = mutableSetOf<Int>()
+                    val excludeGenres = mutableSetOf<Int>()
+                    filter.state.forEach { genre ->
+                        if (genre.isIncluded()) includeGenres.add(genre.id)
+                        if (genre.isExcluded()) excludeGenres.add(genre.id)
                     }
-
-                    url.addEncodedQueryParameter("genres", includeGenres.joinToString(","))
-                        .addEncodedQueryParameter("nogenres", excludeGenres.joinToString(","))
+                    url.apply {
+                        addEncodedQueryParameter("genres", includeGenres.joinToString(","))
+                        addEncodedQueryParameter("nogenres", excludeGenres.joinToString(","))
+                    }
                 }
             }
         }
 
-        url.addEncodedQueryParameter("page", page.toString())
-                .addEncodedQueryParameter("title", query)
-                .addEncodedQueryParameter("sort", null)
-                .addEncodedQueryParameter("stype", 1.toString())
-                .addEncodedQueryParameter("name", null)
-                .addEncodedQueryParameter("author_method", "cw")
-                .addEncodedQueryParameter("author", null)
-                .addEncodedQueryParameter("artist_method", "cw")
-                .addEncodedQueryParameter("artist", null)
-                .addEncodedQueryParameter("rating_method", "eq")
-                .addEncodedQueryParameter("rating", null)
-                .addEncodedQueryParameter("released_method", "eq")
-                .addEncodedQueryParameter("released", null)
+        url.apply {
+            addEncodedQueryParameter("page", page.toString())
+            addEncodedQueryParameter("title", query)
+            addEncodedQueryParameter("sort", null)
+            addEncodedQueryParameter("stype", 1.toString())
+            addEncodedQueryParameter("name", null)
+            addEncodedQueryParameter("author_method", "cw")
+            addEncodedQueryParameter("author", null)
+            addEncodedQueryParameter("artist_method", "cw")
+            addEncodedQueryParameter("artist", null)
+            addEncodedQueryParameter("rating_method", "eq")
+            addEncodedQueryParameter("rating", null)
+            addEncodedQueryParameter("released_method", "eq")
+            addEncodedQueryParameter("released", null)
+        }
 
         return GET(url.toString(), headers)
     }
@@ -318,7 +314,7 @@ class Mangahere : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
             TypeList(types.keys.toList().sorted().toTypedArray()),
             CompletionList(completions),
-            GenreList(genres)
+            GenreList(genres())
     )
 
     private val types = hashMapOf(
@@ -330,7 +326,7 @@ class Mangahere : ParsedHttpSource() {
 
     private val completions = arrayOf("Either", "No", "Yes")
 
-    private val genres = arrayListOf(
+    private fun genres() = arrayListOf(
             Genre("Action", 1),
             Genre("Adventure", 2),
             Genre("Comedy", 3),

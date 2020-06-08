@@ -366,7 +366,7 @@ class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
     ))
 }
 
-open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
     Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
     fun toUriPart() = vals[state].second
 }

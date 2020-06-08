@@ -5,13 +5,12 @@ ext {
     appName = 'Tachiyomi: WP Manga Stream'
     pkgNameSuffix = 'all.wpmangastream'
     extClass = '.WPMangaStreamFactory'
-    extVersionCode = 8
+    extVersionCode = 14
     libVersion = '1.2'
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
-    compileOnly project(':preference-stub')
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
+
 apply from: "$rootDir/common.gradle"

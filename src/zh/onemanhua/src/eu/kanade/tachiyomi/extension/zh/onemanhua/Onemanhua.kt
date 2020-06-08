@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.onemanhua
 
+import android.annotation.SuppressLint
 import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -18,20 +19,21 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Onemanhua : ParsedHttpSource() {
+    override val id = 8252565807829914103 // name used to be "One漫画"
     override val lang = "zh"
     override val supportsLatest = true
-    override val name = "One漫画"
-    override val baseUrl = "https://www.onemanhua.com"
+    override val name = "OH漫画 (One漫画)"
+    override val baseUrl = "https://www.ohmanhua.com/"
 
     private var decryptKey = "JRUIFMVJDIWE569j"
-    private var imageServerUrl = "https://img.onemanhua.com/comic/"
+    private var imageServerUrl = "https://img.ohmanhua.com/comic/"
 
     // Common
     private var commonSelector = "li.fed-list-item"
     private var commonNextPageSelector = "a:contains(下页):not(.fed-btns-disad)"
     private fun commonMangaFromElement(element: Element): SManga {
-        var picElement = element.select("a.fed-list-pics").first()
-        var manga = SManga.create().apply {
+        val picElement = element.select("a.fed-list-pics").first()
+        val manga = SManga.create().apply {
             title = element.select("a.fed-list-title").first().text()
             thumbnail_url = picElement.attr("data-original")
         }
@@ -91,8 +93,8 @@ class Onemanhua : ParsedHttpSource() {
             return commonMangaFromElement(element)
         }
 
-        var picElement = element.select("a.fed-list-pics").first()
-        var manga = SManga.create().apply {
+        val picElement = element.select("a.fed-list-pics").first()
+        val manga = SManga.create().apply {
             title = element.select("h1.fed-part-eone a").first().text()
             thumbnail_url = picElement.attr("data-original")
         }
@@ -103,9 +105,9 @@ class Onemanhua : ParsedHttpSource() {
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        var picElement = document.select("a.fed-list-pics").first()
-        var detailElements = document.select("ul.fed-part-rows li.fed-col-xs12")
-        var manga = SManga.create().apply {
+        val picElement = document.select("a.fed-list-pics").first()
+        val detailElements = document.select("ul.fed-part-rows li.fed-col-xs12")
+        return SManga.create().apply {
             title = document.select("h1.fed-part-eone").first().text().trim()
             thumbnail_url = picElement.attr("data-original")
             status = when (detailElements[0].select("a").first().text()) {
@@ -118,8 +120,6 @@ class Onemanhua : ParsedHttpSource() {
             genre = detailElements[4].select("a").joinToString { it.text() }
             description = detailElements[5].select(".fed-part-esan").first().text().trim()
         }
-
-        return manga
     }
 
     override fun chapterListSelector(): String = "div:not(.fed-hidden) > div.all_data_list > ul.fed-part-rows a"
@@ -136,18 +136,18 @@ class Onemanhua : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         // 1. get C_DATA from HTML
-        var encodedData = getEncodedMangaData(document)
+        val encodedData = getEncodedMangaData(document)
         // 2. decode C_DATA by Base64
-        var decodedData = String(Base64.decode(encodedData, Base64.NO_WRAP))
+        val decodedData = String(Base64.decode(encodedData, Base64.NO_WRAP))
         // 3. decrypt C_DATA
-        var decryptedData = decryptAES(decodedData, decryptKey)
+        val decryptedData = decryptAES(decodedData, decryptKey)
 
         val result = ArrayList<Page>()
 
         if (decryptedData != null) {
-            var imgRelativePath = getImgRelativePath(decryptedData)
-            var startImg = getStartImg(decryptedData)
-            var totalPages = getTotalPages(decryptedData)
+            val imgRelativePath = getImgRelativePath(decryptedData)
+            val startImg = getStartImg(decryptedData)
+            val totalPages = getTotalPages(decryptedData)
 
             for (i in startImg..totalPages) {
                 result.add(Page(i, "", "${imageServerUrl}${imgRelativePath}${"%04d".format(i)}.jpg"))
@@ -172,6 +172,7 @@ class Onemanhua : ParsedHttpSource() {
         throw Error("Unable to match for C_DATA")
     }
 
+    @SuppressLint("GetInstance")
     private fun decryptAES(value: String, key: String): String? {
         val secretKey = SecretKeySpec(key.toByteArray(), "AES")
         val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
@@ -184,7 +185,7 @@ class Onemanhua : ParsedHttpSource() {
 
     private fun getImgRelativePath(mangaData: String): String {
         val pattern = Pattern.compile("imgpath:\"(.+?)\"")
-        var matcher = pattern.matcher(mangaData)
+        val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
             return matcher.group(1)
         }
@@ -194,7 +195,7 @@ class Onemanhua : ParsedHttpSource() {
 
     private fun getTotalPages(mangaData: String): Int {
         val pattern = Pattern.compile("totalimg:([0-9]+?),")
-        var matcher = pattern.matcher(mangaData)
+        val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
             return Integer.parseInt(matcher.group(1))
         }
@@ -204,7 +205,7 @@ class Onemanhua : ParsedHttpSource() {
 
     private fun getStartImg(mangaData: String): Int {
         val pattern = Pattern.compile("startimg:([0-9]+?),")
-        var matcher = pattern.matcher(mangaData)
+        val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
             return Integer.parseInt(matcher.group(1))
         }

@@ -250,7 +250,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
                         ""
                     }
                 }
-                .forEach { pages.add(Page(pages.size, decoder.request(it), "${it.substringBefore("!!")}")) }
+                .forEach { pages.add(Page(pages.size, decoder.request(it), it.substringBefore("!!"))) }
         } catch (e: Exception) {
             e.printStackTrace()
         }

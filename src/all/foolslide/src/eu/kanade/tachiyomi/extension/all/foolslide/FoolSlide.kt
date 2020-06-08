@@ -169,26 +169,31 @@ abstract class FoolSlide(
 
         // Handle 'yesterday' and 'today', using midnight
         var relativeDate: Calendar? = null
-        if (lcDate.startsWith("yesterday")) {
-            relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, -1) // yesterday
-            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
-            relativeDate.set(Calendar.MINUTE, 0)
-            relativeDate.set(Calendar.SECOND, 0)
-            relativeDate.set(Calendar.MILLISECOND, 0)
-        } else if (lcDate.startsWith("today")) {
-            relativeDate = Calendar.getInstance()
-            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
-            relativeDate.set(Calendar.MINUTE, 0)
-            relativeDate.set(Calendar.SECOND, 0)
-            relativeDate.set(Calendar.MILLISECOND, 0)
-        } else if (lcDate.startsWith("tomorrow")) {
-            relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, +1) // tomorrow
-            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
-            relativeDate.set(Calendar.MINUTE, 0)
-            relativeDate.set(Calendar.SECOND, 0)
-            relativeDate.set(Calendar.MILLISECOND, 0)
+        // Result parsed but no year, copy current year over
+        when {
+            lcDate.startsWith("yesterday") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.add(Calendar.DAY_OF_MONTH, -1) // yesterday
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+            lcDate.startsWith("today") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+            lcDate.startsWith("tomorrow") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.add(Calendar.DAY_OF_MONTH, +1) // tomorrow
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
         }
 
         relativeDate?.timeInMillis?.let {

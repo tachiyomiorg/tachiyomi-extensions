@@ -30,6 +30,16 @@ class Mangafreak : ParsedHttpSource() {
         .followRedirects(true)
         .build()!!
 
+    private fun mangaFromElement(element: Element, urlSelector: String): SManga {
+        return SManga.create().apply {
+            thumbnail_url = element.select("img").attr("abs:src")
+            element.select(urlSelector).apply {
+                title = text()
+                url = attr("href")
+            }
+        }
+    }
+
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
@@ -37,13 +47,7 @@ class Mangafreak : ParsedHttpSource() {
     }
     override fun popularMangaNextPageSelector(): String? = "a.next_p"
     override fun popularMangaSelector(): String = "div.ranking_item"
-    override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("abs:src")
-        element.select("a").apply {
-            title = text()
-            url = attr("href")
-        }
-    }
+    override fun popularMangaFromElement(element: Element): SManga = mangaFromElement(element, "a")
 
     // Latest
 
@@ -72,14 +76,14 @@ class Mangafreak : ParsedHttpSource() {
             uri.appendPath("Genre")
             when (filter) {
                 is GenreList -> {
-                    uri.appendPath(filter.state.map {
+                    uri.appendPath(filter.state.joinToString("") {
                         when (it.state) {
                             Filter.TriState.STATE_IGNORE -> "0"
                             Filter.TriState.STATE_INCLUDE -> "1"
                             Filter.TriState.STATE_EXCLUDE -> "2"
                             else -> "0"
                         }
-                    }.joinToString(""))
+                    })
                 }
             }
             uri.appendEncodedPath("Status/0/Type/0")
@@ -88,7 +92,7 @@ class Mangafreak : ParsedHttpSource() {
     }
     override fun searchMangaNextPageSelector(): String? = null
     override fun searchMangaSelector(): String = "div.manga_search_item , div.mangaka_search_item"
-    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga = mangaFromElement(element, "h3 a")
 
     // Details
 
@@ -102,8 +106,7 @@ class Mangafreak : ParsedHttpSource() {
         }
         author = document.select("div.manga_series_data > div:eq(4)").text()
         artist = document.select("div.manga_series_data > div:eq(5)").text()
-        val glist = document.select("div.series_sub_genre_list a").map { it.text() }
-        genre = glist.joinToString(", ")
+        genre = document.select("div.series_sub_genre_list a").joinToString { it.text() }
         description = document.select("div.manga_series_description p").text()
     }
 
@@ -127,7 +130,7 @@ class Mangafreak : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("img#gohere").forEachIndexed { index, element ->
-            add(Page(index, "", element.attr("src")))
+            add(Page(index, "", element.attr("abs:src")))
         }
     }
 

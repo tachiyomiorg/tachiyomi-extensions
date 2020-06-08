@@ -73,7 +73,7 @@ class Onlinecomics : ParsedHttpSource() {
             document.select(selector).first()
         } != null
 
-        return MangasPage(mangas.distinctBy { it -> it.url }, hasNextPage)
+        return MangasPage(mangas.distinctBy { it.url }, hasNextPage)
     }
 
     override fun popularMangaSelector() = "div.PrewLine"

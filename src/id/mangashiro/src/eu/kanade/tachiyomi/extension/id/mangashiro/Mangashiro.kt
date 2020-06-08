@@ -23,11 +23,11 @@ class Mangashiro : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=popular", headers)
+        return GET("$baseUrl/manga/?order=popular&page=$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=latest", headers)
+        return GET("$baseUrl/manga/?order=update&page=$page", headers)
     }
 
     override fun popularMangaSelector() = "div.bs"
@@ -37,7 +37,7 @@ class Mangashiro : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga = searchMangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "a.next.page-numbers"
+    override fun popularMangaNextPageSelector() = "a.r"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
@@ -141,7 +141,7 @@ class Mangashiro : ParsedHttpSource() {
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }

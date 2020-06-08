@@ -144,18 +144,25 @@ class Readmangatoday : ParsedHttpSource() {
             val timeAgo = Integer.parseInt(dateWords[0])
             val calendar = Calendar.getInstance()
 
-            if (dateWords[1].contains("Minute")) {
-                calendar.add(Calendar.MINUTE, -timeAgo)
-            } else if (dateWords[1].contains("Hour")) {
-                calendar.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            } else if (dateWords[1].contains("Day")) {
-                calendar.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("Week")) {
-                calendar.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("Month")) {
-                calendar.add(Calendar.MONTH, -timeAgo)
-            } else if (dateWords[1].contains("Year")) {
-                calendar.add(Calendar.YEAR, -timeAgo)
+            when {
+                dateWords[1].contains("Minute") -> {
+                    calendar.add(Calendar.MINUTE, -timeAgo)
+                }
+                dateWords[1].contains("Hour") -> {
+                    calendar.add(Calendar.HOUR_OF_DAY, -timeAgo)
+                }
+                dateWords[1].contains("Day") -> {
+                    calendar.add(Calendar.DAY_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("Week") -> {
+                    calendar.add(Calendar.WEEK_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("Month") -> {
+                    calendar.add(Calendar.MONTH, -timeAgo)
+                }
+                dateWords[1].contains("Year") -> {
+                    calendar.add(Calendar.YEAR, -timeAgo)
+                }
             }
 
             return calendar.timeInMillis

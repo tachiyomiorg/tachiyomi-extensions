@@ -11,6 +11,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -20,13 +21,9 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override val supportsLatest: Boolean = true
 
-    private fun newHeaders() = super.headersBuilder()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept-Language", "es-ES,es;q=0.9,en;q=0.8,gl;q=0.7")
-        .add("Host", baseUrl.substringAfterLast("/")) // like: es.ninemanga.com
-        .add("Connection", "keep-alive")
-        .add("Upgrade-Insecure-Requests", "1")
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60")
-        .build()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/75")
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/list/New-Update/", headers) // "$baseUrl/category/updated_$page.html"
 
@@ -52,7 +49,7 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div.bookintro").let {
-            title = it.select("li > span:not([class])").text()
+            title = it.select("li > span:not([class])").text().removeSuffix(" Manga")
             genre = it.select("li[itemprop=genre] a").joinToString { e -> e.text() }
             author = it.select("li a[itemprop=author]").text()
             status = parseStatus(it.select("li a.red").first().text())
@@ -107,21 +104,13 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         return 0L
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, newHeaders())
-
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("select#page").first().select("option").forEach {
             add(Page(size, baseUrl + it.attr("value")))
         }
     }
 
-    override fun imageUrlRequest(page: Page) = GET(page.url, newHeaders())
-
     override fun imageUrlParse(document: Document) = document.select("div.pic_box img.manga_pic").first().attr("src").orEmpty()
-
-    /*override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/?name_sel=&wd=$query&author_sel=&author=&artist_sel=&artist=&category_id=&out_category_id=&completed_series=&page=$page.html", headers)
-    }*/
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search/")!!.newBuilder()
@@ -131,15 +120,28 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
         filters.forEach { filter ->
             when (filter) {
+                is QueryCBEFilter -> url.addQueryParameter("name_sel", filter.toUriPart())
+                is AuthorCBEFilter -> url.addQueryParameter("author_sel", filter.toUriPart())
+                is AuthorFilter -> url.addQueryParameter("author", filter.state)
+                is ArtistCBEFilter -> url.addQueryParameter("artist_sel", filter.toUriPart())
+                is ArtistFilter -> url.addQueryParameter("artist", filter.state)
                 is GenreList -> {
-                    filter.state
-                        .filter { genre -> genre.state }
-                        .forEach { genre -> url.addQueryParameter("category_id", genre.id) }
+                    var genreInclude = ""
+                    var genreExclude = ""
+                    filter.state.forEach {
+                        if (it.isIncluded()) genreInclude += "${it.id},"
+                        if (it.isExcluded()) genreExclude += "${it.id},"
+                    }
+                    url.addQueryParameter("category_id", genreInclude)
+                    url.addQueryParameter("out_category_id", genreExclude)
                 }
+                is CompletedFilter -> url.addQueryParameter("completed_series", filter.toUriPart())
             }
         }
 
-        return GET(url.build().toString(), headers)
+        url.addQueryParameter("type", "high")
+
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -148,11 +150,41 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    open class Genre(name: String, val id: String) : Filter.CheckBox(name)
+    open class Genre(name: String, val id: String) : Filter.TriState(name)
     open class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
 
+    class AuthorFilter : Filter.Text("Author")
+    class ArtistFilter : Filter.Text("Artist")
+
+    protected open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
+
+    protected open class ContainBeginEndFilter(name: String) : UriPartFilter(name, arrayOf(
+        Pair("Contain", "contain"),
+        Pair("Begin", "begin"),
+        Pair("End", "end")
+    ))
+
+    private class QueryCBEFilter : ContainBeginEndFilter("Query")
+    private class AuthorCBEFilter : ContainBeginEndFilter("Author")
+    private class ArtistCBEFilter : ContainBeginEndFilter("Artist")
+
+    private class CompletedFilter : UriPartFilter("Completed", arrayOf(
+        Pair("Either", "either"),
+        Pair("Yes", "yes"),
+        Pair("No", "no")
+    ))
+
     override fun getFilterList() = FilterList(
-        GenreList(getGenreList())
+        QueryCBEFilter(),
+        AuthorCBEFilter(),
+        AuthorFilter(),
+        ArtistCBEFilter(),
+        ArtistFilter(),
+        GenreList(getGenreList()),
+        CompletedFilter()
     )
 
     // $(document.querySelectorAll('.optionbox .typelist:nth-child(3) ul li.cate_list')).map((i, el)=>`Genre("${$(el).first().text().trim()}", "${$(el).attr("cate_id")}")`).get().sort().join(",\n")

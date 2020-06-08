@@ -194,7 +194,7 @@ class Komikcast : ParsedHttpSource() {
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length > 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }
@@ -204,7 +204,7 @@ class Komikcast : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        var headers = Headers.Builder()
+        val headers = Headers.Builder()
         headers.apply {
             add("Referer", baseUrl)
             add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")

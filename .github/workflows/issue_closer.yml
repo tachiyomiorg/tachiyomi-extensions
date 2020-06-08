@@ -1,0 +1,27 @@
+name: Issue closer
+on: [issues]
+jobs:
+  autoclose:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Autoclose when no source name or short description provided in title
+      uses: arkon/issue-closer-action@v1.1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        type: title
+        regex: ".*<(Source Name|short description)>*"
+        message: "@${issue.user.login} this issue was automatically closed because you did not fill out the description in the title."
+    - name: Autoclose when body acknowledgement section not removed
+      uses: arkon/issue-closer-action@v1.1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        type: body
+        regex: ".*DELETE THIS SECTION IF YOU HAVE READ AND ACKNOWLEDGED IT.*"
+        message: "@${issue.user.login} this issue was automatically closed because the acknowledgment section was not removed."
+    - name: Autoclose when body requested information not filled out
+      uses: arkon/issue-closer-action@v1.1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        type: body
+        regex: ".*\\* (Tachiyomi version|Android version|Device|Name|Link|Extension version): \\?.*"
+        message: "@${issue.user.login} this issue was automatically closed because the requested information was not filled out."

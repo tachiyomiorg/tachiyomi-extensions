@@ -177,10 +177,15 @@ class Mangachan : ParsedHttpSource() {
         val infoElement = document.select("table.mangatitle").first()
         val descElement = document.select("div#description").first()
         val imgElement = document.select("img#cover").first()
-
+        val rawCategory = infoElement.select("tr:eq(1) > td:eq(1)").text()
+        val category = if (rawCategory.isNotEmpty()) {
+            rawCategory.toLowerCase()
+        } else {
+            "манга"
+        }
         val manga = SManga.create()
         manga.author = infoElement.select("tr:eq(2) > td:eq(1)").text()
-        manga.genre = infoElement.select("tr:eq(5) > td:eq(1)").text()
+        manga.genre = infoElement.select("tr:eq(5) > td:eq(1)").text().split(",").plusElement(category).joinToString { it.trim() }
         manga.status = parseStatus(infoElement.select("tr:eq(4) > td:eq(1)").text())
         manga.description = descElement.textNodes().first().text()
         manga.thumbnail_url = imgElement.attr("src")
@@ -228,7 +233,7 @@ class Mangachan : ParsedHttpSource() {
     private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Перевод завершен", "Выпуск завершен", "Онгоинг", "Новые главы"))
     private class OrderBy : Filter.Sort("Сортировка",
             arrayOf("Дата", "Популярность", "Имя", "Главы"),
-            Filter.Sort.Selection(1, false))
+            Selection(1, false))
 
     override fun getFilterList() = FilterList(
             Status(),

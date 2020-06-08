@@ -30,7 +30,7 @@ import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-open class Guya() : ConfigurableSource, HttpSource() {
+open class Guya : ConfigurableSource, HttpSource() {
 
     override val name = "Guya"
     override val baseUrl = "https://guya.moe"
@@ -46,13 +46,13 @@ open class Guya() : ConfigurableSource, HttpSource() {
             Build.ID)
     }
 
-    private val Scanlators: ScanlatorStore = ScanlatorStore()
+    private val scanlators: ScanlatorStore = ScanlatorStore()
 
-    // Preferences confirguration
+    // Preferences configuration
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
-    private val SCANLATOR_PREFERENCE = "SCANLATOR_PREFERENCE"
+    private val scanlatorPreference = "SCANLATOR_PREFERENCE"
 
     // Request builder for the "browse" page of the manga
     override fun popularMangaRequest(page: Int): Request {
@@ -129,7 +129,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
         val metadata = JSONObject()
 
         metadata.put("chapter", chapterNum)
-        metadata.put("scanlator", Scanlators.getKeyFromValue(chapter.scanlator.toString()))
+        metadata.put("scanlator", scanlators.getKeyFromValue(chapter.scanlator.toString()))
         metadata.put("slug", json.getString("slug"))
         metadata.put("folder", json.getJSONObject("chapters")
             .getJSONObject(chapterNum)
@@ -203,8 +203,8 @@ open class Guya() : ConfigurableSource, HttpSource() {
             title = "Preferred scanlator"
             entries = arrayOf<String>()
             entryValues = arrayOf<String>()
-            for (key in Scanlators.keys()) {
-                entries += Scanlators.getValueFromKey(key)
+            for (key in scanlators.keys()) {
+                entries += scanlators.getValueFromKey(key)
                 entryValues += key
             }
             summary = "Current: %s\n\n" +
@@ -216,7 +216,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue.toString()
-                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
+                preferences.edit().putString(scanlatorPreference, selected).commit()
             }
         }
 
@@ -229,8 +229,8 @@ open class Guya() : ConfigurableSource, HttpSource() {
             title = "Preferred scanlator"
             entries = arrayOf<String>()
             entryValues = arrayOf<String>()
-            for (key in Scanlators.keys()) {
-                entries += Scanlators.getValueFromKey(key)
+            for (key in scanlators.keys()) {
+                entries += scanlators.getValueFromKey(key)
                 entryValues += key
             }
             summary = "Current: %s\n\n" +
@@ -242,7 +242,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue.toString()
-                preferences.edit().putString(SCANLATOR_PREFERENCE, selected).commit()
+                preferences.edit().putString(scanlatorPreference, selected).commit()
             }
         }
 
@@ -252,7 +252,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     // ------------- Helpers and whatnot ---------------
 
     private fun parseChapterList(payload: String): List<SChapter> {
-        val SORT_KEY = "preferred_sort"
+        val sortKey = "preferred_sort"
         val response = JSONObject(payload)
         val chapters = response.getJSONObject("chapters")
 
@@ -263,9 +263,9 @@ open class Guya() : ConfigurableSource, HttpSource() {
         while (iter.hasNext()) {
             val chapter = iter.next()
             val chapterObj = chapters.getJSONObject(chapter)
-            var preferredSort = response.getJSONArray(SORT_KEY)
-            if (chapterObj.has(SORT_KEY)) {
-                preferredSort = chapterObj.getJSONArray(SORT_KEY)
+            var preferredSort = response.getJSONArray(sortKey)
+            if (chapterObj.has(sortKey)) {
+                preferredSort = chapterObj.getJSONArray(sortKey)
             }
             chapterList.add(parseChapterFromJson(chapterObj, chapter, preferredSort, response.getString("slug")))
         }
@@ -306,7 +306,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
 
         // Get the scanlator info based on group ranking; do it first since we need it later
         val firstGroupId = getBestScanlator(json.getJSONObject("groups"), sort)
-        chapter.scanlator = Scanlators.getValueFromKey(firstGroupId)
+        chapter.scanlator = scanlators.getValueFromKey(firstGroupId)
         chapter.date_upload = json.getJSONObject("release_date").getLong(firstGroupId) * 1000
         chapter.name = num + " - " + json.getString("title")
         chapter.chapter_number = num.toFloat()
@@ -331,7 +331,7 @@ open class Guya() : ConfigurableSource, HttpSource() {
     }
 
     private fun getBestScanlator(json: JSONObject, sort: JSONArray): String {
-        val preferred = preferences.getString(SCANLATOR_PREFERENCE, null)
+        val preferred = preferences.getString(scanlatorPreference, null)
 
         if (preferred != null && json.has(preferred)) {
             return preferred
