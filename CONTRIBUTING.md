@@ -85,11 +85,11 @@ dependencies {
 ```
 
 ### Useful knowledge
-
-- An extension should at least extend the [`ParsedHttpSource`](https://github.com/inorichi/tachiyomi-extensions-lib/blob/master/library/src/main/java/eu/kanade/tachiyomi/source/online/ParsedHttpSource.kt) class.
-- Do not override id!!  It will auto-generate based on the name of the extension and the language.
+- the bridge between the app and you extension is the [extention-lib](https://github.com/inorichi/tachiyomi-extensions-lib), but it only contains stubs and the actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package, reading the code inside there will help you in writing your extension.
+- you are encouraged to clone the app itself and make your own debug build so you can attach android-studio to the app, then you can print logs in the code and debug your code from inside `Logcat`, directly debugging your extension(steeping through your extension code) is not possible, but if you keep both projects open in android studio, you can debug the app itself.
+- your `extClass`(inside `build.gradle`) class should be inherited from either `SourceFactory` or one of `Source` children: `CatalogueSource` or `HttpSource` or `ParsedHttpSource`. you shouldn't inherit from `CatalogueSource` unless you know what you are doing.
+- `HttpSource` as in it's name is for a online http(s) source, but `ParsedHttpSource` has a good model of work which makes writing scrapers for normal aggregator websites much easier and streamlined. (again, you can find the implementation of the stubs in the app as mentioned above)  
 - Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
-
 
 
 #### Flow of the extensions
