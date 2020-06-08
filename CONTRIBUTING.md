@@ -89,29 +89,47 @@ dependencies {
 - you are encouraged to clone the app itself and make your own debug build so you can attach android-studio to the app, then you can print logs in the code and debug your code from inside `Logcat`, directly debugging your extension(steeping through your extension code) is not possible, but if you keep both projects open in android studio, you can debug the app itself.
 - your `extClass`(inside `build.gradle`) class should be inherited from either `SourceFactory` or one of `Source` children: `CatalogueSource` or `HttpSource` or `ParsedHttpSource`. you shouldn't inherit from `CatalogueSource` unless you know what you are doing.
 - `HttpSource` as in it's name is for a online http(s) source, but `ParsedHttpSource` has a good model of work which makes writing scrapers for normal aggregator websites much easier and streamlined. (again, you can find the implementation of the stubs in the app as mentioned above)  
-- Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
 
 
-#### Flow of the extensions
+
+
+## general guidelines and extension workflow
+### Important disclamer before you continue!
 The structure for an extension is very strict.  In the future 1.x release this will be less strict but until then this has caused some issues when some sites don't quite fit the model.  There are required overrides but you can override the calling methods if you need more general control. This will go from the highest level method to the lowest level for browse/popular, it is the same but different method names for search and latest.
-##### Browse (Aka Popular Manga)
-- fetchPopularManga (Optional to override)
-    - This method takes the results from a manga listing page and parses it.
-- popularMangaRequest (Must be overridden)
-   - The GET/POST for the HTML Page of the manga listings.
-- popularMangaParse (Optional to override)
-   - Parses the manga listing page returns a boolean if has another page, and the manga objects as MangasPage.
-- popularMangaSelector (must be overridden)
-    - jsoup CSS selector to select the list of the manga.
-- popularMangaFromElement (must be overriden)
-    - jsoup selectors to parse the individual manga html on the page (most sites this is just link, title, cover url)
-- popularMangaNextPageSelector (must be overridden)
-   - jsoup CSS selector to see if there is a another page after current one.
+- the app starts by finding your extension and reads these variables:
 
- This will provide the initial viewing once a user clicks into a manga you will need to override mangaDetailsParse and this is where you need to parse the actual manga site's manga page and parse the standard info (title, author, description etc etc).
-
- ###### Note:
- Must be overriden even if you override the parent method and it's not being called anymore  (for example I override popularMangaParse and don't need the popularMangaNextPage selector.  I would just override in the extension and throw a not used exception).
+| Field | Description |
+| ----- | ----------- |
+| `name` | Name of the source as displayed in the `sources` tab inside the app |
+| `id` | id of your source, automatically set from `HttpSource`, don't touch it | 
+| `supportsLatest` | if `true` the app adds a `latest` button to your extension |
+| `baseUrl` | base URL of the target source without any trailing slashes |
+| `lang` | as the documentation says "An ISO 639-1 compliant language code (two letters in lower case).", it will be used to catalog you extension |
+ 
+- **Notes**
+    - some time during the code of you may find yourself finding no use for some inherited methods, if so just override them and throw exceptions: `throw Exception("Not used")`
+    - you probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
+    - if possible try to stick to the general workflow from`ParsedHttpSource` and `HttpSource` breaking them may cause you more headache than necessary.
+    -  when reading the code documentation it helps to follow the subsequent called methods in the the default implementation from the `app`, while trying to grasp the general workflow.
+    - Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
+- **Popular Manga**
+    - when user presses on the source name or the `Browse` button on the sources tab, the app calls `fetchPopularManga` with `page=1`,  and it returns a `MangasPage` and will continue to call it for next pages, when the user scrolls the manga list and more results must be fetched(until you pass `MangasPage.hasNextPage` as `false` which marks the end of the found manga list)
+    - while passing magnas here you should at least set `url`, `title` and `thumbnail_url`; `url` must be unique since it's used to index mangas in the DataBase.(this information will be cached and you will have a chance to update them when `fetchMangaDetails` is called later).
+- **Latest Manga**
+    - if `supportsLatest` is set to true the app shows a `Latest` button in front for your extension `name` and when the user taps on it, the app will call `fetchLatestUpdates` and the rest of the flow is similar to what happens with `fetchPopularManga`.
+    - if `supportsLatest` is set to false no `Latest` button will be shown and `fetchLatestUpdates` and subsequent methods will never be called.
+- **Manga Search**
+    - `getFilterList` will be called to get all filters and filter types. **TODO: explain more about `Filter`**
+    - when the user searches inside the app, `fetchSearchManga` will be called and the rest of the flow is similar to what happens with `fetchPopularManga`.
+- **Manga Details**
+    - when user taps on a manga and opens its information tab `fetchMangaDetails` and `fetchChapterList` will be called the resulting information will be cached.
+    - `fetchMangaDetails` is called to update a manga's details from when it vas initialized earlier(you may want to parse a manga details page here and fill the rest of the fields here)
+   - `fetchChapterList` is called to display the chapter list, you want to return a reversed list here(last chapter, first index in the list)
+- **Chapter**
+    - after a chapter list for the manga is fetched, `prepareNewChapter` will be called, after that the chapter will be saved in the app's DataBase and later if the chapter list changes the app will loose any references to the chapter(but chapter files will still be in the device storage)
+- **Chapter Pages**
+    - when user opens a chapter, `fetchPageList` will be called and it will return a list of `Page`
+    - while a chapter is open the reader will call `fetchImageUrl` to get URLs for each page of the manga
 
 
 ## Running
