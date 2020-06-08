@@ -5,8 +5,12 @@ ext {
     appName = 'Tachiyomi: Remanga'
     pkgNameSuffix = 'ru.remanga'
     extClass = '.Remanga'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-dataimage')
 }
 
 apply from: "$rootDir/common.gradle"

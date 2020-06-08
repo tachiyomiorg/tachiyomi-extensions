@@ -7,16 +7,26 @@ import LibraryDto
 import MangaDetDto
 import PageDto
 import PageWrapperDto
+import PaidPageDto
+import PaidPagesDto
 import SeriesWrapperDto
 import UserDto
+import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.os.Build
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
+import android.util.Base64
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
+import eu.kanade.tachiyomi.lib.dataimage.DataImageInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -28,9 +38,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.stream.Collectors
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
@@ -82,6 +97,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override val client: OkHttpClient =
         network.client.newBuilder()
+            .addInterceptor(DataImageInterceptor())
             .addInterceptor { authIntercept(it) }
             .build()
 
@@ -248,7 +264,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     private fun chapterName(book: BookDto): String {
-        val chapterId = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
+        val chapterId: Any = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
         var chapterName = "${book.tome}. Глава $chapterId"
         if (book.name.isNotBlank()) {
             chapterName += " ${book.name.capitalize()}"
@@ -273,11 +289,61 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override fun imageUrlParse(response: Response): String = ""
 
+    @TargetApi(Build.VERSION_CODES.N)
     override fun pageListParse(response: Response): List<Page> {
-        val page = gson.fromJson<SeriesWrapperDto<PageDto>>(response.body()?.charStream()!!)
-        return page.content.pages.map {
-            Page(it.page, "", it.link)
+        val body = response.body()?.string()!!
+        return try {
+            val page = gson.fromJson<SeriesWrapperDto<PageDto>>(body)
+
+            page.content.pages.map {
+                Page(it.page, "", it.link)
+            }
+        } catch (e: JsonSyntaxException) {
+            val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
+            page.content.pages.parallelStream().map {
+                val res = this.combineImage(it)
+                Page(it.size, "", "https://127.0.0.1/?imagebase64,$res")
+            }.collect(Collectors.toList())
         }
+    }
+
+    private fun combineImage(it: List<PaidPagesDto>): String {
+        val refererHeaders = Headers.Builder().apply {
+            add("User-Agent", "Tachiyomi")
+            add("Referer", "https://img.remanga.org")
+        }.build()
+
+        val s = client.newCall(GET(it[0].link, refererHeaders)).execute().body()!!.bytes()
+        val b = BitmapFactory.decodeByteArray(s, 0, s.size)
+
+        val cs = Bitmap.createBitmap(b.width, b.height * it.size, Bitmap.Config.ARGB_8888)
+        val comboImage = Canvas(cs)
+        comboImage.drawBitmap(b, 0f, 0f, null)
+        var completeSize = it.size - 2
+        for (i in 1 until it.size) {
+            client.newCall(GET(it[i].link, refererHeaders)).enqueue(
+                object : Callback {
+                    override fun onResponse(call: Call, response: Response) {
+                        val bytes = response.body()!!.bytes()
+
+                        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        comboImage.drawBitmap(bitmap, 0f, (b.height * i).toFloat(), null)
+                        completeSize -= 1
+                    }
+
+                    override fun onFailure(call: Call, e: IOException) {
+                        throw e
+                    }
+                }
+            )
+        }
+        while (completeSize > 0) {
+            Thread.sleep(100)
+        }
+
+        val output = ByteArrayOutputStream()
+        cs.compress(Bitmap.CompressFormat.PNG, 100, output)
+        return Base64.encodeToString(output.toByteArray(), Base64.DEFAULT)
     }
 
     override fun imageRequest(page: Page): Request {

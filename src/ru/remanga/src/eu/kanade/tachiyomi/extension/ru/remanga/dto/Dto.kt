@@ -92,3 +92,13 @@ data class PageDto(
 data class UserDto(
     val access_token: String
 )
+
+data class PaidPagesDto(
+    val id: Long,
+    val link: String,
+    val page: Int
+)
+
+data class PaidPageDto(
+    val pages: List<List<PaidPagesDto>>
+)
