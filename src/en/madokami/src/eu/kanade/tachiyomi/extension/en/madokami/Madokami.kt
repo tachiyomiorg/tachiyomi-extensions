@@ -56,38 +56,35 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         response
     }.build()
 
-    override fun latestUpdatesSelector() = "table.mobile-files-table tbody tr td:nth-child(1) a:nth-child(1)"
+    override fun latestUpdatesSelector() = ""
+    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Unsupported!")
+    override fun latestUpdatesNextPageSelector(): String? = null
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Unsupported!")
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
+    override fun popularMangaSelector(): String = "table.mobile-files-table tbody tr td:nth-child(1) a:nth-child(1)"
+
+    override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.attr("href"))
         manga.title = URLDecoder.decode(element.attr("href").split("/").last(), "UTF-8").trimStart('!')
         return manga
     }
 
-    override fun latestUpdatesNextPageSelector(): String? = null
+    override fun popularMangaNextPageSelector(): String? = null
 
-    override fun latestUpdatesRequest(page: Int) = authenticate(GET("$baseUrl/recent", headers))
-
-    override fun popularMangaSelector(): String = latestUpdatesSelector()
-
-    override fun popularMangaFromElement(element: Element): SManga = latestUpdatesFromElement(element)
-
-    override fun popularMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
-
-    override fun popularMangaRequest(page: Int): Request = latestUpdatesRequest(page)
+    override fun popularMangaRequest(page: Int): Request = authenticate(GET("$baseUrl/recent", headers))
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = authenticate(GET("$baseUrl/search?q=$query", headers))
 
     override fun searchMangaSelector() = "div.container table tbody tr td:nth-child(1) a:nth-child(1)"
 
-    override fun searchMangaFromElement(element: Element): SManga = latestUpdatesFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsRequest(manga: SManga): Request {
         val url = HttpUrl.parse(baseUrl + manga.url)!!
-        if (url.pathSize() > 5 && url.pathSegments()[0] == "Manga" && url.pathSegments()[1] != "Non-English") {
+        if (url.pathSize() > 5 && url.pathSegments()[0] == "Manga" && url.pathSegments()[1].length == 1) {
             return authenticate(GET(url.newBuilder().removePathSegment(5).build().url().toExternalForm(), headers))
         }
         if (url.pathSize() > 2 && url.pathSegments()[0] == "Raws") {
@@ -159,7 +156,7 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         val element = document.select("div#reader")
         val path = element.attr("data-path")
         val files = gson.fromJson<JsonArray>(element.attr("data-files"))
-        val pages = ArrayList<Page>()
+        val pages = mutableListOf<Page>()
         for ((index, file) in files.withIndex()) {
             val url = HttpUrl.Builder()
                 .scheme("https")
