@@ -35,7 +35,7 @@ apply from: "$rootDir/common.gradle"
 | ----- | ----------- |
 | `appName` | The name of the Android application. By prefixing it with `Tachiyomi: `, it will be easier to locate with an Android package manager. |
 | `pkgNameSuffix` | A unique suffix added to `eu.kanade.tachiyomi.extension`. The language and the site name should be enough. Remember your catalogue code implementation must be placed in this package. |
-| `extClass` | Points to the catalogue class. You can use a relative path starting with a dot (the package name is the base path). This is required for Tachiyomi to instantiate the catalogue. |
+| `extClass` | Points to the catalogue class. You can use a relative path starting with a dot (the package name is the base path). This is required for Tachiyomi to find and instantiate the catalogue. |
 | `extVersionCode` | The version code of the catalogue. This must be increased with any change to the implementation and cannot be `0`. |
 | `libVersion` | The version of the [extensions library](https://github.com/inorichi/tachiyomi-extensions-lib)* used. |
 
@@ -86,13 +86,15 @@ dependencies {
 
 ### Useful knowledge
 - The bridge between the app and you extension is the [extension-lib](https://github.com/tachiyomiorg/extensions-lib), but it only contains stubs and the actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package which you can find [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source), reading the code inside there will help you in writing your extension.
-- Your `extClass`(inside `build.gradle`) class should be inherited from either `SourceFactory` or one of `Source` children: `HttpSource` or `ParsedHttpSource`.
-- `HttpSource` as in it's name is for a online http(s) source, but `ParsedHttpSource` has a good model of work which makes writing scrapers for normal aggregator websites much easier and streamlined. (again, you can find the implementation of the stubs in the app as mentioned above)  
 
 ### Important disclaimer before you continue!
 The structure for an extension is very strict.  In the future 1.x release this will be less strict but until then this has caused some issues when some sites don't quite fit the model.  There are required overrides but you can override the calling methods if you need more general control. This will go from the highest level method to the lowest level for browse/popular, it is the same but different method names for search and latest.
 
 ## general guidelines and extension workflow
+- **Extension Main Class**
+    - The extension Main class which is refrenced and defined by `extClass`(inside `build.gradle`) should be inherited from either `SourceFactory` or one of `Source` children: `HttpSource` or `ParsedHttpSource`.
+    - `SourceFactory` is used to expose multiple `Source`s, only use it when there's **minor difference** between your target sources or they are essentially mirrors to the same website.
+    - `HttpSource` as in it's name is for a online http(s) source, but `ParsedHttpSource` has a good model of work which makes writing scrapers for normal aggregator websites much easier and streamlined. (again, you can find the implementation of the stubs in the app as mentioned above)  
 - The app starts by finding your extension and reads these variables:
 
 | Field | Description |
@@ -103,12 +105,6 @@ The structure for an extension is very strict.  In the future 1.x release this w
 | `baseUrl` | base URL of the target source without any trailing slashes |
 | `lang` | as the documentation says "An ISO 639-1 compliant language code (two letters in lower case).", it will be used to catalog your extension |
  
-- **Notes**
-    - Some time while you are writing code, you may find no use for some inherited methods, if so just override them and throw exceptions: `throw Exception("Not used")`
-    - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
-    - If possible try to stick to the general workflow from`ParsedHttpSource` and `HttpSource`, breaking them may cause you more headache than necessary.
-    -  When reading the code documentation it helps to follow the subsequent called methods in the the default implementation from the `app`, while trying to grasp the general workflow.
-    - Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
 - **Popular Manga**
     - When user presses on the source name or the `Browse` button on the sources tab, the app calls `fetchPopularManga` with `page=1`,  and it returns a `MangasPage` and will continue to call it for next pages, when the user scrolls the manga list and more results must be fetched(until you pass `MangasPage.hasNextPage` as `false` which marks the end of the found manga list)
     - While passing magnas here you should at least set `url`, `title` and `thumbnail_url`; `url` must be unique since it's used to index mangas in the DataBase.(this information will be cached and you will have a chance to update them when `fetchMangaDetails` is called later).
@@ -128,6 +124,12 @@ The structure for an extension is very strict.  In the future 1.x release this w
 - **Chapter Pages**
     - When user opens a chapter, `fetchPageList` will be called and it will return a list of `Page`
     - While a chapter is open the reader will call `fetchImageUrl` to get URLs for each page of the manga
+- **Notes**
+    - Some time while you are writing code, you may find no use for some inherited methods, if so just override them and throw exceptions: `throw Exception("Not used")`
+    - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
+    - If possible try to stick to the general workflow from`ParsedHttpSource` and `HttpSource`, breaking them may cause you more headache than necessary.
+    -  When reading the code documentation it helps to follow the subsequent called methods in the the default implementation from the `app`, while trying to grasp the general workflow.
+    - Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
 
 
 ## Running
