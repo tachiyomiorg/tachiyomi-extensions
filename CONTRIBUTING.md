@@ -86,7 +86,6 @@ dependencies {
 
 ### Useful knowledge
 - The bridge between the app and you extension is the [extension-lib](https://github.com/tachiyomiorg/extensions-lib), but it only contains stubs and the actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package which you can find [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source), reading the code inside there will help you in writing your extension.
-- You are encouraged to clone the app itself and make your own debug build so you can attach android-studio to the app, then you can print logs in the code and debug your code from inside `Logcat`, directly debugging your extension(steeping through your extension code) is not possible, but if you keep both projects open in android studio, you can debug the app itself.
 - Your `extClass`(inside `build.gradle`) class should be inherited from either `SourceFactory` or one of `Source` children: `CatalogueSource` or `HttpSource` or `ParsedHttpSource`. you shouldn't inherit from `CatalogueSource` unless you know what you are doing.
 - `HttpSource` as in it's name is for a online http(s) source, but `ParsedHttpSource` has a good model of work which makes writing scrapers for normal aggregator websites much easier and streamlined. (again, you can find the implementation of the stubs in the app as mentioned above)  
 
@@ -147,6 +146,9 @@ And for a release build of Tachiyomi:
 ```
 -W -S -n eu.kanade.tachiyomi/eu.kanade.tachiyomi.ui.main.MainActivity -a eu.kanade.tachiyomi.SHOW_CATALOGUES
 ```
+## Debugging your code
+- You are encouraged to clone the app itself and make your own debug build, then you can attach Android Studio's debugger to the app, and then you can print logs in the code and debug your extension using `Logcat`([link](https://developer.android.com/studio/debug/am-logcat) to Android Studio documentation for `Logcat`)
+- Directly debugging your extension(steeping through your extension code) is not possible, but if you keep both projects open in android studio, you can debug the app itself.
 
 
 ## Building
