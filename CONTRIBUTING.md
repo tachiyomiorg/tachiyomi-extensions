@@ -86,7 +86,7 @@ dependencies {
 
 ### Useful knowledge
 - The bridge between the app and you extension is the [extension-lib](https://github.com/tachiyomiorg/extensions-lib), but it only contains stubs and the actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package which you can find [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source), reading the code inside there will help you in writing your extension.
-- Your `extClass`(inside `build.gradle`) class should be inherited from either `SourceFactory` or one of `Source` children: `CatalogueSource` or `HttpSource` or `ParsedHttpSource`. you shouldn't inherit from `CatalogueSource` unless you know what you are doing.
+- Your `extClass`(inside `build.gradle`) class should be inherited from either `SourceFactory` or one of `Source` children: `HttpSource` or `ParsedHttpSource`.
 - `HttpSource` as in it's name is for a online http(s) source, but `ParsedHttpSource` has a good model of work which makes writing scrapers for normal aggregator websites much easier and streamlined. (again, you can find the implementation of the stubs in the app as mentioned above)  
 
 ### Important disclaimer before you continue!
