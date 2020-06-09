@@ -21,9 +21,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: My catalogue'
-    pkgNameSuffix = 'lang.mycatalogue'
-    extClass = '.MyCatalogue'
+    appName = 'Tachiyomi: My source name'
+    pkgNameSuffix = 'lang.mysourcename'
+    extClass = '.MySourceName'
     extVersionCode = 1
     libVersion = '1.2'
 }
@@ -43,54 +43,14 @@ The catalogue's version name is based off of `libVersion` and `extVersionCode`. 
 
 \* Note: this library only contains the method definitions so that the compiler can resolve them. The actual implementation is written in Tachiyomi.
 
-### Additional dependencies
-
-You may find yourself needing additional functionality and wanting to add more dependencies to your `build.gradle` file. Since extensions are run within the main Tachiyomi app, you can make use of [its dependencies](https://github.com/inorichi/tachiyomi/blob/master/app/build.gradle).
-
-For example, an extension that needs Gson could add the following:
-
-```
-dependencies {
-    compileOnly 'com.google.code.gson:gson:2.8.2'
-}
-```
-
-Notice that we're using `compileOnly` instead of `implementation`, since the app already contains it. You could use `implementation` instead, if it's a new dependency, or you prefer not to rely on whatever the main app has (at the expense of app size).
-
-### Core stubs and libraries
-
 #### Extensions library
 
-Extensions rely on stubs defined in [tachiyomi-extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which simply provides some interfaces for compiling extensions. These interfaces match what's found in the main Tachiyomi app. The exact version used is configured with `libVersion`. The latest version should be preferred.
-
-
-#### Duktape stub
-
-[`duktape-stub`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/duktape-stub) provides stubs for using Duktape functionality without pulling in the full library. Functionality is bundled into the main Tachiyomi app.
-
-```
-dependencies {
-    compileOnly project(':duktape-stub')
-}
-```
-
-#### Rate limiting library
-
-[`lib-ratelimit`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/ratelimit) is a library for adding rate limiting functionality.
-
-```
-dependencies {
-    implementation project(':lib-ratelimit')
-}
-```
-
-### Useful knowledge
-- The bridge between the app and you extension is the [extension-lib](https://github.com/tachiyomiorg/extensions-lib), but it only contains stubs and the actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package which you can find [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source), reading the code inside there will help you in writing your extension.
+- Extensions rely on stubs defined in [extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which simply provides some interfaces and stubs for compiling extentsions. The actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package which you can find it [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source), reading the code inside there will help you with writing your extension.
 
 ### Important disclaimer before you continue!
 The structure for an extension is very strict.  In the future 1.x release this will be less strict but until then this has caused some issues when some sites don't quite fit the model.  There are required overrides but you can override the calling methods if you need more general control. This will go from the highest level method to the lowest level for browse/popular, it is the same but different method names for search and latest.
 
-## general guidelines and extension workflow
+### general guidelines and extension workflow
 - **Extension Main Class**
     - The extension Main class which is refrenced and defined by `extClass`(inside `build.gradle`) should be inherited from either `SourceFactory` or one of `Source` children: `HttpSource` or `ParsedHttpSource`.
     - `SourceFactory` is used to expose multiple `Source`s, only use it when there's **minor difference** between your target sources or they are essentially mirrors to the same website.
@@ -130,6 +90,42 @@ The structure for an extension is very strict.  In the future 1.x release this w
     - If possible try to stick to the general workflow from`ParsedHttpSource` and `HttpSource`, breaking them may cause you more headache than necessary.
     -  When reading the code documentation it helps to follow the subsequent called methods in the the default implementation from the `app`, while trying to grasp the general workflow.
     - Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
+
+### Additional dependencies
+
+You may find yourself needing additional functionality and wanting to add more dependencies to your `build.gradle` file. Since extensions are run within the main Tachiyomi app, you can make use of [its dependencies](https://github.com/inorichi/tachiyomi/blob/master/app/build.gradle).
+
+For example, an extension that needs Gson could add the following:
+
+```
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.8.2'
+}
+```
+
+Notice that we're using `compileOnly` instead of `implementation`, since the app already contains it. You could use `implementation` instead, if it's a new dependency, or you prefer not to rely on whatever the main app has (at the expense of app size).
+
+### Core stubs and libraries
+
+#### Duktape stub
+
+[`duktape-stub`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/duktape-stub) provides stubs for using Duktape functionality without pulling in the full library. Functionality is bundled into the main Tachiyomi app.
+
+```
+dependencies {
+    compileOnly project(':duktape-stub')
+}
+```
+
+#### Rate limiting library
+
+[`lib-ratelimit`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/ratelimit) is a library for adding rate limiting functionality.
+
+```
+dependencies {
+    implementation project(':lib-ratelimit')
+}
+```
 
 
 ## Running
