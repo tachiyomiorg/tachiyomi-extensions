@@ -2,10 +2,12 @@
 
 Before you start, please note that the ability to use following technologies is **required** and it's not possible for us to teach you any of them.
 
-* [Kotlin](https://kotlinlang.org/)
-* [JSoup](https://jsoup.org/)
-* [HTML](https://developer.mozilla.org/en-US/docs/Web/HTML)
-* [CSS selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
+- basic [Android software development](https://en.wikipedia.org/wiki/Android_software_development) using [Kotlin](https://kotlinlang.org/)
+- web scraping
+    - [OkHttp](https://square.github.io/okhttp/)
+    - [JSoup](https://jsoup.org/)
+    - [HTML](https://developer.mozilla.org/en-US/docs/Web/HTML)
+    - [CSS selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
 
 
 ## Writing an extension
