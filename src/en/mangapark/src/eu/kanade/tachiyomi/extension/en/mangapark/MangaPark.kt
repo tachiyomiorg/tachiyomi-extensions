@@ -60,12 +60,16 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
-        uri.appendQueryParameter("q", query)
+        if (query.isNotEmpty()) {
+            uri.appendQueryParameter("q", query)
+        }
         filters.forEach {
             if (it is UriFilter)
                 it.addToUri(uri)
         }
-        uri.appendQueryParameter("page", page.toString())
+        if (page != 1) {
+            uri.appendQueryParameter("page", page.toString())
+        }
         return GET(uri.toString())
     }
 
@@ -262,7 +266,9 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     private class SearchTypeFilter(name: String, val uriParam: String) :
             Filter.Select<String>(name, STATE_MAP), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter(uriParam, STATE_MAP[state])
+            if (STATE_MAP[state] != "contain") {
+                uri.appendQueryParameter(uriParam, STATE_MAP[state])
+            }
         }
 
         companion object {
@@ -272,7 +278,9 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     private class AuthorArtistText : Filter.Text("Author/Artist"), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter("autart", state)
+            if (state.isNotEmpty()) {
+                uri.appendQueryParameter("autart", state)
+            }
         }
     }
 
@@ -372,8 +380,15 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("zombies", "Zombies")
     )), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter("genres", state.filter { it.isIncluded() }.joinToString(",") { it.uriParam })
-            uri.appendQueryParameter("genres-exclude", state.filter { it.isExcluded() }.joinToString(",") { it.uriParam })
+            val genresParameterValue = state.filter { it.isIncluded() }.joinToString(",") { it.uriParam }
+            if (genresParameterValue.isNotEmpty()) {
+                uri.appendQueryParameter("genres", genresParameterValue)
+            }
+
+            val genresExcludeParameterValue = state.filter { it.isExcluded() }.joinToString(",") { it.uriParam }
+            if (genresExcludeParameterValue.isNotEmpty()) {
+                uri.appendQueryParameter("genres-exclude", genresExcludeParameterValue)
+            }
         }
     }
 
@@ -431,10 +446,13 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     private class SortFilter : UriSelectFilter("Sort", "orderby", arrayOf(
             Pair("a-z", "A-Z"),
-            Pair("views", "Views"),
+            Pair("views_a", "Views all-time"),
+            Pair("views_y", "Views last 365 days"),
+            Pair("views_s", "Views last 180 days"),
+            Pair("views_t", "Views last 90 days"),
             Pair("rating", "Rating"),
-            Pair("latest", "Latest"),
-            Pair("add", "New manga")
+            Pair("update", "Latest"),
+            Pair("create", "New manga")
     ), firstIsUnspecified = false, defaultValue = 1)
 
     /**
