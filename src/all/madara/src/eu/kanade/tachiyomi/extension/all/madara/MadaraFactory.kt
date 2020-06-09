@@ -136,7 +136,8 @@ class MadaraFactory : SourceFactory {
         MangaZen(),
         QueensManga(),
         DropeScan(),
-        TheTopComic()
+        TheTopComic(),
+        WebNovel()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -974,3 +975,5 @@ class DropeScan : Madara("Drope Scan", "https://dropescan.com", "pt-BR") {
 }
 
 class TheTopComic : Madara("TheTopComic", "https://thetopcomic.com", "en")
+
+class WebNovel : Madara("WebNovel", "https://webnovel.live", "en")
