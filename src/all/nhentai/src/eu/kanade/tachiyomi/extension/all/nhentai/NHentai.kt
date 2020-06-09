@@ -224,21 +224,10 @@ open class NHentai(
 
     override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
 
-    override fun pageListRequest(chapter: SChapter) = GET("$baseUrl${chapter.url}", headers)
-
     override fun pageListParse(document: Document): List<Page> {
-        val pageElements = document.select("#thumbnail-container > div")
-        val pageList = mutableListOf<Page>()
-
-        pageElements.forEach {
-            Page(pageList.size).run {
-                this.imageUrl = it.select("a > img").attr("data-src").replace("t.nh", "i.nh").replace("t.", ".")
-
-                pageList.add(pageList.size, this)
-            }
+        return document.select("div.thumbs a > img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:data-src").replace("t.nh", "i.nh").replace("t.", "."))
         }
-
-        return pageList
     }
 
     override fun getFilterList(): FilterList = FilterList(
