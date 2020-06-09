@@ -47,11 +47,11 @@ class KillSixBillionDemons : HttpSource() {
         return GET(baseUrl)
     }
 
-    fun popularMangaSelector(): String {
+    private fun popularMangaSelector(): String {
         return "#chapter option:contains(book)"
     }
 
-    fun popularMangaFromElement(element: Element): SManga {
+    private fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             title = element.text().substringBefore(" (")
             thumbnail_url = "https://dummyimage.com/768x994/000/ffffff.jpg&text=$title"
@@ -98,9 +98,9 @@ class KillSixBillionDemons : HttpSource() {
 
         val options = document.select(chapterListSelector())
 
-        var chapters = LinkedList<SChapter>()
+        val chapters = LinkedList<SChapter>()
         var bookNum = 0
-        var targetBookNum = manga.title.split(":")[0].split(" ")[1].toInt()
+        val targetBookNum = manga.title.split(":")[0].split(" ")[1].toInt()
 
         for (element in options) {
             val text = element.text()
@@ -127,7 +127,7 @@ class KillSixBillionDemons : HttpSource() {
         return chapters.reversed()
     }
 
-    fun chapterListSelector(): String {
+    private fun chapterListSelector(): String {
         return "#chapter option"
     }
 
@@ -147,10 +147,10 @@ class KillSixBillionDemons : HttpSource() {
         val chapterPages = mutableListOf<Page>()
         var pageNum = 1
 
-        wordpressPages.forEach {
-            it.select(".post-content .entry a:has(img)").forEach {
+        wordpressPages.forEach { wordpressPage ->
+            wordpressPage.select(".post-content .entry a:has(img)").forEach { _ ->
                 chapterPages.add(
-                    Page(pageNum, it.attr("href"), it.select("img").attr("src"))
+                    Page(pageNum, wordpressPage.attr("href"), wordpressPage.select("img").attr("src"))
                 )
                 pageNum++
             }
