@@ -67,7 +67,8 @@ The structure for an extension is very strict.  In the future 1.x release this w
  
 - **Popular Manga**
     - When user presses on the source name or the `Browse` button on the sources tab, the app calls `fetchPopularManga` with `page=1`,  and it returns a `MangasPage` and will continue to call it for next pages, when the user scrolls the manga list and more results must be fetched(until you pass `MangasPage.hasNextPage` as `false` which marks the end of the found manga list)
-    - While passing magnas here you should at least set `url`, `title` and `thumbnail_url`; `url` must be unique since it's used to index mangas in the DataBase.(this information will be cached and you will have a chance to update them when `fetchMangaDetails` is called later).
+    - While passing magnas here you should at least set `url`, `title` and *`thumbnail_url`; `url` must be unique since it's used to index mangas in the DataBase.(this information will be cached and you will have a chance to update them when `fetchMangaDetails` is called later).
+    - You may not set `thumbnail_url`, which will make the app call `fetchMangaDetails` over every single manga to show the cover, so it's better to set the thumbnail cover in `fetchPopularManga` if possible. The same is true with latest and search.
 - **Latest Manga**
     - If `supportsLatest` is set to true the app shows a `Latest` button in front for your extension `name` and when the user taps on it, the app will call `fetchLatestUpdates` and the rest of the flow is similar to what happens with `fetchPopularManga`.
     - If `supportsLatest` is set to false no `Latest` button will be shown and `fetchLatestUpdates` and subsequent methods will never be called.
@@ -89,7 +90,6 @@ The structure for an extension is very strict.  In the future 1.x release this w
     - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
     - If possible try to stick to the general workflow from`ParsedHttpSource` and `HttpSource`, breaking them may cause you more headache than necessary.
     -  When reading the code documentation it helps to follow the subsequent called methods in the the default implementation from the `app`, while trying to grasp the general workflow.
-    - Set the thumbnail cover when possible.  When parsing the list of manga during latest, search, browse.  If not the site will get a new request for every manga that doesn't have a cover shown,  even if the user doesnt click into the manga.
 
 ### Additional dependencies
 
