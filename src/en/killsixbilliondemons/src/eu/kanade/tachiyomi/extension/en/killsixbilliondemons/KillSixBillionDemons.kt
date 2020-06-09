@@ -2,20 +2,17 @@ package eu.kanade.tachiyomi.extension.en.killsixbilliondemons
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.util.LinkedList
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.util.*
+
 
 /**
  *  @author Aria Moradi <aria.moradi007@gmail.com>
@@ -133,10 +130,10 @@ class KillSixBillionDemons : HttpSource() {
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         val wordpressPages = mutableListOf<Document>()
-        // get the first page
+        // get the first page and add ir to the list
         val firstPageURL = chapter.url + "?order=ASC" // change the url to ask Wordpress to reverse the posts
-
-        val firstPage = Jsoup.connect(firstPageURL).get()
+        val request = Request.Builder().url(firstPageURL).get().build()
+        val firstPage = Jsoup.parse(client.newCall(request).execute().body()!!.string())
         wordpressPages.add(firstPage)
 
         val otherPages = firstPage.select("#paginav a")
