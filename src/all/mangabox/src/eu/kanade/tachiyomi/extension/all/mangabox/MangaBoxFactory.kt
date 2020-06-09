@@ -26,6 +26,7 @@ class MangaBoxFactory : SourceFactory {
 
 class Mangakakalot : MangaBox("Mangakakalot", "https://mangakakalot.com", "en") {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().set("Referer", "https://manganelo.com") // for covers
+    override val simpleQueryPath = "search/story/"
     override fun searchMangaSelector() = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
 }
 
@@ -34,6 +35,7 @@ class Manganelo : MangaBox("Manganelo", "https://manganelo.com", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/genre-all/$page?type=topview", headers)
     override fun popularMangaSelector() = "div.content-genres-item"
     override val latestUrlPath = "genre-all/"
+    override val simpleQueryPath = "search/story/"
     override fun searchMangaSelector() = "div.search-story-item, div.content-genres-item"
     override fun getAdvancedGenreFilters(): List<AdvGenre> = getGenreFilters()
         .drop(1)

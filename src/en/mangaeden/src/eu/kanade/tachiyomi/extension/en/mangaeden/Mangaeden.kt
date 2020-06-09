@@ -11,6 +11,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -25,6 +26,11 @@ class Mangaeden : ParsedHttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    // so hcaptcha won't be triggered on images
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", baseUrl)
+    }
 
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/en/en-directory/?order=3&page=$page", headers)
 
@@ -68,13 +74,11 @@ class Mangaeden : ParsedHttpSource() {
         return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = "table#mangaList > tbody > tr:has(td:gt(1))"
+    override fun searchMangaSelector() = "table#mangaList tbody tr td:first-child a"
 
     override fun searchMangaFromElement(element: Element) = SManga.create().apply {
-        element.select("td > a").first()?.let {
-            setUrlWithoutDomain(it.attr("href"))
-            title = it.text()
-        }
+        setUrlWithoutDomain(element.attr("href"))
+        title = element.text()
     }
 
     override fun searchMangaNextPageSelector() = "a:has(span.next)"
@@ -87,8 +91,7 @@ class Mangaeden : ParsedHttpSource() {
         genre = infos.select("a[href^=/en/en-directory/?categoriesInc]").joinToString { it.text() }
         description = document.select("h2#mangaDescription").text()
         status = parseStatus(infos.select("h4:containsOwn(Status)").first()?.nextSibling().toString())
-        val img = infos.select("div.mangaImage2 > img").first()?.attr("src")
-        if (!img.isNullOrBlank()) thumbnail_url = img.let { "https:$it" }
+        thumbnail_url = document.select("div.mangaImage2 > img").attr("abs:src")
     }
 
     private fun parseStatus(status: String) = when {
@@ -133,13 +136,13 @@ class Mangaeden : ParsedHttpSource() {
             }
         }
 
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("option[value^=/en/en-manga/]").forEach {
-            add(Page(size, "$baseUrl${it.attr("value")}"))
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("select#pageSelect option").mapIndexed { i, element ->
+            Page(i, element.attr("abs:value"))
         }
     }
 
-    override fun imageUrlParse(document: Document): String = document.select("a#nextA.next > img").first()?.attr("src").let { "https:$it" }
+    override fun imageUrlParse(document: Document): String = document.select("a.next img").attr("abs:src")
 
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
     private class Genre(name: String, val id: String) : Filter.TriState(name)
