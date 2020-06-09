@@ -143,9 +143,9 @@ class KillSixBillionDemons : HttpSource() {
         var pageNum = 1
 
         wordpressPages.forEach { wordpressPage ->
-            wordpressPage.select(".post-content .entry a:has(img)").forEach { _ ->
+            wordpressPage.select(".post-content .entry a:has(img)").forEach { postImage ->
                 chapterPages.add(
-                    Page(pageNum, wordpressPage.attr("href"), wordpressPage.select("img").attr("src"))
+                    Page(pageNum, postImage.attr("href"), postImage.select("img").attr("src"))
                 )
                 pageNum++
             }
