@@ -121,6 +121,7 @@ The structure for an extension is very strict.  In the future 1.x release this w
 - **Manga Details**
     - When user taps on a manga and opens it's information Activity `fetchMangaDetails` and `fetchChapterList` will be called the resulting information will be cached.
     - `fetchMangaDetails` is called to update a manga's details from when it vas initialized earlier(you may want to parse a manga details page here and fill the rest of the fields here)
+        - Note: During a backup restore manga covers(`SManga.thumbnail_url`) are scraped by calling `fetchMangaDetails`. To make sure they're restored you need to at the very least set a thumbnail here because it's not going through `fetch*Manga` methods.
    - `fetchChapterList` is called to display the chapter list, you want to return a reversed list here(last chapter, first index in the list)
 - **Chapter**
     - After a chapter list for the manga is fetched, `prepareNewChapter` will be called, after that the chapter will be saved in the app's DataBase and later if the chapter list changes the app will loose any references to the chapter(but chapter files will still be in the device storage)
