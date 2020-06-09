@@ -65,16 +65,14 @@ class KillSixBillionDemons : HttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
-    // books dont change around here
-
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
-//    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-//        return client.newCall(popularMangaRequest(1))
-//            .asObservableSuccess()
-//            .map { response ->
-//                popularMangaParse(response).mangas.find { manga.title == it.title }
-//            }
-//    }
+    // books dont change around here, but still write the data again to avoid bugs in backup restore
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(popularMangaRequest(1))
+            .asObservableSuccess()
+            .map { response ->
+                popularMangaParse(response).mangas.find { manga.title == it.title }
+            }
+    }
 
     override fun mangaDetailsParse(response: Response): SManga = throw Exception("Not used")
 
