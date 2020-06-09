@@ -76,8 +76,8 @@ The structure for an extension is very strict.  In the future 1.x release this w
     - when the user searches inside the app, `fetchSearchManga` will be called and the rest of the flow is similar to what happens with `fetchPopularManga`.
 - **Manga Details**
     - When user taps on a manga and opens it's information Activity `fetchMangaDetails` and `fetchChapterList` will be called the resulting information will be cached.
-    - `fetchMangaDetails` is called to update a manga's details from when it vas initialized earlier(you may want to parse a manga details page here and fill the rest of the fields here)
-        - Note: During a backup and restore manga covers(`SManga.thumbnail_url`) and other extra fields are scraped by calling `fetchMangaDetails`. To make sure they're restored you need to at the very least set the thumbnail because during the said process the SManga object it not comming from `fetch*Manga` methods.
+    - `fetchMangaDetails` is called to update a manga's details from when it vas initialized earlier(you may want to parse a manga details page here and fill the rest of the fields)
+        - Note: During a backup, only `url` and `title` are stored, and to restore the rest of the manga data the app calls `fetchMangaDetails`. so you need to fill the rest of the fields, specially `thumbnail_url`.
    - `fetchChapterList` is called to display the chapter list, you want to return a reversed list here(last chapter, first index in the list)
 - **Chapter**
     - After a chapter list for the manga is fetched, `prepareNewChapter` will be called, after that the chapter will be saved in the app's DataBase and later if the chapter list changes the app will loose any references to the chapter(but chapter files will still be in the device storage)
