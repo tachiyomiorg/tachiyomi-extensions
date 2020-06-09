@@ -114,7 +114,7 @@ class KillSixBillionDemons : HttpSource() {
 
                         val textSplit = text.split(" ")
 
-                        name = "Chpater ${textSplit[0]}"
+                        name = "Chapter ${textSplit[0]}"
                     }
                 )
             }
