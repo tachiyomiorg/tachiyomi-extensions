@@ -146,7 +146,7 @@ And for a release build of Tachiyomi:
 ```
 -W -S -n eu.kanade.tachiyomi/eu.kanade.tachiyomi.ui.main.MainActivity -a eu.kanade.tachiyomi.SHOW_CATALOGUES
 ```
-## Debugging your code
+## Debugging
 - You are encouraged to clone the app itself and make your own debug build, then you can attach Android Studio's debugger to the app, and then you can print logs in the code and debug your extension using `Logcat`([link](https://developer.android.com/studio/debug/am-logcat) to Android Studio documentation for `Logcat`)
 - Directly debugging your extension(steeping through your extension code) is not possible, but if you keep both projects open in android studio, you can debug the app itself.
 
