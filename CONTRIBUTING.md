@@ -47,9 +47,6 @@ The catalogue's version name is based off of `libVersion` and `extVersionCode`. 
 
 Extensions rely on [extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which simply provides some interfaces and stubs to compile extentsions. The actual implementations are in the [app](https://github.com/inorichi/tachiyomi) inside `eu.kanade.tachiyomi.source` package which you can find it [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source), reading the code inside there will help you with writing your extension.
 
-### Important disclaimer before you continue!
-The structure for an extension is very strict.  In the future 1.x release this will be less strict but until then this has caused some issues when some sites don't quite fit the model.  There are required overrides but you can override the calling methods if you need more general control. This will go from the highest level method to the lowest level for browse/popular, it is the same but different method names for search and latest.
-
 ### general guidelines and extension workflow
 - **Extension Main Class**
     - The extension Main class which is refrenced and defined by `extClass`(inside `build.gradle`) should be inherited from either `SourceFactory` or one of `Source` children: `HttpSource` or `ParsedHttpSource`.
