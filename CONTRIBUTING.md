@@ -101,7 +101,7 @@ The structure for an extension is very strict.  In the future 1.x release this w
 | `id` | identifier of your source, automatically set from `HttpSource`, don't touch it | 
 | `supportsLatest` | if `true` the app adds a `latest` button to your extension |
 | `baseUrl` | base URL of the target source without any trailing slashes |
-| `lang` | as the documentation says "An ISO 639-1 compliant language code (two letters in lower case).", it will be used to catalog you extension |
+| `lang` | as the documentation says "An ISO 639-1 compliant language code (two letters in lower case).", it will be used to catalog your extension |
  
 - **Notes**
     - Some time during the code of you may find yourself finding no use for some inherited methods, if so just override them and throw exceptions: `throw Exception("Not used")`
