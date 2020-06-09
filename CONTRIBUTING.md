@@ -104,7 +104,7 @@ The structure for an extension is very strict.  In the future 1.x release this w
 | `lang` | as the documentation says "An ISO 639-1 compliant language code (two letters in lower case).", it will be used to catalog your extension |
  
 - **Notes**
-    - Some time during the code of you may find yourself finding no use for some inherited methods, if so just override them and throw exceptions: `throw Exception("Not used")`
+    - Some time while you are writing code, you may find no use for some inherited methods, if so just override them and throw exceptions: `throw Exception("Not used")`
     - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
     - If possible try to stick to the general workflow from`ParsedHttpSource` and `HttpSource` breaking them may cause you more headache than necessary.
     -  When reading the code documentation it helps to follow the subsequent called methods in the the default implementation from the `app`, while trying to grasp the general workflow.
