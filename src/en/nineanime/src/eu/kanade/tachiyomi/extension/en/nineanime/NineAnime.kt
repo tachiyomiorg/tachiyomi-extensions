@@ -116,7 +116,7 @@ class NineAnime : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
             element.select("a").let {
-                name = it.text()
+                name = it.select("span").firstOrNull()?.text() ?: it.text()
                 setUrlWithoutDomain(it.attr("href"))
             }
             date_upload = element.select("span.time").text().toDate()
