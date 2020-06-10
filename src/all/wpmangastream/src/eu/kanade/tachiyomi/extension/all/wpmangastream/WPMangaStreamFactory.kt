@@ -37,7 +37,8 @@ class WPMangaStreamFactory : SourceFactory {
         NonStopScans(),
         KomikTap(),
         Matakomik(),
-        KomikindoCo()
+        KomikindoCo(),
+        ReadKomik()
     )
 }
 
@@ -631,3 +632,5 @@ class Matakomik : WPMangaStream("Matakomik", "https://matakomik.com", "id") {
 }
 
 class KomikindoCo : WPMangaStream("Komikindo.co", "https://komikindo.co", "id")
+
+class ReadKomik : WPMangaStream("Readkomik", "https://readkomik.com", "en")
