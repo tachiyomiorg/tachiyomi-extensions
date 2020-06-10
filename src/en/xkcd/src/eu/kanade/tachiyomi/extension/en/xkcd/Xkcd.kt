@@ -39,7 +39,8 @@ class Xkcd : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
 
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = fetchPopularManga(1)
+        .map { it.mangas.first().apply { initialized = true } }
 
     override fun chapterListSelector() = "div#middleContainer.box a"
 
