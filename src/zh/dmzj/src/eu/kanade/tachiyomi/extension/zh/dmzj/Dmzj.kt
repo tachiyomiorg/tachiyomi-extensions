@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.net.URLEncoder
 import java.util.ArrayList
 import okhttp3.Request
 import okhttp3.Response
@@ -177,6 +178,16 @@ class Dmzj : HttpSource() {
             ret.add(Page(i, "", arr.getString(i)))
         }
         return ret
+    }
+
+    private fun String.encoded(): String {
+        return this.chunked(1)
+            .joinToString("") { if (it in setOf("%", " ", "+", "#")) URLEncoder.encode(it, "UTF-8") else it }
+            .let { if (it.endsWith(".jp")) "${it}g" else it }
+    }
+
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!.encoded(), headers)
     }
 
     // Unused, we can get image urls directly from the chapter page
