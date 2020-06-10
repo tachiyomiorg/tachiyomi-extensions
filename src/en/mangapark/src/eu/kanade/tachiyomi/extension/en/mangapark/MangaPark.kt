@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.absoluteValue
+import okhttp3.CacheControl
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -115,6 +116,11 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         }
 
         description = document.getElementsByClass("summary").text().trim()
+    }
+
+    // force network to make sure chapter prefs take effect
+    override fun chapterListRequest(manga: SManga): Request {
+        return GET(baseUrl + manga.url, headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
