@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: Gunnerkrigg Court'
     pkgNameSuffix = 'en.gunnerkriggcourt'
     extClass = '.GunnerkriggCourt'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

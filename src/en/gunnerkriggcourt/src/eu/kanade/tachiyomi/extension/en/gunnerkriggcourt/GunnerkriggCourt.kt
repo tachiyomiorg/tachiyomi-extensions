@@ -40,7 +40,7 @@ class GunnerkriggCourt : ParsedHttpSource() {
         return Observable.just(MangasPage(arrayListOf(manga).reversed(), false))
     }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return Observable.just(manga)
