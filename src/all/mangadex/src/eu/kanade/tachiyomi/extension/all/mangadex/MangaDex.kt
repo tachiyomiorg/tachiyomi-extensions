@@ -482,7 +482,7 @@ abstract class MangaDex(
                 chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
             }
         }
-        return chapters.also { if (it.isEmpty() && hasMangaPlus) throw Exception("Only has MangaPLus chapters") }
+        return chapters.also { if (it.isEmpty() && hasMangaPlus) throw Exception("This only has MangaPlus chapters, use the MangaPlus extension") }
     }
 
     /**
