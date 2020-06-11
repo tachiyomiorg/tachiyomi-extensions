@@ -464,6 +464,7 @@ abstract class MangaDex(
     private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        hasMangaPlus = false
         val now = Date().time
         val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
@@ -481,7 +482,7 @@ abstract class MangaDex(
                 chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
             }
         }
-        return chapters
+        return chapters.also { if (it.isEmpty() && hasMangaPlus) throw Exception("Only has MangaPLus chapters") }
     }
 
     /**
@@ -494,7 +495,10 @@ abstract class MangaDex(
         return when {
             chapterJson.get("lang_code").string != internalLang -> false
             (chapterJson.get("timestamp").asLong * 1000) > now -> false
-            chapterJson.get("group_id").string == "9097" -> false
+            chapterJson.get("group_id").string == "9097" -> {
+                hasMangaPlus = true
+                false
+            }
             else -> true
         }
     }
@@ -938,5 +942,7 @@ abstract class MangaDex(
             Pair("Spanish (LATAM)", "29"),
             Pair("Thai", "32"),
             Pair("Filipino", "34"))
+
+        private var hasMangaPlus = false
     }
 }
