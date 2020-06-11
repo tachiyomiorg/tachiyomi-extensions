@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -111,7 +112,7 @@ class MangaOwl : ParsedHttpSource() {
             chapter.setUrlWithoutDomain(it.attr("href").replace("/reader/reader/", "/reader/"))
             chapter.name = it.select("label")[0].text()
         }
-        chapter.date_upload = parseChapterDate(element.select("small").text())
+        chapter.date_upload = parseChapterDate(element.select("small:last-of-type").text())
 
         return chapter
     }
@@ -123,7 +124,11 @@ class MangaOwl : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long {
-        return dateFormat.parse(string).time
+        return try {
+            dateFormat.parse(string).time
+        } catch (_: ParseException) {
+            0
+        }
     }
 
     // Pages
