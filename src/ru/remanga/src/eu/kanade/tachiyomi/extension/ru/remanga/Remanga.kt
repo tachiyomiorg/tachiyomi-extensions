@@ -8,7 +8,6 @@ import MangaDetDto
 import PageDto
 import PageWrapperDto
 import PaidPageDto
-import PaidPagesDto
 import SeriesWrapperDto
 import UserDto
 import android.annotation.TargetApi
@@ -43,7 +42,6 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.stream.Collectors
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
@@ -287,8 +285,6 @@ class Remanga : ConfigurableSource, HttpSource() {
         }
     }
 
-    override fun imageUrlParse(response: Response): String = ""
-
     @TargetApi(Build.VERSION_CODES.N)
     override fun pageListParse(response: Response): List<Page> {
         val body = response.body()?.string()!!
@@ -300,28 +296,36 @@ class Remanga : ConfigurableSource, HttpSource() {
             }
         } catch (e: JsonSyntaxException) {
             val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
-            page.content.pages.parallelStream().map {
-                val res = this.combineImage(it)
-                Page(it.size, "", "https://127.0.0.1/?imagebase64,$res")
-            }.collect(Collectors.toList())
+            page.content.pages.mapIndexed { i, element ->
+                Page(i, element.joinToString { it.link })
+            }
         }
     }
 
-    private fun combineImage(it: List<PaidPagesDto>): String {
+    override fun fetchImageUrl(page: Page): Observable<String> {
+        val urls = page.url.split(", ")
+        val res = this.combineImage(urls)
+        return Observable.just("https://127.0.0.1/?imagebase64,$res")
+    }
+
+    override fun imageUrlRequest(page: Page): Request = throw NotImplementedError("Unused")
+
+    override fun imageUrlParse(response: Response): String = throw NotImplementedError("Unused")
+
+    private fun combineImage(pages: List<String>): String {
         val refererHeaders = Headers.Builder().apply {
             add("User-Agent", "Tachiyomi")
             add("Referer", "https://img.remanga.org")
         }.build()
-
-        val s = client.newCall(GET(it[0].link, refererHeaders)).execute().body()!!.bytes()
+        val s = client.newCall(GET(pages[0], refererHeaders)).execute().body()!!.bytes()
         val b = BitmapFactory.decodeByteArray(s, 0, s.size)
 
-        val cs = Bitmap.createBitmap(b.width, b.height * it.size, Bitmap.Config.ARGB_8888)
+        val cs = Bitmap.createBitmap(b.width, b.height * pages.size, Bitmap.Config.ARGB_8888)
         val comboImage = Canvas(cs)
         comboImage.drawBitmap(b, 0f, 0f, null)
-        var completeSize = it.size - 2
-        for (i in 1 until it.size) {
-            client.newCall(GET(it[i].link, refererHeaders)).enqueue(
+        var completeSize = pages.size - 2
+        for (i in 1 until pages.size) {
+            client.newCall(GET(pages[i], refererHeaders)).enqueue(
                 object : Callback {
                     override fun onResponse(call: Call, response: Response) {
                         val bytes = response.body()!!.bytes()
