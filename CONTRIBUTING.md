@@ -134,6 +134,7 @@ a.k.a. the "Latest" source entry point in the app.
 
 - `getFilterList` will be called to get all filters and filter types. **TODO: explain more about `Filter`**
 - When the user searches inside the app, `fetchSearchManga` will be called and the rest of the flow is similar to what happens with `fetchPopularManga`.
+- if search functionality is not available, return `Observable.just(MangasPage(emptyList(), false))`
 
 #### Manga Details
 
@@ -141,6 +142,7 @@ a.k.a. the "Latest" source entry point in the app.
 - `fetchMangaDetails` is called to update a manga's details from when it was initialized earlier
     - Note: During a backup, only `url` and `title` are stored, and to restore the rest of the manga data the app calls `fetchMangaDetails`, so all fields should be filled in if possible.
 - `fetchChapterList` is called to display the chapter list. This should be sorted descending by date.
+- `SManga.initialized` tells the app if it should call `fetchMangaDetails`, if you are overriding `fetchMangaDetails`, make sure to pass it as `true`.
 
 #### Chapter
 
@@ -150,13 +152,15 @@ a.k.a. the "Latest" source entry point in the app.
 
 - When user opens a chapter, `fetchPageList` will be called and it will return a list of `Page`s.
 - While a chapter is open the reader will call `fetchImageUrl` to get URLs for each page of the manga.
+- chapter pages are are started from `0`.
+- if `Page.imageUrl`s are available immediately, you should pass them here, otherwise(and you can set `page.url` to a empty string. otherwise, you have to override `imageUrlParse` to fill those imageUrls.
 
 ### Misc notes
 
-- Sometimes you may find no use for some inherited methods. If so just override them and throw exceptions: `throw Exception("Not used")`
+- Sometimes you may find no use for some inherited methods. If so just override them and throw exceptions: `throw UnsupportedOperationException("Not used.")`
 - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
 - If possible try to stick to the general workflow from `HttpSource`/`ParsedHttpSource`; breaking them may cause you more headache than necessary.
-
+- by implementing `ConfigurableSource` you can add settings to your source, you'd probably want to use Android's `SharedPreferences`in the code to store your settings.(documentation [here](https://developer.android.com/reference/android/content/SharedPreferences)) 
 
 ## Running
 
