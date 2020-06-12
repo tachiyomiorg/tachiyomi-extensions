@@ -31,7 +31,7 @@ fun JsonObject.getNullable(key: String): JsonElement? {
     return value
 }
 
-open class MangaMutiny : HttpSource() {
+class MangaMutiny : HttpSource() {
 
     override val name = "Manga Mutiny"
     override val baseUrl = "https://api.mangamutiny.org"
@@ -226,7 +226,7 @@ open class MangaMutiny : HttpSource() {
     private fun mangaRequest(page: Int, filters: FilterList? = null, query: String? = null): Request {
         val uri = Uri.parse(baseUrl).buildUpon()
         uri.appendEncodedPath(apiMangaUrlPath)
-        if ((query != null) && query.isNotEmpty()) {
+        if (query?.isNotBlank() == true) {
             uri.appendQueryParameter("text", query)
         }
         if (filters != null) {
