@@ -85,7 +85,7 @@ class TMOHentai : ParsedHttpSource() {
         url.addQueryParameter("search[searchText]", query)
         url.addQueryParameter("page", page.toString())
 
-        filters.forEach { filter ->
+        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Types -> {
                     url.addQueryParameter("type", filter.toUriPart())

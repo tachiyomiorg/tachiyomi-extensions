@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: TMOHentai'
     pkgNameSuffix = 'es.tmohentai'
     extClass = '.TMOHentai'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
