@@ -147,11 +147,13 @@ open class KillSixBillionDemons : HttpSource() {
 
         val chapterPages = mutableListOf<Page>()
 
-        wordpressPages.forEachIndexed { pageNum, wordpressPage ->
+        var pageNum = 1
+        wordpressPages.forEach { wordpressPage ->
             wordpressPage.select(".post-content .entry a:has(img)").forEach { postImage ->
                 chapterPages.add(
                     Page(pageNum, postImage.attr("href"), postImage.select("img").attr("src"))
                 )
+                pageNum++
             }
         }
 

@@ -7,17 +7,19 @@ import android.graphics.Paint
 import android.graphics.Paint.Align
 import android.util.Base64
 import eu.kanade.tachiyomi.lib.dataimage.DataImageInterceptor
+import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import org.apache.commons.text.WordUtils
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.security.MessageDigest
 
 /**
  *  @author Aria Moradi <aria.moradi007@gmail.com>
@@ -52,18 +54,24 @@ class KillSixBillionDemonsWithFlavourText : KillSixBillionDemons() {
 
         val chapterPages = mutableListOf<Page>()
 
-        wordpressPages.forEachIndexed { pageNum, wordpressPage ->
+        var pageNum = 0
+        wordpressPages.forEach { wordpressPage ->
             wordpressPage.select(".post-content .entry a:has(img)").forEach { postImage ->
                 chapterPages.add(
-                    Page(pageNum, postImage.attr("href"), postImage.select("img").attr("src"))
+                    Page(pageNum, "", postImage.select("img").attr("src"))
                 )
+                pageNum++
                 chapterPages.add(
                     Page(pageNum, postImage.attr("href"))
                 )
+                pageNum++
             }
         }
-
         return Observable.just(chapterPages)
+    }
+
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!, headers)
     }
 
     override fun imageUrlParse(response: Response): String {
@@ -73,6 +81,7 @@ class KillSixBillionDemonsWithFlavourText : KillSixBillionDemons() {
     private fun flavourTextAsImageURL(response: Response): String {
         val document = response.asJsoup()
         var flavourTextParagraphs = document.select(".entry").first().select("p").map { el -> el.text() }
+        var pageTitle = document.select("div.post-content > div.post-info > h2").text()
 
         if (flavourTextParagraphs.isEmpty())
             flavourTextParagraphs = listOf("No flavour text for the previous page.")
@@ -115,7 +124,7 @@ class KillSixBillionDemonsWithFlavourText : KillSixBillionDemons() {
 
         val encoded = Base64.encodeToString(byteArray, Base64.DEFAULT)
 
-        return "https://127.0.0.1/?image/jpeg;base64,$encoded"
+        return "https://127.0.0.1/?image/png;base64,$encoded"
     }
 
     companion object {
