@@ -18,7 +18,6 @@ import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.math.absoluteValue
 import okhttp3.CacheControl
 import okhttp3.Request
 import okhttp3.Response
@@ -138,9 +137,20 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
-        val mangaBySource = response.asJsoup().select("div[id^=stream]").map { sourceElement ->
-            sourceElement.select(chapterListSelector()).map { chapterFromElement(it, sourceElement.select("i + span").text()) }
-        }
+        val mangaBySource = response.asJsoup().select("div[id^=stream]")
+            .map { sourceElement ->
+                var lastNum = 0F
+                val sourceName = sourceElement.select("i + span").text()
+
+                sourceElement.select(chapterListSelector())
+                    .reversed() // so incrementing lastNum works
+                    .map { chapterElement ->
+                        chapterFromElement(chapterElement, sourceName, lastNum)
+                            .also { lastNum = it.chapter_number }
+                    }
+                    .distinctBy { it.chapter_number }  // there's even duplicate chapters within a source ( -.- )
+            }
+
         return when (getSourcePref()) {
             // source with most chapters along with chapters that source doesn't have
             "most" -> {
@@ -156,19 +166,33 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             "fox" -> mangaBySource.flatten().filterOrAll("Fox")
             "panda" -> mangaBySource.flatten().filterOrAll("Panda")
             // all sources, all chapters
-            else -> mangaBySource.flatten()
+            else -> mangaBySource.flatMap { it.reversed() }
         }
     }
 
     override fun chapterListSelector() = ".volume .chapter li"
 
-    private fun chapterFromElement(element: Element, source: String) = SChapter.create().apply {
-        url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
-        name = element.select(".tit > a").first().text()
-        // Get the chapter number or create a unique one if it's not available
-        chapter_number = Regex("""\b\d+\.?\d?\b""").find(name)?.value?.toFloatOrNull() ?: ".${name.hashCode().absoluteValue}".toFloat()
-        date_upload = parseDate(element.select(".time").first().text().trim())
-        scanlator = source
+    private fun chapterFromElement(element: Element, source: String, lastNum: Float): SChapter {
+        fun Float.incremented() = this + .00001F
+        fun Float?.orIncrementLastNum() = if (this == null || this < lastNum) lastNum.incremented() else this
+
+        return SChapter.create().apply {
+            url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
+            name = element.select(".tit > a").first().text()
+            // Get the chapter number or create a unique one if it's not available
+            chapter_number = Regex("""\b\d+\.?\d?\b""").findAll(name)
+                .toList()
+                .map { it.value.toFloatOrNull() }
+                .let { nums ->
+                    when {
+                        nums.count() == 1 -> nums[0].orIncrementLastNum()
+                        nums.count() >= 2 -> nums[1].orIncrementLastNum()
+                        else -> lastNum.incremented()
+                    }
+                }
+            date_upload = parseDate(element.select(".time").first().text().trim())
+            scanlator = source
+        }
     }
 
     override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
