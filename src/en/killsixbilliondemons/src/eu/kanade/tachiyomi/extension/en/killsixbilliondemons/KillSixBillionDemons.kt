@@ -19,9 +19,9 @@ import rx.Observable
  *  @author Aria Moradi <aria.moradi007@gmail.com>
  */
 
-class KillSixBillionDemons : HttpSource() {
+open class KillSixBillionDemons : HttpSource() {
 
-    override val name = "KillSixBillionDemons"
+    override val name = "Kill Six Billion Demons"
 
     override val baseUrl = "https://killsixbilliondemons.com"
 
@@ -49,7 +49,7 @@ class KillSixBillionDemons : HttpSource() {
         return "#chapter option:contains(book)"
     }
 
-    private fun popularMangaFromElement(element: Element): SManga {
+    protected open fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             title = element.text().substringBefore(" (")
             thumbnail_url = "https://dummyimage.com/768x994/000/ffffff.jpg&text=$title"
@@ -66,7 +66,15 @@ class KillSixBillionDemons : HttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
-    // books dont change around here, but still write the data again to avoid bugs in backup restore
+    // Search functionality is not available
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
+
+    override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not used")
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
+
+    // books don't change around here, but still write the data again to avoid bugs in backup restore
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return client.newCall(popularMangaRequest(1))
             .asObservableSuccess()
@@ -77,6 +85,8 @@ class KillSixBillionDemons : HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga = throw Exception("Not used")
 
+    // chapter list
+
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return client.newCall(chapterListRequest(manga))
             .asObservableSuccess()
@@ -86,6 +96,10 @@ class KillSixBillionDemons : HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request = popularMangaRequest(1)
+
+    private fun chapterListSelector(): String {
+        return "#chapter option"
+    }
 
     override fun chapterListParse(response: Response): List<SChapter> = throw Exception("Not used")
 
@@ -123,11 +137,25 @@ class KillSixBillionDemons : HttpSource() {
         return chapters.reversed()
     }
 
-    private fun chapterListSelector(): String {
-        return "#chapter option"
-    }
+    // page list
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        val wordpressPages = fetchChapterWordpressPagesList(chapter)
+
+        val chapterPages = mutableListOf<Page>()
+
+        wordpressPages.forEachIndexed { pageNum, wordpressPage ->
+            wordpressPage.select(".post-content .entry a:has(img)").forEach { postImage ->
+                chapterPages.add(
+                    Page(pageNum, postImage.attr("href"), postImage.select("img").attr("src"))
+                )
+            }
+        }
+
+        return Observable.just(chapterPages)
+    }
+
+    fun fetchChapterWordpressPagesList(chapter: SChapter): MutableList<Document> {
         val wordpressPages = mutableListOf<Document>()
         // get the first page and add ir to the list
         val firstPageURL = chapter.url + "?order=ASC" // change the url to ask Wordpress to reverse the posts
@@ -139,28 +167,12 @@ class KillSixBillionDemons : HttpSource() {
         for (i in 0 until (otherPages.size - 1)) // ignore the last one (last page button)
             wordpressPages.add(client.newCall(GET(otherPages[i].attr("href"))).execute().asJsoup())
 
-        val chapterPages = mutableListOf<Page>()
-        var pageNum = 1
-
-        wordpressPages.forEach { wordpressPage ->
-            wordpressPage.select(".post-content .entry a:has(img)").forEach { postImage ->
-                chapterPages.add(
-                    Page(pageNum, postImage.attr("href"), postImage.select("img").attr("src"))
-                )
-                pageNum++
-            }
-        }
-
-        return Observable.just(chapterPages)
+        return wordpressPages
     }
-
-    override fun imageUrlParse(response: Response): String = throw Exception("Not used")
 
     override fun pageListParse(response: Response): List<Page> = throw Exception("Not used")
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = throw Exception("Search functionality is not available.")
+    // image url: already handled
 
-    override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not used")
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw Exception("Not used")
+    override fun imageUrlParse(response: Response): String = throw Exception("Not used")
 }
