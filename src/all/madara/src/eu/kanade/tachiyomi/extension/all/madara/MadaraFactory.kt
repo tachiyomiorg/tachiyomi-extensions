@@ -652,7 +652,7 @@ class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en") {
     )
 }
 
-class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR", SimpleDateFormat("dd 'de' MMM 'de' yyyy", Locale("pt", "BR"))) {
+class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))) {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)

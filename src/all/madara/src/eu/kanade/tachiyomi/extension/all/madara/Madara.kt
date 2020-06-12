@@ -418,6 +418,10 @@ abstract class Madara(
             date.endsWith(" ago", ignoreCase = true) -> {
                 parseRelativeDate(date)
             }
+            // Handle translated 'ago' in Portuguese.
+            date.endsWith(" atrás", ignoreCase = true) -> {
+                parseRelativeDate(date)
+            }
             // Handle 'yesterday' and 'today', using midnight
             date.startsWith("year", ignoreCase = true) -> {
                 Calendar.getInstance().apply {
@@ -456,18 +460,18 @@ abstract class Madara(
     private fun parseRelativeDate(date: String): Long {
         val trimmedDate = date.split(" ")
         val number = trimmedDate[0].toIntOrNull()
-
+        val isRelative = trimmedDate[2] == "ago" || trimmedDate[2] == "atrás"
         /**
          *  Size check is for Arabic language, would sometimes break if we don't check
          *  Take that in to consideration if adding support for parsing Arabic dates
          */
-        return if (trimmedDate.size == 3 && trimmedDate[2] == "ago" && number is Int) {
+        return if (trimmedDate.size == 3 && isRelative && number is Int) {
             val cal = Calendar.getInstance()
             // Map English and other language units to Java units
             when (trimmedDate[1].removeSuffix("s")) {
-                "jour", "día", "day" -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
+                "jour", "día", "dia", "day" -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
                 "heure", "hora", "hour" -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
-                "min", "minute" -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
+                "min", "minute", "minuto" -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
                 "segundo", "second" -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
                 else -> 0
             }
