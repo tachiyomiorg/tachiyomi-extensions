@@ -257,7 +257,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             .html()
             .trim()
             .removePrefix("window.__info = ")
-            .removeSuffix(";")
+            .split(";")
+            .first()
 
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject
