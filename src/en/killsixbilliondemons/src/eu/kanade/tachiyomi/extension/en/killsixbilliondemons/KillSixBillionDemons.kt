@@ -27,6 +27,9 @@ open class KillSixBillionDemons : HttpSource() {
 
     override val lang = "en"
 
+    // override to set it the the original id
+    override val id = 5520021760150818261
+
     override val supportsLatest: Boolean = false
 
     // list of books
