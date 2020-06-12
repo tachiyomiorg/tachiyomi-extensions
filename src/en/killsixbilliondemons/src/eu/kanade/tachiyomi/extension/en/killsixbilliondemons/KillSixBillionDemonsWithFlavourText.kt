@@ -17,6 +17,7 @@ import okhttp3.Response
 import org.apache.commons.text.WordUtils
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.security.MessageDigest
 
 /**
  *  @author Aria Moradi <aria.moradi007@gmail.com>
@@ -24,6 +25,12 @@ import rx.Observable
 
 class KillSixBillionDemonsWithFlavourText : KillSixBillionDemons() {
     override val name = "KSBD: with flavour text"
+
+    override val id by lazy {
+        val key = "${name.toLowerCase()}/$lang/$versionId"
+        val bytes = MessageDigest.getInstance("MD5").digest(key.toByteArray())
+        (0..7).map { bytes[it].toLong() and 0xff shl 8 * (7 - it) }.reduce(Long::or) and Long.MAX_VALUE
+    }
 
     override val client: OkHttpClient = OkHttpClient().newBuilder()
         .addInterceptor(DataImageInterceptor())
@@ -110,7 +117,6 @@ class KillSixBillionDemonsWithFlavourText : KillSixBillionDemons() {
 
         return "https://127.0.0.1/?image/jpeg;base64,$encoded"
     }
-
 
     companion object {
         const val imageWidth = 1500
