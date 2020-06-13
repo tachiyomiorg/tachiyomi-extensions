@@ -17,6 +17,9 @@ Before you start, please note that the ability to use following technologies is 
 - [Android Studio](https://developer.android.com/studio)
 - Emulator or phone with developer options enabled and a recent version of Tachiyomi installed
 
+## Getting help
+- Join [Tachiyomi's discord server](https://discord.gg/tachiyomi) for online help and to ask questions while developing your extension.
+- There are some features and tricks that are not explored in this document. Refer to the [app's repository](https://github.com/inorichi/tachiyomi), [extensions library](https://github.com/tachiyomiorg/extensions-lib), [lib directory](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib) and other exsiting extension code for more info.
 
 ## Writing an extension
 
