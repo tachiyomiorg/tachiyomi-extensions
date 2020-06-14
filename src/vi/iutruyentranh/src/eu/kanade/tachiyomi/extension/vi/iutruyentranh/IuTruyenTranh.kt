@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.vi.iutruyentranh
 
+import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -7,7 +8,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.lang.UnsupportedOperationException
 import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,9 +29,9 @@ class IuTruyenTranh : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "div.bbottom h4.media-heading"
+    override fun popularMangaSelector() = "div.media"
 
-    override fun latestUpdatesSelector() = "h4.media-heading"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/genre/$page?popular", headers)
@@ -40,10 +43,11 @@ class IuTruyenTranh : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        element.select("a").first().let {
+        element.select("h4 a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
         }
+        manga.thumbnail_url = element.select("img").attr("abs:data-original")
         return manga
     }
 
@@ -55,6 +59,7 @@ class IuTruyenTranh : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
+    @SuppressLint("DefaultLocale")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search/$page?")!!.newBuilder().addQueryParameter("name", query)
         val genres = mutableListOf<String>()
@@ -89,14 +94,14 @@ class IuTruyenTranh : ParsedHttpSource() {
 
         val manga = SManga.create()
         manga.author = infoElement.select("span[itemprop=author]").first()?.text()
-        manga.genre = infoElement.select("a[itemprop=genre]").text()
+        manga.genre = infoElement.select("a[itemprop=genre]").joinToString { it.text() }
         manga.description = infoElement.select("p.box.box-danger").text()
         manga.status = infoElement.select("a[rel=nofollow]").last()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = infoElement.select("img[class^=thumbnail]").first()?.attr("src")
         return manga
     }
 
-    fun parseStatus(status: String) = when {
+    private fun parseStatus(status: String) = when {
         status.contains("Đang tiến hành") -> SManga.ONGOING
         status.contains("Đã hoàn thành") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -111,25 +116,18 @@ class IuTruyenTranh : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href") + "&load=all")
         chapter.name = urlElement.select("b").text()
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
-            SimpleDateFormat("dd/MM/yyyy").parse(it).time
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(it).time
         } ?: 0
         return chapter
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
-
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        var i = 0
-        document.select("img.img").forEach {
-            pages.add(Page(i++, "", it.attr("src")))
+        return document.select("a.img-link img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:src"))
         }
-        return pages
     }
 
-    override fun imageUrlRequest(page: Page) = GET(page.url)
-
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     private class Author : Filter.Text("Tác giả")
     private class Genre(name: String) : Filter.TriState(name)
