@@ -167,7 +167,8 @@ a.k.a. the "Latest" source entry point in the app.
 - When user opens a chapter, `fetchPageList` will be called and it will return a list of `Page`s.
 - While a chapter is open the reader will call `fetchImageUrl` to get URLs for each page of the manga.
 - Chapter pages start from `0`.
-- If `Page.imageUrl`s are available immediately, you should pass them here. Otherwise, you can set `page.url` to a empty string and override `imageUrlParse` to fill those `imageUrl`s.
+- If `Page.imageUrl`s
+ are available immediately, you should pass them here. Otherwise, you sould set `page.url` to a pages that contain them and override `imageUrlParse` to fill those `imageUrl`s.
 
 ### Misc notes
 
