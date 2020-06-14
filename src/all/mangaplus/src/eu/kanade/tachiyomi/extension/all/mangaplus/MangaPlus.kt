@@ -35,7 +35,6 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 abstract class MangaPlus(
-    override val id: Long,
     override val lang: String,
     private val internalLang: String,
     private val langCode: Language
