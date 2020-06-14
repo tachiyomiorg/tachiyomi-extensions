@@ -76,7 +76,7 @@ data class Title(
     @ProtoId(3) val author: String,
     @ProtoId(4) val portraitImageUrl: String,
     @ProtoId(5) val landscapeImageUrl: String,
-    @ProtoId(6) val viewCount: Int,
+    @ProtoId(6) val viewCount: Int = 0,
     @ProtoId(7) val language: Language? = Language.ENGLISH
 )
 
@@ -189,6 +189,7 @@ const val DECODE_SCRIPT: String = """
         .add(new Field("nextTimeStamp", 5, "uint32"))
         .add(new Field("updateTiming", 6, "UpdateTiming"))
         .add(new Field("viewingPeriodDescription", 7, "string"))
+        .add(new Field("nonAppearanceInfo", 8, "string", {"default": ""}))
         .add(new Field("firstChapterList", 9, "Chapter", "repeated"))
         .add(new Field("lastChapterList", 10, "Chapter", "repeated"))
         .add(new Field("isSimulReleased", 14, "bool"))
@@ -214,7 +215,7 @@ const val DECODE_SCRIPT: String = """
         .add(new Field("author", 3, "string"))
         .add(new Field("portraitImageUrl", 4, "string"))
         .add(new Field("landscapeImageUrl", 5, "string"))
-        .add(new Field("viewCount", 6, "uint32"))
+        .add(new Field("viewCount", 6, "uint32", {"default": 0}))
         .add(new Field("language", 7, "Language", {"default": 0}));
 
     var Language = new Enum("Language")

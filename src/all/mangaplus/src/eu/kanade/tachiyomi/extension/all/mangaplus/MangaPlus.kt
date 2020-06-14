@@ -40,7 +40,12 @@ abstract class MangaPlus(
     private val langCode: Language
 ) : HttpSource(), ConfigurableSource {
 
-    override val name = "Manga Plus by Shueisha"
+    // Hardcode the id because the old name wasn't matching the official service name.
+    override val id: Long by lazy {
+        if (lang == "en") OLD_ENGLISH_ID else OLD_SPANISH_ID
+    }
+
+    override val name = "MANGA Plus by SHUEISHA"
 
     override val baseUrl = "https://mangaplus.shueisha.co.jp"
 
@@ -196,8 +201,8 @@ abstract class MangaPlus(
         val isCompleted = details.nonAppearanceInfo.contains(COMPLETE_REGEX)
 
         return SManga.create().apply {
-            author = title.author
-            artist = title.author
+            author = title.author.replace(" / ", ", ")
+            artist = author
             description = details.overview + "\n\n" + details.viewingPeriodDescription
             status = if (isCompleted) SManga.COMPLETED else SManga.ONGOING
             thumbnail_url = title.portraitImageUrl.toWeservUrl()
@@ -448,5 +453,8 @@ abstract class MangaPlus(
         private const val SPLIT_PREF_DEFAULT_VALUE = true
 
         private val COMPLETE_REGEX = "completado|complete".toRegex()
+
+        private const val OLD_ENGLISH_ID: Long = 1998944621602463790
+        private const val OLD_SPANISH_ID: Long = 1286073245950890830
     }
 }
