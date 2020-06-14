@@ -7,7 +7,6 @@ class MangaPlusFactory : SourceFactory {
     override fun createSources(): List<Source> = getAllMangaPlus()
 }
 
-// The ids are hardcoded because the old name wasn't matching the official service name.
 class MangaPlusEnglish : MangaPlus("en", "eng", Language.ENGLISH)
 class MangaPlusSpanish : MangaPlus("es", "esp", Language.SPANISH)
 
