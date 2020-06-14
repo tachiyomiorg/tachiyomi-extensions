@@ -35,15 +35,11 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 abstract class MangaPlus(
+    override val id: Long,
     override val lang: String,
     private val internalLang: String,
     private val langCode: Language
 ) : HttpSource(), ConfigurableSource {
-
-    // Hardcode the id because the old name wasn't matching the official service name.
-    override val id: Long by lazy {
-        if (lang == "en") OLD_ENGLISH_ID else OLD_SPANISH_ID
-    }
 
     override val name = "MANGA Plus by SHUEISHA"
 
@@ -453,8 +449,5 @@ abstract class MangaPlus(
         private const val SPLIT_PREF_DEFAULT_VALUE = true
 
         private val COMPLETE_REGEX = "completado|complete".toRegex()
-
-        private const val OLD_ENGLISH_ID: Long = 1998944621602463790
-        private const val OLD_SPANISH_ID: Long = 1286073245950890830
     }
 }
