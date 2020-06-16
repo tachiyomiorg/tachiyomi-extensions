@@ -143,9 +143,11 @@ Note that using `compileOnly` restricts you to versions that must be compatible 
 
 The class which is refrenced and defined by `extClass` in `build.gradle`.
 This class should implement either `SourceFactory` or one of the `Source` implementations: `HttpSource` or `ParsedHttpSource`.
-- `SourceFactory`: used to expose multiple `Source`s. Use it when there's minor differences between your target sources or they are essentially mirrors to the same website.
-- `HttpSource`: for online source, where requests are made using HTTP.
-- `ParsedHttpSource`: similar to `HttpSource`, but has methods useful for scraping pages.
+| Class | Description |
+| ----- | ----------- |
+|`SourceFactory`| used to expose multiple `Source`s. Use it when there's minor differences between your target sources or they are essentially mirrors to the same website. |
+| `HttpSource`| for online source, where requests are made using HTTP. |
+| `ParsedHttpSource`| similar to `HttpSource`, but has methods useful for scraping pages. |
 
 #### Main class key variables
 
