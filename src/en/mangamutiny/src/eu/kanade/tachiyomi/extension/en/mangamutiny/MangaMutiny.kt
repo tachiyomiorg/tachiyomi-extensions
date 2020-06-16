@@ -140,8 +140,8 @@ class MangaMutiny : HttpSource() {
                     "completed" -> SManga.COMPLETED
                     else -> SManga.UNKNOWN
                 }
-                description = rootNode.get("summary").asString
-                thumbnail_url = rootNode.get("thumbnail")?.asString
+                description = rootNode.getNullable("summary")?.asString
+                thumbnail_url = rootNode.getNullable("thumbnail")?.asString
                 title = rootNode.get("title").asString
                 url = rootNode.get("slug").asString
                 artist = rootNode.get("artists").asString
@@ -211,7 +211,7 @@ class MangaMutiny : HttpSource() {
                     val mangaObject = singleItem.asJsonObject
                     mangasPage.add(SManga.create().apply {
                         this.title = mangaObject.get("title").asString
-                        this.thumbnail_url = mangaObject.get("thumbnail")?.asString
+                        this.thumbnail_url = mangaObject.getNullable("thumbnail")?.asString
                         this.url = mangaObject.get("slug").asString
                     })
                 }
