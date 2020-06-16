@@ -225,7 +225,7 @@ And for a release build of Tachiyomi:
 -W -S -n eu.kanade.tachiyomi/eu.kanade.tachiyomi.ui.main.MainActivity -a eu.kanade.tachiyomi.SHOW_CATALOGUES
 ```
 
-### Debugging
+## Debugging
 
 Directly debugging your extension (i.e steping through the extension code) is not possible due to the way that extension code is loaded into the app. However, logs printed from extensions (via [`Logcat`](https://developer.android.com/studio/debug/am-logcat)) do work(Preview or debug build only).
 
