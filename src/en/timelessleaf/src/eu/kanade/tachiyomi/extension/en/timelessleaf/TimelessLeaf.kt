@@ -103,13 +103,23 @@ class TimelessLeaf : HttpSource() {
         }
     }
 
-    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used.")
+    // search manga, implementing a local search
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = popularMangaRequest(1)
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                val allManga = popularMangaParse(response)
+                val filtered = allManga.mangas.filter { manga -> manga.title.toLowerCase(Locale.ROOT).contains(query) }
+                MangasPage(filtered, false)
+            }
+    }
 
     override fun searchMangaParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used.")
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used.")
+    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used.")
 
     override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used.")
 
