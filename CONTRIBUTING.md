@@ -30,7 +30,7 @@ Each extension should reside in `src/<lang>/<mysourcename>`. Use `all` as `<lang
 
 #### Extention file structure
 The simplest extention structure follows this:
-```
+```console
 $ tree src/<lang>/<mysourcename>/
 src/<lang>/<mysourcename>/
 ├── build.gradle
