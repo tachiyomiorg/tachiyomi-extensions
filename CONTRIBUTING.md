@@ -137,7 +137,7 @@ dependencies {
 
 Notice that we're using `compileOnly` instead of `implementation`, since the app already contains it. You could use `implementation` instead for a new dependency, or you prefer not to rely on whatever the main app has at the expense of app size.
 
-Note that using `compileOnly` restricts you to versions that must be compatible with those used in Tachiyomi v0.8.5+ for proper backwards compatibility.
+Note that using `compileOnly` restricts you to versions that must be compatible with those used in [Tachiyomi v0.8.5+](https://github.com/inorichi/tachiyomi/blob/82141cec6e612885fef4fa70092e29e99d60adbb/app/build.gradle) for proper backwards compatibility.
 
 ### Extension main class
 
