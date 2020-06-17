@@ -14,7 +14,6 @@ import eu.kanade.tachiyomi.util.asJsoup
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.CacheControl
@@ -398,22 +397,25 @@ abstract class Madara(
                 chapter.name = urlElement.text()
             }
 
-            // For when source's chapter date is a graphic representing "new" instead of text
-            val imgDate = select("img").attr("alt")
-            if (imgDate.isNotBlank()) {
-                chapter.date_upload = parseRelativeDate(imgDate)
-            } else {
-                // For a chapter date that's text
-                select("span.chapter-release-date i").first()?.let {
-                    chapter.date_upload = parseChapterDate(it.text()) ?: 0
-                }
-            }
+            // Dates can be part of a "new" graphic or plain text
+            chapter.date_upload = select("img").firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
+                ?: parseChapterDate(select("span.chapter-release-date i").firstOrNull()?.text())
         }
 
         return chapter
     }
 
-    open fun parseChapterDate(date: String): Long? {
+    open fun parseChapterDate(date: String?): Long {
+        date ?: return 0
+
+        fun SimpleDateFormat.tryParse(string: String): Long {
+            return try {
+                parse(string).time
+            } catch (_: ParseException) {
+                0
+            }
+        }
+
         return when {
             date.endsWith(" ago", ignoreCase = true) -> {
                 parseRelativeDate(date)
@@ -449,42 +451,24 @@ abstract class Madara(
                         it
                     }
                 }
-                    .let { dateFormat.parseOrNull(it.joinToString(" "))?.time }
+                    .let { dateFormat.tryParse(it.joinToString(" ")) }
             }
-            else -> dateFormat.parseOrNull(date)?.time
+            else -> dateFormat.tryParse(date)
         }
     }
 
     // Parses dates in this form:
     // 21 horas ago
     private fun parseRelativeDate(date: String): Long {
-        val trimmedDate = date.split(" ")
-        val number = trimmedDate[0].toIntOrNull()
-        val isRelative = trimmedDate[2] == "ago" || trimmedDate[2] == "atrás"
-        /**
-         *  Size check is for Arabic language, would sometimes break if we don't check
-         *  Take that in to consideration if adding support for parsing Arabic dates
-         */
-        return if (trimmedDate.size == 3 && isRelative && number is Int) {
-            val cal = Calendar.getInstance()
-            // Map English and other language units to Java units
-            when (trimmedDate[1].removeSuffix("s")) {
-                "jour", "día", "dia", "day" -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
-                "heure", "hora", "hour" -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
-                "min", "minute", "minuto" -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
-                "segundo", "second" -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
-                else -> 0
-            }
-        } else {
-            0
-        }
-    }
+        val number = Regex("""(\d+)""").find(date)?.value?.toIntOrNull() ?: return 0
+        val cal = Calendar.getInstance()
 
-    private fun SimpleDateFormat.parseOrNull(string: String): Date? {
-        return try {
-            parse(string)
-        } catch (e: ParseException) {
-            null
+        return when {
+            WordSet("jour", "día", "dia", "day").anyWordIn(date) -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
+            WordSet("heure", "hora", "hour").anyWordIn(date) -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
+            WordSet("min", "minute", "minuto").anyWordIn(date) -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
+            WordSet("segundo", "second").anyWordIn(date) -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
+            else -> 0
         }
     }
 
@@ -507,3 +491,5 @@ abstract class Madara(
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 }
+
+class WordSet(private vararg val words: String) { fun anyWordIn(dateString: String): Boolean = words.any { dateString.contains(it, ignoreCase = true) } }

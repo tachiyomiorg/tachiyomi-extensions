@@ -137,7 +137,12 @@ class MadaraFactory : SourceFactory {
         QueensManga(),
         DropeScan(),
         TheTopComic(),
-        WebNovel()
+        WebNovel(),
+        TruyenTranhAudioCom(),
+        TruyenTranhAudioOnline(),
+        MangaTurf(),
+        SheaManga(),
+        FurioScans()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -977,3 +982,36 @@ class DropeScan : Madara("Drope Scan", "https://dropescan.com", "pt-BR") {
 class TheTopComic : Madara("TheTopComic", "https://thetopcomic.com", "en")
 
 class WebNovel : Madara("WebNovel", "https://webnovel.live", "en")
+
+class TruyenTranhAudioCom : Madara("TruyenTranhAudio.com", "https://truyentranhaudio.com", "vi", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())) {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page?s&post_type=wp-manga&m_orderby=views", headers)
+    override fun popularMangaSelector() = searchMangaSelector()
+    override fun popularMangaFromElement(element: Element): SManga = searchMangaFromElement(element)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page?s&post_type=wp-manga&m_orderby=latest", headers)
+    override fun latestUpdatesSelector() = searchMangaSelector()
+    override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("div.reading-content img").map { it.attr("abs:src") }
+            .filterNot { it.isNullOrEmpty() }
+            .distinct()
+            .mapIndexed { i, url -> Page(i, "", url) }
+    }
+}
+
+class TruyenTranhAudioOnline : Madara("TruyenTranhAudio.online", "https://truyentranhaudio.online", "vi", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())) {
+    override val formHeaders: Headers = headersBuilder()
+        .add("Content-Type", "application/x-www-form-urlencoded")
+        .build()
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("div.reading-content img").map { it.attr("abs:src") }
+            .filterNot { it.isNullOrEmpty() }
+            .distinct()
+            .mapIndexed { i, url -> Page(i, "", url) }
+    }
+}
+
+class MangaTurf : Madara("Manga Turf", "https://mangaturf.com", "en")
+
+class SheaManga : Madara("Shea Manga", "https://sheamanga.my.id", "id")
+
+class FurioScans : Madara("Furio Scans", "https://furioscans.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()))
