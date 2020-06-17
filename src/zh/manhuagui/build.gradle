@@ -5,11 +5,12 @@ ext {
     appName = 'Tachiyomi: ManHuaGui'
     pkgNameSuffix = 'zh.manhuagui'
     extClass = '.Manhuagui'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
 dependencies {
+    implementation project(':lib-ratelimit')
     compileOnly project(':duktape-stub')
 }
 
