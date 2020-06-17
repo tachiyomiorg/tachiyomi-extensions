@@ -28,13 +28,20 @@ class TimelessLeaf : HttpSource() {
 
     override val supportsLatest: Boolean = false
 
+    val mangasPageUrl = baseUrl + "/manga/"
+
     // popular manga
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET(baseUrl)
+        return GET(mangasPageUrl)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        // scraping post links
+        val articleLinks = document.select(".site-main article a")
+
         // scraping menus, ignore the ones that are not manga entries
         val pagesWeDontWant = listOf(
             "dropped",
@@ -43,37 +50,41 @@ class TimelessLeaf : HttpSource() {
         ).joinToString(prefix = "(?i)", separator = "|").toRegex()
 
         // all mangas are in sub menus, go straight for that to deal with less menu items
-        val links = response.asJsoup().select(".sub-menu a").filterNot { element ->
+        val menuLinks = document.select(".sub-menu a").filterNot { element ->
             element.text().toLowerCase(Locale.ROOT).contains(pagesWeDontWant)
         }
 
-        return MangasPage(links.map { el ->
+        // combine the two lists
+        val combinedLinks = articleLinks.map { el ->
+            Pair(el.text(), el.attr("href"))
+        }.toMutableList().apply {
+            val titleList = this.map { it.first }
+            menuLinks.forEach { el ->
+                val title = el.text()
+                // ignore duplicates
+                if (titleList.filter { str -> str.startsWith(title, ignoreCase = true) }.isEmpty())
+                    add(Pair(title, el.attr("href")))
+            }
+        }.sortedBy { pair -> pair.first }
+
+        return MangasPage(combinedLinks.map { p ->
             SManga.create().apply {
-                title = el.text()
-                setUrlWithoutDomain(el.attr("href"))
+                title = p.first
+                setUrlWithoutDomain(p.second)
             }
         }, false)
     }
 
     // manga details
 
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return client.newCall(mangaDetailsRequest(manga))
-            .asObservableSuccess()
-            .map { response ->
-                mangaDetailsParse(manga, response).apply { initialized = true }
-            }
-    }
-
-    // change signature to recycle existing data
-    private fun mangaDetailsParse(manga: SManga, response: Response): SManga {
+    override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
 
-        return manga.apply {
+        return SManga.create().apply {
             // prefer srcset for higher res images, if not available use src
-            thumbnail_url = document.select(".site-main img").attr("srcset").split(" ")[0]
+            thumbnail_url = document.select(".site-main img").attr("srcset").substringBefore(" ")
             if (thumbnail_url == "")
-                thumbnail_url = document.select(".site-main img").attr("src")
+                thumbnail_url = document.select(".site-main img").attr("abs:src")
         }
     }
 
@@ -96,10 +107,8 @@ class TimelessLeaf : HttpSource() {
     // page list
 
     override fun pageListParse(response: Response): List<Page> {
-        val document = response.asJsoup()
-
-        return document.select(".site-main article .gallery-item img").mapIndexed { index, el ->
-            Page(index, "", el.attr("src"))
+        return response.asJsoup().select(".site-main article .gallery-item img").mapIndexed { index, el ->
+            Page(index, "", el.attr("abs:src"))
         }
     }
 
@@ -112,7 +121,7 @@ class TimelessLeaf : HttpSource() {
             .asObservableSuccess()
             .map { response ->
                 val allManga = popularMangaParse(response)
-                val filtered = allManga.mangas.filter { manga -> manga.title.toLowerCase(Locale.ROOT).contains(query) }
+                val filtered = allManga.mangas.filter { manga -> manga.title.contains(query, ignoreCase = true) }
                 MangasPage(filtered, false)
             }
     }
@@ -124,6 +133,4 @@ class TimelessLeaf : HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used.")
 
     override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException("Not used.")
-
-    override fun mangaDetailsParse(response: Response): SManga = throw UnsupportedOperationException("Not used.")
 }
