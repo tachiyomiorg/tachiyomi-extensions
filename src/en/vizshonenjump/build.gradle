@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    appName = 'Tachiyomi: VIZ Shonen Jump'
+    pkgNameSuffix = 'en.vizshonenjump'
+    extClass = '.VizShonenJump'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation 'com.android.support:exifinterface:28.0.0'
+}
+
+apply from: "$rootDir/common.gradle"
