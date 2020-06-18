@@ -4,11 +4,11 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Log
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -16,10 +16,17 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import okhttp3.FormBody
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
@@ -46,60 +53,38 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
                 "https://www.manhuagui.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = arrayOf("https://i.hamreus.com")
 
+    private val imageServer = arrayOf("https://i.hamreus.com")
     private val gson = Gson()
     private val baseHttpUrl: HttpUrl = HttpUrl.parse(baseUrl)!!
 
     // Add rate limit to fix manga thumbnail load failure
     private val rateLimitInterceptor = RateLimitInterceptor(5, 1, TimeUnit.SECONDS)
 
-    override val client: OkHttpClient = network.client.newBuilder()
-            .addNetworkInterceptor(rateLimitInterceptor)
-            .addNetworkInterceptor(AddCookieHeaderInterceptor(getShowR18(), baseHttpUrl))
-            .addInterceptor(SendPostRequestInterceptor(baseHttpUrl))
-            .build()
-
-    // Send a post request to https://www.manhuagui.com/tools/submit_ajax.ashx?action=user_check_login
-    // to get country cookie and pretend as a normal browser
-    // TODO: This POST request and the GET request below(in mangaDetailsRequest()) currently will be sent before any real browsing request, obviously unnatural but seem still work. May be we need coroutine or some other way to fix it?
-    class SendPostRequestInterceptor(private val baseHttpUrl: HttpUrl) : Interceptor {
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val originalURL: HttpUrl = chain.request().url()
-            if (originalURL.host() == baseHttpUrl.host() && !originalURL.toString().contains("vote.ashx")) {
-                val postRequest: Request = Request.Builder()
-                        .url("${baseHttpUrl}tools/submit_ajax.ashx?action=user_check_login")
-                        .header("Origin", baseHttpUrl.toString())
-                        .header("Referer", originalURL.toString())
-                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4086.0 Safari/537.36")
-                        .header("X-Requested-With", "XMLHttpRequest")
-                        .post(FormBody.Builder().build())
+    override val client: OkHttpClient =
+            if (getShowR18())
+                network.client.newBuilder()
+                        .addNetworkInterceptor(rateLimitInterceptor)
+                        .addNetworkInterceptor(AddCookieHeaderInterceptor(baseHttpUrl))
                         .build()
-                val postResponse: Response = chain.proceed(postRequest)
-                postResponse.close()
-            }
-            return chain.proceed(chain.request())
-        }
-    }
+            else
+                network.client.newBuilder()
+                        .addNetworkInterceptor(rateLimitInterceptor)
+                        .build()
 
     // Add R18 verification cookie
-    class AddCookieHeaderInterceptor(private val r18Setting: Boolean, private val baseHttpUrl: HttpUrl) : Interceptor {
+    class AddCookieHeaderInterceptor(private val baseHttpUrl: HttpUrl) : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
-            return if (chain.request().url().host() == baseHttpUrl.host()) {
+            if (chain.request().url().host() == baseHttpUrl.host()) {
                 val originalCookies = chain.request().header("Cookie") ?: ""
-                Log.i("AddCookie", "r18Setting=$r18Setting")
-                Log.i("AddCookie", "originalCookies=$originalCookies")
-                val temp = if (r18Setting && originalCookies != "") "; isAdult=1" else ""
-                r18VerificationCookieAdded = if (temp != "") true else false
-                val newReq: Request = chain
-                        .request()
-                        .newBuilder()
-                        .header("Cookie", "$originalCookies$temp")
-                        .build()
-                Log.i("AddCookie", "newRequest: \n$newReq")
-                chain.proceed(newReq)
-            } else
-                chain.proceed(chain.request())
+                if (originalCookies != "") {
+                    return chain.proceed(chain.request().newBuilder()
+                            .header("Cookie", "$originalCookies; isAdult=1")
+                            .build()
+                    )
+                }
+            }
+            return chain.proceed(chain.request())
         }
     }
 
@@ -109,33 +94,50 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             GET("$baseUrl/s/${query}_p$page.html", headers)
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        // Send a get request to https://www.manhuagui.com/tools/vote.ashx?act=get&bid=$bid
-        // to simulate what web page javascript do
         var bid = Regex("""\d+/?$""").find(manga.url)?.value
         if (bid != null) {
             bid = bid.removeSuffix("/")
-            Log.i("bid", bid)
-            val response = client.newCall(Request.Builder()
-                    .url("$baseUrl/tools/vote.ashx?act=get&bid=$bid")
-                    .header("Referer", baseUrl + manga.url)
-                    .header("X-Requested-With", "XMLHttpRequest")
-                    .build()
-            ).execute()
-            response.close()
+
+            // Send a get request to https://www.manhuagui.com/tools/vote.ashx?act=get&bid=$bid
+            // and a post request to https://www.manhuagui.com/tools/submit_ajax.ashx?action=user_check_login
+            // to simulate what web page javascript do and get "country" cookie.
+            // Send requests using coroutine in another (IO) thread.
+            GlobalScope.launch {
+                withContext(Dispatchers.IO) {
+                    // Delay 1 second to wait main manga details request complete
+                    delay(1000L)
+                    client.newCall(POST("$baseUrl/tools/submit_ajax.ashx?action=user_check_login", headersBuilder()
+                            .set("Referer", manga.url)
+                            .set("X-Requested-With", "XMLHttpRequest")
+                            .build()
+                    )).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) = e.printStackTrace()
+                        override fun onResponse(call: Call, response: Response) = response.close()
+                    })
+
+                    client.newCall(GET("$baseUrl/tools/vote.ashx?act=get&bid=$bid", headersBuilder()
+                            .set("Referer", manga.url)
+                            .set("X-Requested-With", "XMLHttpRequest").build()
+                    )).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) = e.printStackTrace()
+                        override fun onResponse(call: Call, response: Response) = response.close()
+                    })
+                }
+            }
         }
 
-        return GET(baseUrl + manga.url, headers)
+        return GET(manga.url, headers)
     }
 
-    override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
+    override fun chapterListRequest(manga: SManga) = GET(manga.url, headers)
+    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
 
     override fun popularMangaSelector() = "ul#contList > li"
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun searchMangaSelector() = "div.book-result > ul > li"
     override fun chapterListSelector() = "ul > li > a.status0"
 
-    override fun searchMangaNextPageSelector() = "a.prev"
+    override fun searchMangaNextPageSelector() = "span.current + a" // "a.prev" contain 2~4 elements: first, previous, next and last page, "span.current + a" is a better choice.
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
@@ -148,16 +150,15 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a.bcover").first().let {
-            manga.url = it.attr("href")
+            manga.url = it.attr("abs:href")
             manga.title = it.attr("title").trim()
 
             // Fix thumbnail lazy load
             val thumbnailElement = it.select("img").first()
-            if (thumbnailElement.hasAttr("src")) {
-                manga.thumbnail_url = thumbnailElement.attr("src")
-            } else {
-                manga.thumbnail_url = thumbnailElement.attr("data-src")
-            }
+            manga.thumbnail_url = if (thumbnailElement.hasAttr("src"))
+                thumbnailElement.attr("abs:src")
+            else
+                thumbnailElement.attr("abs:data-src")
         }
         return manga
     }
@@ -165,18 +166,16 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        element.select("div.book-cover > a.bcover > img").first().attr("src")
-
         element.select("div.book-detail").first().let {
-            manga.url = it.select("dl > dt > a").first().attr("href")
+            manga.url = it.select("dl > dt > a").first().attr("abs:href")
             manga.title = it.select("dl > dt > a").first().attr("title").trim()
+            manga.thumbnail_url = element.select("div.book-cover > a.bcover > img").first().attr("abs:src")
         }
 
         return manga
     }
 
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
-
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val chapters = mutableListOf<SChapter>()
@@ -184,14 +183,13 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         // Try to get R18 manga hidden chapter list
         val hiddenEncryptedChapterList = document.select("#__VIEWSTATE").first()
         if (hiddenEncryptedChapterList != null) {
-            if (getShowR18() && r18VerificationCookieAdded) {
+            if (getShowR18()) {
                 // Hidden chapter list is LZString encoded
                 val decodedHiddenChapterList = Duktape.create().use {
                     it.evaluate(jsDecodeFunc +
                             """LZString.decompressFromBase64('${hiddenEncryptedChapterList.`val`()}');""") as String
                 }
-                Log.i("ChapterListDecodeResult", decodedHiddenChapterList)
-                val hiddenChapterList = Jsoup.parse(decodedHiddenChapterList)
+                val hiddenChapterList = Jsoup.parse(decodedHiddenChapterList, response.request().url().toString())
                 if (hiddenChapterList != null) {
                     // Replace R18 warning with actual chapter list
                     document.select("#erroraudit_show").first().replaceWith(hiddenChapterList)
@@ -204,14 +202,14 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             }
         }
         val chapterList = document.select("ul > li > a.status0")
-        val latestChapterHref = document.select("div.book-detail > ul.detail-list > li.status > span > a.blue").first().attr("href")
+        val latestChapterHref = document.select("div.book-detail > ul.detail-list > li.status > span > a.blue").first().attr("abs:href")
         chapterList.forEach {
             val currentChapter = SChapter.create()
-            currentChapter.url = it.attr("href")
+            currentChapter.url = it.attr("abs:href")
             currentChapter.name = it.attr("title").trim()
 
             // Manhuagui only provide upload date for latest chapter
-            if (it.attr("href") == latestChapterHref) {
+            if (currentChapter.url == latestChapterHref) {
                 currentChapter.date_upload = parseDate(document.select("div.book-detail > ul.detail-list > li.status > span > span.red").last())
             }
             chapters.add(currentChapter)
@@ -225,7 +223,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         manga.description = document.select("div#intro-all").text().trim()
-        manga.thumbnail_url = document.select("p.hcover > img").attr("src")
+        manga.thumbnail_url = document.select("p.hcover > img").attr("abs:src")
         manga.artist = document.select("span:contains(漫画作者) > a , span:contains(漫畫作者) > a").text().trim()
         manga.genre = document.select("span:contains(漫画剧情) > a , span:contains(漫畫劇情) > a").text().trim()
         manga.status = when (document.select("div.book-detail > ul.detail-list > li.status > span > span").first().text()) {
@@ -248,8 +246,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     // https://www.w3cschool.cn/tools/index?name=evalencode can try to decode javascript eval encoded content,
     // jsDecodeFunc's LZString.decompressFromBase64() can decode LZString.
     override fun pageListParse(document: Document): List<Page> {
-        // R18 warning element is remove by web page javascript, so here the warning element
-        // will always exist if this manga is R18 limited whether R18 verification cookie has been sent or not.
+        // R18 warning element (#erroraudit_show) is remove by web page javascript, so here the warning element
+        // will always exist if this manga is R18 limited whether R18 verification cookies has been sent or not.
         // But it will not interfere parse mechanism below.
         if (document.select("#erroraudit_show").first() != null && !getShowR18())
             error("R18作品显示开关未开启或未生效") // "R18 setting didn't enabled or became effective"
@@ -260,7 +258,6 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         val imgDecode = Duktape.create().use {
             it.evaluate(jsDecodeFunc + imgCode) as String
         }
-        Log.i("jsonresult", imgDecode)
 
         val re2 = Regex("""\{.*\}""")
         val imgJsonStr = re2.find(imgDecode)?.groups?.get(0)?.value
@@ -268,7 +265,6 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
         return imageJson.files!!.mapIndexed { i, imgStr ->
             val imgurl = "${imageServer[0]}${imageJson.path}$imgStr?cid=${imageJson.cid}&md5=${imageJson.sl?.md5}"
-            Log.i("image", imgurl)
             Page(i, "", imgurl)
         }
     }
@@ -279,9 +275,9 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         // Simplified/Traditional Chinese version website switch
         val zhHantPreference = androidx.preference.CheckBoxPreference(screen.context).apply {
             key = SHOW_ZH_HANT_WEBSITE_PREF
-            // Use traditional chinese version website
+            // "Use traditional chinese version website"
             title = "使用繁体版网站"
-            // You need to restart Tachiyomi
+            // "You need to restart Tachiyomi"
             summary = "需要重启软件。"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -361,7 +357,5 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         private const val SHOW_R18_PREF_Title = "R18Setting"
         private const val SHOW_R18_PREF = "showR18Default"
         private const val SHOW_ZH_HANT_WEBSITE_PREF = "showZhHantWebsite"
-
-        private var r18VerificationCookieAdded: Boolean = false
     }
 }
