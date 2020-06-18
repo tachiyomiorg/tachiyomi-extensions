@@ -35,6 +35,7 @@ import kotlin.collections.set
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -70,6 +71,7 @@ abstract class MangaDex(
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
+        .addInterceptor(CoverInterceptor())
         .build()
 
     private fun clientBuilder(): OkHttpClient = clientBuilder(getShowR18())
@@ -944,5 +946,33 @@ abstract class MangaDex(
             Pair("Filipino", "34"))
 
         private var hasMangaPlus = false
+    }
+}
+
+class CoverInterceptor : Interceptor {
+    private val coverRegex = Regex("""/images/.*\.jpg""")
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest = chain.request()
+
+        fun Request.withNewExtension(ext: String): Request {
+            return this.newBuilder().url(originalRequest.url().toString().substringBeforeLast(".") + ".$ext").build()
+        }
+
+        return chain.proceed(chain.request()).let { response ->
+            if (response.code() == 404 && originalRequest.url().toString().contains(coverRegex)) {
+                response.close()
+                chain.proceed(originalRequest.withNewExtension("png")).let { response2 ->
+                    if (response2.code() == 404) {
+                        response2.close()
+                        chain.proceed(originalRequest.withNewExtension("jpeg"))
+                    } else {
+                        response
+                    }
+                }
+            } else {
+                response
+            }
+        }
     }
 }
