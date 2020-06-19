@@ -7,9 +7,11 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -43,7 +45,7 @@ class VizShonenJump : ParsedHttpSource() {
             .set("Referer", baseUrl)
             .build()
 
-        return GET("$baseUrl/shonenjump", newHeaders)
+        return GET("$baseUrl/shonenjump", newHeaders, CacheControl.FORCE_NETWORK)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -55,11 +57,11 @@ class VizShonenJump : ParsedHttpSource() {
         return MangasPage(mangas.sortedBy { it.title }, false)
     }
 
-    override fun popularMangaSelector(): String = "section.section_chapters div.o_sort_container div.o_sortable a"
+    override fun popularMangaSelector(): String = "section.section_chapters div.o_sort_container div.o_sortable > a"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.pad-x-rg").first().text()
-        thumbnail_url = element.select("div.pos-r img.disp-bl").first()?.attr("data-original")
+        thumbnail_url = element.select("div.pos-r img.disp-bl").first()?.attr("src")
         url = element.attr("href")
     }
 
@@ -112,13 +114,33 @@ class VizShonenJump : ParsedHttpSource() {
                 ?.replace("Created by ", "")
             artist = author
             status = SManga.ONGOING
-            description = seriesIntro.select("h4").first().text()
+            description = seriesIntro.select("h2").first().text()
         }
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val allChapters = super.chapterListParse(response)
+
+        val newHeaders = headersBuilder()
+            .add("X-Requested-With", "XMLHttpRequest")
+            .set("Referer", response.request().url().toString())
+            .build()
+        val loginCheckRequest = GET(REFRESH_LOGIN_LINKS_URL, newHeaders)
+        val document = client.newCall(loginCheckRequest).execute().asJsoup()
+        val isLoggedIn = document.select("div#o_account-links-content").first()!!.attr("logged_in")!!.toBoolean()
+
+        if (isLoggedIn) {
+            return allChapters.map { oldChapter ->
+                oldChapter.apply { url = url.substringAfter("'").substringBeforeLast("'") }
+            }
+        }
+
+        return allChapters.filter { !it.url.startsWith("javascript") }
+    }
+
     override fun chapterListSelector() =
-        "section.section_chapters div.o_sortable > a.o_chapter-container:not([href*=javascript]), " +
-            "section.section_chapters div.o_sortable div.o_chapter-vol-container tr.o_chapter a.o_chapter-container.pad-r-0:not([href*=javascript])"
+        "section.section_chapters div.o_sortable > a.o_chapter-container, " +
+            "section.section_chapters div.o_sortable div.o_chapter-vol-container tr.o_chapter a.o_chapter-container.pad-r-0"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val isVolume = element.select("div:nth-child(1) table").first() == null
@@ -134,7 +156,8 @@ class VizShonenJump : ParsedHttpSource() {
         }
 
         scanlator = "VIZ Media"
-        url = element.attr("href")
+
+        url = element.attr("data-target-url")
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -221,5 +244,7 @@ class VizShonenJump : ParsedHttpSource() {
         private val DATE_FORMATTER by lazy { SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH) }
 
         private const val COUNTRY_NOT_SUPPORTED = "Your country is not supported, try using a VPN."
+
+        private const val REFRESH_LOGIN_LINKS_URL = "https://www.viz.com/account/refresh_login_links"
     }
 }
