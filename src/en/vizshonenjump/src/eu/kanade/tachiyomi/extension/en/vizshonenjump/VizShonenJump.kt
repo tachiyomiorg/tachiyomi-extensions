@@ -61,7 +61,7 @@ class VizShonenJump : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.pad-x-rg").first().text()
-        thumbnail_url = element.select("div.pos-r img.disp-bl").first()?.attr("src")
+        thumbnail_url = element.select("div.pos-r img.disp-bl").first()?.attr("data-original")
         url = element.attr("href")
     }
 
