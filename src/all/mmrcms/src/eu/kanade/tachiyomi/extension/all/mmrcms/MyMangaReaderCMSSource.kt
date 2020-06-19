@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLDecoder
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -334,23 +335,15 @@ class MyMangaReaderCMSSource(
 
     override fun pageListParse(response: Response) = response.asJsoup().select("#all > .img-responsive")
             .mapIndexed { i, e ->
-                var url = e.attr("abs:data-src")
-
-                if (url.isBlank()) {
-                    url = e.attr("abs:src")
-                }
-
-                url = url.trim()
+                var url = (if (e.hasAttr("data-src")) e.attr("abs:data-src") else e.attr("abs:src")).trim()
 
                 // Mangas.pw encodes some of their urls, decode them
-                if (url.contains("mangas.pw") && url.contains("img.php")) {
-                    url = url.substringAfter("i=")
-                    repeat(5) {
-                        url = Base64.decode(url, Base64.DEFAULT).toString(Charsets.UTF_8).substringBefore("=")
-                    }
+                if (name.contains("Mangas.pw") && !url.contains(".")) {
+                    url = Base64.decode(url.substringAfter("//"), Base64.DEFAULT).toString(Charsets.UTF_8).substringBefore("=")
+                    url = URLDecoder.decode(url, "UTF-8")
                 }
 
-                Page(i, url, url)
+                Page(i, "", url)
             }
 
     override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method called!")
