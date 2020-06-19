@@ -126,11 +126,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
-        return GET(manga.url, headers)
+        return GET(baseUrl + manga.url, headers)
     }
-
-    override fun chapterListRequest(manga: SManga) = GET(manga.url, headers)
-    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
 
     override fun popularMangaSelector() = "ul#contList > li"
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -150,7 +147,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a.bcover").first().let {
-            manga.url = it.attr("abs:href")
+            manga.url = it.attr("href")
             manga.title = it.attr("title").trim()
 
             // Fix thumbnail lazy load
@@ -167,7 +164,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         val manga = SManga.create()
 
         element.select("div.book-detail").first().let {
-            manga.url = it.select("dl > dt > a").first().attr("abs:href")
+            manga.url = it.select("dl > dt > a").first().attr("href")
             manga.title = it.select("dl > dt > a").first().attr("title").trim()
             manga.thumbnail_url = element.select("div.book-cover > a.bcover > img").first().attr("abs:src")
         }
@@ -202,10 +199,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             }
         }
         val chapterList = document.select("ul > li > a.status0")
-        val latestChapterHref = document.select("div.book-detail > ul.detail-list > li.status > span > a.blue").first().attr("abs:href")
+        val latestChapterHref = document.select("div.book-detail > ul.detail-list > li.status > span > a.blue").first().attr("href")
         chapterList.forEach {
             val currentChapter = SChapter.create()
-            currentChapter.url = it.attr("abs:href")
+            currentChapter.url = it.attr("href")
             currentChapter.name = it.attr("title").trim()
 
             // Manhuagui only provide upload date for latest chapter
