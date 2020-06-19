@@ -1,16 +1,21 @@
 package eu.kanade.tachiyomi.extension.en.questionablecontent
 
+import android.app.Application
+import android.content.SharedPreferences
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.util.Date
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class QuestionableContent : ParsedHttpSource() {
 
@@ -31,6 +36,7 @@ class QuestionableContent : ParsedHttpSource() {
             url = "/archive.php"
             description = "An internet comic strip about romance and robots"
             thumbnail_url = "https://i.ibb.co/ZVL9ncS/qc-teh.png"
+            initialized = true
         }
 
         return Observable.just(MangasPage(arrayListOf(manga), false))
@@ -38,10 +44,24 @@ class QuestionableContent : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
 
-    override fun fetchMangaDetails(manga: SManga) = Observable.just(manga)
+    override fun fetchMangaDetails(manga: SManga) = fetchPopularManga(1).map { it.mangas.first() }
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return super.chapterListParse(response).distinct()
+        val chapters = super.chapterListParse(response).distinct()
+        // set date of most recent chapter to today, use SharedPreferences so that we aren't changing it needlessly on refreshes
+        if (chapters.first().url != preferences.getString(LAST_CHAPTER_URL, null)) {
+            val date = Date().time
+            chapters.first().date_upload = date
+            preferences.edit().putString(LAST_CHAPTER_URL, chapters.first().url).apply()
+            preferences.edit().putLong(LAST_CHAPTER_DATE, date).apply()
+        } else {
+            chapters.first().date_upload = preferences.getLong(LAST_CHAPTER_DATE, 0L)
+        }
+        return chapters
     }
 
     override fun chapterListSelector() = """div#container a[href^="view.php?comic="]"""
@@ -59,6 +79,11 @@ class QuestionableContent : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document) = document.select("#strip").mapIndexed { i, element -> Page(i, "", baseUrl + element.attr("src").substring(1)) }
+
+    companion object {
+        private const val LAST_CHAPTER_URL = "QC_LAST_CHAPTER_URL"
+        private const val LAST_CHAPTER_DATE = "QC_LAST_CHAPTER_DATE"
+    }
 
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
