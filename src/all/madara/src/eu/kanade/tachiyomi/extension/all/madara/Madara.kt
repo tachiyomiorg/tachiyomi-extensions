@@ -16,6 +16,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -41,6 +43,9 @@ abstract class Madara(
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0 ${Random.nextInt().absoluteValue}")
 
     // Popular Manga
 
@@ -483,10 +488,14 @@ abstract class Madara(
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListParseSelector).mapIndexed { index, element ->
-            Page(index, "", element.select("img").first()?.let {
+            Page(index, document.location(), element.select("img").first()?.let {
                 it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
             })
         }
+    }
+
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!, headers.newBuilder().set("Referer", page.url).build())
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")

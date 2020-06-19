@@ -15,6 +15,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
+import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -226,7 +227,11 @@ class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com", "en",
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
-class MangaSY : Madara("Manga SY", "https://www.mangasy.com", "en")
+class MangaSY : Madara("Manga SY", "https://www.mangasy.com", "en") {
+    override fun imageRequest(page: Page): Request = super.imageRequest(page).newBuilder()
+        .cacheControl(CacheControl.FORCE_NETWORK)
+        .build()
+}
 
 class ManwhaClub : Madara("Manwha Club", "https://manhwa.club", "en")
 
@@ -301,12 +306,6 @@ class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
 }
 
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
-    override val client: OkHttpClient = network.client
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36"
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", userAgent)
-        .add("Referer", "$baseUrl/manga/?m_orderby=views")
-
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
     override fun searchMangaNextPageSelector() = "a[rel=next]"
