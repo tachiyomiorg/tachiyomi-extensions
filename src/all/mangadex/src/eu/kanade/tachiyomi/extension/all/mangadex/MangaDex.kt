@@ -955,20 +955,10 @@ class CoverInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
-        fun Response.requestWithNewExtension(ext: String): Response {
-            this.close()
-            return chain.proceed(originalRequest.newBuilder().url(originalRequest.url().toString().substringBeforeLast(".") + ".$ext").build())
-        }
-
         return chain.proceed(chain.request()).let { response ->
             if (response.code() == 404 && originalRequest.url().toString().contains(coverRegex)) {
-                response.requestWithNewExtension("png").let { response2 ->
-                    if (response2.code() == 404) {
-                        response2.requestWithNewExtension("jpeg")
-                    } else {
-                        response
-                    }
-                }
+                response.close()
+                chain.proceed(originalRequest.newBuilder().url(originalRequest.url().toString().substringBeforeLast(".") + ".thumb.jpg").build())
             } else {
                 response
             }
