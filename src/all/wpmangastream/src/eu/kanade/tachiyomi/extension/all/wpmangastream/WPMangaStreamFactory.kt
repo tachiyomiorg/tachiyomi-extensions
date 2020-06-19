@@ -46,7 +46,7 @@ class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sekte
 class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id") {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#readerarea img").map { it.attr("abs:src") }
-            .filterNot { it.contains("/.filerun") }
+            .filterNot { it.substringAfterLast("/").contains(Regex("""(filerun|photothumb\.db)""")) }
             .mapIndexed { i, image -> Page(i, "", image) }
     }
 }
