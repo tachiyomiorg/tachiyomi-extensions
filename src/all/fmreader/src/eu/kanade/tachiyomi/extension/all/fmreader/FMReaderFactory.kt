@@ -25,7 +25,6 @@ class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LHTranslation(),
         KissLove(),
-        MangaBone(),
         ReadComicOnlineOrg(),
         HanaScan(),
         RawLH(),
@@ -47,8 +46,9 @@ class FMReaderFactory : SourceFactory {
 
 class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en")
 
-class KissLove : FMReader("KissLove", "https://kisslove.net", "ja")
-class MangaBone : FMReader("MangaBone", "https://mangabone.com", "en")
+class KissLove : FMReader("KissLove", "https://kisslove.net", "ja") {
+    override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
+}
 
 class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconline.org", "en") {
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -94,6 +94,7 @@ class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
 
 class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
+    override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
     // Referer needs to be chapter URL
     override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
 }

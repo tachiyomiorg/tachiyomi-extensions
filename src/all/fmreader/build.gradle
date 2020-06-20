@@ -5,7 +5,7 @@ ext {
     appName = 'Tachiyomi: FMReader (multiple aggregators)'
     pkgNameSuffix = 'all.fmreader'
     extClass = '.FMReaderFactory'
-    extVersionCode = 16
+    extVersionCode = 17
     libVersion = '1.2'
 }
 

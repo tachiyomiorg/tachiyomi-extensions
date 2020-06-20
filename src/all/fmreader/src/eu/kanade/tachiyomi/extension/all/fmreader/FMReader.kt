@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.fmreader
 
+import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -9,6 +10,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.nio.charset.Charset
 import java.util.Calendar
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -33,7 +35,7 @@ abstract class FMReader(
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64) Gecko/20100101 Firefox/75.0")
+        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64) Gecko/20100101 Firefox/77.0")
         add("Referer", baseUrl)
     }
 
@@ -256,6 +258,21 @@ abstract class FMReader(
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListImageSelector).mapIndexed { i, img ->
             Page(i, document.location(), img.imgAttr())
+        }
+    }
+
+    protected fun base64PageListParse(document: Document): List<Page> {
+        fun Element.decoded(): String {
+            val attr = if (this.hasAttr("data-original")) "data-original" else "data-src"
+            return if (!this.attr(attr).contains(".")) {
+                Base64.decode(this.attr(attr), Base64.DEFAULT).toString(Charset.defaultCharset())
+            } else {
+                this.attr("abs:$attr")
+            }
+        }
+
+        return document.select(pageListImageSelector).mapIndexed { i, img ->
+            Page(i, document.location(), img.decoded())
         }
     }
 
