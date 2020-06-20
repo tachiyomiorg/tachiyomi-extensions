@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaMx & Doujin-Yang'
+    appName = 'Tachiyomi: MangaMx'
     pkgNameSuffix = 'es.mangamx'
     extClass = '.MangaMx'
-    extVersionCode = 7
+    extVersionCode = 8
     libVersion = '1.2'
 }
 
