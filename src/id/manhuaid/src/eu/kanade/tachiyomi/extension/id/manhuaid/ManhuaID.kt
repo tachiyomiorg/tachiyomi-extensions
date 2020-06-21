@@ -69,7 +69,7 @@ class ManhuaID : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "table.table.table-striped td[width] > a.text-success.text-decoration-none"
+    override fun chapterListSelector() = "table.table tr td:first-of-type a"
 
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
 
