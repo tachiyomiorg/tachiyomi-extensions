@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.ehentai
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -114,26 +115,33 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     override fun searchMangaParse(response: Response) = genericMangaParse(response)
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
 
-    private fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true) = GET(page?.let {
-        addParam(url, "page", (it - 1).toString())
-    } ?: url, additionalHeaders?.let {
-        val headers = headers.newBuilder()
-        it.toMultimap().forEach { (t, u) ->
-            u.forEach { string ->
-                headers.add(t, string)
+    private fun exGet(url: String, page: Int? = null, additionalHeaders: Headers? = null, cache: Boolean = true): Request {
+        return GET(
+            page?.let {
+                addParam(url, "page", (page - 1).toString())
+            } ?: url,
+            additionalHeaders?.let { header ->
+                val headers = headers.newBuilder()
+                header.toMultimap().forEach { (t, u) ->
+                    u.forEach {
+                        headers.add(t, it)
+                    }
+                }
+                headers.build()
+            } ?: headers
+        ).let {
+            if (!cache) {
+                it.newBuilder().cacheControl(CacheControl.FORCE_NETWORK).build()
+            } else {
+                it
             }
         }
-        headers.build()
-    } ?: headers).let {
-        if (!cache)
-            it.newBuilder().cacheControl(CacheControl.FORCE_NETWORK).build()
-        else
-            it
-    }!!
+    }
 
     /**
      * Parse gallery page to metadata model
      */
+    @SuppressLint("DefaultLocale")
     override fun mangaDetailsParse(response: Response) = with(response.asJsoup()) {
         with(ExGalleryMetadata()) {
             url = response.request().url().encodedPath()
@@ -235,21 +243,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
     override fun pageListParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
 
-    override fun fetchImageUrl(page: Page) = client.newCall(imageUrlRequest(page))
-        .asObservableSuccess()
-        .map { realImageUrlParse(it, page) }!!
-
-    private fun realImageUrlParse(response: Response, page: Page) = with(response.asJsoup()) {
-        val currentImage = getElementById("img").attr("src")
-        // TODO We cannot currently do this as page.url is immutable
-        // Each press of the retry button will choose another server
-        /*select("#loadfail").attr("onclick").nullIfBlank()?.let {
-            page.url = addParam(page.url, "nl", it.substring(it.indexOf('\'') + 1 until it.lastIndexOf('\'')))
-        }*/
-        currentImage
-    }!!
-
-    override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method was called somehow!")
+    override fun imageUrlParse(response: Response): String = response.asJsoup().select("#img").attr("abs:src")
 
     private val cookiesHeader by lazy {
         val cookies = mutableMapOf<String, String>()
@@ -282,6 +276,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
     }
 
+    @Suppress("SameParameterValue")
     private fun addParam(url: String, param: String, value: String) = Uri.parse(url)
         .buildUpon()
         .appendQueryParameter(param, value)
@@ -340,15 +335,38 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         }
     }
 
-    class RatingOption : Filter.Select<String>("Minimum Rating", arrayOf(
-        "Any",
-        "2 stars",
-        "3 stars",
-        "4 stars",
-        "5 stars"
-    )), UriFilter {
+    open class PageOption(name: String, private val queryKey: String) : Filter.Text(name), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
-            if (state > 0) builder.appendQueryParameter("f_srdd", (state + 1).toString())
+            if (state.isNotBlank()) {
+                if (builder.build().getQueryParameters("f_sp").isEmpty()) {
+                    builder.appendQueryParameter("f_sp", "on")
+                }
+
+                builder.appendQueryParameter(queryKey, state.trim())
+            }
+        }
+    }
+
+    class MinPagesOption : PageOption("Minimum Pages", "f_spf")
+    class MaxPagesOption : PageOption("Maximum Pages", "f_spt")
+
+    class RatingOption :
+        Filter.Select<String>(
+            "Minimum Rating",
+            arrayOf(
+                "Any",
+                "2 stars",
+                "3 stars",
+                "4 stars",
+                "5 stars"
+            )
+        ),
+        UriFilter {
+        override fun addToUri(builder: Uri.Builder) {
+            if (state > 0) {
+                builder.appendQueryParameter("f_srdd", (state + 1).toString())
+                builder.appendQueryParameter("f_sr", "on")
+            }
         }
     }
 
@@ -362,7 +380,9 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         AdvancedOption("Search Low-Power Tags", "f_sdt1"),
         AdvancedOption("Search Downvoted Tags", "f_sdt2"),
         AdvancedOption("Show Expunged Galleries", "f_sh"),
-        RatingOption()
+        RatingOption(),
+        MinPagesOption(),
+        MaxPagesOption()
     ))
 
     // map languages to their internal ids
