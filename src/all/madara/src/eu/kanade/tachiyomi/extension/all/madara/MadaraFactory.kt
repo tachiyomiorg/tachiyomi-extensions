@@ -31,6 +31,7 @@ class MadaraFactory : SourceFactory {
         AdonisFansub(),
         AllPornComic(),
         AoCTranslations(),
+        AsuraScans(),
         AstralLibrary(),
         ATMSubs(),
         Azora(),
@@ -151,6 +152,8 @@ class MadaraFactory : SourceFactory {
         // MangaStein(),
     )
 }
+
+class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
 
