@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.comicpunch
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -13,6 +14,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class Comicpunch : ParsedHttpSource() {
 
@@ -63,32 +65,31 @@ class Comicpunch : ParsedHttpSource() {
 
     // Search
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/node/$query?page=${page - 1}", headers)
+        return GET("$baseUrl/comics-list", headers)
     }
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val mangas = mutableListOf<SManga>()
-        val document = response.asJsoup()
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        val mangas = response.asJsoup().select(searchMangaSelector())
+            .filter { it.text().contains(query, ignoreCase = true) }
+            .map { searchMangaFromElement(it) }
 
-        document.select(searchMangaSelector())
-            .asSequence()
-            .filterNot { it.attr("href").contains("/comic/") }
-            .filterNot { it.attr("href").contains("/asiancomics/") }
-            .filterNot { it.attr("href").contains("/latest-issues") }
-            .filterNot { it.attr("href").contains("$baseUrl/latest-issues") }
-            .filterNot { it.attr("href").contains("$baseUrl/newest-issues") }
-            .map { mangas.add(searchMangaFromElement(it)) }
-            .toList()
-
-        return MangasPage(mangas, document.select(searchMangaNextPageSelector()).isNotEmpty())
+        return MangasPage(mangas, false)
     }
 
-    override fun searchMangaSelector() = "li.search-result h3 a"
+    override fun searchMangaSelector() = "table.cols-2 td a"
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
 
     // Details
 
