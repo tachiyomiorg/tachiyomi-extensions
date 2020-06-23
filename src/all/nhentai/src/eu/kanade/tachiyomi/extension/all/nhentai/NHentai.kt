@@ -152,26 +152,51 @@ open class NHentai(
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val filters = if (filters.isEmpty()) getFilterList() else filters
-
+        val advQuery = combineQuery(filters)
         val favoriteFilter = filters.findInstance<FavoriteFilter>()
+        val uploadedFilter = filters.findInstance<UploadedFilter>()
+
         if (favoriteFilter != null && favoriteFilter.state) {
             val url = HttpUrl.parse("$baseUrl/favorites")!!.newBuilder()
-                .addQueryParameter("q", query)
+                .addQueryParameter("q", query + advQuery)
                 .addQueryParameter("page", page.toString())
 
             return GET(url.toString(), headers)
         } else {
             val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
-                .addQueryParameter("q", "$query +$nhLang")
+                .addQueryParameter("q", "$query +$nhLang $advQuery")
                 .addQueryParameter("page", page.toString())
 
-            filters.findInstance<SortFilter>()?.let { f ->
-                url.addQueryParameter("sort", f.values[f.state].toLowerCase())
+            if (uploadedFilter!!.state.isBlank()) {
+                filters.findInstance<SortFilter>()?.let { f ->
+                    url.addQueryParameter("sort", f.toUriPart())
+                }
             }
 
             return GET(url.toString(), headers)
         }
     }
+
+    private fun combineQuery(filters: FilterList): String {
+        val stringBuilder = StringBuilder()
+        val advSearch = filters.filterIsInstance<AdvSearchEntryFilter>().flatMap { filter ->
+            val splitState = filter.state.split(",").map(String::trim).filterNot(String::isBlank)
+            splitState.map {
+                AdvSearchEntry(filter.name, it.removePrefix("-"), it.startsWith("-"))
+            }
+        }
+
+        advSearch.forEach { entry ->
+            if (entry.exclude) stringBuilder.append("-")
+            stringBuilder.append("${entry.name}:")
+            stringBuilder.append(entry.text)
+            stringBuilder.append(" ")
+        }
+
+        return stringBuilder.toString()
+    }
+
+    data class AdvSearchEntry(val name: String, val text: String, val exclude: Boolean)
 
     private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/g/$id", headers)
 
@@ -241,16 +266,51 @@ open class NHentai(
     }
 
     override fun getFilterList(): FilterList = FilterList(
+        Filter.Header("Separate tags with commas (,)"),
+        Filter.Header("Prepend with dash (-) to exclude"),
+        TagFilter(),
+        CategoryFilter(),
+        GroupFilter(),
+        ArtistFilter(),
+        ParodyFilter(),
+        CharactersFilter(),
+        Filter.Header("Uploaded valid units are h, d, w, m, y."),
+        Filter.Header("example: (>20d)"),
+        UploadedFilter(),
+
+        Filter.Separator(),
         SortFilter(),
         Filter.Header("Sort is ignored if favorites only"),
         FavoriteFilter()
     )
 
+    class TagFilter : AdvSearchEntryFilter("Tags")
+    class CategoryFilter : AdvSearchEntryFilter("Categories")
+    class GroupFilter : AdvSearchEntryFilter("Groups")
+    class ArtistFilter : AdvSearchEntryFilter("Artists")
+    class ParodyFilter : AdvSearchEntryFilter("Parodies")
+    class CharactersFilter : AdvSearchEntryFilter("Characters")
+    class UploadedFilter : AdvSearchEntryFilter("Uploaded")
+    open class AdvSearchEntryFilter(name: String) : Filter.Text(name)
+
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     private class FavoriteFilter : Filter.CheckBox("Show favorites only", false)
 
-    private class SortFilter : Filter.Select<String>("Sort", arrayOf("Popular", "Date"))
+    private class SortFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
+            Pair("Popular: All Time", "popular"),
+            Pair("Popular: Week", "popular-week"),
+            Pair("Popular: Today", "popular-today"),
+            Pair("Recent", "date")
+        )
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
 
