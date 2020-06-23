@@ -37,6 +37,7 @@ class MadaraFactory : SourceFactory {
         Azora(),
         BoysLove(),
         ChibiManga(),
+        CopyPasteScan(),
         DisasterScans(),
         DoujinHentai(),
         FirstKissManga(),
@@ -65,6 +66,7 @@ class MadaraFactory : SourceFactory {
         MangaKomi(),
         Mangalek(),
         MangaLord(),
+        MangaRawr(),
         MangaRead(),
         MangaStream(),
         Mangasushi(),
@@ -124,8 +126,7 @@ class MadaraFactory : SourceFactory {
         FirstKissManhua(),
         HeroManhua(),
         MartialScans(),
-        MangaYosh(),
-        Reisubs(),
+        MangaYosh(),        
         MangaReadOrg(),
         TurkceManga(),
         EinherjarScan(),
@@ -155,7 +156,11 @@ class MadaraFactory : SourceFactory {
 
 class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
+class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
+
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
+
+class MangaRawr : Madara("MangaRawr", "https://mangarawr.com", "en")
 
 class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
 
@@ -842,8 +847,6 @@ class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
 }
 
 class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateFormat("dd MMM yyyy", Locale.US))
-
-class Reisubs : Madara("Reisubs", "https://www.reisubs.xyz", "en")
 
 class WebtoonXYZ : Madara("WebtoonXYZ", "https://www.webtoon.xyz", "en")
 
