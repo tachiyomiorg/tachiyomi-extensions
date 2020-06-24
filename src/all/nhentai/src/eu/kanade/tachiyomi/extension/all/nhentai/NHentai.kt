@@ -158,7 +158,7 @@ open class NHentai(
 
         if (favoriteFilter != null && favoriteFilter.state) {
             val url = HttpUrl.parse("$baseUrl/favorites")!!.newBuilder()
-                .addQueryParameter("q", query + advQuery)
+                .addQueryParameter("q", "$query $advQuery")
                 .addQueryParameter("page", page.toString())
 
             return GET(url.toString(), headers)
