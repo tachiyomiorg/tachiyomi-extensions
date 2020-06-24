@@ -29,6 +29,7 @@ import rx.Observable
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         AdonisFansub(),
+        AhStudios(),
         AllPornComic(),
         AoCTranslations(),
         AsuraScans(),
@@ -153,6 +154,8 @@ class MadaraFactory : SourceFactory {
         // MangaStein(),
     )
 }
+
+class AhStudios : Madara("AhStudios", "https://ahstudios.net", "es")
 
 class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
