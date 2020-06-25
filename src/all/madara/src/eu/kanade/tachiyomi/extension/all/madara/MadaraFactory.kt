@@ -94,6 +94,7 @@ class MadaraFactory : SourceFactory {
         NovelFrance(),
         OnManga(),
         PlotTwistScan(),
+        PMScans(),
         PojokManga(),
         PornComix(),
         RaiderScans(),
@@ -684,6 +685,8 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR",
 class MangaLord : Madara("Manga Lord", "https://mangalord.com", "en")
 
 class PornComix : Madara("PornComix", "https://www.porncomixonline.net", "en")
+
+class PMScans : Madara("PMScans", "http://www.pmscans.com", "en")
 
 class MangaRead : Madara("Manga Read", "https://mangaread.co", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
