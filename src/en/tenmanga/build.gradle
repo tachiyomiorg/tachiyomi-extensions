@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Tachiyomi: Tenmanga'
+    pkgNameSuffix = 'en.tenmanga'
+    extClass = '.Tenmanga'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"
