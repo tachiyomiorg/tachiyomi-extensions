@@ -613,10 +613,21 @@ class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id
 
 class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
 
-class KomikTap : WPMangaStream("KomikTap", "https://komiktap.xyz", "id") {
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga/?page=$page&order=popular", headers)
-    override fun popularMangaNextPageSelector() = "a.r"
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/?page=$page&order=update", headers)
+class KomikTap : WPMangaStream("KomikTap", "https://komiktap.us", "id") {
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/project/", headers)
+    override fun popularMangaNextPageSelector(): String? = null
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/?page=$page", headers)
+    override fun latestUpdatesSelector() = "div.releases:contains(latest update) + div div.uta"
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            element.select("div.luf > a").let {
+                title = it.text()
+                setUrlWithoutDomain(it.attr("href"))
+            }
+            thumbnail_url = element.select("img").attr("abs:src")
+        }
+    }
+    override fun latestUpdatesNextPageSelector() = "div.hpage a.r"
     // Source's search is semi-broken, filtered search returns "no results" for page > 1
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/cari-manga/$query/page/$page/")
     override fun searchMangaNextPageSelector() = "a.next.page-numbers"

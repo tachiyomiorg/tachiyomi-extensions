@@ -155,7 +155,7 @@ abstract class WPMangaStream(
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "a.next.page-numbers"
+    override fun popularMangaNextPageSelector(): String? = "a.next.page-numbers"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
