@@ -75,3 +75,13 @@ data class AuthorDto(
     val name: String,
     val role: String
 )
+
+data class CollectionDto(
+    val id: Long,
+    val name: String,
+    val ordered: Boolean,
+    val seriesIds: List<Long>,
+    val createdDate: String,
+    val lastModifiedDate: String,
+    val filtered: Boolean
+)

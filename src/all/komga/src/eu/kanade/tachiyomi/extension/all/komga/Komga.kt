@@ -10,6 +10,7 @@ import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
@@ -23,10 +24,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import okhttp3.Credentials
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -38,6 +35,10 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.DecimalFormat
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
@@ -71,6 +72,17 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                     if (libraryToInclude.isNotEmpty()) {
                         url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
+                    }
+                }
+                is CollectionGroup -> {
+                    val collectionToInclude = mutableListOf<Long>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            collectionToInclude.add(content.id)
+                        }
+                    }
+                    if (collectionToInclude.isNotEmpty()) {
+                        url.addQueryParameter("collection_id", collectionToInclude.joinToString(","))
                     }
                 }
                 is StatusGroup -> {
@@ -187,6 +199,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
+    private class CollectionFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
+    private class CollectionGroup(collections: List<CollectionFilter>) : Filter.Group<CollectionFilter>("Collections", collections)
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Selection(0, true))
     private class StatusFilter(name: String) : Filter.CheckBox(name, false)
     private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
@@ -195,12 +209,14 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun getFilterList(): FilterList =
         FilterList(
             UnreadOnly(),
-            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name }),
+            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
+            CollectionGroup(collections.map { CollectionFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
             StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
             SeriesSort()
         )
 
     private var libraries = emptyList<LibraryDto>()
+    private var collections = emptyList<CollectionDto>()
 
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
@@ -307,6 +323,19 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             .subscribe({
                 libraries = try {
                     gson.fromJson(it.body()?.charStream()!!)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }, {})
+
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                collections = try {
+                    gson.fromJson<PageWrapperDto<CollectionDto>>(it.body()?.charStream()!!).content
                 } catch (e: Exception) {
                     emptyList()
                 }
