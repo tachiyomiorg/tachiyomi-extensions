@@ -40,3 +40,5 @@ for APK in ${APKS[@]}; do
         '{name:$name, pkg:$pkg, apk:$apk, lang:$lang, code:$code, version:$version}'
 
 done | jq -scr '[.[]]' > index.json
+
+cat index.json
