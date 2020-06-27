@@ -18,7 +18,7 @@ for APK in ${APKS[@]}; do
     BADGING="$(${TOOLS}/aapt dump badging $APK)"
 
     PACKAGE=$(echo "$BADGING" | grep package:)
-    PKGNAME=$(echo $PACKAGE | grep -Po "name='\K[^']+")
+    PKGNAME=$(echo $PACKAGE | grep -Po "package: name='\K[^']+")
     VCODE=$(echo $PACKAGE | grep -Po "versionCode='\K[^']+")
     VNAME=$(echo $PACKAGE | grep -Po "versionName='\K[^']+")
 

@@ -1,7 +1,7 @@
 apply plugin: 'org.jmailen.kotlinter'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
     buildToolsVersion '29.0.3'
 
     buildTypes {
@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 29
         applicationIdSuffix pkgNameSuffix
         versionCode extVersionCode
         versionName "$libVersion.$extVersionCode"
