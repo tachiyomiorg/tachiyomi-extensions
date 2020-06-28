@@ -5,6 +5,11 @@ import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.Filter.CheckBox
+import eu.kanade.tachiyomi.source.model.Filter.Group
+import eu.kanade.tachiyomi.source.model.Filter.Select
+import eu.kanade.tachiyomi.source.model.Filter.Text
+import eu.kanade.tachiyomi.source.model.Filter.TriState
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -29,22 +34,37 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
 
     override val supportsLatest = true
 
+    // true if lang is a "natural human language"
+    private fun isLangNatural(): Boolean = lang !in listOf("none", "other")
+
     private fun genericMangaParse(response: Response): MangasPage {
         val doc = response.asJsoup()
-        val parsedMangas = doc.select("table.itg td.glname").map {
-            SManga.create().apply {
-                // Get title
-                it.select("a")?.first()?.apply {
-                    title = this.select(".glink").text()
-                    url = ExGalleryMetadata.normalizeUrl(attr("href"))
-                }
-                // Get image
-                it.parent().select(".glthumb img")?.first().apply {
-                    thumbnail_url = this?.attr("data-src")?.nullIfBlank()
-                        ?: this?.attr("src")
+        val parsedMangas = doc.select("table.itg td.glname")
+            .let { elements ->
+                if (isLangNatural()) {
+                    elements.filter { element ->
+                        // only accept elements with a language tag matching ehLang or without a language tag
+                        // could make this stricter and not accept elements without a language tag, possibly add a sharedpreference for it
+                        element.select("div[title^=language]").firstOrNull()?.let { it.text() == ehLang } ?: true
+                    }
+                } else {
+                    elements
                 }
             }
-        }
+            .map {
+                SManga.create().apply {
+                    // Get title
+                    it.select("a")?.first()?.apply {
+                        title = this.select(".glink").text()
+                        url = ExGalleryMetadata.normalizeUrl(attr("href"))
+                    }
+                    // Get image
+                    it.parent().select(".glthumb img")?.first().apply {
+                        thumbnail_url = this?.attr("data-src")?.nullIfBlank()
+                            ?: this?.attr("src")
+                    }
+                }
+            }
 
         // Add to page if required
         val hasNextPage = doc.select("a[onclick=return false]").last()?.text() == ">"
@@ -95,14 +115,26 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         if (it.text() == ">") it.attr("href") else null
     }
 
-    override fun popularMangaRequest(page: Int) = latestUpdatesRequest(page)
-    // This source supports finding popular manga but will not respect language filters on the popular manga page!
-    // We currently display the latest updates instead until this is fixed
-    // override fun popularMangaRequest(page: Int) = exGet("$baseUrl/toplist.php?tl=15", page)
+    private val languageTag = "language:$ehLang"
+
+    override fun popularMangaRequest(page: Int) = if (isLangNatural()) {
+        exGet("$baseUrl/?f_search=$languageTag&f_srdd=5&f_sr=on", page)
+    } else {
+        latestUpdatesRequest(page)
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl$QUERY_PREFIX").buildUpon()
-        uri.appendQueryParameter("f_search", query)
+        var modifiedQuery = when {
+            !isLangNatural() -> query
+            query.isBlank() -> languageTag
+            else -> "$query,$languageTag"
+        }
+        modifiedQuery += filters.filterIsInstance<TagFilter>()
+            .flatMap { it.markedTags() }
+            .joinToString(",")
+            .let { if (it.isNotEmpty()) ",$it" else it }
+        uri.appendQueryParameter("f_search", modifiedQuery)
         filters.forEach {
             if (it is UriFilter) it.addToUri(uri)
         }
@@ -299,17 +331,20 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     override fun getFilterList() = FilterList(
         Watched(),
         GenreGroup(),
+        TagFilter("Misc Tags", triStateBoxesFrom(miscTags), ""),
+        TagFilter("Female Tags", triStateBoxesFrom(femaleTags), "female"),
+        TagFilter("Male Tags", triStateBoxesFrom(maleTags), "male"),
         AdvancedGroup()
     )
 
-    class Watched : Filter.CheckBox("Watched List"), UriFilter {
+    class Watched : CheckBox("Watched List"), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if (state)
                 builder.appendPath("watched")
         }
     }
 
-    class GenreOption(name: String, private val genreId: String) : Filter.CheckBox(name, false), UriFilter {
+    class GenreOption(name: String, private val genreId: String) : CheckBox(name, false), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             builder.appendQueryParameter("f_$genreId", if (state) "1" else "0")
         }
@@ -328,14 +363,14 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         GenreOption("Misc", "misc")
     ))
 
-    class AdvancedOption(name: String, private val param: String, defValue: Boolean = false) : Filter.CheckBox(name, defValue), UriFilter {
+    class AdvancedOption(name: String, private val param: String, defValue: Boolean = false) : CheckBox(name, defValue), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if (state)
                 builder.appendQueryParameter(param, "on")
         }
     }
 
-    open class PageOption(name: String, private val queryKey: String) : Filter.Text(name), UriFilter {
+    open class PageOption(name: String, private val queryKey: String) : Text(name), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
             if (state.isNotBlank()) {
                 if (builder.build().getQueryParameters("f_sp").isEmpty()) {
@@ -351,7 +386,7 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
     class MaxPagesOption : PageOption("Maximum Pages", "f_spt")
 
     class RatingOption :
-        Filter.Select<String>(
+        Select<String>(
             "Minimum Rating",
             arrayOf(
                 "Any",
@@ -384,6 +419,17 @@ open class EHentai(override val lang: String, private val ehLang: String) : Http
         MinPagesOption(),
         MaxPagesOption()
     ))
+
+    private val miscTags = "3d, animated, artbook, comic, forbidden content, full censorship, full color, group, hololive, how to, lvlapple, miwano ragu, model, mosaic censorship, multi-work series, novel, sawan no mole, soushuuhen, square-enix, story arc, tokuohyoe, udan, uncensored, webtoon, western cg, western imageset, western non-h, yukkuri"
+    private val femaleTags = "ahegao, anal, angel, apron, bandages, bbw, bdsm, beauty mark, big areolae, big ass, big breasts, big clit, big lips, big nipples, bikini, blackmail, bloomers, blowjob, bodysuit, bondage, breast expansion, bukkake, bunny girl, business suit, catgirl, centaur, cheating, chinese dress, christmas, collar, corset, cosplaying, cowgirl, crossdressing, cunnilingus, dark skin, daughter, deepthroat, defloration, demon girl, double penetration, dougi, dragon, drunk, elf, exhibitionism, farting, females only, femdom, filming, fingering, fishnets, footjob, fox girl, furry, futanari, garter belt, ghost, giantess, glasses, gloves, goblin, gothic lolita, growth, guro, gyaru, hair buns, hairy, hairy armpits, handjob, harem, hidden sex, horns, huge breasts, humiliation, impregnation, incest, inverted nipples, kemonomimi, kimono, kissing, lactation, latex, leg lock, leotard, lingerie, lizard girl, maid, masked face, masturbation, midget, miko, milf, mind break, mind control, monster girl, mother, muscle, nakadashi, netorare, nose hook, nun, nurse, oil, paizuri, panda girl, pantyhose, piercing, pixie cut, policewoman, ponytail, pregnant, rape, rimjob, robot, scat, schoolgirl uniform, sex toys, shemale, sister, small breasts, smell, sole dickgirl, sole female, squirting, stockings, sundress, sweating, swimsuit, swinging, tail, tall girl, teacher, tentacles, thigh high boots, tomboy, transformation, twins, twintails, unusual pupils, urination, vore, vtuber, widow, wings, witch, wolf girl, x-ray, yuri, zombie"
+    private val maleTags = "anal, bbm, big ass, big penis, bikini, blood, blowjob, bondage, catboy, cheating, chikan, condom, crab, crossdressing, dark skin, deepthroat, demon, dickgirl on male, dilf, dog boy, double anal, double penetration, dragon, drunk, exhibitionism, facial hair, feminization, footjob, fox boy, furry, glasses, group, guro, hairy, handjob, hidden sex, horns, huge penis, human on furry, kimono, lingerie, lizard guy, machine, maid, males only, masturbation, mmm threesome, monster, muscle, nakadashi, ninja, octopus, oni, pillory, policeman, possession, prostate massage, public use, schoolboy uniform, schoolgirl uniform, sex toys, shotacon, sleeping, snuff, sole male, stockings, sunglasses, swimsuit, tall man, tentacles, tomgirl, unusual pupils, virginity, waiter, x-ray, yaoi, zombie"
+
+    private fun triStateBoxesFrom(tagString: String): List<TagTriState> = tagString.split(", ").map { TagTriState(it) }
+
+    class TagTriState(tag: String) : TriState(tag)
+    class TagFilter(name: String, private val triStateBoxes: List<TagTriState>, private val nameSpace: String) : Group<TagTriState>(name, triStateBoxes) {
+        fun markedTags() = triStateBoxes.filter { it.isIncluded() }.map { "$nameSpace:${it.name}" } + triStateBoxes.filter { it.isExcluded() }.map { "-$nameSpace:${it.name}" }
+    }
 
     // map languages to their internal ids
     private val languageMappings = listOf(
