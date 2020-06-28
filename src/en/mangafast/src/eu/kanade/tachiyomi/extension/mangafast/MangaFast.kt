@@ -30,7 +30,7 @@ class MangaFast: ParsedHttpSource() {
         thumbnail_url = element.select("img").attr("abs:data-src").substringBeforeLast("resize")
     }
 
-    override fun popularMangaNextPageSelector() = "Unused"
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/read/page/$page", headers)
 
