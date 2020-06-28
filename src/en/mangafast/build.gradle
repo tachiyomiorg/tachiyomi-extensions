@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Tachiyomi: MangaFast'
+    extName = 'MangaFast'
     pkgNameSuffix = 'en.mangafast'
     extClass = '.MangaFast'
     extVersionCode = 1
