@@ -70,7 +70,7 @@ class MangaFast: ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = element.select("a").attr("title")
-        date_upload = dateFormat.parse(element.select("td.tgs").text().trim()).time
+        date_upload = dateFormat.parse(element.select("td.tgs").text().trim()).time ?: 0
     }
 
     companion object {
