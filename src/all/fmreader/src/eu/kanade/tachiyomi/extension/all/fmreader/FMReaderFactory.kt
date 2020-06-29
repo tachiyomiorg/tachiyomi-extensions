@@ -332,4 +332,7 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
 
 class ManhuaScan : FMReader("ManhuaScan", "https://manhuascan.com", "en")
 
-class ManhwaSmut : FMReader("ManhwaSmut", "https://manhwasmut.com", "en")
+class ManhwaSmut : FMReader("ManhwaSmut", "https://manhwasmut.com", "en") {
+    private val noReferer = headersBuilder().removeAll("Referer").build()
+    override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, if (page.imageUrl!!.contains("toonily")) noReferer else headers)
+}
