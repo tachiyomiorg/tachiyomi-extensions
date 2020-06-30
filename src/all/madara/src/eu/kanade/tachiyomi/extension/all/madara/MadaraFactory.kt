@@ -328,8 +328,141 @@ class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override fun searchMangaNextPageSelector() = "a[rel=next]"
     override fun getGenreList() = listOf(
         Genre("3D", "3d"),
+        Genre("Ahegao", "ahegao"),
+        Genre("Alien Girl", "alien-girl"),
+        Genre("Anal", "anal"),
+        Genre("Anime", "anime"),
+        Genre("Anthology", "anthology"),
+        Genre("Artbook", "artbook"),
+        Genre("BBW / Chubby / Fat Woman", "bbw"),
+        Genre("BDSM", "bdsm"),
+        Genre("Big Areolae", "big-areolae"),
+        Genre("Big Ass", "big-ass"),
+        Genre("Big Balls", "big-balls"),
+        Genre("Big Breasts", "big-breasts"),
+        Genre("Big Clit", "big-clit"),
+        Genre("Big Nipples", "big-nipples"),
+        Genre("Big Penis", "big-penis"),
+        Genre("Bikini", "bikini"),
+        Genre("Blackmail", "blackmail"),
+        Genre("Blindfold", "blindfold"),
+        Genre("Body Modification", "body-modification"),
+        Genre("Body Swap", "body-swap"),
+        Genre("Body Writing", "body-writing"),
+        Genre("BodyStocking", "bodystocking"),
+        Genre("Bodysuit", "bodysuit"),
+        Genre("Bondage", "bondage"),
+        Genre("Brain Fuck", "brain-fuck"),
+        Genre("Cartoon", "cartoon"),
+        Genre("Cheerleader", "cheerleader"),
+        Genre("Chinese Dress", "chinese-dress"),
+        Genre("Collar / Choker", "collar"),
+        Genre("Comedy", "comedy"),
+        Genre("Corruption", "corruption"),
+        Genre("Corset", "corset"),
+        Genre("Crotch Tattoo", "crotch-tattoo"),
+        Genre("Dark Skin", "dark-skin"),
+        Genre("Demon Girl / Succubus", "demon-girl"),
+        Genre("Dick Growth", "dick-growth"),
+        Genre("Dickgirl On Dickgirl", "dickgirl-on-dickgirl"),
+        Genre("Dickgirl On Male", "dickgirl-on-male"),
+        Genre("Dickgirls Only", "dickgirls-only"),
+        Genre("Drugs", "drugs"),
+        Genre("Drunk", "drunk"),
+        Genre("Exhibitionism", "exhibitionism"),
+        Genre("FFM Threesome", "ffm-threesome"),
+        Genre("FFT Threesome", "fft-threesome"),
+        Genre("Females Only", "females-only"),
+        Genre("Femdom", "femdom"),
+        Genre("Feminization", "feminization"),
+        Genre("Full Body Tattoo", "full-body-tattoo"),
+        Genre("Full Color", "full-color"),
+        Genre("Futanari", "futanari"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Glasses", "glasses"),
+        Genre("Group", "group"),
+        Genre("Gyaru", "gyaru"),
+        Genre("Gyaru-OH", "gyaru-oh"),
+        Genre("Harem", "harem"),
         Genre("Hentai", "hentai"),
-        Genre("Western", "western")
+        Genre("Human Pet", "human-pet"),
+        Genre("Humiliation", "humiliation"),
+        Genre("Impregnation", "impregnation"),
+        Genre("Incest", "incest"),
+        Genre("Interracial", "interracial"),
+        Genre("Kimono", "kimono"),
+        Genre("Latex", "latex"),
+        Genre("Leash", "leash"),
+        Genre("Lingerie", "lingerie"),
+        Genre("Lolicon", "lolicon"),
+        Genre("MILF", "milf"),
+        Genre("MMF Threesome", "mmf-threesome"),
+        Genre("MMT Threesome", "mmt-threesome"),
+        Genre("Magical Girl", "magical-girl"),
+        Genre("Maid", "maid"),
+        Genre("Male On Dickgirl", "male-on-dickgirl"),
+        Genre("Manhwa", "manhwa"),
+        Genre("Military", "military"),
+        Genre("Milking", "milking"),
+        Genre("Mind Break", "mind-break"),
+        Genre("Mind Control", "mind-control"),
+        Genre("Monster Girl", "monster-girl"),
+        Genre("Moral Degeneration", "moral-degeneration"),
+        Genre("Muscle", "muscle"),
+        Genre("Muscle Growth", "muscle-growth"),
+        Genre("Nakadashi", "nakadashi"),
+        Genre("Netorare", "netorare"),
+        Genre("Netori", "netori"),
+        Genre("Ninja", "ninja"),
+        Genre("Nun", "nun"),
+        Genre("Nurse", "nurse"),
+        Genre("Orgy", "orgy"),
+        Genre("Paizuri", "paizuri"),
+        Genre("Pegging", "pegging"),
+        Genre("Piercing", "piercing"),
+        Genre("Pixie Cut", "pixie-cut"),
+        Genre("Policewoman", "policewoman"),
+        Genre("Possession", "possession"),
+        Genre("Retro", "retro"),
+        Genre("Ryona", "ryona"),
+        Genre("School Swimsuit", "school-swimsuit"),
+        Genre("Schoolboy Uniform", "schoolboy-uniform"),
+        Genre("Schoolgirl Uniform", "schoolgirl-uniform"),
+        Genre("Shared Senses", "shared-senses"),
+        Genre("Shemale", "shemale"),
+        Genre("Shibari", "shibari"),
+        Genre("Shotacon", "shotacon"),
+        Genre("Slave", "slave"),
+        Genre("Slime Girl", "slime-girl"),
+        Genre("Small Breasts", "small-breasts"),
+        Genre("Stockings", "stockings"),
+        Genre("Strap-on", "strap-on"),
+        Genre("Stuck In Wall", "stuck-in-wall"),
+        Genre("Superhero", "superhero"),
+        Genre("Superheroine", "superheroine"),
+        Genre("Tail", "tail"),
+        Genre("Tail Plug", "tail-plug"),
+        Genre("Tankoubon", "tankoubon"),
+        Genre("Tentacles", "tentacles"),
+        Genre("Thigh High Boots", "thigh-high-boots"),
+        Genre("Tights", "tights"),
+        Genre("Time Stop", "time-stop"),
+        Genre("Tomboy", "tomboy"),
+        Genre("Tomgirl", "tomgirl"),
+        Genre("Torture", "torture"),
+        Genre("Transformation", "transformation"),
+        Genre("Uncensored", "uncensored"),
+        Genre("Unusual Pupils", "unusual-pupils"),
+        Genre("Unusual Teeth", "unusual-teeth"),
+        Genre("Vampire", "vampire"),
+        Genre("Virginity", "virginity"),
+        Genre("Voyeurism", "voyeurism"),
+        Genre("Webtoon", "webtoon"),
+        Genre("Western", "western"),
+        Genre("Witch", "witch"),
+        Genre("Yandere", "yandere"),
+        Genre("Yaoi", "yaoi"),
+        Genre("Yuri", "yuri")
     )
 }
 
@@ -559,7 +692,24 @@ class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", 
     }
 }
 
-class GoldenManga : Madara("موقع لترجمة المانجا", "https://golden-manga.ml", "ar", SimpleDateFormat("yyyy-MM-dd", Locale.US))
+class GoldenManga : Madara("موقع لترجمة المانجا", "https://golden-manga.com", "ar", SimpleDateFormat("yyyy-MM-dd", Locale.US)) {
+    override fun searchMangaSelector() = "div.c-image-hover a"
+    override fun searchMangaFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            title = element.attr("title")
+            thumbnail_url = element.select("img").firstOrNull()?.let { imageFromElement(it) }
+        }
+    }
+    override fun chapterListSelector() = "div.main a"
+    override fun chapterFromElement(element: Element): SChapter {
+        return SChapter.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            name = element.select("h6:first-of-type").text()
+            date_upload = parseChapterDate(element.select("h6:last-of-type").firstOrNull()?.ownText())
+        }
+    }
+}
 
 class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
 
