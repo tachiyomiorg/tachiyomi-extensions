@@ -47,7 +47,7 @@ class MangaLife : HttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0")
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/77.0")
 
     private val gson = GsonBuilder().setLenient().create()
 
@@ -161,6 +161,7 @@ class MangaLife : HttpSource() {
                     "Scan Status" -> directory.filter { it["ss"].string.contains(filter.values[filter.state], ignoreCase = true) }
                     "Publish Status" -> directory.filter { it["ps"].string.contains(filter.values[filter.state], ignoreCase = true) }
                     "Type" -> directory.filter { it["t"].string.contains(filter.values[filter.state], ignoreCase = true) }
+                    "Translation" -> directory.filter { it["o"].string.contains("yes", ignoreCase = true) }
                     else -> directory
                 }
                 is YearField -> if (filter.state.isNotEmpty()) directory = directory.filter { it["y"].string.contains(filter.state) }
@@ -237,7 +238,7 @@ class MangaLife : HttpSource() {
                 name = json["ChapterName"].nullString.let { if (it.isNullOrEmpty()) "${json["Type"].string} ${chapterImage(indexChapter)}" else it }
                 url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
-                    dateFormat.parse(json["Date"].string.substringBefore(" ")).time
+                    dateFormat.parse(json["Date"].string.substringBefore(" "))?.time ?: 0
                 } catch (_: Exception) {
                     0L
                 }
@@ -285,6 +286,7 @@ class MangaLife : HttpSource() {
             SelectField("Scan Status", arrayOf("Any", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing")),
             SelectField("Publish Status", arrayOf("Any", "Cancelled", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing", "Unfinished")),
             SelectField("Type", arrayOf("Any", "Doujinshi", "Manga", "Manhua", "Manhwa", "OEL", "One-shot")),
+            SelectField("Translation", arrayOf("Any", "Official Only")),
             Sort(),
             GenreList(getGenreList())
     )
