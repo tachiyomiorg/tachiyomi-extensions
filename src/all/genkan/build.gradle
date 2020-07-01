@@ -5,7 +5,7 @@ ext {
     extName = 'Genkan (multiple sources)'
     pkgNameSuffix = 'all.genkan'
     extClass = '.GenkanFactory'
-    extVersionCode = 20
+    extVersionCode = 21
     libVersion = '1.2'
 }
 
