@@ -23,7 +23,7 @@ class Mangasee : ParsedHttpSource() {
 
     override val name = "Mangasee"
 
-    override val baseUrl = "https://mangaseeonline.us"
+    override val baseUrl = "https://mangasee123.com/"
 
     override val lang = "en"
 
