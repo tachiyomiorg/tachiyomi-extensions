@@ -234,16 +234,19 @@ abstract class MangaBox(
     open val pageListSelector = "div#vungdoc img, div.container-chapter-reader img"
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(pageListSelector).mapIndexed { i, element ->
-            val url = element.attr("abs:src").let { src ->
-                if (src.startsWith("https://convert_image_digi.mgicdn.com")) {
-                    "https://images.weserv.nl/?url=" + src.substringAfter("//")
-                } else {
-                    src
+        return document.select(pageListSelector)
+            // filter out bad elements for mangakakalots
+            .filterNot { it.attr("src").endsWith("log") }
+            .mapIndexed { i, element ->
+                val url = element.attr("abs:src").let { src ->
+                    if (src.startsWith("https://convert_image_digi.mgicdn.com")) {
+                        "https://images.weserv.nl/?url=" + src.substringAfter("//")
+                    } else {
+                        src
+                    }
                 }
+                Page(i, document.location(), url)
             }
-            Page(i, document.location(), url)
-        }
     }
 
     override fun imageRequest(page: Page): Request {
