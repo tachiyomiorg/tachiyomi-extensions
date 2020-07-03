@@ -78,24 +78,23 @@ open class MultPorn(
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return if (query.startsWith("Section: ")) {
-            val category = query.removePrefix("Section: ").toLowerCase(Locale.ROOT)
-                .replace("\\s".toRegex(), "_").replace("[^a-z0-9_]".toRegex(), "")
-            client.newCall(searchMangaByIdRequest(category, page - 1))
-                .asObservableSuccess()
-                .map { response -> searchMangaByTagsParse(response) }
-        } else if (query.startsWith("Genre: ")) {
-            val id = query.removePrefix("Genre: ").toLowerCase(Locale.ROOT)
-                .replace("\\s".toRegex(), "_").replace("[^a-z0-9_]".toRegex(), "")
-            client.newCall(searchMangaByCategoryRequest(id, page - 1))
-                .asObservableSuccess()
-                .map { response -> searchMangaByTagsParse(response) }
-        } else
-            super.fetchSearchManga(page - 1, query, filters)
-    }
-
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return super.fetchChapterList(manga)
+        return when {
+            query.startsWith("Section: ") -> {
+                val category = query.removePrefix("Section: ").toLowerCase(Locale.ROOT)
+                    .replace("\\s".toRegex(), "_").replace("[^a-z0-9_]".toRegex(), "")
+                client.newCall(searchMangaByIdRequest(category, page - 1))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByTagsParse(response) }
+            }
+            query.startsWith("Genre: ") -> {
+                val id = query.removePrefix("Genre: ").toLowerCase(Locale.ROOT)
+                    .replace("\\s".toRegex(), "_").replace("[^a-z0-9_]".toRegex(), "")
+                client.newCall(searchMangaByCategoryRequest(id, page - 1))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByTagsParse(response) }
+            }
+            else -> super.fetchSearchManga(page - 1, query, filters)
+        }
     }
 
     override fun chapterFromElement(element: Element): SChapter {
@@ -125,6 +124,8 @@ open class MultPorn(
         return listOf(chapterParse(document, chapterNumber))
     }
 
+    /*Suppressed the warning because this is intended to change in future. Look at the commented code in chapterListParse*/
+    @Suppress("SameParameterValue")
     private fun chapterParse(document: Document, index: Int): SChapter {
         val chapter = SChapter.create()
         chapter.name = document.select("meta[property='og:title']").attr("content").trim()
