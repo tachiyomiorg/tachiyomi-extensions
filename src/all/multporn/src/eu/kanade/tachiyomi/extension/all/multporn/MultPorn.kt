@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.multporn
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -157,7 +156,12 @@ open class MultPorn(
 
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
-        return document.select(".field-name-field-com-pages").select("img").mapIndexed { i, img ->
+        val imgContainer = if (document.select(".field-name-field-com-pages").first() != null) {
+            document.select(".field-name-field-com-pages")
+        } else {
+            document.select(".jb-image")
+        }
+        return imgContainer.select("img").mapIndexed { i, img ->
             Page(i, "", img.attr("src"))
         }
     }
