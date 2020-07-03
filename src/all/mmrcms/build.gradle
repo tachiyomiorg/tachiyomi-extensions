@@ -5,7 +5,7 @@ ext {
     extName = 'My Manga Reader CMS (Many sources)'
     pkgNameSuffix = 'all.mmrcms'
     extClass = '.MyMangaReaderCMSSources'
-    extVersionCode = 43
+    extVersionCode = 44
     libVersion = '1.2'
 }
 
