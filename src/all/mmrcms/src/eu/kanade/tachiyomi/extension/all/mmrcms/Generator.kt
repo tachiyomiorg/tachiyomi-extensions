@@ -26,6 +26,10 @@ import org.jsoup.nodes.Document
 
 class Generator {
 
+    init {
+        System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2,TLSv1.3")
+    }
+
     @TargetApi(Build.VERSION_CODES.O)
     fun generate() {
         val buffer = StringBuffer()
@@ -49,15 +53,15 @@ class Generator {
                     parseCategories = parseCategories(advancedSearchDocument)
                 }
 
-                val homePageDocument = getDocument(it.third)!!
+                val homePageDocument = getDocument(it.third)
 
-                val itemUrl = getItemUrl(homePageDocument)
+                val itemUrl = getItemUrl(homePageDocument, it.third)
 
                 var prefix = itemUrl.substringAfterLast("/").substringBeforeLast("/")
 
                 // Sometimes itemUrl is the root of the website, and thus the prefix found is the website address.
                 // In this case, we set the default prefix as "manga".
-                if (prefix.startsWith("www")) {
+                if (prefix.startsWith("www") || prefix.startsWith("wwv")) {
                     prefix = "manga"
                 }
 
@@ -151,7 +155,8 @@ class Generator {
         return array
     }
 
-    private fun getItemUrl(document: Document): String {
+    private fun getItemUrl(document: Document?, url: String): String {
+        document ?: throw Exception("Couldn't get document for: $url")
         return document.toString().substringAfter("showURL = \"").substringAfter("showURL=\"").substringBefore("/SELECTION\";")
 
         // Some websites like mangasyuri use javascript minifiers, and thus "showURL = " becomes "showURL="https://mangasyuri.net/manga/SELECTION""
@@ -220,7 +225,7 @@ class Generator {
         val sources = listOf(
             Triple("ar", "مانجا اون لاين", "https://onma.me"),
             Triple("en", "Read Comics Online", "https://readcomicsonline.ru"),
-            Triple("en", "Biamam Scans", "https://biamam.com/"),
+            Triple("en", "Biamam Scans", "https://biamam.com"),
             Triple("en", "Fallen Angels", "https://manga.fascans.com"),
             Triple("en", "Mangawww Reader", "https://mangawww.club"),
             Triple("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
@@ -236,7 +241,7 @@ class Generator {
             Triple("tr", "MangaHanta", "http://mangahanta.com"),
             Triple("vi", "Fallen Angels Scans", "https://truyen.fascans.com"),
             Triple("es", "LeoManga", "https://leomanga.me"),
-            Triple("es", "submanga", "https://submanga.li"),
+            Triple("es", "submanga", "https://submangas.net"),
             Triple("es", "Mangadoor", "https://mangadoor.com"),
             Triple("es", "Mangas.pw", "https://mangas.in"),
             Triple("es", "Tumangaonline.co", "http://tumangaonline.uno"),
@@ -245,9 +250,9 @@ class Generator {
             Triple("pl", "Phoenix-Scans", "https://phoenix-scans.pl"),
             Triple("ru", "Japit Comics", "https://j-comics.ru"),
             Triple("tr", "Puzzmos", "https://puzzmos.com"),
-            Triple("fr", "Scan-1", "https://www.scan-1.com"),
+            Triple("fr", "Scan-1", "https://wwv.scan-1.com"),
             Triple("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
-            Triple("id", "MangaSusu", "https://www.mangasusu.mobi"),
+            Triple("id", "MangaSusu", "https://www.mangasusu.site"),
             Triple("id", "Komik Manga", "https://adm.komikmanga.com"),
             Triple("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
             Triple("pt-BR", "Remangas", "https://remangas.top"),
