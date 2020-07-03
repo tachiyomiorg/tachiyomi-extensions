@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.all.webtoons
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
@@ -25,11 +25,6 @@ class DongmanManhua : WebtoonsDefault("zh", "") {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/dailySchedule", headers)
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/dailySchedule?sortOrder=UPDATE&webtoonCompleteType=ONGOING", headers)
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        val mangas = response.asJsoup().select(searchMangaSelector()).map { searchMangaFromElement(it) }
-        return MangasPage(mangas, false)
-    }
 
     override fun parseDetailsThumbnail(document: Document): String? {
         return document.select("div.detail_body").attr("style").substringAfter("(").substringBefore(")")
@@ -65,4 +60,6 @@ class DongmanManhua : WebtoonsDefault("zh", "") {
     override fun chapterParseDate(date: String): Long {
         return SimpleDateFormat("yyyy-M-d", Locale.ENGLISH).parse(date).time
     }
+
+    override fun getFilterList(): FilterList = FilterList()
 }
