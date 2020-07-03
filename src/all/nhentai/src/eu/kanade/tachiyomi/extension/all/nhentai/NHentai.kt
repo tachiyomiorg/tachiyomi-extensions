@@ -167,7 +167,7 @@ open class NHentai(
                 .addQueryParameter("q", "$query +$nhLang $advQuery")
                 .addQueryParameter("page", page.toString())
 
-            if (uploadedFilter!!.state.isBlank()) {
+            if (uploadedFilter?.state?.isBlank() == true) {
                 filters.findInstance<SortFilter>()?.let { f ->
                     url.addQueryParameter("sort", f.toUriPart())
                 }
