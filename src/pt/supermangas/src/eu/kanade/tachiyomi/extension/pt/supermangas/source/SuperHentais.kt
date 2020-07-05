@@ -4,7 +4,6 @@ import eu.kanade.tachiyomi.extension.pt.supermangas.SuperMangasGeneric
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
-import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.Request
 
@@ -38,10 +37,6 @@ class SuperHentais : SuperMangasGeneric(
     }
 
     override fun searchMangaSelector(): String = "article.box_view.list div.grid_box:contains(Hentai Manga) div.grid_image.grid_image_vertical a"
-
-    override fun chapterListPaginatedBody(idCategory: Int, page: Int, totalPage: Int): FormBody.Builder =
-        super.chapterListPaginatedBody(idCategory, page, totalPage)
-            .add("type", "book")
 
     override fun getFilterList() = FilterList(
         Filter.Header("Filtros abaixo são ignorados na busca!"),

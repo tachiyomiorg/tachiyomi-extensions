@@ -21,6 +21,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
@@ -39,10 +40,14 @@ abstract class SuperMangasGeneric(
 
     override val supportsLatest = true
 
+    override val client: OkHttpClient = network.cloudflareClient
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
         .add("Referer", baseUrl)
+        .add("Accept", ACCEPT_COMMON)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
 
     protected open val defaultFilter = mutableMapOf(
         "filter_display_view" to "lista",
@@ -217,11 +222,13 @@ abstract class SuperMangasGeneric(
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("div.boxAnime").first()!!
+        val infoElementAbout = infoElement.select("ul.boxAnimeSobre")
 
         title = document.select("div.boxBarraInfo h1").first()!!.text()
-        author = infoElement.select("ul.boxAnimeSobre li:contains(Autor) span").first()!!.text()
-        artist = infoElement.select("ul.boxAnimeSobre li:contains(Art) span").first()!!.text()
-        genre = infoElement.select("ul.boxAnimeSobre li.sizeFull span a").joinToString { it.text() }
+        author = infoElementAbout.select("li:contains(Autor) span").first()!!.text()
+        artist = infoElementAbout.select("li:contains(Art:) span").first()!!.text()
+        genre = infoElementAbout.select("li.sizeFull span a").joinToString { it.text() }
+        status = infoElementAbout.select("li:contains(Conteúdo)").first()!!.text().toStatus()
         description = document.select("p#sinopse").first()!!.text()
         thumbnail_url = infoElement.select("span.boxAnimeImg img").first()!!.attr("src")
     }
@@ -255,6 +262,7 @@ abstract class SuperMangasGeneric(
             .add("limit", "50")
             .add("total_page", totalPage.toString())
             .add("order_video", "desc")
+            .add("type", "book")
     }
 
     private fun chapterListPaginatedRequest(idCategory: Int, page: Int, totalPage: Int, mangaUrl: String): Request {
@@ -266,6 +274,7 @@ abstract class SuperMangasGeneric(
             .add("Content-Length", form.contentLength().toString())
             .add("Host", "www." + baseUrl.substringAfter("//"))
             .set("Referer", mangaUrl)
+            .set("Accept", ACCEPT_JSON)
             .build()
 
         return POST("$baseUrl/inc/paginatorVideo.inc.php", newHeaders, form)
@@ -322,6 +331,13 @@ abstract class SuperMangasGeneric(
 
     private fun String.changeSize(): String = substringBefore("&w=280") + "&w512"
 
+    private fun String.toStatus() = when {
+        contains("Em lançamento") -> SManga.ONGOING
+        contains("Sendo upado") -> SManga.ONGOING
+        contains("Completo") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     private fun Map<String, String>.toUrlQueryParams(): String =
@@ -334,7 +350,11 @@ abstract class SuperMangasGeneric(
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+        private const val ACCEPT_COMMON = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"
+
         private val JSON_PARSER by lazy { JsonParser() }
 
         private val LETTER_LIST = listOf("Todas", "Caracteres Especiais")
