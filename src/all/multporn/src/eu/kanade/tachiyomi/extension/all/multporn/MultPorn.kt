@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -54,6 +55,10 @@ open class MultPorn(
         manga.thumbnail_url = getMangaThumbUrl(element)
         return manga
     }
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:54.0) Gecko/20100101 Firefox/75.0")
+        .add("Referer", baseUrl)
 
     open fun getMangaUrl(element: Element): String = "$baseUrl/${element.select("a").attr("href")}"
     open fun getMangaTitle(element: Element) = element.select("a").first().text().trim()
