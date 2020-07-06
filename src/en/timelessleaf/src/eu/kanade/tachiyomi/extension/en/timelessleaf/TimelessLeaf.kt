@@ -28,12 +28,10 @@ class TimelessLeaf : HttpSource() {
 
     override val supportsLatest: Boolean = false
 
-    val mangasPageUrl = baseUrl + "/manga/"
-
     // popular manga
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET(mangasPageUrl)
+        return GET("$baseUrl/manga/")
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -62,7 +60,7 @@ class TimelessLeaf : HttpSource() {
             menuLinks.forEach { el ->
                 val title = el.text()
                 // ignore duplicates
-                if (titleList.filter { str -> str.startsWith(title, ignoreCase = true) }.isEmpty())
+                if (titleList.none { str -> str.startsWith(title, ignoreCase = true) })
                     add(Pair(title, el.attr("href")))
             }
         }.sortedBy { pair -> pair.first }
@@ -107,9 +105,14 @@ class TimelessLeaf : HttpSource() {
     // page list
 
     override fun pageListParse(response: Response): List<Page> {
-        return response.asJsoup().select(".site-main article .gallery-item img").mapIndexed { index, el ->
-            Page(index, "", el.attr("abs:src"))
-        }
+        return response.asJsoup()
+            .let { document ->
+                document.select(".site-main article .gallery-item img")
+                    .let { if (it.isNullOrEmpty()) document.select("div.entry-content img") else it }
+            }
+            .mapIndexed { index, el ->
+                Page(index, "", el.attr("abs:src"))
+            }
     }
 
     // search manga, implementing a local search
