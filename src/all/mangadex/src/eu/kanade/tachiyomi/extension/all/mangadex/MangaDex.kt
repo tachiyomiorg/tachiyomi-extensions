@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Log
 import com.github.salomonbrys.kotson.forEach
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -605,16 +604,15 @@ abstract class MangaDex(
             // Some images are hosted elsewhere
             !page.url.startsWith("http") -> baseUrl + page.url.substringBefore(",") + page.imageUrl
             // New chapters on MD servers
-            page.url.startsWith(cdnUrl) -> page.url.substringBefore(",") + page.imageUrl
+            page.url.contains("https://mangadex.org/data") -> page.url.substringBefore(",") + page.imageUrl
             // MD@Home token handling
             else -> {
-                val refreshTokenAfter = 5000
+                val tokenLifespan = 5 * 60 * 1000
                 val data = page.url.split(",")
                 var tokenedServer = data[0]
-                Log.d("original token", tokenedServer)
-                if (Date().time - data[2].toLong() > refreshTokenAfter) {
+                if (Date().time - data[2].toLong() > tokenLifespan) {
                     val tokenRequestUrl = data[1]
-                    val cacheControl = if (Date().time - (tokenTracker[tokenRequestUrl] ?: 0) > refreshTokenAfter) {
+                    val cacheControl = if (Date().time - (tokenTracker[tokenRequestUrl] ?: 0) > tokenLifespan) {
                         tokenTracker[tokenRequestUrl] = Date().time
                         CacheControl.FORCE_NETWORK
                     } else {
@@ -622,7 +620,6 @@ abstract class MangaDex(
                     }
                     val jsonData = client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute().body()!!.string()
                     tokenedServer = JsonParser().parse(jsonData).asJsonObject.get("server").string
-                    Log.d("new token", tokenedServer)
                 }
                 tokenedServer + page.imageUrl
             }
@@ -630,6 +627,7 @@ abstract class MangaDex(
         return GET(url, headers)
     }
 
+    // chapter url where we get the token, last request time
     private val tokenTracker = hashMapOf<String, Long>()
 
     override fun imageUrlParse(document: Document): String = ""
