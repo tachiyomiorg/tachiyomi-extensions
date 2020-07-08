@@ -5,7 +5,7 @@ ext {
     extName = 'Wutopia'
     pkgNameSuffix = 'en.wutopia'
     extClass = '.Wutopia'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
