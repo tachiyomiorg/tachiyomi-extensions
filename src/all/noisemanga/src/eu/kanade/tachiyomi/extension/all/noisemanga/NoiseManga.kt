@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -33,11 +34,14 @@ abstract class NoiseManga(override val lang: String) : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.text()
         setUrlWithoutDomain(element.attr("href"))
+        thumbnail_url = baseUrl + SLUG_TO_DETAILS_MAP[url]?.thumbnail_url
     }
 
     override fun popularMangaNextPageSelector(): String? = null
 
-    // Since there are only three series, it's worth to do a client-side search.
+    /**
+     * Since there are only three series, it's worth to do a client-side search.
+     */
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return super.fetchSearchManga(page, query, filters)
             .map {
@@ -46,7 +50,7 @@ abstract class NoiseManga(override val lang: String) : ParsedHttpSource() {
             }
     }
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = popularMangaRequest(1)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = popularMangaRequest(page)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -59,17 +63,24 @@ abstract class NoiseManga(override val lang: String) : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val mainContent = document.select("div.main-content-page").first()
         val entryContent = mainContent.select("div.entry-content").first()
-        val descriptionSelector = if (lang == "en") "hr + h4, hr + div h4" else "h1 + h4"
+        val descriptionSelector = if (lang == "en") "h4 + h4, h4 + div h4" else "h1 + h4"
+        val mangaSlug = document.location().replace(baseUrl, "")
 
         return SManga.create().apply {
             title = mainContent.select("header h1.single-title").first()!!.text()
-            status = SManga.UNKNOWN
-            description = entryContent.select(descriptionSelector).first()!!.text()
-            thumbnail_url = entryContent.select("h1 img.alignleft").first()!!.attr("src")
+            author = SLUG_TO_DETAILS_MAP[mangaSlug]?.author
+            artist = SLUG_TO_DETAILS_MAP[mangaSlug]?.artist
+            status = SManga.ONGOING
+            description = entryContent.select(descriptionSelector).last()!!.text()
+            thumbnail_url = baseUrl + SLUG_TO_DETAILS_MAP[mangaSlug]?.thumbnail_url
         }
     }
 
     override fun chapterListRequest(manga: SManga): Request = GET(baseUrl + manga.url, headers)
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return super.chapterListParse(response).reversed()
+    }
 
     override fun chapterListSelector(): String {
         val columnSelector = if (lang == "pt-BR") 1 else 2
@@ -86,28 +97,49 @@ abstract class NoiseManga(override val lang: String) : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter): Request = GET(baseUrl + chapter.url, headers)
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = document.select("div.single-content div.single-entry-summary img.aligncenter")
-
-        return pages
-            .map {
-                it.attr("srcset")
+        return document.select("div.single-content div.single-entry-summary img.aligncenter")
+            .mapIndexed { i, element ->
+                val imgUrl = element.attr("srcset")
                     .substringAfterLast(", ")
                     .substringBeforeLast(" ")
+                Page(i, "", imgUrl)
             }
-            .mapIndexed { i, imgUrl -> Page(i, "", imgUrl) }
     }
 
     override fun imageUrlParse(document: Document) = ""
 
-    override fun latestUpdatesRequest(page: Int) = throw Exception("This method should not be called!")
+    override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException("Not used")
 
-    override fun latestUpdatesSelector() = throw Exception("This method should not be called!")
+    override fun latestUpdatesSelector() = throw UnsupportedOperationException("Not used")
 
-    override fun latestUpdatesFromElement(element: Element) = throw Exception("This method should not be called!")
+    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("Not used")
 
-    override fun latestUpdatesNextPageSelector() = throw Exception("This method should not be called!")
+    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("Not used")
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"
+
+        /**
+         * There isn't a good title list available with all the information.
+         * Since the service does only have three series, it's worth to manually
+         * add the missing information, such as artist, author, and thumbnail.
+         */
+        private val SLUG_TO_DETAILS_MAP = mapOf(
+            "/quack/" to SManga.create().apply {
+                artist = "Kaji Pato"
+                author = "Kaji Pato"
+                thumbnail_url = "/wp-content/uploads/2019/11/quack1.jpg"
+            },
+            "/japow/" to SManga.create().apply {
+                artist = "Eduardo Capelo"
+                author = "Jun Sugiyama"
+                thumbnail_url = "/wp-content/uploads/2019/11/JAPOW_000_NOISE_0000.jpg"
+            },
+            "/tools-challenge/" to SManga.create().apply {
+                artist = "Max Andrade"
+                author = "Max Andrade"
+                thumbnail_url = "/wp-content/uploads/2019/11/TC_001_NOISE_0000-1.jpg"
+            }
+        )
     }
 }
