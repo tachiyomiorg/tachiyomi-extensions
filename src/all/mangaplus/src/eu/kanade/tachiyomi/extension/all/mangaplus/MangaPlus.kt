@@ -438,9 +438,9 @@ abstract class MangaPlus(
 
         private const val RESOLUTION_PREF_KEY = "imageResolution"
         private const val RESOLUTION_PREF_TITLE = "Image resolution"
-        private val RESOLUTION_PREF_ENTRIES = arrayOf("Low resolution", "High resolution")
-        private val RESOLUTION_PREF_ENTRY_VALUES = arrayOf("low", "high")
-        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[1]
+        private val RESOLUTION_PREF_ENTRIES = arrayOf("Low resolution", "Medium resolution", "High resolution")
+        private val RESOLUTION_PREF_ENTRY_VALUES = arrayOf("low", "high", "super_high")
+        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[2]
 
         private const val SPLIT_PREF_KEY = "splitImage"
         private const val SPLIT_PREF_TITLE = "Split double pages"
