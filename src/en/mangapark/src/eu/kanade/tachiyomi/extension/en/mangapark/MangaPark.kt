@@ -31,6 +31,8 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override val lang = "en"
 
+    override val client = network.cloudflareClient
+
     override val supportsLatest = true
     override val name = "MangaPark"
     override val baseUrl = "https://mangapark.net"
