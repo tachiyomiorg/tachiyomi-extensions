@@ -104,7 +104,7 @@ class SilentMangaAudition : HttpSource() {
     }
 
     private fun SmaEntry.toSManga(index: Int): SManga = SManga.create().apply {
-        title = name.substringBefore(" ")
+        title = name
         author = "Various artists"
         status = SManga.COMPLETED
         description = "The theme is… " + name.substringAfter(" ") + "."
