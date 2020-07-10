@@ -16,7 +16,7 @@ import rx.Observable
 
 class SilentMangaAudition : HttpSource() {
 
-    override val name = "SILENT MANGA AUDITION"
+    override val name = "Silent Manga Audition"
 
     override val baseUrl = "https://manga-audition.com"
 

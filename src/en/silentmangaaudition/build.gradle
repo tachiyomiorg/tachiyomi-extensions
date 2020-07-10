@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'SILENT MANGA AUDITION'
+    extName = 'Silent Manga Audition'
     pkgNameSuffix = 'en.silentmangaaudition'
     extClass = '.SilentMangaAudition'
     extVersionCode = 1
