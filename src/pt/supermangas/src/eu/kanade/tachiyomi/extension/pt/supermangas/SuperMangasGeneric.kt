@@ -68,6 +68,8 @@ abstract class SuperMangasGeneric(
 
     protected open val contentList: List<Content> = listOf()
 
+    protected open val chapterListOrder: String = "desc"
+
     private fun genericPaginatedRequest(
         typeUrl: String,
         filterData: Map<String, String> = defaultFilter,
@@ -235,19 +237,23 @@ abstract class SuperMangasGeneric(
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val totalPage = document.select("select.pageSelect option").last()!!.attr("value").toInt()
-        val idCategory = document.select("div#listaDeConteudo").first()!!.attr("data-id-cat").toInt()
+        val lastPage = document.select("select.pageSelect option").last()!!
+            .attr("value").toInt()
+        val idCategory = document.select("div#listaDeConteudo").first()!!
+            .attr("data-id-cat").toInt()
         val mangaUrl = response.request().url().toString()
 
         val chapters = mutableListOf<SChapter>()
 
-        for (page in 1..totalPage) {
-            val result = client.newCall(chapterListPaginatedRequest(idCategory, page, totalPage, mangaUrl)).execute()
+        for (page in 1..lastPage) {
+            val chapterListRequest = chapterListPaginatedRequest(idCategory, page, lastPage, mangaUrl)
+            val result = client.newCall(chapterListRequest).execute()
             val apiResponse = result.asJsonObject()
 
             if (apiResponse["codigo"].int == 0) break
 
-            chapters += Jsoup.parse(apiResponse["body"].asJsonArray.joinToString("") { it.string })
+            val htmlBody = apiResponse["body"].array.joinToString("") { it.string }
+            chapters += Jsoup.parse(htmlBody)
                 .select(chapterListSelector())
                 .map { chapterFromElement(it) }
         }
@@ -261,11 +267,11 @@ abstract class SuperMangasGeneric(
             .add("page", page.toString())
             .add("limit", "50")
             .add("total_page", totalPage.toString())
-            .add("order_video", "desc")
+            .add("order_video", chapterListOrder)
             .add("type", "book")
     }
 
-    private fun chapterListPaginatedRequest(idCategory: Int, page: Int, totalPage: Int, mangaUrl: String): Request {
+    protected fun chapterListPaginatedRequest(idCategory: Int, page: Int, totalPage: Int, mangaUrl: String): Request {
         val form = chapterListPaginatedBody(idCategory, page, totalPage).build()
 
         val newHeaders = headersBuilder()
@@ -338,7 +344,7 @@ abstract class SuperMangasGeneric(
         else -> SManga.UNKNOWN
     }
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
+    protected fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     private fun Map<String, String>.toUrlQueryParams(): String =
         map { (k, v) -> "$k=$v" }.joinToString("&")

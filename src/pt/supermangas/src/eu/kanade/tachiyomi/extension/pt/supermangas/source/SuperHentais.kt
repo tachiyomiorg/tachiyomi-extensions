@@ -1,11 +1,18 @@
 package eu.kanade.tachiyomi.extension.pt.supermangas.source
 
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.string
 import eu.kanade.tachiyomi.extension.pt.supermangas.SuperMangasGeneric
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.Jsoup
 
 class SuperHentais : SuperMangasGeneric(
     "Super Hentais",
@@ -27,6 +34,8 @@ class SuperHentais : SuperMangasGeneric(
         Triple("10", "manhwa-ero", "Manhwa")
     )
 
+    override val chapterListOrder = "asc"
+
     override fun searchMangaWithQueryRequest(query: String): Request {
         val searchUrl = HttpUrl.parse("$baseUrl/busca")!!.newBuilder()
             .addEncodedQueryParameter("parametro", query)
@@ -37,6 +46,44 @@ class SuperHentais : SuperMangasGeneric(
     }
 
     override fun searchMangaSelector(): String = "article.box_view.list div.grid_box:contains(Hentai Manga) div.grid_image.grid_image_vertical a"
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+
+        // Parse the first chapter list page available at the html.
+        val chapters = document.select(chapterListSelector())
+            .map { chapterFromElement(it) }
+            .toMutableList()
+
+        // Check if there is more pages.
+        val lastPage = document.select("select.pageSelect option").last()!!
+            .attr("value").toInt()
+
+        if (lastPage > 1) {
+            val idCategory = document.select("div#listaDeConteudo").first()!!
+                .attr("data-id-cat").toInt()
+            val mangaUrl = response.request().url().toString()
+
+            for (page in 2..lastPage) {
+                val chapterListRequest = chapterListPaginatedRequest(idCategory, page, lastPage, mangaUrl)
+                val result = client.newCall(chapterListRequest).execute()
+                val apiResponse = result.asJsonObject()
+
+                // Check if for some reason the API returned an error.
+                if (apiResponse["codigo"].int == 0) break
+
+                val htmlBody = apiResponse["body"].array.joinToString("") { it.string }
+                chapters += Jsoup.parse(htmlBody)
+                    .select(chapterListSelector())
+                    .map { chapterFromElement(it) }
+            }
+        }
+
+        // Reverse the chapters since the pagination is broken and there is no
+        // way to order some parts as desc in the API and unite with the first page
+        // that is ordered as asc.
+        return chapters.reversed()
+    }
 
     override fun getFilterList() = FilterList(
         Filter.Header("Filtros abaixo são ignorados na busca!"),
