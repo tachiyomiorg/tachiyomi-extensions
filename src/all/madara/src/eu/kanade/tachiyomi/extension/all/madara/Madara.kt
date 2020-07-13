@@ -44,8 +44,11 @@ abstract class Madara(
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
+    // helps with cloudflare for some sources, makes it worse for others; override with empty string if the latter is true
+    protected open val userAgentRandomizer = " ${Random.nextInt().absoluteValue}"
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0 ${Random.nextInt().absoluteValue}")
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/78.0$userAgentRandomizer")
 
     // Popular Manga
 
@@ -415,7 +418,7 @@ abstract class Madara(
 
         fun SimpleDateFormat.tryParse(string: String): Long {
             return try {
-                parse(string).time
+                parse(string)?.time ?: 0
             } catch (_: ParseException) {
                 0
             }

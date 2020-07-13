@@ -95,7 +95,6 @@ class MadaraFactory : SourceFactory {
         NinjaScans(),
         NovelFrance(),
         OnManga(),
-        PlotTwistScan(),
         PMScans(),
         PojokManga(),
         PornComix(),
@@ -152,7 +151,10 @@ class MadaraFactory : SourceFactory {
         FurioScans(),
         Mangareceh(),
         KlanKomik(),
-        ComicKiba()
+        ComicKiba(),
+        ToonPoint(),
+        MangaScantrad(),
+        ManhuaPlus()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -299,8 +301,7 @@ class Manga3asq : Madara("مانجا العاشق", "https://3asq.org", "ar")
 class Indiancomicsonline : Madara("Indian Comics Online", "http://www.indiancomicsonline.com", "hi")
 
 class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "tr") {
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0")
+    override val userAgentRandomizer = ""
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
@@ -669,10 +670,6 @@ class Toonily : Madara("Toonily", "https://toonily.com", "en") {
     )
 }
 
-class PlotTwistScan : Madara("Plot Twist No Fansub", "https://www.plotwistscan.com", "es") {
-    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).asReversed()
-}
-
 class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en", SimpleDateFormat("MM/dd/yyyy", Locale.US))
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
@@ -851,13 +848,6 @@ class UnknownScans : Madara("Unknown Scans", "https://unknoscans.com", "en")
 
 class Manga68 : Madara("Manga68", "https://manga68.com", "en") {
     override val pageListParseSelector = "div.page-break, div.text-left p"
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select(pageListParseSelector).mapIndexed { index, element ->
-            Page(index, "", element.select("img").first()?.let {
-                it.absUrl(/*if (it.hasAttr("data-lazy-src")) "data-lazy-src" else */if (it.hasAttr("data-src")) "data-src" else "src")
-            })
-        }.filter { it.imageUrl!!.startsWith("http") }
-    }
 }
 
 class ManhuaBox : Madara("ManhuaBox", "https://manhuabox.net", "en") {
@@ -1191,3 +1181,13 @@ class ComicKiba : Madara("ComicKiba", "https://comickiba.com", "en") {
 }
 
 class KlanKomik : Madara("KlanKomik", "https://klankomik.com", "id")
+
+class ToonPoint : Madara("ToonPoint", "https://toonpoint.com", "en") {
+    override val userAgentRandomizer = ""
+}
+
+class MangaScantrad : Madara("Manga-Scantrad", "https://manga-scantrad.net", "fr", SimpleDateFormat("d MMM yyyy", Locale.FRANCE))
+
+class ManhuaPlus : Madara("Manhua Plus", "https://manhuaplus.com", "en") {
+    override val pageListParseSelector = "li.blocks-gallery-item"
+}

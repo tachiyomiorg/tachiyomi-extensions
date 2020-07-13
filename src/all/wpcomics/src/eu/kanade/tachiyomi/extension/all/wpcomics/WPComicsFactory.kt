@@ -19,7 +19,6 @@ import org.jsoup.nodes.Element
 @MultiSource
 class WPComicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-        ManhuaPlus(),
         ManhuaES(),
         MangaSum(),
         XoxoComics(),
@@ -27,10 +26,6 @@ class WPComicsFactory : SourceFactory {
         NetTruyen(),
         TruyenChon()
     )
-}
-
-private class ManhuaPlus : WPComics("Manhua Plus", "https://manhuaplus.com", "en") {
-    override val pageListSelector: String = "div.chapter-detail img, ${super.pageListSelector}"
 }
 
 private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", SimpleDateFormat("HH:mm - dd/MM/yyyy Z", Locale.US), "+0700") {
