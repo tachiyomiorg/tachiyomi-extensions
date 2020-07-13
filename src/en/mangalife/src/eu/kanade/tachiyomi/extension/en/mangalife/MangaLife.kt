@@ -92,7 +92,7 @@ class MangaLife : HttpSource() {
             mangas.add(SManga.create().apply {
                 title = directory[i]["s"].string
                 url = "/manga/${directory[i]["i"].string}"
-                thumbnail_url = "https://static.mangaboss.net/cover/${directory[i]["i"].string}.jpg"
+                thumbnail_url = "https://cover.mangabeast01.com/cover/${directory[i]["i"].string}.jpg"
             })
         }
         return MangasPage(mangas, endRange < directory.lastIndex)
