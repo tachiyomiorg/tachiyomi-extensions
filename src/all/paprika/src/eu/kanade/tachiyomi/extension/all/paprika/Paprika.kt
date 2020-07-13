@@ -162,8 +162,7 @@ abstract class Paprika(
                     }?.timeInMillis ?: 0L
                 }
                 else -> SimpleDateFormat("MMM d yy", Locale.US)
-                    .parse("${this.substringBefore(",")} $currentYear")
-                    .time
+                    .parse("${this.substringBefore(",")} $currentYear")?.time ?: 0
             }
         } catch (_: Exception) {
             0L
