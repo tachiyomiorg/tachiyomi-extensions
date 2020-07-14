@@ -68,7 +68,7 @@ class AndromedaScans: ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = element.select("span").first().ownText()
-        date_upload = dateFormat.parse(element.select("span.date").text())?.time
+        date_upload = dateFormat.parse(element.select("span.date").text())?.time ?: 0
     }
 
     companion object {
