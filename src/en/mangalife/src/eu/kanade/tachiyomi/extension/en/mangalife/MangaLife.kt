@@ -205,7 +205,7 @@ class MangaLife : HttpSource() {
 
     // Chapters - Mind special cases like decimal chapters (e.g. One Punch Man) and manga with seasons (e.g. The Gamer)
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:SS Z", Locale.getDefault())
 
     private fun chapterURLEncode(e: String): String {
         var index = ""
@@ -238,7 +238,7 @@ class MangaLife : HttpSource() {
                 name = json["ChapterName"].nullString.let { if (it.isNullOrEmpty()) "${json["Type"].string} ${chapterImage(indexChapter)}" else it }
                 url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
-                    dateFormat.parse(json["Date"].string.substringBefore(" "))?.time ?: 0
+                    json["Date"].nullString?.let { dateFormat.parse("$it +0600")?.time } ?: 0
                 } catch (_: Exception) {
                     0L
                 }
