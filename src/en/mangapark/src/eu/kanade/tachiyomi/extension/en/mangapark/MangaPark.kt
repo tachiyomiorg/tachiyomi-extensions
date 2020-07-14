@@ -174,15 +174,19 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListSelector() = ".volume .chapter li"
 
+    private val chapterNumberRegex = Regex("""\b\d+\.?\d?\b""")
+
     private fun chapterFromElement(element: Element, source: String, lastNum: Float): SChapter {
         fun Float.incremented() = this + .00001F
         fun Float?.orIncrementLastNum() = if (this == null || this < lastNum) lastNum.incremented() else this
 
         return SChapter.create().apply {
-            url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
-            name = element.select(".tit > a").first().text()
+            element.select(".tit > a").first().let {
+                url = it.attr("href").removeSuffix("1")
+                name = it.text()
+            }
             // Get the chapter number or create a unique one if it's not available
-            chapter_number = Regex("""\b\d+\.?\d?\b""").findAll(name)
+            chapter_number = chapterNumberRegex.findAll(name)
                 .toList()
                 .map { it.value.toFloatOrNull() }
                 .let { nums ->
@@ -215,7 +219,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
         relativeDate?.let {
             // Since the date is not specified, it defaults to 1970!
-            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' '))
+            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' ')) ?: return 0
             val cal = Calendar.getInstance()
             cal.time = time
 
@@ -225,7 +229,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             return it.timeInMillis
         }
 
-        return dateFormat.parse(lcDate).time
+        return dateFormat.parse(lcDate)?.time ?: 0
     }
 
     /**
@@ -262,21 +266,17 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         return now.timeInMillis
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val doc = document.toString()
-        val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
-        val pages = mutableListOf<Page>()
-        val imglist = JSONArray(obj)
-        for (i in 0 until imglist.length()) {
-            val item = imglist.getJSONObject(i)
-            var page = item.getString("u")
-            if (page.startsWith("//")) {
-                page = "https:$page"
-            }
-            pages.add(Page(i, "", page))
-        }
-        return pages
+    private val objRegex = Regex("""var _load_pages = (\[.*])""")
+
+    override fun pageListParse(response: Response): List<Page> {
+        val obj = objRegex.find(response.body()!!.string())?.groupValues?.get(1)
+            ?: throw Exception("_load_pages not found - ${response.request().url()}")
+        val jsonArray = JSONArray(obj)
+        return (0 until jsonArray.length()).map { i -> jsonArray.getJSONObject(i).getString("u") }
+            .mapIndexed { i, url -> Page(i, "", if (url.startsWith("//")) "https://$url" else url) }
     }
+
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
     // Unused, we can get image urls directly from the chapter page
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
