@@ -109,7 +109,7 @@ private class TruyenChon : WPComics("TruyenChon", "http://truyenchon.com", "vi",
 }
 
 private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "en", SimpleDateFormat("MM/dd/yyyy", Locale.US), null) {
-    //Hot has only one page
+    //Hot only has one page
     override val popularPath = "popular-comics"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
