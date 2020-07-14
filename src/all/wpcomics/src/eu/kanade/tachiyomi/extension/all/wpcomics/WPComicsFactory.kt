@@ -24,7 +24,8 @@ class WPComicsFactory : SourceFactory {
         XoxoComics(),
         NhatTruyen(),
         NetTruyen(),
-        TruyenChon()
+        TruyenChon(),
+        ComicLatest()
     )
 }
 
@@ -105,4 +106,33 @@ private class TruyenChon : WPComics("TruyenChon", "http://truyenchon.com", "vi",
             GenreFilter(getGenreList())
         )
     }
+}
+
+private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "en", SimpleDateFormat("MM/dd/yyyy", Locale.US), null) {
+    //Hot has only one page
+    override val popularPath = "popular-comics"
+
+    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+        element.select("h3 a").let {
+                title = it.text()
+                setUrlWithoutDomain(it.attr("href"))
+            }
+        thumbnail_url = element.select("img").attr("data-original")
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val chapters = mutableListOf<SChapter>()
+
+        fun parseChapters(document: Document) {
+            document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+            document.select("ul.pagination a[rel=next]").firstOrNull()?.let { a ->
+                parseChapters(client.newCall(GET(a.attr("abs:href"), headers)).execute().asJsoup())
+            }
+        }
+
+        parseChapters(response.asJsoup())
+        return chapters
+    }
+
+    override fun pageListRequest(chapter: SChapter) = GET("$baseUrl${chapter.url}/all", headers)
 }
