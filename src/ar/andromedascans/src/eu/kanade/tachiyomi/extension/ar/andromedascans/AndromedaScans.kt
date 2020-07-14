@@ -38,7 +38,7 @@ class AndromedaScans: ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/$page", headers)
 
-    override fun latestUpdatesSelector() = "div.flexbox"
+    override fun latestUpdatesSelector() = "div.flexbox3-item"
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
@@ -68,7 +68,7 @@ class AndromedaScans: ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = element.select("span").first().ownText()
-        date_upload = dateFormat.parse(element.select("span.date").text()).time ?: 0
+        date_upload = dateFormat.parse(element.select("span.date").text())?.time
     }
 
     companion object {
