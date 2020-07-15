@@ -154,7 +154,8 @@ class MadaraFactory : SourceFactory {
         ComicKiba(),
         ToonPoint(),
         MangaScantrad(),
-        ManhuaPlus()
+        ManhuaPlus(),
+        TritiniaScans()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -166,6 +167,8 @@ class MadaraFactory : SourceFactory {
 class AhStudios : Madara("AhStudios", "https://ahstudios.net", "es")
 
 class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
+
+class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en")
 
 class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
 
