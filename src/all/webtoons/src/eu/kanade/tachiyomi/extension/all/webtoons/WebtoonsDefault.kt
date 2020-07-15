@@ -4,10 +4,13 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.json.JSONObject
+import java.io.File
 
 open class WebtoonsDefault(
     override val lang: String,
@@ -40,5 +43,25 @@ open class WebtoonsDefault(
 
     override fun chapterListRequest(manga: SManga) = GET("https://m.webtoons.com" + manga.url, mobileHeaders)
 
-    override fun pageListParse(document: Document) = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
+    override fun pageListParse(document: Document): List<Page> {
+        val pages = document.select("div#_imageList > img").mapIndexed { i, element -> Page(i, "", element.attr("data-url")) }
+        
+        if (pages.isNotEmpty()) { return pages }
+
+        val docString = document.toString()
+        
+        val docUrlRegex = Regex("documentURL:.*?'(.*?)'")
+        val motiontoonPathRegex = Regex("jpg:.*?'(.*?)\\{")
+
+        val docUrl = docUrlRegex.find(docString)!!.destructured.toList()[0]
+        val motiontoonPath = motiontoonPathRegex.find(docString)!!.destructured.toList()[0]
+
+        val motiontoonJson = JSONObject(client.newCall(GET(docUrl, headers)).execute().body()!!.string()).getJSONObject("assets").getJSONObject("image")
+
+        val keys = motiontoonJson.keySet().toList().filter { it.contains("layer") }
+
+        return keys.mapIndexed { i, key ->
+            Page(i, "", motiontoonPath + motiontoonJson.getString(key))
+        }
+    }
 }
