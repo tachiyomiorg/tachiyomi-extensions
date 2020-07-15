@@ -56,7 +56,7 @@ open class WebtoonsDefault(
 
         val motiontoonJson = JSONObject(client.newCall(GET(docUrl, headers)).execute().body()!!.string()).getJSONObject("assets").getJSONObject("image")
 
-        val keys = motiontoonJson.keySet().toList().filter { it.contains("layer") }
+        val keys = motiontoonJson.keys().asSequence().toList().filter { it.contains("layer") }
 
         return keys.mapIndexed { i, key ->
             Page(i, "", motiontoonPath + motiontoonJson.getString(key))
