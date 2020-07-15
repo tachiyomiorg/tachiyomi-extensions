@@ -9,7 +9,6 @@ import java.util.Locale
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.json.JSONObject
-import java.io.File
 
 open class WebtoonsDefault(
     override val lang: String,
