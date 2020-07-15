@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -29,6 +30,8 @@ class MangaHost : ParsedHttpSource() {
     override val lang = "pt-BR"
 
     override val supportsLatest = true
+
+    override val client: OkHttpClient = network.cloudflareClient
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
