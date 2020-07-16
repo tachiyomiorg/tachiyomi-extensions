@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.thelibraryofohara
+package eu.kanade.tachiyomi.extension.all.thelibraryofohara
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -18,13 +18,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-class Thelibraryofohara : ParsedHttpSource() {
+class TheLibraryOfOhara(override val lang: String, private val siteLang: String, private val latestLang: String) : ParsedHttpSource() {
 
     override val name = "The Library of Ohara"
 
     override val baseUrl = "https://thelibraryofohara.com"
-
-    override val lang = "en"
 
     override val supportsLatest = false
 
@@ -37,10 +35,8 @@ class Thelibraryofohara : ParsedHttpSource() {
     }
 
     // only show entries which contain pictures only.
-    override fun popularMangaSelector() =
+    override fun popularMangaSelector() = if (lang == "en") {
         "#categories-7 ul li.cat-item-589813936," + // Chapter Secrets
-            "#categories-7 ul li.cat-item-693784776, " + // Chapter Secrets (multilingual)
-            "#categories-7 ul li.cat-item-702404482, " + // Chapter Secrets Bahasa Indonesia
             "#categories-7 ul li.cat-item-607613583, " + // Chapter Secrets Specials
             "#categories-7 ul li.cat-item-43972770, " + // Charlotte Family
             "#categories-7 ul li.cat-item-9363667, " + // Complete Guides
@@ -49,6 +45,11 @@ class Thelibraryofohara : ParsedHttpSource() {
             "#categories-7 ul li.cat-item-139757, " + // SBS
             "#categories-7 ul li.cat-item-22695, " + // Timeline
             "#categories-7 ul li.cat-item-648324575" // Vivre Card Databook
+    } else if (lang == "id") {
+        "#categories-7 ul li.cat-item-702404482" // Chapter Secrets Bahasa Indonesia
+    } else {
+        "#categories-7 ul li.cat-item-693784776" // Chapter Secrets (multilingual)
+    }
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -124,8 +125,6 @@ class Thelibraryofohara : ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val allChapters = mutableListOf<SChapter>()
-        var page = 1
-        val urlBase = response.request().url().toString()
         var document = response.asJsoup()
 
         while (true) {
@@ -141,6 +140,13 @@ class Thelibraryofohara : ParsedHttpSource() {
 
             val nextUrl = document.select(chapterNextPageSelector()).attr("href")
             document = client.newCall(GET(nextUrl, headers)).execute().asJsoup()
+        }
+
+        // Remove Indonesian posts if lang is spanish
+        // Indonesian and Spanish posts are mixed in the same category "multilingual" on the website
+        // BTW, the same problem doesn't apply if lang is Indonesian because Indonesian has its own category
+        if (lang == "es") {
+            return allChapters.filter { !it.name.contains("Indonesia") }.toMutableList()
         }
 
         return allChapters

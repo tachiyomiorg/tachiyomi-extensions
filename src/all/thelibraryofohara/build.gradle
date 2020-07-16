@@ -3,8 +3,8 @@ apply plugin: 'kotlin-android'
 
 ext {
     extName = 'The Library of Ohara'
-    pkgNameSuffix = 'en.thelibraryofohara'
-    extClass = '.Thelibraryofohara'
+    pkgNameSuffix = 'all.thelibraryofohara'
+    extClass = '.TheLibraryOfOharaFactory'
     extVersionCode = 1
 	libVersion = '1.2'
 }
