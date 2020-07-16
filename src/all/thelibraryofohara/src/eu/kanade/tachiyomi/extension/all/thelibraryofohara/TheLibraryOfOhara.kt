@@ -46,9 +46,13 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
             "#categories-7 ul li.cat-item-22695, " + // Timeline
             "#categories-7 ul li.cat-item-648324575" // Vivre Card Databook
     } else if (lang == "id") {
-        "#categories-7 ul li.cat-item-702404482" // Chapter Secrets Bahasa Indonesia
+        "#categories-7 ul li.cat-item-702404482, #categories-7 ul li.cat-item-699200615" // Chapter Secrets Bahasa Indonesia, Return to the Reverie
+    } else if (lang == "fr") {
+        "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
+    } else if (lang == "ar") {
+        "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
     } else {
-        "#categories-7 ul li.cat-item-693784776" // Chapter Secrets (multilingual)
+        "#categories-7 ul li.cat-item-693784776, #categories-7 ul li.cat-item-699200615" // Chapter Secrets (multilingual)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -140,6 +144,22 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
 
             val nextUrl = document.select(chapterNextPageSelector()).attr("href")
             document = client.newCall(GET(nextUrl, headers)).execute().asJsoup()
+        }
+
+        if (!allChapters.isEmpty() && allChapters[0].name.contains("Reverie")) {
+            return when (lang) {
+                "fr" -> allChapters.filter { it.name.contains("French") }.toMutableList()
+                "ar" -> allChapters.filter { it.name.contains("Arabic") }.toMutableList()
+                "it" -> allChapters.filter { it.name.contains("Italian") }.toMutableList()
+                "id" -> allChapters.filter { it.name.contains("Indonesia") }.toMutableList()
+                "es" -> allChapters.filter { it.name.contains("Spanish") }.toMutableList()
+                else -> allChapters.filter { // english
+                    !it.name.contains("French") &&
+                        !it.name.contains("Arabic") &&
+                        !it.name.contains("Italian") &&
+                        !it.name.contains("Indonesia") &&
+                        !it.name.contains("Spanish") }.toMutableList()
+            }
         }
 
         // Remove Indonesian posts if lang is spanish
