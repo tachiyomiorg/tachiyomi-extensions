@@ -51,7 +51,7 @@ class Kumanga : HttpSource() {
 
     private fun parseMangaFromJson(json: JsonElement) = SManga.create().apply {
         title = json["name"].string
-        description = json["description"].string
+        description = json["description"].string.replace("\\", "")
         url = getMangaUrl(json["id"].string, json["slug"].string, 1)
         thumbnail_url = getMangaCover(json["id"].string)
 
@@ -108,6 +108,8 @@ class Kumanga : HttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         .parse(date)?.time ?: 0
 
+    private fun chapterSelector() = "div#accordion > div.panel.panel-default.c_panel"
+
     private fun chapterFromElement(element: Element) = SChapter.create().apply {
         element.select("table:first-child td h4").let { it ->
             it.select("a:has(i)").let {
@@ -129,17 +131,23 @@ class Kumanga : HttpSource() {
         if (numberChapters != null) {
             // Calculating total of pages, Kumanga shows 10 chapters per page, total_pages = #chapters / 10
             val numberOfPages = (numberChapters / 10.toDouble() + 0.4).roundToInt()
-            var currentPage = 1
 
-            while (currentPage <= numberOfPages) {
-                document.select("div#accordion > div.panel.panel-default.c_panel").map {
+            if (numberOfPages > 1) {
+                var currentPage = 1
+                while (currentPage <= numberOfPages) {
+                    document.select(chapterSelector()).map {
+                        add(chapterFromElement(it))
+                    }
+
+                    currentPage++
+                    document = client.newCall(GET(baseUrl + getMangaUrl(mangaId, mangaSlug, currentPage))).execute().asJsoup()
+                }
+            } else {
+                document.select(chapterSelector()).map {
                     add(chapterFromElement(it))
                 }
-
-                currentPage++
-                document = client.newCall(GET(baseUrl + getMangaUrl(mangaId, mangaSlug, currentPage))).execute().asJsoup()
             }
-        }
+        } else throw Exception("No fue posible obtener los capítulos")
     }
 
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
