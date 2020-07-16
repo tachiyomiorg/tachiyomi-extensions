@@ -35,8 +35,8 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
     }
 
     // only show entries which contain pictures only.
-    override fun popularMangaSelector() = if (lang == "en") {
-        "#categories-7 ul li.cat-item-589813936," + // Chapter Secrets
+    override fun popularMangaSelector() = when (lang) {
+        "en" -> "#categories-7 ul li.cat-item-589813936," + // Chapter Secrets
             "#categories-7 ul li.cat-item-607613583, " + // Chapter Secrets Specials
             "#categories-7 ul li.cat-item-43972770, " + // Charlotte Family
             "#categories-7 ul li.cat-item-9363667, " + // Complete Guides
@@ -45,14 +45,11 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
             "#categories-7 ul li.cat-item-139757, " + // SBS
             "#categories-7 ul li.cat-item-22695, " + // Timeline
             "#categories-7 ul li.cat-item-648324575" // Vivre Card Databook
-    } else if (lang == "id") {
-        "#categories-7 ul li.cat-item-702404482, #categories-7 ul li.cat-item-699200615" // Chapter Secrets Bahasa Indonesia, Return to the Reverie
-    } else if (lang == "fr") {
-        "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
-    } else if (lang == "ar") {
-        "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
-    } else {
-        "#categories-7 ul li.cat-item-693784776, #categories-7 ul li.cat-item-699200615" // Chapter Secrets (multilingual)
+        "id" -> "#categories-7 ul li.cat-item-702404482, #categories-7 ul li.cat-item-699200615" // Chapter Secrets Bahasa Indonesia, Return to the Reverie
+        "fr" -> "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
+        "ar" -> "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
+        "it" -> "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
+        else -> "#categories-7 ul li.cat-item-693784776, #categories-7 ul li.cat-item-699200615" // Chapter Secrets (multilingual), Return to the Reverie
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -98,14 +95,45 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-
-        manga.thumbnail_url = document.select("article:first-of-type").select("img").attr("abs:src")
         manga.title = document.select("h1.page-title").text().replace("Category: ", "")
+        manga.thumbnail_url = chooseChapterThumbnail(document, manga.title)
         manga.description = ""
         manga.status = SManga.ONGOING
-
         return manga
     }
+
+    // Use one of the chapter thumbnails as manga thumbnail
+    // Some thumbnails have a flag on them which indicates the Language.
+    // Try to choose a thumbnail with a matching flag
+    private fun chooseChapterThumbnail(document: Document, mangaTitle: String): String {
+        // Reverie
+        if (mangaTitle.contains("Reverie")) {
+            document.select("article").forEach {
+                val chapterTitle = it.select("h2.entry-title a").text()
+                if (chapterTitle.contains(siteLang) || (lang == "en" &&
+                        !chapterTitle.contains("French") &&
+                        !chapterTitle.contains("Arabic") &&
+                        !chapterTitle.contains("Italian") &&
+                        !chapterTitle.contains("Indonesia") &&
+                        !chapterTitle.contains("Spanish"))) {
+                    return it.select("img").attr("abs:src")
+                }
+            }
+        }
+        // Chapter Secrets (multilingual)
+        if (mangaTitle.contains("multilingual")) {
+            document.select("article").forEach {
+                val chapterTitle = it.select("h2.entry-title a").text()
+                if ((lang == "id" && chapterTitle.contains("Indonesia")) || (lang == "es" && !chapterTitle.contains("Indonesia"))) {
+                    it.select("img").attr("abs:src")
+                }
+            }
+        }
+
+        // Fallback
+        return document.select("article:first-of-type").select("img").attr("abs:src")
+    }
+
     // Chapters
 
     override fun chapterListSelector() = "article"
