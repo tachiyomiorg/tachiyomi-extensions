@@ -135,7 +135,7 @@ class Manhuadui : ParsedHttpSource() {
     }
 
     private fun decrypt(code: String): String? {
-        val key = "123456781234567G"
+        val key = "1231994MHB123456"
         val iv = "ABCDEF1G34123412"
 
         return decryptAES(code, key, iv)
