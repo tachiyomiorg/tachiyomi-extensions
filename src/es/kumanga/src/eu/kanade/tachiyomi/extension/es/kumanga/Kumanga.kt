@@ -16,6 +16,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.text.SimpleDateFormat
+import java.util.Locale
 import kotlin.math.roundToInt
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -103,14 +105,18 @@ class Kumanga : HttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    private fun parseChapterDate(date: String): Long = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        .parse(date)?.time ?: 0
+
     private fun chapterFromElement(element: Element) = SChapter.create().apply {
-        url = element.select("td")
-            .attr("onclick")
-            .substringAfter("window.location='")
-            .substringBefore("'")
-            .replace("/c/", "/leer/")
-        name = element.select("span.c_title").text()
-        scanlator = element.select("span.pull-right.greenSpan").text()
+        element.select("table:first-child td h4").let { it ->
+            it.select("a:has(i)").let {
+                url = '/' + it.attr("href").replace("/c/", "/leer/")
+                name = it.text()
+                date_upload = parseChapterDate(it.attr("title"))
+            }
+            scanlator = it.select("span.pull-right.greenSpan")?.text()
+        }
     }
 
     override fun chapterListParse(response: Response): List<SChapter> = mutableListOf<SChapter>().apply {
@@ -123,15 +129,15 @@ class Kumanga : HttpSource() {
         if (numberChapters != null) {
             // Calculating total of pages, Kumanga shows 10 chapters per page, total_pages = #chapters / 10
             val numberOfPages = (numberChapters / 10.toDouble() + 0.4).roundToInt()
-            var nextPage = if (numberOfPages > 1) 2 else 1
+            var currentPage = 1
 
-            while (nextPage <= numberOfPages) {
+            while (currentPage <= numberOfPages) {
                 document.select("div#accordion > div.panel.panel-default.c_panel").map {
                     add(chapterFromElement(it))
                 }
 
-                nextPage++
-                document = client.newCall(GET(baseUrl + getMangaUrl(mangaId, mangaSlug, nextPage))).execute().asJsoup()
+                currentPage++
+                document = client.newCall(GET(baseUrl + getMangaUrl(mangaId, mangaSlug, currentPage))).execute().asJsoup()
             }
         }
     }
@@ -264,5 +270,4 @@ class Kumanga : HttpSource() {
         Genre("Yaoi", "44"),
         Genre("Yuri", "45")
     )
-
 }
