@@ -106,9 +106,9 @@ class Kumanga : HttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-        .parse(date)?.time ?: 0
+        .parse(date)?.time ?: 0L
 
-    private fun chapterSelector() = "div#accordion > div.panel.panel-default.c_panel"
+    private fun chapterSelector() = "div#accordion > div.panel.panel-default.c_panel:has(table)"
 
     private fun chapterFromElement(element: Element) = SChapter.create().apply {
         element.select("table:first-child td h4").let { it ->
@@ -131,21 +131,13 @@ class Kumanga : HttpSource() {
         if (numberChapters != null) {
             // Calculating total of pages, Kumanga shows 10 chapters per page, total_pages = #chapters / 10
             val numberOfPages = (numberChapters / 10.toDouble() + 0.4).roundToInt()
+            document.select(chapterSelector()).map { add(chapterFromElement(it)) }
+            var page = 2
 
-            if (numberOfPages > 1) {
-                var currentPage = 1
-                while (currentPage <= numberOfPages) {
-                    document.select(chapterSelector()).map {
-                        add(chapterFromElement(it))
-                    }
-
-                    currentPage++
-                    document = client.newCall(GET(baseUrl + getMangaUrl(mangaId, mangaSlug, currentPage))).execute().asJsoup()
-                }
-            } else {
-                document.select(chapterSelector()).map {
-                    add(chapterFromElement(it))
-                }
+            while (page <= numberOfPages) {
+                document = client.newCall(GET(baseUrl + getMangaUrl(mangaId, mangaSlug, page))).execute().asJsoup()
+                document.select(chapterSelector()).map { add(chapterFromElement(it)) }
+                page++
             }
         } else throw Exception("No fue posible obtener los capítulos")
     }
