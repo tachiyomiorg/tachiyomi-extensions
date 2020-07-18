@@ -126,12 +126,12 @@ private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "
             when (filter) {
                 is AuthorFilter -> {
                     val author = filter.state.trim().replace(" ", "-").toLowerCase()
-                    return GET("$baseUrl/author/$author", headers)
+                    return GET("$baseUrl/author/$author?page=$page", headers)
                 }
             }
         }
 
-        return GET("$baseUrl/search?keyword=$query", headers)
+        return GET("$baseUrl/search?keyword=$query&page=$page", headers)
     }
 
     override fun searchMangaSelector() = "div.item div.box_img > a[title]"
