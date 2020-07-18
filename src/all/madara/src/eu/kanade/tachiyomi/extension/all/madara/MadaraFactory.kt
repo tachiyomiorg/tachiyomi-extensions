@@ -155,7 +155,9 @@ class MadaraFactory : SourceFactory {
         ToonPoint(),
         MangaScantrad(),
         ManhuaPlus(),
-        TritiniaScans()
+        TritiniaScans(),
+        AkuManga(),
+        AsgardTeam()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -478,6 +480,7 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
 }
 
 class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
+    override fun searchMangaNextPageSelector() = "${super.searchMangaNextPageSelector()}, a.nextpostslink"
     override fun getGenreList() = listOf(
         Genre("Adult", "adult"),
         Genre("Action", "action"),
@@ -961,7 +964,7 @@ class WeScans : Madara("WeScans", "https://wescans.xyz", "en") {
     override fun getFilterList(): FilterList = FilterList()
 }
 
-class ArangScans : Madara("Arang Scans", "https://www.arangscans.com", "en") {
+class ArangScans : Madara("Arang Scans", "https://www.arangscans.com", "en", SimpleDateFormat("d MMM yyyy", Locale.US)) {
     // has very few manga
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga?m_orderby=views", headers)
     override fun popularMangaNextPageSelector(): String? = null
@@ -1194,3 +1197,7 @@ class MangaScantrad : Madara("Manga-Scantrad", "https://manga-scantrad.net", "fr
 class ManhuaPlus : Madara("Manhua Plus", "https://manhuaplus.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
 }
+
+class AkuManga : Madara("AkuManga", "https://akumanga.com", "ar")
+
+class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
