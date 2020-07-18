@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.wpcomics
 
-import eu.kanade.tachiyomi.annotations.MultiSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
@@ -8,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -16,7 +16,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-@MultiSource
 class WPComicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         ManhuaES(),
@@ -118,6 +117,25 @@ private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "
                 setUrlWithoutDomain(it.attr("href"))
             }
         thumbnail_url = element.select("img").attr("data-original")
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (query.startsWith("author:")) {
+            val author = query.substringAfter("author:").trim().replace(" ", "-").toLowerCase()
+            return GET("$baseUrl/author/$author", headers)
+        } else {
+            return GET("$baseUrl/search?keyword=$query", headers)
+        }
+    }
+
+    override fun searchMangaSelector() = "div.item div.box_img > a[title]"
+
+    //For whatever reason, errors with author search
+    override fun searchMangaFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            title = element.attr("title")
+            setUrlWithoutDomain(element.attr("href"))
+        }
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
