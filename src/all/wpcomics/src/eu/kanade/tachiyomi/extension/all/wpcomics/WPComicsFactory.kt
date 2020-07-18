@@ -131,7 +131,7 @@ private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "
 
     override fun searchMangaSelector() = "div.item div.box_img > a[title]"
 
-    //For whatever reason, errors with author search
+    //For whatever reason, errors with author search if this isn't overridden
     override fun searchMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             title = element.attr("title")
