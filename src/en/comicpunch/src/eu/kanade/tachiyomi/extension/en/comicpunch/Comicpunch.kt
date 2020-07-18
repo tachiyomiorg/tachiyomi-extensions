@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.comicpunch
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -137,10 +136,6 @@ class Comicpunch : ParsedHttpSource() {
     }
 
     // Pages
-
-    override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url, headers)
-    }
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
