@@ -626,7 +626,7 @@ class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
     override val popularMangaUrlSelector = "div.post-title a:last-child"
 }
 
-class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar") {
+class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabtm.com", "ar") {
     override fun imageRequest(page: Page): Request {
         return GET(page.imageUrl!!.replace("http:", "https:"))
     }
