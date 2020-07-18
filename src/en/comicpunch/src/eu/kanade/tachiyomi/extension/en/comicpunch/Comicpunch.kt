@@ -150,7 +150,7 @@ class Comicpunch : ParsedHttpSource() {
         // Then we just split it.
         val pageUrls = document.select("div#code_contain > script")
             .eq(1).first().data()
-            .substringAfter("= [").substringBefore("]").split("'")
+            .substringAfter("messages = [").substringBefore("]").split("'")
 
         pageUrls.forEachIndexed { i, img ->
             pages.add(Page(i, "", URLEncoder.encode(img.toString(), "UTF-8")))
