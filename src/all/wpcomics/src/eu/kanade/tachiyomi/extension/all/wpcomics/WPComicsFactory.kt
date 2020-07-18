@@ -4,11 +4,11 @@ import eu.kanade.tachiyomi.annotations.MultiSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -122,17 +122,21 @@ private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query.startsWith("author:")) {
-            val author = query.substringAfter("author:").trim().replace(" ", "-").toLowerCase()
-            return GET("$baseUrl/author/$author", headers)
-        } else {
-            return GET("$baseUrl/search?keyword=$query", headers)
+        filters.forEach { filter ->
+            when (filter) {
+                is AuthorFilter -> {
+                    val author = filter.state.trim().replace(" ", "-").toLowerCase()
+                    return GET("$baseUrl/author/$author", headers)
+                }
+            }
         }
+
+        return GET("$baseUrl/search?keyword=$query", headers)
     }
 
     override fun searchMangaSelector() = "div.item div.box_img > a[title]"
 
-    //For whatever reason, errors with author search
+    //For whatever reason, errors with author search if this isn't overridden
     override fun searchMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             title = element.attr("title")
@@ -155,4 +159,12 @@ private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "
     }
 
     override fun pageListRequest(chapter: SChapter) = GET("$baseUrl${chapter.url}/all", headers)
+
+    private class AuthorFilter: Filter.Text("Author")
+
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: Cannot be used with search"),
+        Filter.Separator(),
+        AuthorFilter()
+    )
 }
