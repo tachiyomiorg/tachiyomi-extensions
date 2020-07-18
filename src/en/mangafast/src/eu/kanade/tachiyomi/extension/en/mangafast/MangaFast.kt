@@ -10,6 +10,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Locale
 import java.text.SimpleDateFormat
+import java.io.File
 
 class MangaFast: ParsedHttpSource() {
     override val name = "MangaFast"
@@ -80,8 +81,16 @@ class MangaFast: ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val file = File("/sdcard/MangaFast.txt")
+        file.appendText("MangaFast\n")
         return document.select("div.chp2 > img").mapIndexed { i, element ->
-            Page(i, "", element.attr("abs:src"))
+            var url = element.attr("abs:data-src")
+
+            if (url.isEmpty()) {
+                url = element.attr("abs:src")
+            }
+
+            Page(i, "", url)
         }
     }
 
