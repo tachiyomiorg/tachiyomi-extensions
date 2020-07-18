@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.net.URLEncoder
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -124,7 +125,7 @@ class Comicpunch : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "div#chapterlist li.chapter a"
+    override fun chapterListSelector() = "li.chapter a"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -138,14 +139,21 @@ class Comicpunch : ParsedHttpSource() {
     // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url + "/?q=fullchapter", headers)
+        return GET(baseUrl + chapter.url, headers)
     }
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("img.picture").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:src")))
+        // Comicpunch appears to store the array of images for each chapter as a variable "messages"
+        // in a script tag. It's the second line and the first and only array, hence we do "= [".
+        // Then we just split it.
+        val pageUrls = document.select("div#code_contain > script")
+            .eq(1).first().data()
+            .substringAfter("= [").substringBefore("]").split("'")
+
+        pageUrls.forEachIndexed { i, img ->
+            pages.add(Page(i, "", URLEncoder.encode(img.toString(), "UTF-8")))
         }
 
         return pages
