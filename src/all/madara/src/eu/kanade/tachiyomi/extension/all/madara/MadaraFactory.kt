@@ -139,7 +139,6 @@ class MadaraFactory : SourceFactory {
         RenaScans(),
         WebtoonXYZ(),
         ManhwaTime(),
-        MangaZen(),
         QueensManga(),
         DropeScan(),
         TheTopComic(),
@@ -1010,8 +1009,6 @@ class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateF
 class WebtoonXYZ : Madara("WebtoonXYZ", "https://www.webtoon.xyz", "en")
 
 class ManhwaTime : Madara("ManhwaTime", "https://manhwatime.xyz", "en")
-
-class MangaZen : Madara("MangaZen", "https://manga-zen.com/", "ar")
 
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
 
