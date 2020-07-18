@@ -117,7 +117,7 @@ class Comicpunch : ParsedHttpSource() {
         var elements = response.asJsoup().select(chapterListSelector()).toList()
 
         // Check if latest chapter is just a placeholder, drop it if it is
-        client.newCall(GET(elements[0].attr("abs:href"), headers)).execute().asJsoup().select("img.picture").attr("src").let { img ->
+        client.newCall(GET(elements[0].attr("abs:href"), headers)).execute().asJsoup().select("img").last().attr("src").let { img ->
             if (img.contains("placeholder", ignoreCase = true)) elements = elements.drop(1)
         }
         elements.map { chapters.add(chapterFromElement(it)) }
