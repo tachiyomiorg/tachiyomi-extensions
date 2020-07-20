@@ -615,7 +615,7 @@ class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id
 
 class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
 
-class KomikTap : WPMangaStream("KomikTap", "https://komiktap.us", "id") {
+class KomikTap : WPMangaStream("KomikTap", "https://komiktap.net", "id") {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/project/", headers)
     override fun popularMangaNextPageSelector(): String? = null
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/?page=$page", headers)
