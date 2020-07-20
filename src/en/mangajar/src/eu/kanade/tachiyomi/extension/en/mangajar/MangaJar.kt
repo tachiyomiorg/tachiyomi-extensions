@@ -62,7 +62,7 @@ class MangaJar : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        description = document.select("div.manga-description.entry > div").text()
+        description = document.select("div.manga-description.entry").text()
         thumbnail_url = document.select("div.row > div > img").attr("src")
         genre = document.select("div.post-info > span > a[href*=genre]").joinToString { it.text() }
         status = parseStatus(document.select("span:has(b)")[1].text())
@@ -76,7 +76,7 @@ class MangaJar : ParsedHttpSource() {
 
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url + "/chaptersList")
 
-    override fun chapterListSelector() = "li.list-group-item.chapter-item.d-none"
+    override fun chapterListSelector() = "li.list-group-item.chapter-item"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
