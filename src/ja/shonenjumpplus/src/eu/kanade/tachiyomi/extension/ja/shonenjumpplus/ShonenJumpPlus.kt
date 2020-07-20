@@ -51,16 +51,11 @@ class ShonenJumpPlus : ParsedHttpSource() {
         .addInterceptor { imageIntercept(it) }
         .build()
 
-    private val dayOfWeek: String
-        get() = when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
-            Calendar.SUNDAY -> "sunday"
-            Calendar.MONDAY -> "monday"
-            Calendar.TUESDAY -> "tuesday"
-            Calendar.WEDNESDAY -> "wednesday"
-            Calendar.THURSDAY -> "thursday"
-            Calendar.FRIDAY -> "friday"
-            else -> "saturday"
-        }
+    private val dayOfWeek: String by lazy {
+        Calendar.getInstance()
+            .getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.US)!!
+            .toLowerCase(Locale.US)
+    }
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
