@@ -41,7 +41,8 @@ class MangaJar : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("p.card-title.js-card-title").text()
-        thumbnail_url = element.select("img").attr("src")
+        thumbnail_url = element.select("img").let { if (it.hasAttr("data-src"))
+                it.attr("data-src") else it.attr("src") }
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
