@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.mangajar
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -26,7 +27,7 @@ class MangaJar : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "article:has(div.post-description)"
+    override fun popularMangaSelector() = "article[class*=flex-item]"
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga?sortBy=popular&page=$page")
@@ -52,7 +53,14 @@ class MangaJar : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query&page=$page")
+        val filters = if (filters.isEmpty()) getFilterList() else filters
+        val genreFilter = filters.findInstance<GenreList>()
+        val genre = genreFilter?.let { f -> f.values[f.state] }
+
+        if (genre!!.isEmpty())
+            return GET("$baseUrl/search?q=$query&page=$page")
+        else
+            return GET("$baseUrl/genre/$genre?q=$query&page=$page")
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -123,5 +131,62 @@ class MangaJar : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
-    override fun getFilterList() = FilterList()
+    override fun getFilterList() = FilterList(
+            GenreList()
+    )
+
+    private class GenreList : Filter.Select<String>("Select Genre",
+        arrayOf(
+            "",
+            "Fantasy",
+            "Adventure",
+            "Martial Arts",
+            "Action",
+            "Demons",
+            "Shounen",
+            "Drama",
+            "Isekai",
+            "School Life",
+            "Harem",
+            "Horror",
+            "Supernatural",
+            "Mystery",
+            "Sci-Fi",
+            "Webtoons",
+            "Romance",
+            "Magic",
+            "Slice of Life",
+            "Seinen",
+            "Historical",
+            "Ecchi",
+            "Comedy",
+            "Sports",
+            "Tragedy",
+            "Shounen Ai",
+            "Yaoi",
+            "Shoujo",
+            "Super Power",
+            "Food",
+            "Psychological",
+            "Gender Bender",
+            "Smut",
+            "Shoujo Ai",
+            "Yuri",
+            "4-koma",
+            "Mecha",
+            "Adult",
+            "Mature",
+            "Military",
+            "Vampire",
+            "Kids",
+            "Space",
+            "Police",
+            "Music",
+            "One Shot",
+            "Parody",
+            "Josei"
+        )
+    )
+
+    private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
 }
