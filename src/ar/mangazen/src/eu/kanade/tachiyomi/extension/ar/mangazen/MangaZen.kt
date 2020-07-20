@@ -12,7 +12,6 @@ import java.util.Locale
 import java.text.SimpleDateFormat
 
 class MangaZen: ParsedHttpSource() {
-    override val id: Long = 5993044061860511575
 
     override val baseUrl = "https://manga-zen.com"
 
