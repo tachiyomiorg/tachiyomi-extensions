@@ -93,7 +93,6 @@ class MadaraFactory : SourceFactory {
         NightComic(),
         NijiTranslations(),
         NinjaScans(),
-        NovelFrance(),
         OnManga(),
         PMScans(),
         PojokManga(),
@@ -156,7 +155,8 @@ class MadaraFactory : SourceFactory {
         ManhuaPlus(),
         TritiniaScans(),
         AkuManga(),
-        AsgardTeam()
+        AsgardTeam(),
+        Skymanga()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -479,7 +479,6 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
 }
 
 class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
-    override fun searchMangaNextPageSelector() = "${super.searchMangaNextPageSelector()}, a.nextpostslink"
     override fun getGenreList() = listOf(
         Genre("Adult", "adult"),
         Genre("Action", "action"),
@@ -720,8 +719,6 @@ class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", Simpl
 class AstralLibrary : Madara("Astral Library", "https://astrallibrary.net", "en") {
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
-
-class NovelFrance : Madara("Novel France", "http://novel-france.fr", "fr", SimpleDateFormat("dd MMM yyyy", Locale.FRENCH))
 
 class KlikManga : Madara("KlikManga", "https://klikmanga.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale("id")))
 
@@ -1006,7 +1003,11 @@ class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
 
 class MangaYosh : Madara("MangaYosh", "https://mangayosh.xyz", "id", SimpleDateFormat("dd MMM yyyy", Locale.US))
 
-class WebtoonXYZ : Madara("WebtoonXYZ", "https://www.webtoon.xyz", "en")
+class WebtoonXYZ : Madara("WebtoonXYZ", "https://www.webtoon.xyz", "en") {
+    private fun pagePath(page: Int) = if (page > 1) "page/$page/" else ""
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/webtoons/${pagePath(page)}?m_orderby=views", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/webtoons/${pagePath(page)}?m_orderby=latest", headers)
+}
 
 class ManhwaTime : Madara("ManhwaTime", "https://manhwatime.xyz", "en")
 
@@ -1198,3 +1199,5 @@ class ManhuaPlus : Madara("Manhua Plus", "https://manhuaplus.com", "en") {
 class AkuManga : Madara("AkuManga", "https://akumanga.com", "ar")
 
 class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
+
+class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
