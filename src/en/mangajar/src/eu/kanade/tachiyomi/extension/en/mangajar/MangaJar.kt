@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -57,10 +58,23 @@ class MangaJar : ParsedHttpSource() {
         val genreFilter = filters.findInstance<GenreList>()
         val genre = genreFilter?.let { f -> f.values[f.state] }
 
-        if (genre!!.isEmpty())
-            return GET("$baseUrl/search?q=$query&page=$page")
-        else
-            return GET("$baseUrl/genre/$genre?q=$query&page=$page")
+        val url = HttpUrl.parse(if (genre!!.isEmpty()) "$baseUrl/search" else "$baseUrl/genre/$genre")!!.newBuilder()
+
+        url.addQueryParameter("q", query)
+        url.addQueryParameter("page", page.toString())
+
+        (filters.forEach { filter ->
+            when (filter) {
+                is OrderBy -> {
+                    url.addQueryParameter("sortBy", filter.toUriPart())
+                }
+                is SortBy -> {
+                    url.addQueryParameter("sortAscending", filter.toUriPart())
+                }
+            }
+        })
+
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -132,8 +146,23 @@ class MangaJar : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
     override fun getFilterList() = FilterList(
+            OrderBy(),
+            SortBy(),
             GenreList()
     )
+
+    private class SortBy : UriPartFilter("Sort By", arrayOf(
+            Pair("Descending", "0"),
+            Pair("Ascending", "1")
+    ))
+
+    private class OrderBy : UriPartFilter("Order By", arrayOf(
+            Pair("Popularity", "popular"),
+            Pair("Year", "year"),
+            Pair("Alphabet", "name"),
+            Pair("Date added", "published_at"),
+            Pair("Date updated", "last_chapter_at")
+    ))
 
     private class GenreList : Filter.Select<String>("Select Genre",
         arrayOf(
@@ -189,4 +218,9 @@ class MangaJar : ParsedHttpSource() {
     )
 
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 }
