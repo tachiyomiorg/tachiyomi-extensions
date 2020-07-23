@@ -24,7 +24,7 @@ class GoldenMangas : ParsedHttpSource() {
 
     override val name = "Golden Mangás"
 
-    override val baseUrl = "https://goldenmangas.online"
+    override val baseUrl = "https://goldenmangas.top"
 
     override val lang = "pt-BR"
 
@@ -37,6 +37,8 @@ class GoldenMangas : ParsedHttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
         .add("Referer", baseUrl)
@@ -139,6 +141,7 @@ class GoldenMangas : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
+            .set("Accept", ACCEPT_IMAGE)
             .set("Referer", page.url)
             .build()
 
@@ -151,14 +154,17 @@ class GoldenMangas : ParsedHttpSource() {
 
     private fun SimpleDateFormat.tryParseTime(date: String): Long {
         return try {
-            parse(date).time
+            parse(date)!!.time
         } catch (e: ParseException) {
             0L
         }
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36"
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/webp,image/apng,image/*,*/*;q=0.8"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
 
         private val FLAG_REGEX = "\\((Pt[-/]br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
 
