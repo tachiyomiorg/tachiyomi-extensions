@@ -682,16 +682,22 @@ class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com", "en"
 
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
 
-class YaoiToshokan : Madara("Yaoi Toshokan", "https://www.yaoitoshokan.com.br", "pt-BR") {
-    override val popularMangaUrlSelector = "div.post-title a:not([target])" // Page has custom link to scan website
-    override fun chapterListParse(response: Response): List<SChapter> { // Chapters are listed old to new
+class YaoiToshokan : Madara("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR") {
+    // Page has custom link to scan website.
+    override val popularMangaUrlSelector = "div.post-title a:not([target])"
+
+    // Chapters are listed old to new.
+    override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).reversed()
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(pageListParseSelector).mapIndexed { index, element ->
-            Page(index, "", element.select("img").attr("data-src").trim()) // had to add trim because of white space in source
-        }
+        return document.select(pageListParseSelector)
+            .mapIndexed { index, element ->
+                // Had to add trim because of white space in source.
+                val imageUrl = element.select("img").attr("data-src").trim()
+                Page(index, document.location(), imageUrl)
+            }
     }
 }
 
