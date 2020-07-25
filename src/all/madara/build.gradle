@@ -5,12 +5,8 @@ ext {
     extName = 'Madara (multiple sources)'
     pkgNameSuffix = "all.madara"
     extClass = '.MadaraFactory'
-    extVersionCode = 122
+    extVersionCode = 123
     libVersion = '1.2'
-}
-
-dependencies {
-    implementation project(':lib-dataimage')
 }
 
 apply from: "$rootDir/common.gradle"

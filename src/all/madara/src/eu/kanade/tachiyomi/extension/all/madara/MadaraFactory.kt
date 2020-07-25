@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.all.madara
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.annotations.MultiSource
-import eu.kanade.tachiyomi.lib.dataimage.DataImageInterceptor
-import eu.kanade.tachiyomi.lib.dataimage.dataImageAsUrl
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
@@ -156,7 +154,8 @@ class MadaraFactory : SourceFactory {
         TritiniaScans(),
         AkuManga(),
         AsgardTeam(),
-        Skymanga()
+        Skymanga(),
+        ToonilyNet()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -1131,15 +1130,7 @@ class Manga347 : Madara("Manga347", "https://manga347.com", "en", SimpleDateForm
 class RenaScans : Madara("Renascence Scans (Renascans)", "https://new.renascans.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
 class QueensManga : Madara("QueensManga ملكات المانجا", "https://queensmanga.com", "ar") {
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(DataImageInterceptor())
-        .build()
     override fun chapterListSelector(): String = "div.listing-chapters_wrap a"
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select("picture > source").mapIndexed { i, source ->
-            Page(i, "", source.dataImageAsUrl("srcset"))
-        }
-    }
 }
 
 class DropeScan : Madara("Drope Scan", "https://dropescan.com", "pt-BR") {
@@ -1207,3 +1198,5 @@ class AkuManga : Madara("AkuManga", "https://akumanga.com", "ar")
 class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
 
 class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
+
+class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
