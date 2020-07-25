@@ -5,7 +5,7 @@ ext {
     extName = 'Mangareader & Mangapanda'
     pkgNameSuffix = 'en.mangareader'
     extClass = '.MRPFactory'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
