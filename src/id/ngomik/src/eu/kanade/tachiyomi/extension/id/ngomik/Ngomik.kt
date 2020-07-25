@@ -48,14 +48,14 @@ class Ngomik : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val filters = if (filters.isEmpty()) getFilterList() else filters
-        val genre = filters.findInstance<GenreList>()?.let { f -> f.toUriPart() }
-        val order = filters.findInstance<OrderByFilter>()?.let { f -> f.toUriPart() }
+        val genre = filters.findInstance<GenreList>()?.toUriPart()
+        val order = filters.findInstance<OrderByFilter>()?.toUriPart()
 
-        if (order!!.isEmpty())
-            return if (genre!!.isEmpty()) GET("$baseUrl/page/$page/?s=$query") else
-                GET("$baseUrl/genres/$genre/page/$page/?s=$query")
-        else
-            return GET("$baseUrl/all-komik/page/$page/?order=$order")
+        return when {
+            order!!.isNotEmpty() -> GET("$baseUrl/all-komik/page/$page/?order=$order")
+            genre!!.isNotEmpty() -> GET("$baseUrl/genres/$genre/page/$page/?s=$query")
+            else -> GET("$baseUrl/page/$page/?s=$query")
+        }
     }
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
