@@ -44,7 +44,11 @@ class WPMangaStreamFactory : SourceFactory {
     )
 }
 
-class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
+class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=update", headers)
+    override fun popularMangaNextPageSelector() = "a.r"
+}
 class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id") {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#readerarea img").map { it.attr("abs:src") }
@@ -52,8 +56,16 @@ class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "i
             .mapIndexed { i, image -> Page(i, "", image) }
     }
 }
-class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id")
-class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
+class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=update", headers)
+    override fun popularMangaNextPageSelector() = "a.r"
+}
+class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=update", headers)
+    override fun popularMangaNextPageSelector() = "a.r"
+}
 class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikcast.com", "id") {
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/daftar-komik/page/$page/?order=popular", headers)
