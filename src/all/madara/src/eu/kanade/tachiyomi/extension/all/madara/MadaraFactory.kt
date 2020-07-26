@@ -135,7 +135,6 @@ class MadaraFactory : SourceFactory {
         Manga347(),
         RenaScans(),
         WebtoonXYZ(),
-        ManhwaTime(),
         QueensManga(),
         DropeScan(),
         TheTopComic(),
@@ -1013,8 +1012,6 @@ class WebtoonXYZ : Madara("WebtoonXYZ", "https://www.webtoon.xyz", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/webtoons/${pagePath(page)}?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/webtoons/${pagePath(page)}?m_orderby=latest", headers)
 }
-
-class ManhwaTime : Madara("ManhwaTime", "https://manhwatime.xyz", "en")
 
 class MangaReadOrg : Madara("MangaRead.org", "https://www.mangaread.org", "en", SimpleDateFormat("dd.MM.yyy", Locale.US))
 

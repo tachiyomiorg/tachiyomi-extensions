@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Madara (multiple sources)'
-    pkgNameSuffix = "all.madara"
-    extClass = '.MadaraFactory'
-    extVersionCode = 124
+    extName = 'ManhwaTime'
+    pkgNameSuffix = 'en.manhwatime'
+    extClass = '.ManhwaTime'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
