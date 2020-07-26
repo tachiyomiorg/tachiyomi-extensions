@@ -199,11 +199,13 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             }
         }
         val chapterList = document.select("ul > li > a.status0")
-        val latestChapterHref = document.select("div.book-detail > ul.detail-list > li.status > span > a.blue").first().attr("href")
+        val latestChapterHref = document.select("div.book-detail > ul.detail-list > li.status > span > a.blue").first()?.attr("href")
+        val chNumRegex = Regex("""\d+""")
         chapterList.forEach {
             val currentChapter = SChapter.create()
             currentChapter.url = it.attr("href")
-            currentChapter.name = it.attr("title").trim()
+            currentChapter.name = it?.attr("title")?.trim() ?: it.select("span").first().ownText()
+            currentChapter.chapter_number = chNumRegex.find(currentChapter.name)?.value?.toFloatOrNull() ?: 0F
 
             // Manhuagui only provide upload date for latest chapter
             if (currentChapter.url == latestChapterHref) {
@@ -212,10 +214,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             chapters.add(currentChapter)
         }
 
-        return chapters
+        return chapters.sortedByDescending { it.chapter_number }
     }
 
-    private fun parseDate(element: Element): Long = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).parse(element.text()).time
+    private fun parseDate(element: Element): Long = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).parse(element.text())?.time ?: 0
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -250,13 +252,13 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             error("R18作品显示开关未开启或未生效") // "R18 setting didn't enabled or became effective"
 
         val html = document.html()
-        val re = Regex("""window\[".*?"\](\(.*\)\s*\{[\s\S]+\}\s*\(.*\))""")
+        val re = Regex("""window\[".*?"](\(.*\)\s*\{[\s\S]+}\s*\(.*\))""")
         val imgCode = re.find(html)?.groups?.get(1)?.value
         val imgDecode = Duktape.create().use {
             it.evaluate(jsDecodeFunc + imgCode) as String
         }
 
-        val re2 = Regex("""\{.*\}""")
+        val re2 = Regex("""\{.*}""")
         val imgJsonStr = re2.find(imgDecode)?.groups?.get(0)?.value
         val imageJson: Comic = gson.fromJson(imgJsonStr, Comic::class.java)
 
