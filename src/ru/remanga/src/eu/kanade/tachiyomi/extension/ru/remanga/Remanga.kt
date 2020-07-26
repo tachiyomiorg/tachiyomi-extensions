@@ -10,6 +10,7 @@ import PageWrapperDto
 import PaidPageDto
 import SeriesWrapperDto
 import UserDto
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
@@ -24,10 +25,12 @@ import android.util.Base64
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import eu.kanade.tachiyomi.lib.dataimage.DataImageInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -67,7 +70,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override val supportsLatest = true
 
-    var token: String = ""
+    private var token: String = ""
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi")
@@ -139,20 +142,16 @@ class Remanga : ConfigurableSource, HttpSource() {
             thumbnail_url = "$baseUrl/${img.high}"
         }
 
-    private fun parseDate(date: String?): Long =
-        if (date == null)
+    private val simpleDateFormat by lazy { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US) }
+
+    private fun parseDate(date: String?): Long {
+        date ?: return Date().time
+        return try {
+            simpleDateFormat.parse(date)!!.time
+        } catch (_: Exception) {
             Date().time
-        else {
-            try {
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date).time
-            } catch (ex: Exception) {
-                try {
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S", Locale.US).parse(date).time
-                } catch (ex: Exception) {
-                    Date().time
-                }
-            }
         }
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var url = HttpUrl.parse("$baseUrl/api/search/catalog/?page=$page")!!.newBuilder()
@@ -223,6 +222,22 @@ class Remanga : ConfigurableSource, HttpSource() {
         }
     }
 
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        var warnLogin = false
+        return client.newCall(mangaDetailsRequest(manga))
+            .asObservable().doOnNext { response ->
+                if (!response.isSuccessful) {
+                    response.close()
+                    if (response.code() == 401) warnLogin = true else throw Exception("HTTP error ${response.code()}")
+                }
+            }
+            .map { response ->
+                (if (warnLogin) manga.apply { description = "Авторизуйтесь для просмотра списка глав" } else mangaDetailsParse(response))
+                    .apply { initialized = true
+                }
+            }
+    }
+
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
         branches[series.content.en_name] = series.content.branches
@@ -230,10 +245,15 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     private fun mangaBranches(manga: SManga): List<BranchesDto> {
-        val response = client.newCall(GET("$baseUrl/${manga.url}")).execute()
-        val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
-        branches[series.content.en_name] = series.content.branches
-        return series.content.branches
+        val responseString = client.newCall(GET("$baseUrl/${manga.url}")).execute().body()?.string() ?: return emptyList()
+        // manga requiring login return "content" as a JsonArray instead of the JsonObject we expect
+        return if (gson.fromJson<JsonObject>(responseString)["content"].isJsonObject) {
+            val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(responseString)
+            branches[series.content.en_name] = series.content.branches
+            series.content.branches
+        } else {
+            emptyList()
+        }
     }
 
     private fun selector(b: BranchesDto): Int = b.count_chapters
@@ -261,6 +281,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         return GET("$baseUrl/api/titles/chapters/?branch_id=$branch", headers)
     }
 
+    @SuppressLint("DefaultLocale")
     private fun chapterName(book: BookDto): String {
         val chapterId: Any = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
         var chapterName = "${book.tome}. Глава $chapterId"
