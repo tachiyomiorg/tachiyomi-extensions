@@ -37,28 +37,26 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     override val name = "MangaPark"
     override val baseUrl = "https://mangapark.net"
 
-    private val directorySelector = ".ls1 .item"
-    private val directoryUrl = "/genre"
-    private val directoryNextPageSelector = ".paging.full > li:last-child > a"
+    private val nextPageSelector = ".paging:not(.order) > li:last-child > a"
 
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views_a")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/search?orderby=views_a&page=$page")
 
-    override fun popularMangaSelector() = directorySelector
+    override fun popularMangaSelector() = searchMangaSelector()
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = directoryNextPageSelector
+    override fun popularMangaNextPageSelector() = nextPageSelector
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest" + if (page > 1) "/$page" else "")
 
-    override fun latestUpdatesSelector() = directorySelector
+    override fun latestUpdatesSelector() = ".ls1 .item"
 
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+    override fun latestUpdatesNextPageSelector() = nextPageSelector
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
@@ -79,7 +77,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
+    override fun searchMangaNextPageSelector() = nextPageSelector
 
     private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
