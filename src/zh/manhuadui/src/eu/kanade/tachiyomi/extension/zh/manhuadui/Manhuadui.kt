@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadui
 
 import android.util.Base64
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -9,15 +8,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class Manhuadui : ParsedHttpSource() {
 
@@ -117,8 +116,11 @@ class Manhuadui : ParsedHttpSource() {
     }
 
     // ref: https://jueyue.iteye.com/blog/1830792
-    private fun decryptAES(value: String, key: String, iv: String): String? {
-        try {
+    private fun decryptAES(value: String): String? {
+        val key = "1231M8H8B8123456"
+        val iv = "A1B2C3D4E5F6G789"
+
+        return try {
             val secretKey = SecretKeySpec(key.toByteArray(), "AES")
             val ivParams = IvParameterSpec(iv.toByteArray())
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
@@ -126,41 +128,35 @@ class Manhuadui : ParsedHttpSource() {
 
             val code = Base64.decode(value, Base64.NO_WRAP)
 
-            return String(cipher.doFinal(code))
+            String(cipher.doFinal(code))
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
-
-        return null
     }
 
-    private fun decrypt(code: String): String? {
-        val key = "1231994MHB123456"
-        val iv = "ABCDEF1G34123412"
-
-        return decryptAES(code, key, iv)
-    }
+    private val chapterImagesRegex = Regex("""var chapterImages =\s*"(.*?)";""")
+    private val imgPathRegex = Regex("""var chapterPath =\s*"(.*?)";""")
+    private val imgCodeCleanupRegex = Regex("""[\[\]"\\]""")
 
     override fun pageListParse(document: Document): List<Page> {
         val html = document.html()
-        val re = Regex("""var chapterImages =\s*"(.*?)";""")
-        val imgCodeStr = re.find(html)?.groups?.get(1)?.value
-        val imgCode = decrypt(imgCodeStr!!)
-        val imgPath = Regex("""var chapterPath =\s*"(.*?)";""").find(html)?.groups?.get(1)?.value
-        val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode!! + """.join('|')""") as String
-        }
-        return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            // Log.i("Tachidebug", "img => ${imageServer[0]}/$imgPath$imgStr")
+        val imgCodeStr = chapterImagesRegex.find(html)?.groups?.get(1)?.value ?: throw Exception("imgCodeStr not found")
+        val imgCode = decryptAES(imgCodeStr)
+            ?.replace(imgCodeCleanupRegex, "")
+            ?.replace("%", "%25")
+            ?: throw Exception("Decryption failed")
+        val imgPath = imgPathRegex.find(document.html())?.groups?.get(1)?.value ?: throw Exception("imgPath not found")
+        return imgCode.split(",").mapIndexed { i, imgStr ->
             if (imgStr.startsWith("http://images.dmzj.com")) {
-                Page(i, "", "https://mhcdn.manhuazj.com/showImage.php?url=$imgStr")
+                Page(i, "", "https://img01.eshanyao.com/showImage.php?url=$imgStr")
             } else {
                 Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
             }
         }
     }
 
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),
