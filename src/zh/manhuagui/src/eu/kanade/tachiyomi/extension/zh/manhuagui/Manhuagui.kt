@@ -252,13 +252,15 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             error("R18作品显示开关未开启或未生效") // "R18 setting didn't enabled or became effective"
 
         val html = document.html()
-        val re = Regex("""window\[".*?"](\(.*\)\s*\{[\s\S]+}\s*\(.*\))""")
+        // These "\" can't be remove: \}
+        val re = Regex("""window\[".*?"\](\(.*\)\s*\{[\s\S]+\}\s*\(.*\))""")
         val imgCode = re.find(html)?.groups?.get(1)?.value
         val imgDecode = Duktape.create().use {
             it.evaluate(jsDecodeFunc + imgCode) as String
         }
 
-        val re2 = Regex("""\{.*}""")
+        // \}
+        val re2 = Regex("""\{.*\}""")
         val imgJsonStr = re2.find(imgDecode)?.groups?.get(0)?.value
         val imageJson: Comic = gson.fromJson(imgJsonStr, Comic::class.java)
 
