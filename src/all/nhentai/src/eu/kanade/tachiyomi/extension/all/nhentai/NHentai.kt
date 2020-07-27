@@ -57,6 +57,9 @@ open class NHentai(
         else -> false
     }
 
+    private val shortenTitleRegex = Regex("""(\[[^]]*]|[({][^)}]*[)}])""")
+    private fun String.shortenTitle() = this.replace(shortenTitleRegex, "").trim()
+
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val serverPref = androidx.preference.ListPreference(screen.context).apply {
             key = TITLE_PREF
@@ -110,7 +113,7 @@ open class NHentai(
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("a > div").text().replace("\"", "").let {
-            if (displayFullTitle) it.trim() else it.substringAfter("]").substringBefore("[").trim()
+            if (displayFullTitle) it.trim() else it.shortenTitle()
         }
         thumbnail_url = element.select(".cover img").first().let { img ->
             if (img.hasAttr("data-src")) img.attr("abs:data-src") else img.attr("abs:src")
@@ -151,12 +154,12 @@ open class NHentai(
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val filters = if (filters.isEmpty()) getFilterList() else filters
-        val advQuery = combineQuery(filters)
-        val favoriteFilter = filters.findInstance<FavoriteFilter>()
-        val uploadedFilter = filters.findInstance<UploadedFilter>()
+        val filterList = if (filters.isEmpty()) getFilterList() else filters
+        val advQuery = combineQuery(filterList)
+        val favoriteFilter = filterList.findInstance<FavoriteFilter>()
+        val isOkayToSort = filterList.findInstance<UploadedFilter>()?.state?.isBlank() ?: true
 
-        if (favoriteFilter != null && favoriteFilter.state) {
+        if (favoriteFilter?.state == true) {
             val url = HttpUrl.parse("$baseUrl/favorites")!!.newBuilder()
                 .addQueryParameter("q", "$query $advQuery")
                 .addQueryParameter("page", page.toString())
@@ -167,8 +170,8 @@ open class NHentai(
                 .addQueryParameter("q", "$query +$nhLang $advQuery")
                 .addQueryParameter("page", page.toString())
 
-            if (uploadedFilter?.state?.isBlank() == true) {
-                filters.findInstance<SortFilter>()?.let { f ->
+            if (isOkayToSort) {
+                filterList.findInstance<SortFilter>()?.let { f ->
                     url.addQueryParameter("sort", f.toUriPart())
                 }
             }
@@ -227,7 +230,7 @@ open class NHentai(
         val fullTitle = document.select("#info > h1").text().replace("\"", "").trim()
 
         return SManga.create().apply {
-            title = if (displayFullTitle) fullTitle else fullTitle.substringAfter("]").substringBefore("[").trim()
+            title = if (displayFullTitle) fullTitle else fullTitle.shortenTitle()
             thumbnail_url = document.select("#cover > a > img").attr("data-src")
             status = SManga.COMPLETED
             artist = getArtists(document)
