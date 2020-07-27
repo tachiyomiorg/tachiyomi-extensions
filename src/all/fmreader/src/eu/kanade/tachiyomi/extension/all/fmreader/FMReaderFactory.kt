@@ -33,7 +33,6 @@ class FMReaderFactory : SourceFactory {
         Manhwa18(),
         EighteenLHPlus(),
         MangaTR(),
-        Comicastle(),
         Manhwa18Net(),
         Manhwa18NetRaw(),
         SayTruyen(),
@@ -205,43 +204,6 @@ class MangaTR : FMReader("Manga-TR", "https://manga-tr.com", "tr") {
     }
 
     override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/${chapter.url.substringAfter("cek/")}", headers)
-}
-
-class Comicastle : FMReader("Comicastle", "https://www.comicastle.org", "en") {
-    override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/comic-dir?sorting=views&c-page=$page&sorting-type=DESC", headers)
-    override fun popularMangaNextPageSelector() = "li:contains(»):not(.disabled)"
-    override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/comic-dir?sorting=lastUpdate&c-page=$page&sorting-type=ASC", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        GET("$baseUrl/comic-dir?q=$query" + if (page > 1) "&c-page=$page" else "", headers)
-    override fun getFilterList() = FilterList()
-    override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
-        val infoElement = document.select("div.col-md-9").first()
-
-        manga.author = infoElement.select("tr + tr td a").first().text()
-        manga.artist = infoElement.select("tr + tr td + td a").text()
-        manga.genre = infoElement.select("tr + tr td + td + td").text()
-        manga.description = infoElement.select("p").text().trim()
-        manga.thumbnail_url = document.select("img.manga-cover").attr("abs:src")
-
-        return manga
-    }
-
-    override fun chapterListSelector() = "div.col-md-9 table:last-of-type tr"
-    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("div.text-center select option").forEachIndexed { i, imgPage ->
-            pages.add(Page(i, imgPage.attr("value")))
-        }
-        return pages
-    }
-
-    override fun imageUrlParse(document: Document): String = document.select("img.chapter-img").attr("abs:src").trim()
-    override fun getGenreList() = getComicsGenreList()
 }
 
 class Manhwa18Net : FMReader("Manhwa18.net", "https://manhwa18.net", "en") {
