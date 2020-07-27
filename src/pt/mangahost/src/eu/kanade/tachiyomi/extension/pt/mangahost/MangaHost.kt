@@ -155,7 +155,7 @@ class MangaHost : ParsedHttpSource() {
 
     private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
 
-    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_large.")
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, ".")
 
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
