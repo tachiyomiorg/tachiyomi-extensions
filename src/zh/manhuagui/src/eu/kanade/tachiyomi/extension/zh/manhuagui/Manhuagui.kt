@@ -224,7 +224,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         manga.description = document.select("div#intro-all").text().trim()
         manga.thumbnail_url = document.select("p.hcover > img").attr("abs:src")
         manga.artist = document.select("span:contains(漫画作者) > a , span:contains(漫畫作者) > a").text().trim()
-        manga.genre = document.select("span:contains(漫画剧情) > a , span:contains(漫畫劇情) > a").text().trim()
+        manga.genre = document.select("span:contains(漫画剧情) > a , span:contains(漫畫劇情) > a").text().trim().replace(" ", ", ")
         manga.status = when (document.select("div.book-detail > ul.detail-list > li.status > span > span").first().text()) {
             "连载中" -> SManga.ONGOING
             "已完结" -> SManga.COMPLETED
