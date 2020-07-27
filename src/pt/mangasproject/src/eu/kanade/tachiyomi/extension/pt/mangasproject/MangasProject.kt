@@ -197,7 +197,7 @@ abstract class MangasProject(
         if (!result["chapters"]!!.isJsonArray)
             return emptyList()
 
-        val mangaUrl = response.request().header("Referer")!!
+        val mangaUrl = response.request().header("Referer")!!.replace(baseUrl, "")
         val mangaId = mangaUrl.substringAfterLast("/")
         var page = 1
 
@@ -262,8 +262,8 @@ abstract class MangasProject(
             return result
 
         val document = result.asJsoup()
-        val token = document.select("script[src*=\"reader.\"]").first()
-            .attr("abs:src")
+        val token = document.select("script[src*=\"reader.\"]").firstOrNull()
+            ?.attr("abs:src")
             ?.let { HttpUrl.parse(it)!!.queryParameter("token") }
                 ?: throw Exception(TOKEN_NOT_FOUND)
 
