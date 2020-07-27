@@ -50,7 +50,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/xw")
+        .add("Referer", "$baseUrl/awx")
 
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
@@ -64,7 +64,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun popularMangaSelector(): String = "div.bloco-manga"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("a").last().text().withoutLanguage()
+        title = element.select("div[id^=bloco-tooltip] > b").first().text().withoutLanguage()
         thumbnail_url = element.select("a img").first()?.attr("src")
         setUrlWithoutDomain(element.select("a").last().attr("href"))
     }
@@ -104,6 +104,7 @@ class UnionMangas : ParsedHttpSource() {
         }
 
         val newHeaders = headersBuilder()
+            .add("Accept", "application/json, text/javascript, */*; q=0.01")
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 
@@ -132,7 +133,7 @@ class UnionMangas : ParsedHttpSource() {
     }
 
     private fun searchMangaFromObject(obj: JsonObject): SManga = SManga.create().apply {
-        title = obj["titulo"].string
+        title = obj["titulo"].string.withoutLanguage()
         thumbnail_url = obj["imagem"].string
         setUrlWithoutDomain("$baseUrl/perfil-manga/${obj["url"].string}")
     }
@@ -204,20 +205,20 @@ class UnionMangas : ParsedHttpSource() {
 
     private fun SimpleDateFormat.tryParseTime(date: String): Long {
         return try {
-            parse(date).time
+            parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
-    private fun String.withoutLanguage(): String = replace(LANGUAGE_REGEX, "").trim()
+    private fun String.withoutLanguage(): String = replace("(pt-br)", "", true).trim()
 
     private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
