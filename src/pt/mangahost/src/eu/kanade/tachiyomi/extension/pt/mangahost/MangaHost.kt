@@ -13,7 +13,6 @@ import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
@@ -37,12 +36,10 @@ class MangaHost : ParsedHttpSource() {
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
-    private fun genericMangaFromElement(element: Element): SManga =
+    private fun genericMangaFromElement(element: Element, attr: String = "src"): SManga =
         SManga.create().apply {
             title = element.attr("title").withoutLanguage()
-            thumbnail_url = element.select("img")
-                .attr("data-path")
-                .toLargeUrl()
+            thumbnail_url = element.select("img").attr(attr).toLargeUrl()
             setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
         }
 
@@ -85,7 +82,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
 
-    override fun searchMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga = genericMangaFromElement(element, "data-path")
 
     override fun searchMangaNextPageSelector(): String? = null
 
@@ -128,17 +125,8 @@ class MangaHost : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val imagesHtml = document.select("script:containsData(var images)").first()!!
-            .data()
-            .substringAfter("var images = [")
-            .substringBefore("];")
-            .replace(SCRIPT_REGEX, "")
-
-        return Jsoup.parse(imagesHtml)
-            .select("a img")
-            .mapIndexed { i, el ->
-                Page(i, document.location(), el.attr("src"))
-            }
+        return document.select("div#slider a img")
+            .mapIndexed { i, el -> Page(i, document.location(), el.attr("src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -178,7 +166,5 @@ class MangaHost : ParsedHttpSource() {
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
 
         private val DATE_FORMAT by lazy { SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH) }
-
-        private val SCRIPT_REGEX = "[\",]".toRegex()
     }
 }
