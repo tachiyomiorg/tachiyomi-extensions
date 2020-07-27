@@ -224,8 +224,6 @@ class UnionMangas : ParsedHttpSource() {
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH) }
 
-        private val LANGUAGE_REGEX = "\\(Pt-Br\\)".toRegex(RegexOption.IGNORE_CASE)
-
         const val PREFIX_ID_SEARCH = "id:"
     }
 }
