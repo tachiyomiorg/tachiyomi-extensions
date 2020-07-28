@@ -11,7 +11,6 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.util.Locale
 import okhttp3.Headers
-import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -24,13 +23,13 @@ open class MultPorn(
     override val name = "MultPorn"
     final override val baseUrl = "https://multporn.net"
 
-    override val supportsLatest = true
+    override val supportsLatest = false
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/new?page=${page - 1}", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/new?page=${page - 1}", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search?search_api_views_fulltext=$query&type=All&sort_by=search_api_relevance&page=${page - 1}")?.newBuilder()
-        return GET(url.toString(), headers)
+        val url = "$baseUrl/search?search_api_views_fulltext=$query&type=All&sort_by=search_api_relevance&page=${page - 1}"
+        return GET(url, headers)
     }
 
     override fun popularMangaSelector() = ".masonry-item"
@@ -41,10 +40,6 @@ open class MultPorn(
     override fun popularMangaNextPageSelector() = ".pager-next"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
-
-    override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
-    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -60,17 +55,11 @@ open class MultPorn(
         .add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:54.0) Gecko/20100101 Firefox/75.0")
         .add("Referer", baseUrl)
 
-    open fun getMangaUrl(element: Element): String = "$baseUrl/${element.select("a").attr("href")}"
+    open fun getMangaUrl(element: Element): String = element.select("a").attr("href")
     open fun getMangaTitle(element: Element) = element.select("a").first().text().trim()
     open fun getMangaThumbUrl(element: Element): String = element.select("img").attr("src")
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.url = "$baseUrl${element.select("a").attr("href")}"
-        manga.title = element.select("a").first().text().trim()
-        manga.thumbnail_url = getMangaThumbUrl(element)
-        return manga
-    }
+    override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
     private fun searchMangaByIdRequest(id: String, page: Int) = GET("$baseUrl/comics/$id?page=0%2C$page", headers)
     private fun searchMangaByCategoryRequest(category: String, page: Int) = GET("$baseUrl/category/$category?page=0%2C$page", headers)
@@ -105,7 +94,6 @@ open class MultPorn(
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.url = getMangaUrl(element)
-        chapter.chapter_number = "0".toFloat()
         chapter.name = getMangaTitle(element)
         return chapter
     }
@@ -134,7 +122,7 @@ open class MultPorn(
     private fun chapterParse(document: Document, index: Int): SChapter {
         val chapter = SChapter.create()
         chapter.name = document.select("meta[property='og:title']").attr("content").trim()
-        chapter.url = document.select("meta[property='og:url']").attr("content").trim()
+        chapter.url = document.select("meta[property='og:url']").attr("content").trim().removePrefix(baseUrl)
         chapter.chapter_number = index.toFloat()
         return chapter
     }
@@ -143,7 +131,6 @@ open class MultPorn(
         val manga = SManga.create()
         manga.author = document.select(".field-name-field-author").select("a").text().trim()
         manga.artist = manga.author
-        manga.description = ""
         manga.thumbnail_url = document.select("meta[property='og:image']").attr("content").toString()
         val sections = document.select(".field-name-field-com-group>ul>li>a").map { it.text() }
         val genreList = document.select(".field-name-field-category>ul>li>a").map { "Genre: ${it.text()}" }.toMutableList()
@@ -160,8 +147,7 @@ open class MultPorn(
         return manga
     }
 
-    override fun pageListParse(response: Response): List<Page> {
-        val document = response.asJsoup()
+    override fun pageListParse(document: Document): List<Page> {
         val imgContainer = if (document.select(".field-name-field-com-pages").first() != null) {
             document.select(".field-name-field-com-pages")
         } else {
@@ -172,7 +158,5 @@ open class MultPorn(
         }
     }
 
-    override fun pageListParse(document: Document) = throw Exception("Not used")
-    override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 }
