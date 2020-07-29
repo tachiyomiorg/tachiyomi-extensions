@@ -57,7 +57,7 @@ class ReadManhwa : HttpSource() {
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week", headers)
+        return GET("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week&nsfw=true", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -65,7 +65,7 @@ class ReadManhwa : HttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day", headers)
+        return GET("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day&nsfw=true", headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -78,6 +78,7 @@ class ReadManhwa : HttpSource() {
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
+            .addQueryParameter("nsfw", "true")
 
             filters.forEach { filter ->
                 when (filter) {
@@ -99,10 +100,10 @@ class ReadManhwa : HttpSource() {
             .map { mangaDetailsParse(it).apply { initialized = true } }
 
     // Return the real URL for "Open in browser"
-    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}", headers)
+    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}?nsfw=true", headers)
 
     private fun apiMangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}", headers)
+        return GET("$baseUrl/api/comics/${manga.url}?nsfw=true", headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -136,7 +137,7 @@ class ReadManhwa : HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}/chapters", headers)
+        return GET("$baseUrl/api/comics/${manga.url}/chapters?nsfw=true", headers)
     }
 
     private fun chapterListParse(response: Response, titleSlug: String): List<SChapter> {
@@ -156,7 +157,7 @@ class ReadManhwa : HttpSource() {
                             else -> 0L
                         }
                     } else {
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString).time
+                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString)?.time ?: 0
                     }
                 }
             }
@@ -168,7 +169,7 @@ class ReadManhwa : HttpSource() {
     // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET("$baseUrl/api/comics/${chapter.url}/images", headers)
+        return GET("$baseUrl/api/comics/${chapter.url}/images?nsfw=true", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
