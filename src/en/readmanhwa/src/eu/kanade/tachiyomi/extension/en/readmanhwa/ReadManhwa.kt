@@ -20,6 +20,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +36,12 @@ class ReadManhwa : HttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    override fun headersBuilder(): Headers.Builder = headersBuilder(true)
+
+    private fun headersBuilder(enableNsfw: Boolean) = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        .add("X-NSFW", enableNsfw.toString())
 
     override val client: OkHttpClient = network.cloudflareClient
 
@@ -57,7 +64,7 @@ class ReadManhwa : HttpSource() {
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week&nsfw=true", headers)
+        return GET("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -65,7 +72,7 @@ class ReadManhwa : HttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day&nsfw=true", headers)
+        return GET("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day", headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -73,12 +80,13 @@ class ReadManhwa : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val enableNsfw = (filters.find { it is NSFWFilter } as? Filter.CheckBox)?.state ?: true
+
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
             .addQueryParameter("per_page", "18")
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
-            .addQueryParameter("nsfw", "true")
 
             filters.forEach { filter ->
                 when (filter) {
@@ -87,7 +95,7 @@ class ReadManhwa : HttpSource() {
                     is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
                 }
             }
-        return GET(url.toString(), headers)
+        return GET(url.toString(), headersBuilder(enableNsfw).build())
     }
 
     override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -100,10 +108,10 @@ class ReadManhwa : HttpSource() {
             .map { mangaDetailsParse(it).apply { initialized = true } }
 
     // Return the real URL for "Open in browser"
-    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}?nsfw=true", headers)
+    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}", headers)
 
     private fun apiMangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}?nsfw=true", headers)
+        return GET("$baseUrl/api/comics/${manga.url}", headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -137,7 +145,7 @@ class ReadManhwa : HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}/chapters?nsfw=true", headers)
+        return GET("$baseUrl/api/comics/${manga.url}/chapters", headers)
     }
 
     private fun chapterListParse(response: Response, titleSlug: String): List<SChapter> {
@@ -169,7 +177,7 @@ class ReadManhwa : HttpSource() {
     // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET("$baseUrl/api/comics/${chapter.url}/images?nsfw=true", headers)
+        return GET("$baseUrl/api/comics/${chapter.url}/images", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -183,10 +191,13 @@ class ReadManhwa : HttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
+        NSFWFilter(),
         GenreFilter(getGenreList()),
         DurationFilter(getDurationList()),
         SortFilter(getSortList())
     )
+
+    private class NSFWFilter : Filter.CheckBox("Show NSFW", true)
 
     private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
 
