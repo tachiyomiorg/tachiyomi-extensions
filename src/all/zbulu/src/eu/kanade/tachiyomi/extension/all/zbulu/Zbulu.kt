@@ -151,7 +151,7 @@ abstract class Zbulu(
                 setUrlWithoutDomain(it.attr("href").addTrailingSlash())
                 name = it.text()
             }
-            date_upload = element.select("div.chapter-date")?.text()?.let { parseChapterDate(it) } ?: 0
+            date_upload = element.select("div.chapter-date")?.text().toDate()
         }
     }
 
@@ -161,8 +161,12 @@ abstract class Zbulu(
         }
     }
 
-    private fun parseChapterDate(string: String): Long {
-            return dateFormat.parse(string).time
+    private fun String?.toDate(): Long {
+        return if (this.isNullOrEmpty()) {
+            0
+        } else {
+            dateFormat.parse(this)?.time ?: 0
+        }
     }
 
     // Pages
