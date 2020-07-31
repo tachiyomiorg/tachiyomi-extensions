@@ -8,15 +8,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class Manhuadui : ParsedHttpSource() {
 
@@ -29,7 +29,7 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "ul[id^=chapter-list] > li"
+    override fun chapterListSelector() = "ul[id^=chapter-list] > li a"
 
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
@@ -54,10 +54,6 @@ class Manhuadui : ParsedHttpSource() {
             GET(url.toString(), headers)
         }
     }
-
-    override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -96,11 +92,9 @@ class Manhuadui : ParsedHttpSource() {
     }
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a")
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.attr("title").trim()
+        chapter.setUrlWithoutDomain(element.attr("href"))
+        chapter.name = element.select("span:first-child").text().trim()
         return chapter
     }
 
@@ -111,14 +105,15 @@ class Manhuadui : ParsedHttpSource() {
         return manga
     }
 
+    override fun chapterListRequest(manga: SManga) = GET(baseUrl.replace("www", "m") + manga.url)
     override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).asReversed()
     }
 
     // ref: https://jueyue.iteye.com/blog/1830792
     private fun decryptAES(value: String): String? {
-        val key = "1231M8H8B8123456"
-        val iv = "A1B2C3D4E5F6G789"
+        val key = "1739ZAQ12345bbG1"
+        val iv = "ABCDEF1G341234bb"
 
         return try {
             val secretKey = SecretKeySpec(key.toByteArray(), "AES")
