@@ -177,12 +177,6 @@ abstract class MangasProject(
         return Observable.error(Exception(MANGA_REMOVED))
     }
 
-    override fun chapterListRequest(manga: SManga): Request {
-        val id = manga.url.substringAfterLast("/")
-
-        return chapterListRequestPaginated(manga.url, id, 1)
-    }
-
     private fun chapterListRequestPaginated(mangaUrl: String, id: String, page: Int): Request {
         val newHeaders = sourceHeadersBuilder()
             .set("Referer", baseUrl + mangaUrl)
@@ -192,14 +186,25 @@ abstract class MangasProject(
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var result = response.asJsonObject()
+        val document = response.asJsoup()
+        val licensedMessage = document.select("div.series-blocked-img").firstOrNull()
+
+        if (licensedMessage != null) {
+            // If the manga is licensed and has been removed from the source,
+            // the extension will not fetch the chapters, even if they are returned
+            // by the API. This is just to mimic the website behavior.
+            throw Exception(MANGA_REMOVED)
+        }
+
+        val mangaUrl = response.request().url().toString().replace(baseUrl, "")
+        val mangaId = mangaUrl.substringAfterLast("/")
+        var page = 1
+
+        var chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, page)
+        var result = client.newCall(chapterListRequest).execute().asJsonObject()
 
         if (!result["chapters"]!!.isJsonArray)
             return emptyList()
-
-        val mangaUrl = response.request().header("Referer")!!.replace(baseUrl, "")
-        val mangaId = mangaUrl.substringAfterLast("/")
-        var page = 1
 
         val chapters = mutableListOf<SChapter>()
 
@@ -208,8 +213,8 @@ abstract class MangasProject(
                 .flatMap { chapterListItemParse(it.obj) }
                 .toMutableList()
 
-            val newRequest = chapterListRequestPaginated(mangaUrl, mangaId, ++page)
-            result = client.newCall(newRequest).execute().asJsonObject()
+            chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, ++page)
+            result = client.newCall(chapterListRequest).execute().asJsonObject()
         }
 
         return chapters
@@ -222,8 +227,11 @@ abstract class MangasProject(
             val release = it.value.obj
 
             SChapter.create().apply {
-                name = "Cap. ${obj["number"].string}" + (if (chapterName == "") "" else " - $chapterName")
-                date_upload = DATE_FORMATTER.tryParseDate(obj["date_created"].string.substringBefore("T"))
+                name = "Cap. ${obj["number"].string}" +
+                    (if (chapterName == "") "" else " - $chapterName")
+                date_upload = DATE_FORMATTER.tryParseDate(
+                    obj["date_created"].string.substringBefore("T")
+                )
                 scanlator = release["scanlators"]!!.array
                     .map { scanObj -> scanObj.obj["name"].string }
                     .sorted()
@@ -309,7 +317,7 @@ abstract class MangasProject(
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
 
-        private const val MANGA_REMOVED = "Mangá licenciado e removido pela editora."
+        private const val MANGA_REMOVED = "Mangá licenciado e removido pela fonte."
         private const val TOKEN_NOT_FOUND = "Não foi possível obter o token de leitura."
     }
 }
