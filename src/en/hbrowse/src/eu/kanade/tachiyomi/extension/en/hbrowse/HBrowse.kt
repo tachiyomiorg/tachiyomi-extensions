@@ -26,6 +26,10 @@ class HBrowse : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    // Clients
+
+    private lateinit var phpSessId: String
+
     private val searchClient = OkHttpClient().newBuilder()
         .followRedirects(false)
         .cookieJar(CookieJar.NO_COOKIES)
@@ -35,22 +39,26 @@ class HBrowse : ParsedHttpSource() {
         .followRedirects(false)
         .addInterceptor { chain ->
             val originalRequest = chain.request()
-            if (originalRequest.url().toString() == searchUrl) {
-                val sessionCookie = searchClient.newCall(originalRequest).execute()
-                    .headers("Set-Cookie")
-                    .firstOrNull { it.contains("PHPSESSID") }
-                    ?.toString()
-                    ?.substringBefore(";")
-                    ?: throw IOException("PHPSESSID missing")
+            when {
+                originalRequest.url().toString() == searchUrl -> {
+                    phpSessId = searchClient.newCall(originalRequest).execute()
+                        .headers("Set-Cookie")
+                        .firstOrNull { it.contains("PHPSESSID") }
+                        ?.toString()
+                        ?.substringBefore(";")
+                        ?: throw IOException("PHPSESSID missing")
 
-                val newHeaders = headersBuilder()
-                    .add("Cookie", sessionCookie)
+                    val newHeaders = headersBuilder()
+                        .add("Cookie", phpSessId)
 
-                val contentLength = originalRequest.body()!!.contentLength()
+                    val contentLength = originalRequest.body()!!.contentLength()
 
-                searchClient.newCall(GET("$baseUrl/${if (contentLength > 8000) "result" else "search"}/1", newHeaders.build())).execute()
-            } else {
-                chain.proceed(originalRequest)
+                    searchClient.newCall(GET("$baseUrl/${if (contentLength > 8000) "result" else "search"}/1", newHeaders.build())).execute()
+                }
+                originalRequest.url().toString().contains(nextSearchPageUrlRegex) -> {
+                    searchClient.newCall(originalRequest).execute()
+                }
+                else -> chain.proceed(originalRequest)
             }
         }
         .build()
@@ -67,7 +75,7 @@ class HBrowse : ParsedHttpSource() {
         return SManga.create().apply {
             element.select("div.thumbDiv a").let {
                 setUrlWithoutDomain(it.attr("href"))
-                title = it.attr("title").substringAfter("\'").substringBefore("\'")
+                title = it.attr("title").substringAfter("\'").substringBeforeLast("\'")
             }
             thumbnail_url = element.select("img.thumbImg").attr("abs:src")
         }
@@ -90,23 +98,29 @@ class HBrowse : ParsedHttpSource() {
     // Search
 
     private val searchUrl = "$baseUrl/content/process.php"
+    private val nextSearchPageUrlRegex = Regex("""(/search/|/result/)""")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val filterList = if (filters.isEmpty()) getFilterList() else filters
 
-        val rBody = FormBody.Builder().apply {
-            if (query.isNotBlank()) {
-                add("type", "search")
-                add("needle", query)
-            } else {
-                add("type", "advance")
-                filterList.filterIsInstance<AdvancedFilter>()
-                    .flatMap { it.vals }
-                    .forEach { filter -> add(filter.formName, filter.formValue()) }
+        return if (page == 1) {
+            val rBody = FormBody.Builder().apply {
+                if (query.isNotBlank()) {
+                    add("type", "search")
+                    add("needle", query)
+                } else {
+                    add("type", "advance")
+                    filterList.filterIsInstance<AdvancedFilter>()
+                        .flatMap { it.vals }
+                        .forEach { filter -> add(filter.formName, filter.formValue()) }
+                }
             }
+            POST(searchUrl, headers, rBody.build())
+        } else {
+            val url = "$baseUrl/${if (query.isNotBlank()) "search" else "result"}/$page"
+            val nextPageHeaders = headersBuilder().add("Cookie", phpSessId).build()
+            GET(url, nextPageHeaders)
         }
-
-        return POST(searchUrl, headers, rBody.build())
     }
 
     override fun searchMangaSelector() = "tbody > tr td.browseTitle a"
@@ -167,7 +181,10 @@ class HBrowse : ParsedHttpSource() {
     // Filters
 
     override fun getFilterList(): FilterList {
-        return FilterList(advFilterMap.map { AdvancedFilter(getAdvTriStateList(it.key, it.value.split(", "))) })
+        return FilterList(
+            listOf(Filter.Header("Can't combine with text search!"), Filter.Separator()) +
+            advFilterMap.map { AdvancedFilter(getAdvTriStateList(it.key, it.value.split(", "))) }
+        )
     }
 
     private class AdvTriStateFilter(val groupName: String, name: String) : Filter.TriState(name) {
