@@ -6,7 +6,7 @@ ext {
     extName = 'MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 10
+    extVersionCode = 11
     libVersion = '1.2'
 }
 
