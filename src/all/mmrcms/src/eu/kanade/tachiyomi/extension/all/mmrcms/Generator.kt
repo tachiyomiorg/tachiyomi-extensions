@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
 import com.google.gson.Gson
+import java.io.File
 import java.io.PrintWriter
 import java.security.cert.CertificateException
 import java.time.ZonedDateTime
@@ -26,8 +27,11 @@ import org.jsoup.nodes.Document
 
 class Generator {
 
+    private var preRunTotal: String
+
     init {
         System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2,TLSv1.3")
+        preRunTotal = Regex("""MMRSOURCE_(\d+)""").findAll(File(relativePath).readText(Charsets.UTF_8)).last().groupValues[1]
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -101,7 +105,8 @@ class Generator {
                 }
             }
         }
-        println("Number of sources successfully generated: ${number - 1}")
+        println("Pre-run sources: $preRunTotal")
+        println("Post-run sources: ${number - 1}")
         val writer = PrintWriter(relativePath)
         writer.write(buffer.toString())
         writer.close()
@@ -258,6 +263,8 @@ class Generator {
             Triple("pt-BR", "Remangas", "https://remangas.top"),
             Triple("pt-BR", "AnimaRegia", "https://animaregia.net"),
             Triple("tr", "NoxSubs", "https://noxsubs.com"),
+            Triple("id", "MangaYu", "https://mangayu.com"),
+            Triple("tr", "MangaVadisi", "http://manga-v2.mangavadisi.org"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             Triple("other", "HentaiShark", "https://www.hentaishark.com"))
             // Changed CMS
