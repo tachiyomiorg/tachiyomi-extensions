@@ -45,6 +45,14 @@ class Kumanga : HttpSource() {
         .add("Referer", baseUrl)
         .build()
 
+    private val kumangaToken = getKumangaToken()
+
+    private fun getKumangaToken(): String {
+        val document = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
+
+        return document.select("#kmtkn").attr("value").orEmpty()
+    }
+
     private fun getMangaCover(mangaId: String) = "https://static.kumanga.com/manga_covers/$mangaId.jpg?w=201"
 
     private fun getMangaUrl(mangaId: String, mangaSlug: String, page: Int) = "/manga/$mangaId/p/$page/$mangaSlug#cl"
@@ -68,7 +76,8 @@ class Kumanga : HttpSource() {
     private fun parseGenresFromJson(json: JsonElement) = json["name"].string
 
     override fun popularMangaRequest(page: Int): Request {
-        return POST("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=&retrieveCategories=true&retrieveAuthors=false&contentType=manga", headers)
+        if (kumangaToken.isEmpty()) throw Exception("No fue posible obtener la lista de mangas")
+        return POST("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=&retrieveCategories=true&retrieveAuthors=false&contentType=manga&token=$kumangaToken", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -123,10 +132,11 @@ class Kumanga : HttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> = mutableListOf<SChapter>().apply {
         var document = response.asJsoup()
-        val params = document.select("body").toString().substringAfter("php_pagination(").substringBefore(")")
-        val numberChapters = params.split(",")[4].toIntOrNull()
-        val mangaId = params.split(",")[0]
-        val mangaSlug = params.split(",")[1].replace("'", "")
+        val params = document.select("script:containsData(totCntnts)").toString()
+
+        val numberChapters = params.substringAfter("totCntnts=").substringBefore(";").toIntOrNull()
+        val mangaId = params.substringAfter("mid=").substringBefore(";")
+        val mangaSlug = params.substringAfter("slg='").substringBefore("';")
 
         if (numberChapters != null) {
             // Calculating total of pages, Kumanga shows 10 chapters per page, total_pages = #chapters / 10
@@ -162,7 +172,8 @@ class Kumanga : HttpSource() {
     override fun imageUrlParse(response: Response) = throw Exception("Not Used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=$query&retrieveCategories=true&retrieveAuthors=false&contentType=manga")!!.newBuilder()
+        if (kumangaToken.isEmpty()) throw Exception("No fue posible obtener la lista de mangas")
+        val url = HttpUrl.parse("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=$query&retrieveCategories=true&retrieveAuthors=false&contentType=manga&token=$kumangaToken")!!.newBuilder()
 
         filters.forEach { filter ->
             when (filter) {
