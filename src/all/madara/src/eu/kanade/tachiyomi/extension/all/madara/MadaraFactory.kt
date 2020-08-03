@@ -44,7 +44,6 @@ class MadaraFactory : SourceFactory {
         FirstKissManga(),
         GetManhwa(),
         GoldenManga(),
-        HappyTeaScans(),
         Hiperdex(),
         HunterFansub(),
         IchirinNoHanaYuri(),
@@ -97,17 +96,14 @@ class MadaraFactory : SourceFactory {
         PornComix(),
         RaiderScans(),
         ReadManhua(),
-        TeabeerComics(),
         ThreeSixtyFiveManga(),
         Toonily(),
         TopManhua(),
         TsubakiNoScan(),
-        UnknownScans(),
         Wakamics(),
         WuxiaWorld(),
         YaoiToshokan(),
         YokaiJump(),
-        YoManga(),
         ZinManga(),
         ZManga(),
         MangaWT(),
@@ -116,7 +112,6 @@ class MadaraFactory : SourceFactory {
         MixedManga(),
         ManhuasWorld(),
         ArazNovel(),
-        MangaByte(),
         ManhwaRaw(),
         GuncelManga(),
         WeScans(),
@@ -154,7 +149,9 @@ class MadaraFactory : SourceFactory {
         AkuManga(),
         AsgardTeam(),
         Skymanga(),
-        ToonilyNet()
+        ToonilyNet(),
+        BestManga(),
+        TwilightScans()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -167,7 +164,21 @@ class AhStudios : Madara("AhStudios", "https://ahstudios.net", "es")
 
 class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
-class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en")
+class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
+    // site is a bit broken
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/index_m_orderby=views.html", headers)
+    override fun popularMangaNextPageSelector(): String? = null
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/index_m_orderby=latest.html", headers)
+    override fun latestUpdatesNextPageSelector(): String? = null
+    private val imageRegex = Regex(""""(http[^"]*)"""")
+    override fun pageListParse(document: Document): List<Page> {
+        val script = document.select("#chapter_preloaded_images").firstOrNull()?.data()
+            ?: throw Exception("chapter_preloaded_images not found")
+        return imageRegex.findAll(script).asIterable().mapIndexed { i, mr ->
+            Page(i, "", mr.groupValues[1].replace("\\", ""))
+        }
+    }
+}
 
 class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
 
@@ -181,8 +192,6 @@ class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
     dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
 
 class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com", "en")
-
-class HappyTeaScans : Madara("Happy Tea Scans", "https://happyteascans.com", "en")
 
 class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru", "ru",
     dateFormat = SimpleDateFormat("yy.MM.dd", Locale.US))
@@ -262,8 +271,6 @@ class WuxiaWorld : Madara("WuxiaWorld", "https://wuxiaworld.site", "en") {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = super.searchMangaRequest(page, "$query comics", filters)
     override fun popularMangaNextPageSelector() = "div.nav-previous.float-left"
 }
-
-class YoManga : Madara("Yo Manga", "https://yomanga.info", "en")
 
 class ManyToon : Madara("ManyToon", "https://manytoon.com", "en")
 
@@ -676,8 +683,6 @@ class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en", SimpleDateF
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
-class TeabeerComics : Madara("Teabeer Comics", "https://teabeercomics.com", "en")
-
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
 
 class YaoiToshokan : Madara("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR", SimpleDateFormat("dd MMM yyyy", Locale("pt", "BR"))) {
@@ -850,8 +855,6 @@ class PMScans : Madara("PMScans", "http://www.pmscans.com", "en")
 
 class MangaRead : Madara("Manga Read", "https://mangaread.co", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
-class UnknownScans : Madara("Unknown Scans", "https://unknoscans.com", "en")
-
 class Manga68 : Madara("Manga68", "https://manga68.com", "en") {
     override val pageListParseSelector = "div.page-break, div.text-left p"
 }
@@ -948,8 +951,6 @@ class ArazNovel : Madara("ArazNovel", "https://www.araznovel.com", "tr", SimpleD
         }
     }
 }
-
-class MangaByte : Madara("Manga Byte", "https://mangabyte.com", "en")
 
 class ManhwaRaw : Madara("Manhwa Raw", "https://manhwaraw.com", "ko")
 
@@ -1197,3 +1198,7 @@ class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
 class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
 class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
+
+class BestManga : Madara("BestManga", "https://bestmanga.club", "ru", SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()))
+
+class TwilightScans : Madara("Twilight Scans", "https://twilightscans.com", "en")
