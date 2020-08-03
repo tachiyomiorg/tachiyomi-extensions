@@ -16,6 +16,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -31,6 +32,17 @@ class Kumanga : HttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
         .newBuilder()
         .followRedirects(true)
+        .addInterceptor { chain ->
+            val originalRequest = chain.request()
+            if (originalRequest.url().toString().endsWith("token=")) {
+                getKumangaToken()
+                val url = originalRequest.url().toString() + kumangaToken
+                val newRequest = originalRequest.newBuilder().url(url).build()
+                chain.proceed(newRequest)
+            } else {
+                chain.proceed(originalRequest)
+            }
+        }
         .build()
 
     override val name = "Kumanga"
@@ -45,12 +57,11 @@ class Kumanga : HttpSource() {
         .add("Referer", baseUrl)
         .build()
 
-    private val kumangaToken = getKumangaToken()
+    private var kumangaToken = ""
 
-    private fun getKumangaToken(): String {
-        val document = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
-
-        return document.select("#kmtkn").attr("value").orEmpty()
+    private fun getKumangaToken() {
+        kumangaToken = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
+            .select("div.input-group [value]").firstOrNull()?.attr("value") ?: throw IOException("No fue posible obtener la lista de mangas")
     }
 
     private fun getMangaCover(mangaId: String) = "https://static.kumanga.com/manga_covers/$mangaId.jpg?w=201"
@@ -76,7 +87,6 @@ class Kumanga : HttpSource() {
     private fun parseGenresFromJson(json: JsonElement) = json["name"].string
 
     override fun popularMangaRequest(page: Int): Request {
-        if (kumangaToken.isEmpty()) throw Exception("No fue posible obtener la lista de mangas")
         return POST("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=&retrieveCategories=true&retrieveAuthors=false&contentType=manga&token=$kumangaToken", headers)
     }
 
@@ -172,7 +182,6 @@ class Kumanga : HttpSource() {
     override fun imageUrlParse(response: Response) = throw Exception("Not Used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (kumangaToken.isEmpty()) throw Exception("No fue posible obtener la lista de mangas")
         val url = HttpUrl.parse("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=$query&retrieveCategories=true&retrieveAuthors=false&contentType=manga&token=$kumangaToken")!!.newBuilder()
 
         filters.forEach { filter ->
