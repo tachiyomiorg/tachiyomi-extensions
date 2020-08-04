@@ -51,6 +51,8 @@ class MangaMutiny : HttpSource() {
     private val apiMangaUrlPath = "v1/public/manga"
     private val apiChapterUrlPath = "v1/public/chapter"
 
+    private val fetchAmount = 21
+
     // Popular manga
     override fun popularMangaRequest(page: Int): Request = mangaRequest(page)
 
@@ -103,7 +105,7 @@ class MangaMutiny : HttpSource() {
     }
 
     private fun parseDate(dateAsString: String): Long {
-        val format = SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
+        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
         format.timeZone = TimeZone.getTimeZone("UTC")
 
         return format.parse(dateAsString)?.time ?: 0
@@ -147,7 +149,7 @@ class MangaMutiny : HttpSource() {
                 artist = rootNode.get("artists").asString
                 author = rootNode.get("authors").asString
 
-                genre = rootNode.get("genres").asJsonArray
+                genre = rootNode.get("tags").asJsonArray
                     .joinToString { singleGenre -> singleGenre.asString }
             }
         }
@@ -220,7 +222,7 @@ class MangaMutiny : HttpSource() {
             responseBody.close()
         }
 
-        return MangasPage(mangasPage, mangasPage.size == 20)
+        return MangasPage(mangasPage, mangasPage.size == fetchAmount)
     }
 
     private fun mangaRequest(page: Int, filters: FilterList? = null, query: String? = null): Request {
@@ -229,19 +231,26 @@ class MangaMutiny : HttpSource() {
         if (query?.isNotBlank() == true) {
             uri.appendQueryParameter("text", query)
         }
+
         if (filters != null) {
+            val uriParameterMap = mutableMapOf<String, String>()
+
             for (singleFilter in filters) {
                 if (singleFilter is UriFilter) {
-                    singleFilter.addToUri(uri)
+                    singleFilter.potentiallyAddToUriParameterMap(uriParameterMap)
                 }
+            }
+
+            for (uriParameter in uriParameterMap) {
+                uri.appendQueryParameter(uriParameter.key, uriParameter.value)
             }
         } else {
             uri.appendQueryParameter("sort", "-rating -ratingCount")
         }
-        uri.appendQueryParameter("limit", "20")
+        uri.appendQueryParameter("limit", fetchAmount.toString())
 
         if (page != 1) {
-            uri.appendQueryParameter("skip", (page * 20).toString())
+            uri.appendQueryParameter("skip", (page * fetchAmount).toString())
         }
         return GET(uri.build().toString(), headers)
     }
@@ -251,8 +260,11 @@ class MangaMutiny : HttpSource() {
         return FilterList(
             StatusFilter(),
             CategoryFilter(),
-            GenreGroup(),
-            SortFilter()
+            GenresFilter(),
+            FormatsFilter(),
+            SortFilter(),
+            AuthorFilter()
+            // ScanlatorFilter()
         )
     }
 
@@ -261,7 +273,18 @@ class MangaMutiny : HttpSource() {
     }
 
     private interface UriFilter {
-        fun addToUri(uri: Uri.Builder)
+        fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>)
+        fun appendValueToKeyInUriParameterMap(parameterMap: MutableMap<String, String>, parameterName: String, additionalValue: String) {
+            if (additionalValue.isNotEmpty()) {
+                val newParameterValueBuilder = StringBuilder()
+                if (parameterMap[parameterName] != null) {
+                    newParameterValueBuilder.append(parameterMap[parameterName] + " ")
+                }
+                newParameterValueBuilder.append(additionalValue)
+
+                parameterMap[parameterName] = newParameterValueBuilder.toString()
+            }
+        }
     }
     private open class UriSelectFilter(
         displayName: String,
@@ -271,9 +294,12 @@ class MangaMutiny : HttpSource() {
         defaultValue: Int = 0
     ) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
-        override fun addToUri(uri: Uri.Builder) {
-            if (state != 0 || !firstIsUnspecified)
-                uri.appendQueryParameter(uriParam, vals[state].first)
+
+        // If not otherwise specified, any new parameter will overwrite any existing parameter in the parameter map
+        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
+            if (state != 0 || !firstIsUnspecified) {
+                parameterMap[uriParam] = vals[state].first
+            }
         }
     }
 
@@ -283,104 +309,109 @@ class MangaMutiny : HttpSource() {
         Pair("ongoing", "Ongoing")
     ))
 
-    private class CategoryFilter : UriSelectFilter("Category", "category", arrayOf(
+    private class CategoryFilter : UriSelectFilter("Category", "tags", arrayOf(
         Pair("", "All"),
         Pair("josei", "Josei"),
         Pair("seinen", "Seinen"),
         Pair("shoujo", "Shoujo"),
         Pair("shounen", "Shounen")
-    ))
+    )) {
+        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) =
+            appendValueToKeyInUriParameterMap(parameterMap, uriParam, vals[state].first)
+    }
 
+    // A single filter: either a genre or a format filter
     private class GenreFilter(val uriParam: String, displayName: String) : Filter.CheckBox(displayName)
 
-    private class GenreGroup : Filter.Group<GenreFilter>("Genres", listOf(
-        GenreFilter("4-koma", "4-koma"),
-        GenreFilter("action", "Action"),
-        GenreFilter("adaptation", "Adaptation"),
-        GenreFilter("adult", "Adult"),
-        GenreFilter("adventure", "Adventure"),
-        GenreFilter("aliens", "Aliens"),
-        GenreFilter("animals", "Animals"),
-        GenreFilter("anthology", "Anthology"),
-        GenreFilter("award_winning", "Award winning"),
-        GenreFilter("comedy", "Comedy"),
-        GenreFilter("cooking", "Cooking"),
-        GenreFilter("crossdressing", "Crossdressing"),
-        GenreFilter("delinquents", "Delinquents"),
-        GenreFilter("demons", "Demons"),
-        GenreFilter("doujinshi", "Doujinshi"),
-        GenreFilter("drama", "Drama"),
-        GenreFilter("ecchi", "Ecchi"),
-        GenreFilter("fan_colored", "Fan colored"),
-        GenreFilter("fantasy", "Fantasy"),
-        GenreFilter("full_color", "Full color"),
-        GenreFilter("gender_bender", "Gender bender"),
-        GenreFilter("genderswap", "Genderswap"),
-        GenreFilter("ghosts", "Ghosts"),
-        GenreFilter("gore", "Gore"),
-        GenreFilter("gyaru", "Gyaru"),
-        GenreFilter("harem", "Harem"),
-        GenreFilter("historical", "Historical"),
-        GenreFilter("horror", "Horror"),
-        GenreFilter("incest", "Incest"),
-        GenreFilter("isekai", "Isekai"),
-        GenreFilter("josei", "Josei"),
-        GenreFilter("loli", "Loli"),
-        GenreFilter("long_strip", "Long strip"),
-        GenreFilter("magic", "Magic"),
-        GenreFilter("magical_girls", "Magical girls"),
-        GenreFilter("manga", "Manga"),
-        GenreFilter("mangamutiny", "Mangamutiny"),
-        GenreFilter("manhua", "Manhua"),
-        GenreFilter("manhwa", "Manhwa"),
-        GenreFilter("martial_arts", "Martial arts"),
-        GenreFilter("mature", "Mature"),
-        GenreFilter("mecha", "Mecha"),
-        GenreFilter("medical", "Medical"),
-        GenreFilter("military", "Military"),
-        GenreFilter("monster_girls", "Monster girls"),
-        GenreFilter("monsters", "Monsters"),
-        GenreFilter("mystery", "Mystery"),
-        GenreFilter("ninja", "Ninja"),
-        GenreFilter("office_workers", "Office workers"),
-        GenreFilter("official_colored", "Official colored"),
-        GenreFilter("oneshot", "Oneshot"),
-        GenreFilter("philosophical", "Philosophical"),
-        GenreFilter("psychological", "Psychological"),
-        GenreFilter("reincarnation", "Reincarnation"),
-        GenreFilter("reverse_harem", "Reverse harem"),
-        GenreFilter("romance", "Romance"),
-        GenreFilter("school_life", "School life"),
-        GenreFilter("sci_fi", "Sci fi"),
-        GenreFilter("sci-fi", "Sci-fi"),
-        GenreFilter("seinen", "Seinen"),
-        GenreFilter("sexual_violence", "Sexual violence"),
-        GenreFilter("shota", "Shota"),
-        GenreFilter("shoujo", "Shoujo"),
-        GenreFilter("shounen", "Shounen"),
-        GenreFilter("shounen_ai", "Shounen ai"),
-        GenreFilter("slice_of_life", "Slice of life"),
-        GenreFilter("smut", "Smut"),
-        GenreFilter("sports", "Sports"),
-        GenreFilter("superhero", "Superhero"),
-        GenreFilter("supernatural", "Supernatural"),
-        GenreFilter("survival", "Survival"),
-        GenreFilter("time_travel", "Time travel"),
-        GenreFilter("tragedy", "Tragedy"),
-        GenreFilter("video_games", "Video games"),
-        GenreFilter("virtual_reality", "Virtual reality"),
-        GenreFilter("web_comic", "Web comic"),
-        GenreFilter("webtoons", "Webtoons"),
-        GenreFilter("wuxia", "Wuxia"),
-        GenreFilter("zombies", "Zombies")
-    )), UriFilter {
-        override fun addToUri(uri: Uri.Builder) {
-            val genresParameterValue = state.filter { it.state }.joinToString("+") { it.uriParam }
+    // A collection of genre or format filters
+    private abstract class GenreFilterList(name: String, elementList: List<GenreFilter>) : Filter.Group<GenreFilter>(name, elementList), UriFilter {
+        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
+            val genresParameterValue = state.filter { it.state }.joinToString(" ") { it.uriParam }
             if (genresParameterValue.isNotEmpty()) {
-                uri.appendQueryParameter("genres", genresParameterValue)
+                appendValueToKeyInUriParameterMap(parameterMap, "tags", genresParameterValue)
             }
         }
     }
+    // Actual genere filter list
+    private class GenresFilter : GenreFilterList("Genres", listOf(
+        GenreFilter("action", "action"),
+        GenreFilter("adult", "adult"),
+        GenreFilter("adventure", "adventure"),
+        GenreFilter("aliens", "aliens"),
+        GenreFilter("animals", "animals"),
+        GenreFilter("comedy", "comedy"),
+        GenreFilter("cooking", "cooking"),
+        GenreFilter("crossdressing", "crossdressing"),
+        GenreFilter("delinquents", "delinquents"),
+        GenreFilter("demons", "demons"),
+        GenreFilter("drama", "drama"),
+        GenreFilter("ecchi", "ecchi"),
+        GenreFilter("fantasy", "fantasy"),
+        GenreFilter("gender_bender", "gender bender"),
+        GenreFilter("genderswap", "genderswap"),
+        GenreFilter("ghosts", "ghosts"),
+        GenreFilter("gore", "gore"),
+        GenreFilter("gyaru", "gyaru"),
+        GenreFilter("harem", "harem"),
+        GenreFilter("historical", "historical"),
+        GenreFilter("horror", "horror"),
+        GenreFilter("incest", "incest"),
+        GenreFilter("isekai", "isekai"),
+        GenreFilter("loli", "loli"),
+        GenreFilter("magic", "magic"),
+        GenreFilter("magical_girls", "magical girls"),
+        GenreFilter("mangamutiny", "mangamutiny"),
+        GenreFilter("martial_arts", "martial arts"),
+        GenreFilter("mature", "mature"),
+        GenreFilter("mecha", "mecha"),
+        GenreFilter("medical", "medical"),
+        GenreFilter("military", "military"),
+        GenreFilter("monster_girls", "monster girls"),
+        GenreFilter("monsters", "monsters"),
+        GenreFilter("mystery", "mystery"),
+        GenreFilter("ninja", "ninja"),
+        GenreFilter("office_workers", "office workers"),
+        GenreFilter("philosophical", "philosophical"),
+        GenreFilter("psychological", "psychological"),
+        GenreFilter("reincarnation", "reincarnation"),
+        GenreFilter("reverse_harem", "reverse harem"),
+        GenreFilter("romance", "romance"),
+        GenreFilter("school_life", "school life"),
+        GenreFilter("sci_fi", "sci fi"),
+        GenreFilter("sci-fi", "sci-fi"),
+        GenreFilter("sexual_violence", "sexual violence"),
+        GenreFilter("shota", "shota"),
+        GenreFilter("shoujo_ai", "shoujo ai"),
+        GenreFilter("shounen_ai", "shounen ai"),
+        GenreFilter("slice_of_life", "slice of life"),
+        GenreFilter("smut", "smut"),
+        GenreFilter("sports", "sports"),
+        GenreFilter("superhero", "superhero"),
+        GenreFilter("supernatural", "supernatural"),
+        GenreFilter("survival", "survival"),
+        GenreFilter("time_travel", "time travel"),
+        GenreFilter("tragedy", "tragedy"),
+        GenreFilter("video_games", "video games"),
+        GenreFilter("virtual_reality", "virtual reality"),
+        GenreFilter("webtoons", "webtoons"),
+        GenreFilter("wuxia", "wuxia"),
+        GenreFilter("zombies", "zombies")
+    ))
+
+    // Actual format filter List
+    private class FormatsFilter : GenreFilterList("Formats", listOf(
+        GenreFilter("4-koma", "4-koma"),
+        GenreFilter("adaptation", "adaptation"),
+        GenreFilter("anthology", "anthology"),
+        GenreFilter("award_winning", "award winning"),
+        GenreFilter("doujinshi", "doujinshi"),
+        GenreFilter("fan_colored", "fan colored"),
+        GenreFilter("full_color", "full color"),
+        GenreFilter("long_strip", "long strip"),
+        GenreFilter("official_colored", "official colored"),
+        GenreFilter("oneshot", "oneshot"),
+        GenreFilter("web_comic", "web comic")
+    ))
 
     private class SortFilter : UriSelectFilter("Sort", "sort", arrayOf(
         Pair("-rating -ratingCount", "Popular"),
@@ -388,4 +419,25 @@ class MangaMutiny : HttpSource() {
         Pair("-createdAt", "Newest"),
         Pair("title", "Name")
     ), firstIsUnspecified = false, defaultValue = 0)
+
+    private class AuthorFilter : Filter.Text("Manga Author & Artist"), UriFilter {
+        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
+            if (state.isNotEmpty()) {
+                parameterMap["creator"] = state
+            }
+        }
+    }
+
+    /**The scanlator filter exists on the mangamutiny website website, however it doesn't work.
+    This should stay disabled in the extension until it's properly implemented on the website,
+    otherwise users may be confused by searches that return no results.**/
+    /*
+    private class ScanlatorFilter : Filter.Text("Scanlator Name"), UriFilter {
+        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
+            if (state.isNotEmpty()) {
+                parameterMap["scanlator"] = state
+            }
+        }
+    }
+     */
 }
