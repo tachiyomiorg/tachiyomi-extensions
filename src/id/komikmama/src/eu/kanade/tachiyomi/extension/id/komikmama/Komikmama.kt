@@ -29,7 +29,7 @@ class Komikmama : ParsedHttpSource() {
         return GET("$baseUrl/manga-list/page/$page/?order=update", headers)
     }
 
-    override fun popularMangaSelector() = "div.utao"
+    override fun popularMangaSelector() = "div.bs"
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun searchMangaSelector() = popularMangaSelector()
 
