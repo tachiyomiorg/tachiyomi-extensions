@@ -41,7 +41,8 @@ class WPMangaStreamFactory : SourceFactory {
         Matakomik(),
         KomikindoCo(),
         ReadKomik(),
-        MangaP()
+        MangaP(),
+        MangaProZ()
     )
 }
 
@@ -660,4 +661,10 @@ class ReadKomik : WPMangaStream("Readkomik", "https://readkomik.com", "en") {
 class MangaP : WPMangaStream("MangaP", "https://mangap.me", "ar") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=update", headers)
+}
+
+class MangaProZ : WPMangaStream("Manga Pro Z", "https://mangaproz.com", "ar") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=update", headers)
+    override fun chapterFromElement(element: Element): SChapter = super.chapterFromElement(element).apply { name = name.removeSuffix(" free") }
 }

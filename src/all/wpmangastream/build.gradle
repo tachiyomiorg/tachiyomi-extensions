@@ -5,7 +5,7 @@ ext {
     extName = 'WP Mangstream (multiple sources)'
     pkgNameSuffix = 'all.wpmangastream'
     extClass = '.WPMangaStreamFactory'
-    extVersionCode = 20
+    extVersionCode = 21
     libVersion = '1.2'
 }
 
