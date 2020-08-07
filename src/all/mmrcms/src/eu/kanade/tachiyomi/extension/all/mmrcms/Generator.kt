@@ -170,7 +170,7 @@ class Generator {
 
     private fun supportsLatest(third: String): Boolean {
         val document = getDocument("$third/latest-release?page=1", false) ?: return false
-        return document.select("div.mangalist div.manga-item a").isNotEmpty()
+        return document.select("div.mangalist div.manga-item a, div.grid-manga tr").isNotEmpty()
     }
 
     private fun parseCategories(document: Document): MutableList<Map<String, String>> {

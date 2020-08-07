@@ -139,19 +139,30 @@ class MyMangaReaderCMSSource(
 
         if (document.location().contains("page=1")) latestTitles.clear()
 
-        val mangas = document.select(latestUpdatesSelector()).map { element -> latestUpdatesFromElement(element) }
+        val mangas = document.select(latestUpdatesSelector())
+            .map { element ->
+                if (element.hasClass("manga-item")) latestUpdatesFromElement(element) else gridLatestUpdatesFromElement(element)
+            }
             .distinctBy { manga -> manga.title }
             .filterNot { manga -> manga.title in latestTitles }
             .also { list -> latestTitles.addAll(list.map { it.title }) }
 
         return MangasPage(mangas, document.select(latestUpdatesNextPageSelector()) != null)
     }
-    private fun latestUpdatesSelector() = "div.mangalist div.manga-item"
+    private fun latestUpdatesSelector() = "div.mangalist div.manga-item, div.grid-manga tr"
     private fun latestUpdatesNextPageSelector() = "a[rel=next]"
     private fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         url = element.select("a").first().attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
         title = element.select("a").first().text().trim()
         thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
+    }
+    // MangaYu, for instance, needs this
+    private fun gridLatestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
+        element.select("a.chart-title").let {
+            setUrlWithoutDomain(it.attr("href"))
+            title = it.text()
+        }
+        thumbnail_url = element.select("img").attr("abs:src")
     }
 
     private fun internalMangaParse(response: Response): MangasPage {
