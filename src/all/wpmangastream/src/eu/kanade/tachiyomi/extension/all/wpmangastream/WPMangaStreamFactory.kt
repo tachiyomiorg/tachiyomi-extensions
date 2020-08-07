@@ -652,7 +652,10 @@ class Matakomik : WPMangaStream("Matakomik", "https://matakomik.com", "id") {
 
 class KomikindoCo : WPMangaStream("Komikindo.co", "https://komikindo.co", "id")
 
-class ReadKomik : WPMangaStream("Readkomik", "https://readkomik.com", "en")
+class ReadKomik : WPMangaStream("Readkomik", "https://readkomik.com", "en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=update", headers)
+}
 
 class MangaP : WPMangaStream("MangaP", "https://mangap.me", "ar") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
