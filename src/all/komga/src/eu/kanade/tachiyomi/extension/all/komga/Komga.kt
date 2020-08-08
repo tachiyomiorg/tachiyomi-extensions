@@ -10,11 +10,15 @@ import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.BookDtoOld
 import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDtoOld
 import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDtoOld
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDtoOld
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -64,7 +68,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                 }
                 is LibraryGroup -> {
-                    val libraryToInclude = mutableListOf<Long>()
+                    val libraryToInclude = mutableListOf<String>()
                     filter.state.forEach { content ->
                         if (content.state) {
                             libraryToInclude.add(content.id)
@@ -75,7 +79,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                 }
                 is CollectionGroup -> {
-                    val collectionToInclude = mutableListOf<Long>()
+                    val collectionToInclude = mutableListOf<String>()
                     filter.state.forEach { content ->
                         if (content.state) {
                             collectionToInclude.add(content.id)
@@ -121,7 +125,12 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val series = gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
+        val series = try {
+            gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
+        } catch (e: Exception) {
+            gson.fromJson<SeriesDtoOld>(response.body()?.charStream()!!)
+                .toSeriesDto()
+        }
         return series.toSManga()
     }
 
@@ -129,9 +138,14 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         GET("$baseUrl${manga.url}/books?size=1000&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
+        val page = try {
+            gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!).content
+        } catch (e: Exception) {
+            gson.fromJson<PageWrapperDto<BookDtoOld>>(response.body()?.charStream()!!).content
+                .map { it.toBookDto() }
+        }
 
-        return page.content.map { book ->
+        return page.map { book ->
             SChapter.create().apply {
                 chapter_number = book.metadata.numberSort
                 name = "${decimalFormat.format(book.metadata.numberSort)} - ${book.metadata.title} (${book.size})"
@@ -161,11 +175,22 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     }
 
     private fun processSeriesPage(response: Response): MangasPage {
-        val page = gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)
-        val mangas = page.content.map {
+        var lastPage: Boolean
+        val page = try {
+            with(gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)) {
+                lastPage = last
+                content
+            }
+        } catch (e: Exception) {
+            with(gson.fromJson<PageWrapperDto<SeriesDtoOld>>(response.body()?.charStream()!!)) {
+                lastPage = last
+                content.map { it.toSeriesDto() }
+            }
+        }
+        val mangas = page.map {
             it.toSManga()
         }
-        return MangasPage(mangas, !page.last)
+        return MangasPage(mangas, !lastPage)
     }
 
     private fun SeriesDto.toSManga(): SManga =
@@ -197,9 +222,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     override fun imageUrlParse(response: Response): String = ""
 
-    private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
+    private class LibraryFilter(val id: String, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
-    private class CollectionFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
+    private class CollectionFilter(val id: String, name: String) : Filter.CheckBox(name, false)
     private class CollectionGroup(collections: List<CollectionFilter>) : Filter.Group<CollectionFilter>("Collections", collections)
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Selection(0, true))
     private class StatusFilter(name: String) : Filter.CheckBox(name, false)
@@ -320,11 +345,16 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
+            .subscribe({ response ->
                 libraries = try {
-                    gson.fromJson(it.body()?.charStream()!!)
+                    gson.fromJson(response.body()?.charStream()!!)
                 } catch (e: Exception) {
-                    emptyList()
+                    try {
+                        gson.fromJson<List<LibraryDtoOld>>(response.body()?.charStream()!!)
+                            .map { it.toLibraryDto() }
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
                 }
             }, {})
 
@@ -333,11 +363,16 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
+            .subscribe({ response ->
                 collections = try {
-                    gson.fromJson<PageWrapperDto<CollectionDto>>(it.body()?.charStream()!!).content
+                    gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
                 } catch (e: Exception) {
-                    emptyList()
+                    try {
+                        gson.fromJson<PageWrapperDto<CollectionDtoOld>>(response.body()?.charStream()!!).content
+                            .map { it.toCollectionDto() }
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
                 }
             }, {})
     }

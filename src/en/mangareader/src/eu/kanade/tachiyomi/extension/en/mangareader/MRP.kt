@@ -124,7 +124,7 @@ abstract class MRP(
         manga.artist = infoElement.select("td.propertytitle:containsOwn(artist) + td").text()
         val status = infoElement.select("td.propertytitle:containsOwn(status) + td").text()
         manga.status = parseStatus(status)
-        manga.genre = infoElement.select("td.propertytitle:containsOwn(genre) + td").text()
+        manga.genre = infoElement.select("td.propertytitle:containsOwn(genre) + td a").joinToString { it.text() }
         manga.description = document.select("div#readmangasum p").text()
         manga.thumbnail_url = document.select("img").attr("src")
         return manga
@@ -155,7 +155,7 @@ abstract class MRP(
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("MM/dd/yyyy", Locale.US).parse(date).time
+        return SimpleDateFormat("MM/dd/yyyy", Locale.US).parse(date)?.time ?: 0
     }
 
     override fun pageListParse(document: Document): List<Page> {

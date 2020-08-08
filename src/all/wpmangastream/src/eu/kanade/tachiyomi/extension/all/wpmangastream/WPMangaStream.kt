@@ -155,7 +155,7 @@ abstract class WPMangaStream(
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector(): String? = "a.next.page-numbers"
+    override fun popularMangaNextPageSelector(): String? = "a.next.page-numbers, a.r"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
@@ -218,7 +218,7 @@ abstract class WPMangaStream(
             }
         } else {
             try {
-                dateFormat.parse(date).time
+                dateFormat.parse(date)?.time ?: 0
             } catch (_: Exception) {
                 0L
             }

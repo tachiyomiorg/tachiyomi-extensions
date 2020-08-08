@@ -6,7 +6,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.MediaType
@@ -85,7 +84,7 @@ class MangaKatana : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = element.select("a").text()
-        date_upload = dateFormat.parse(element.select(".update_time").text()).time
+        date_upload = dateFormat.parse(element.select(".update_time").text())?.time ?: 0
     }
 
     companion object {
@@ -94,13 +93,15 @@ class MangaKatana : ParsedHttpSource() {
         }
     }
 
+    private val imageArrayRegex = Regex("""var ytaw=\[([^\[]*)]""")
+    private val imageUrlRegex = Regex("""'([^']*)'""")
+
     override fun pageListParse(document: Document): List<Page> {
-        // image URLs are in an array with each URL being reversed (e.g. 1.jpg becomes gpj.1)
-        val script = document.select("script:containsData(var ytaw)").firstOrNull()?.data()
+        val imageArray = document.select("script:containsData(var ytaw)").firstOrNull()?.data()
+            ?.let { imageArrayRegex.find(it)?.groupValues?.get(1) }
             ?: throw Exception("Image array not found")
-        val regex = Regex("""'(.[^']*ptth)'""")
-        return regex.findAll(script).toList().mapIndexed { i, mr ->
-            Page(i, "", mr.groupValues[1].reversed())
+        return imageUrlRegex.findAll(imageArray).asIterable().mapIndexed { i, mr ->
+            Page(i, "", mr.groupValues[1])
         }
     }
 

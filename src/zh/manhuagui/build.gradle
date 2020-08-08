@@ -5,12 +5,11 @@ ext {
     extName = 'ManHuaGui'
     pkgNameSuffix = 'zh.manhuagui'
     extClass = '.Manhuagui'
-    extVersionCode = 2
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
 dependencies {
-    implementation project(':lib-ratelimit')
     compileOnly "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     compileOnly "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
 }

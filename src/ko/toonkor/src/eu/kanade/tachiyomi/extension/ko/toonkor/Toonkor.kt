@@ -78,10 +78,12 @@ class Toonkor : ConfigurableSource, ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val filterList = if (filters.isEmpty()) getFilterList() else filters
+
         // Webtoons, Manga, or Hentai
-        val type = filters.findUriPartFilter<TypeFilter>()
+        val type = filterList.findUriPartFilter<TypeFilter>()
         // Popular, Latest, or Completed
-        val sort = filters.findUriPartFilter<SortFilter>()
+        val sort = filterList.findUriPartFilter<SortFilter>()
 
         // Hentai doesn't have a "completed" sort, ignore it if it's selected (equivalent to returning popular)
         val requestPath = when {
@@ -129,7 +131,7 @@ class Toonkor : ConfigurableSource, ParsedHttpSource() {
     private val dateFormat by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
     private fun String.toDate(): Long {
-        return dateFormat.parse(this).time
+        return dateFormat.parse(this)?.time ?: 0
     }
 
     // Pages

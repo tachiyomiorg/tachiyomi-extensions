@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadui
 
 import android.util.Base64
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -30,7 +29,7 @@ class Manhuadui : ParsedHttpSource() {
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "ul[id^=chapter-list] > li"
+    override fun chapterListSelector() = "ul[id^=chapter-list] > li a"
 
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
@@ -55,10 +54,6 @@ class Manhuadui : ParsedHttpSource() {
             GET(url.toString(), headers)
         }
     }
-
-    override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -97,11 +92,9 @@ class Manhuadui : ParsedHttpSource() {
     }
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a")
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.attr("title").trim()
+        chapter.setUrlWithoutDomain(element.attr("href"))
+        chapter.name = element.select("span:first-child").text().trim()
         return chapter
     }
 
@@ -112,13 +105,17 @@ class Manhuadui : ParsedHttpSource() {
         return manga
     }
 
+    override fun chapterListRequest(manga: SManga) = GET(baseUrl.replace("www", "m") + manga.url)
     override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).asReversed()
     }
 
     // ref: https://jueyue.iteye.com/blog/1830792
-    private fun decryptAES(value: String, key: String, iv: String): String? {
-        try {
+    private fun decryptAES(value: String): String? {
+        val key = "1739ZAQ12345bbG1"
+        val iv = "ABCDEF1G341234bb"
+
+        return try {
             val secretKey = SecretKeySpec(key.toByteArray(), "AES")
             val ivParams = IvParameterSpec(iv.toByteArray())
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
@@ -126,41 +123,35 @@ class Manhuadui : ParsedHttpSource() {
 
             val code = Base64.decode(value, Base64.NO_WRAP)
 
-            return String(cipher.doFinal(code))
+            String(cipher.doFinal(code))
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
-
-        return null
     }
 
-    private fun decrypt(code: String): String? {
-        val key = "123456781234567G"
-        val iv = "ABCDEF1G34123412"
-
-        return decryptAES(code, key, iv)
-    }
+    private val chapterImagesRegex = Regex("""var chapterImages =\s*"(.*?)";""")
+    private val imgPathRegex = Regex("""var chapterPath =\s*"(.*?)";""")
+    private val imgCodeCleanupRegex = Regex("""[\[\]"\\]""")
 
     override fun pageListParse(document: Document): List<Page> {
         val html = document.html()
-        val re = Regex("""var chapterImages =\s*"(.*?)";""")
-        val imgCodeStr = re.find(html)?.groups?.get(1)?.value
-        val imgCode = decrypt(imgCodeStr!!)
-        val imgPath = Regex("""var chapterPath =\s*"(.*?)";""").find(html)?.groups?.get(1)?.value
-        val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode!! + """.join('|')""") as String
-        }
-        return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            // Log.i("Tachidebug", "img => ${imageServer[0]}/$imgPath$imgStr")
+        val imgCodeStr = chapterImagesRegex.find(html)?.groups?.get(1)?.value ?: throw Exception("imgCodeStr not found")
+        val imgCode = decryptAES(imgCodeStr)
+            ?.replace(imgCodeCleanupRegex, "")
+            ?.replace("%", "%25")
+            ?: throw Exception("Decryption failed")
+        val imgPath = imgPathRegex.find(document.html())?.groups?.get(1)?.value ?: throw Exception("imgPath not found")
+        return imgCode.split(",").mapIndexed { i, imgStr ->
             if (imgStr.startsWith("http://images.dmzj.com")) {
-                Page(i, "", "https://mhcdn.manhuazj.com/showImage.php?url=$imgStr")
+                Page(i, "", "https://img01.eshanyao.com/showImage.php?url=$imgStr")
             } else {
                 Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
             }
         }
     }
 
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),

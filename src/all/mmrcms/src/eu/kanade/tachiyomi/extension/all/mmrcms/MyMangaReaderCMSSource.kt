@@ -281,6 +281,11 @@ class MyMangaReaderCMSSource(
     // Some websites add characters after "chapters" thus the need of checking classes that starts with "chapters"
 
     /**
+     * titleWrapper can have multiple "a" elements, filter to the first that contains letters (i.e. not "" or # as is possible)
+     */
+    private val urlRegex = Regex("""[a-zA-z]""")
+
+    /**
      * Returns a chapter from the given element.
      *
      * @param element an element obtained from [chapterListSelector].
@@ -291,7 +296,9 @@ class MyMangaReaderCMSSource(
         try {
             val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
             // Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
-            val url = titleWrapper.getElementsByTag("a").attr("href")
+            val url = titleWrapper.getElementsByTag("a")
+                .first { it.attr("href").contains(urlRegex) }
+                .attr("href")
 
             // Ensure chapter actually links to a manga
             // Some websites use the chapters box to link to post announcements
@@ -327,7 +334,7 @@ class MyMangaReaderCMSSource(
 
     private fun parseDate(dateText: String): Long {
         return try {
-            DATE_FORMAT.parse(dateText).time
+            DATE_FORMAT.parse(dateText)?.time ?: 0
         } catch (e: ParseException) {
             0L
         }

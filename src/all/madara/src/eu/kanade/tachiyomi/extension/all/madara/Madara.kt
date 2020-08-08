@@ -61,7 +61,7 @@ abstract class Madara(
 
         with(element) {
             select(popularMangaUrlSelector).first()?.let {
-                manga.setUrlWithoutDomain(it.attr("href"))
+                manga.setUrlWithoutDomain(it.attr("abs:href"))
                 manga.title = it.ownText()
             }
 
@@ -300,7 +300,7 @@ abstract class Madara(
 
         with(element) {
             select("div.post-title a").first()?.let {
-                manga.setUrlWithoutDomain(it.attr("href"))
+                manga.setUrlWithoutDomain(it.attr("abs:href"))
                 manga.title = it.ownText()
             }
             select("img").first()?.let {
@@ -311,7 +311,7 @@ abstract class Madara(
         return manga
     }
 
-    override fun searchMangaNextPageSelector(): String? = "div.nav-previous, nav.navigation-ajax"
+    override fun searchMangaNextPageSelector(): String? = "div.nav-previous, nav.navigation-ajax, a.nextpostslink"
 
     // Manga Details Parse
 

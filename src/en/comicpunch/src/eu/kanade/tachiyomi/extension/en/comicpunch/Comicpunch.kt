@@ -116,7 +116,7 @@ class Comicpunch : ParsedHttpSource() {
         var elements = response.asJsoup().select(chapterListSelector()).toList()
 
         // Check if latest chapter is just a placeholder, drop it if it is
-        client.newCall(GET(elements[0].attr("abs:href"), headers)).execute().asJsoup().select("img.picture").attr("src").let { img ->
+        client.newCall(GET(elements[0].attr("abs:href"), headers)).execute().asJsoup().select("img").last().attr("src").let { img ->
             if (img.contains("placeholder", ignoreCase = true)) elements = elements.drop(1)
         }
         elements.map { chapters.add(chapterFromElement(it)) }
@@ -124,7 +124,7 @@ class Comicpunch : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "div#chapterlist li.chapter a"
+    override fun chapterListSelector() = "li.chapter a"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -137,15 +137,14 @@ class Comicpunch : ParsedHttpSource() {
 
     // Pages
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url + "/?q=fullchapter", headers)
-    }
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("img.picture").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:src")))
+        val pageUrls = document.select("div#code_contain > script")
+            .eq(1).first().data()
+            .substringAfter("= [").substringBefore("]").split(",")
+        pageUrls.forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.removeSurrounding("\"")))
         }
 
         return pages

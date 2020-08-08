@@ -39,6 +39,9 @@ for APK in ${APKS[@]}; do
         --arg version "$VNAME" \
         '{name:$name, pkg:$pkg, apk:$apk, lang:$lang, code:$code, version:$version}'
 
-done | jq -scr '[.[]]' > index.json
+done | jq -sr '[.[]]' > index.json
+
+# Alternate gzipped copy
+gzip -c index.json > index.json.gz
 
 cat index.json

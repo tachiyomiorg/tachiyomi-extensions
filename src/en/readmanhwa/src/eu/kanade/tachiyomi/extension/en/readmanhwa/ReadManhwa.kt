@@ -20,6 +20,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +36,12 @@ class ReadManhwa : HttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    override fun headersBuilder(): Headers.Builder = headersBuilder(true)
+
+    private fun headersBuilder(enableNsfw: Boolean) = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        .add("X-NSFW", enableNsfw.toString())
 
     override val client: OkHttpClient = network.cloudflareClient
 
@@ -73,6 +80,8 @@ class ReadManhwa : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val enableNsfw = (filters.find { it is NSFWFilter } as? Filter.CheckBox)?.state ?: true
+
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
             .addQueryParameter("per_page", "18")
             .addQueryParameter("page", page.toString())
@@ -86,7 +95,7 @@ class ReadManhwa : HttpSource() {
                     is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
                 }
             }
-        return GET(url.toString(), headers)
+        return GET(url.toString(), headersBuilder(enableNsfw).build())
     }
 
     override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -156,7 +165,7 @@ class ReadManhwa : HttpSource() {
                             else -> 0L
                         }
                     } else {
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString).time
+                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString)?.time ?: 0
                     }
                 }
             }
@@ -182,10 +191,13 @@ class ReadManhwa : HttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
+        NSFWFilter(),
         GenreFilter(getGenreList()),
         DurationFilter(getDurationList()),
         SortFilter(getSortList())
     )
+
+    private class NSFWFilter : Filter.CheckBox("Show NSFW", true)
 
     private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
 

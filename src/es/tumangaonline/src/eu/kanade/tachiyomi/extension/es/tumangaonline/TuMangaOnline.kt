@@ -229,7 +229,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         if (getPageMethod() == "cascade") {
-            document.select("img.viewer-img").forEach {
+            document.select("div.viewer-container img").forEach {
                 add(Page(size, "", it.let {
                     if (it.hasAttr("data-src"))
                         it.attr("abs:data-src") else it.attr("abs:src")

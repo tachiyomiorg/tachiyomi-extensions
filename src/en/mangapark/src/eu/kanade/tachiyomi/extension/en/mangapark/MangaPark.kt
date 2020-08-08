@@ -37,28 +37,26 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     override val name = "MangaPark"
     override val baseUrl = "https://mangapark.net"
 
-    private val directorySelector = ".ls1 .item"
-    private val directoryUrl = "/genre"
-    private val directoryNextPageSelector = ".paging.full > li:last-child > a"
+    private val nextPageSelector = ".paging:not(.order) > li:last-child > a"
 
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views_a")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/search?orderby=views_a&page=$page")
 
-    override fun popularMangaSelector() = directorySelector
+    override fun popularMangaSelector() = searchMangaSelector()
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = directoryNextPageSelector
+    override fun popularMangaNextPageSelector() = nextPageSelector
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest" + if (page > 1) "/$page" else "")
 
-    override fun latestUpdatesSelector() = directorySelector
+    override fun latestUpdatesSelector() = ".ls1 .item"
 
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+    override fun latestUpdatesNextPageSelector() = nextPageSelector
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
@@ -79,7 +77,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
+    override fun searchMangaNextPageSelector() = nextPageSelector
 
     private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
@@ -174,15 +172,19 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun chapterListSelector() = ".volume .chapter li"
 
+    private val chapterNumberRegex = Regex("""\b\d+\.?\d?\b""")
+
     private fun chapterFromElement(element: Element, source: String, lastNum: Float): SChapter {
         fun Float.incremented() = this + .00001F
         fun Float?.orIncrementLastNum() = if (this == null || this < lastNum) lastNum.incremented() else this
 
         return SChapter.create().apply {
-            url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
-            name = element.select(".tit > a").first().text()
+            element.select(".tit > a").first().let {
+                url = it.attr("href").removeSuffix("1")
+                name = it.text()
+            }
             // Get the chapter number or create a unique one if it's not available
-            chapter_number = Regex("""\b\d+\.?\d?\b""").findAll(name)
+            chapter_number = chapterNumberRegex.findAll(name)
                 .toList()
                 .map { it.value.toFloatOrNull() }
                 .let { nums ->
@@ -215,7 +217,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
         relativeDate?.let {
             // Since the date is not specified, it defaults to 1970!
-            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' '))
+            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' ')) ?: return 0
             val cal = Calendar.getInstance()
             cal.time = time
 
@@ -225,7 +227,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             return it.timeInMillis
         }
 
-        return dateFormat.parse(lcDate).time
+        return dateFormat.parse(lcDate)?.time ?: 0
     }
 
     /**
@@ -262,21 +264,17 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         return now.timeInMillis
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val doc = document.toString()
-        val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
-        val pages = mutableListOf<Page>()
-        val imglist = JSONArray(obj)
-        for (i in 0 until imglist.length()) {
-            val item = imglist.getJSONObject(i)
-            var page = item.getString("u")
-            if (page.startsWith("//")) {
-                page = "https:$page"
-            }
-            pages.add(Page(i, "", page))
-        }
-        return pages
+    private val objRegex = Regex("""var _load_pages = (\[.*])""")
+
+    override fun pageListParse(response: Response): List<Page> {
+        val obj = objRegex.find(response.body()!!.string())?.groupValues?.get(1)
+            ?: throw Exception("_load_pages not found - ${response.request().url()}")
+        val jsonArray = JSONArray(obj)
+        return (0 until jsonArray.length()).map { i -> jsonArray.getJSONObject(i).getString("u") }
+            .mapIndexed { i, url -> Page(i, "", if (url.startsWith("//")) "https://$url" else url) }
     }
+
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
     // Unused, we can get image urls directly from the chapter page
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")

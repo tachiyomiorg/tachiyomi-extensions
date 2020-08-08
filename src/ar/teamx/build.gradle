@@ -5,7 +5,7 @@ ext {
     extName = 'Team X'
     pkgNameSuffix = 'ar.teamx'
     extClass = '.TeamX'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
