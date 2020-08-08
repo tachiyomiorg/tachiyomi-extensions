@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.all.madara
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.annotations.MultiSource
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
@@ -645,6 +646,7 @@ class NightComic : Madara("Night Comic", "https://nightcomic.com", "en") {
         .build()
 }
 
+@Nsfw
 class Toonily : Madara("Toonily", "https://toonily.com", "en") {
     override fun getGenreList(): List<Genre> = listOf(
         Genre("Action", "action-webtoon"),
@@ -1197,6 +1199,7 @@ class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
 
 class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
+@Nsfw
 class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
 
 class BestManga : Madara("BestManga", "https://bestmanga.club", "ru", SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()))
