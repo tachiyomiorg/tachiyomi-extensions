@@ -5,8 +5,9 @@ ext {
     extName = 'Eggporncomics'
     pkgNameSuffix = 'en.eggporncomics'
     extClass = '.Eggporncomics'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"
