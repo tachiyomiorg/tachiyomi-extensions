@@ -7,6 +7,7 @@ ext {
     extClass = '.Hipercool'
     extVersionCode = 4
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"
