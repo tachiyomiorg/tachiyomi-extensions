@@ -5,7 +5,7 @@ ext {
     extName = 'MyHentaiComics'
     pkgNameSuffix = 'en.myhentaicomics'
     extClass = '.MyHentaiComics'
-    extVersionCode = 3
+    extVersionCode = 2
     libVersion = '1.2'
     containsNsfw = true
 }

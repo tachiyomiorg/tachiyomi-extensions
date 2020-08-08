@@ -5,7 +5,7 @@ ext {
     extName = 'Mundo Hentai'
     pkgNameSuffix = 'pt.mundohentai'
     extClass = '.MundoHentai'
-    extVersionCode = 2
+    extVersionCode = 1
     libVersion = '1.2'
     containsNsfw = true
 }

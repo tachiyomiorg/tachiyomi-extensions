@@ -5,7 +5,7 @@ ext {
     extName = 'E-Hentai'
     pkgNameSuffix = 'all.ehentai'
     extClass = '.EHFactory'
-    extVersionCode = 14
+    extVersionCode = 13
     libVersion = '1.2'
     containsNsfw = true
 }
