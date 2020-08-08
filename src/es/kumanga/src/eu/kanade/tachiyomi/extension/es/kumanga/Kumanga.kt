@@ -53,7 +53,10 @@ class Kumanga : HttpSource() {
 
     override val supportsLatest = false
 
-    private val chapterImagesHeaders = Headers.Builder()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0")
+
+    private val chapterImagesHeaders = headersBuilder()
         .add("Referer", baseUrl)
         .build()
 
@@ -61,7 +64,8 @@ class Kumanga : HttpSource() {
 
     private fun getKumangaToken() {
         kumangaToken = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
-            .select("div.input-group [value]").firstOrNull()?.attr("value") ?: throw IOException("No fue posible obtener la lista de mangas")
+            .select("div.input-group [type=hidden]").firstOrNull()?.outerHtml()?.substringBeforeLast("\"")?.substringAfterLast("\"")
+            ?: throw IOException("No fue posible obtener la lista de mangas")
     }
 
     private fun getMangaCover(mangaId: String) = "https://static.kumanga.com/manga_covers/$mangaId.jpg?w=201"
@@ -127,17 +131,15 @@ class Kumanga : HttpSource() {
     private fun parseChapterDate(date: String): Long = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         .parse(date)?.time ?: 0L
 
-    private fun chapterSelector() = "div#accordion > div.panel.panel-default.c_panel:has(table)"
+    private fun chapterSelector() = "div#accordion .title"
 
     private fun chapterFromElement(element: Element) = SChapter.create().apply {
-        element.select("table:first-child td h4").let { it ->
-            it.select("a:has(i)").let {
-                url = '/' + it.attr("href").replace("/c/", "/leer/")
-                name = it.text()
-                date_upload = parseChapterDate(it.attr("title"))
-            }
-            scanlator = it.select("span.pull-right.greenSpan")?.text()
+        element.select("a:has(i)").let {
+            setUrlWithoutDomain(it.attr("abs:href").replace("/c/", "/leer/"))
+            name = it.text()
+            date_upload = parseChapterDate(it.attr("title"))
         }
+            scanlator = element.select("span.pull-right.greenSpan")?.text()
     }
 
     override fun chapterListParse(response: Response): List<SChapter> = mutableListOf<SChapter>().apply {
@@ -164,9 +166,10 @@ class Kumanga : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val document = response.asJsoup()
-        val imagesJsonListStr = document.select("head").toString()
-            .substringAfter("var pUrl=")
-            .substringBefore(";")
+        val imagesJsonListStr = document.select("script:containsData(var pUrl=)").firstOrNull()?.data()
+            ?.substringAfter("var pUrl=")
+            ?.substringBefore(";")
+            ?: throw Exception("imagesJsonListStr null")
         val imagesJsonList = parseJson(imagesJsonListStr).array
 
         imagesJsonList.forEach {
