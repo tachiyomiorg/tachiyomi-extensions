@@ -75,6 +75,7 @@ ext {
     extClass = '.<MySourceName>'
     extVersionCode = 1
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"
@@ -87,6 +88,7 @@ apply from: "$rootDir/common.gradle"
 | `extClass` | Points to the class that implements `Source`. You can use a relative path starting with a dot (the package name is the base path). This is used to find and instantiate the source(s). |
 | `extVersionCode` | The extension version code. This must be a positive integer and incremented with any change to the code. |
 | `libVersion` | The version of the [extensions library](https://github.com/tachiyomiorg/extensions-lib) used. |
+| `containsNsfw` | (Optional, defaults to `false`) Flag to indicate that a source contains NSFW content. |
 
 The extension's version name is generated automatically by concatenating `libVersion` and `extVersionCode`. With the example used above, the version would be `1.2.1`.
 
