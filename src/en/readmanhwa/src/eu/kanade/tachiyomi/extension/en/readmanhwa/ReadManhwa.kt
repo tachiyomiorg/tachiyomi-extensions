@@ -60,11 +60,16 @@ class ReadManhwa : HttpSource() {
 
         return MangasPage(mangas, jsonObject["current_page"].int < jsonObject["last_page"].int)
     }
+    private fun getMangaUrl(url: String): String {
+        return HttpUrl.parse(url)!!.newBuilder()
+            // TODO need to get nsfw from pref
+            .setQueryParameter("nsfw", true.toString()).toString()
+    }
 
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week"), headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -72,7 +77,7 @@ class ReadManhwa : HttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day"), headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -87,6 +92,7 @@ class ReadManhwa : HttpSource() {
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
+            .addQueryParameter("nsfw", enableNsfw.toString())
 
             filters.forEach { filter ->
                 when (filter) {
@@ -108,10 +114,10 @@ class ReadManhwa : HttpSource() {
             .map { mangaDetailsParse(it).apply { initialized = true } }
 
     // Return the real URL for "Open in browser"
-    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}", headers)
+    override fun mangaDetailsRequest(manga: SManga) = GET(getMangaUrl("$baseUrl/en/webtoon/${manga.url}"), headers)
 
     private fun apiMangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics/${manga.url}"), headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -145,7 +151,7 @@ class ReadManhwa : HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}/chapters", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics/${manga.url}/chapters"), headers)
     }
 
     private fun chapterListParse(response: Response, titleSlug: String): List<SChapter> {
@@ -177,7 +183,7 @@ class ReadManhwa : HttpSource() {
     // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET("$baseUrl/api/comics/${chapter.url}/images", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics/${chapter.url}/images"), headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
