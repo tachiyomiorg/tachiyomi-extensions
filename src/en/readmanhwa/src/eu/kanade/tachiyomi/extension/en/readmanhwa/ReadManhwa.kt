@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.extension.en.readmanhwa
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.CheckBoxPreference
+import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -10,6 +14,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -26,8 +31,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class ReadManhwa : HttpSource() {
+class ReadManhwa : ConfigurableSource, HttpSource() {
 
     override val name = "ReadManhwa"
 
@@ -42,6 +49,10 @@ class ReadManhwa : HttpSource() {
     private fun headersBuilder(enableNsfw: Boolean) = Headers.Builder()
         .add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
         .add("X-NSFW", enableNsfw.toString())
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override val client: OkHttpClient = network.cloudflareClient
 
@@ -62,8 +73,7 @@ class ReadManhwa : HttpSource() {
     }
     private fun getMangaUrl(url: String): String {
         return HttpUrl.parse(url)!!.newBuilder()
-            // TODO need to get nsfw from pref
-            .setQueryParameter("nsfw", true.toString()).toString()
+            .setQueryParameter("nsfw", isNSFWEnabledInPref().toString()).toString()
     }
 
     // Popular
@@ -197,7 +207,7 @@ class ReadManhwa : HttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
-        NSFWFilter(),
+        NSFWFilter().apply { state = isNSFWEnabledInPref() },
         GenreFilter(getGenreList()),
         DurationFilter(getDurationList()),
         SortFilter(getSortList())
@@ -285,4 +295,42 @@ class ReadManhwa : HttpSource() {
         Pair("Popularity", "popularity"),
         Pair("Date", "uploaded_at")
     )
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val nsfw = CheckBoxPreference(screen.context).apply {
+            key = NSFW
+            title = NSFW_TITLE
+            setDefaultValue(NSFW_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as Boolean
+                preferences.edit().putBoolean(NSFW, selected).commit()
+            }
+        }
+        screen.addPreference(nsfw)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val nsfw = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = NSFW
+            title = NSFW_TITLE
+            setDefaultValue(NSFW_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as Boolean
+                preferences.edit().putBoolean(NSFW, selected).commit()
+            }
+        }
+        screen.addPreference(nsfw)
+    }
+
+    private fun isNSFWEnabledInPref(): Boolean {
+        return preferences.getBoolean(NSFW, NSFW_DEFAULT)
+    }
+
+    companion object {
+        private const val NSFW = "NSFW"
+        private const val NSFW_TITLE = "Show NSFW"
+        private const val NSFW_DEFAULT = true
+    }
 }
