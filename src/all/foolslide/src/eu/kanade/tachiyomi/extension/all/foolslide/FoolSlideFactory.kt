@@ -7,6 +7,7 @@ import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
 import com.github.salomonbrys.kotson.get
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -161,6 +162,7 @@ class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://www.kirishimafans
 
 class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
 
+@Nsfw
 class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR") {
     // Hardcode the id because the language wasn't specific.
     override val id: Long = 8908032188831949972

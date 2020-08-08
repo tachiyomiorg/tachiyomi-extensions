@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.pt.supermangas.source
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.string
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.extension.pt.supermangas.SuperMangasGeneric
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -14,6 +15,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
 
+@Nsfw
 class SuperHentais : SuperMangasGeneric(
     "Super Hentais",
     "https://superhentais.com",

@@ -686,6 +686,7 @@ class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
 
+@Nsfw
 class YaoiToshokan : Madara("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR", SimpleDateFormat("dd MMM yyyy", Locale("pt", "BR"))) {
     // Page has custom link to scan website.
     override val popularMangaUrlSelector = "div.post-title a:not([target])"
