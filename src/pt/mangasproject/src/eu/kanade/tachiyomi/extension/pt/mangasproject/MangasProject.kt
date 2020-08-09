@@ -54,10 +54,10 @@ abstract class MangasProject(
         .add("Accept", ACCEPT_JSON)
         .add("X-Requested-With", "XMLHttpRequest")
 
-    private val sourceHeaders: Headers by lazy { sourceHeadersBuilder().build() }
+    protected val sourceHeaders: Headers by lazy { sourceHeadersBuilder().build() }
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/home/most_read?page=$page", sourceHeaders)
+        return GET("$baseUrl/home/most_read?page=$page&type=", sourceHeaders)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -78,7 +78,7 @@ abstract class MangasProject(
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/home/releases?page=$page", sourceHeaders)
+        return GET("$baseUrl/home/releases?page=$page&type=", sourceHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -311,7 +311,7 @@ abstract class MangasProject(
 
     companion object {
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
