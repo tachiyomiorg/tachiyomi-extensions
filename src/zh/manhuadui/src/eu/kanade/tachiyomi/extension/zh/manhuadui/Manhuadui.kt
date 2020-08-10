@@ -26,6 +26,11 @@ class Manhuadui : ParsedHttpSource() {
     override val supportsLatest = true
     private val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
 
+    companion object {
+        private const val DECRYPTION_KEY = "1739ZAQ54321bbG1"
+        private const val DECRYPTION_IV = "ABCDEF1G344321bb"
+    }
+
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -112,12 +117,9 @@ class Manhuadui : ParsedHttpSource() {
 
     // ref: https://jueyue.iteye.com/blog/1830792
     private fun decryptAES(value: String): String? {
-        val key = "1739ZAQ12345bbG1"
-        val iv = "ABCDEF1G341234bb"
-
         return try {
-            val secretKey = SecretKeySpec(key.toByteArray(), "AES")
-            val ivParams = IvParameterSpec(iv.toByteArray())
+            val secretKey = SecretKeySpec(DECRYPTION_KEY.toByteArray(), "AES")
+            val ivParams = IvParameterSpec(DECRYPTION_IV.toByteArray())
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParams)
 
