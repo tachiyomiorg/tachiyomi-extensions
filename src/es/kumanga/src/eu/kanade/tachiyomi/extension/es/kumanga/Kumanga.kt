@@ -61,10 +61,13 @@ class Kumanga : HttpSource() {
         .build()
 
     private var kumangaToken = ""
+    private val tokenRegex = Regex(""""([^"\s]{100,})"""")
 
     private fun getKumangaToken() {
         kumangaToken = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
-            .select("div.input-group [type=hidden]").firstOrNull()?.outerHtml()?.substringBeforeLast("\"")?.substringAfterLast("\"")
+            .select("div.input-group [type=hidden]")
+            .firstOrNull()
+            ?.let { tokenRegex.find(it.outerHtml())?.groupValues?.get(1) }
             ?: throw IOException("No fue posible obtener la lista de mangas")
     }
 
