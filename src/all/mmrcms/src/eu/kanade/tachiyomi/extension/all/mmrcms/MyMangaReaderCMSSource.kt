@@ -64,27 +64,22 @@ class MyMangaReaderCMSSource(
         }
     }
 
-    /**
-     * Search through a list of titles client-side or let the server do it
-     */
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return if (name == "Mangas.pw") {
-            selfSearch(query)
-        } else {
-            super.fetchSearchManga(page, query, filters)
-        }
-    }
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        // Query overrides everything
         val url: Uri.Builder
-        if (query.isNotBlank()) {
-            url = Uri.parse("$baseUrl/search")!!.buildUpon()
-            url.appendQueryParameter("query", query)
-        } else {
-            url = Uri.parse("$baseUrl/filterList?page=$page")!!.buildUpon()
-            filters.filterIsInstance<UriFilter>()
+        when {
+            name == "Mangas.pw" -> {
+                url = Uri.parse("$baseUrl/search")!!.buildUpon()
+                url.appendQueryParameter("q", query)
+            }
+            query.isNotBlank() -> {
+                url = Uri.parse("$baseUrl/search")!!.buildUpon()
+                url.appendQueryParameter("query", query)
+            }
+            else -> {
+                url = Uri.parse("$baseUrl/filterList?page=$page")!!.buildUpon()
+                filters.filterIsInstance<UriFilter>()
                     .forEach { it.addToUri(url) }
+            }
         }
         return GET(url.toString(), headers)
     }
@@ -113,20 +108,22 @@ class MyMangaReaderCMSSource(
 
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (response.request().url().queryParameter("query")?.isNotBlank() == true) {
+        return if (listOf("query", "q").any { it in response.request().url().queryParameterNames() }) {
             // If a search query was specified, use search instead!
-            MangasPage(jsonParser
-                    .parse(response.body()!!.string())["suggestions"].array
-                    .map {
-                        SManga.create().apply {
-                            val segment = it["data"].string
-                            url = getUrlWithoutBaseUrl(itemUrl + segment)
-                            title = it["value"].string
+            val jsonArray = jsonParser.parse(response.body()!!.string()).let {
+                if (name == "Mangas.pw") it.array else it["suggestions"].array
+            }
+            MangasPage(jsonArray
+                .map {
+                    SManga.create().apply {
+                        val segment = it["data"].string
+                        url = getUrlWithoutBaseUrl(itemUrl + segment)
+                        title = it["value"].string
 
-                            // Guess thumbnails
-                            // thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
-                        }
-                    }, false)
+                        // Guess thumbnails
+                        // thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
+                    }
+                }, false)
         } else {
             internalMangaParse(response)
         }
