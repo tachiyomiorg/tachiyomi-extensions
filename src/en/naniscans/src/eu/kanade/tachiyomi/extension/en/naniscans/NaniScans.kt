@@ -23,12 +23,13 @@ class NaniScans : HttpSource() {
     override val name = "NANI? Scans"
     override val supportsLatest = true
 
+    private val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+
     override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val titlesJson = JSONArray(response.body()!!.string())
         val mangaMap = mutableMapOf<Long, SManga>()
-        val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
         for (i in 0 until titlesJson.length()) {
             val manga = titlesJson.getJSONObject(i)
@@ -41,10 +42,7 @@ class NaniScans : HttpSource() {
             if (date == "null")
                 date = "2018-04-10T17:38:56"
 
-            mangaMap[dateParser.parse(date)!!.time] = SManga.create().apply {
-                title = manga.getString("name")
-                url = manga.getString("id")
-            }
+            mangaMap[dateParser.parse(date)!!.time] = getBareSManga(manga)
         }
 
         return MangasPage(mangaMap.toSortedMap().values.toList().asReversed(), false)
@@ -62,10 +60,7 @@ class NaniScans : HttpSource() {
             if (manga.getString("type") != "Comic")
                 continue
 
-            mangaList.add(SManga.create().apply {
-                title = manga.getString("name")
-                url = manga.getString("id")
-            })
+            mangaList.add(getBareSManga(manga))
         }
 
         return MangasPage(mangaList, false)
@@ -116,7 +111,7 @@ class NaniScans : HttpSource() {
             chaptersList.add(SChapter.create().apply {
                 chapter_number = chapter.get("number").toString().toFloat()
                 name = getChapterTitle(chapter)
-                date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(chapter.getString("releaseDate"))!!.time
+                date_upload = dateParser.parse(chapter.getString("releaseDate"))!!.time
                 url = "${titleJson.getString("id")}_${chapter.getString("id")}"
             })
         }
@@ -173,5 +168,11 @@ class NaniScans : HttpSource() {
         }
 
         return chapterName.joinToString(" ")
+    }
+
+    private fun getBareSManga(manga: JSONObject): SManga = SManga.create().apply {
+        title = manga.getString("name")
+        thumbnail_url = "$baseUrl${manga.getString("coverUrl")}"
+        url = manga.getString("id")
     }
 }
