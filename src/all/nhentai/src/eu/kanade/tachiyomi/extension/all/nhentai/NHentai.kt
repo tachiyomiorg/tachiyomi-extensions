@@ -106,7 +106,7 @@ open class NHentai(
         screen.addPreference(serverPref)
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/language/$nhLang/?page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET(if (nhLang.isBlank()) "$baseUrl/?page=$page" else "$baseUrl/language/$nhLang/?page=$page", headers)
 
     override fun latestUpdatesSelector() = "#content .gallery"
 
@@ -122,7 +122,7 @@ open class NHentai(
 
     override fun latestUpdatesNextPageSelector() = "#content > section.pagination > a.next"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/language/$nhLang/popular?page=$page", headers)
+    override fun popularMangaRequest(page: Int) = GET(if (nhLang.isBlank()) "$baseUrl/?page=$page" else "$baseUrl/language/$nhLang/popular?page=$page", headers)
 
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
@@ -155,6 +155,7 @@ open class NHentai(
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val filterList = if (filters.isEmpty()) getFilterList() else filters
+        val nhLangSearch = if (nhLang.isBlank()) "" else "+$nhLang "
         val advQuery = combineQuery(filterList)
         val favoriteFilter = filterList.findInstance<FavoriteFilter>()
         val isOkayToSort = filterList.findInstance<UploadedFilter>()?.state?.isBlank() ?: true
@@ -167,7 +168,7 @@ open class NHentai(
             return GET(url.toString(), headers)
         } else {
             val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
-                .addQueryParameter("q", "$query +$nhLang $advQuery")
+                .addQueryParameter("q", "$query $nhLangSearch$advQuery")
                 .addQueryParameter("page", page.toString())
 
             if (isOkayToSort) {
