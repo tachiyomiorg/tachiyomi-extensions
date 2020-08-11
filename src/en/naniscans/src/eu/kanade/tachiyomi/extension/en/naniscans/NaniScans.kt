@@ -22,6 +22,7 @@ class NaniScans : HttpSource() {
     override val lang = "en"
     override val name = "NANI? Scans"
     override val supportsLatest = true
+    override val versionId = 2
 
     private val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
