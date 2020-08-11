@@ -26,23 +26,23 @@ class NaniScans : HttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val jsonArray = JSONArray(response.body()!!.string())
+        val titlesJson = JSONArray(response.body()!!.string())
         val mangaMap = mutableMapOf<Long, SManga>()
 
-        for (i in 0 until jsonArray.length()) {
-            val item = jsonArray.getJSONObject(i)
+        for (i in 0 until titlesJson.length()) {
+            val manga = titlesJson.getJSONObject(i)
 
-            if (item.getString("type") != "Comic")
+            if (manga.getString("type") != "Comic")
                 continue
 
-            var date = item.getString("updatedAt")
+            var date = manga.getString("updatedAt")
 
             if (date == "null")
                 date = "2018-04-10T17:38:56"
 
             mangaMap[SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(date)!!.time] = SManga.create().apply {
-                title = item.getString("name")
-                url = item.getString("id")
+                title = manga.getString("name")
+                url = manga.getString("id")
             }
         }
 
@@ -52,18 +52,18 @@ class NaniScans : HttpSource() {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/api/titles")
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val jsonArray = JSONArray(response.body()!!.string())
+        val titlesJson = JSONArray(response.body()!!.string())
         val mangaList = mutableListOf<SManga>()
 
-        for (i in 0 until jsonArray.length()) {
-            val item = jsonArray.getJSONObject(i)
+        for (i in 0 until titlesJson.length()) {
+            val manga = titlesJson.getJSONObject(i)
 
-            if (item.getString("type") != "Comic")
+            if (manga.getString("type") != "Comic")
                 continue
 
             mangaList.add(SManga.create().apply {
-                title = item.getString("name")
-                url = item.getString("id")
+                title = manga.getString("name")
+                url = manga.getString("id")
             })
         }
 
@@ -81,47 +81,49 @@ class NaniScans : HttpSource() {
     override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/titles/${manga.url}")
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val jsonObject = JSONObject(response.body()!!.string())
+        val titleJson = JSONObject(response.body()!!.string())
 
-        if (jsonObject.getString("type") != "Comic")
+        if (titleJson.getString("type") != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
 
         return SManga.create().apply {
-            title = jsonObject.getString("name")
-            artist = jsonObject.getString("artist")
-            author = jsonObject.getString("author")
-            description = jsonObject.getString("synopsis")
-            status = getStatus(jsonObject.getString("status"))
-            thumbnail_url = "$baseUrl${jsonObject.getString("coverUrl")}"
-            genre = jsonObject.getJSONArray("tags").join(", ").replace("\"", "")
-            url = jsonObject.getString("id")
+            title = titleJson.getString("name")
+            artist = titleJson.getString("artist")
+            author = titleJson.getString("author")
+            description = titleJson.getString("synopsis")
+            status = getStatus(titleJson.getString("status"))
+            thumbnail_url = "$baseUrl${titleJson.getString("coverUrl")}"
+            genre = titleJson.getJSONArray("tags").join(", ").replace("\"", "")
+            url = titleJson.getString("id")
         }
     }
 
     override fun chapterListRequest(manga: SManga) = GET("$baseUrl/api/titles/${manga.url}")
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsonObject = JSONObject(response.body()!!.string())
+        val titleJson = JSONObject(response.body()!!.string())
 
-        if (jsonObject.getString("type") != "Comic")
+        if (titleJson.getString("type") != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
 
-        val chaptersJson = jsonObject.getJSONArray("chapters")
+        val chaptersJson = titleJson.getJSONArray("chapters")
         val chaptersList = mutableListOf<SChapter>()
 
         for (i in 0 until chaptersJson.length()) {
-            val item = chaptersJson.getJSONObject(i)
+            val chapter = chaptersJson.getJSONObject(i)
 
             chaptersList.add(SChapter.create().apply {
-                chapter_number = item.get("number").toString().toFloat()
-                name = getChapterTitle(item)
-                date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(item.getString("releaseDate"))!!.time
-                url = "/api/titles/${jsonObject.getString("id")}/chapters/${item.getString("id")}"
+                chapter_number = chapter.get("number").toString().toFloat()
+                name = getChapterTitle(chapter)
+                date_upload = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(chapter.getString("releaseDate"))!!.time
+                url = "${titleJson.getString("id")}_${chapter.getString("id")}"
             })
         }
 
         return chaptersList
     }
+
+    override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/api/titles/${chapter.url.substring(0, 36)}/chapters/${chapter.url.substring(37, 73)}")
 
     override fun pageListParse(response: Response): List<Page> {
         val jsonObject = JSONObject(response.body()!!.string())
