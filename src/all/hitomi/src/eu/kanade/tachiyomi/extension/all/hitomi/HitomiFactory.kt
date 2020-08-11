@@ -7,49 +7,44 @@ import eu.kanade.tachiyomi.source.SourceFactory
 @Nsfw
 class HitomiFactory : SourceFactory {
     override fun createSources(): List<Source> = languageList
-        .filterNot { it.first.isEmpty() }
         .map { Hitomi(it.first, it.second) }
 }
 
-/**
- * These should all be valid languages but I was too lazy to look up all the language codes
- * Replace an empty string with a valid language code to enable that language
- */
 private val languageList = listOf(
     Pair("other", "all"), // all languages
     Pair("id", "indonesian"),
-    Pair("", "catalan"),
-    Pair("", "cebuano"),
-    Pair("", "czech"),
-    Pair("", "danish"),
+    Pair("ca", "catalan"),
+    Pair("ceb", "cebuano"),
+    Pair("cs", "czech"),
+    Pair("da", "danish"),
     Pair("de", "german"),
-    Pair("", "estonian"),
+    Pair("et", "estonian"),
     Pair("en", "english"),
     Pair("es", "spanish"),
-    Pair("", "esperanto"),
+    Pair("eo", "esperanto"),
     Pair("fr", "french"),
     Pair("it", "italian"),
-    Pair("", "latin"),
-    Pair("", "hungarian"),
-    Pair("", "dutch"),
-    Pair("", "norwegian"),
+    Pair("la", "latin"),
+    Pair("hu", "hungarian"),
+    Pair("nl", "dutch"),
+    Pair("no", "norwegian"),
     Pair("pl", "polish"),
-    Pair("pt-BR", "portuguese"),
-    Pair("", "romanian"),
-    Pair("", "albanian"),
-    Pair("", "slovak"),
-    Pair("", "finnish"),
-    Pair("", "swedish"),
-    Pair("", "tagalog"),
+    Pair("pt", "portuguese"),
+    Pair("ro", "romanian"),
+    Pair("sq", "albanian"),
+    Pair("sk", "slovak"),
+    Pair("fi", "finnish"),
+    Pair("sv", "swedish"),
+    Pair("tl", "tagalog"),
     Pair("vi", "vietnamese"),
     Pair("tr", "turkish"),
-    Pair("", "greek"),
-    Pair("", "mongolian"),
+    Pair("el", "greek"),
+    Pair("mn", "mongolian"),
     Pair("ru", "russian"),
-    Pair("", "ukrainian"),
-    Pair("", "hebrew"),
+    Pair("uk", "ukrainian"),
+    Pair("he", "hebrew"),
     Pair("ar", "arabic"),
-    Pair("", "persian"),
+    Pair("fa", "persian"),
     Pair("th", "thai"),
     Pair("ko", "korean"),
     Pair("zh", "chinese"),
