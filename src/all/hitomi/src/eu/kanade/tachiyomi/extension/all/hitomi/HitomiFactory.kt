@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.all.hitomi
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 
+@Nsfw
 class HitomiFactory : SourceFactory {
     override fun createSources(): List<Source> = languageList
         .filterNot { it.first.isEmpty() }
