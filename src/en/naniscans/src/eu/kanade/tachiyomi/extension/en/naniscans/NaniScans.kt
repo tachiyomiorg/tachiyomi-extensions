@@ -28,6 +28,7 @@ class NaniScans : HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage {
         val titlesJson = JSONArray(response.body()!!.string())
         val mangaMap = mutableMapOf<Long, SManga>()
+        val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
         for (i in 0 until titlesJson.length()) {
             val manga = titlesJson.getJSONObject(i)
@@ -40,7 +41,7 @@ class NaniScans : HttpSource() {
             if (date == "null")
                 date = "2018-04-10T17:38:56"
 
-            mangaMap[SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(date)!!.time] = SManga.create().apply {
+            mangaMap[dateParser.parse(date)!!.time] = SManga.create().apply {
                 title = manga.getString("name")
                 url = manga.getString("id")
             }
