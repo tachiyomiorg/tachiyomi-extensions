@@ -29,7 +29,7 @@ private val languageList = listOf(
     Pair("nl", "dutch"),
     Pair("no", "norwegian"),
     Pair("pl", "polish"),
-    Pair("pt", "portuguese"),
+    Pair("pt-BR", "portuguese"),
     Pair("ro", "romanian"),
     Pair("sq", "albanian"),
     Pair("sk", "slovak"),
