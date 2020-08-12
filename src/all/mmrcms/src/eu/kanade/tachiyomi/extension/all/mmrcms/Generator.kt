@@ -34,6 +34,8 @@ class Generator {
         preRunTotal = Regex("""MMRSOURCE_(\d+)""").findAll(File(relativePath).readText(Charsets.UTF_8)).last().groupValues[1]
     }
 
+    data class SourceData(val lang: String, val name: String, val baseUrl: String, val isNsfw: Boolean = false)
+
     @TargetApi(Build.VERSION_CODES.O)
     fun generate() {
         val buffer = StringBuffer()
@@ -45,21 +47,22 @@ class Generator {
         sources.forEach {
             try {
                 val map = mutableMapOf<String, Any>()
-                map["language"] = it.first
-                map["name"] = it.second
-                map["base_url"] = it.third
-                map["supports_latest"] = supportsLatest(it.third)
+                map["language"] = it.lang
+                map["name"] = it.name
+                map["base_url"] = it.baseUrl
+                map["supports_latest"] = supportsLatest(it.baseUrl)
+                map["isNsfw"] = it.isNsfw
 
-                val advancedSearchDocument = getDocument("${it.third}/advanced-search", false)
+                val advancedSearchDocument = getDocument("${it.baseUrl}/advanced-search", false)
 
                 var parseCategories = mutableListOf<Map<String, String>>()
                 if (advancedSearchDocument != null) {
                     parseCategories = parseCategories(advancedSearchDocument)
                 }
 
-                val homePageDocument = getDocument(it.third)
+                val homePageDocument = getDocument(it.baseUrl)
 
-                val itemUrl = getItemUrl(homePageDocument, it.third)
+                val itemUrl = getItemUrl(homePageDocument, it.baseUrl)
 
                 var prefix = itemUrl.substringAfterLast("/").substringBeforeLast("/")
 
@@ -69,7 +72,7 @@ class Generator {
                     prefix = "manga"
                 }
 
-                val mangaListDocument = getDocument("${it.third}/$prefix-list")!!
+                val mangaListDocument = getDocument("${it.baseUrl}/$prefix-list")!!
 
                 if (parseCategories.isEmpty()) {
                     parseCategories = parseCategories(mangaListDocument)
@@ -82,14 +85,14 @@ class Generator {
                     map["tags"] = tags
                 }
 
-                if (!itemUrl.startsWith(it.third)) println("**Note: ${it.second} URL does not match! Check for changes: \n ${it.third} vs $itemUrl")
+                if (!itemUrl.startsWith(it.baseUrl)) println("**Note: ${it.name} URL does not match! Check for changes: \n ${it.baseUrl} vs $itemUrl")
 
                 val toJson = Gson().toJson(map)
 
                 buffer.append("private const val MMRSOURCE_$number = \"\"\"$toJson\"\"\"\n")
                 number++
             } catch (e: Exception) {
-                println("error generating source ${it.second} ${e.printStackTrace()}")
+                println("error generating source ${it.name} ${e.printStackTrace()}")
             }
         }
 
@@ -228,98 +231,99 @@ class Generator {
 
     companion object {
         val sources = listOf(
-            Triple("ar", "مانجا اون لاين", "https://onma.me"),
-            Triple("en", "Read Comics Online", "https://readcomicsonline.ru"),
-            Triple("en", "Biamam Scans", "https://biamam.com"),
-            Triple("en", "Fallen Angels", "https://manga.fascans.com"),
-            Triple("en", "Mangawww Reader", "https://mangawww.club"),
-            Triple("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
-            Triple("fr", "Scan FR", "https://www.scan-fr.co"),
-            Triple("fr", "Scan VF", "https://www.scan-vf.net"),
-            Triple("fr", "Scan OP", "https://scan-op.com"),
-            Triple("id", "Komikid", "https://www.komikid.com"),
-            Triple("pl", "ToraScans", "http://torascans.pl"),
-            Triple("pt-BR", "Comic Space", "https://www.comicspace.com.br"),
-            Triple("pt-BR", "Mangás Yuri", "https://mangasyuri.net"),
-            Triple("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),
-            Triple("pl", "Nikushima", "http://azbivo.webd.pro"),
-            Triple("tr", "MangaHanta", "http://mangahanta.com"),
-            Triple("vi", "Fallen Angels Scans", "https://truyen.fascans.com"),
-            Triple("es", "LeoManga", "https://leomanga.me"),
-            Triple("es", "submanga", "https://submangas.net"),
-            Triple("es", "Mangadoor", "https://mangadoor.com"),
-            Triple("es", "Mangas.pw", "https://mangas.in"),
-            Triple("es", "Tumangaonline.co", "http://tumangaonline.uno"),
-            Triple("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
-            Triple("es", "Universo Yuri", "https://universoyuri.com"),
-            Triple("pl", "Phoenix-Scans", "https://phoenix-scans.pl"),
-            Triple("ru", "Japit Comics", "https://j-comics.ru"),
-            Triple("tr", "Puzzmos", "https://puzzmos.com"),
-            Triple("fr", "Scan-1", "https://wwv.scan-1.com"),
-            Triple("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
-            Triple("id", "MangaSusu", "https://www.mangasusu.site"),
-            Triple("id", "Komik Manga", "https://adm.komikmanga.com"),
-            Triple("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
-            Triple("pt-BR", "Remangas", "https://remangas.top"),
-            Triple("pt-BR", "AnimaRegia", "https://animaregia.net"),
-            Triple("tr", "NoxSubs", "https://noxsubs.com"),
-            Triple("id", "MangaYu", "https://mangayu.com"),
-            Triple("tr", "MangaVadisi", "http://manga-v2.mangavadisi.org"),
+            SourceData("ar", "مانجا اون لاين", "https://onma.me"),
+            SourceData("en", "Read Comics Online", "https://readcomicsonline.ru"),
+            SourceData("en", "Biamam Scans", "https://biamam.com"),
+            SourceData("en", "Fallen Angels", "https://manga.fascans.com"),
+            SourceData("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
+            SourceData("fr", "Scan FR", "https://www.scan-fr.co"),
+            SourceData("fr", "Scan VF", "https://www.scan-vf.net"),
+            SourceData("fr", "Scan OP", "https://scan-op.com"),
+            SourceData("id", "Komikid", "https://www.komikid.com"),
+            SourceData("pl", "ToraScans", "http://torascans.pl"),
+            SourceData("pt-BR", "Comic Space", "https://www.comicspace.com.br"),
+            SourceData("pt-BR", "Mangás Yuri", "https://mangasyuri.net"),
+            SourceData("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),
+            SourceData("pl", "Nikushima", "http://azbivo.webd.pro"),
+            SourceData("tr", "MangaHanta", "http://mangahanta.com"),
+            SourceData("vi", "Fallen Angels Scans", "https://truyen.fascans.com"),
+            SourceData("es", "LeoManga", "https://leomanga.me"),
+            SourceData("es", "submanga", "https://submangas.net"),
+            SourceData("es", "Mangadoor", "https://mangadoor.com"),
+            SourceData("es", "Mangas.pw", "https://mangas.in"),
+            SourceData("es", "Tumangaonline.co", "http://tumangaonline.uno"),
+            SourceData("bg", "Utsukushii", "https://manga.utsukushii-bg.com"),
+            SourceData("es", "Universo Yuri", "https://universoyuri.com"),
+            SourceData("pl", "Phoenix-Scans", "https://phoenix-scans.pl"),
+            SourceData("ru", "Japit Comics", "https://j-comics.ru"),
+            SourceData("tr", "Puzzmos", "https://puzzmos.com"),
+            SourceData("fr", "Scan-1", "https://wwv.scan-1.com"),
+            SourceData("fr", "Lelscan-VF", "https://www.lelscan-vf.com"),
+            SourceData("id", "MangaSusu", "https://www.mangasusu.site"),
+            SourceData("id", "Komik Manga", "https://adm.komikmanga.com"),
+            SourceData("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
+            SourceData("pt-BR", "Remangas", "https://remangas.top"),
+            SourceData("pt-BR", "AnimaRegia", "https://animaregia.net"),
+            SourceData("tr", "NoxSubs", "https://noxsubs.com"),
+            SourceData("id", "MangaYu", "https://mangayu.com"),
+            SourceData("tr", "MangaVadisi", "http://manga-v2.mangavadisi.org"),
+            SourceData("id", "MangaID", "https://mangaid.click"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
-            Triple("other", "HentaiShark", "https://www.hentaishark.com"))
+            SourceData("other", "HentaiShark", "https://www.hentaishark.com", true))
             // Changed CMS
-            // Triple("en", "MangaTreat Scans", "http://www.mangatreat.com"),
-            // Triple("en", "Chibi Manga Reader", "https://www.cmreader.info"),
-            // Triple("tr", "Epikmanga", "https://www.epikmanga.com"),
-            // Triple("en", "Hatigarm Scans", "https://hatigarmscans.net"),
+            // SourceData("en", "MangaTreat Scans", "http://www.mangatreat.com"),
+            // SourceData("en", "Chibi Manga Reader", "https://www.cmreader.info"),
+            // SourceData("tr", "Epikmanga", "https://www.epikmanga.com"),
+            // SourceData("en", "Hatigarm Scans", "https://hatigarmscans.net"),
             // Went offline
-            // Triple("ru", "Anigai clan", "http://anigai.ru"),
-            // Triple("en", "ZXComic", "http://zxcomic.com"),
-            // Triple("es", "SOS Scanlation", "https://sosscanlation.com"),
-            // Triple("es", "MangaCasa", "https://mangacasa.com"))
-            // Triple("ja", "RAW MANGA READER", "https://rawmanga.site"),
-            // Triple("ar", "Manga FYI", "http://mangafyi.com/manga/arabic"),
-            // Triple("en", "MangaRoot", "http://mangaroot.com"),
-            // Triple("en", "MangaForLife", "http://manga4ever.com"),
-            // Triple("en", "Manga Spoil", "http://mangaspoil.com"),
-            // Triple("en", "MangaBlue", "http://mangablue.com"),
-            // Triple("en", "Manga Forest", "https://mangaforest.com"),
-            // Triple("en", "DManga", "http://dmanga.website"),
-            // Triple("en", "DB Manga", "http://dbmanga.com"),
-            // Triple("en", "Mangacox", "http://mangacox.com"),
-            // Triple("en", "GO Manhwa", "http://gomanhwa.xyz"),
-            // Triple("en", "KoManga", "https://komanga.net"),
-            // Triple("en", "Manganimecan", "http://manganimecan.com"),
-            // Triple("en", "Hentai2Manga", "http://hentai2manga.com"),
-            // Triple("en", "4 Manga", "http://4-manga.com"),
-            // Triple("en", "XYXX.INFO", "http://xyxx.info"),
-            // Triple("en", "Isekai Manga Reader", "https://isekaimanga.club"),
-            // Triple("fa", "TrinityReader", "http://trinityreader.pw"),
-            // Triple("fr", "Manga-LEL", "https://www.manga-lel.com"),
-            // Triple("fr", "Manga Etonnia", "https://www.etonnia.com"),
-            // Triple("fr", "ScanFR.com"), "http://scanfr.com"),
-            // Triple("fr", "Manga FYI", "http://mangafyi.com/manga/french"),
-            // Triple("fr", "scans-manga", "http://scans-manga.com"),
-            // Triple("fr", "Henka no Kaze", "http://henkanokazelel.esy.es/upload"),
-            // Triple("fr", "Tous Vos Scans", "http://www.tous-vos-scans.com"),
-            // Triple("id", "Manga Desu", "http://mangadesu.net"),
-            // Triple("id", "Komik Mangafire.ID", "http://go.mangafire.id"),
-            // Triple("id", "MangaOnline", "https://mangaonline.web.id"),
-            // Triple("id", "MangaNesia", "https://manganesia.com"),
-            // Triple("id", "MangaID", "https://mangaid.me"
-            // Triple("id", "Manga Seru", "http://www.mangaseru.top"
-            // Triple("id", "Manga FYI", "http://mangafyi.com/manga/indonesian"
-            // Triple("id", "Bacamangaku", "http://www.bacamangaku.com"),
-            // Triple("id", "Indo Manga Reader", "http://indomangareader.com"),
-            // Triple("it", "Kingdom Italia Reader", "http://kireader.altervista.org"),
-            // Triple("ja", "IchigoBook", "http://ichigobook.com"),
-            // Triple("ja", "Mangaraw Online", "http://mangaraw.online"
-            // Triple("ja", "Mangazuki RAWS", "https://raws.mangazuki.co"),
-            // Triple("ja", "MangaRAW", "https://www.mgraw.com"),
-            // Triple("ja", "マンガ/漫画 マガジン/雑誌 raw", "http://netabare-manga-raw.com"),
-            // Triple("ru", "NAKAMA", "http://nakama.ru"),
-            // Triple("tr", "MangAoi", "http://mangaoi.com"),
-            // Triple("tr", "ManhuaTR", "http://www.manhua-tr.com"),
+            // SourceData("en", "Mangawww Reader", "https://mangawww.club"),
+            // SourceData("ru", "Anigai clan", "http://anigai.ru"),
+            // SourceData("en", "ZXComic", "http://zxcomic.com"),
+            // SourceData("es", "SOS Scanlation", "https://sosscanlation.com"),
+            // SourceData("es", "MangaCasa", "https://mangacasa.com"))
+            // SourceData("ja", "RAW MANGA READER", "https://rawmanga.site"),
+            // SourceData("ar", "Manga FYI", "http://mangafyi.com/manga/arabic"),
+            // SourceData("en", "MangaRoot", "http://mangaroot.com"),
+            // SourceData("en", "MangaForLife", "http://manga4ever.com"),
+            // SourceData("en", "Manga Spoil", "http://mangaspoil.com"),
+            // SourceData("en", "MangaBlue", "http://mangablue.com"),
+            // SourceData("en", "Manga Forest", "https://mangaforest.com"),
+            // SourceData("en", "DManga", "http://dmanga.website"),
+            // SourceData("en", "DB Manga", "http://dbmanga.com"),
+            // SourceData("en", "Mangacox", "http://mangacox.com"),
+            // SourceData("en", "GO Manhwa", "http://gomanhwa.xyz"),
+            // SourceData("en", "KoManga", "https://komanga.net"),
+            // SourceData("en", "Manganimecan", "http://manganimecan.com"),
+            // SourceData("en", "Hentai2Manga", "http://hentai2manga.com"),
+            // SourceData("en", "4 Manga", "http://4-manga.com"),
+            // SourceData("en", "XYXX.INFO", "http://xyxx.info"),
+            // SourceData("en", "Isekai Manga Reader", "https://isekaimanga.club"),
+            // SourceData("fa", "TrinityReader", "http://trinityreader.pw"),
+            // SourceData("fr", "Manga-LEL", "https://www.manga-lel.com"),
+            // SourceData("fr", "Manga Etonnia", "https://www.etonnia.com"),
+            // SourceData("fr", "ScanFR.com"), "http://scanfr.com"),
+            // SourceData("fr", "Manga FYI", "http://mangafyi.com/manga/french"),
+            // SourceData("fr", "scans-manga", "http://scans-manga.com"),
+            // SourceData("fr", "Henka no Kaze", "http://henkanokazelel.esy.es/upload"),
+            // SourceData("fr", "Tous Vos Scans", "http://www.tous-vos-scans.com"),
+            // SourceData("id", "Manga Desu", "http://mangadesu.net"),
+            // SourceData("id", "Komik Mangafire.ID", "http://go.mangafire.id"),
+            // SourceData("id", "MangaOnline", "https://mangaonline.web.id"),
+            // SourceData("id", "MangaNesia", "https://manganesia.com"),
+            // SourceData("id", "MangaID", "https://mangaid.me"
+            // SourceData("id", "Manga Seru", "http://www.mangaseru.top"
+            // SourceData("id", "Manga FYI", "http://mangafyi.com/manga/indonesian"
+            // SourceData("id", "Bacamangaku", "http://www.bacamangaku.com"),
+            // SourceData("id", "Indo Manga Reader", "http://indomangareader.com"),
+            // SourceData("it", "Kingdom Italia Reader", "http://kireader.altervista.org"),
+            // SourceData("ja", "IchigoBook", "http://ichigobook.com"),
+            // SourceData("ja", "Mangaraw Online", "http://mangaraw.online"
+            // SourceData("ja", "Mangazuki RAWS", "https://raws.mangazuki.co"),
+            // SourceData("ja", "MangaRAW", "https://www.mgraw.com"),
+            // SourceData("ja", "マンガ/漫画 マガジン/雑誌 raw", "http://netabare-manga-raw.com"),
+            // SourceData("ru", "NAKAMA", "http://nakama.ru"),
+            // SourceData("tr", "MangAoi", "http://mangaoi.com"),
+            // SourceData("tr", "ManhuaTR", "http://www.manhua-tr.com"),
 
         val relativePath = System.getProperty("user.dir") + "/src/all/mmrcms/src/eu/kanade/tachiyomi/extension/all/mmrcms/GeneratedSources.kt"
 

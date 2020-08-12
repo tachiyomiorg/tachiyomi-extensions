@@ -7,6 +7,7 @@ import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -28,11 +29,11 @@ import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
 
-class MyMangaReaderCMSSource(
-    override val lang: String,
-    override val name: String,
-    override val baseUrl: String,
-    override val supportsLatest: Boolean,
+open class MyMangaReaderCMSSource(
+    final override val lang: String,
+    final override val name: String,
+    final override val baseUrl: String,
+    final override val supportsLatest: Boolean,
     private val itemUrl: String,
     private val categoryMappings: List<Pair<String, String>>,
     private val tagMappings: List<Pair<String, String>>?
@@ -137,8 +138,12 @@ class MyMangaReaderCMSSource(
         if (document.location().contains("page=1")) latestTitles.clear()
 
         val mangas = document.select(latestUpdatesSelector())
-            .map { element ->
-                if (element.hasClass("manga-item")) latestUpdatesFromElement(element) else gridLatestUpdatesFromElement(element)
+            .let { elements ->
+                if (elements.select("a").firstOrNull()?.hasText() == true) {
+                    elements.map { latestUpdatesFromElement(it) }
+                } else {
+                    document.select(gridLatestUpdatesSelector()).map { gridLatestUpdatesFromElement(it) }
+                }
             }
             .distinctBy { manga -> manga.title }
             .filterNot { manga -> manga.title in latestTitles }
@@ -146,14 +151,15 @@ class MyMangaReaderCMSSource(
 
         return MangasPage(mangas, document.select(latestUpdatesNextPageSelector()) != null)
     }
-    private fun latestUpdatesSelector() = "div.mangalist div.manga-item, div.grid-manga tr"
+    private fun latestUpdatesSelector() = "div.mangalist div.manga-item"
     private fun latestUpdatesNextPageSelector() = "a[rel=next]"
     private fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         url = element.select("a").first().attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
         title = element.select("a").first().text().trim()
         thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
     }
-    // MangaYu, for instance, needs this
+    // MangaYu and MangaID needs this
+    private fun gridLatestUpdatesSelector() = "div.mangalist div.manga-item, div.grid-manga tr"
     private fun gridLatestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         element.select("a.chart-title").let {
             setUrlWithoutDomain(it.attr("href"))
@@ -455,3 +461,22 @@ class MyMangaReaderCMSSource(
         private val DATE_FORMAT = SimpleDateFormat("d MMM. yyyy", Locale.US)
     }
 }
+
+@Nsfw
+class MyMangaReaderCMSSourceNsfw(
+    lang: String,
+    name: String,
+    baseUrl: String,
+    supportsLatest: Boolean,
+    itemUrl: String,
+    categoryMappings: List<Pair<String, String>>,
+    tagMappings: List<Pair<String, String>>?
+) : MyMangaReaderCMSSource(
+    lang,
+    name,
+    baseUrl,
+    supportsLatest,
+    itemUrl,
+    categoryMappings,
+    tagMappings
+)
