@@ -48,7 +48,7 @@ class PlotTwistNoFansub : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "div.page-nav a:has(i)"
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/ulti/", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/actu/", headers)
 
     override fun latestUpdatesSelector() = "div.row.last-updates div.item"
 
