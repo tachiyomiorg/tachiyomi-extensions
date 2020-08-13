@@ -51,12 +51,13 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
     protected open val topLevelPathSegments = listOf("album", "Various-Authors")
     private val pageQueryRegex = Regex("""page=\d+""")
 
-    private fun Document.addNextPageToStack() {
-        this.select(nextPageSelector).firstOrNull()?.text()?.toIntOrNull()?.let { int ->
-            val nextPage = if (stackItem.url.contains(pageQueryRegex)) {
-                stackItem.url.replace(pageQueryRegex, "page=$int")
+    private fun Document.nextPageOrNull(): String? {
+        val url = this.location()
+        return this.select(nextPageSelector).firstOrNull()?.text()?.toIntOrNull()?.let { int ->
+            if (url.contains(pageQueryRegex)) {
+                url.replace(pageQueryRegex, "page=$int")
             } else {
-                val httpUrl = HttpUrl.parse(stackItem.url)!!
+                val httpUrl = HttpUrl.parse(url)!!
                 val builder = if (httpUrl.pathSegments().last().toIntOrNull() is Int) {
                     httpUrl.newBuilder().removePathSegment(httpUrl.pathSegments().lastIndex)
                 } else {
@@ -64,8 +65,11 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
                 }
                 builder.addPathSegment(int.toString()).toString()
             }
-            pageStack.add(StackItem(nextPage, stackItem.pageType))
         }
+    }
+
+    private fun Document.addNextPageToStack() {
+        this.nextPageOrNull()?.let { pageStack.add(StackItem(it, stackItem.pageType)) }
     }
 
     protected fun Element.imgAttr(): String = if (this.hasAttr("data-src")) this.attr("abs:data-src") else this.attr("abs:src")
@@ -210,27 +214,33 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
     protected open val pageThumbnailSelector = "a.c-tile:has(img)[href*=/comics/picture/] img"
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val document = response.asJsoup()
-        // Linked albums
-        val chapters = document.select(linkedChapterSelector)
-            .mapNotNull {
-                SChapter.create().apply {
-                    name = it.text()
-                    setUrlWithoutDomain(it.attr("href"))
+        fun parseChapters(document: Document, isFirstPage: Boolean, chapters: ArrayDeque<SChapter>): List<SChapter> {
+            // Linked chapters
+            document.select(linkedChapterSelector)
+                .mapNotNull {
+                    chapters.addFirst(
+                        SChapter.create().apply {
+                            name = it.text()
+                            setUrlWithoutDomain(it.attr("href"))
+                        }
+                    )
+                }
+            if (isFirstPage) {
+                // Self
+                document.select(pageThumbnailSelector).firstOrNull()?.let {
+                    chapters.add(
+                        SChapter.create().apply {
+                            name = "Chapter"
+                            setUrlWithoutDomain(response.request().url().toString())
+                        }
+                    )
                 }
             }
-            .reversed()
-            .toMutableList()
-        // Self
-        document.select(pageThumbnailSelector).firstOrNull()?.let {
-            chapters.add(
-                SChapter.create().apply {
-                    name = "Chapter"
-                    setUrlWithoutDomain(response.request().url().toString())
-                }
-            )
+            document.nextPageOrNull()?.let { url -> parseChapters(client.newCall(GET(url, headers)).execute().asJsoup(), false, chapters) }
+            return chapters
         }
-        return chapters
+
+        return parseChapters(response.asJsoup(), true, ArrayDeque())
     }
 
     // Pages
