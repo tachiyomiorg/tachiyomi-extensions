@@ -61,13 +61,15 @@ class Kumanga : HttpSource() {
         .build()
 
     private var kumangaToken = ""
-    private val tokenRegex = Regex(""""([^"\s]{100,})"""")
+
+    // They add various fake tokens but the chosen one always starts with "eyJjdCI6I"
+    private val tokenRegex = Regex(""""(eyJjdCI6I[^"\s]{100,})"""")
 
     private fun getKumangaToken() {
         kumangaToken = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
             .select("div.input-group [type=hidden]")
             .firstOrNull()
-            ?.let { tokenRegex.find(it.outerHtml())?.groupValues?.get(1) }
+            ?.let { tokenRegex.find(it.outerHtml())!!.value }
             ?: throw IOException("No fue posible obtener la lista de mangas")
     }
 
