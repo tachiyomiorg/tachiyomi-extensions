@@ -1,11 +1,13 @@
 package eu.kanade.tachiyomi.extension.ru.henchan
 
+import android.annotation.SuppressLint
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -26,6 +28,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
+@Nsfw
 class Henchan : ParsedHttpSource() {
 
     override val name = "Henchan"
@@ -133,6 +136,7 @@ class Henchan : ParsedHttpSource() {
         manga.author = document.select(".row .item2 h2")[1].text()
         manga.genre = document.select(".sidetag > a:eq(2)").joinToString { it.text() }
         manga.description = document.select("#description").text()
+        manga.thumbnail_url = document.select("img#cover").attr("abs:src").getHQThumbnail()
         return manga
     }
 
@@ -159,7 +163,7 @@ class Henchan : ParsedHttpSource() {
             chap.chapter_number = 1F
 
             val date = document.select("div.row4_right b")?.text()?.let {
-                SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it).time
+                SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it)?.time ?: 0
             } ?: 0
             chap.date_upload = date
             return listOf(chap)
@@ -236,7 +240,7 @@ class Henchan : ParsedHttpSource() {
         }
     }
 
-    private class Genre(val id: String, name: String = id.replace('_', ' ').capitalize()) : Filter.TriState(name)
+    private class Genre(val id: String, @SuppressLint("DefaultLocale") name: String = id.replace('_', ' ').capitalize()) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
     private class OrderBy : UriPartFilter("Сортировка", arrayOf("Дата", "Популярность", "Алфавит"),
             arrayOf("&n=dateasc" to "", "&n=favasc" to "&n=favdesc", "&n=abcdesc" to "&n=abcasc"),
