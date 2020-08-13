@@ -160,7 +160,7 @@ class Dmzj : HttpSource() {
                 ret.add(SChapter.create().apply {
                     name = "$prefix: ${chapter.getString("chapter_title")}"
                     date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                    url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
+                    url = "$baseUrl/chapter/$cid/${chapter.getString("chapter_id")}.json"
                     // url = "http://m.dmzj.com/chapinfo/$cid/${chapter.getString("chapter_id")}.html" // From m_readerBg.js
                 })
             }
