@@ -5,7 +5,7 @@ ext {
     extName = 'Dmzj'
     pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
-    extVersionCode = 9
+    extVersionCode = 10
     libVersion = '1.2'
 }
 
