@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.all.madara
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
@@ -151,7 +152,16 @@ class MadaraFactory : SourceFactory {
         ToonilyNet(),
         BestManga(),
         TwilightScans(),
-        DetectiveConanAr()
+        DetectiveConanAr(),
+        WordExcerpt(),
+        WoopRead(),
+        Ninjavi(),
+        ManhwaTop(),
+        ImmortalUpdates(),
+        Bakaman(),
+        CatTranslator(),
+        ComicsValley(),
+        FriendlyTranslations()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -334,6 +344,7 @@ class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
     }
 }
 
+@Nsfw
 class AllPornComic : Madara("AllPornComic", "https://allporncomic.com", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
@@ -520,6 +531,7 @@ class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     )
 }
 
+@Nsfw
 class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", SimpleDateFormat("d MMM. yyyy", Locale.ENGLISH)) {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/lista-manga-hentai?orderby=views&page=$page", headers)
     override fun popularMangaSelector() = "div.col-md-3 a"
@@ -851,6 +863,7 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR",
 
 class MangaLord : Madara("Manga Lord", "https://mangalord.com", "en")
 
+@Nsfw
 class PornComix : Madara("PornComix", "https://www.porncomixonline.net", "en")
 
 class PMScans : Madara("PMScans", "http://www.pmscans.com", "en")
@@ -975,6 +988,7 @@ class ArangScans : Madara("Arang Scans", "https://www.arangscans.com", "en", Sim
     override fun latestUpdatesNextPageSelector(): String? = null
 }
 
+@Nsfw
 class MangaHentai : Madara("Manga Hentai", "https://mangahentai.me", "en")
 
 class MangaPhoenix : Madara("Manga Diyari", "https://mangadiyari.com", "tr") {
@@ -1207,3 +1221,44 @@ class BestManga : Madara("BestManga", "https://bestmanga.club", "ru", SimpleDate
 class TwilightScans : Madara("Twilight Scans", "https://twilightscans.com", "en")
 
 class DetectiveConanAr : Madara("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar")
+
+// mostly novels, doesn't include year in chapter dates (even for past years)
+class WordExcerpt : Madara("Word Excerpt", "https://wordexcerpt.com", "en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/archive/webtoon/page/$page/?m_orderby=views", headers)
+    override fun popularMangaNextPageSelector() = "div.nav-previous a"
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/archive/webtoon/page/$page/?m_orderby=latest", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/?s=the&post_type=wp-manga&genre[]=webtoon", headers)
+    override fun getFilterList(): FilterList = FilterList()
+}
+
+// mostly novels
+class WoopRead : Madara("WoopRead", "https://woopread.com", "en") {
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?s&post_type=wp-manga&genre[0]=manhua&genre[1]=manhwa&m_orderby=views", headers)
+    override fun popularMangaParse(response: Response) = searchMangaParse(response)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?s&post_type=wp-manga&genre[0]=manhua&genre[1]=manhwa&m_orderby=latest", headers)
+    override fun latestUpdatesParse(response: Response) = searchMangaParse(response)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
+        GET("$baseUrl/?s=$query&post_type=wp-manga&genre[0]=manhua&genre[1]=manhwa&m_orderby=latest", headers)
+    override fun getFilterList(): FilterList = FilterList()
+}
+
+class Ninjavi : Madara("Ninjavi", "https://ninjavi.com", "ar")
+
+class ManhwaTop : Madara("Manhwatop", "https://manhwatop.com", "en")
+
+class ImmortalUpdates : Madara("Immortal Updates", "https://immortalupdates.com", "en")
+
+class Bakaman : Madara("Bakaman", "https://bakaman.net", "th")
+
+class CatTranslator : Madara("CAT-translator", "https://cat-translator.com", "th") {
+    override fun popularMangaRequest(page: Int): Request =
+        POST("$baseUrl/manga/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
+    override fun latestUpdatesRequest(page: Int): Request =
+        POST("$baseUrl/manga/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
+    override fun searchPage(page: Int): String = "manga/page/$page/"
+}
+
+@Nsfw
+class ComicsValley : Madara("Comics Valley", "https://comicsvalley.com", "hi")
+
+class FriendlyTranslations : Madara("Friendly Translations", "https://friendlytranslationsscan.website", "en")
