@@ -121,7 +121,8 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
     }
 
     // cleans up the name removing author and language from the title
-    private fun cleanTitle(title: String) = title.substringBeforeLast("[").substringAfterLast("]").substringBeforeLast("(").trim()
+    private val titleRegex = Regex("""\[[^]]*]""")
+    private fun cleanTitle(title: String) = title.replace(titleRegex, "").substringBeforeLast("(").trim()
 
     private fun cleanAuthor(author: String) = author.substringAfter("[").substringBefore("]").trim()
 
@@ -209,7 +210,9 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
 
     override fun pageListParse(document: Document): List<Page> {
         return (document.select("div > img") + document.select("div.separator img[data-src]"))
-            .mapIndexed { i, img -> Page(i, "", getImage(img)) }
+            .map { getImage(it) }
+            .distinct()
+            .mapIndexed { i, url -> Page(i, "", url) }
     }
 
     override fun imageUrlParse(document: Document) = throw Exception("Not used")

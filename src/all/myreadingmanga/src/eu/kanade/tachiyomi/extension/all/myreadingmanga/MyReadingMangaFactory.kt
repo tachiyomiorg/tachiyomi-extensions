@@ -1,8 +1,10 @@
 package eu.kanade.tachiyomi.extension.all.myreadingmanga
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 
+@Nsfw
 class MyReadingMangaFactory : SourceFactory {
     override fun createSources(): List<Source> = languageList.map { MyReadingManga(it.tachiLang, it.siteLang, it.latestLang) }
 }
