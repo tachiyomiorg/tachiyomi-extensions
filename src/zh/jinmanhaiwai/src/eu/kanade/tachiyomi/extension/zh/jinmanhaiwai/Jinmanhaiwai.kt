@@ -74,17 +74,17 @@ class Jinmanhaiwai : ParsedHttpSource() {
         title = document.select("div.panel-heading").select("div.pull-left").first().text()
         thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("\\?")[0]
         author = selectAuthor(document)
-        artist = "插件开发者:ZongerZY"
+        artist = author
         genre = selectDetailsStatusAndGenre(document, 0)
         status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt()
-        description = document.select("div.p-t-5.p-b-5").get(7).text() + " >>>插件开发者[twitter:ZongerZY][GitHub:ZongerZY][Discord:ZongerZY#3770],开发者将负责开发中文扩展插件,希望大家关注并支持开发者<<<"
+        description = document.select("div.p-t-5.p-b-5").get(7).text()
     }
 
     // 查询作者信息
     private fun selectAuthor(document: Document): String {
         var element = document.select("div.tag-block").get(9)
         if (element.select("a").size == 0) {
-            return "(插件):ZongerZY"
+            return "未知"
         } else {
             return element.select("a").first().text()
         }
