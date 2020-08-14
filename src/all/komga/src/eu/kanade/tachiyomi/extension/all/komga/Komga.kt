@@ -28,10 +28,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import okhttp3.Credentials
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -43,6 +39,9 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
@@ -148,7 +147,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         return page.map { book ->
             SChapter.create().apply {
                 chapter_number = book.metadata.numberSort
-                name = "${decimalFormat.format(book.metadata.numberSort)} - ${book.metadata.title} (${book.size})"
+                name = "${book.metadata.number} - ${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
@@ -246,8 +245,6 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
     override val supportsLatest = true
-
-    private val decimalFormat: DecimalFormat by lazy { DecimalFormat("0.#") }
 
     override val baseUrl by lazy { getPrefBaseUrl() }
     private val username by lazy { getPrefUsername() }
