@@ -1,3 +1,11 @@
+## 1.2.14
+
+Requires Komga `0.41.0`
+
+### Features
+
+* change chapter display name to use the display number instead of the sort number
+
 ## 1.2.13
 
 Requires Komga `0.41.0`
