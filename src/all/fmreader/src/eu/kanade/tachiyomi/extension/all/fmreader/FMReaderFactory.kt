@@ -255,13 +255,7 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=lastUpdate&sorting-type=DESC&Sayfa=$page", headers)
     override fun popularMangaNextPageSelector() = "ul.pagination li.active + li:not(.disabled)" 
 
-    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        element.select("h4 a").let {
-            setUrlWithoutDomain(it.attr("href"))
-            title = it.text()
-        }
-        thumbnail_url = element.select("img").imgAttr()
-    } 
+    override val headerSelector = "h4"
 
     // search wasn't working on source's website
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
