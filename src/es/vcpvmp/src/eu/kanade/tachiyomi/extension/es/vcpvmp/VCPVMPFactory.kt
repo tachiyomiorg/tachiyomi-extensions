@@ -1,9 +1,11 @@
 package eu.kanade.tachiyomi.extension.es.vcpvmp
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 
+@Nsfw
 class VCPVMPFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         VCP(),
@@ -14,6 +16,7 @@ class VCPVMPFactory : SourceFactory {
 class VCP : VCPVMP("VCP", "https://vercomicsporno.com")
 
 class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
+    override val pageListSelector = "div.comicimg img:last-child:not([alt^=banner])"
 
     // Array.from(document.querySelectorAll('div.tagcloud a.tag-cloud-link'))
     // .map(a => `Pair("${a.innerText}", "${a.href.replace('https://vermangasporno.com/genero/', '')}")`).join(',\n')
