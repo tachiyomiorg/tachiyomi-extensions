@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.zh.jinmanhaiwai
+package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -14,10 +14,10 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
-class Jinmanhaiwai : ParsedHttpSource() {
-    override val baseUrl: String = "https://18comic.vip"
+class Jinmantiantang : ParsedHttpSource() {
+    override val baseUrl: String = "https://18comic2.biz"
     override val lang: String = "zh"
-    override val name: String = "禁漫(海外IP访问)"
+    override val name: String = "禁漫天堂"
     override val supportsLatest: Boolean = true
 
     private var chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
@@ -55,8 +55,8 @@ class Jinmanhaiwai : ParsedHttpSource() {
                 if (it is UriPartFilter) {
                     it.toUriPart()
                 } else ""
-            }.filter { it != "" }.joinToString("?")
-            val url = HttpUrl.parse("$baseUrl/albums$params&page=$page")?.newBuilder()
+            }.filter { it != "" }.joinToString("")
+            val url = HttpUrl.parse("$baseUrl" + "$params&page=$page")?.newBuilder()
             GET(url.toString(), headers)
         }
     }
@@ -76,7 +76,7 @@ class Jinmanhaiwai : ParsedHttpSource() {
         author = selectAuthor(document)
         artist = author
         genre = selectDetailsStatusAndGenre(document, 0)
-        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt()
+        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt() // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1, it will definitely return a String type of 0, 1 or 2. This warning can be ignored
         description = document.select("div.p-t-5.p-b-5").get(7).text()
     }
 
@@ -89,6 +89,7 @@ class Jinmanhaiwai : ParsedHttpSource() {
             return element.select("a").first().text()
         }
     }
+
     // 查询漫画状态和类别信息
     private fun selectDetailsStatusAndGenre(document: Document, index: Int): String {
         determineChapterInfo(document)
@@ -144,7 +145,7 @@ class Jinmanhaiwai : ParsedHttpSource() {
         return super.chapterListParse(response).asReversed()
     }
 
-    // Pages
+    // 漫画图片信息
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         var elements = document.select("div[style=text-align:center;][id*=0]")
         for (element in elements) {
@@ -159,6 +160,7 @@ class Jinmanhaiwai : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
 
     // Filters
+    // 按照类别信息进行检索
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),
@@ -166,13 +168,70 @@ class Jinmanhaiwai : ParsedHttpSource() {
     )
 
     private class CategoryGroup : UriPartFilter("按类型", arrayOf(
-        Pair("全部", ""),
-        Pair("其他", "/another"),
-        Pair("同人", "/doujin"),
-        Pair("韩漫", "/hanman"),
-        Pair("美漫", "/meiman"),
-        Pair("短篇", "/short"),
-        Pair("单本", "/single")
+        Pair("全部", "/albums?"),
+        Pair("其他", "/albums/another?"),
+        Pair("同人", "/albums/doujin?"),
+        Pair("韩漫", "/albums/hanman?"),
+        Pair("美漫", "/albums/meiman?"),
+        Pair("短篇", "/albums/short?"),
+        Pair("单本", "/albums/single?"),
+
+        Pair("中文", "/search/photos?search_query=中文&"),
+        Pair("汉化", "/search/photos?search_query=漢化&"),
+        Pair("P站", "/search/photos?search_query=PIXIV&"),
+        Pair("图集", "/search/photos?search_query=CG&"),
+
+        Pair("剧情", "/search/photos?search_query=劇情&"),
+        Pair("校园", "/search/photos?search_query=校園&"),
+        Pair("纯爱", "/search/photos?search_query=純愛&"),
+        Pair("人妻", "/search/photos?search_query=人妻&"),
+        Pair("师生", "/search/photos?search_query=師生&"),
+        Pair("近亲", "/search/photos?search_query=近親&"),
+        Pair("百合", "/search/photos?search_query=百合&"),
+        Pair("男同", "/search/photos?search_query=YAOI&"),
+        Pair("性转换", "/search/photos?search_query=性轉換&"),
+        Pair("暴力", "/search/photos?search_query=NTR&"),
+        Pair("偽娘", "/search/photos?search_query=偽娘&"),
+        Pair("痴女", "/search/photos?search_query=癡女&"),
+        Pair("全彩", "/search/photos?search_query=全彩&"),
+
+        Pair("萝莉", "/search/photos?search_query=蘿莉&"),
+        Pair("御姐", "/search/photos?search_query=御姐&"),
+        Pair("熟女", "/search/photos?search_query=熟女&"),
+        Pair("正太", "/search/photos?search_query=正太&"),
+        Pair("巨乳", "/search/photos?search_query=巨乳&"),
+        Pair("贫乳", "/search/photos?search_query=貧乳&"),
+        Pair("女王", "/search/photos?search_query=女王&"),
+        Pair("教室", "/search/photos?search_query=教師&"),
+        Pair("女仆", "/search/photos?search_query=女僕&"),
+        Pair("护士", "/search/photos?search_query=護士&"),
+        Pair("泳裝", "/search/photos?search_query=泳裝&"),
+        Pair("眼睛", "/search/photos?search_query=眼鏡&"),
+        Pair("丝袜", "/search/photos?search_query=絲襪&"),
+        Pair("制服", "/search/photos?search_query=制服&"),
+
+        Pair("群交", "/search/photos?search_query=群交&"),
+        Pair("足交", "/search/photos?search_query=足交&"),
+        Pair("SM", "/search/photos?search_query=SM&"),
+        Pair("肛交", "/search/photos?search_query=肛交&"),
+        Pair("阿黑颜", "/search/photos?search_query=阿黑顏&"),
+        Pair("药物", "/search/photos?search_query=藥物&"),
+        Pair("扶他", "/search/photos?search_query=扶他&"),
+        Pair("调教", "/search/photos?search_query=調教&"),
+        Pair("野外", "/search/photos?search_query=野外&"),
+        Pair("露出", "/search/photos?search_query=露出&"),
+        Pair("催眠", "/search/photos?search_query=催眠&"),
+        Pair("自慰", "/search/photos?search_query=自慰&"),
+        Pair("触手", "/search/photos?search_query=觸手&"),
+        Pair("兽交", "/search/photos?search_query=獸交&"),
+        Pair("亞人", "/search/photos?search_query=亞人&"),
+        Pair("魔物", "/search/photos?search_query=魔物&"),
+
+        Pair("重口", "/search/photos?search_query=重口&"),
+        Pair("猎奇", "/search/photos?search_query=獵奇&"),
+        Pair("非H", "/search/photos?search_query=非H&"),
+        Pair("血腥", "/search/photos?search_query=血腥&"),
+        Pair("暴力", "/search/photos?search_query=暴力&")
     ))
 
     private class ProgressGroup : UriPartFilter("按进度", arrayOf(

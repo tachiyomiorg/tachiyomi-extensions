@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Jinmandalu'
-    pkgNameSuffix = 'zh.jinmandalu'
-    extClass = '.Jinmandalu'
+    extName = 'Jinmantiantang'
+    pkgNameSuffix = 'zh.jinmantiantang'
+    extClass = '.Jinmantiantang'
     extVersionCode = 1
     libVersion = '1.2'
 }
