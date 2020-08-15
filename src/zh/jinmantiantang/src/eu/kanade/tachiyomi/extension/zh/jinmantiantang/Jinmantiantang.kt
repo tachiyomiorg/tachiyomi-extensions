@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
+import android.util.Log
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -49,28 +50,35 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 查询信息
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (query != "" && !query.contains("-")) {
-            // 禁漫天堂特有搜索方式: A +B --> A and B, A B --> A or B
-            val newQuery = query.replace("+", "%2B").replace(" ", "+")
-            val url = HttpUrl.parse("$baseUrl/search/photos?search_query=$newQuery&page=$page")?.newBuilder()
-            GET(url.toString(), headers)
-        } else {
-            var params = filters.map {
-                if (it is UriPartFilter) {
-                    it.toUriPart()
-                } else ""
-            }.filter { it != "" }.joinToString("")
+        var params = filters.map {
+            if (it is UriPartFilter) {
+                it.toUriPart()
+            } else ""
+        }.filter { it != "" }.joinToString("")
 
+        val url = if (query != "" && !query.contains("-")) {
+            // 禁漫天堂特有搜索方式: A +B --> A and B, A B --> A or B
+            var newQuery = query.replace("+", "%2B").replace(" ", "+")
+            // remove illegal param
+            params = params.substringAfter("?")
+            if (params.contains("search_query")) {
+                val keyword = params.substringBefore("&").substringAfter("=")
+                newQuery = "$newQuery+%2B$keyword"
+                params = params.substringAfter("&")
+            }
+            HttpUrl.parse("$baseUrl/search/photos?search_query=$newQuery&page=$page&$params")?.newBuilder()
+        } else {
             params = if (params == "") "/albums?" else params
-            val url = if (query == "") {
+            if (query == "") {
                 HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres")?.newBuilder()
             } else {
                 // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
                 val removedGenres = query.split(" ").filter { it.startsWith("-") }.map { it.removePrefix("-") }.joinToString("+")
                 HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres$removedGenres")?.newBuilder()
             }
-            GET(url.toString(), headers)
         }
+        Log.d("debug", url.toString() + " " + params)
+        return GET(url.toString(), headers)
     }
     // 默认过滤类型, 仅针对能够自己编译应用的读者
     private val defaultRemovedGenres: String = "" // like ”YAOI+扶他+毛絨絨+獵奇+“
