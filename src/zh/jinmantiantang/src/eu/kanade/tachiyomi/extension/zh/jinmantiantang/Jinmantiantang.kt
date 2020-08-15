@@ -50,7 +50,9 @@ class Jinmantiantang : ParsedHttpSource() {
     // 查询信息
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query != "") {
-            val url = HttpUrl.parse("$baseUrl/search/photos?search_query=$query&page=$page")?.newBuilder()
+            // 禁漫天堂特有搜索方式: A +B --> A and B, A B --> A or B
+            val newQuery = query.replace("+", "%2B").replace(" ", "+")
+            val url = HttpUrl.parse("$baseUrl/search/photos?search_query=$newQuery&page=$page")?.newBuilder()
             GET(url.toString(), headers)
         } else {
             val params = filters.map {
