@@ -79,7 +79,7 @@ class Jinmantiantang : ParsedHttpSource() {
         artist = author
         genre = selectDetailsStatusAndGenre(document, 0)
         status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt() // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1, it will definitely return a String type of 0, 1 or 2. This warning can be ignored
-        description = document.select("div.p-t-5.p-b-5").get(7).text()
+        description = document.select("div.p-t-5.p-b-5").get(7).text().removePrefix("敘述：")
     }
 
     // 查询作者信息
