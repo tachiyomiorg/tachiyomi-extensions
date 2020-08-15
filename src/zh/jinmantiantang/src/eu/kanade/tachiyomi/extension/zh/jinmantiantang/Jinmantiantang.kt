@@ -193,8 +193,8 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("百合", "/search/photos?search_query=百合&"),
         Pair("男同", "/search/photos?search_query=YAOI&"),
         Pair("性转换", "/search/photos?search_query=性轉換&"),
-        Pair("暴力", "/search/photos?search_query=NTR&"),
-        Pair("偽娘", "/search/photos?search_query=偽娘&"),
+        Pair("NTR", "/search/photos?search_query=NTR&"),
+        Pair("伪娘", "/search/photos?search_query=偽娘&"),
         Pair("痴女", "/search/photos?search_query=癡女&"),
         Pair("全彩", "/search/photos?search_query=全彩&"),
 
@@ -209,7 +209,7 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("女仆", "/search/photos?search_query=女僕&"),
         Pair("护士", "/search/photos?search_query=護士&"),
         Pair("泳裝", "/search/photos?search_query=泳裝&"),
-        Pair("眼睛", "/search/photos?search_query=眼鏡&"),
+        Pair("眼镜", "/search/photos?search_query=眼鏡&"),
         Pair("丝袜", "/search/photos?search_query=絲襪&"),
         Pair("制服", "/search/photos?search_query=制服&"),
 
@@ -227,7 +227,7 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("自慰", "/search/photos?search_query=自慰&"),
         Pair("触手", "/search/photos?search_query=觸手&"),
         Pair("兽交", "/search/photos?search_query=獸交&"),
-        Pair("亞人", "/search/photos?search_query=亞人&"),
+        Pair("亚人", "/search/photos?search_query=亞人&"),
         Pair("魔物", "/search/photos?search_query=魔物&"),
 
         Pair("重口", "/search/photos?search_query=重口&"),
@@ -239,7 +239,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     private class SortFilter : UriPartFilter("排序", arrayOf(
         Pair("最新", "o=mr&"),
-        Pair("最多点阅", "o=mv&"),
+        Pair("最多订阅", "o=mv&"),
         Pair("最多图片", "o=mp&"),
         Pair("最多爱心", "o=tf&")
     ))
