@@ -26,7 +26,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 点击量排序(人气)
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/albums?o=mv&page=$page", headers)
+        return GET("$baseUrl/albums?o=mv&page=$page&screen=$defaultRemovedGenres", headers)
     }
 
     override fun popularMangaNextPageSelector(): String? = "a.prevnext"
@@ -40,7 +40,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 最新排序
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/albums?o=mr&page=$page", headers)
+        return GET("$baseUrl/albums?o=mr&page=$page&screen=$defaultRemovedGenres", headers)
     }
 
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -49,21 +49,31 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 查询信息
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (query != "") {
+        return if (query != "" && !query.contains("-")) {
             // 禁漫天堂特有搜索方式: A +B --> A and B, A B --> A or B
             val newQuery = query.replace("+", "%2B").replace(" ", "+")
             val url = HttpUrl.parse("$baseUrl/search/photos?search_query=$newQuery&page=$page")?.newBuilder()
             GET(url.toString(), headers)
         } else {
-            val params = filters.map {
+            var params = filters.map {
                 if (it is UriPartFilter) {
                     it.toUriPart()
                 } else ""
             }.filter { it != "" }.joinToString("")
-            val url = HttpUrl.parse("$baseUrl" + "$params&page=$page")?.newBuilder()
+
+            params = if (params == "") "/albums?" else params
+            val url = if (query == "") {
+                HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres")?.newBuilder()
+            } else {
+                // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
+                val removedGenres = query.split(" ").filter { it.startsWith("-") }.map { it.removePrefix("-") }.joinToString("+")
+                HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres$removedGenres")?.newBuilder()
+            }
             GET(url.toString(), headers)
         }
     }
+    // 默认过滤类型, 仅针对能够自己编译应用的读者
+    private val defaultRemovedGenres: String = "" // like ”YAOI+扶他+毛絨絨+獵奇+“
 
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
@@ -81,7 +91,7 @@ class Jinmantiantang : ParsedHttpSource() {
         artist = author
         genre = selectDetailsStatusAndGenre(document, 0).trim().split(" ").joinToString(", ")
 
-        // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1, 
+        // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1,
         // it will definitely return a String type of 0, 1 or 2. This warning can be ignored
         status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt()
         description = document.select("div.p-t-5.p-b-5").get(7).text().removePrefix("敘述：")
