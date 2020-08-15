@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
-import android.util.Log
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -9,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -77,7 +77,6 @@ class Jinmantiantang : ParsedHttpSource() {
                 HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres$removedGenres")?.newBuilder()
             }
         }
-        Log.d("debug", url.toString() + " " + params)
         return GET(url.toString(), headers)
     }
     // 默认过滤类型, 仅针对能够自己编译应用的读者
@@ -148,19 +147,21 @@ class Jinmantiantang : ParsedHttpSource() {
     // 漫画章节信息
     override fun chapterListSelector(): String = chapterArea
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-
-        if (chapterArea == "a[class=col btn btn-primary dropdown-toggle reading]") {
-            name = element.select("a[class=col btn btn-primary dropdown-toggle reading]").text()
+        val sdf = SimpleDateFormat("yyyy-MM-dd")
+        if (chapterArea == "body") {
+            name = "Ch. 1"
             url = element.select("a[class=col btn btn-primary dropdown-toggle reading]").attr("href")
+            date_upload = sdf.parse(element.select("div[itemprop='datePublished']").attr("content")).time
         } else {
             url = element.select("a").attr("href")
             name = element.select("a li").first().ownText()
+            date_upload = sdf.parse(element.select("a li span.hidden-xs").text().trim()).time
         }
     }
 
     private fun determineChapterInfo(document: Document) {
         if (document.select("div[id=episode-block] a li").size == 0) {
-            chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
+            chapterArea = "body"
         } else {
             chapterArea = "div[id=episode-block] a[href^=/photo/]"
         }
