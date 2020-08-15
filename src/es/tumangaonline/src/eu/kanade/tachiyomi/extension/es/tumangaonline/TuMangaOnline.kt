@@ -5,9 +5,11 @@ import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -21,6 +23,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -138,6 +141,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
+        title = document.select("h2.element-subtitle").text()
         document.select("h5.card-title").let {
             author = it?.first()?.attr("title")?.substringAfter(", ")
             artist = it?.last()?.attr("title")?.substringAfter(", ")
@@ -249,6 +253,28 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String {
         return document.select("div.viewer-container > div.img-container > img.viewer-image").attr("src")
+    }
+
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/$PREFIX_LIBRARY/$id", headers)
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/$PREFIX_LIBRARY/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
     }
 
     private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
@@ -452,6 +478,9 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         private const val DEDUP_PREF = "deduppref"
         private const val PAGEGET_PREF_Title = "Método para la descarga de imágenes"
         private const val PAGEGET_PREF = "pagemethodpref"
+
+        const val PREFIX_LIBRARY = "library"
+        const val PREFIX_ID_SEARCH = "id:"
 
         private val SORTABLES = listOf(
             Pair("Me gusta", "likes_count"),
