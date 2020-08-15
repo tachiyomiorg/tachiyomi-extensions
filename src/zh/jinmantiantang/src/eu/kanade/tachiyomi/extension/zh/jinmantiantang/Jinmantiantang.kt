@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -14,6 +15,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
+@Nsfw
 class Jinmantiantang : ParsedHttpSource() {
     override val baseUrl: String = "https://18comic2.biz"
     override val lang: String = "zh"
