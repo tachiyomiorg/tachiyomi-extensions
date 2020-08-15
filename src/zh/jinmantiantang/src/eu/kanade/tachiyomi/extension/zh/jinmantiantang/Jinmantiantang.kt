@@ -166,7 +166,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),
-        ProgressGroup()
+        SortFilter()
     )
 
     private class CategoryGroup : UriPartFilter("按类型", arrayOf(
@@ -236,7 +236,7 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("暴力", "/search/photos?search_query=暴力&")
     ))
 
-    private class ProgressGroup : UriPartFilter("按进度", arrayOf(
+    private class SortFilter : UriPartFilter("排序", arrayOf(
         Pair("最新", "o=mr"),
         Pair("最多点阅", "o=mv"),
         Pair("最多图片", "o=mp"),
