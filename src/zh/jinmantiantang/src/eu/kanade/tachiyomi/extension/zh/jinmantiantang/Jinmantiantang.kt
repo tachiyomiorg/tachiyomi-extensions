@@ -35,7 +35,7 @@ class Jinmantiantang : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("span.video-title").text()
         setUrlWithoutDomain(element.select("a").first().attr("href"))
-        thumbnail_url = element.select("img").attr("data-original").split("\\?")[0]
+        thumbnail_url = element.select("img").attr("data-original").split("?")[0].replace("_3x4", "")
         author = element.select("div.title-truncate").select("a").first().text()
     }
 
@@ -92,8 +92,8 @@ class Jinmantiantang : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         determineChapterInfo(document)
-        // title = document.select("div.panel-heading").select("div.pull-left").first().text()
-        // thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("\\?")[0]
+        title = document.select("div.panel-heading").select("div.pull-left").first().text()
+        thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("?")[0].replace("_3x4", "")
         author = selectAuthor(document)
         artist = author
         genre = selectDetailsStatusAndGenre(document, 0).trim().split(" ").joinToString(", ")
