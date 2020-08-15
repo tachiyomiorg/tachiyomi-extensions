@@ -77,11 +77,11 @@ class Jinmantiantang : ParsedHttpSource() {
         // thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("\\?")[0]
         author = selectAuthor(document)
         artist = author
-        genre = selectDetailsStatusAndGenre(document, 0)
-        
+        genre = selectDetailsStatusAndGenre(document, 0).trim().split(" ").joinToString(", ")
+
         // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1, 
         // it will definitely return a String type of 0, 1 or 2. This warning can be ignored
-        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt() 
+        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt()
         description = document.select("div.p-t-5.p-b-5").get(7).text().removePrefix("敘述：")
     }
 
