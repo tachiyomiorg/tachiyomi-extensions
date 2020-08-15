@@ -261,10 +261,10 @@ class Jinmantiantang : ParsedHttpSource() {
     ))
 
     private class SortFilter : UriPartFilter("排序", arrayOf(
-        Pair("最新", "o=mr&"),
         Pair("最多订阅", "o=mv&"),
-        Pair("最多图片", "o=mp&"),
-        Pair("最多爱心", "o=tf&")
+        Pair("最新", "o=mr&"),
+        Pair("最多爱心", "o=tf&"),
+        Pair("最多图片", "o=mp&")
     ))
 
     private class TimeFilter : UriPartFilter("时间", arrayOf(
