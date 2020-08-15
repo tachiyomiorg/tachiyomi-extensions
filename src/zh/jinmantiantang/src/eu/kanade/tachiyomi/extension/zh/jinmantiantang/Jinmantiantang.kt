@@ -166,7 +166,8 @@ class Jinmantiantang : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),
-        SortFilter()
+        SortFilter(),
+        TimeFilter()
     )
 
     private class CategoryGroup : UriPartFilter("按类型", arrayOf(
@@ -237,10 +238,17 @@ class Jinmantiantang : ParsedHttpSource() {
     ))
 
     private class SortFilter : UriPartFilter("排序", arrayOf(
-        Pair("最新", "o=mr"),
-        Pair("最多点阅", "o=mv"),
-        Pair("最多图片", "o=mp"),
-        Pair("最多爱心", "o=tf")
+        Pair("最新", "o=mr&"),
+        Pair("最多点阅", "o=mv&"),
+        Pair("最多图片", "o=mp&"),
+        Pair("最多爱心", "o=tf&")
+    ))
+
+    private class TimeFilter : UriPartFilter("时间", arrayOf(
+        Pair("全部", "t=a"),
+        Pair("今天", "t=t"),
+        Pair("这周", "t=w"),
+        Pair("本月", "t=m")
     ))
 
     /**
