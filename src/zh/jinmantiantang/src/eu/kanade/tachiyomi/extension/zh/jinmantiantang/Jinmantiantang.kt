@@ -73,8 +73,8 @@ class Jinmantiantang : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         determineChapterInfo(document)
-        title = document.select("div.panel-heading").select("div.pull-left").first().text()
-        thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("\\?")[0]
+        // title = document.select("div.panel-heading").select("div.pull-left").first().text()
+        // thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("\\?")[0]
         author = selectAuthor(document)
         artist = author
         genre = selectDetailsStatusAndGenre(document, 0)
