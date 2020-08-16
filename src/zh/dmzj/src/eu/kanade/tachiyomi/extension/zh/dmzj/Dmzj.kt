@@ -170,8 +170,19 @@ class Dmzj : HttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers) // Bypass base url
 
     override fun pageListParse(response: Response): List<Page> {
-        val obj = JSONObject(response.body()!!.string())
-        val arr = obj.getJSONObject("chapter").getJSONArray("page_url")
+        // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
+        val arr = try {
+            val obj = JSONObject(response.body()!!.string())
+            obj.getJSONObject("chapter").getJSONArray("page_url")
+        } catch (_: Exception) {
+            // example url: http://v3api.dmzj.com/chapter/44253/101852.json
+            val url = response.request().url().toString()
+                .replace("api.m", "v3api")
+                .replace("comic/", "")
+                .replace(".html", ".json")
+            val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
+            obj.getJSONArray("page_url")
+        }
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
             ret.add(Page(i, "", arr.getString(i)))
