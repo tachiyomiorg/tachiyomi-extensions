@@ -15,6 +15,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Mumamanhua : ParsedHttpSource() {
+
     override val baseUrl: String = "https://www.muamh.com"
     override val lang: String = "zh"
     override val name: String = "木马漫画"
@@ -22,6 +23,10 @@ class Mumamanhua : ParsedHttpSource() {
 
     // 识别手机浏览器请求头信息集合(User-Agent)
     //headers request (User-Agent)
+    //这个网站只能使用手机中的浏览器进行访问,无法使用Windows浏览器访问,原因是该网站在headers request中对手机浏览器进行了识别
+    //This website can only be accessed using the browser on the mobile phone, Cannot access using windows browser,because the website recognizes the mobile browser in the headers request
+    //在多个标头请求中添加“ User-Agent”的值，以伪造移动浏览器访问权限。添加许多内容的原因是该网站具有反网站搜寻器(爬虫)
+    //Add the value of "User-Agent" to multiple header requests to fake mobile browser access rights.The reason for adding a lot of content is that the website has a website anti-searcher
     private val phone = mapOf<Int, String>(
         1 to "Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1",
         2 to "Mozilla/5.0 (Linux; Android 9; V1838A Build/PKQ1.190302.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.89 Mobile Safari/537.36 T7/11.20 SP-engine/2.16.0 baiduboxapp/11.20.0.14 (Baidu; P1 9)",
@@ -66,6 +71,10 @@ class Mumamanhua : ParsedHttpSource() {
     )
 
     // 设置请求头为手机标识
+    //自定义 header request,只为了让请求信息如同使用手机中的浏览器访问一样
+    //Custom header request, just to make the request information like using the browser in the mobile phone to access
+    //对于headers request中的"User-Agent",使用随机获取,原因是如果同一个设备多次且快速的访问网站,网站会识别出请求是非法的爬虫请求(website searcher),导致设备或者改设备下的网络IP无法访问该网站
+    //For the "User-Agent" in the headers request, random acquisition is used. The reason is that if the same device visits the website multiple times and quickly, the website will recognize that the request is an illegal crawler request (website searcher), resulting in the device or the device The network IP cannot access the website
     private var header = Headers.of(mapOf(
         "Cache-Control" to "max-age=0",
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -137,7 +146,7 @@ class Mumamanhua : ParsedHttpSource() {
         thumbnail_url = document.select("div.comic-item div.thumbnail img.thumbnail").attr("data-src")
         author = document.select("span.author").text()
         artist = author
-        genre = getMangaGenre(document)
+        genre = getMangaGenre(document)!!.trim().split(" ").joinToString(", ")
         status = getMangaStatus(document)
         description = document.select("div.swiper-slide.tab-item div.comic-detail p.content").text()
     }
@@ -211,19 +220,19 @@ class Mumamanhua : ParsedHttpSource() {
         TagGroup()
     )
 
-    private class UpdateGroup : UriPartFilter("按类型", arrayOf(
+    private class UpdateGroup : UriPartFilter("按进度", arrayOf(
         Pair("全部", "/booklist?"),
         Pair("连载中", "/booklist?end=0"),
         Pair("已完结", "/booklist?end=1")
     ))
 
-    private class CutGroup : UriPartFilter("按进度", arrayOf(
+    private class CutGroup : UriPartFilter("删减类型", arrayOf(
         Pair("全部", ""),
         Pair("无删减", "&areas=1"),
         Pair("删减", "&areas=2")
     ))
 
-    private class TagGroup : UriPartFilter("按进度", arrayOf(
+    private class TagGroup : UriPartFilter("按剧情", arrayOf(
         Pair("全部", ""),
         Pair("耽美", "&tag=耽美"),
         Pair("恋爱", "&tag=恋爱"),
