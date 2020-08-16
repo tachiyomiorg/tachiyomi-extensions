@@ -1,6 +1,6 @@
 ## 1.2.14
 
-Requires Komga `0.41.0`
+Minimum Komga version required: `0.41.0`
 
 ### Features
 
@@ -8,7 +8,7 @@ Requires Komga `0.41.0`
 
 ## 1.2.13
 
-Requires Komga `0.41.0`
+Minimum Komga version required: `0.41.0`
 
 ### Features
 
@@ -16,7 +16,7 @@ Requires Komga `0.41.0`
 
 ## 1.2.12
 
-Requires Komga `0.41.0`
+Minimum Komga version required: `0.41.0`
 
 ### Features
 
@@ -24,7 +24,7 @@ Requires Komga `0.41.0`
 
 ## 1.2.11
 
-Requires Komga `0.35.2`
+Minimum Komga version required: `0.35.2`
 
 ### Features
 
@@ -32,7 +32,7 @@ Requires Komga `0.35.2`
 
 ## 1.2.10
 
-Requires Komga `0.35.2`
+Minimum Komga version required: `0.35.2`
 
 ### Features
 
@@ -41,7 +41,7 @@ Requires Komga `0.35.2`
 
 ## 1.2.9
 
-Requires Komga `0.22.0`
+Minimum Komga version required: `0.22.0`
 
 ### Features
 
@@ -49,7 +49,7 @@ Requires Komga `0.22.0`
 
 ## 1.2.8
 
-Requires Komga `0.22.0`
+Minimum Komga version required: `0.22.0`
 
 ### Features
 
