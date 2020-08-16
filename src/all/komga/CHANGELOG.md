@@ -1,3 +1,11 @@
+## 1.2.15
+
+Minimum Komga version required: `0.56.0`
+
+### Features
+
+* remove the 1000 chapters limit
+
 ## 1.2.14
 
 Minimum Komga version required: `0.41.0`

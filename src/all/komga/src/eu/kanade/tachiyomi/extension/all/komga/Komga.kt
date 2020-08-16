@@ -134,7 +134,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books?size=1000&media_status=READY", headers)
+        GET("$baseUrl${manga.url}/books?unpaged=true&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = try {
