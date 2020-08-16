@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -7,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -14,6 +16,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
+@Nsfw
 class Jinmantiantang : ParsedHttpSource() {
     override val baseUrl: String = "https://18comic2.biz"
     override val lang: String = "zh"
@@ -24,7 +27,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 点击量排序(人气)
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/albums?o=mv&page=$page", headers)
+        return GET("$baseUrl/albums?o=mv&page=$page&screen=$defaultRemovedGenres", headers)
     }
 
     override fun popularMangaNextPageSelector(): String? = "a.prevnext"
@@ -32,13 +35,13 @@ class Jinmantiantang : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("span.video-title").text()
         setUrlWithoutDomain(element.select("a").first().attr("href"))
-        thumbnail_url = element.select("img").attr("data-original").split("\\?")[0]
+        thumbnail_url = element.select("img").attr("data-original").split("?")[0].replace("_3x4", "")
         author = element.select("div.title-truncate").select("a").first().text()
     }
 
     // 最新排序
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/albums?o=mr&page=$page", headers)
+        return GET("$baseUrl/albums?o=mr&page=$page&screen=$defaultRemovedGenres", headers)
     }
 
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -47,19 +50,37 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 查询信息
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (query != "") {
-            val url = HttpUrl.parse("$baseUrl/search/photos?search_query=$query&page=$page")?.newBuilder()
-            GET(url.toString(), headers)
+        var params = filters.map {
+            if (it is UriPartFilter) {
+                it.toUriPart()
+            } else ""
+        }.filter { it != "" }.joinToString("")
+
+        val url = if (query != "" && !query.contains("-")) {
+            // 禁漫天堂特有搜索方式: A +B --> A and B, A B --> A or B
+            var newQuery = query.replace("+", "%2B").replace(" ", "+")
+            // remove illegal param
+            params = params.substringAfter("?")
+            if (params.contains("search_query")) {
+                val keyword = params.substringBefore("&").substringAfter("=")
+                newQuery = "$newQuery+%2B$keyword"
+                params = params.substringAfter("&")
+            }
+            HttpUrl.parse("$baseUrl/search/photos?search_query=$newQuery&page=$page&$params")?.newBuilder()
         } else {
-            val params = filters.map {
-                if (it is UriPartFilter) {
-                    it.toUriPart()
-                } else ""
-            }.filter { it != "" }.joinToString("")
-            val url = HttpUrl.parse("$baseUrl" + "$params&page=$page")?.newBuilder()
-            GET(url.toString(), headers)
+            params = if (params == "") "/albums?" else params
+            if (query == "") {
+                HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres")?.newBuilder()
+            } else {
+                // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
+                val removedGenres = query.split(" ").filter { it.startsWith("-") }.map { it.removePrefix("-") }.joinToString("+")
+                HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres$removedGenres")?.newBuilder()
+            }
         }
+        return GET(url.toString(), headers)
     }
+    // 默认过滤类型, 仅针对能够自己编译应用的读者
+    private val defaultRemovedGenres: String = "" // like ”YAOI+扶他+毛絨絨+獵奇+“
 
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
@@ -72,12 +93,15 @@ class Jinmantiantang : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         determineChapterInfo(document)
         title = document.select("div.panel-heading").select("div.pull-left").first().text()
-        thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("\\?")[0]
+        thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("?")[0].replace("_3x4", "")
         author = selectAuthor(document)
         artist = author
-        genre = selectDetailsStatusAndGenre(document, 0)
-        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt() // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1, it will definitely return a String type of 0, 1 or 2. This warning can be ignored
-        description = document.select("div.p-t-5.p-b-5").get(7).text()
+        genre = selectDetailsStatusAndGenre(document, 0).trim().split(" ").joinToString(", ")
+
+        // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1,
+        // it will definitely return a String type of 0, 1 or 2. This warning can be ignored
+        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt()
+        description = document.select("div.p-t-5.p-b-5").get(7).text().removePrefix("敘述：")
     }
 
     // 查询作者信息
@@ -123,19 +147,21 @@ class Jinmantiantang : ParsedHttpSource() {
     // 漫画章节信息
     override fun chapterListSelector(): String = chapterArea
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-
-        if (chapterArea == "a[class=col btn btn-primary dropdown-toggle reading]") {
-            name = element.select("a[class=col btn btn-primary dropdown-toggle reading]").text()
+        val sdf = SimpleDateFormat("yyyy-MM-dd")
+        if (chapterArea == "body") {
+            name = "Ch. 1"
             url = element.select("a[class=col btn btn-primary dropdown-toggle reading]").attr("href")
+            date_upload = sdf.parse(element.select("div[itemprop='datePublished']").attr("content")).time
         } else {
             url = element.select("a").attr("href")
             name = element.select("a li").first().ownText()
+            date_upload = sdf.parse(element.select("a li span.hidden-xs").text().trim()).time
         }
     }
 
     private fun determineChapterInfo(document: Document) {
         if (document.select("div[id=episode-block] a li").size == 0) {
-            chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
+            chapterArea = "body"
         } else {
             chapterArea = "div[id=episode-block] a[href^=/photo/]"
         }
@@ -164,7 +190,8 @@ class Jinmantiantang : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),
-        ProgressGroup()
+        SortFilter(),
+        TimeFilter()
     )
 
     private class CategoryGroup : UriPartFilter("按类型", arrayOf(
@@ -190,8 +217,8 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("百合", "/search/photos?search_query=百合&"),
         Pair("男同", "/search/photos?search_query=YAOI&"),
         Pair("性转换", "/search/photos?search_query=性轉換&"),
-        Pair("暴力", "/search/photos?search_query=NTR&"),
-        Pair("偽娘", "/search/photos?search_query=偽娘&"),
+        Pair("NTR", "/search/photos?search_query=NTR&"),
+        Pair("伪娘", "/search/photos?search_query=偽娘&"),
         Pair("痴女", "/search/photos?search_query=癡女&"),
         Pair("全彩", "/search/photos?search_query=全彩&"),
 
@@ -206,7 +233,7 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("女仆", "/search/photos?search_query=女僕&"),
         Pair("护士", "/search/photos?search_query=護士&"),
         Pair("泳裝", "/search/photos?search_query=泳裝&"),
-        Pair("眼睛", "/search/photos?search_query=眼鏡&"),
+        Pair("眼镜", "/search/photos?search_query=眼鏡&"),
         Pair("丝袜", "/search/photos?search_query=絲襪&"),
         Pair("制服", "/search/photos?search_query=制服&"),
 
@@ -224,7 +251,7 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("自慰", "/search/photos?search_query=自慰&"),
         Pair("触手", "/search/photos?search_query=觸手&"),
         Pair("兽交", "/search/photos?search_query=獸交&"),
-        Pair("亞人", "/search/photos?search_query=亞人&"),
+        Pair("亚人", "/search/photos?search_query=亞人&"),
         Pair("魔物", "/search/photos?search_query=魔物&"),
 
         Pair("重口", "/search/photos?search_query=重口&"),
@@ -234,11 +261,18 @@ class Jinmantiantang : ParsedHttpSource() {
         Pair("暴力", "/search/photos?search_query=暴力&")
     ))
 
-    private class ProgressGroup : UriPartFilter("按进度", arrayOf(
-        Pair("最新", "o=mr"),
-        Pair("最多点阅", "o=mv"),
-        Pair("最多图片", "o=mp"),
-        Pair("最多爱心", "o=tf")
+    private class SortFilter : UriPartFilter("排序", arrayOf(
+        Pair("最多订阅", "o=mv&"),
+        Pair("最新", "o=mr&"),
+        Pair("最多爱心", "o=tf&"),
+        Pair("最多图片", "o=mp&")
+    ))
+
+    private class TimeFilter : UriPartFilter("时间", arrayOf(
+        Pair("全部", "t=a"),
+        Pair("今天", "t=t"),
+        Pair("这周", "t=w"),
+        Pair("本月", "t=m")
     ))
 
     /**

@@ -122,11 +122,13 @@ abstract class FMReader(
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun searchMangaSelector() = popularMangaSelector()
+    override fun searchMangaSelector() = popularMangaSelector() 
+
+    open val headerSelector = "h3"
 
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            element.select("h3 a").let {
+            element.select("$headerSelector a").let {
                 setUrlWithoutDomain(it.attr("abs:href"))
                 title = it.text()
             }

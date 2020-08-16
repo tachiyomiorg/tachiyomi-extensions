@@ -5,8 +5,6 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -71,9 +69,7 @@ class DynastyChapters : DynastyScans() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.baseUri())
         chapter.name = element.select("h3").text()
-        chapter.date_upload = element.select("span.released")?.first().let {
-            SimpleDateFormat("MMM dd, yy", Locale.ENGLISH).parse(it!!.text()).time
-        }
+        chapter.date_upload = element.select("span.released").firstOrNull()?.text().toDate("MMM dd, yyyy")
         return chapter
     }
 

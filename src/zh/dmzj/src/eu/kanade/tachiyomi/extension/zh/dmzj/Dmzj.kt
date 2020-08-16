@@ -160,8 +160,7 @@ class Dmzj : HttpSource() {
                 ret.add(SChapter.create().apply {
                     name = "$prefix: ${chapter.getString("chapter_title")}"
                     date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                    url = "$baseUrl/chapter/$cid/${chapter.getString("chapter_id")}.json"
-                    // url = "http://m.dmzj.com/chapinfo/$cid/${chapter.getString("chapter_id")}.html" // From m_readerBg.js
+                    url = "https://api.m.dmzj.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
                 })
             }
         }
@@ -172,7 +171,7 @@ class Dmzj : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val obj = JSONObject(response.body()!!.string())
-        val arr = obj.getJSONArray("page_url")
+        val arr = obj.getJSONObject("chapter").getJSONArray("page_url")
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
             ret.add(Page(i, "", arr.getString(i)))

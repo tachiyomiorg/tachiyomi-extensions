@@ -147,10 +147,20 @@ abstract class DynastyScans : ParsedHttpSource() {
                 chapter.name += " and ${nodes[nodes.indexOfPartial(" and ") + 1]}"
             }
         }
-        chapter.date_upload = nodes[nodes.indexOfPartial("released")].let {
-            SimpleDateFormat("MMM dd yy", Locale.ENGLISH).parse(it.substringAfter("released ").replace("\'", "")).time
-        }
+        chapter.date_upload = nodes[nodes.indexOfPartial("released")]
+            .substringAfter("released ")
+            .replace("\'", "")
+            .toDate("MMM dd yy")
         return chapter
+    }
+
+    protected fun String?.toDate(pattern: String): Long {
+        this ?: return 0
+        return try {
+            SimpleDateFormat(pattern, Locale.ENGLISH).parse(this)?.time ?: 0
+        } catch (_: Exception) {
+            0
+        }
     }
 
     override fun pageListParse(document: Document): List<Page> {
