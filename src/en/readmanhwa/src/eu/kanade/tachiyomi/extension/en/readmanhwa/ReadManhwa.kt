@@ -12,6 +12,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -34,6 +35,7 @@ import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+@Nsfw
 class ReadManhwa : ConfigurableSource, HttpSource() {
 
     override val name = "ReadManhwa"
