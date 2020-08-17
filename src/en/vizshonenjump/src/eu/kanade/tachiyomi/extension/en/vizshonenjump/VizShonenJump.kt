@@ -57,11 +57,13 @@ class VizShonenJump : ParsedHttpSource() {
         return MangasPage(mangas.sortedBy { it.title }, false)
     }
 
-    override fun popularMangaSelector(): String = "section.section_chapters div.o_sort_container div.o_sortable > a"
+    override fun popularMangaSelector(): String =
+        "section.section_chapters div.o_sort_container div.o_sortable > a"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.pad-x-rg").first().text()
-        thumbnail_url = element.select("div.pos-r img.disp-bl").first()?.attr("data-original")
+        thumbnail_url = element.select("div.pos-r img.disp-bl").first()
+            ?.attr("data-original")
         url = element.attr("href")
     }
 
@@ -80,16 +82,21 @@ class VizShonenJump : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element): SManga =
+        popularMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return super.fetchSearchManga(page, query, filters)
-            .map { MangasPage(it.mangas.filter { m -> m.title.contains(query, true) }, it.hasNextPage) }
+            .map {
+                val filteredMangas = it.mangas.filter { m -> m.title.contains(query, true) }
+                MangasPage(filteredMangas, it.hasNextPage)
+            }
     }
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = popularMangaRequest(page)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
+        popularMangaRequest(page)
 
     override fun searchMangaParse(response: Response): MangasPage {
         val mangasPage = super.searchMangaParse(response)
@@ -114,7 +121,7 @@ class VizShonenJump : ParsedHttpSource() {
                 ?.replace("Created by ", "")
             artist = author
             status = SManga.ONGOING
-            description = seriesIntro.select("h2").first().text()
+            description = seriesIntro.select("h4").first().text()
         }
     }
 
@@ -125,17 +132,22 @@ class VizShonenJump : ParsedHttpSource() {
             .add("X-Requested-With", "XMLHttpRequest")
             .set("Referer", response.request().url().toString())
             .build()
+
         val loginCheckRequest = GET(REFRESH_LOGIN_LINKS_URL, newHeaders)
         val document = client.newCall(loginCheckRequest).execute().asJsoup()
-        val isLoggedIn = document.select("div#o_account-links-content").first()!!.attr("logged_in")!!.toBoolean()
+        val isLoggedIn = document.select("div#o_account-links-content").first()!!
+            .attr("logged_in")!!.toBoolean()
 
         if (isLoggedIn) {
             return allChapters.map { oldChapter ->
-                oldChapter.apply { url = url.substringAfter("'").substringBeforeLast("'") }
+                oldChapter.apply {
+                    url = url.substringAfter("'").substringBeforeLast("'")
+                }
             }
         }
 
         return allChapters.filter { !it.url.startsWith("javascript") }
+            .sortedByDescending { it.chapter_number }
     }
 
     override fun chapterListSelector() =
@@ -151,12 +163,12 @@ class VizShonenJump : ParsedHttpSource() {
             val leftSide = element.select("div:nth-child(1) table").first()!!
             val rightSide = element.select("div:nth-child(2) table").first()!!
 
-            name = rightSide.select("td.ch-num-list-spacing").first()!!.text()
-            date_upload = DATE_FORMATTER.tryParseTime(leftSide.select("td[align=right]").first()!!.text())
+            name = rightSide.select("td").first()!!.text()
+            date_upload = leftSide.select("td[align=right]").first()!!.text().toDate()
         }
 
+        chapter_number = name.substringAfter("Ch. ").toFloatOrNull() ?: 0F
         scanlator = "VIZ Media"
-
         url = element.attr("data-target-url")
     }
 
@@ -230,18 +242,20 @@ class VizShonenJump : ParsedHttpSource() {
         return GET(newImageUrl, newHeaders)
     }
 
-    private fun SimpleDateFormat.tryParseTime(date: String): Long {
+    private fun String.toDate(): Long {
         return try {
-            parse(date).time
+            DATE_FORMATTER.parse(this)!!.time
         } catch (e: ParseException) {
             0L
         }
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
 
-        private val DATE_FORMATTER by lazy { SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH) }
+        private val DATE_FORMATTER by lazy {
+            SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)
+        }
 
         private const val COUNTRY_NOT_SUPPORTED = "Your country is not supported, try using a VPN."
 

@@ -5,12 +5,12 @@ ext {
     extName = 'VIZ Shonen Jump'
     pkgNameSuffix = 'en.vizshonenjump'
     extClass = '.VizShonenJump'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
 dependencies {
-    implementation 'androidx.exifinterface:exifinterface:1.2.0'
+    implementation 'com.drewnoakes:metadata-extractor:2.14.0'
 }
 
 apply from: "$rootDir/common.gradle"
