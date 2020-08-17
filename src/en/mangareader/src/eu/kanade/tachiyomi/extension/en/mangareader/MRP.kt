@@ -27,54 +27,11 @@ abstract class MRP(
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "div.mangaresultitem"
-
     override fun popularMangaRequest(page: Int): Request {
-        return if (page == 1) {
-            GET("$baseUrl/popular/")
-        } else {
-            GET("$baseUrl/popular/$nextPageNumber")
-        }
+        return GET("$baseUrl/popular" + if (page > 1) "/${(page - 1) * 30}" else "", headers)
     }
 
-    // Site's page numbering is weird, have to do some work to get the right page number for additional requests
-    private lateinit var nextPageNumber: String
-
-    private val nextPageSelector = "div#sp a:contains(>)"
-
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        nextPageNumber = document.select(nextPageSelector).attr("href")
-            .substringAfterLast("/").substringBefore("\"")
-
-        val manga = mutableListOf<SManga>()
-        document.select(popularMangaSelector()).map { manga.add(popularMangaFromElement(it)) }
-
-        return MangasPage(manga, document.select(nextPageSelector).hasText())
-    }
-
-    override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        nextPageNumber = document.select(nextPageSelector).attr("href")
-            .substringAfterLast("/").substringBefore("\"")
-
-        val manga = mutableListOf<SManga>()
-        document.select(latestUpdatesSelector()).map { manga.add(latestUpdatesFromElement(it)) }
-
-        return MangasPage(manga, document.select(nextPageSelector).hasText())
-    }
-
-    override fun latestUpdatesSelector() = "tr.c3"
-
-    override fun latestUpdatesRequest(page: Int): Request {
-        return if (page == 1) {
-            GET("$baseUrl/latest/")
-        } else {
-            GET("$baseUrl/latest/$nextPageNumber")
-        }
-    }
+    override fun popularMangaSelector() = "div.mangaresultitem"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -86,6 +43,30 @@ abstract class MRP(
         return manga
     }
 
+    override fun popularMangaNextPageSelector() = "div#sp strong + a"
+
+    private var nextLatestPage: String? = null
+
+    override fun latestUpdatesRequest(page: Int): Request {
+        return if (page == 1) {
+            nextLatestPage = null
+            GET("$baseUrl/latest", headers)
+        } else {
+            GET(nextLatestPage!!, headers)
+        }
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(latestUpdatesSelector()).map { latestUpdatesFromElement(it) }
+        nextLatestPage = document.select(latestUpdatesNextPageSelector()).firstOrNull()?.attr("abs:href")
+
+        return MangasPage(mangas, nextLatestPage != null)
+    }
+
+    override fun latestUpdatesSelector() = "tr.c3"
+
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a.chapter").first().let {
@@ -95,19 +76,11 @@ abstract class MRP(
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = "Not using this"
-
-    override fun latestUpdatesNextPageSelector() = "Not using this"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (page == 1) {
-            GET("$baseUrl/search/?w=$query&p", headers)
-        } else {
-            GET("$baseUrl/search/?w=$query&p=$nextPageNumber", headers)
-        }
+        return GET("$baseUrl/search/?w=$query" + if (page > 1) "&p=${(page - 1) * 30}" else "", headers)
     }
-
-    override fun searchMangaParse(response: Response) = popularMangaParse(response)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -130,7 +103,7 @@ abstract class MRP(
         return manga
     }
 
-    private fun parseStatus(status: String?) = when {
+    protected fun parseStatus(status: String?) = when {
         status == null -> SManga.UNKNOWN
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Completed") -> SManga.COMPLETED
@@ -173,8 +146,6 @@ abstract class MRP(
 
     // Get the image from the requested page
     override fun imageUrlParse(document: Document): String {
-        return document.select("a img").attr("src")
+        return document.select("a img").attr("abs:src")
     }
-
-    override fun getFilterList() = FilterList()
 }
