@@ -268,6 +268,7 @@ class Generator {
             SourceData("id", "MangaYu", "https://mangayu.com"),
             SourceData("tr", "MangaVadisi", "http://manga-v2.mangavadisi.org"),
             SourceData("id", "MangaID", "https://mangaid.click"),
+            SourceData("fr", "Jpmangas", "https://www.jpmangas.com"),
             // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
             SourceData("other", "HentaiShark", "https://www.hentaishark.com", true))
             // Changed CMS
