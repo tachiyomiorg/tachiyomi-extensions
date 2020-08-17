@@ -379,7 +379,7 @@ abstract class Madara(
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val dataIdSelector = "div#manga-chapters-holder"
+        val dataIdSelector = "div[id^=manga-chapters-holder]"
 
         return document.select(chapterListSelector())
             .let { elements ->

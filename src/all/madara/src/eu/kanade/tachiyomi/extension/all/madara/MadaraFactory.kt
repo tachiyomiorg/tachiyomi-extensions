@@ -47,7 +47,6 @@ class MadaraFactory : SourceFactory {
         Hiperdex(),
         HunterFansub(),
         IchirinNoHanaYuri(),
-        Indiancomicsonline(),
         IsekaiScanCom(),
         JustForFun(),
         KingzManga(),
@@ -316,8 +315,6 @@ class ZinManga : Madara("Zin Translator", "https://zinmanga.com", "en") {
 class ManwahentaiMe : Madara("Manwahentai.me", "https://manhwahentai.me", "en")
 
 class Manga3asq : Madara("مانجا العاشق", "https://3asq.org", "ar")
-
-class Indiancomicsonline : Madara("Indian Comics Online", "http://www.indiancomicsonline.com", "hi")
 
 class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "tr") {
     override val userAgentRandomizer = ""
