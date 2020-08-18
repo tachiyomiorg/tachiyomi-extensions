@@ -160,7 +160,8 @@ class MadaraFactory : SourceFactory {
         Bakaman(),
         CatTranslator(),
         ComicsValley(),
-        FriendlyTranslations()
+        FriendlyTranslations(),
+        Wakascan()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -1259,3 +1260,5 @@ class CatTranslator : Madara("CAT-translator", "https://cat-translator.com", "th
 class ComicsValley : Madara("Comics Valley", "https://comicsvalley.com", "hi")
 
 class FriendlyTranslations : Madara("Friendly Translations", "https://friendlytranslationsscan.website", "en")
+
+class Wakascan : Madara("Wakascan", "https://wakascan.com", "fr")
