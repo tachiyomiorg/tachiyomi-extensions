@@ -5,18 +5,20 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 
 /**
- * Source changes domain names approximately once every 10 days (e.g. newtoki31.net to newtoki32.net)
- * The domain name was newtoki32 on 2019-11-14, this should increment that by 1 for every 10 days that pass
- * If that rate holds and the code is correct, this should be accurate for a good while
+ * Source changes domain names every few days (e.g. newtoki31.net to newtoki32.net)
+ * The domain name was newtoki32 on 2019-11-14, this attempts to match the rate at which the domain changes
  */
-private val domainNumber = 32 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", Locale.US).parse("2019-11-14").time) / 864000000)
+private val domainNumber = 32 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", Locale.US).parse("2019-11-14")!!.time) / 595000000)
 
 class NewTokiFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -45,6 +47,20 @@ class NewTokiWebtoon : NewToki("NewToki (Webtoon)", "https://newtoki$domainNumbe
         }
 
         return GET(url.toString())
+    }
+
+    private val htmlDataRegex = Regex("""html_data\+='([^']+)'""")
+
+    override fun pageListParse(document: Document): List<Page> {
+        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("script not found")
+
+        return htmlDataRegex.findAll(script).map { it.groupValues[1] }
+            .asIterable()
+            .flatMap { it.split(".") }
+            .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
+            .let { Jsoup.parse(it) }
+            .select("img[alt]")
+            .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
     private class SearchTypeList : Filter.Select<String>("Type", arrayOf("전체", "일반웹툰", "성인웹툰", "BL/GL", "완결웹툰"))

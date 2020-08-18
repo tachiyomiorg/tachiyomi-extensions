@@ -155,7 +155,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
 
                 calendar.timeInMillis
             } else {
-                SimpleDateFormat("yyyy.MM.dd").parse(date).time
+                SimpleDateFormat("yyyy.MM.dd").parse(date)?.time ?: 0
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -164,22 +164,9 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        try {
-            document.select(".view-padding img")
-                    .map {
-                        val origin = it.attr("data-original")
-                        if (origin.isNullOrEmpty()) it.attr("content") else origin
-                    }
-                    .forEach {
-                        val url = if (it.contains("://")) it else baseUrl + it
-                        pages.add(Page(pages.size, "", url))
-                    }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return pages
+        return document.select("article > div > div > img")
+            .filterNot { it.attr("data-original").contains("blank.gif") }
+            .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
