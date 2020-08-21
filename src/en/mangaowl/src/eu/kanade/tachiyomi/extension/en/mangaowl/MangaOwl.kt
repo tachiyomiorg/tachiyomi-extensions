@@ -67,7 +67,7 @@ class MangaOwl : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/$query/$page", headers)
+        return GET("$baseUrl/search/$page?search=$query", headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -125,7 +125,7 @@ class MangaOwl : ParsedHttpSource() {
 
     private fun parseChapterDate(string: String): Long {
         return try {
-            dateFormat.parse(string).time
+            dateFormat.parse(string)?.time ?: 0
         } catch (_: ParseException) {
             0
         }
