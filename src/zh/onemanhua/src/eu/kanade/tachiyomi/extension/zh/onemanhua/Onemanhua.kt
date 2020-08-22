@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.ArrayList
 import java.util.regex.Pattern
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
@@ -25,7 +24,7 @@ class Onemanhua : ParsedHttpSource() {
     override val name = "OH漫画 (One漫画)"
     override val baseUrl = "https://www.ohmanhua.com/"
 
-    private var decryptKey = "JRUIFMVJDIWE569j"
+    private var decryptKey = "fw12558899ertyui"
     private var imageServerUrl = "https://img.ohmanhua.com/comic/"
 
     // Common
@@ -142,19 +141,15 @@ class Onemanhua : ParsedHttpSource() {
         // 3. decrypt C_DATA
         val decryptedData = decryptAES(decodedData, decryptKey)
 
-        val result = ArrayList<Page>()
+        val imgRelativePath = getImgRelativePath(decryptedData)
+        val startImg = getStartImg(decryptedData)
+        val totalPages = getTotalPages(decryptedData)
 
-        if (decryptedData != null) {
-            val imgRelativePath = getImgRelativePath(decryptedData)
-            val startImg = getStartImg(decryptedData)
-            val totalPages = getTotalPages(decryptedData)
-
+        return mutableListOf<Page>().apply {
             for (i in startImg..totalPages) {
-                result.add(Page(i, "", "${imageServerUrl}${imgRelativePath}${"%04d".format(i)}.jpg"))
+                add(Page(i, "", "${imageServerUrl}${imgRelativePath}${"%04d".format(i)}.jpg"))
             }
         }
-
-        return result
     }
 
     private fun getEncodedMangaData(document: Document): String? {
@@ -173,21 +168,26 @@ class Onemanhua : ParsedHttpSource() {
     }
 
     @SuppressLint("GetInstance")
-    private fun decryptAES(value: String, key: String): String? {
+    private fun decryptAES(value: String, key: String): String {
         val secretKey = SecretKeySpec(key.toByteArray(), "AES")
         val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-        cipher.init(Cipher.DECRYPT_MODE, secretKey)
 
-        val code = Base64.decode(value, Base64.NO_WRAP)
+        return try {
+            cipher.init(Cipher.DECRYPT_MODE, secretKey)
 
-        return String(cipher.doFinal(code))
+            val code = Base64.decode(value, Base64.NO_WRAP)
+
+            String(cipher.doFinal(code))
+        } catch (_: Exception) {
+            throw Exception("Decryption failed")
+        }
     }
 
     private fun getImgRelativePath(mangaData: String): String {
         val pattern = Pattern.compile("imgpath:\"(.+?)\"")
         val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
-            return matcher.group(1)
+            return matcher.group(1) ?: throw Exception("imgpath not found")
         }
 
         throw Error("Unable to match for imgPath")
@@ -197,7 +197,7 @@ class Onemanhua : ParsedHttpSource() {
         val pattern = Pattern.compile("totalimg:([0-9]+?),")
         val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1))
+            return matcher.group(1)?.let { Integer.parseInt(it) } ?: throw Exception("totalimg not found")
         }
 
         throw Error("Unable to match for totalimg")
@@ -207,7 +207,7 @@ class Onemanhua : ParsedHttpSource() {
         val pattern = Pattern.compile("startimg:([0-9]+?),")
         val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1))
+            return matcher.group(1)?.let { Integer.parseInt(it) } ?: throw Exception("startimg not found")
         }
 
         throw Error("Unable to match for startimg")
