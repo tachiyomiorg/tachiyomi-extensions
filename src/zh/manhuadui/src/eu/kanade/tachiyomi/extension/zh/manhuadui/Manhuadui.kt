@@ -8,15 +8,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
-import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class Manhuadui : ParsedHttpSource() {
 
@@ -27,9 +27,13 @@ class Manhuadui : ParsedHttpSource() {
     private val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
 
     companion object {
-        private const val DECRYPTION_KEY = "1739ZAQ54321bbG1"
-        private const val DECRYPTION_IV = "ABCDEF1G344321bb"
+        private const val DECRYPTION_KEY = "KA58ZAQ321oobbG8"
+        private const val DECRYPTION_IV = "A1B2C3DEF1G321o8"
     }
+
+    override val client: OkHttpClient = super.client.newBuilder()
+        .followRedirects(true)
+        .build()
 
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
@@ -39,9 +43,6 @@ class Manhuadui : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
-
-    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
-        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
