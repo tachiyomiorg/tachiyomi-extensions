@@ -21,7 +21,21 @@ data class SeriesMetadataDto(
     val created: String?,
     val lastModified: String?,
     val title: String,
-    val titleSort: String
+    val titleSort: String,
+    val summary: String,
+    val summaryLock: Boolean,
+    val readingDirection: String,
+    val readingDirectionLock: Boolean,
+    val publisher: String,
+    val publisherLock: Boolean,
+    val ageRating: Int?,
+    val ageRatingLock: Boolean,
+    val language: String,
+    val languageLock: Boolean,
+    val genres: Set<String>?, //TODO: remove optional in next iteration
+    val genresLock: Boolean,
+    val tags: Set<String>?, //TODO: remove optional in next iteration
+    val tagsLock: Boolean
 )
 
 data class BookDto(
@@ -59,12 +73,6 @@ data class BookMetadataDto(
     val numberLock: Boolean,
     val numberSort: Float,
     val numberSortLock: Boolean,
-    val readingDirection: String,
-    val readingDirectionLock: Boolean,
-    val publisher: String,
-    val publisherLock: Boolean,
-    val ageRating: Int?,
-    val ageRatingLock: Boolean,
     val releaseDate: String?,
     val releaseDateLock: Boolean,
     val authors: List<AuthorDto>,

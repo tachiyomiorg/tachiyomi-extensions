@@ -10,15 +10,11 @@ import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.BookDtoOld
 import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDtoOld
 import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDtoOld
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDto
-import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDtoOld
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -124,12 +120,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val series = try {
-            gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
-        } catch (e: Exception) {
-            gson.fromJson<SeriesDtoOld>(response.body()?.charStream()!!)
-                .toSeriesDto()
-        }
+        val series = gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
         return series.toSManga()
     }
 
@@ -137,12 +128,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         GET("$baseUrl${manga.url}/books?unpaged=true&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val page = try {
-            gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!).content
-        } catch (e: Exception) {
-            gson.fromJson<PageWrapperDto<BookDtoOld>>(response.body()?.charStream()!!).content
-                .map { it.toBookDto() }
-        }
+        val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!).content
 
         return page.map { book ->
             SChapter.create().apply {
@@ -175,16 +161,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     private fun processSeriesPage(response: Response): MangasPage {
         var lastPage: Boolean
-        val page = try {
-            with(gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)) {
-                lastPage = last
-                content
-            }
-        } catch (e: Exception) {
-            with(gson.fromJson<PageWrapperDto<SeriesDtoOld>>(response.body()?.charStream()!!)) {
-                lastPage = last
-                content.map { it.toSeriesDto() }
-            }
+        val page = with(gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)) {
+            lastPage = last
+            content
         }
         val mangas = page.map {
             it.toSManga()
@@ -202,6 +181,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 "ENDED" -> SManga.COMPLETED
                 else -> SManga.UNKNOWN
             }
+            // TODO: remove safe calls in next iteration
+            genre = (metadata.genres?.plus(metadata.tags ?: emptySet())
+                ?: emptySet()).joinToString(", ")
+            description = metadata.summary
         }
 
     private fun parseDate(date: String?): Long =
@@ -346,12 +329,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 libraries = try {
                     gson.fromJson(response.body()?.charStream()!!)
                 } catch (e: Exception) {
-                    try {
-                        gson.fromJson<List<LibraryDtoOld>>(response.body()?.charStream()!!)
-                            .map { it.toLibraryDto() }
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
+                    emptyList()
                 }
             }, {})
 
@@ -364,12 +342,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 collections = try {
                     gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
                 } catch (e: Exception) {
-                    try {
-                        gson.fromJson<PageWrapperDto<CollectionDtoOld>>(response.body()?.charStream()!!).content
-                            .map { it.toCollectionDto() }
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
+                    emptyList()
                 }
             }, {})
     }
