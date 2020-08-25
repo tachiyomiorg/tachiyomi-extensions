@@ -139,26 +139,35 @@ open class MyMangaReaderCMSSource(
 
         val mangas = document.select(latestUpdatesSelector())
             .let { elements ->
-                if (elements.select("a").firstOrNull()?.hasText() == true) {
-                    elements.map { latestUpdatesFromElement(it) }
-                } else {
-                    document.select(gridLatestUpdatesSelector()).map { gridLatestUpdatesFromElement(it) }
+                when {
+                    // Mangas.pw
+                    elements.select("a.fa-info-circle + a").firstOrNull()?.hasText() == true -> elements.map { latestUpdatesFromElement(it, "a.fa-info-circle + a") }
+                    // List layout (most sources)
+                    elements.select("a").firstOrNull()?.hasText() == true -> elements.map { latestUpdatesFromElement(it, "a") }
+                    // Grid layout (e.g. MangaYu and MangaID)
+                    else -> document.select(gridLatestUpdatesSelector()).map { gridLatestUpdatesFromElement(it) }
                 }
             }
-            .distinctBy { manga -> manga.title }
-            .filterNot { manga -> manga.title in latestTitles }
-            .also { list -> latestTitles.addAll(list.map { it.title }) }
+            .filterNotNull()
 
         return MangasPage(mangas, document.select(latestUpdatesNextPageSelector()) != null)
     }
     private fun latestUpdatesSelector() = "div.mangalist div.manga-item"
     private fun latestUpdatesNextPageSelector() = "a[rel=next]"
-    private fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        url = element.select("a").first().attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
-        title = element.select("a").first().text().trim()
-        thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
+    private fun latestUpdatesFromElement(element: Element, urlSelector: String): SManga? {
+        return element.select(urlSelector).first().let { titleElement ->
+            if (titleElement.text() in latestTitles) {
+                null
+            } else {
+                latestTitles.add(titleElement.text())
+                SManga.create().apply {
+                    url = titleElement.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
+                    title = titleElement.text().trim()
+                    thumbnail_url = "$baseUrl/uploads/manga/${url.substringAfterLast('/')}/cover/cover_250x350.jpg"
+                }
+            }
+        }
     }
-    // MangaYu and MangaID needs this
     private fun gridLatestUpdatesSelector() = "div.mangalist div.manga-item, div.grid-manga tr"
     private fun gridLatestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         element.select("a.chart-title").let {
@@ -308,7 +317,7 @@ open class MyMangaReaderCMSSource(
         val chapter = SChapter.create()
 
         try {
-            val titleWrapper = if (name == "Mangas.pw") element.select("em a[alt]").first() else element.select("[class^=chapter-title-rtl]").first()
+            val titleWrapper = if (name == "Mangas.pw") element.select("i a").first() else element.select("[class^=chapter-title-rtl]").first()
             // Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
             val url = titleWrapper.getElementsByTag("a")
                 .first { it.attr("href").contains(urlRegex) }
