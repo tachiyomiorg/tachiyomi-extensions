@@ -142,7 +142,7 @@ class Kumanga : HttpSource() {
             name = it.text()
             date_upload = parseChapterDate(it.attr("title"))
         }
-            scanlator = element.select("span.pull-right.greenSpan")?.text()
+        scanlator = element.select("span.pull-right.greenSpan")?.text()
     }
 
     override fun chapterListParse(response: Response): List<SChapter> = mutableListOf<SChapter>().apply {
