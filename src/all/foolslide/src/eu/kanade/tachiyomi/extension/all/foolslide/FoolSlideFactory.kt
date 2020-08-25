@@ -62,7 +62,8 @@ class FoolSlideFactory : SourceFactory {
         Customizable(),
         TortugaCeviri(),
         Rama(),
-        Mabushimajo()
+        Mabushimajo(),
+        EdensZero()
     )
 }
 
@@ -291,3 +292,5 @@ class TortugaCeviri : FoolSlide("Tortuga Ceviri", "http://tortuga-ceviri.com", "
 class Rama : FoolSlide("Rama", "https://www.ramareader.it", "it", "/read")
 
 class Mabushimajo : FoolSlide("Mabushimajo", "http://mabushimajo.com", "tr", "/onlineokuma")
+
+class EdensZero : FoolSlide("Edens Zero and Hero's", "https://readedenszero.com", "en", "/reader")
