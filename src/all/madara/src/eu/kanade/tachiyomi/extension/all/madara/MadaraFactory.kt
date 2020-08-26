@@ -86,7 +86,6 @@ class MadaraFactory : SourceFactory {
         MangaBob(),
         MangaDods(),
         MangaHentai(),
-        MangaKiss(),
         MangaKomi(),
         MangaLord(),
         MangaPhoenix(),
@@ -786,10 +785,6 @@ class DisasterScans : Madara("Disaster Scans", "https://disasterscans.com", "en"
 
         return manga
     }
-}
-
-class MangaKiss : Madara("MangaKiss", "https://mangakiss.org", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US)) {
-    override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
 class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
