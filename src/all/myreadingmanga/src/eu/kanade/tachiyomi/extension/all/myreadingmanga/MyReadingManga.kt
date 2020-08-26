@@ -17,6 +17,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.CacheControl
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -36,6 +37,9 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
         .followRedirects(true)
         .build()!!
     override val supportsLatest = true
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Referer", baseUrl)
 
     // Popular - Random
     override fun popularMangaRequest(page: Int): Request {
