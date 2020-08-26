@@ -162,7 +162,8 @@ class MadaraFactory : SourceFactory {
         YaoiToshokan(),
         YokaiJump(),
         ZManga(),
-        ZinManga()
+        ZinManga(),
+        ShoujoHearts()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -192,8 +193,8 @@ class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
 }
 
 class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
-                                   
-class FunList : Madara("FunList", "https://funlist.online", "en")                                   
+
+class FunList : Madara("FunList", "https://funlist.online", "en")
 
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
 
@@ -693,7 +694,7 @@ class Toonily : Madara("Toonily", "https://toonily.com", "en") {
     )
 }
 
-class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en", SimpleDateFormat("MM/dd/yyyy", Locale.US))
+class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
 
 class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
@@ -899,7 +900,7 @@ class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.
 
 class MangaRockTeam : Madara("Manga Rock Team", "https://mangarockteam.com", "en")
 
-class MixedManga : Madara("Mixed Manga", "https://mixedmanga.com", "en") {
+class MixedManga : Madara("Mixed Manga", "https://mixedmanga.com", "en", SimpleDateFormat("d MMM yyyy", Locale.US)) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
@@ -1265,3 +1266,11 @@ class ComicsValley : Madara("Comics Valley", "https://comicsvalley.com", "hi")
 class FriendlyTranslations : Madara("Friendly Translations", "https://friendlytranslationsscan.website", "en")
 
 class Wakascan : Madara("Wakascan", "https://wakascan.com", "fr")
+
+class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
+    override fun popularMangaRequest(page: Int): Request =
+        POST("$baseUrl/reader/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, true).build(), CacheControl.FORCE_NETWORK)
+    override fun latestUpdatesRequest(page: Int): Request =
+        POST("$baseUrl/reader/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
+    override fun searchPage(page: Int): String = "reader/page/$page/"
+}
