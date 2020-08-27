@@ -1,3 +1,11 @@
+## 1.2.16
+
+Minimum Komga version required: `0.59.0`
+
+### Features
+
+* filter by genres, tags and publishers
+
 ## 1.2.15
 
 Minimum Komga version required: `0.56.0`
@@ -5,6 +13,7 @@ Minimum Komga version required: `0.56.0`
 ### Features
 
 * remove the 1000 chapters limit
+* display series description and tags (genres + tags)
 
 ## 1.2.14
 
