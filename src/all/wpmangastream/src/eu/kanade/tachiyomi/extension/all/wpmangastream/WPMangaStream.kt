@@ -95,11 +95,11 @@ abstract class WPMangaStream(
     protected fun Elements.imgAttr(): String = this.first().imgAttr()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=popular", headers)
+        return GET("$baseUrl/manga/?page=$page&order=popular", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=latest", headers)
+        return GET("$baseUrl/manga/?page=$page&order=update", headers)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -301,6 +301,7 @@ abstract class WPMangaStream(
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Header("Genre exclusion not available for all sources"),
         Filter.Separator(),
         AuthorFilter(),
         YearFilter(),
