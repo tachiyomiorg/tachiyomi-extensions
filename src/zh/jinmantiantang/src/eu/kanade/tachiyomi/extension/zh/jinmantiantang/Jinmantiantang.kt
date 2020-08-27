@@ -8,7 +8,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -73,7 +75,7 @@ class Jinmantiantang : ParsedHttpSource() {
                 HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres")?.newBuilder()
             } else {
                 // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
-                val removedGenres = query.split(" ").filter { it.startsWith("-") }.map { it.removePrefix("-") }.joinToString("+")
+                val removedGenres = query.split(" ").filter { it.startsWith("-") }.joinToString("+") { it.removePrefix("-") }
                 HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres$removedGenres")?.newBuilder()
             }
         }
@@ -100,70 +102,73 @@ class Jinmantiantang : ParsedHttpSource() {
 
         // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1,
         // it will definitely return a String type of 0, 1 or 2. This warning can be ignored
-        status = selectDetailsStatusAndGenre(document, 1).trim()!!.toInt()
-        description = document.select("div.p-t-5.p-b-5").get(7).text().removePrefix("敘述：")
+        status = selectDetailsStatusAndGenre(document, 1).trim().toInt()
+        description = document.select("div.p-t-5.p-b-5")[7].text().removePrefix("敘述：")
     }
 
     // 查询作者信息
     private fun selectAuthor(document: Document): String {
-        var element = document.select("div.tag-block").get(9)
-        if (element.select("a").size == 0) {
-            return "未知"
+        val element = document.select("div.tag-block")[9]
+        return if (element.select("a").size == 0) {
+            "未知"
         } else {
-            return element.select("a").first().text()
+            element.select("a").first().text()
         }
     }
 
     // 查询漫画状态和类别信息
     private fun selectDetailsStatusAndGenre(document: Document, index: Int): String {
         determineChapterInfo(document)
-        var status: String = "0"
-        var genre: String = ""
+        var status = "0"
+        var genre = ""
         if (document.select("span[itemprop=genre] a").size == 0) {
-            if (index == 1) {
-                return status
+            return if (index == 1) {
+                status
             } else {
-                return genre
+                genre
             }
         }
-        var elements: Elements = document.select("span[itemprop=genre]").first().select("a")
+        val elements: Elements = document.select("span[itemprop=genre]").first().select("a")
         for (value in elements) {
-            var vote: String = value.select("a").text()
-            if (vote.equals("連載中")) {
-                status = "1"
-            } else if (vote.equals("完結")) {
-                status = "2"
-            } else {
-                genre = genre + "$vote "
+            when (val vote: String = value.select("a").text()) {
+                "連載中" -> {
+                    status = "1"
+                }
+                "完結" -> {
+                    status = "2"
+                }
+                else -> {
+                    genre = "$genre$vote "
+                }
             }
         }
-        if (index == 1) {
-            return status
+        return if (index == 1) {
+            status
         } else {
-            return genre
+            genre
         }
     }
 
     // 漫画章节信息
     override fun chapterListSelector(): String = chapterArea
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        val sdf = SimpleDateFormat("yyyy-MM-dd")
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         if (chapterArea == "body") {
             name = "Ch. 1"
             url = element.select("a[class=col btn btn-primary dropdown-toggle reading]").attr("href")
-            date_upload = sdf.parse(element.select("div[itemprop='datePublished']").attr("content")).time
+            date_upload = sdf.parse(element.select("div[itemprop='datePublished']").attr("content"))?.time ?: 0
         } else {
             url = element.select("a").attr("href")
             name = element.select("a li").first().ownText()
-            date_upload = sdf.parse(element.select("a li span.hidden-xs").text().trim()).time
+            date_upload = sdf.parse(element.select("a li span.hidden-xs").text().trim())?.time ?: 0
         }
     }
 
     private fun determineChapterInfo(document: Document) {
-        if (document.select("div[id=episode-block] a li").size == 0) {
-            chapterArea = "body"
+        chapterArea = if (document.select("div[id=episode-block] a li").size == 0) {
+            "body"
         } else {
-            chapterArea = "div[id=episode-block] a[href^=/photo/]"
+            "div[id=episode-block] a[href^=/photo/]"
         }
     }
 
@@ -172,15 +177,23 @@ class Jinmantiantang : ParsedHttpSource() {
     }
 
     // 漫画图片信息
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        var elements = document.select("div[style=text-align:center;][id*=0]")
-        for (element in elements) {
-            if (element.select("div[style=text-align:center;][id*=0] img").attr("src").indexOf("blank.jpg") >= 0) {
-                add(Page(size, "", element.select("div[style=text-align:center;][id*=0] img").attr("data-original").split("\\?")[0]))
-            } else {
-                add(Page(size, "", element.select("div[style=text-align:center;][id*=0] img").attr("src").split("\\?")[0]))
+    override fun pageListParse(document: Document): List<Page> {
+        fun internalParse(document: Document, pages: MutableList<Page>): List<Page> {
+            val elements = document.select("div[style=text-align:center;][id*=0]")
+            for (element in elements) {
+                pages.apply {
+                    if (element.select("div[style=text-align:center;][id*=0] img").attr("src").indexOf("blank.jpg") >= 0) {
+                        add(Page(size, "", element.select("div[style=text-align:center;][id*=0] img").attr("data-original").split("\\?")[0]))
+                    } else {
+                        add(Page(size, "", element.select("div[style=text-align:center;][id*=0] img").attr("src").split("\\?")[0]))
+                    }
+                }
             }
+            return document.select("a.prevnext").firstOrNull()
+                ?.let { internalParse(client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup(), pages) } ?: pages
         }
+
+        return internalParse(document, mutableListOf())
     }
 
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
