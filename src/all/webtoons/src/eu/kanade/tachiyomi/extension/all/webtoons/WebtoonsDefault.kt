@@ -13,7 +13,8 @@ import org.jsoup.nodes.Element
 open class WebtoonsDefault(
     override val lang: String,
     override val langCode: String = lang,
-    override val localeForCookie: String = lang
+    override val localeForCookie: String = lang,
+    private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
 ) : Webtoons(lang, langCode, lang) {
 
     override fun chapterListSelector() = "ul#_episodeList > li[id*=episode]"
@@ -36,7 +37,7 @@ open class WebtoonsDefault(
     }
 
     open fun chapterParseDate(date: String): Long {
-        return SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
+        return dateFormat.parse(date)?.time ?: 0
     }
 
     override fun chapterListRequest(manga: SManga) = GET("https://m.webtoons.com" + manga.url, mobileHeaders)

@@ -68,7 +68,7 @@ abstract class Webtoons(
 
     override fun popularMangaSelector() = "not using"
 
-    override fun latestUpdatesSelector() = "div#dailyList > $day li > a:has(span:contains(UP))"
+    override fun latestUpdatesSelector() = "div#dailyList > $day li > a"
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
             .add("Referer", "https://www.webtoons.com/$langCode/")

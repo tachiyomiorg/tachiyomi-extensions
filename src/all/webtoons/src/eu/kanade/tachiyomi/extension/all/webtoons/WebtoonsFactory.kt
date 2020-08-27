@@ -12,6 +12,7 @@ class WebtoonsFactory : SourceFactory {
         WebtoonsChineseTraditional(),
         WebtoonsIndonesian(),
         WebtoonsThai(),
+        WebtoonsFr(),
         DongmanManhua(),
 
         // Fan translations
@@ -67,14 +68,8 @@ class WebtoonsIndonesian : WebtoonsDefault("in", "id") {
     }
 }
 
-class WebtoonsThai : WebtoonsDefault("th") {
-    override fun chapterParseDate(date: String): Long {
-        return SimpleDateFormat("d MMM yyyy", Locale("th")).parse(date).time
-    }
-}
+class WebtoonsThai : WebtoonsDefault("th", dateFormat = SimpleDateFormat("d MMM yyyy", Locale("th")))
 
-class WebtoonsChineseTraditional : WebtoonsDefault("zh", "zh-hant", "zh_TW") {
-    override fun chapterParseDate(date: String): Long {
-        return SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE).parse(date).time
-    }
-}
+class WebtoonsChineseTraditional : WebtoonsDefault("zh", "zh-hant", "zh_TW", SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE))
+
+class WebtoonsFr : WebtoonsDefault("fr", dateFormat = SimpleDateFormat("d MMM yyyy", Locale.FRENCH))
