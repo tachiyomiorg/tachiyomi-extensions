@@ -9,15 +9,9 @@ import android.widget.Toast
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Calendar
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -25,6 +19,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * NewToki Source
@@ -77,6 +73,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.view-title > .view-content").first()
         val title = document.select("div.view-content > span > b").text()
+        val thumbnail = document.select("div.row div.view-img > img").attr("src")
         val descriptionElement = info.select("div.row div.view-content:not([style])")
         val description = descriptionElement.map {
             it.text().trim()
@@ -85,6 +82,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         val manga = SManga.create()
         manga.title = title
         manga.description = description.joinToString("\n")
+        manga.thumbnail_url = thumbnail
         descriptionElement.forEach {
             val text = it.text()
             when {
@@ -164,8 +162,8 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("article > div > div > img")
-            .filterNot { it.attr("data-original").contains("blank.gif") }
+        return document.select("article > div  div > img")
+            .filterNot { !it.hasAttr("data-original") || it.attr("data-original").contains("blank.gif") }
             .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
