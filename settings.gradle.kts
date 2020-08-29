@@ -9,6 +9,9 @@ project(":duktape-stub").projectDir = File("lib/duktape-stub")
 include(":lib-dataimage")
 project(":lib-dataimage").projectDir = File("lib/dataimage")
 
+include(":lib-themesources")
+project(":lib-themesources").projectDir = File("lib/themesources")
+
 File(rootDir, "src").eachDir { dir ->
     dir.eachDir { subdir ->
         val name = ":${dir.name}-${subdir.name}"
