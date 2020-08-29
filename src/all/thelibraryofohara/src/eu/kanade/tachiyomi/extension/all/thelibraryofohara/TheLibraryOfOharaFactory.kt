@@ -4,10 +4,10 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 
 class TheLibraryOfOharaFactory : SourceFactory {
-    override fun createSources(): List<Source> = languageList.map { TheLibraryOfOhara(it.tachiLang, it.siteLang, it.latestLang) }
+    override fun createSources(): List<Source> = languageList.map { TheLibraryOfOhara(it.tachiLang, it.siteLang) }
 }
 
-private data class Source(val tachiLang: String, val siteLang: String, val latestLang: String = siteLang)
+private data class Source(val tachiLang: String, val siteLang: String)
 
 private val languageList = listOf(
 

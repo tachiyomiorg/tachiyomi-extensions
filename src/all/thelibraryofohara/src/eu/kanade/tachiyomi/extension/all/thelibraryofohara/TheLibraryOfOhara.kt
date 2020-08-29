@@ -18,7 +18,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-class TheLibraryOfOhara(override val lang: String, private val siteLang: String, private val latestLang: String) : ParsedHttpSource() {
+class TheLibraryOfOhara(override val lang: String, private val siteLang: String) : ParsedHttpSource() {
 
     override val name = "The Library of Ohara"
 
@@ -59,7 +59,7 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = "Not needed"
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
@@ -105,33 +105,27 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
     // Use one of the chapter thumbnails as manga thumbnail
     // Some thumbnails have a flag on them which indicates the Language.
     // Try to choose a thumbnail with a matching flag
-    private fun chooseChapterThumbnail(document: Document, mangaTitle: String): String {
+    private fun chooseChapterThumbnail(document: Document, mangaTitle: String): String? {
+        var imgElement: Element? = null
+
         // Reverie
         if (mangaTitle.contains("Reverie")) {
-            document.select("article").forEach {
-                val chapterTitle = it.select("h2.entry-title a").text()
-                if (chapterTitle.contains(siteLang) || (lang == "en" &&
-                        !chapterTitle.contains("French") &&
-                        !chapterTitle.contains("Arabic") &&
-                        !chapterTitle.contains("Italian") &&
-                        !chapterTitle.contains("Indonesia") &&
-                        !chapterTitle.contains("Spanish"))) {
-                    return it.select("img").attr("abs:src")
-                }
+            imgElement = document.select("article").firstOrNull { element ->
+                val chapterTitle = element.select("h2.entry-title a").text()
+                (chapterTitle.contains(siteLang) || (lang == "en" && !chapterTitle.contains(Regex("""(French|Arabic|Italian|Indonesia|Spanish)"""))))
             }
         }
         // Chapter Secrets (multilingual)
-        if (mangaTitle.contains("multilingual")) {
-            document.select("article").forEach {
+        if (mangaTitle.contains("Chapter Secrets") && lang != "en") {
+            imgElement = document.select("article").firstOrNull {
                 val chapterTitle = it.select("h2.entry-title a").text()
-                if ((lang == "id" && chapterTitle.contains("Indonesia")) || (lang == "es" && !chapterTitle.contains("Indonesia"))) {
-                    it.select("img").attr("abs:src")
-                }
+                ((lang == "id" && chapterTitle.contains("Indonesia")) || (lang == "es" && !chapterTitle.contains("Indonesia")))
             }
         }
 
         // Fallback
-        return document.select("article:first-of-type").select("img").attr("abs:src")
+        imgElement = imgElement ?: document.select("article:first-of-type").firstOrNull()
+        return imgElement?.select("img")?.attr("abs:src")
     }
 
     // Chapters
@@ -174,7 +168,7 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
             document = client.newCall(GET(nextUrl, headers)).execute().asJsoup()
         }
 
-        if (!allChapters.isEmpty() && allChapters[0].name.contains("Reverie")) {
+        if (allChapters.isNotEmpty() && allChapters[0].name.contains("Reverie")) {
             return when (lang) {
                 "fr" -> allChapters.filter { it.name.contains("French") }.toMutableList()
                 "ar" -> allChapters.filter { it.name.contains("Arabic") }.toMutableList()
@@ -213,6 +207,4 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String,
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
-
-    override fun getFilterList() = FilterList()
 }
