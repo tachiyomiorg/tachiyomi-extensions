@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
@@ -13,8 +12,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -24,13 +21,13 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         ATMSubs(),
         AdonisFansub(),
-        AhStudios(),
         AkuManga(),
         AllPornComic(),
         AoCTranslations(),
@@ -60,7 +57,6 @@ class MadaraFactory : SourceFactory {
         FriendlyTranslations(),
         FunList(),
         FurioScans(),
-        GetManhwa(),
         GoldenManga(),
         GuncelManga(),
         HeroManhua(),
@@ -74,7 +70,6 @@ class MadaraFactory : SourceFactory {
         KingzManga(),
         KlanKomik(),
         KlikManga(),
-        KnightNoScanlation(),
         KomikGo(),
         LilyManga(),
         LuxyScans(),
@@ -170,8 +165,6 @@ class MadaraFactory : SourceFactory {
         // MangaStein(),
     )
 }
-
-class AhStudios : Madara("AhStudios", "https://ahstudios.net", "es")
 
 class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
@@ -324,25 +317,6 @@ class AdonisFansub : Madara("Adonis Fansub", "https://manga.adonisfansub.com", "
     override val userAgentRandomizer = ""
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=views", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
-}
-
-class GetManhwa : Madara("GetManhwa", "https://getmanhwa.co", "en") {
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return client.newCall(mangaDetailsRequest(manga))
-            .asObservableSuccess()
-            .map { response ->
-                mangaDetailsParse(response.asJsoup(), manga).apply { initialized = true }
-            }
-    }
-    private fun mangaDetailsParse(document: Document, manga: SManga): SManga {
-        return SManga.create().apply {
-            if (manga.thumbnail_url.isNullOrEmpty()) thumbnail_url = searchMangaParse(client.newCall(searchMangaRequest(1, manga.title, FilterList())).execute())
-                .mangas.firstOrNull()?.thumbnail_url
-            author = document.select("div.summary-heading-creator a").joinToString { it.text() }
-            genre = document.select("div.genres-content a").joinToString { it.text() }
-            description = document.select("div.description-summary p").joinToString("\n") { it.text() }
-        }
-    }
 }
 
 @Nsfw
@@ -1039,8 +1013,6 @@ class TurkceManga : Madara("Türkçe Manga", "https://turkcemanga.com", "tr") {
 }
 
 class EinherjarScan : Madara("Einherjar Scan", "https://einherjarscans.space", "en")
-
-class KnightNoScanlation : Madara("Knight no Scanlation", "https://knightnoscanlation.com", "es")
 
 class DoujinYosh : Madara("DoujinYosh", "https://doujinyosh.work", "id") {
     // source issue, doing this limits results to one page but not doing it returns no results at all
