@@ -163,6 +163,8 @@ class MadaraFactory : SourceFactory {
         // MangaGecesi(),
         // MangaWOW(),
         // MangaStein(),
+        // KnightNoScanlation(),
+        // AhStudios(),
     )
 }
 
