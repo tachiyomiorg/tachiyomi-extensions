@@ -46,10 +46,6 @@ interface ThemeSourceGenerator {
                 if (source.isNsfw) "    containsNsfw = true\n" else "" +
                     "}\n" +
                     "\n" +
-                    "dependencies {\n" +
-                    "    implementation project(':lib-ratelimit')\n" +
-                    "}\n" +
-                    "\n" +
                     "apply from: \"\$rootDir/common.gradle\"")
         }
 
@@ -59,6 +55,7 @@ interface ThemeSourceGenerator {
             val classPath = File("$gradlePath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
             val classFile = File("$classPath/${source.className}.kt")
             File(gradlePath).let { file ->
+                println("Working on $source")
                 // new source
                 if (!file.exists()) {
                     file.mkdirs()
@@ -76,8 +73,8 @@ interface ThemeSourceGenerator {
                         "    \n" +
                         "    override val lang = \"${source.lang}\"\n" +
                         "}")
-                    File("$userDir/lib/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
-                        if (res.exists()) res.copyTo(File(gradlePath))
+                    File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
+                        if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
                     }
                 // update current source
                 } else {
