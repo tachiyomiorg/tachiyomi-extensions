@@ -1,7 +1,14 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference as LegacyListPreference
+import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -17,10 +24,12 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 @Nsfw
-class Jinmantiantang : ParsedHttpSource() {
-    override val baseUrl: String = "https://18comic2.biz"
+class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
+    override var baseUrl: String = "https://18comic2.biz"
     override val lang: String = "zh"
     override val name: String = "禁漫天堂"
     override val supportsLatest: Boolean = true
@@ -198,6 +207,46 @@ class Jinmantiantang : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val serverPref = ListPreference(screen.context).apply {
+            key = "SERVER_LOCATION"
+            title = "服务器位置"
+            entries = arrayOf("大陆", "海外")
+            entryValues = arrayOf("https://18comic2.biz", "https://18comic.org")
+            setDefaultValue(entryValues[0])
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                baseUrl = entry
+                preferences.edit().putString("SERVER_LOCATION", entry).commit()
+            }
+        }
+
+        screen.addPreference(serverPref)
+    }
+    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
+        val serverPref = LegacyListPreference(screen.context).apply {
+            key = "SERVER_LOCATION"
+            title = "服务器位置"
+            entries = arrayOf("大陆", "海外")
+            entryValues = arrayOf("https://18comic2.biz", "https://18comic.org")
+            setDefaultValue(entryValues[0])
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                baseUrl = entry
+                preferences.edit().putString("SERVER_LOCATION", entry).commit()
+            }
+        }
+
+        screen.addPreference(serverPref)
+    }
     // Filters
     // 按照类别信息进行检索
 
