@@ -10,6 +10,7 @@ import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -27,6 +28,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 @Nsfw
 class Henchan : ParsedHttpSource() {
@@ -138,6 +140,26 @@ class Henchan : ParsedHttpSource() {
         manga.description = document.select("#description").text()
         manga.thumbnail_url = document.select("img#cover").attr("abs:src").getHQThumbnail()
         return manga
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return client.newCall(chapterListRequest(manga))
+            .asObservable().doOnNext { response ->
+                if (!response.isSuccessful) {
+                    response.close()
+                    // Error message for exceeding last page
+                    if (response.code() == 404)
+                        Observable.just(listOf(SChapter.create().apply {
+                            url = manga.url
+                            name = "Chapter"
+                            chapter_number = 1f
+                        }))
+                    else throw Exception("HTTP error ${response.code()}")
+                }
+            }
+            .map { response ->
+                chapterListParse(response)
+            }
     }
 
     override fun chapterListRequest(manga: SManga): Request {
