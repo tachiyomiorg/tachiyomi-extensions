@@ -38,7 +38,7 @@ interface ThemeSourceGenerator {
                 "apply plugin: 'kotlin-android'\n" +
                 "\n" +
                 "ext {\n" +
-                "    extName = '${source.className}'\n" +
+                "    extName = '${source.name}'\n" +
                 "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
                 "    extClass = '.${source.className}'\n" +
                 "    extVersionCode = $version\n" +

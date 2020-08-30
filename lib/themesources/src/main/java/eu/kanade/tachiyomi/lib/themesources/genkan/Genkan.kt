@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.lib.themesources
+package eu.kanade.tachiyomi.lib.themesources.genkan
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
