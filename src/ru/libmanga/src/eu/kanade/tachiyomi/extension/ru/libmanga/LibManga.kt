@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.nullArray
@@ -74,7 +73,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val serverPref = androidx.preference.ListPreference(screen.context).apply {
             key = SERVER_PREF
             title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Сжатия (эконом трафика)")
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
             entryValues = arrayOf("secondary", "fourth", "compress")
             summary = "%s"
 
@@ -91,7 +90,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val serverPref = ListPreference(screen.context).apply {
             key = SERVER_PREF
             title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Сжатия (эконом трафика)")
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
             entryValues = arrayOf("secondary", "fourth", "compress")
             summary = "%s"
 
@@ -259,7 +258,6 @@ class LibManga : ConfigurableSource, HttpSource() {
         val pages = mutableListOf<Page>()
         images.forEachIndexed { index, page ->
             val url = "${this.imageServerUrl()}/manga/$slug/chapters/$chapterslug/${page.string}"
-            Log.i("LIB", "$index + $url")
             pages.add(Page(index, "", url))
         }
 
