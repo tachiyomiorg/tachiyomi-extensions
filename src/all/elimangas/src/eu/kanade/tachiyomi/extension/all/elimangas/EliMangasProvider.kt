@@ -38,8 +38,10 @@ open class EliMangasProvider(
 
         return MangasPage(json.map {
             SManga.create().apply {
+                val id = it["id"].asString
+                url = id
                 title = it["name"].asString
-                url = it["id"].asString
+                thumbnail_url = "https://www.elimangas.com/images/$id.jpg"
             }
         }, json.size() >= 30)
     }
@@ -62,6 +64,7 @@ open class EliMangasProvider(
                 description = json["synopsis"].asString
                 genre = json["categories"].asJsonArray.joinToString { it["label"].asString }
                 status = if (json["isComplete"].asBoolean) SManga.COMPLETED else SManga.UNKNOWN
+                thumbnail_url = "https://www.elimangas.com/images/${json["id"].asString}.jpg"
             }
         }
     }
