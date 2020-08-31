@@ -11,5 +11,5 @@ class EliMangasFactory : SourceFactory {
 }
 
 // data from /api/mangas/configuration?isCensored=false
-class JapScan : EliMangasProvider("JapScan", 4, 1376, "fr")
-class JapanRead : EliMangasProvider("JapanRead", 5, 20, "fr")
+class JapScan : EliMangasProvider("JapScan", 4, 1376, 1375, "fr")
+class JapanRead : EliMangasProvider("JapanRead", 5, 20, 22, "fr")

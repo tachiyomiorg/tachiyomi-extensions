@@ -19,10 +19,11 @@ open class EliMangasProvider(
     _name: String,
     private val srcId: Int,
     private val allCatId: Int,
+    private val latestCatId: Int,
     override val lang: String
 ) : HttpSource() {
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     override val name = "$_name (via EliMangas)"
 
@@ -47,8 +48,8 @@ open class EliMangasProvider(
     }
 
     // Latest
-    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException("Unused")
-    override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Unused")
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/api/mangas/top/$latestCatId?page=$page")
+    override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/api/mangas/search/$query?isCensored=false&provider=$srcId")
