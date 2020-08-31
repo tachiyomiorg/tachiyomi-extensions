@@ -51,7 +51,7 @@ open class EliMangasProvider(
     override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Unused")
 
     // Search
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/api/mangas/search/$query?provider=$srcId")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/api/mangas/search/$query?isCensored=false&provider=$srcId")
     override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
 
     // Details
