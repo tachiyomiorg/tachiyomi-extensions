@@ -5,7 +5,7 @@ ext {
     extName = 'EliMangas'
     pkgNameSuffix = 'all.elimangas'
     extClass = '.EliMangasFactory'
-    extVersionCode = 0
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
