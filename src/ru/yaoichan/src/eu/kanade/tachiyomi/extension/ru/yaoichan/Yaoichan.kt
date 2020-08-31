@@ -39,10 +39,9 @@ class Yaoichan : ParsedHttpSource() {
         GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var pageNum = 1
-        when {
-            page < 1 -> pageNum = 1
-            page >= 1 -> pageNum = page
+        var pageNum = when {
+            page < 1 -> 1
+            else -> page
         }
         val url = if (query.isNotEmpty()) {
             "$baseUrl/?do=search&subaction=search&story=$query&search_start=$pageNum"
