@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -97,7 +98,7 @@ class JMana : ConfigurableSource, ParsedHttpSource() {
         val rawName = linkElement.text()
 
         return SChapter.create().apply {
-            url = linkElement.attr("href").substringAfter(baseUrl) + "?viewstyle=list"
+            url = HttpUrl.parse(linkElement.attr("abs:href"))!!.let { "${it.encodedPath()}?${it.encodedQuery()}" }
             chapter_number = parseChapterNumber(rawName)
             name = rawName.trim()
             date_upload = parseChapterDate(element.select("li.publish-date span").last().text())
@@ -120,7 +121,7 @@ class JMana : ConfigurableSource, ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).parse(date).time
+            SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).parse(date)?.time ?: 0
         } catch (e: Exception) {
             e.printStackTrace()
             0
@@ -129,7 +130,7 @@ class JMana : ConfigurableSource, ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("ul.view img").mapIndexed { i, img ->
-            Page(i, "", img.attr("abs:src"))
+            Page(i, "", if (img.hasAttr("data-src")) img.attr("abs:data-src") else img.attr("abs:src"))
         }
     }
 
@@ -151,10 +152,8 @@ class JMana : ConfigurableSource, ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga {
         return SManga.create().apply {
             setUrlWithoutDomain(element.select("a.btn").attr("href").cleaned())
-            element.select("img").attr("abs:src").let {
-                thumbnail_url = it
-                title = it.substringAfterLast("/").substringBefore(".")
-            }
+            title = element.select("div.info a").text()
+            thumbnail_url = element.select("img").attr("abs:src")
         }
     }
 
@@ -168,7 +167,7 @@ class JMana : ConfigurableSource, ParsedHttpSource() {
         const val DETAIL_GENRE = "장르 : "
         const val DETAIL_AUTHOR = "작가 : "
         const val DETAIL_DESCRIPTION = "설명 : "
-        const val DEFAULT_BASEURL = "https://jmana1.net"
+        const val DEFAULT_BASEURL = "https://003.jmana2.net"
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
