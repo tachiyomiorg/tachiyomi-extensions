@@ -913,7 +913,9 @@ abstract class MangaDex(
         Tag("80", "Traditional Games"),
         Tag("81", "Virtual Reality"),
         Tag("82", "Zombies"),
-        Tag("83", "Incest")
+        Tag("83", "Incest"),
+        Tag("84", "Mafia"),
+        Tag("85", "Villainess")
     ).sortedWith(compareBy { it.name })
 
     private val GENRES = (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }.toMap()

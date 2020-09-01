@@ -5,7 +5,7 @@ ext {
     extName = 'MangaDex'
     pkgNameSuffix = 'all.mangadex'
     extClass = '.MangaDexFactory'
-    extVersionCode = 95
+    extVersionCode = 96
     libVersion = '1.2'
     containsNsfw = true
 }
