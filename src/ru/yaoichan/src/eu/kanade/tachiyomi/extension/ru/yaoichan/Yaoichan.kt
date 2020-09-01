@@ -5,12 +5,10 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.OkHttpClient
@@ -38,13 +36,12 @@ class Yaoichan : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
 
+    override fun latestUpdatesRequest(page: Int): Request =
+        GET("$baseUrl/manga/new?offset=${20 * (page - 1)}", headers)
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var pageNum = when {
-            page < 1 -> 1
-            else -> page
-        }
         val url = if (query.isNotEmpty()) {
-            "$baseUrl/?do=search&subaction=search&story=$query&search_start=$pageNum"
+            "$baseUrl/?do=search&subaction=search&story=$query&search_start=$page"
         } else {
 
             var genres = ""
@@ -82,9 +79,9 @@ class Yaoichan : ParsedHttpSource() {
                     }
                 }
                 if (statusParam) {
-                    "$baseUrl/tags/${genres.dropLast(1)}$order?offset=${20 * (pageNum - 1)}&status=$status"
+                    "$baseUrl/tags/${genres.dropLast(1)}$order?offset=${20 * (page - 1)}&status=$status"
                 } else {
-                    "$baseUrl/tags/$status/${genres.dropLast(1)}/$order?offset=${20 * (pageNum - 1)}"
+                    "$baseUrl/tags/$status/${genres.dropLast(1)}/$order?offset=${20 * (page - 1)}"
                 }
             } else {
                 for (filter in filters) {
@@ -99,20 +96,18 @@ class Yaoichan : ParsedHttpSource() {
                     }
                 }
                 if (statusParam) {
-                    "$baseUrl/$order?offset=${20 * (pageNum - 1)}&status=$status"
+                    "$baseUrl/$order?offset=${20 * (page - 1)}&status=$status"
                 } else {
-                    "$baseUrl/$order/$status?offset=${20 * (pageNum - 1)}"
+                    "$baseUrl/$order/$status?offset=${20 * (page - 1)}"
                 }
             }
         }
         return GET(url, headers)
     }
 
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/newestch?page=$page")
-
     override fun popularMangaSelector() = "div.content_row"
 
-    override fun latestUpdatesSelector() = "ul.area_rightNews li"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -126,14 +121,7 @@ class Yaoichan : ParsedHttpSource() {
         return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        element.select("a:nth-child(1)").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        return manga
-    }
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
@@ -141,36 +129,7 @@ class Yaoichan : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = "a:contains(Далее)"
-
-    private fun searchGenresNextPageSelector() = popularMangaNextPageSelector()
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        var hasNextPage = false
-
-        val mangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
-        }
-
-        val nextSearchPage = document.select(searchMangaNextPageSelector())
-        if (nextSearchPage.isNotEmpty()) {
-            val query = document.select("input#searchinput").first().attr("value")
-            val pageNum = nextSearchPage.let { selector ->
-                val onClick = selector.attr("onclick")
-                onClick?.split("""\\d+""")
-            }
-            nextSearchPage.attr("href", "$baseUrl/?do=search&subaction=search&story=$query&search_start=$pageNum")
-            hasNextPage = true
-        }
-
-        val nextGenresPage = document.select(searchGenresNextPageSelector())
-        if (nextGenresPage.isNotEmpty()) {
-            hasNextPage = true
-        }
-
-        return MangasPage(mangas, hasNextPage)
-    }
+    override fun searchMangaNextPageSelector() = "a:contains(Далее), ${popularMangaNextPageSelector()}"
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("table.mangatitle").first()
@@ -242,7 +201,7 @@ class Yaoichan : ParsedHttpSource() {
 
     /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")]
     *  .map(el => `Genre("${el.getAttribute('href').substr(6)}")`).join(',\n')
-    *  on https://yaoi-chan.me/
+    *  on https://yaoi-chan.me/catalog
     */
     private fun getGenreList() = listOf(
         Genre("18 плюс"),
