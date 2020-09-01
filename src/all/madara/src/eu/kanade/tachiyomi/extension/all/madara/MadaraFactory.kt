@@ -157,7 +157,8 @@ class MadaraFactory : SourceFactory {
         YokaiJump(),
         ZManga(),
         ZinManga(),
-        ShoujoHearts()
+        ShoujoHearts(),
+        AlianzaMarcial()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -1203,15 +1204,7 @@ class WordExcerpt : Madara("Word Excerpt", "https://wordexcerpt.com", "en") {
 }
 
 // mostly novels
-class WoopRead : Madara("WoopRead", "https://woopread.com", "en") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/?s&post_type=wp-manga&genre[0]=manhua&genre[1]=manhwa&m_orderby=views", headers)
-    override fun popularMangaParse(response: Response) = searchMangaParse(response)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/?s&post_type=wp-manga&genre[0]=manhua&genre[1]=manhwa&m_orderby=latest", headers)
-    override fun latestUpdatesParse(response: Response) = searchMangaParse(response)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        GET("$baseUrl/?s=$query&post_type=wp-manga&genre[0]=manhua&genre[1]=manhwa&m_orderby=latest", headers)
-    override fun getFilterList(): FilterList = FilterList()
-}
+class WoopRead : Madara("WoopRead", "https://woopread.com", "en")
 
 class Ninjavi : Madara("Ninjavi", "https://ninjavi.com", "ar")
 
@@ -1243,3 +1236,5 @@ class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
         POST("$baseUrl/reader/wp-admin/admin-ajax.php", formHeaders, formBuilder(page, false).build(), CacheControl.FORCE_NETWORK)
     override fun searchPage(page: Int): String = "reader/page/$page/"
 }
+
+class AlianzaMarcial : Madara("AlianzaMarcial", "https://alianzamarcial.xyz", "es")
