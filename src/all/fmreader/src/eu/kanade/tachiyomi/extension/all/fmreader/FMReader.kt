@@ -122,7 +122,7 @@ abstract class FMReader(
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun searchMangaSelector() = popularMangaSelector() 
+    override fun searchMangaSelector() = popularMangaSelector()
 
     open val headerSelector = "h3"
 

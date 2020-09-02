@@ -65,7 +65,7 @@ interface ThemeSourceGenerator {
                         "\n" +
                         "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n" +
                         "\n" +
-                        "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")")
+                        "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n")
                     File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
                         if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
                     }

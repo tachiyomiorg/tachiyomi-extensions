@@ -253,7 +253,7 @@ class SayTruyen : FMReader("Say Truyen", "https://saytruyen.com", "vi") {
 class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=views&sorting-type=DESC&Sayfa=$page", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=lastUpdate&sorting-type=DESC&Sayfa=$page", headers)
-    override fun popularMangaNextPageSelector() = "ul.pagination li.active + li:not(.disabled)" 
+    override fun popularMangaNextPageSelector() = "ul.pagination li.active + li:not(.disabled)"
 
     override val headerSelector = "h4"
 
