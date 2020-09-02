@@ -166,7 +166,8 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("article > div  div > img")
+        // <article> - <div> - optional <div> - <div> - optional <p> - <img>
+        return document.select("article > div  div img")
             .filterNot { !it.hasAttr("data-original") || it.attr("data-original").contains("blank.gif") }
             .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
