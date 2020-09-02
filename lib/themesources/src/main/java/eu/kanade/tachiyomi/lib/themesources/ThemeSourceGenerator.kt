@@ -63,16 +63,9 @@ interface ThemeSourceGenerator {
                     classPath.mkdirs()
                     classFile.writeText("package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
                         "\n" +
-                        "import eu.kanade.tachiyomi.lib.themesources.$themeName\n" +
+                        "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n" +
                         "\n" +
-                        "class ${source.className} : $themeName() {\n" +
-                        "\n" +
-                        "    override val name = \"${source.name}\"\n" +
-                        "    \n" +
-                        "    override val baseUrl = \"${source.baseUrl}\"\n" +
-                        "    \n" +
-                        "    override val lang = \"${source.lang}\"\n" +
-                        "}")
+                        "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")")
                     File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
                         if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
                     }

@@ -17,7 +17,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-abstract class Genkan : ParsedHttpSource() {
+abstract class Genkan(override val name: String, override val baseUrl: String, override val lang: String) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
