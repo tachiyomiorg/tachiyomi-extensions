@@ -109,15 +109,31 @@ class Onemanhua : ParsedHttpSource() {
         return SManga.create().apply {
             title = document.select("h1.fed-part-eone").first().text().trim()
             thumbnail_url = picElement.attr("data-original")
-            status = when (detailElements[0].select("a").first().text()) {
+
+            status = when (detailElements.firstOrNull {
+                it.children().firstOrNull {
+                    it2 -> it2.hasClass("fed-text-muted") && it2.ownText() == "状态"
+                } != null
+            }?.select("a")?.first()?.text()) {
                 "连载中" -> SManga.ONGOING
                 "已完结" -> SManga.COMPLETED
                 else -> SManga.UNKNOWN
             }
-            author = detailElements[1].select("a").first().text()
 
-            genre = detailElements[4].select("a").joinToString { it.text() }
-            description = detailElements[5].select(".fed-part-esan").first().text().trim()
+            author = detailElements.firstOrNull {
+                it.children().firstOrNull {
+                    it2 -> it2.hasClass("fed-text-muted") && it2.ownText() == "作者"
+                } != null
+            }?.select("a")?.first()?.text()
+
+            genre = detailElements.firstOrNull {
+                it.children().firstOrNull {
+                    it2 -> it2.hasClass("fed-text-muted") && it2.ownText() == "类别"
+                } != null
+            }?.select("a")?.joinToString { it.text() }
+
+            description = document.select("ul.fed-part-rows li.fed-col-xs12.fed-show-md-block .fed-part-esan")
+                .firstOrNull()?.text()?.trim()
         }
     }
 
