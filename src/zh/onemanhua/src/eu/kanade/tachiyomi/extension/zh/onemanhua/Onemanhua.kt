@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.net.URLEncoder
 import java.util.regex.Pattern
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
@@ -25,7 +26,6 @@ class Onemanhua : ParsedHttpSource() {
     override val baseUrl = "https://www.ohmanhua.com/"
 
     private var decryptKey = "fw12558899ertyui"
-    private var imageServerUrl = "https://img.ohmanhua.com/comic/"
 
     // Common
     private var commonSelector = "li.fed-list-item"
@@ -141,13 +141,30 @@ class Onemanhua : ParsedHttpSource() {
         // 3. decrypt C_DATA
         val decryptedData = decryptAES(decodedData, decryptKey)
 
-        val imgRelativePath = getImgRelativePath(decryptedData)
-        val startImg = getStartImg(decryptedData)
-        val totalPages = getTotalPages(decryptedData)
+        // 4. Extract values from C_DATA to formulate page urls
+        var imageServerDomain = regexExtractStringValue(
+            decryptedData, "domain:\"(.+?)\"", "Unable to match for imageServerDomain"
+        )
+        var mhId = regexExtractStringValue(
+            decryptedData, "mhid:\"(.+?)\"", "Unable to match for mhId"
+        )
+        var pageName = regexExtractStringValue(
+            decryptedData, "pagename:\"(.+?)\"", "Unable to match for pagename"
+        )
+        val startImg = regexExtractIntValue(
+            decryptedData, "startimg:([0-9]+?),", "Unable to match for startimg"
+        )
+
+        // 5. Decode and decrypt total pages
+        var encodedTotalPages = regexExtractStringValue(
+            decryptedData, "enc_code1:\"(.+?)\"", "Unable to match for enc_code1"
+        )
+        var decodedTotalPages = String(Base64.decode(encodedTotalPages, Base64.NO_WRAP))
+        var decryptedTotalPages = Integer.parseInt(decryptAES(decodedTotalPages, decryptKey))
 
         return mutableListOf<Page>().apply {
-            for (i in startImg..totalPages) {
-                add(Page(i, "", "${imageServerUrl}${imgRelativePath}${"%04d".format(i)}.jpg"))
+            for (i in startImg..decryptedTotalPages) {
+                add(Page(i, "", "https://$imageServerDomain/comic/$mhId/${encodeUriComponent(pageName)}/${"%04d".format(i)}.jpg"))
             }
         }
     }
@@ -183,33 +200,24 @@ class Onemanhua : ParsedHttpSource() {
         }
     }
 
-    private fun getImgRelativePath(mangaData: String): String {
-        val pattern = Pattern.compile("imgpath:\"(.+?)\"")
+    private fun regexExtractStringValue(mangaData: String, regex: String, messageIfError: String): String {
+        val pattern = Pattern.compile(regex)
         val matcher = pattern.matcher(mangaData)
         if (matcher.find()) {
-            return matcher.group(1) ?: throw Exception("imgpath not found")
+            return matcher.group(1) ?: throw Exception(messageIfError)
         }
 
-        throw Error("Unable to match for imgPath")
+        throw Error(messageIfError)
     }
 
-    private fun getTotalPages(mangaData: String): Int {
-        val pattern = Pattern.compile("totalimg:([0-9]+?),")
-        val matcher = pattern.matcher(mangaData)
-        if (matcher.find()) {
-            return matcher.group(1)?.let { Integer.parseInt(it) } ?: throw Exception("totalimg not found")
-        }
-
-        throw Error("Unable to match for totalimg")
+    private fun regexExtractIntValue(mangaData: String, regex: String, messageIfError: String): Int {
+        return regexExtractStringValue(mangaData, regex, messageIfError).let { Integer.parseInt(it) }
     }
 
-    private fun getStartImg(mangaData: String): Int {
-        val pattern = Pattern.compile("startimg:([0-9]+?),")
-        val matcher = pattern.matcher(mangaData)
-        if (matcher.find()) {
-            return matcher.group(1)?.let { Integer.parseInt(it) } ?: throw Exception("startimg not found")
-        }
-
-        throw Error("Unable to match for startimg")
+    private fun encodeUriComponent(str: String): String {
+        return URLEncoder.encode(str, "UTF-8")
+            .replace("+", "%20")
+            .replace("%7E", "~")
+            .replace("*", "%2A")
     }
 }
