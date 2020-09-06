@@ -11,14 +11,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.io.IOException
-import java.nio.charset.Charset
-import java.util.Calendar
 import okhttp3.CacheControl
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.FormBody
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.Buffer
@@ -26,6 +24,9 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
+import java.io.IOException
+import java.nio.charset.Charset
+import java.util.Calendar
 
 class MangaDoom : HttpSource() {
 
@@ -274,11 +275,11 @@ class MangaDoom : HttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val currentSearchParameter = LinkedHashMap(defaultSearchParameter)
 
-        var potentialGenreGroup: GenreGroup? = null
+        var potentialGenreGroupFilter: GenreGroupFilterManager.GenreGroupFilter? = null
 
         filters.forEach {
             if (it is FormBodyFilter) it.addToFormParameters(currentSearchParameter)
-            if (it is GenreGroup) potentialGenreGroup = it
+            if (it is GenreGroupFilterManager.GenreGroupFilter) potentialGenreGroupFilter = it
         }
 
         Log.d("devExt", "Filter size ${filters.size}")
@@ -293,7 +294,7 @@ class MangaDoom : HttpSource() {
         currentSearchParameter.entries.forEach {
             requestBodyBuilder.add(it.key, it.value)
             if (it.key == "artist-name") {
-                potentialGenreGroup?.run {
+                potentialGenreGroupFilter?.run {
                     addToRequestPayload(requestBodyBuilder)
                 }
             }
@@ -328,12 +329,14 @@ class MangaDoom : HttpSource() {
     }
 
     // filters
+    private val genreManager = GenreGroupFilterManager(client, baseUrl)
+
     override fun getFilterList() = FilterList(
         TypeFilter(),
-        AuthorText(),
-        ArtistText(),
+        AuthorTextFilter(),
+        ArtistTextFilter(),
         StatusFilter(),
-        getGenreGroupFilterOrPlaceholder()
+        genreManager.getGenreGroupFilterOrPlaceholder()
     )
 
     private class TypeFilter : FormBodySelectFilter("Type", "type", arrayOf(
@@ -343,13 +346,13 @@ class MangaDoom : HttpSource() {
         Pair("all", "All")
     ), 3)
 
-    private class AuthorText : Filter.Text("Author"), FormBodyFilter {
+    private class AuthorTextFilter : Filter.Text("Author"), FormBodyFilter {
         override fun addToFormParameters(formParameters: MutableMap<String, String>) {
             formParameters["author-name"] = state
         }
     }
 
-    private class ArtistText : Filter.Text("Artist"), FormBodyFilter {
+    private class ArtistTextFilter : Filter.Text("Artist"), FormBodyFilter {
         override fun addToFormParameters(formParameters: MutableMap<String, String>) {
             formParameters["artist-name"] = state
         }
@@ -361,77 +364,80 @@ class MangaDoom : HttpSource() {
         Pair("both", "Both")
     ), 2)
 
-    private fun getGenreGroupFilterOrPlaceholder(): Filter<*> {
-        return when (val potentialGenreGroup = callForGenreGroup()) {
-            null -> GenreNotAvailable()
-            else -> potentialGenreGroup
-        }
-    }
+    private class GenreGroupFilterManager(val client: OkHttpClient, val baseUrl: String) {
 
-    private class GenreNotAvailable : Filter.Text("genreNotAvailable", "Reset for genre filter")
-
-    private class GenreFilter(val payloadParam: String, displayName: String) : Filter.CheckBox(displayName)
-
-    private class GenreGroup(generatedGenreList: List<GenreFilter>) : Filter.Group<GenreFilter>("Genres", generatedGenreList) {
-        fun addToRequestPayload(formBodyBuilder: FormBody.Builder) {
-            state.filter { it.state }
-                .forEach { formBodyBuilder.add("include[]", it.payloadParam) }
-        }
-    }
-
-    private var genreFiltersContent: List<Pair<String, String>>? = null
-    private var genreFilterContentFrom: Long? = null
-
-    private fun contentUpToDate(compareTimestamp: Long?): Boolean =
-        (genreFiltersContent == null || compareTimestamp == null || (System.currentTimeMillis() - compareTimestamp < 15 * 60 * 1000))
-
-    private fun callForGenreGroup(): GenreGroup? {
-        fun genreContentListToGenreGroup(genreFiltersContent: List<Pair<String, String>>) =
-            GenreGroup(genreFiltersContent.map { singleGenreContent ->
-                GenreFilter(singleGenreContent.first, singleGenreContent.second) })
-
-        val genreGroupFromCacheContent = genreFiltersContent?.let { genreList ->
-            genreContentListToGenreGroup(genreList)
-        }
-
-        return if (genreGroupFromCacheContent != null && contentUpToDate(genreFilterContentFrom)) {
-            genreGroupFromCacheContent
-        } else {
-            generateFilterContent()?.let {
-                genreContentListToGenreGroup(it)
-            }
-        }
-    }
-
-    private val advancedSearchPagePath = "/advanced-search"
-
-    private fun generateFilterContent(): List<Pair<String, String>>? {
-        fun responseToGenreFilter(genreResponse: Response): List<Pair<String, String>> {
-            val document = genreResponse.asJsoup()
-
-            return document.select("ul.manga-cat > li").map {
-                Pair(it.select("span.fa").first().attr("data-id"), it.ownText())
+        fun getGenreGroupFilterOrPlaceholder(): Filter<*> {
+            return when (val potentialGenreGroup = callForGenreGroup()) {
+                null -> GenreNotAvailable()
+                else -> potentialGenreGroup
             }
         }
 
-        val genreResponse = client
-            .newCall(GET(url = baseUrl + advancedSearchPagePath, cache = CacheControl.FORCE_CACHE))
-            .execute()
+        private class GenreNotAvailable : Filter.Text("genreNotAvailable", "Reset for genre filter")
 
-        return if (genreResponse.code() == 200 && contentUpToDate(genreResponse.receivedResponseAtMillis())) {
-            responseToGenreFilter(genreResponse)
-        } else {
-            client.newCall(GET(url = baseUrl + advancedSearchPagePath, cache = CacheControl.FORCE_NETWORK)).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    throw e
-                }
+        private class GenreFilter(val payloadParam: String, displayName: String) : Filter.CheckBox(displayName)
 
-                override fun onResponse(call: Call, response: Response) {
-                    genreFilterContentFrom = response.receivedResponseAtMillis()
-                    genreFiltersContent = responseToGenreFilter(response)
+        class GenreGroupFilter(generatedGenreList: List<GenreFilter>) : Filter.Group<GenreFilter>("Genres", generatedGenreList) {
+            fun addToRequestPayload(formBodyBuilder: FormBody.Builder) {
+                state.filter { it.state }
+                    .forEach { formBodyBuilder.add("include[]", it.payloadParam) }
+            }
+        }
+
+        private var genreFiltersContent: List<Pair<String, String>>? = null
+        private var genreFilterContentFrom: Long? = null
+
+        private fun contentUpToDate(compareTimestamp: Long?): Boolean =
+            (genreFiltersContent == null || compareTimestamp == null || (System.currentTimeMillis() - compareTimestamp < 15 * 60 * 1000))
+
+        private fun callForGenreGroup(): GenreGroupFilter? {
+            fun genreContentListToGenreGroup(genreFiltersContent: List<Pair<String, String>>) =
+                GenreGroupFilter(genreFiltersContent.map { singleGenreContent ->
+                    GenreFilter(singleGenreContent.first, singleGenreContent.second) })
+
+            val genreGroupFromCacheContent = genreFiltersContent?.let { genreList ->
+                genreContentListToGenreGroup(genreList)
+            }
+
+            return if (genreGroupFromCacheContent != null && contentUpToDate(genreFilterContentFrom)) {
+                genreGroupFromCacheContent
+            } else {
+                generateFilterContent()?.let {
+                    genreContentListToGenreGroup(it)
                 }
-            })
-            null
+            }
+        }
+
+        private val advancedSearchPagePath = "/advanced-search"
+
+        private fun generateFilterContent(): List<Pair<String, String>>? {
+            fun responseToGenreFilter(genreResponse: Response): List<Pair<String, String>> {
+                val document = genreResponse.asJsoup()
+
+                return document.select("ul.manga-cat > li").map {
+                    Pair(it.select("span.fa").first().attr("data-id"), it.ownText())
+                }
+            }
+
+            val genreResponse = client
+                .newCall(GET(url = baseUrl + advancedSearchPagePath, cache = CacheControl.FORCE_CACHE))
+                .execute()
+
+            return if (genreResponse.code() == 200 && contentUpToDate(genreResponse.receivedResponseAtMillis())) {
+                responseToGenreFilter(genreResponse)
+            } else {
+                client.newCall(GET(url = baseUrl + advancedSearchPagePath, cache = CacheControl.FORCE_NETWORK)).enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        throw e
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        genreFilterContentFrom = response.receivedResponseAtMillis()
+                        genreFiltersContent = responseToGenreFilter(response)
+                    }
+                })
+                null
+            }
         }
     }
 
