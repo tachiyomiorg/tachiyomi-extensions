@@ -21,7 +21,7 @@ import org.jsoup.nodes.Document
  *
  * Since 2020-09-20, They changed manga side to Manatoki.
  * It was merged after shutdown of ManaMoa.
- * This is by the head of Manamoa, as thety decided to move to Newtoki.
+ * This is by the head of Manamoa, as they decided to move to Newtoki.
  */
 private val domainNumber = 59 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", Locale.US).parse("2019-11-14")!!.time) / 595000000)
 
