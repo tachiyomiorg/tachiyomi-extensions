@@ -41,7 +41,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         val linkElement = element.getElementsByTag("a").first()
 
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(linkElement.attr("href").substringAfter("?"))
+        manga.setUrlWithoutDomain(linkElement.attr("href").substringBefore("?"))
         manga.title = element.select("span.title").first().ownText()
         manga.thumbnail_url = linkElement.getElementsByTag("img").attr("src")
         return manga
