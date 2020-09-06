@@ -35,6 +35,117 @@ class NewTokiFactory : SourceFactory {
 class NewTokiManga : NewToki("ManaToki", "https://manatoki$domainNumber.net", "comic") {
     // / ! DO NOT CHANGE THIS !  Only the site name changed from newtoki.
     override val id by lazy { generateSourceId("NewToki", lang, versionId) }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = HttpUrl.parse("$baseUrl/comic" + (if (page > 1) "/p$page" else ""))!!.newBuilder()
+
+        if (!query.isBlank()) {
+            url.addQueryParameter("stx", query)
+            return GET(url.toString())
+        }
+
+        filters.forEach { filter ->
+            when (filter) {
+                is SearchPublishTypeList -> {
+                    if (filter.state > 0) {
+                        url.addQueryParameter("publish", filter.values[filter.state])
+                    }
+                }
+
+                is SearchJaumTypeList -> {
+                    if (filter.state > 0) {
+                        url.addQueryParameter("jaum", filter.values[filter.state])
+                    }
+                }
+
+                is SearchGenreTypeList -> {
+                    if (filter.state > 0) {
+                        url.addQueryParameter("tag", filter.values[filter.state])
+                    }
+                }
+            }
+        }
+
+        return GET(url.toString())
+    }
+
+    // [...document.querySelectorAll("form.form td")[2].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchPublishTypeList : Filter.Select<String>("Publish", arrayOf(
+        "전체",
+        "미분류",
+        "주간",
+        "격주",
+        "월간",
+        "격월/비정기",
+        "단편",
+        "단행본",
+        "완결"
+    ))
+
+    // [...document.querySelectorAll("form.form td")[3].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchJaumTypeList : Filter.Select<String>("Jaum", arrayOf(
+        "전체",
+        "ㄱ",
+        "ㄴ",
+        "ㄷ",
+        "ㄹ",
+        "ㅁ",
+        "ㅂ",
+        "ㅅ",
+        "ㅇ",
+        "ㅈ",
+        "ㅊ",
+        "ㅋ",
+        "ㅌ",
+        "ㅍ",
+        "ㅎ",
+        "0-9",
+        "a-z"
+    ))
+
+    // [...document.querySelectorAll("form.form td")[4].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchGenreTypeList : Filter.Select<String>("Genre", arrayOf(
+        "전체",
+        "17",
+        "BL",
+        "SF",
+        "TS",
+        "개그",
+        "게임",
+        "공포",
+        "도박",
+        "드라마",
+        "라노벨",
+        "러브코미디",
+        "로맨스",
+        "먹방",
+        "미스터리",
+        "백합",
+        "붕탁",
+        "성인",
+        "순정",
+        "스릴러",
+        "스포츠",
+        "시대",
+        "애니화",
+        "액션",
+        "역사",
+        "음악",
+        "이세계",
+        "일상",
+        "일상+치유",
+        "전생",
+        "추리",
+        "판타지",
+        "학원",
+        "호러"
+    ))
+
+    override fun getFilterList() = FilterList(
+        SearchPublishTypeList(),
+        SearchJaumTypeList(),
+        SearchGenreTypeList()
+    )
 }
 
 class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "webtoon") {
