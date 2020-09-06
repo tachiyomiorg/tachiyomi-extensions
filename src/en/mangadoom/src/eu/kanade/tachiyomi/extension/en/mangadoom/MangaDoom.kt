@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.mangadoom
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -55,7 +54,7 @@ class MangaDoom : HttpSource() {
     /**
      * The website has a pagination problem for the latest-chapters list.
      * latest-chapters/ without a page number is the first page, latest-chapters/1 is the
-     * second page, latest-chapters/2 is the third page, ...
+     * second page, latest-chapters/2 is the third page, ....
      */
     override fun latestUpdatesRequest(page: Int): Request {
         var url = baseUrl + latestMangaPath
@@ -77,8 +76,8 @@ class MangaDoom : HttpSource() {
     }
 
     /**
-     * Checks on pages that have pagination (e.g. popular-manga and latest-chapters)
-     * whether or not a next page exists
+     * Checks on a page that has pagination (e.g. popular-manga and latest-chapters)
+     * whether or not a next page exists.
      */
     private fun paginationHasNext(document: Document) = !document
         .select("ul.pagination > li:contains(»)").isEmpty()
@@ -334,10 +333,7 @@ class MangaDoom : HttpSource() {
             if (it is GenreGroupFilterManager.GenreGroupFilter) potentialGenreGroupFilter = it
         }
 
-        Log.d("devExt", "Filter size ${filters.size}")
-
         if (query.isNotEmpty()) {
-            Log.d("devExt", "Query is not empty")
             currentSearchParameter["manga-name"] = query
         }
 
