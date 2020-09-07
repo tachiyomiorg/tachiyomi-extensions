@@ -38,7 +38,7 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
         .build()!!
     override val supportsLatest = true
 
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", baseUrl)
 
     // Popular - Random
