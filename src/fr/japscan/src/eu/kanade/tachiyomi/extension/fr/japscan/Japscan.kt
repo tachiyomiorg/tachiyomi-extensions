@@ -43,8 +43,6 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-@Suppress("DEPRECATION")
-@TargetApi(Build.VERSION_CODES.KITKAT)
 class Japscan : ParsedHttpSource() {
 
     override val id: Long = 11
@@ -78,7 +76,6 @@ class Japscan : ParsedHttpSource() {
         var width = 0
 
         handler.post {
-            WebView.setWebContentsDebuggingEnabled(true)
             val webview = WebView(Injekt.get<Application>())
             webView = webview
             webview.settings.javaScriptEnabled = true
@@ -111,11 +108,15 @@ class Japscan : ParsedHttpSource() {
 
         Log.d("japscan", "awaiting alert")
         latch.await()
-        webView!!.isDrawingCacheEnabled = true
+
         webView!!.measure(width, height)
         webView!!.layout(0, 0, width, height)
         Thread.sleep(350)
-        val bitmap: Bitmap = webView!!.drawingCache
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        var canvas = Canvas(bitmap)
+        webView!!.draw(canvas)
+
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
 
