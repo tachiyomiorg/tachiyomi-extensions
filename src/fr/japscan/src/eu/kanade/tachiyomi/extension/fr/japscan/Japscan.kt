@@ -2,20 +2,27 @@ package eu.kanade.tachiyomi.extension.fr.japscan
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import android.view.View
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -24,6 +31,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -41,7 +49,7 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class Japscan : ParsedHttpSource() {
+class Japscan : ConfigurableSource, ParsedHttpSource() {
 
     override val id: Long = 11
 
@@ -53,10 +61,14 @@ class Japscan : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
         val indicator = "&wvsc"
-        val cleanupjs = "var db=document.body,chl=db.children;for(db.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=chl[0].tagName;)db.removeChild(chl[0]);window.variable={w:chl[0].all_canvas[0].width,h:chl[0].all_canvas[0].height};"
+        val cleanupjs = "var db=document.body,chl=db.children;if(document.getElementsByTagName(\"CNV-VV\").length>1){for(db.appendChild(document.getElementById(\"image\"));\"image\"!=chl[0].id;)db.removeChild(chl[0]);window.scrollTo(0,0),window.variable={w:document.getElementsByTagName(\"CNV-VV\")[0].all_canvas[0].width,h:[].slice.call(document.getElementsByTagName(\"cnv-vv\")).map(e=>e.all_canvas[0].height).reduce((e,l)=>e+l)}}else{for(db.appendChild(document.getElementsByTagName(\"CNV-VV\")[0]);\"CNV-VV\"!=chl[0].tagName;)db.removeChild(chl[0]);window.variable={w:chl[0].all_canvas[0].width,h:chl[0].all_canvas[0].height}}"
         val request = chain.request()
         val url = request.url().toString()
 
@@ -73,6 +85,7 @@ class Japscan : ParsedHttpSource() {
         var width = 0
 
         handler.post {
+            WebView.setWebContentsDebuggingEnabled(true)
             val webview = WebView(Injekt.get<Application>())
             webView = webview
             webview.settings.javaScriptEnabled = true
@@ -101,6 +114,8 @@ class Japscan : ParsedHttpSource() {
 
         latch.await()
 
+        // webView!!.isDrawingCacheEnabled = true
+
         webView!!.measure(width, height)
         webView!!.layout(0, 0, width, height)
         Thread.sleep(350)
@@ -109,6 +124,7 @@ class Japscan : ParsedHttpSource() {
         var canvas = Canvas(bitmap)
         webView!!.draw(canvas)
 
+        // val bitmap: Bitmap = webView!!.drawingCache
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
 
@@ -120,7 +136,13 @@ class Japscan : ParsedHttpSource() {
         val dateFormat by lazy {
             SimpleDateFormat("dd MMM yyyy", Locale.US)
         }
+        private const val SHOW_SPOILER_CHAPTERS_Title = "Les chapitres en Anglais ou non traduit sont upload en tant que \" Spoilers \" sur Japscan"
+        private const val SHOW_SPOILER_CHAPTERS = "JAPSCAN_SPOILER_CHAPTERS"
+        private val prefsEntries = arrayOf("Montrer uniquement les chapitres traduit en Français", "Montrer les chapitres spoiler")
+        private val prefsEntryValues = arrayOf("hide", "show")
     }
+
+    private fun chapterListPref() = preferences.getString(SHOW_SPOILER_CHAPTERS, "hide")
 
     // Popular
     override fun popularMangaRequest(page: Int): Request {
@@ -267,7 +289,7 @@ class Japscan : ParsedHttpSource() {
     }
 
     override fun chapterListSelector() = "#chapters_list > div.collapse > div.chapters_list" +
-        ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW),.badge:contains(VUS)))"
+        if (chapterListPref() == "hide") { ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW),.badge:contains(VUS)))" } else { "" }
     // JapScan sometimes uploads some "spoiler preview" chapters, containing 2 or 3 untranslated pictures taken from a raw. Sometimes they also upload full RAWs/US versions and replace them with a translation as soon as available.
     // Those have a span.badge "SPOILER" or "RAW". The additional pseudo selector makes sure to exclude these from the chapter list.
 
@@ -291,7 +313,47 @@ class Japscan : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
+        return if (document.getElementsByTag("script").size> 12) { // scrambled images, webview screenshotting
+            document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
+        } else {
+            // unscrambled images, check for single page
+            val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
+            val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body()!!.string()
+            if ((zjs.toLowerCase().split("new image").size - 1) == 1) { // single page, webview request dumping
+                val pagecount = document.getElementsByTag("option").size
+                val pages = ArrayList<Page>()
+                val handler = Handler(Looper.getMainLooper())
+                val latch = CountDownLatch(1)
+
+                val dummyimage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+                val dummystream = ByteArrayOutputStream()
+                dummyimage.compress(Bitmap.CompressFormat.JPEG, 100, dummystream)
+
+                handler.post {
+                    val webview = WebView(Injekt.get<Application>())
+                    webview.settings.javaScriptEnabled = true
+                    webview.settings.domStorageEnabled = true
+                    webview.webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): WebResourceResponse? {
+                            if (request.url.toString().startsWith("https://c.")) {
+                                pages.add(Page(pages.size, "", request.url.toString()))
+                                if (pages.size == pagecount) { latch.countDown() }
+                                return WebResourceResponse("image/jpeg", "UTF-8", ByteArrayInputStream(dummystream.toByteArray()))
+                            }
+                            return super.shouldInterceptRequest(view, request)
+                        }
+                    }
+                    webview.loadUrl(baseUrl + document.getElementsByTag("option").first().attr("value"))
+                }
+                latch.await()
+                return pages
+            } else { // page by page, just do webview screenshotting because it's easier
+                document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
+            }
+        }
     }
 
     override fun imageUrlParse(document: Document): String = ""
@@ -320,4 +382,41 @@ class Japscan : ParsedHttpSource() {
     }
 
     private var pageNumberDoc: Document? = null
+
+    // Prefs
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_SPOILER_CHAPTERS_Title
+            title = SHOW_SPOILER_CHAPTERS_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SHOW_SPOILER_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val chapterListPref = ListPreference(screen.context).apply {
+            key = SHOW_SPOILER_CHAPTERS_Title
+            title = SHOW_SPOILER_CHAPTERS_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SHOW_SPOILER_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
 }
