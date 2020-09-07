@@ -1,14 +1,12 @@
 package eu.kanade.tachiyomi.extension.fr.japscan
 
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.app.Application
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -66,7 +64,6 @@ class Japscan : ParsedHttpSource() {
             .url(url.substringBefore(indicator))
             .build()
         val response = chain.proceed(newRequest)
-        Log.d("japscan", "network req $url")
         if (!url.endsWith(indicator)) return@addInterceptor response
         // Webview screenshotting code
         val handler = Handler(Looper.getMainLooper())
@@ -86,17 +83,13 @@ class Japscan : ParsedHttpSource() {
                 @SuppressLint("NewApi")
                 override fun onProgressChanged(view: WebView, progress: Int) {
                     if (progress == 100) {
-                        Log.d("japscan", "loaded page, running JS")
                         view.evaluateJavascript(cleanupjs) {
-                            Log.d("japscan", "received alert $it, unlatching")
                             if (it.contains('{')) {
                                 val j = JsonParser().parse(it).asJsonObject
                                 width = j["w"].asInt
                                 height = j["h"].asInt
-                                Log.d("japscan", "passed $width $height")
                                 latch.countDown()
                             } else {
-                                Log.d("japscan", "returned null, reloading")
                                 webview.loadUrl(url.replace("&wvsc", ""))
                             }
                         }
@@ -106,7 +99,6 @@ class Japscan : ParsedHttpSource() {
             webview.loadUrl(url.replace("&wvsc", ""))
         }
 
-        Log.d("japscan", "awaiting alert")
         latch.await()
 
         webView!!.measure(width, height)
@@ -299,9 +291,7 @@ class Japscan : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
-        Log.d("japscan", pages.first().imageUrl.toString())
-        return pages
+        return document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
     }
 
     override fun imageUrlParse(document: Document): String = ""
