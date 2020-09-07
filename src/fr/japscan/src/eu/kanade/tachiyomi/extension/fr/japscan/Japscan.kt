@@ -68,7 +68,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     @SuppressLint("SetJavaScriptEnabled")
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
         val indicator = "&wvsc"
-        val cleanupjs = "var db=document.body,chl=db.children;if(document.getElementsByTagName(\"CNV-VV\").length>1){for(db.appendChild(document.getElementById(\"image\"));\"image\"!=chl[0].id;)db.removeChild(chl[0]);window.scrollTo(0,0),window.variable={w:document.getElementsByTagName(\"CNV-VV\")[0].all_canvas[0].width,h:[].slice.call(document.getElementsByTagName(\"cnv-vv\")).map(e=>e.all_canvas[0].height).reduce((e,l)=>e+l)}}else{for(db.appendChild(document.getElementsByTagName(\"CNV-VV\")[0]);\"CNV-VV\"!=chl[0].tagName;)db.removeChild(chl[0]);window.variable={w:chl[0].all_canvas[0].width,h:chl[0].all_canvas[0].height}}"
+        val cleanupjs = "var db=document.body,chl=db.children;for(db.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=chl[0].tagName;)db.removeChild(chl[0]);window.variable={w:chl[0].all_canvas[0].width,h:chl[0].all_canvas[0].height};"
         val request = chain.request()
         val url = request.url().toString()
 
@@ -85,7 +85,6 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         var width = 0
 
         handler.post {
-            WebView.setWebContentsDebuggingEnabled(true)
             val webview = WebView(Injekt.get<Application>())
             webView = webview
             webview.settings.javaScriptEnabled = true
