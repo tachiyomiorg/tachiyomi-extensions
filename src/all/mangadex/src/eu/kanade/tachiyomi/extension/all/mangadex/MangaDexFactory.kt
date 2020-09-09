@@ -16,7 +16,6 @@ class MangaDexFactory : SourceFactory {
         MangaDexRussian(),
         MangaDexGerman(),
         MangaDexHungarian(),
-        MangaDexFrench(),
         MangaDexFinnish(),
         MangaDexVietnamese(),
         MangaDexGreek(),
@@ -59,7 +58,6 @@ class MangaDexItalian : MangaDex("it", "it")
 class MangaDexRussian : MangaDex("ru", "ru")
 class MangaDexGerman : MangaDex("de", "de")
 class MangaDexHungarian : MangaDex("hu", "hu")
-class MangaDexFrench : MangaDex("fr", "fr")
 class MangaDexFinnish : MangaDex("fi", "fi")
 class MangaDexVietnamese : MangaDex("vi", "vn")
 class MangaDexGreek : MangaDex("el", "gr")
