@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Ciayo Comics'
+    extName = 'Ciayo Comics'
     pkgNameSuffix = 'all.ciayo'
     extClass = '.CiayoFactory'
     extVersionCode = 1

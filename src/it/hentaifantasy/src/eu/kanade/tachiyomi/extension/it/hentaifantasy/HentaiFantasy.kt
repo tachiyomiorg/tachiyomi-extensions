@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.it.hentaifantasy
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -19,6 +20,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
+@Nsfw
 class HentaiFantasy : ParsedHttpSource() {
     override val name = "HentaiFantasy"
 

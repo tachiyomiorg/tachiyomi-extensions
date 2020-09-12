@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Kombatch'
+    extName = 'Kombatch'
     pkgNameSuffix = 'id.kombatch'
     extClass = '.Kombatch'
     extVersionCode = 1

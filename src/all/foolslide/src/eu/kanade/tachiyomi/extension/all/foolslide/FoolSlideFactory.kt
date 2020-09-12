@@ -7,6 +7,7 @@ import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
 import com.github.salomonbrys.kotson.get
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -55,14 +56,14 @@ class FoolSlideFactory : SourceFactory {
         HNIScantradEN(),
         PhoenixScans(),
         GTO(),
-        Kangaryu(),
         FallenWorldOrder(),
         NIFTeam(),
         TuttoAnimeManga(),
         Customizable(),
         TortugaCeviri(),
         Rama(),
-        Mabushimajo()
+        Mabushimajo(),
+        EdensZero()
     )
 }
 
@@ -161,6 +162,7 @@ class KirishimaFansub : FoolSlide("Kirishima Fansub", "https://www.kirishimafans
 
 class PowerMangaIT : FoolSlide("PowerManga", "https://reader.powermanga.org", "it", "")
 
+@Nsfw
 class BaixarHentai : FoolSlide("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR") {
     // Hardcode the id because the language wasn't specific.
     override val id: Long = 8908032188831949972
@@ -208,22 +210,6 @@ class HNIScantradEN : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "en"
 class PhoenixScans : FoolSlide("The Phoenix Scans", "https://www.phantomreader.com", "it", "/reader")
 
 class GTO : FoolSlide("GTO The Great Site", "https://www.gtothegreatsite.net", "it", "/reader")
-
-class Kangaryu : FoolSlide("Kangaryu", "https://kangaryu-team.fr", "fr") {
-    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers).also { latestUpdatesUrls.clear() }
-    override fun latestUpdatesSelector() = "div.card"
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            element.select("div.card-text a").let {
-                title = it.text()
-                setUrlWithoutDomain(it.attr("href"))
-            }
-            thumbnail_url = element.select("img").attr("abs:src")
-        }
-    }
-    override fun latestUpdatesNextPageSelector(): String? = null
-    override val mangaDetailsInfoSelector = "div.info:not(.comic)"
-}
 
 class FallenWorldOrder : FoolSlide("Fall World Reader", "https://faworeader.altervista.org", "it", "/slide")
 
@@ -306,3 +292,5 @@ class TortugaCeviri : FoolSlide("Tortuga Ceviri", "http://tortuga-ceviri.com", "
 class Rama : FoolSlide("Rama", "https://www.ramareader.it", "it", "/read")
 
 class Mabushimajo : FoolSlide("Mabushimajo", "http://mabushimajo.com", "tr", "/onlineokuma")
+
+class EdensZero : FoolSlide("Edens Zero and Hero's", "https://readedenszero.com", "en", "/reader")

@@ -6,9 +6,15 @@ import eu.kanade.tachiyomi.source.SourceFactory
 class PaprikaFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         MangazukiXyz(),
-        MangaTensei()
+        MangaTensei(),
+        MangaNelo(),
+        MangaWindowClub(),
+        MangaDogs()
     )
 }
 
-class MangazukiXyz : Paprika("MangaZuki.xyz", "https://ir2me.com", "en")
+class MangazukiXyz : Paprika("MangaZuki.xyz", "http://mangazuki.xyz", "en")
 class MangaTensei : Paprika("MangaTensei", "https://www.mangatensei.com", "en")
+class MangaNelo : Paprika("MangaNelos.com", "http://manganelos.com", "en")
+class MangaWindowClub : PaprikaAlt("MangaWindow.club", "https://mangawindow.club", "en")
+class MangaDogs : Paprika("MangaDogs.fun", "http://mangadogs.fun", "en")

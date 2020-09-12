@@ -7,9 +7,7 @@ class GenkanFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LeviatanScans(),
         LeviatanScansES(),
-        OneShotScans(),
         HunlightScans(),
-        WoweScans(),
         ZeroScans(),
         ReaperScans(),
         TheNonamesScans(),
@@ -18,7 +16,8 @@ class GenkanFactory : SourceFactory {
         SecretScans(),
         MethodScans(),
         SKScans(),
-        KKJScans()
+        KKJScans(),
+        KrakenScans()
     )
 }
 
@@ -27,9 +26,7 @@ class GenkanFactory : SourceFactory {
 
 class LeviatanScans : Genkan("Leviatan Scans", "https://leviatanscans.com", "en")
 class LeviatanScansES : GenkanOriginal("Leviatan Scans", "https://es.leviatanscans.com", "es")
-class OneShotScans : Genkan("One Shot Scans", "https://oneshotscans.com", "en")
 class HunlightScans : Genkan("Hunlight Scans", "https://hunlight-scans.info", "en")
-class WoweScans : Genkan("Wowe Scans", "https://wowescans.co", "en")
 class ZeroScans : Genkan("ZeroScans", "https://zeroscans.com", "en")
 // Search isn't working on Reaper's website, use GenkanOriginal for now
 class ReaperScans : GenkanOriginal("Reaper Scans", "https://reaperscans.com", "en")
@@ -42,3 +39,4 @@ class SecretScans : GenkanOriginal("SecretScans", "https://secretscans.co", "en"
 class MethodScans : Genkan("Method Scans", "https://methodscans.com", "en")
 class SKScans : Genkan("Sleeping Knight Scans", "https://skscans.com", "en")
 class KKJScans : Genkan("KKJ Scans", "https://kkjscans.co", "en")
+class KrakenScans : Genkan("Kraken Scans", "https://krakenscans.com", "en")

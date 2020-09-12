@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Central de Mangás'
+    extName = 'Central de Mangás'
     pkgNameSuffix = 'pt.centraldemangas'
     extClass = '.CentralDeMangas'
     extVersionCode = 3

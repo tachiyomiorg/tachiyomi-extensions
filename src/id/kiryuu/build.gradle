@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Kiryuu'
+    extName = 'Kiryuu'
     pkgNameSuffix = 'id.kiryuu'
     extClass = '.Kiryuu'
     extVersionCode = 2

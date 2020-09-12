@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Paprika'
+    extName = 'Paprika'
     pkgNameSuffix = 'all.paprika'
     extClass = '.PaprikaFactory'
-    extVersionCode = 1
+    extVersionCode = 5
     libVersion = '1.2'
 }
 

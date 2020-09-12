@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Henchan'
+    extName = 'Henchan'
     pkgNameSuffix = 'ru.henchan'
     extClass = '.Henchan'
-    extVersionCode = 16
+    extVersionCode = 18
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 dependencies {

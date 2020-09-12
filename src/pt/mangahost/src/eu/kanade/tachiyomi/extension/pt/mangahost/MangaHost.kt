@@ -11,8 +11,8 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
@@ -24,52 +24,54 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahost2.com"
+    override val baseUrl = "https://mangahosted.com"
 
     override val lang = "pt-BR"
 
     override val supportsLatest = true
 
+    override val client: OkHttpClient = network.cloudflareClient
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
-    private fun genericMangaFromElement(element: Element, lazy: Boolean = true): SManga =
+    private fun genericMangaFromElement(element: Element, attr: String = "src"): SManga =
         SManga.create().apply {
             title = element.attr("title").withoutLanguage()
-            thumbnail_url = element.select("img.manga")
-                .attr(if (lazy) "data-path" else "src")
-                .toLargeUrl()
+            thumbnail_url = element.select("img").attr(attr).toLargeUrl()
             setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
         }
 
     override fun popularMangaRequest(page: Int): Request {
+        val listPath = if (page == 1) "" else "/mais-visualizados/page/${page - 1}"
         val newHeaders = headersBuilder()
-            .set("Referer", "$baseUrl/mangas" + (if (page == 1) "" else "/mais-visualizados/page/${page - 1}"))
+            .set("Referer", "$baseUrl/mangas$listPath")
             .build()
 
         val pageStr = if (page != 1) "/page/$page" else ""
         return GET("$baseUrl/mangas/mais-visualizados$pageStr", newHeaders)
     }
 
-    override fun popularMangaSelector(): String = "div.thumbnail div a.pull-left"
+    override fun popularMangaSelector(): String = "div#dados div.manga-block div.manga-block-left a"
 
     override fun popularMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "div.wp-pagenavi:has(a.nextpostslink)"
 
     override fun latestUpdatesRequest(page: Int): Request {
+        val listPath = if (page == 1) "" else "/lancamentos/page/${page - 1}"
         val newHeaders = headersBuilder()
-            .set("Referer", baseUrl + (if (page == 1) "" else "/lancamentos/page/${page - 1}"))
+            .set("Referer", baseUrl + listPath)
             .build()
 
         val pageStr = if (page != 1) "/page/$page" else ""
         return GET("$baseUrl/lancamentos$pageStr", newHeaders)
     }
 
-    override fun latestUpdatesSelector() = "table.table-lancamentos > tbody > tr > td:eq(0) > a"
+    override fun latestUpdatesSelector() = "div#dados div.line-lancamentos div.column-img a"
 
-    override fun latestUpdatesFromElement(element: Element): SManga = genericMangaFromElement(element, false)
+    override fun latestUpdatesFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -82,61 +84,36 @@ class MangaHost : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
 
-    override fun searchMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga =
+        genericMangaFromElement(element, "data-path")
 
     override fun searchMangaNextPageSelector(): String? = null
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div#page > section > div > div.pull-left")
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
+        val infoElement = document.select("div.box-content div.w-row div.w-col:eq(1) article")
 
-        return SManga.create().apply {
-            author = infoElement.select("li:contains(Autor:)").textWithoutLabel()
-            artist = infoElement.select("li:contains(Desenho (Art):)").textWithoutLabel()
-            genre = infoElement.select("li:contains(Categoria(s):)").textWithoutLabel()
-            description = infoElement.select("article").first()?.text()
-                ?.substringBefore("Relacionados:")
-            status = parseStatus(infoElement.select("li:contains(Status:)").text().orEmpty())
-            thumbnail_url = document.select("div#page > section > div > img.thumbnail")
-                .attr("src")
-        }
-    }
-
-    private fun parseStatus(status: String) = when {
-        status.contains("Ativo") -> SManga.ONGOING
-        status.contains("Completo") -> SManga.COMPLETED
-        else -> SManga.UNKNOWN
+        author = infoElement.select("div.text li div:contains(Autor:)").textWithoutLabel()
+        artist = infoElement.select("div.text li div:contains(Arte:)").textWithoutLabel()
+        genre = infoElement.select("h3.subtitle + div.tags a").joinToString { it.text() }
+        description = infoElement.select("div.text div.paragraph").first()?.text()
+            ?.substringBefore("Relacionados:")
+        status = infoElement.select("div.text li div:contains(Status:)").text().toStatus()
+        thumbnail_url = document.select("div.box-content div.w-row div.w-col:eq(0) div.widget img")
+            .attr("src")
     }
 
     override fun chapterListSelector(): String =
-        "ul.list_chapters li a, table.table-hover:not(.table-mangas) > tbody > tr"
+        "article.article > section.clearfix div.chapters div.cap div.card.pop"
 
-    override fun chapterFromElement(element: Element): SChapter {
-        val isNewLayout = element.tagName() == "a"
-
-        if (isNewLayout) {
-            val content = Jsoup.parse(element.attr("data-content"))
-            val date = content.select("small.clearfix").text()
-                .substringAfter("Adicionado em ")
-
-            return SChapter.create().apply {
-                name = element.attr("data-original-title").withoutLanguage()
-                scanlator = content.select("small.clearfix strong").text()
-                date_upload = DATE_FORMAT_NEW.tryParseTime(date)
-                chapter_number = element.text().toFloatOrNull() ?: 1f
-                setUrlWithoutDomain(content.select("div.clearfix a").attr("href"))
-            }
-        }
-
-        val firstColumn = element.select("td:eq(0)")
-        val secondColumn = element.select("td:eq(1)")
-        val thirdColumn = element.select("td:eq(2)")
-
-        return SChapter.create().apply {
-            name = firstColumn.select("a").text().withoutLanguage()
-            scanlator = secondColumn.text()
-            date_upload = DATE_FORMAT_OLD.tryParseTime(thirdColumn.text())
-            setUrlWithoutDomain(firstColumn.select("a").attr("href"))
-        }
+    override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
+        name = element.select("div.pop-title").text().withoutLanguage()
+        scanlator = element.select("div.pop-content small strong").text()
+        date_upload = element.select("small.clearfix").text()
+            .substringAfter("Adicionado em ")
+            .toDate()
+        chapter_number = element.select("div.pop-title span.btn-caps").text()
+            .toFloatOrNull() ?: 1f
+        setUrlWithoutDomain(element.select("div.tags a").attr("href"))
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -149,17 +126,8 @@ class MangaHost : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val documentStr = document.toString()
-        val images = documentStr
-            .substringAfter(SCRIPT_BEGIN)
-            .substringBefore(SCRIPT_END)
-            .replace(SCRIPT_REGEX, "")
-
-        val newDocument = Jsoup.parse(images)
-        val referer = document.select("link[rel='canonical']").first()
-
-        return newDocument.select("a img")
-            .mapIndexed { i, el -> Page(i, referer.attr("href"), el.attr("src")) }
+        return document.select("div#slider a img")
+            .mapIndexed { i, el -> Page(i, document.location(), el.attr("src")) }
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -172,31 +140,34 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun SimpleDateFormat.tryParseTime(date: String): Long {
+    private fun String.toDate(): Long {
         return try {
-            parse(date).time
+            DATE_FORMAT.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
+    private fun String.toStatus() = when {
+        contains("Ativo") -> SManga.ONGOING
+        contains("Completo") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
     private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
 
-    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_large.")
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, ".")
 
-    private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":")
+    private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
-        private val IMAGE_REGEX = "_(small|medium)\\.".toRegex()
+        private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
 
-        private val DATE_FORMAT_OLD by lazy { SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH) }
-        private val DATE_FORMAT_NEW by lazy { SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH) }
-
-        private const val SCRIPT_BEGIN = "var images = ["
-        private const val SCRIPT_END = "];"
-        private val SCRIPT_REGEX = "[\",]".toRegex()
+        private val DATE_FORMAT by lazy {
+            SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
+        }
     }
 }

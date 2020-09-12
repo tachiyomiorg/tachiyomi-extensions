@@ -4,11 +4,13 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
@@ -55,8 +57,13 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
+                is UnreadOnly -> {
+                    if (filter.state) {
+                        url.addQueryParameter("read_status", "UNREAD")
+                    }
+                }
                 is LibraryGroup -> {
-                    val libraryToInclude = mutableListOf<Long>()
+                    val libraryToInclude = mutableListOf<String>()
                     filter.state.forEach { content ->
                         if (content.state) {
                             libraryToInclude.add(content.id)
@@ -64,6 +71,17 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                     if (libraryToInclude.isNotEmpty()) {
                         url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
+                    }
+                }
+                is CollectionGroup -> {
+                    val collectionToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            collectionToInclude.add(content.id)
+                        }
+                    }
+                    if (collectionToInclude.isNotEmpty()) {
+                        url.addQueryParameter("collection_id", collectionToInclude.joinToString(","))
                     }
                 }
                 is StatusGroup -> {
@@ -75,6 +93,39 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                     if (statusToInclude.isNotEmpty()) {
                         url.addQueryParameter("status", statusToInclude.joinToString(","))
+                    }
+                }
+                is GenreGroup -> {
+                    val genreToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            genreToInclude.add(content.name)
+                        }
+                    }
+                    if (genreToInclude.isNotEmpty()) {
+                        url.addQueryParameter("genre", genreToInclude.joinToString(","))
+                    }
+                }
+                is TagGroup -> {
+                    val tagToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            tagToInclude.add(content.name)
+                        }
+                    }
+                    if (tagToInclude.isNotEmpty()) {
+                        url.addQueryParameter("tag", tagToInclude.joinToString(","))
+                    }
+                }
+                is PublisherGroup -> {
+                    val publisherToInclude = mutableListOf<String>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            publisherToInclude.add(content.name)
+                        }
+                    }
+                    if (publisherToInclude.isNotEmpty()) {
+                        url.addQueryParameter("publisher", publisherToInclude.joinToString(","))
                     }
                 }
                 is Filter.Sort -> {
@@ -107,15 +158,15 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books?size=1000&media_status=READY", headers)
+        GET("$baseUrl${manga.url}/books?unpaged=true&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
+        val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!).content
 
-        return page.content.map { book ->
+        return page.map { book ->
             SChapter.create().apply {
                 chapter_number = book.metadata.numberSort
-                name = "${book.metadata.title} (${book.size})"
+                name = "${book.metadata.number} - ${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = parseDate(book.lastModified)
             }
@@ -142,11 +193,15 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     }
 
     private fun processSeriesPage(response: Response): MangasPage {
-        val page = gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)
-        val mangas = page.content.map {
+        var lastPage: Boolean
+        val page = with(gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)) {
+            lastPage = last
+            content
+        }
+        val mangas = page.map {
             it.toSManga()
         }
-        return MangasPage(mangas, !page.last)
+        return MangasPage(mangas, !lastPage)
     }
 
     private fun SeriesDto.toSManga(): SManga =
@@ -159,6 +214,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 "ENDED" -> SManga.COMPLETED
                 else -> SManga.UNKNOWN
             }
+            // TODO: remove safe calls in next iteration
+            genre = (metadata.genres?.plus(metadata.tags ?: emptySet())
+                ?: emptySet()).joinToString(", ")
+            description = metadata.summary
         }
 
     private fun parseDate(date: String?): Long =
@@ -178,20 +237,38 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     override fun imageUrlParse(response: Response): String = ""
 
-    private class LibraryFilter(val id: Long, name: String) : Filter.CheckBox(name, false)
+    private class LibraryFilter(val id: String, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
+    private class CollectionFilter(val id: String, name: String) : Filter.CheckBox(name, false)
+    private class CollectionGroup(collections: List<CollectionFilter>) : Filter.Group<CollectionFilter>("Collections", collections)
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Selection(0, true))
     private class StatusFilter(name: String) : Filter.CheckBox(name, false)
     private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
+    private class UnreadOnly : Filter.CheckBox("Unread only", false)
+    private class GenreFilter(genre: String) : Filter.CheckBox(genre, false)
+    private class GenreGroup(genres: List<GenreFilter>) : Filter.Group<GenreFilter>("Genres", genres)
+    private class TagFilter(tag: String) : Filter.CheckBox(tag, false)
+    private class TagGroup(tags: List<TagFilter>) : Filter.Group<TagFilter>("Tags", tags)
+    private class PublisherFilter(publisher: String) : Filter.CheckBox(publisher, false)
+    private class PublisherGroup(publishers: List<PublisherFilter>) : Filter.Group<PublisherFilter>("Publishers", publishers)
 
     override fun getFilterList(): FilterList =
         FilterList(
-            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name }),
+            UnreadOnly(),
+            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
+            CollectionGroup(collections.map { CollectionFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
             StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
+            GenreGroup(genres.map { GenreFilter(it) }),
+            TagGroup(tags.map { TagFilter(it) }),
+            PublisherGroup(publishers.map { PublisherFilter(it) }),
             SeriesSort()
         )
 
     private var libraries = emptyList<LibraryDto>()
+    private var collections = emptyList<CollectionDto>()
+    private var genres = emptySet<String>()
+    private var tags = emptySet<String>()
+    private var publishers = emptySet<String>()
 
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
@@ -226,16 +303,22 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
         screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
-        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password, true))
     }
 
-    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String): androidx.preference.EditTextPreference {
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String, isPassword: Boolean = false): androidx.preference.EditTextPreference {
         return androidx.preference.EditTextPreference(context).apply {
             key = title
             this.title = title
             summary = value
             this.setDefaultValue(default)
             dialogTitle = title
+
+            if (isPassword) {
+                setOnBindEditTextListener {
+                    it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+            }
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -287,11 +370,63 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
+            .subscribe({ response ->
                 libraries = try {
-                    gson.fromJson(it.body()?.charStream()!!)
+                    gson.fromJson(response.body()?.charStream()!!)
                 } catch (e: Exception) {
                     emptyList()
+                }
+            }, {})
+
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
+                collections = try {
+                    gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }, {})
+
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/genres", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
+                genres = try {
+                    gson.fromJson(response.body()?.charStream()!!)
+                } catch (e: Exception) {
+                    emptySet()
+                }
+            }, {})
+
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
+                tags = try {
+                    gson.fromJson(response.body()?.charStream()!!)
+                } catch (e: Exception) {
+                    emptySet()
+                }
+            }, {})
+
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/publishers", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
+                publishers = try {
+                    gson.fromJson(response.body()?.charStream()!!)
+                } catch (e: Exception) {
+                    emptySet()
                 }
             }, {})
     }

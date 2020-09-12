@@ -18,7 +18,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.math.absoluteValue
+import okhttp3.CacheControl
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -31,41 +31,45 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override val lang = "en"
 
+    override val client = network.cloudflareClient
+
     override val supportsLatest = true
     override val name = "MangaPark"
     override val baseUrl = "https://mangapark.net"
 
-    private val directorySelector = ".ls1 .item"
-    private val directoryUrl = "/genre"
-    private val directoryNextPageSelector = ".paging.full > li:last-child > a"
+    private val nextPageSelector = ".paging:not(.order) > li:last-child > a"
 
     private val dateFormat = SimpleDateFormat("MMM d, yyyy, HH:mm a", Locale.ENGLISH)
     private val dateFormatTimeOnly = SimpleDateFormat("HH:mm a", Locale.ENGLISH)
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$directoryUrl/$page?views_a")
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/search?orderby=views_a&page=$page")
 
-    override fun popularMangaSelector() = directorySelector
+    override fun popularMangaSelector() = searchMangaSelector()
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = directoryNextPageSelector
+    override fun popularMangaNextPageSelector() = nextPageSelector
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest" + if (page > 1) "/$page" else "")
 
-    override fun latestUpdatesSelector() = directorySelector
+    override fun latestUpdatesSelector() = ".ls1 .item"
 
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = directoryNextPageSelector
+    override fun latestUpdatesNextPageSelector() = nextPageSelector
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
-        uri.appendQueryParameter("q", query)
+        if (query.isNotEmpty()) {
+            uri.appendQueryParameter("q", query)
+        }
         filters.forEach {
             if (it is UriFilter)
                 it.addToUri(uri)
         }
-        uri.appendQueryParameter("page", page.toString())
+        if (page != 1) {
+            uri.appendQueryParameter("page", page.toString())
+        }
         return GET(uri.toString())
     }
 
@@ -73,7 +77,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = ".paging:not(.order) > li:last-child > a"
+    override fun searchMangaNextPageSelector() = nextPageSelector
 
     private fun mangaFromElement(element: Element) = SManga.create().apply {
         val coverElement = element.getElementsByClass("cover").first()
@@ -113,6 +117,11 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         description = document.getElementsByClass("summary").text().trim()
     }
 
+    // force network to make sure chapter prefs take effect
+    override fun chapterListRequest(manga: SManga): Request {
+        return GET(baseUrl + manga.url, headers, CacheControl.FORCE_NETWORK)
+    }
+
     override fun chapterListParse(response: Response): List<SChapter> {
         fun List<SChapter>.getMissingChapters(allChapters: List<SChapter>): List<SChapter> {
             val chapterNums = this.map { it.chapter_number }
@@ -128,9 +137,20 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
-        val mangaBySource = response.asJsoup().select("div[id^=stream]").map { sourceElement ->
-            sourceElement.select(chapterListSelector()).map { chapterFromElement(it, sourceElement.select("i + span").text()) }
-        }
+        val mangaBySource = response.asJsoup().select("div[id^=stream]")
+            .map { sourceElement ->
+                var lastNum = 0F
+                val sourceName = sourceElement.select("i + span").text()
+
+                sourceElement.select(chapterListSelector())
+                    .reversed() // so incrementing lastNum works
+                    .map { chapterElement ->
+                        chapterFromElement(chapterElement, sourceName, lastNum)
+                            .also { lastNum = it.chapter_number }
+                    }
+                    .distinctBy { it.chapter_number } // there's even duplicate chapters within a source ( -.- )
+            }
+
         return when (getSourcePref()) {
             // source with most chapters along with chapters that source doesn't have
             "most" -> {
@@ -146,19 +166,37 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             "fox" -> mangaBySource.flatten().filterOrAll("Fox")
             "panda" -> mangaBySource.flatten().filterOrAll("Panda")
             // all sources, all chapters
-            else -> mangaBySource.flatten()
+            else -> mangaBySource.flatMap { it.reversed() }
         }
     }
 
     override fun chapterListSelector() = ".volume .chapter li"
 
-    private fun chapterFromElement(element: Element, source: String) = SChapter.create().apply {
-        url = element.select(".tit > a").first().attr("href").replaceAfterLast("/", "")
-        name = element.select(".tit > a").first().text()
-        // Get the chapter number or create a unique one if it's not available
-        chapter_number = Regex("""\b\d+\.?\d?\b""").find(name)?.value?.toFloatOrNull() ?: ".${name.hashCode().absoluteValue}".toFloat()
-        date_upload = parseDate(element.select(".time").first().text().trim())
-        scanlator = source
+    private val chapterNumberRegex = Regex("""\b\d+\.?\d?\b""")
+
+    private fun chapterFromElement(element: Element, source: String, lastNum: Float): SChapter {
+        fun Float.incremented() = this + .00001F
+        fun Float?.orIncrementLastNum() = if (this == null || this < lastNum) lastNum.incremented() else this
+
+        return SChapter.create().apply {
+            element.select(".tit > a").first().let {
+                url = it.attr("href").removeSuffix("1")
+                name = it.text()
+            }
+            // Get the chapter number or create a unique one if it's not available
+            chapter_number = chapterNumberRegex.findAll(name)
+                .toList()
+                .map { it.value.toFloatOrNull() }
+                .let { nums ->
+                    when {
+                        nums.count() == 1 -> nums[0].orIncrementLastNum()
+                        nums.count() >= 2 -> nums[1].orIncrementLastNum()
+                        else -> lastNum.incremented()
+                    }
+                }
+            date_upload = parseDate(element.select(".time").first().text().trim())
+            scanlator = source
+        }
     }
 
     override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
@@ -179,7 +217,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
         relativeDate?.let {
             // Since the date is not specified, it defaults to 1970!
-            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' '))
+            val time = dateFormatTimeOnly.parse(lcDate.substringAfter(' ')) ?: return 0
             val cal = Calendar.getInstance()
             cal.time = time
 
@@ -189,7 +227,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             return it.timeInMillis
         }
 
-        return dateFormat.parse(lcDate).time
+        return dateFormat.parse(lcDate)?.time ?: 0
     }
 
     /**
@@ -226,21 +264,17 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         return now.timeInMillis
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val doc = document.toString()
-        val obj = doc.substringAfter("var _load_pages = ").substringBefore(";")
-        val pages = mutableListOf<Page>()
-        val imglist = JSONArray(obj)
-        for (i in 0 until imglist.length()) {
-            val item = imglist.getJSONObject(i)
-            var page = item.getString("u")
-            if (page.startsWith("//")) {
-                page = "https:$page"
-            }
-            pages.add(Page(i, "", page))
-        }
-        return pages
+    private val objRegex = Regex("""var _load_pages = (\[.*])""")
+
+    override fun pageListParse(response: Response): List<Page> {
+        val obj = objRegex.find(response.body()!!.string())?.groupValues?.get(1)
+            ?: throw Exception("_load_pages not found - ${response.request().url()}")
+        val jsonArray = JSONArray(obj)
+        return (0 until jsonArray.length()).map { i -> jsonArray.getJSONObject(i).getString("u") }
+            .mapIndexed { i, url -> Page(i, "", if (url.startsWith("//")) "https://$url" else url) }
     }
+
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
     // Unused, we can get image urls directly from the chapter page
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
@@ -262,7 +296,9 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     private class SearchTypeFilter(name: String, val uriParam: String) :
             Filter.Select<String>(name, STATE_MAP), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter(uriParam, STATE_MAP[state])
+            if (STATE_MAP[state] != "contain") {
+                uri.appendQueryParameter(uriParam, STATE_MAP[state])
+            }
         }
 
         companion object {
@@ -272,7 +308,9 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     private class AuthorArtistText : Filter.Text("Author/Artist"), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter("autart", state)
+            if (state.isNotEmpty()) {
+                uri.appendQueryParameter("autart", state)
+            }
         }
     }
 
@@ -297,7 +335,9 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("doujinshi", "Doujinshi"),
             GenreFilter("drama", "Drama"),
             GenreFilter("ecchi", "Ecchi"),
+            GenreFilter("fan-colored", "Fan colored"),
             GenreFilter("fantasy", "Fantasy"),
+            GenreFilter("food", "Food"),
             GenreFilter("full-color", "Full color"),
             GenreFilter("game", "Game"),
             GenreFilter("gender-bender", "Gender bender"),
@@ -316,6 +356,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("loli", "Loli"),
             GenreFilter("lolicon", "Lolicon"),
             GenreFilter("long-strip", "Long strip"),
+            GenreFilter("mafia", "Mafia"),
             GenreFilter("magic", "Magic"),
             GenreFilter("magical-girls", "Magical girls"),
             GenreFilter("manhwa", "Manhwa"),
@@ -328,6 +369,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("monsters", "Monsters"),
             GenreFilter("music", "Music"),
             GenreFilter("mystery", "Mystery"),
+            GenreFilter("ninja", "Ninja"),
             GenreFilter("office-workers", "Office workers"),
             GenreFilter("official-colored", "Official colored"),
             GenreFilter("one-shot", "One shot"),
@@ -339,6 +381,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("reincarnation", "Reincarnation"),
             GenreFilter("reverse-harem", "Reverse harem"),
             GenreFilter("romance", "Romance"),
+            GenreFilter("samurai", "Samurai"),
             GenreFilter("school-life", "School life"),
             GenreFilter("sci-fi", "Sci fi"),
             GenreFilter("seinen", "Seinen"),
@@ -359,11 +402,14 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("suspense", "Suspense"),
             GenreFilter("thriller", "Thriller"),
             GenreFilter("time-travel", "Time travel"),
+            GenreFilter("toomics", "Toomics"),
+            GenreFilter("traditional-games", "Traditional games"),
             GenreFilter("tragedy", "Tragedy"),
             GenreFilter("user-created", "User created"),
             GenreFilter("vampire", "Vampire"),
             GenreFilter("vampires", "Vampires"),
             GenreFilter("video-games", "Video games"),
+            GenreFilter("virtual-reality", "Virtual reality"),
             GenreFilter("web-comic", "Web comic"),
             GenreFilter("webtoon", "Webtoon"),
             GenreFilter("wuxia", "Wuxia"),
@@ -372,8 +418,15 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             GenreFilter("zombies", "Zombies")
     )), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
-            uri.appendQueryParameter("genres", state.filter { it.isIncluded() }.joinToString(",") { it.uriParam })
-            uri.appendQueryParameter("genres-exclude", state.filter { it.isExcluded() }.joinToString(",") { it.uriParam })
+            val genresParameterValue = state.filter { it.isIncluded() }.joinToString(",") { it.uriParam }
+            if (genresParameterValue.isNotEmpty()) {
+                uri.appendQueryParameter("genres", genresParameterValue)
+            }
+
+            val genresExcludeParameterValue = state.filter { it.isExcluded() }.joinToString(",") { it.uriParam }
+            if (genresExcludeParameterValue.isNotEmpty()) {
+                uri.appendQueryParameter("genres-exclude", genresExcludeParameterValue)
+            }
         }
     }
 
@@ -431,10 +484,13 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     private class SortFilter : UriSelectFilter("Sort", "orderby", arrayOf(
             Pair("a-z", "A-Z"),
-            Pair("views", "Views"),
+            Pair("views_a", "Views all-time"),
+            Pair("views_y", "Views last 365 days"),
+            Pair("views_s", "Views last 180 days"),
+            Pair("views_t", "Views last 90 days"),
             Pair("rating", "Rating"),
-            Pair("latest", "Latest"),
-            Pair("add", "New manga")
+            Pair("update", "Latest"),
+            Pair("create", "New manga")
     ), firstIsUnspecified = false, defaultValue = 1)
 
     /**

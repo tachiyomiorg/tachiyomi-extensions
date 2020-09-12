@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.mangamx
 
 import android.net.Uri
+import android.util.Base64
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
@@ -15,6 +16,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.FormBody
@@ -176,6 +178,7 @@ open class MangaMx : ParsedHttpSource() {
     // Chapters
 
     override fun chapterListSelector(): String = "div#c_list a"
+
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.text().trim()
         setUrlWithoutDomain(element.attr("href"))
@@ -189,13 +192,16 @@ open class MangaMx : ParsedHttpSource() {
 
     // Pages
 
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        val script = document.select("script:containsData(hojas)").html()
-        val dir = script.substringAfter("var dir = '").substringBefore("';")
-        val imgList =
-            script.substringAfter("var hojas = [\"").substringBefore("\"];").split("\",\"")
-        imgList.forEach {
-            add(Page(size, "", dir + it))
+    override fun pageListParse(document: Document): List<Page> {
+        val encoded = document.select("script:containsData(unicap)").firstOrNull()
+            ?.data()?.substringAfter("'")?.substringBefore("'")?.reversed()
+            ?: throw Exception("unicap not found")
+
+        val drop = encoded.length % 4
+        val decoded = Base64.decode(encoded.dropLast(drop), Base64.DEFAULT).toString(Charset.defaultCharset())
+        val path = decoded.substringBefore("||")
+        return decoded.substringAfter("[").substringBefore("]").split(",").mapIndexed { i, file ->
+            Page(i, "", path + file.removeSurrounding("\""))
         }
     }
 

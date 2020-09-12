@@ -4,26 +4,25 @@ import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.experimental.and
+import kotlin.experimental.xor
+import okhttp3.HttpUrl
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.MediaType
 import okhttp3.ResponseBody
-import okhttp3.HttpUrl
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.Calendar
-import kotlin.experimental.and
-import kotlin.experimental.xor
-
 
 class MangaRockEs : ParsedHttpSource() {
 
@@ -189,16 +188,16 @@ class MangaRockEs : ParsedHttpSource() {
         // Doc: https://developers.google.com/speed/webp/docs/riff_container#webp_file_header
         val buffer = ByteArray(data.size + 15)
         val size = data.size + 7
-        buffer[0] = 82  // R
-        buffer[1] = 73  // I
-        buffer[2] = 70  // F
-        buffer[3] = 70  // F
+        buffer[0] = 82 // R
+        buffer[1] = 73 // I
+        buffer[2] = 70 // F
+        buffer[3] = 70 // F
         buffer[4] = (255.toByte() and size.toByte())
         buffer[5] = (size ushr 8).toByte() and 255.toByte()
         buffer[6] = (size ushr 16).toByte() and 255.toByte()
         buffer[7] = (size ushr 24).toByte() and 255.toByte()
-        buffer[8] = 87  // W
-        buffer[9] = 69  // E
+        buffer[8] = 87 // W
+        buffer[9] = 69 // E
         buffer[10] = 66 // B
         buffer[11] = 80 // P
         buffer[12] = 86 // V
@@ -311,5 +310,4 @@ class MangaRockEs : ParsedHttpSource() {
             Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
 }

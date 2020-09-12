@@ -26,10 +26,19 @@ class Komiku : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/other/hot/page/$page/?orderby=modified", headers)
 
+    private val coverRegex = Regex("""(/Manga-|/Manhua-|/Manhwa-)""")
+    private val coverUploadRegex = Regex("""/uploads/\d\d\d\d/\d\d/""")
+
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a").attr("href"))
+        setUrlWithoutDomain(element.select("a:has(h3)").attr("href"))
         title = element.select("h3").text().trim()
-        thumbnail_url = element.select("img").attr("src")
+
+        // scraped image doesn't make for a good cover; so try to transform it
+        // make it null if it contains upload date as those URLs aren't very useful
+        thumbnail_url = element.select("img").attr("abs:src")
+            .substringBeforeLast("?")
+            .replace(coverRegex, "/Komik-")
+            .let { if (it.contains(coverUploadRegex)) null else it }
     }
 
     override fun popularMangaNextPageSelector() = "a.next.popunder"
@@ -53,8 +62,8 @@ class Komiku : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         description = document.select("#Sinopsis > p").text().trim()
         genre = document.select("li[itemprop=genre] > a").joinToString { it.text() }
-        status = parseStatus(document.select("table.inftable > tr > td")[11].text())
-        thumbnail_url = document.select("div.ims > img").attr("src")
+        status = parseStatus(document.select("table.inftable tr > td:contains(Status) + td").text())
+        thumbnail_url = document.select("div.ims > img").attr("abs:src")
     }
 
     private fun parseStatus(status: String) = when {
@@ -65,13 +74,11 @@ class Komiku : ParsedHttpSource() {
 
     override fun chapterListSelector() = "table.chapter tr:has(td.judulseries)"
 
-    override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a.popunder").attr("href"))
         name = element.select("a.popunder").attr("title")
 
-        // Has datetime attribute, but all are set to statt of current day for whatever reason, so parsing text instead
+        // Has datetime attribute, but all are set to start of current day for whatever reason, so parsing text instead
         date_upload = parseRelativeDate(element.select("time").text().trim()) ?: 0
     }
 
@@ -95,7 +102,7 @@ class Komiku : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div.bc > img").mapIndexed { i, element ->
-            Page(i, "", element.attr("src"))
+            Page(i, "", element.attr("abs:src"))
         }
     }
 

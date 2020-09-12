@@ -222,4 +222,6 @@ open class WebtoonsTranslate(override val lang: String, private val translateLan
         }
         return ret
     }
+
+    override fun getFilterList(): FilterList = FilterList()
 }

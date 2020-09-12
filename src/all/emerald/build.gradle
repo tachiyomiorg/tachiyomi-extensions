@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Emerald'
+    extName = 'Emerald'
     pkgNameSuffix = 'all.emerald'
     extClass = '.EmeraldFactory'
     extVersionCode = 1

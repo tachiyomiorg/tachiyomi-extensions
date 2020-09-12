@@ -55,18 +55,26 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-        add("Accept", "*/*")
+        add("Accept", "image/webp,*/*;q=0.8")
     }
 
     private val jsonParser = JsonParser()
 
     private var server: String? = preferences.getString(SERVER_PREF, null)
 
+    private val defaultServer = "https://img2.emanga.ru"
+
+    private val servers = mapOf(
+        "secondary" to "https://img2.emanga.ru",
+        "fourth" to "https://img4.imgslib.ru",
+        "compress" to "https://img3.ranobelib.me"
+    )
+
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val serverPref = androidx.preference.ListPreference(screen.context).apply {
             key = SERVER_PREF
             title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Сжатия (эконом трафика)")
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
             entryValues = arrayOf("secondary", "fourth", "compress")
             summary = "%s"
 
@@ -83,7 +91,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val serverPref = ListPreference(screen.context).apply {
             key = SERVER_PREF
             title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Сжатия (эконом трафика)")
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
             entryValues = arrayOf("secondary", "fourth", "compress")
             summary = "%s"
 
@@ -94,6 +102,10 @@ class LibManga : ConfigurableSource, HttpSource() {
         }
 
         screen.addPreference(serverPref)
+    }
+
+    private fun imageServerUrl(): String {
+        return this.servers.getOrDefault(this.server, this.defaultServer)
     }
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
@@ -257,7 +269,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             .html()
             .trim()
             .removePrefix("window.__info = ")
-            .removeSuffix(";")
+            .split(";")
+            .first()
 
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject
@@ -277,12 +290,11 @@ class LibManga : ConfigurableSource, HttpSource() {
             .removeSuffix(";")
 
         val pagesJson = jsonParser.parse(pagesArr).array
-
         val pages = mutableListOf<Page>()
+
         pagesJson.forEach { page ->
             pages.add(Page(page["p"].int, "", imageServerUrl + imgUrl + page["u"].string))
         }
-
         return pages
     }
 

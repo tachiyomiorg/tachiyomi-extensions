@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import java.net.URLEncoder
 import java.util.ArrayList
 import okhttp3.Request
 import okhttp3.Response
@@ -159,8 +160,7 @@ class Dmzj : HttpSource() {
                 ret.add(SChapter.create().apply {
                     name = "$prefix: ${chapter.getString("chapter_title")}"
                     date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                    // V3API url = "/chapter/$cid/${chapter.getString("chapter_id")}.json"
-                    url = "http://m.dmzj.com/chapinfo/$cid/${chapter.getString("chapter_id")}.html" // From m_readerBg.js
+                    url = "https://api.m.dmzj.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
                 })
             }
         }
@@ -170,13 +170,34 @@ class Dmzj : HttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers) // Bypass base url
 
     override fun pageListParse(response: Response): List<Page> {
-        val obj = JSONObject(response.body()!!.string())
-        val arr = obj.getJSONArray("page_url")
+        // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
+        val arr = try {
+            val obj = JSONObject(response.body()!!.string())
+            obj.getJSONObject("chapter").getJSONArray("page_url")
+        } catch (_: Exception) {
+            // example url: http://v3api.dmzj.com/chapter/44253/101852.json
+            val url = response.request().url().toString()
+                .replace("api.m", "v3api")
+                .replace("comic/", "")
+                .replace(".html", ".json")
+            val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
+            obj.getJSONArray("page_url")
+        }
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
             ret.add(Page(i, "", arr.getString(i)))
         }
         return ret
+    }
+
+    private fun String.encoded(): String {
+        return this.chunked(1)
+            .joinToString("") { if (it in setOf("%", " ", "+", "#")) URLEncoder.encode(it, "UTF-8") else it }
+            .let { if (it.endsWith(".jp")) "${it}g" else it }
+    }
+
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!.encoded(), headers)
     }
 
     // Unused, we can get image urls directly from the chapter page

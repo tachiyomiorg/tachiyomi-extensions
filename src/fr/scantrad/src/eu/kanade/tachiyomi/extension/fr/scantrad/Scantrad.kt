@@ -125,7 +125,8 @@ class Scantrad : ParsedHttpSource() {
 
     // Chapters
 
-    override fun chapterListSelector() = "div.chapitre"
+    // ignore links from Amazon that get mixed in
+    override fun chapterListSelector() = "div.chapitre:has(span:contains(lire))"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -178,7 +179,7 @@ class Scantrad : ParsedHttpSource() {
             }
         } else {
             try {
-                SimpleDateFormat("dd MMM yyyy", Locale.FRENCH).parse(date.substringAfter("le ")).time
+                SimpleDateFormat("dd MMM yyyy", Locale.FRENCH).parse(date.substringAfter("le "))?.time ?: 0
             } catch (_: Exception) {
                 0L
             }

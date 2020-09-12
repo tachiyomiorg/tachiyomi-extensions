@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Tohomh123'
+    extName = 'Tohomh123'
     pkgNameSuffix = 'zh.tohomh123'
     extClass = '.Tohomh'
     extVersionCode = 2

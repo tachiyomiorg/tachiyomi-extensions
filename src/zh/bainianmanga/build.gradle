@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: BainianManga'
+    extName = 'BainianManga'
     pkgNameSuffix = 'zh.bainianmanga'
     extClass = '.BainianManga'
     extVersionCode = 2

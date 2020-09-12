@@ -57,8 +57,10 @@ class MyMangaReaderCMSSources : SourceFactory {
             if (jsonObject["tags"].isJsonArray) {
                 tags = mapToPairs(jsonObject["tags"].asJsonArray)
             }
+            val isNsfw = jsonObject["isNsfw"].bool
 
-            MyMangaReaderCMSSource(
+            if (isNsfw) {
+                MyMangaReaderCMSSourceNsfw(
                     language,
                     name,
                     baseUrl,
@@ -66,7 +68,18 @@ class MyMangaReaderCMSSources : SourceFactory {
                     itemUrl,
                     categories,
                     tags
-            )
+                )
+            } else {
+                MyMangaReaderCMSSource(
+                    language,
+                    name,
+                    baseUrl,
+                    supportsLatest,
+                    itemUrl,
+                    categories,
+                    tags
+                )
+            }
         }
     }
 

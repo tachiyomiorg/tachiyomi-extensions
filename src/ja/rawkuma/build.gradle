@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Rawkuma'
+    extName = 'Rawkuma'
     pkgNameSuffix = 'ja.rawkuma'
     extClass = '.Rawkuma'
     extVersionCode = 3

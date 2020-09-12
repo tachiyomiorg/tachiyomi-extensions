@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'VIZ Shonen Jump'
+    pkgNameSuffix = 'en.vizshonenjump'
+    extClass = '.VizShonenJump'
+    extVersionCode = 3
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation 'com.drewnoakes:metadata-extractor:2.14.0'
+}
+
+apply from: "$rootDir/common.gradle"

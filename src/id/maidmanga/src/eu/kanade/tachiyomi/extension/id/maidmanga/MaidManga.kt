@@ -32,7 +32,7 @@ class MaidManga : ParsedHttpSource() {
     override fun latestUpdatesSelector() = searchMangaSelector()
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/advanced-search/${pagePathSegment(page)}?order=popular")
+        return GET("$baseUrl/advanced-search/${pagePathSegment(page)}?order=update")
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
@@ -40,7 +40,7 @@ class MaidManga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/advanced-search/${pagePathSegment(page)}?order=update")
+        return GET("$baseUrl/advanced-search/${pagePathSegment(page)}?order=popular")
     }
 
     override fun popularMangaSelector() = searchMangaSelector()

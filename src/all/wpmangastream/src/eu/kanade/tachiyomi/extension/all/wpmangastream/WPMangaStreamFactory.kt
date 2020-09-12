@@ -37,20 +37,28 @@ class WPMangaStreamFactory : SourceFactory {
         NonStopScans(),
         KomikTap(),
         Matakomik(),
-        KomikindoCo()
+        KomikindoCo(),
+        ReadKomik(),
+        MangaP(),
+        MangaProZ(),
+        Boosei(),
+        Mangakyo()
     )
 }
 
 class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
+
 class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "id") {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#readerarea img").map { it.attr("abs:src") }
-            .filterNot { it.contains("/.filerun") }
+            .filterNot { it.substringAfterLast("/").contains(Regex("""(filerun|photothumb\.db)""")) }
             .mapIndexed { i, image -> Page(i, "", image) }
     }
 }
 class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id")
+
 class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
+
 class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikcast.com", "id") {
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/daftar-komik/page/$page/?order=popular", headers)
@@ -467,11 +475,7 @@ class KomikGo : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com
     )
 }
 
-class KomikIndo : WPMangaStream("Komik Indo (WP Manga Stream)", "https://www.komikindo.web.id", "id") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=popular", headers)
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/?page=$page&order=latest", headers)
-    override fun popularMangaNextPageSelector() = "a.r"
-}
+class KomikIndo : WPMangaStream("Komik Indo (WP Manga Stream)", "https://www.komikindo.web.id", "id")
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
     /**
@@ -492,8 +496,6 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
         .add("Referer", baseUrl)
         .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0")
         .add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
-
-    override fun popularMangaNextPageSelector() = "div.hpage a.r"
 
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
@@ -612,15 +614,7 @@ class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id
 
 class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
 
-class KomikTap : WPMangaStream("KomikTap", "https://komiktap.xyz", "id") {
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga/?page=$page&order=popular", headers)
-    override fun popularMangaNextPageSelector() = "a.r"
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/?page=$page&order=update", headers)
-    // Source's search is semi-broken, filtered search returns "no results" for page > 1
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/cari-manga/$query/page/$page/")
-    override fun searchMangaNextPageSelector() = "a.next.page-numbers"
-    override fun getFilterList() = FilterList()
-}
+class KomikTap : WPMangaStream("KomikTap", "https://komiktap.net", "id")
 
 class Matakomik : WPMangaStream("Matakomik", "https://matakomik.com", "id") {
     override fun pageListParse(document: Document): List<Page> {
@@ -631,3 +625,15 @@ class Matakomik : WPMangaStream("Matakomik", "https://matakomik.com", "id") {
 }
 
 class KomikindoCo : WPMangaStream("Komikindo.co", "https://komikindo.co", "id")
+
+class ReadKomik : WPMangaStream("Readkomik", "https://readkomik.com", "en")
+
+class MangaP : WPMangaStream("MangaP", "https://mangap.me", "ar")
+
+class MangaProZ : WPMangaStream("Manga Pro Z", "https://mangaproz.com", "ar") {
+    override fun chapterFromElement(element: Element): SChapter = super.chapterFromElement(element).apply { name = name.removeSuffix(" free") }
+}
+
+class Boosei : WPMangaStream("Boosei", "https://boosei.com", "id")
+
+class Mangakyo : WPMangaStream("Mangakyo", "https://www.mangakyo.me", "id")

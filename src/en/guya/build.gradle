@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Guya'
+    extName = 'Guya'
     pkgNameSuffix = "en.guya"
     extClass = '.Guya'
-    extVersionCode = 11
+    extVersionCode = 13
     libVersion = '1.2'
 }
 

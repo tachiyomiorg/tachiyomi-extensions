@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Qimiaomh'
+    extName = 'Qimiaomh'
     pkgNameSuffix = 'zh.qimiaomh'
     extClass = '.Qimiaomh'
     extVersionCode = 1

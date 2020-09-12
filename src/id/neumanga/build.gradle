@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Neumanga'
+    extName = 'Neumanga'
     pkgNameSuffix = 'id.neumanga'
     extClass = '.Neumanga'
     extVersionCode = 3

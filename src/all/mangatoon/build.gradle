@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Mangatoon (Limited)'
+    extName = 'Mangatoon (Limited)'
     pkgNameSuffix = 'all.mangatoon'
     extClass = '.MangaToonFactory'
     extVersionCode = 1

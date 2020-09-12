@@ -133,7 +133,7 @@ abstract class Genkan(
         return if ("ago" in string) {
             parseRelativeDate(string) ?: 0
         } else {
-            dateFormat.parse(string).time
+            dateFormat.parse(string)?.time ?: 0
         }
     }
 

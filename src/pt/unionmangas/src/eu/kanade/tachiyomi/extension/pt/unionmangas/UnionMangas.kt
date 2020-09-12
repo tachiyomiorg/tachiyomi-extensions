@@ -33,7 +33,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override val name = "Union Mangás"
 
-    override val baseUrl = "https://unionleitor.top"
+    override val baseUrl = "https://unionmangas.top"
 
     override val lang = "pt-BR"
 
@@ -50,11 +50,12 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/xw")
+        .add("Referer", "$baseUrl/ayx")
 
     override fun popularMangaRequest(page: Int): Request {
+        val listPath = if (page == 1) "" else "/visualizacoes/${page - 1}"
         val newHeaders = headersBuilder()
-            .set("Referer", "$baseUrl/lista-mangas" + (if (page == 1) "" else "/visualizacoes/${page - 1}"))
+            .set("Referer", "$baseUrl/lista-mangas$listPath")
             .build()
 
         val pageStr = if (page != 1) "/$page" else ""
@@ -64,7 +65,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun popularMangaSelector(): String = "div.bloco-manga"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("a").last().text().withoutLanguage()
+        title = element.select("div[id^=bloco-tooltip] > b").first().text().withoutLanguage()
         thumbnail_url = element.select("a img").first()?.attr("src")
         setUrlWithoutDomain(element.select("a").last().attr("href"))
     }
@@ -104,6 +105,7 @@ class UnionMangas : ParsedHttpSource() {
         }
 
         val newHeaders = headersBuilder()
+            .add("Accept", "application/json, text/javascript, */*; q=0.01")
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 
@@ -132,36 +134,22 @@ class UnionMangas : ParsedHttpSource() {
     }
 
     private fun searchMangaFromObject(obj: JsonObject): SManga = SManga.create().apply {
-        title = obj["titulo"].string
+        title = obj["titulo"].string.withoutLanguage()
         thumbnail_url = obj["imagem"].string
         setUrlWithoutDomain("$baseUrl/perfil-manga/${obj["url"].string}")
     }
 
-    override fun mangaDetailsParse(document: Document): SManga {
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("div.tamanho-bloco-perfil").first()
-        val elAuthor = infoElement.select("div.row:eq(2) div.col-md-8:eq(4)").first()
-        val elArtist = infoElement.select("div.row:eq(2) div.col-md-8:eq(5)").first()
-        val elGenre = infoElement.select("div.row:eq(2) div.col-md-8:eq(3)").first()
-        val elStatus = infoElement.select("div.row:eq(2) div.col-md-8:eq(6)").first()
-        val elDescription = infoElement.select("div.row:eq(2) div.col-md-8:eq(8)").first()
-        val imgThumbnail = infoElement.select(".img-thumbnail").first()
-        val elTitle = infoElement.select("h2").first()
+        val rowInfo = infoElement.select("div.row:eq(2)").first()
 
-        return SManga.create().apply {
-            title = elTitle!!.text().withoutLanguage()
-            author = elAuthor?.textWithoutLabel()
-            artist = elArtist?.textWithoutLabel()
-            genre = elGenre?.textWithoutLabel()
-            status = parseStatus(elStatus?.text().orEmpty())
-            description = elDescription?.text()
-            thumbnail_url = imgThumbnail?.attr("src")
-        }
-    }
-
-    private fun parseStatus(status: String) = when {
-        status.contains("Ativo") -> SManga.ONGOING
-        status.contains("Completo") -> SManga.COMPLETED
-        else -> SManga.UNKNOWN
+        title = infoElement.select("h2").text().withoutLanguage()
+        author = rowInfo.select("div.col-md-8:eq(4)").first().textWithoutLabel()
+        artist = rowInfo.select("div.col-md-8:eq(5)").first().textWithoutLabel()
+        genre = rowInfo.select("div.col-md-8:eq(3)").first().textWithoutLabel()
+        status = rowInfo.select("div.col-md-8:eq(6)").first().text().toStatus()
+        description = rowInfo.select("div.col-md-8:eq(8)").first().text()
+        thumbnail_url = infoElement.select(".img-thumbnail").first().attr("src")
     }
 
     override fun chapterListSelector() = "div.row.lancamento-linha"
@@ -172,10 +160,11 @@ class UnionMangas : ParsedHttpSource() {
 
         name = firstColumn.select("a").first().text()
         scanlator = secondColumn?.select("a")?.joinToString { it.text() }
-        date_upload = DATE_FORMATTER.tryParseTime(firstColumn.select("span").last()!!.text())
+        date_upload = firstColumn.select("span").last()!!.text().toDate()
 
         // For some reason, setUrlWithoutDomain does not work when the url have spaces.
-        val absoluteUrlFixed = firstColumn.select("a").first().attr("href")
+        val absoluteUrlFixed = firstColumn.select("a").first()
+            .attr("href")
             .replace(" ", "%20")
         setUrlWithoutDomain(absoluteUrlFixed)
     }
@@ -183,7 +172,9 @@ class UnionMangas : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img.img-responsive.img-manga")
             .filter { it.attr("src").contains("/leitor/") }
-            .mapIndexed { i, element -> Page(i, document.location(), element.absUrl("src")) }
+            .mapIndexed { i, element ->
+                Page(i, document.location(), element.absUrl("src"))
+            }
     }
 
     override fun imageUrlParse(document: Document) = ""
@@ -202,28 +193,35 @@ class UnionMangas : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = throw Exception("This method should not be called!")
 
-    private fun SimpleDateFormat.tryParseTime(date: String): Long {
+    private fun String.toDate(): Long {
         return try {
-            parse(date).time
+            DATE_FORMATTER.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
-    private fun String.withoutLanguage(): String = replace(LANGUAGE_REGEX, "").trim()
+    private fun String.toStatus(): Int = when {
+        contains("Ativo") -> SManga.ONGOING
+        contains("Completo") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
+    private fun String.withoutLanguage(): String =
+        replace("(pt-br)", "", true).trim()
 
     private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
-        private val DATE_FORMATTER by lazy { SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH) }
-
-        private val LANGUAGE_REGEX = "\\(Pt-Br\\)".toRegex(RegexOption.IGNORE_CASE)
+        private val DATE_FORMATTER by lazy {
+            SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH)
+        }
 
         const val PREFIX_ID_SEARCH = "id:"
     }

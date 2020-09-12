@@ -7,11 +7,11 @@ class EmeraldFactory : SourceFactory {
     override fun createSources(): List<Source> = languages.map { Mangawindow(it.first, it.second) } + languages.map { Batoto(it.first, it.second) }
 }
 
-class Mangawindow(tachiLang: String, siteLang: String)
-    : Emerald("Mangawindow", "https://mangawindow.net", tachiLang, siteLang)
+class Mangawindow(tachiLang: String, siteLang: String) :
+    Emerald("Mangawindow", "https://mangawindow.net", tachiLang, siteLang)
 
-class Batoto(tachiLang: String, siteLang: String)
-    : Emerald("Bato.to", "https://bato.to", tachiLang, siteLang)
+class Batoto(tachiLang: String, siteLang: String) :
+    Emerald("Bato.to", "https://bato.to", tachiLang, siteLang)
 
 private val languages = listOf(
     Pair("ar", "arabic"),

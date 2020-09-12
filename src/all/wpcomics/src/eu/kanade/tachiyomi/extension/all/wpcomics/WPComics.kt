@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.all.wpcomics
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -9,6 +10,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -64,8 +66,30 @@ abstract class WPComics(
 
     // Search
 
+    protected open val searchPath = "tim-truyen"
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/?s=$query&post_type=comics&page=$page")
+        val filterList = filters.let { if (it.isEmpty()) getFilterList() else it }
+        return if (filterList.isEmpty()) {
+            GET("$baseUrl/?s=$query&post_type=comics&page=$page")
+        } else {
+            val url = HttpUrl.parse("$baseUrl/$searchPath")!!.newBuilder()
+
+            filterList.forEach { filter ->
+                when (filter) {
+                    is GenreFilter -> filter.toUriPart()?.let { url.addPathSegment(it) }
+                    is StatusFilter -> filter.toUriPart()?.let { url.addQueryParameter("status", it) }
+                }
+            }
+
+            url.apply {
+                addQueryParameter("keyword", query)
+                addQueryParameter("page", page.toString())
+                addQueryParameter("sort", "0")
+            }
+
+            GET(url.toString().replace("www.nettruyen.com/tim-truyen?status=2&", "www.nettruyen.com/truyen-full?"), headers)
+        }
     }
 
     override fun searchMangaSelector() = "div.items div.item div.image a"
@@ -147,10 +171,10 @@ abstract class WPComics(
                 (if (gmtOffset == null) this.substringAfterLast(" ") else "$this $gmtOffset").let {
                     // timestamp has year
                     if (Regex("""\d+/\d+/\d\d""").find(it)?.value != null) {
-                        dateFormat.parse(it).time
+                        dateFormat.parse(it)?.time ?: 0
                     } else {
                         // MangaSum - timestamp sometimes doesn't have year (current year implied)
-                        dateFormat.parse("$it/$currentYear").time
+                        dateFormat.parse("$it/$currentYear")?.time ?: 0
                     }
                 }
             }
@@ -189,4 +213,75 @@ abstract class WPComics(
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
+
+    // Filters
+
+    protected class StatusFilter(vals: Array<Pair<String?, String>>) : UriPartFilter("Status", vals)
+    protected class GenreFilter(vals: Array<Pair<String?, String>>) : UriPartFilter("Genre", vals)
+
+    protected open fun getStatusList(): Array<Pair<String?, String>> = arrayOf(
+        Pair(null, "Tất cả"),
+        Pair("1", "Đang tiến hành"),
+        Pair("2", "Đã hoàn thành"),
+        Pair("3", "Tạm ngừng")
+    )
+    protected open fun getGenreList(): Array<Pair<String?, String>> = arrayOf(
+        null to "Tất cả",
+        "action" to "Action",
+        "adult" to "Adult",
+        "adventure" to "Adventure",
+        "anime" to "Anime",
+        "chuyen-sinh" to "Chuyển Sinh",
+        "comedy" to "Comedy",
+        "comic" to "Comic",
+        "cooking" to "Cooking",
+        "co-dai" to "Cổ Đại",
+        "doujinshi" to "Doujinshi",
+        "drama" to "Drama",
+        "dam-my" to "Đam Mỹ",
+        "ecchi" to "Ecchi",
+        "fantasy" to "Fantasy",
+        "gender-bender" to "Gender Bender",
+        "harem" to "Harem",
+        "historical" to "Historical",
+        "horror" to "Horror",
+        "josei" to "Josei",
+        "live-action" to "Live action",
+        "manga" to "Manga",
+        "manhua" to "Manhua",
+        "manhwa" to "Manhwa",
+        "martial-arts" to "Martial Arts",
+        "mature" to "Mature",
+        "mecha" to "Mecha",
+        "mystery" to "Mystery",
+        "ngon-tinh" to "Ngôn Tình",
+        "one-shot" to "One shot",
+        "psychological" to "Psychological",
+        "romance" to "Romance",
+        "school-life" to "School Life",
+        "sci-fi" to "Sci-fi",
+        "seinen" to "Seinen",
+        "shoujo" to "Shoujo",
+        "shoujo-ai" to "Shoujo Ai",
+        "shounen" to "Shounen",
+        "shounen-ai" to "Shounen Ai",
+        "slice-of-life" to "Slice of Life",
+        "smut" to "Smut",
+        "soft-yaoi" to "Soft Yaoi",
+        "soft-yuri" to "Soft Yuri",
+        "sports" to "Sports",
+        "supernatural" to "Supernatural",
+        "thieu-nhi" to "Thiếu Nhi",
+        "tragedy" to "Tragedy",
+        "trinh-tham" to "Trinh Thám",
+        "truyen-scan" to "Truyện scan",
+        "truyen-mau" to "Truyện Màu",
+        "webtoon" to "Webtoon",
+        "xuyen-khong" to "Xuyên Không"
+    )
+
+    protected open class UriPartFilter(displayName: String, val vals: Array<Pair<String?, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
+        fun toUriPart() = vals[state].first
+    }
 }

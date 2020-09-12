@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Super Mangás'
+    extName = 'Super Mangás'
     pkgNameSuffix = 'pt.supermangas'
     extClass = '.SuperMangasFactory'
-    extVersionCode = 1
+    extVersionCode = 3
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

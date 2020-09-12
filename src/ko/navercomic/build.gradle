@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Naver Comic'
+    extName = 'Naver Comic'
     pkgNameSuffix = 'ko.navercomic'
     extClass = '.NaverComicFactory'
     extVersionCode = 2

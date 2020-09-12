@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaDog'
+    extName = 'MangaDog'
     pkgNameSuffix = 'en.mangadog'
     extClass = '.Mangadog'
     extVersionCode = 1

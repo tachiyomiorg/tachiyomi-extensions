@@ -29,7 +29,7 @@ class Readmanga : ParsedHttpSource() {
 
     override val name = "Readmanga"
 
-    override val baseUrl = "https://readmanga.me"
+    override val baseUrl = "https://readmanga.live"
 
     override val lang = "ru"
 

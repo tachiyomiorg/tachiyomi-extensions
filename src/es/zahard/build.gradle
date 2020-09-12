@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Zahard'
+    extName = 'Zahard'
     pkgNameSuffix = 'es.zahard'
     extClass = '.Zahard'
     extVersionCode = 1

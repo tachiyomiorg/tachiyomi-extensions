@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ManhuaDB'
+    extName = 'ManhuaDB'
     pkgNameSuffix = 'zh.manhuadb'
     extClass = '.ManhuaDB'
     extVersionCode = 2

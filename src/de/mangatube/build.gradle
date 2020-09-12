@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Manga Tube'
+    extName = 'Manga Tube'
     pkgNameSuffix = 'de.mangatube'
     extClass = '.MangaTube'
     extVersionCode = 1

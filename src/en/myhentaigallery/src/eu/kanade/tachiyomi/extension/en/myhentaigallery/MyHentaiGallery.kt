@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.myhentaigallery
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -17,6 +18,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
+@Nsfw
 class MyHentaiGallery : ParsedHttpSource() {
 
     override val name = "MyHentaiGallery"

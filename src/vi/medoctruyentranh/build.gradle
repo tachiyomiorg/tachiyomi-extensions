@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MeDocTruyenTranh'
+    extName = 'MeDocTruyenTranh'
     pkgNameSuffix = 'vi.medoctruyentranh'
     extClass = '.MeDocTruyenTranh'
     extVersionCode = 3

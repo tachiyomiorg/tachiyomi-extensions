@@ -7,126 +7,173 @@ import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.source.online.HttpSource
+import java.lang.UnsupportedOperationException
 import java.text.SimpleDateFormat
 import java.util.Locale
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
+import org.json.JSONArray
+import org.json.JSONObject
 import rx.Observable
 
-class NaniScans : ParsedHttpSource() {
-
-    override val name = "NANI? Scans"
-
-    override val baseUrl = "https://naniscans.xyz"
-
+class NaniScans : HttpSource() {
+    override val baseUrl = "https://naniscans.com"
     override val lang = "en"
-
+    override val name = "NANI? Scans"
     override val supportsLatest = true
+    override val versionId = 2
 
-    override val client: OkHttpClient = network.cloudflareClient
+    private val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
-    // Popular
-
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/titles", headers)
-    }
-
-    override fun popularMangaSelector() = "div.card"
-
-    override fun popularMangaFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            element.select("h4 a").let {
-                title = it.text()
-                setUrlWithoutDomain(it.attr("href"))
-            }
-            thumbnail_url = element.select("img").attr("abs:src")
-        }
-    }
-
-    override fun popularMangaNextPageSelector(): String? = null
-
-    // Latest
-
-    override fun latestUpdatesRequest(page: Int): Request {
-        return GET(baseUrl, headers)
-    }
+    override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        return MangasPage(super.latestUpdatesParse(response).mangas.distinctBy { it.title }, false)
+        val titlesJson = JSONArray(response.body()!!.string())
+        val mangaMap = mutableMapOf<Long, SManga>()
+
+        for (i in 0 until titlesJson.length()) {
+            val manga = titlesJson.getJSONObject(i)
+
+            if (manga.getString("type") != "Comic")
+                continue
+
+            var date = manga.getString("updatedAt")
+
+            if (date == "null")
+                date = "2018-04-10T17:38:56"
+
+            mangaMap[dateParser.parse(date)!!.time] = getBareSManga(manga)
+        }
+
+        return MangasPage(mangaMap.toSortedMap().values.toList().asReversed(), false)
     }
 
-    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/api/titles")
 
-    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun popularMangaParse(response: Response): MangasPage {
+        val titlesJson = JSONArray(response.body()!!.string())
+        val mangaList = mutableListOf<SManga>()
 
-    override fun latestUpdatesNextPageSelector(): String? = null
+        for (i in 0 until titlesJson.length()) {
+            val manga = titlesJson.getJSONObject(i)
 
-    // Search
+            if (manga.getString("type") != "Comic")
+                continue
 
-    // website doesn't have a search function
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return client.newCall(popularMangaRequest(1))
-            .asObservableSuccess()
-            .map { response ->
-                searchMangaParse(response, query)
-            }
+            mangaList.add(getBareSManga(manga))
+        }
+
+        return MangasPage(mangaList, false)
     }
 
-    private fun searchMangaParse(response: Response, query: String): MangasPage {
-        val mangas = popularMangaParse(response).mangas.filter { it.title.contains(query, ignoreCase = true) }
+    override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
 
-        return MangasPage(mangas, false)
-    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/api/titles/search?term=$query")
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used")
+    // Workaround to allow "Open in browser" to use the real URL
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = client.newCall(chapterListRequest(manga)).asObservableSuccess().map { mangaDetailsParse(it).apply { initialized = true } }
 
-    override fun searchMangaSelector() = throw UnsupportedOperationException("Not used")
+    // Return the real URL for "Open in browser"
+    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/titles/${manga.url}")
 
-    override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
+    override fun mangaDetailsParse(response: Response): SManga {
+        val titleJson = JSONObject(response.body()!!.string())
 
-    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+        if (titleJson.getString("type") != "Comic")
+            throw UnsupportedOperationException("Tachiyomi only supports Comics.")
 
-    // Details
-
-    override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
-            document.select("div.content").let { info ->
-                author = info.select("div.center p:contains(Author:)").text().substringAfter("Author: ")
-                artist = info.select("div.center p:contains(Artist:)").text().substringAfter("Artist: ")
-                genre = info.select("div.labels > div").joinToString { it.text() }
-                description = info.select("div.description p").text()
+            title = titleJson.getString("name")
+            artist = titleJson.getString("artist")
+            author = titleJson.getString("author")
+            description = titleJson.getString("synopsis")
+            status = getStatus(titleJson.getString("status"))
+            thumbnail_url = "$baseUrl${titleJson.getString("coverUrl")}"
+            genre = titleJson.getJSONArray("tags").join(", ").replace("\"", "")
+            url = titleJson.getString("id")
+        }
+    }
+
+    override fun chapterListRequest(manga: SManga) = GET("$baseUrl/api/titles/${manga.url}")
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val titleJson = JSONObject(response.body()!!.string())
+
+        if (titleJson.getString("type") != "Comic")
+            throw UnsupportedOperationException("Tachiyomi only supports Comics.")
+
+        val chaptersJson = titleJson.getJSONArray("chapters")
+        val chaptersList = mutableListOf<SChapter>()
+
+        for (i in 0 until chaptersJson.length()) {
+            val chapter = chaptersJson.getJSONObject(i)
+
+            chaptersList.add(SChapter.create().apply {
+                chapter_number = chapter.get("number").toString().toFloat()
+                name = getChapterTitle(chapter)
+                date_upload = dateParser.parse(chapter.getString("releaseDate"))!!.time
+                url = "${titleJson.getString("id")}_${chapter.getString("id")}"
+            })
+        }
+
+        return chaptersList
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/api/titles/${chapter.url.substring(0, 36)}/chapters/${chapter.url.substring(37, 73)}")
+
+    override fun pageListParse(response: Response): List<Page> {
+        val jsonObject = JSONObject(response.body()!!.string())
+
+        val pagesJson = jsonObject.getJSONArray("pages")
+        val pagesList = mutableListOf<Page>()
+
+        for (i in 0 until pagesJson.length()) {
+            val item = pagesJson.getJSONObject(i)
+
+            pagesList.add(Page(item.getInt("number"), "", "$baseUrl${item.getString("pageUrl")}"))
+        }
+
+        return pagesList
+    }
+
+    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not Used.")
+
+    private fun getStatus(status: String): Int = when (status) {
+        "Ongoing" -> SManga.ONGOING
+        "Completed" -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
+    private fun getChapterTitle(chapter: JSONObject): String {
+        val chapterName = mutableListOf<String>()
+
+        if (chapter.getString("volume") != "null") {
+            chapterName.add("Vol." + chapter.getString("volume"))
+        }
+
+        if (chapter.getString("number") != "null") {
+            chapterName.add("Ch." + chapter.getString("number"))
+        }
+
+        if (chapter.getString("name") != "null") {
+            if (chapterName.isNotEmpty()) {
+                chapterName.add("-")
             }
-            thumbnail_url = document.select("div.image img").attr("abs:src")
+
+            chapterName.add(chapter.getString("name"))
         }
+
+        if (chapterName.isEmpty()) {
+            chapterName.add("Oneshot")
+        }
+
+        return chapterName.joinToString(" ")
     }
 
-    // Chapters
-
-    override fun chapterListSelector() = "div.list div.item"
-
-    override fun chapterFromElement(element: Element): SChapter {
-        return SChapter.create().apply {
-            element.select("p.header a:last-of-type").let {
-                name = it.text()
-                setUrlWithoutDomain(it.attr("href"))
-            }
-            date_upload = element.select("div.description p").firstOrNull()?.ownText()
-                ?.let { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it).time } ?: 0
-        }
+    private fun getBareSManga(manga: JSONObject): SManga = SManga.create().apply {
+        title = manga.getString("name")
+        thumbnail_url = "$baseUrl${manga.getString("coverUrl")}"
+        url = manga.getString("id")
     }
-
-    // Pages
-
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select("script:containsData(let pages)").first().data().let { script ->
-            script.substringAfter("let pages = [").substringBefore("]").replace("\"", "")
-                .split(",").mapIndexed { i, string -> Page(i, "", baseUrl + string) }
-        }
-    }
-
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 }

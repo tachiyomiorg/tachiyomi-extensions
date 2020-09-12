@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Mangahub'
+    extName = 'Mangahub'
     pkgNameSuffix = 'en.mangahub'
     extClass = '.Mangahub'
     extVersionCode = 6

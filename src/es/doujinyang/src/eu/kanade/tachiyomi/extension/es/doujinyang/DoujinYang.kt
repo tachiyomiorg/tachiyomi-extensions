@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.doujinyang
 
 import android.net.Uri
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -19,7 +20,8 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-open class DoujinYang : ParsedHttpSource() {
+@Nsfw
+class DoujinYang : ParsedHttpSource() {
 
     override val name = "Doujin-Yang"
     override val baseUrl = "https://doujin-yang.es"

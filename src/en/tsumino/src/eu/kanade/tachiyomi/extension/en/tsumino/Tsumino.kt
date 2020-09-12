@@ -4,6 +4,7 @@ import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getArtists
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getChapter
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getCollection
@@ -27,6 +28,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
+@Nsfw
 class Tsumino : ParsedHttpSource() {
 
     override val name = "Tsumino"

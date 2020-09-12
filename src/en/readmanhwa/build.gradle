@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ReadManhwa'
+    extName = 'ReadManhwa'
     pkgNameSuffix = 'en.readmanhwa'
     extClass = '.ReadManhwa'
-    extVersionCode = 3
+    extVersionCode = 6
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

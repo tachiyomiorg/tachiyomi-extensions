@@ -95,11 +95,11 @@ abstract class WPMangaStream(
     protected fun Elements.imgAttr(): String = this.first().imgAttr()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=popular", headers)
+        return GET("$baseUrl/manga/?page=$page&order=popular", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=latest", headers)
+        return GET("$baseUrl/manga/?page=$page&order=update", headers)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -155,7 +155,7 @@ abstract class WPMangaStream(
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "a.next.page-numbers"
+    override fun popularMangaNextPageSelector(): String? = "a.next.page-numbers, a.r"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
@@ -218,7 +218,7 @@ abstract class WPMangaStream(
             }
         } else {
             try {
-                dateFormat.parse(date).time
+                dateFormat.parse(date)?.time ?: 0
             } catch (_: Exception) {
                 0L
             }
@@ -301,6 +301,7 @@ abstract class WPMangaStream(
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Header("Genre exclusion not available for all sources"),
         Filter.Separator(),
         AuthorFilter(),
         YearFilter(),

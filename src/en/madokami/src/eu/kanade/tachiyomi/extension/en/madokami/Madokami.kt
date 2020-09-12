@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.text.InputType
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -14,14 +15,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import java.io.IOException
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.collections.ArrayList
 import okhttp3.Credentials
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -48,38 +50,41 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         return request.newBuilder().header("Authorization", credential).build()
     }
 
-    override fun latestUpdatesSelector() = "table.mobile-files-table tbody tr td:nth-child(1) a:nth-child(1)"
+    override val client: OkHttpClient = super.client.newBuilder().addInterceptor { chain ->
+        val response = chain.proceed(chain.request())
+        if (response.code() == 401) throw IOException("You are currently logged out.\nGo to Extensions > Details to input your credentials.")
+        response
+    }.build()
 
-    override fun latestUpdatesFromElement(element: Element): SManga {
+    override fun latestUpdatesSelector() = ""
+    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("Unsupported!")
+    override fun latestUpdatesNextPageSelector(): String? = null
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Unsupported!")
+
+    override fun popularMangaSelector(): String = "table.mobile-files-table tbody tr td:nth-child(1) a:nth-child(1)"
+
+    override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.attr("href"))
         manga.title = URLDecoder.decode(element.attr("href").split("/").last(), "UTF-8").trimStart('!')
         return manga
     }
 
-    override fun latestUpdatesNextPageSelector(): String? = null
+    override fun popularMangaNextPageSelector(): String? = null
 
-    override fun latestUpdatesRequest(page: Int) = authenticate(GET("$baseUrl/recent", headers))
-
-    override fun popularMangaSelector(): String = latestUpdatesSelector()
-
-    override fun popularMangaFromElement(element: Element): SManga = latestUpdatesFromElement(element)
-
-    override fun popularMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
-
-    override fun popularMangaRequest(page: Int): Request = latestUpdatesRequest(page)
+    override fun popularMangaRequest(page: Int): Request = authenticate(GET("$baseUrl/recent", headers))
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = authenticate(GET("$baseUrl/search?q=$query", headers))
 
     override fun searchMangaSelector() = "div.container table tbody tr td:nth-child(1) a:nth-child(1)"
 
-    override fun searchMangaFromElement(element: Element): SManga = latestUpdatesFromElement(element)
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector(): String? = latestUpdatesNextPageSelector()
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsRequest(manga: SManga): Request {
         val url = HttpUrl.parse(baseUrl + manga.url)!!
-        if (url.pathSize() > 5 && url.pathSegments()[0] == "Manga" && url.pathSegments()[1] != "Non-English") {
+        if (url.pathSize() > 5 && url.pathSegments()[0] == "Manga" && url.pathSegments()[1].length == 1) {
             return authenticate(GET(url.newBuilder().removePathSegment(5).build().url().toExternalForm(), headers))
         }
         if (url.pathSize() > 2 && url.pathSegments()[0] == "Raws") {
@@ -151,7 +156,7 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         val element = document.select("div#reader")
         val path = element.attr("data-path")
         val files = gson.fromJson<JsonArray>(element.attr("data-files"))
-        val pages = ArrayList<Page>()
+        val pages = mutableListOf<Page>()
         for ((index, file) in files.withIndex()) {
             val url = HttpUrl.Builder()
                 .scheme("https")
@@ -186,6 +191,10 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
         val password = androidx.preference.EditTextPreference(screen.context).apply {
             key = "password"
             title = "Password"
+
+            setOnBindEditTextListener {
+                it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
 
             setOnPreferenceChangeListener { _, newValue ->
                 preferences.edit().putString(key, newValue as String).commit()

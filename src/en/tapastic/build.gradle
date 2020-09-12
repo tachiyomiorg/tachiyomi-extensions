@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Tapas'
+    extName = 'Tapas'
     pkgNameSuffix = 'en.tapastic'
     extClass = '.Tapastic'
     extVersionCode = 10

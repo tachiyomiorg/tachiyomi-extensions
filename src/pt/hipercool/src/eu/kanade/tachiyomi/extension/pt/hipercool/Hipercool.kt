@@ -9,6 +9,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -30,6 +31,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import rx.Observable
 
+@Nsfw
 class Hipercool : HttpSource() {
 
     // Hardcode the id because the language wasn't specific.

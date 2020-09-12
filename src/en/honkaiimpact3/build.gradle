@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: HonkaiImpact3'
+    extName = 'HonkaiImpact3'
     pkgNameSuffix = 'en.honkaiimpact'
     extClass = '.Honkaiimpact'
     extVersionCode = 1

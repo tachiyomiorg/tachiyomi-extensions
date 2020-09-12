@@ -41,7 +41,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         val linkElement = element.getElementsByTag("a").first()
 
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(linkElement.attr("href"))
+        manga.setUrlWithoutDomain(linkElement.attr("href").substringBefore("?"))
         manga.title = element.select("span.title").first().ownText()
         manga.thumbnail_url = linkElement.getElementsByTag("img").attr("src")
         return manga
@@ -77,6 +77,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.view-title > .view-content").first()
         val title = document.select("div.view-content > span > b").text()
+        val thumbnail = document.select("div.row div.view-img > img").attr("src")
         val descriptionElement = info.select("div.row div.view-content:not([style])")
         val description = descriptionElement.map {
             it.text().trim()
@@ -85,6 +86,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         val manga = SManga.create()
         manga.title = title
         manga.description = description.joinToString("\n")
+        manga.thumbnail_url = thumbnail
         descriptionElement.forEach {
             val text = it.text()
             when {
@@ -155,7 +157,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
 
                 calendar.timeInMillis
             } else {
-                SimpleDateFormat("yyyy.MM.dd").parse(date).time
+                SimpleDateFormat("yyyy.MM.dd").parse(date)?.time ?: 0
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -164,22 +166,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        try {
-            document.select(".view-padding img")
-                    .map {
-                        val origin = it.attr("data-original")
-                        if (origin.isNullOrEmpty()) it.attr("content") else origin
-                    }
-                    .forEach {
-                        val url = if (it.contains("://")) it else baseUrl + it
-                        pages.add(Page(pages.size, "", url))
-                    }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return pages
+        // <article> - <div> - optional <div> - <div> - optional <p> - <img>
+        return document.select("article > div div img")
+            .filterNot { !it.hasAttr("data-original") || it.attr("data-original").contains("blank.gif") }
+            .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -245,7 +235,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         screen.addPreference(baseUrlPref)
     }
 
-    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)
+    private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
 
     companion object {
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"

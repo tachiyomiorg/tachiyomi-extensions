@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.extension.en.readmanhwa
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.CheckBoxPreference
+import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -8,8 +12,10 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -20,13 +26,17 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class ReadManhwa : HttpSource() {
+@Nsfw
+class ReadManhwa : ConfigurableSource, HttpSource() {
 
     override val name = "ReadManhwa"
 
@@ -35,6 +45,16 @@ class ReadManhwa : HttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    override fun headersBuilder(): Headers.Builder = headersBuilder(true)
+
+    private fun headersBuilder(enableNsfw: Boolean) = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+        .add("X-NSFW", enableNsfw.toString())
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override val client: OkHttpClient = network.cloudflareClient
 
@@ -53,11 +73,15 @@ class ReadManhwa : HttpSource() {
 
         return MangasPage(mangas, jsonObject["current_page"].int < jsonObject["last_page"].int)
     }
+    private fun getMangaUrl(url: String): String {
+        return HttpUrl.parse(url)!!.newBuilder()
+            .setQueryParameter("nsfw", isNSFWEnabledInPref().toString()).toString()
+    }
 
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week"), headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -65,7 +89,7 @@ class ReadManhwa : HttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day"), headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -73,11 +97,14 @@ class ReadManhwa : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val enableNsfw = (filters.find { it is NSFWFilter } as? Filter.CheckBox)?.state ?: true
+
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
             .addQueryParameter("per_page", "18")
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
+            .addQueryParameter("nsfw", enableNsfw.toString())
 
             filters.forEach { filter ->
                 when (filter) {
@@ -86,7 +113,7 @@ class ReadManhwa : HttpSource() {
                     is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
                 }
             }
-        return GET(url.toString(), headers)
+        return GET(url.toString(), headersBuilder(enableNsfw).build())
     }
 
     override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -99,10 +126,10 @@ class ReadManhwa : HttpSource() {
             .map { mangaDetailsParse(it).apply { initialized = true } }
 
     // Return the real URL for "Open in browser"
-    override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/en/webtoon/${manga.url}", headers)
+    override fun mangaDetailsRequest(manga: SManga) = GET(getMangaUrl("$baseUrl/en/webtoon/${manga.url}"), headers)
 
     private fun apiMangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics/${manga.url}"), headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -136,7 +163,7 @@ class ReadManhwa : HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/api/comics/${manga.url}/chapters", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics/${manga.url}/chapters"), headers)
     }
 
     private fun chapterListParse(response: Response, titleSlug: String): List<SChapter> {
@@ -156,7 +183,7 @@ class ReadManhwa : HttpSource() {
                             else -> 0L
                         }
                     } else {
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString).time
+                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString)?.time ?: 0
                     }
                 }
             }
@@ -168,7 +195,7 @@ class ReadManhwa : HttpSource() {
     // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return GET("$baseUrl/api/comics/${chapter.url}/images", headers)
+        return GET(getMangaUrl("$baseUrl/api/comics/${chapter.url}/images"), headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -182,10 +209,13 @@ class ReadManhwa : HttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
+        NSFWFilter().apply { state = isNSFWEnabledInPref() },
         GenreFilter(getGenreList()),
         DurationFilter(getDurationList()),
         SortFilter(getSortList())
     )
+
+    private class NSFWFilter : Filter.CheckBox("Show NSFW", true)
 
     private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
 
@@ -267,4 +297,42 @@ class ReadManhwa : HttpSource() {
         Pair("Popularity", "popularity"),
         Pair("Date", "uploaded_at")
     )
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val nsfw = CheckBoxPreference(screen.context).apply {
+            key = NSFW
+            title = NSFW_TITLE
+            setDefaultValue(NSFW_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as Boolean
+                preferences.edit().putBoolean(NSFW, selected).commit()
+            }
+        }
+        screen.addPreference(nsfw)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val nsfw = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = NSFW
+            title = NSFW_TITLE
+            setDefaultValue(NSFW_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as Boolean
+                preferences.edit().putBoolean(NSFW, selected).commit()
+            }
+        }
+        screen.addPreference(nsfw)
+    }
+
+    private fun isNSFWEnabledInPref(): Boolean {
+        return preferences.getBoolean(NSFW, NSFW_DEFAULT)
+    }
+
+    companion object {
+        private const val NSFW = "NSFW"
+        private const val NSFW_TITLE = "Show NSFW"
+        private const val NSFW_DEFAULT = true
+    }
 }

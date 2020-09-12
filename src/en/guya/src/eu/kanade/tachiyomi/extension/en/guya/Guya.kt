@@ -32,12 +32,12 @@ import uy.kohesive.injekt.api.get
 
 open class Guya : ConfigurableSource, HttpSource() {
 
-    override val name = "Guya"
-    override val baseUrl = "https://guya.moe"
-    override val supportsLatest = false
-    override val lang = "en"
+    final override val name = "Guya"
+    final override val baseUrl = "https://guya.moe"
+    final override val supportsLatest = false
+    final override val lang = "en"
 
-    private val scanlatorCacheUrl = "https://raw.githubusercontent.com/appu1232/guyamoe/master/api/data_cache/all_groups.json"
+    private val scanlatorCacheUrl = "$baseUrl/api/get_all_groups"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "(Android ${Build.VERSION.RELEASE}; " +

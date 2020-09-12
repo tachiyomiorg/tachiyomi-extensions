@@ -109,7 +109,11 @@ class MangaDenizi : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = "${element.select("a").text()}: ${element.select("em").text()}"
-        date_upload = dateFormat.parse(element.select("div.date-chapter-title-rtl").text().trim()).time ?: 0
+        date_upload = try {
+            dateFormat.parse(element.select("div.date-chapter-title-rtl").text().trim())?.time ?: 0
+        } catch (_: Exception) {
+            0
+        }
     }
 
     companion object {

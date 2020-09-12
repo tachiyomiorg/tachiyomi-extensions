@@ -18,7 +18,7 @@ class GuyaUrlActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
-        if (pathSegments != null && pathSegments.size == 3) {
+        if (pathSegments != null && pathSegments.size >= 3) {
             val slug = pathSegments[2]
 
             // Gotta do it like this since slug title != actual title

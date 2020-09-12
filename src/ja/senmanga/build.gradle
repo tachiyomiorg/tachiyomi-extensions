@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Sen Manga'
+    extName = 'Sen Manga'
     pkgNameSuffix = 'ja.senmanga'
     extClass = '.SenManga'
     extVersionCode = 4

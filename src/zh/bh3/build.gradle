@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: BH3'
+    extName = 'BH3'
     pkgNameSuffix = 'zh.bh3'
     extClass = '.BH3'
     extVersionCode = 2

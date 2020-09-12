@@ -134,6 +134,4 @@ class TeamX : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
-
-    override fun getFilterList() = FilterList()
 }

@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Comico'
+    extName = 'Comico'
     pkgNameSuffix = 'zh.comico'
     extClass = '.ComicoFactory'
     extVersionCode = 1

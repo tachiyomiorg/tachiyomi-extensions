@@ -52,6 +52,9 @@ class CloneManga : ParsedHttpSource() {
         }
     }
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = fetchPopularManga(1)
+        .map { mp -> MangasPage(mp.mangas.filter { it.title.contains(query, ignoreCase = true) }, false) }
+
     override fun mangaDetailsParse(document: Document): SManga {
         // Populate with already fetched details
         return SManga.create()
@@ -90,11 +93,6 @@ class CloneManga : ParsedHttpSource() {
             .select("img").first().absUrl("src")
         // List of pages will always contain only one page
         return listOf(Page(1, "", imgAbsoluteUrl))
-    }
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList):
-        Observable<MangasPage> {
-        return Observable.empty()
     }
 
     override fun imageUrlParse(document: Document): String { throw Exception("Not used") }

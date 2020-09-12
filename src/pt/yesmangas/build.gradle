@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: YES Mangás'
+    extName = 'YES Mangás'
     pkgNameSuffix = 'pt.yesmangas'
     extClass = '.YesMangas'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

@@ -3,17 +3,16 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlinx-serialization'
 
 ext {
-    appName = 'Tachiyomi: MANGA Plus by SHUEISHA'
+    extName = 'MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 7
+    extVersionCode = 11
     libVersion = '1.2'
 }
 
 dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-protobuf:0.20.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0'
-    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"

@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaRaw'
+    extName = 'MangaRaw'
     pkgNameSuffix = 'ja.mangaraw'
     extClass = '.MangaRawFactory'
     extVersionCode = 1

@@ -11,6 +11,7 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 open class VCPVMP(override val name: String, override val baseUrl: String) : ParsedHttpSource() {
 
@@ -28,47 +29,43 @@ open class VCPVMP(override val name: String, override val baseUrl: String) : Par
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/page/$page", headers)
 
-    override fun popularMangaSelector() = "div#posts div.gallery"
+    override fun popularMangaSelector() = "div#ccontent div.gallery"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         element.select("a.cover").first().let {
             setUrlWithoutDomain(it.attr("href"))
             title = it.select("div.caption").text()
-            thumbnail_url = getCover(it.select("img").attr("data-src"))
+            thumbnail_url = it.select("img").attr("abs:src").substringBefore("?")
         }
-    }
-
-    private fun getCover(imgURL: String): String {
-        return if (imgURL == "") "" else imgURL.substringBefore("?")
     }
 
     override fun popularMangaNextPageSelector() = "ul.pagination > li.active + li"
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div#catag").let {
-            genre = document.select("div#tagsin > a[rel=tag]").joinToString(", ") {
-                it.text()
-            }
-            artist = ""
-            description = ""
+            genre = document.select("div#tagsin > a[rel=tag]").joinToString { it.text() }
             status = SManga.UNKNOWN
+            thumbnail_url = document.select(pageListSelector).firstOrNull()?.attr("abs:src")
         }
     }
 
-    override fun chapterListSelector() = "div#posts"
-
-    override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        name = element.select("h1").text()
-        setUrlWithoutDomain(element.baseUri())
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return Observable.just(
+            listOf(
+                SChapter.create().apply {
+                    name = manga.title
+                    url = manga.url
+                }
+            )
+        )
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url)
+    override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
+    override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Not used")
 
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div#posts img[data-src]").forEach {
-            add(Page(size, document.baseUri(), it.attr("data-src")))
-        }
-    }
+    protected open val pageListSelector = "div.comicimg img"
+    override fun pageListParse(document: Document): List<Page> = document.select(pageListSelector)
+        .mapIndexed { i, img -> Page(i, "", img.attr("abs:src")) }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 

@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.hentai2read
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -22,6 +23,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
+@Nsfw
 class Hentai2Read : ParsedHttpSource() {
 
     override val name = "Hentai2Read"

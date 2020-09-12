@@ -2,15 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Manhuadui'
+    extName = 'Manhuadui'
     pkgNameSuffix = 'zh.manhuadui'
     extClass = '.Manhuadui'
-    extVersionCode = 7
+    extVersionCode = 12
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"

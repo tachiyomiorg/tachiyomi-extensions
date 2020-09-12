@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Team X'
+    extName = 'Team X'
     pkgNameSuffix = 'ar.teamx'
     extClass = '.TeamX'
-    extVersionCode = 4
+    extVersionCode = 6
     libVersion = '1.2'
 }
 

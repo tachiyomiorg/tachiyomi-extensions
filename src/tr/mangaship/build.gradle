@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Manga Ship'
+    extName = 'Manga Ship'
     pkgNameSuffix = 'tr.mangaship'
     extClass = '.MangaShip'
     extVersionCode = 1

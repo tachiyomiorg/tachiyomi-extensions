@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Ngon Phong'
+    extName = 'Ngon Phong'
     pkgNameSuffix = 'vi.ngonphong'
     extClass = '.NgonPhong'
     extVersionCode = 1

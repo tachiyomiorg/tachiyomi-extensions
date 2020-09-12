@@ -1,23 +1,35 @@
 package eu.kanade.tachiyomi.extension.en.wutopia
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
+import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class Wutopia : HttpSource() {
+class Wutopia : ConfigurableSource, HttpSource() {
 
     override val name = "Wutopia"
 
@@ -76,9 +88,21 @@ class Wutopia : HttpSource() {
 
     // Details
 
-    override fun mangaDetailsRequest(manga: SManga): Request {
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(apiMangaDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    private fun apiMangaDetailsRequest(manga: SManga): Request {
         val body = RequestBody.create(null, "id=${manga.url}&linkId=0")
         return POST("$baseUrl/mobile/cartoon-collection/get", headers, body)
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET("$baseUrl/#/mobile/cartoon/detail-cartoon/${manga.url}")
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -104,17 +128,21 @@ class Wutopia : HttpSource() {
 
     override fun chapterListRequest(manga: SManga): Request {
         val body = RequestBody.create(null, "id=${manga.url}&pageSize=99999&pageNo=1&sort=0&linkId=0")
-        return POST("$baseUrl/mobile/cartoon-collection/list-chapter", headers, body)
+        return POST("$baseUrl/mobile/cartoon-collection/list-chapter", headers, body, CacheControl.FORCE_NETWORK)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["list"].asJsonArray.map { json ->
-            SChapter.create().apply {
-                url = json["id"].asString
-                name = json["name"].asString.let { if (it.isNotEmpty()) it else "Chapter " + json["chapterIndex"].asString }
-                date_upload = json["modifyTime"].asLong
+        return gson.fromJson<JsonObject>(response.body()!!.string())["list"].asJsonArray
+            .let { json ->
+                if (chapterListPref() == "free") json.filter { it["isPayed"].bool } else json
             }
-        }.reversed()
+            .map { json ->
+                SChapter.create().apply {
+                    url = json["id"].asString
+                    name = json["name"].asString.let { if (it.isNotEmpty()) it else "Chapter " + json["chapterIndex"].asString }
+                    date_upload = json["modifyTime"].asLong
+                }
+            }.reversed()
     }
 
     // Pages
@@ -132,5 +160,54 @@ class Wutopia : HttpSource() {
 
     override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
 
-    override fun getFilterList() = FilterList()
+    // Preferences
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_LOCKED_CHAPTERS_Title
+            title = SHOW_LOCKED_CHAPTERS_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val chapterListPref = ListPreference(screen.context).apply {
+            key = SHOW_LOCKED_CHAPTERS_Title
+            title = SHOW_LOCKED_CHAPTERS_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
+
+    private fun chapterListPref() = preferences.getString(SHOW_LOCKED_CHAPTERS, "free")
+
+    companion object {
+        private const val SHOW_LOCKED_CHAPTERS_Title = "Wutopia requires login/payment for some chapters"
+        private const val SHOW_LOCKED_CHAPTERS = "WUTOPIA_LOCKED_CHAPTERS"
+        private val prefsEntries = arrayOf("Show all chapters (including pay-to-read)", "Only show free chapters")
+        private val prefsEntryValues = arrayOf("all", "free")
+    }
 }

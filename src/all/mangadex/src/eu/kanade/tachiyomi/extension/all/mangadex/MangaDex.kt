@@ -35,6 +35,7 @@ import kotlin.collections.set
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -54,7 +55,7 @@ abstract class MangaDex(
 
     override val baseUrl = "https://www.mangadex.org"
 
-    private val cdnUrl = "https://www.mangadex.org" // "https://s0.mangadex.org"
+    private val cdnUrl = "https://mangadex.org" // "https://s0.mangadex.org"
 
     override val supportsLatest = true
 
@@ -70,6 +71,7 @@ abstract class MangaDex(
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
+        .addInterceptor(CoverInterceptor())
         .build()
 
     private fun clientBuilder(): OkHttpClient = clientBuilder(getShowR18())
@@ -464,6 +466,7 @@ abstract class MangaDex(
     private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        hasMangaPlus = false
         val now = Date().time
         val jsonData = response.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
@@ -481,7 +484,7 @@ abstract class MangaDex(
                 chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
             }
         }
-        return chapters
+        return chapters.also { if (it.isEmpty() && hasMangaPlus) throw Exception("This only has MangaPlus chapters, use the MangaPlus extension") }
     }
 
     /**
@@ -494,7 +497,10 @@ abstract class MangaDex(
         return when {
             chapterJson.get("lang_code").string != internalLang -> false
             (chapterJson.get("timestamp").asLong * 1000) > now -> false
-            chapterJson.get("group_id").string == "9097" -> false
+            chapterJson.get("group_id").string == "9097" -> {
+                hasMangaPlus = true
+                false
+            }
             else -> true
         }
     }
@@ -584,26 +590,51 @@ abstract class MangaDex(
         val server = json.get("server").string
 
         pageArray.forEach {
-            val url = "$server$hash/${it.asString}"
-            pages.add(Page(pages.size, "", getImageUrl(url)))
+            val url = "$hash/${it.asString}"
+            pages.add(Page(pages.size, "$server,${response.request().url()},${Date().time}", url))
         }
 
         return pages
     }
+
+    override fun imageRequest(page: Page): Request {
+        val url = when {
+            // Legacy
+            page.url.isEmpty() -> page.imageUrl!!
+            // Some images are hosted elsewhere
+            !page.url.startsWith("http") -> baseUrl + page.url.substringBefore(",") + page.imageUrl
+            // New chapters on MD servers
+            page.url.contains("https://mangadex.org/data") -> page.url.substringBefore(",") + page.imageUrl
+            // MD@Home token handling
+            else -> {
+                val tokenLifespan = 5 * 60 * 1000
+                val data = page.url.split(",")
+                var tokenedServer = data[0]
+                if (Date().time - data[2].toLong() > tokenLifespan) {
+                    val tokenRequestUrl = data[1]
+                    val cacheControl = if (Date().time - (tokenTracker[tokenRequestUrl] ?: 0) > tokenLifespan) {
+                        tokenTracker[tokenRequestUrl] = Date().time
+                        CacheControl.FORCE_NETWORK
+                    } else {
+                        CacheControl.FORCE_CACHE
+                    }
+                    val jsonData = client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute().body()!!.string()
+                    tokenedServer = JsonParser().parse(jsonData).asJsonObject.get("server").string
+                }
+                tokenedServer + page.imageUrl
+            }
+        }
+        return GET(url, headers)
+    }
+
+    // chapter url where we get the token, last request time
+    private val tokenTracker = hashMapOf<String, Long>()
 
     override fun imageUrlParse(document: Document): String = ""
 
     private fun parseStatus(status: Int) = when (status) {
         1 -> SManga.ONGOING
         else -> SManga.UNKNOWN
-    }
-
-    private fun getImageUrl(attr: String): String {
-        // Some images are hosted elsewhere
-        if (attr.startsWith("http")) {
-            return attr
-        }
-        return baseUrl + attr
     }
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -882,7 +913,9 @@ abstract class MangaDex(
         Tag("80", "Traditional Games"),
         Tag("81", "Virtual Reality"),
         Tag("82", "Zombies"),
-        Tag("83", "Incest")
+        Tag("83", "Incest"),
+        Tag("84", "Mafia"),
+        Tag("85", "Villainess")
     ).sortedWith(compareBy { it.name })
 
     private val GENRES = (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }.toMap()
@@ -938,5 +971,24 @@ abstract class MangaDex(
             Pair("Spanish (LATAM)", "29"),
             Pair("Thai", "32"),
             Pair("Filipino", "34"))
+
+        private var hasMangaPlus = false
+    }
+}
+
+class CoverInterceptor : Interceptor {
+    private val coverRegex = Regex("""/images/.*\.jpg""")
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest = chain.request()
+
+        return chain.proceed(chain.request()).let { response ->
+            if (response.code() == 404 && originalRequest.url().toString().contains(coverRegex)) {
+                response.close()
+                chain.proceed(originalRequest.newBuilder().url(originalRequest.url().toString().substringBeforeLast(".") + ".thumb.jpg").build())
+            } else {
+                response
+            }
+        }
     }
 }

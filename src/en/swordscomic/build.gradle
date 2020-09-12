@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Swords Comic'
+    extName = 'Swords Comic'
     pkgNameSuffix = 'en.swordscomic'
     extClass = '.SwordsComic'
     extVersionCode = 1

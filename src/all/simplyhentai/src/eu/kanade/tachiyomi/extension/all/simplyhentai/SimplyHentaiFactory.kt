@@ -1,8 +1,10 @@
 package eu.kanade.tachiyomi.extension.all.simplyhentai
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 
+@Nsfw
 class SimplyHentaiFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         SimplyHentaiEN(),
@@ -14,7 +16,7 @@ class SimplyHentaiFactory : SourceFactory {
         SimplyHentaiFR(),
         SimplyHentaiDE(),
         SimplyHentaiPT()
-        )
+    )
 }
 
 class SimplyHentaiEN : SimplyHentai("en", "english", "1")

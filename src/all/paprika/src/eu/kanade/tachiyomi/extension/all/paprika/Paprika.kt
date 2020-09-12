@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -104,7 +105,7 @@ abstract class Paprika(
         }
     }
 
-    private fun String?.toStatus() = when {
+    fun String?.toStatus() = when {
         this == null -> SManga.UNKNOWN
         this.contains("Ongoing", ignoreCase = true) -> SManga.ONGOING
         this.contains("Completed", ignoreCase = true) -> SManga.COMPLETED
@@ -119,15 +120,22 @@ abstract class Paprika(
      */
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return super.chapterListParse(response).distinctBy { it.url }
+        val document = response.asJsoup()
+        val mangaTitle = document.select("div.manga-detail h1").text()
+        return document.select(chapterListSelector()).map { chapterFromElement(it, mangaTitle) }.distinctBy { it.url }
     }
 
     override fun chapterListSelector() = "div.total-chapter:has(h2) li"
 
+    // never called
     override fun chapterFromElement(element: Element): SChapter {
+        throw Exception("unreachable code was reached!")
+    }
+
+    open fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
         return SChapter.create().apply {
             element.select("a").let {
-                name = it.text()
+                name = it.text().substringAfter("$mangaTitle ")
                 setUrlWithoutDomain(it.attr("href"))
             }
             date_upload = element.select("div.small").firstOrNull()?.text().toDate()
@@ -136,7 +144,7 @@ abstract class Paprika(
 
     private val currentYear by lazy { Calendar.getInstance(Locale.US)[1].toString().takeLast(2) }
 
-    private fun String?.toDate(): Long {
+    fun String?.toDate(): Long {
         this ?: return 0L
         return try {
             when {
@@ -154,8 +162,7 @@ abstract class Paprika(
                     }?.timeInMillis ?: 0L
                 }
                 else -> SimpleDateFormat("MMM d yy", Locale.US)
-                    .parse("${this.substringBefore(",")} $currentYear")
-                    .time
+                    .parse("${this.substringBefore(",")} $currentYear")?.time ?: 0
             }
         } catch (_: Exception) {
             0L
@@ -181,7 +188,7 @@ abstract class Paprika(
         GenreFilter(getGenreList())
     )
 
-    private class OrderFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
+    class OrderFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
 
     private fun getOrderList() = arrayOf(
         Pair("Views", "2"),
@@ -189,7 +196,7 @@ abstract class Paprika(
         Pair("A-Z", "1")
     )
 
-    private class GenreFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
+    class GenreFilter(vals: Array<Pair<String, String>>) : UriPartFilter("Category", vals)
 
     private fun getGenreList() = arrayOf(
         Pair("4 koma", "4-koma"),

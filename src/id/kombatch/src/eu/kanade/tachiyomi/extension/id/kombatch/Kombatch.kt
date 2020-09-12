@@ -5,16 +5,12 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.OkHttpClient
-import okhttp3.Response
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.json.JSONArray
-import org.json.JSONObject
 
-class Kombatch: ParsedHttpSource() {
+class Kombatch : ParsedHttpSource() {
     override val name = "Kombatch"
 
     override val baseUrl = "https://kombatch.com"
@@ -45,7 +41,7 @@ class Kombatch: ParsedHttpSource() {
         thumbnail_url = element.select("img").attr("abs:src")
     }
 
-    //No next page
+    // No next page
     override fun latestUpdatesNextPageSelector() = "Not used"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/search?search=$query&page=$page", headers)

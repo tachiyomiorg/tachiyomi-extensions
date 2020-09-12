@@ -1,8 +1,11 @@
 package eu.kanade.tachiyomi.extension.es.tmohentai
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -11,7 +14,9 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
+@Nsfw
 class TMOHentai : ParsedHttpSource() {
 
     override val name = "TMOHentai"
@@ -48,6 +53,7 @@ class TMOHentai : ParsedHttpSource() {
         val parsedInformation = document.select("div.row > div.panel.panel-primary").text()
         val authorAndArtist = parsedInformation.substringAfter("Groups").substringBefore("Magazines").trim()
 
+        title = document.select("h3.truncate").text()
         thumbnail_url = document.select("img.content-thumbnail-cover").attr("src")
         author = authorAndArtist
         artist = authorAndArtist
@@ -85,7 +91,7 @@ class TMOHentai : ParsedHttpSource() {
         url.addQueryParameter("search[searchText]", query)
         url.addQueryParameter("page", page.toString())
 
-        filters.forEach { filter ->
+        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Types -> {
                     url.addQueryParameter("type", filter.toUriPart())
@@ -118,6 +124,28 @@ class TMOHentai : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/$PREFIX_CONTENTS/$id", headers)
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/$PREFIX_CONTENTS/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
 
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)
 
@@ -212,6 +240,9 @@ class TMOHentai : ParsedHttpSource() {
     )
 
     companion object {
+        const val PREFIX_CONTENTS = "contents"
+        const val PREFIX_ID_SEARCH = "id:"
+
         private val SORTABLES = listOf(
             Pair("Alfabético", "alphabetic"),
             Pair("Creación", "publication_date"),
