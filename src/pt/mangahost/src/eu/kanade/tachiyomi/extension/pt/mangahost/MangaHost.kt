@@ -24,7 +24,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahosted.com"
+    override val baseUrl = "https://mangahost2.com"
 
     override val lang = "pt-BR"
 
@@ -71,7 +71,8 @@ class MangaHost : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "div#dados div.line-lancamentos div.column-img a"
 
-    override fun latestUpdatesFromElement(element: Element): SManga = genericMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element): SManga =
+        genericMangaFromElement(element, "data-lazy-src")
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -156,12 +157,12 @@ class MangaHost : ParsedHttpSource() {
 
     private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
 
-    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, ".")
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_full.")
 
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
