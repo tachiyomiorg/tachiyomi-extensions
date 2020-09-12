@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.schlockmercenary
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -43,9 +42,6 @@ class Schlockmercenary : ParsedHttpSource() {
         val book = element.select("h4 > a").first()
         val thumb = (baseUrl + (element.select("img").first()?.attr("src")
             ?: defaultThumbnailUrl)).substringBefore("?")
-        Log.d("schmc", book.attr("href"))
-        Log.d("schmc", book.text())
-        Log.d("schmc", thumb)
         return SManga.create().apply {
             url = book.attr("href")
             title = book.text()
@@ -73,7 +69,8 @@ class Schlockmercenary : ParsedHttpSource() {
 
     private fun selectChaptersFromBook(response: Response, manga: SManga): List<SChapter> {
         val document = response.asJsoup()
-        val book = document.select(popularMangaSelector() + ":contains(${manga.title})")
+        val sanitizedTitle = manga.title.replace("""([",'])""".toRegex(), "\\\\$1")
+        val book = document.select(popularMangaSelector() + ":contains($sanitizedTitle)")
         val chapters = mutableListOf<SChapter>()
         chapter_count = 1
         book.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
@@ -90,9 +87,6 @@ class Schlockmercenary : ParsedHttpSource() {
         chapter.date_upload = chapter.url.takeLast(10).let {
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it)!!.time
         }
-        Log.d("schmc", chapter.url)
-        Log.d("schmc", chapter.name)
-        Log.d("schmc", chapter.chapter_number.toString())
         return chapter
     }
 
