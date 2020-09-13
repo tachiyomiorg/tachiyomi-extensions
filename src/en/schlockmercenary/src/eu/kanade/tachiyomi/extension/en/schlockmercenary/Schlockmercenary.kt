@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.schlockmercenary
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -11,6 +12,9 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import java.lang.UnsupportedOperationException
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.GregorianCalendar
 import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
@@ -28,7 +32,7 @@ class Schlockmercenary : ParsedHttpSource() {
 
     override val supportsLatest = false
 
-    var chapter_count = 1
+    private var chapterCount = 1
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
 
@@ -63,16 +67,16 @@ class Schlockmercenary : ParsedHttpSource() {
         return client.newCall(GET(requestUrl))
             .asObservableSuccess()
             .map { response ->
-                selectChaptersFromBook(response, manga)
+                getChaptersForBook(response, manga)
             }
     }
 
-    private fun selectChaptersFromBook(response: Response, manga: SManga): List<SChapter> {
+    private fun getChaptersForBook(response: Response, manga: SManga): List<SChapter> {
         val document = response.asJsoup()
         val sanitizedTitle = manga.title.replace("""([",'])""".toRegex(), "\\\\$1")
         val book = document.select(popularMangaSelector() + ":contains($sanitizedTitle)")
         val chapters = mutableListOf<SChapter>()
-        chapter_count = 1
+        chapterCount = 1
         book.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
         return chapters
     }
@@ -83,19 +87,72 @@ class Schlockmercenary : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.url = element.attr("href")
         chapter.name = element.text()
-        chapter.chapter_number = chapter_count++.toFloat()
+        chapter.chapter_number = chapterCount++.toFloat()
         chapter.date_upload = chapter.url.takeLast(10).let {
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it)!!.time
+            SimpleDateFormat(dateFormat, Locale.getDefault()).parse(it)!!.time
         }
         return chapter
     }
 
-    // This is what gets the pages
-    override fun pageListParse(document: Document): List<Page> {
-        return listOf()
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        val requestUrl = "${baseUrl}$archiveUrl"
+        return client.newCall(GET(requestUrl))
+            .asObservableSuccess()
+            .map { response ->
+                getPagesForChapter(response, chapter)
+            }
     }
 
-    override fun imageUrlRequest(page: Page) = GET(page.url)
+    private fun getPagesForChapter(response: Response, chapter: SChapter): List<Page> {
+        val document = response.asJsoup()
+        /**
+         * To find the end page, first, the next chapter start must be found,
+         * then subtract one day off of the next chapter start.
+         * If no chapter start is found, grab the next book start.
+         * If no next book exists, assume one page long.
+         */
+        val currentChapter = document.select(chapterListSelector() + "[href=${chapter.url}]").first()!!
+        val start = chapterFromElement(currentChapter).date_upload
+        // Find next chapter start
+        var nextChapter = currentChapter.parent()?.nextElementSibling()?.select("a")?.first()
+        var end = start + 1
+        // Chapter is the last in the book
+
+        if (nextChapter == null) {
+            // Grab next book start.
+            nextChapter = currentChapter.parents()[2]?.nextElementSibling()?.select(chapterListSelector())?.first()
+        }
+
+        if (nextChapter != null) {
+            end = chapterFromElement(nextChapter).date_upload
+        }
+
+        return generatePageListBetweenDates(start, end)
+    }
+
+    private fun generatePageListBetweenDates(start: Long, end: Long): List<Page> {
+        val pages = mutableListOf<Page>()
+        val calendar = GregorianCalendar()
+        calendar.time = Date(start)
+
+        while (calendar.time.before(Date(end))) {
+            val result = calendar.time
+            val formatter = SimpleDateFormat(dateFormat, Locale.getDefault())
+            val today = formatter.format(result)
+            getImageUrlsForDay(today).forEach { pages.add(Page(pages.size, "", it)) }
+            calendar.add(Calendar.DATE, 1)
+        }
+
+        return pages
+    }
+
+    private fun getImageUrlsForDay(day: String): List<String> {
+        val requestUrl = "$baseUrl/$day"
+        val document = client.newCall(GET(requestUrl)).execute().asJsoup()
+        val urls = document.select("div#strip-$day > img").map { it.attr("abs:src") }
+        urls.forEach { Log.d("schmc", it) }
+        return urls
+    }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
@@ -106,6 +163,8 @@ class Schlockmercenary : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used")
 
     override fun mangaDetailsParse(document: Document): SManga = throw UnsupportedOperationException("Not used")
+
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
     override fun latestUpdatesNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
 
@@ -118,5 +177,6 @@ class Schlockmercenary : ParsedHttpSource() {
     companion object {
         const val defaultThumbnailUrl = "/static/img/logo.b6dacbb8.jpg"
         const val archiveUrl = "/archives/"
+        const val dateFormat = "yyyy-MM-dd"
     }
 }
