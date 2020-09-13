@@ -154,7 +154,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         return when (getSourcePref()) {
             // source with most chapters along with chapters that source doesn't have
             "most" -> {
-                val chapters = mangaBySource.maxBy { it.count() }!!
+                val chapters = mangaBySource.maxByOrNull { it.count() }!!
                 (chapters + chapters.getMissingChapters(mangaBySource.flatten())).sortedByDescending { it.chapter_number }
             }
             // "smart list" - try not to miss a chapter and avoid dupes

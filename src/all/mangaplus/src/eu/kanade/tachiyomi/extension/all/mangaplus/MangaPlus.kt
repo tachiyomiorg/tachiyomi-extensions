@@ -428,7 +428,7 @@ abstract class MangaPlus(
 
     private fun Response.asProto(): MangaPlusResponse {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT)
-            return ProtoBuf.load(MangaPlusSerializer, body()!!.bytes())
+            return ProtoBuf.decodeFromByteArray(MangaPlusSerializer, body()!!.bytes())
 
         // Apparently, the version used of Kotlinx Serialization lib causes a crash
         // on KitKat devices (see #1678). So, if the device is running KitKat or lower,
@@ -439,7 +439,8 @@ abstract class MangaPlus(
 
         val res = Duktape.create().use {
             it.set(
-                "helper", DuktapeHelper::class.java,
+                "helper",
+                DuktapeHelper::class.java,
                 object : DuktapeHelper {
                     override fun getProtobuf(): String = protobufJs
                 }

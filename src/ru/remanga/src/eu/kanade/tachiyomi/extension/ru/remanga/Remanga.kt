@@ -268,7 +268,7 @@ class Remanga : ConfigurableSource, HttpSource() {
                 Observable.error(Exception("Licensed - No chapters to show"))
             }
             else -> {
-                val branchId = branch.maxBy { selector(it) }!!.id
+                val branchId = branch.maxByOrNull { selector(it) }!!.id
                 client.newCall(chapterListRequest(branchId))
                     .asObservableSuccess()
                     .map { response ->
