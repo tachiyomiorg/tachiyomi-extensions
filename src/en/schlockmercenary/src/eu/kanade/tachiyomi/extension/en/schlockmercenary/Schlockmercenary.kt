@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.schlockmercenary
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -149,7 +148,6 @@ class Schlockmercenary : ParsedHttpSource() {
         val requestUrl = "$baseUrl/$day"
         val document = client.newCall(GET(requestUrl)).execute().asJsoup()
         val urls = document.select("div#strip-$day > img").map { it.attr("abs:src") }
-        urls.forEach { Log.d("schmc", it) }
         return urls
     }
 
