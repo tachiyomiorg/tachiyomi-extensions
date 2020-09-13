@@ -6,14 +6,14 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
-import java.security.MessageDigest
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.security.MessageDigest
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Source changes domain names every few days (e.g. newtoki31.net to newtoki32.net)
@@ -27,8 +27,8 @@ private val domainNumber = 33 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", L
 
 class NewTokiFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-            NewTokiManga(),
-            NewTokiWebtoon()
+        NewTokiManga(),
+        NewTokiWebtoon()
     )
 }
 
@@ -70,76 +70,85 @@ class NewTokiManga : NewToki("ManaToki", "https://manatoki$domainNumber.net", "c
     }
 
     // [...document.querySelectorAll("form.form td")[2].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
-    private class SearchPublishTypeList : Filter.Select<String>("Publish", arrayOf(
-        "전체",
-        "미분류",
-        "주간",
-        "격주",
-        "월간",
-        "격월/비정기",
-        "단편",
-        "단행본",
-        "완결"
-    ))
+    private class SearchPublishTypeList : Filter.Select<String>(
+        "Publish",
+        arrayOf(
+            "전체",
+            "미분류",
+            "주간",
+            "격주",
+            "월간",
+            "격월/비정기",
+            "단편",
+            "단행본",
+            "완결"
+        )
+    )
 
     // [...document.querySelectorAll("form.form td")[3].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
-    private class SearchJaumTypeList : Filter.Select<String>("Jaum", arrayOf(
-        "전체",
-        "ㄱ",
-        "ㄴ",
-        "ㄷ",
-        "ㄹ",
-        "ㅁ",
-        "ㅂ",
-        "ㅅ",
-        "ㅇ",
-        "ㅈ",
-        "ㅊ",
-        "ㅋ",
-        "ㅌ",
-        "ㅍ",
-        "ㅎ",
-        "0-9",
-        "a-z"
-    ))
+    private class SearchJaumTypeList : Filter.Select<String>(
+        "Jaum",
+        arrayOf(
+            "전체",
+            "ㄱ",
+            "ㄴ",
+            "ㄷ",
+            "ㄹ",
+            "ㅁ",
+            "ㅂ",
+            "ㅅ",
+            "ㅇ",
+            "ㅈ",
+            "ㅊ",
+            "ㅋ",
+            "ㅌ",
+            "ㅍ",
+            "ㅎ",
+            "0-9",
+            "a-z"
+        )
+    )
 
     // [...document.querySelectorAll("form.form td")[4].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
-    private class SearchGenreTypeList : Filter.Select<String>("Genre", arrayOf(
-        "전체",
-        "17",
-        "BL",
-        "SF",
-        "TS",
-        "개그",
-        "게임",
-        "공포",
-        "도박",
-        "드라마",
-        "라노벨",
-        "러브코미디",
-        "로맨스",
-        "먹방",
-        "미스터리",
-        "백합",
-        "붕탁",
-        "성인",
-        "순정",
-        "스릴러",
-        "스포츠",
-        "시대",
-        "애니화",
-        "액션",
-        "역사",
-        "음악",
-        "이세계",
-        "일상",
-        "일상+치유",
-        "전생",
-        "추리",
-        "판타지",
-        "학원",
-        "호러"
-    ))
+    private class SearchGenreTypeList : Filter.Select<String>(
+        "Genre",
+        arrayOf(
+            "전체",
+            "17",
+            "BL",
+            "SF",
+            "TS",
+            "개그",
+            "게임",
+            "공포",
+            "도박",
+            "드라마",
+            "라노벨",
+            "러브코미디",
+            "로맨스",
+            "먹방",
+            "미스터리",
+            "백합",
+            "붕탁",
+            "성인",
+            "순정",
+            "스릴러",
+            "스포츠",
+            "시대",
+            "애니화",
+            "액션",
+            "역사",
+            "음악",
+            "이세계",
+            "일상",
+            "일상+치유",
+            "전생",
+            "추리",
+            "판타지",
+            "학원",
+            "호러"
+        )
+    )
 
     override fun getFilterList() = FilterList(
         SearchPublishTypeList(),
@@ -188,7 +197,7 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
     private class SearchTypeList : Filter.Select<String>("Type", arrayOf("전체", "일반웹툰", "성인웹툰", "BL/GL", "완결웹툰"))
 
     override fun getFilterList() = FilterList(
-            SearchTypeList()
+        SearchTypeList()
     )
 }
 

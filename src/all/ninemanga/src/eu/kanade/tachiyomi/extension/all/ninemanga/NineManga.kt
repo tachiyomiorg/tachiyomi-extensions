@@ -7,15 +7,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 open class NineManga(override val name: String, override val baseUrl: String, override val lang: String) : ParsedHttpSource() {
 
@@ -84,7 +84,7 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         if (dateWords.size == 3) {
             if (dateWords[1].contains(",")) {
                 return try {
-                    SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
+                    SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
                 } catch (e: ParseException) {
                     0L
                 }
@@ -161,21 +161,27 @@ open class NineManga(override val name: String, override val baseUrl: String, ov
         fun toUriPart() = vals[state].second
     }
 
-    protected open class ContainBeginEndFilter(name: String) : UriPartFilter(name, arrayOf(
-        Pair("Contain", "contain"),
-        Pair("Begin", "begin"),
-        Pair("End", "end")
-    ))
+    protected open class ContainBeginEndFilter(name: String) : UriPartFilter(
+        name,
+        arrayOf(
+            Pair("Contain", "contain"),
+            Pair("Begin", "begin"),
+            Pair("End", "end")
+        )
+    )
 
     private class QueryCBEFilter : ContainBeginEndFilter("Query")
     private class AuthorCBEFilter : ContainBeginEndFilter("Author")
     private class ArtistCBEFilter : ContainBeginEndFilter("Artist")
 
-    private class CompletedFilter : UriPartFilter("Completed", arrayOf(
-        Pair("Either", "either"),
-        Pair("Yes", "yes"),
-        Pair("No", "no")
-    ))
+    private class CompletedFilter : UriPartFilter(
+        "Completed",
+        arrayOf(
+            Pair("Either", "either"),
+            Pair("Yes", "yes"),
+            Pair("No", "no")
+        )
+    )
 
     override fun getFilterList() = FilterList(
         QueryCBEFilter(),

@@ -18,9 +18,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -40,6 +37,9 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
@@ -49,10 +49,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "漫画柜"
     override val baseUrl =
-            if (preferences.getBoolean(SHOW_ZH_HANT_WEBSITE_PREF, false))
-                "https://tw.manhuagui.com"
-            else
-                "https://www.manhuagui.com"
+        if (preferences.getBoolean(SHOW_ZH_HANT_WEBSITE_PREF, false))
+            "https://tw.manhuagui.com"
+        else
+            "https://www.manhuagui.com"
     override val lang = "zh"
     override val supportsLatest = true
 
@@ -61,20 +61,22 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     private val baseHttpUrl: HttpUrl = HttpUrl.parse(baseUrl)!!
 
     // Add rate limit to fix manga thumbnail load failure
-    private val rateLimitInterceptor = ManhuaguiRateLimitInterceptor(baseHttpUrl.host()!!,
-            preferences.getString(MAINSITE_RATELIMIT_PREF, "2")!!.toInt(),
-            preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt())
+    private val rateLimitInterceptor = ManhuaguiRateLimitInterceptor(
+        baseHttpUrl.host()!!,
+        preferences.getString(MAINSITE_RATELIMIT_PREF, "2")!!.toInt(),
+        preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt()
+    )
 
     override val client: OkHttpClient =
-            if (getShowR18())
-                network.client.newBuilder()
-                        .addNetworkInterceptor(rateLimitInterceptor)
-                        .addNetworkInterceptor(AddCookieHeaderInterceptor(baseHttpUrl.host()!!))
-                        .build()
-            else
-                network.client.newBuilder()
-                        .addNetworkInterceptor(rateLimitInterceptor)
-                        .build()
+        if (getShowR18())
+            network.client.newBuilder()
+                .addNetworkInterceptor(rateLimitInterceptor)
+                .addNetworkInterceptor(AddCookieHeaderInterceptor(baseHttpUrl.host()!!))
+                .build()
+        else
+            network.client.newBuilder()
+                .addNetworkInterceptor(rateLimitInterceptor)
+                .build()
 
     // Add R18 verification cookie
     class AddCookieHeaderInterceptor(private val baseHost: String) : Interceptor {
@@ -82,7 +84,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             if (chain.request().url().host() == baseHost) {
                 val originalCookies = chain.request().header("Cookie") ?: ""
                 if (originalCookies != "" && !originalCookies.contains("isAdult=1")) {
-                    return chain.proceed(chain.request().newBuilder()
+                    return chain.proceed(
+                        chain.request().newBuilder()
                             .header("Cookie", "$originalCookies; isAdult=1")
                             .build()
                     )
@@ -95,7 +98,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/list/view_p$page.html", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/list/update_p$page.html", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-            GET("$baseUrl/s/${query}_p$page.html", headers)
+        GET("$baseUrl/s/${query}_p$page.html", headers)
 
     override fun mangaDetailsRequest(manga: SManga): Request {
         var bid = Regex("""\d+/?$""").find(manga.url)?.value
@@ -110,22 +113,34 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
                 withContext(Dispatchers.IO) {
                     // Delay 1 second to wait main manga details request complete
                     delay(1000L)
-                    client.newCall(POST("$baseUrl/tools/submit_ajax.ashx?action=user_check_login", headersBuilder()
-                            .set("Referer", manga.url)
-                            .set("X-Requested-With", "XMLHttpRequest")
-                            .build()
-                    )).enqueue(object : Callback {
-                        override fun onFailure(call: Call, e: IOException) = e.printStackTrace()
-                        override fun onResponse(call: Call, response: Response) = response.close()
-                    })
+                    client.newCall(
+                        POST(
+                            "$baseUrl/tools/submit_ajax.ashx?action=user_check_login",
+                            headersBuilder()
+                                .set("Referer", manga.url)
+                                .set("X-Requested-With", "XMLHttpRequest")
+                                .build()
+                        )
+                    ).enqueue(
+                        object : Callback {
+                            override fun onFailure(call: Call, e: IOException) = e.printStackTrace()
+                            override fun onResponse(call: Call, response: Response) = response.close()
+                        }
+                    )
 
-                    client.newCall(GET("$baseUrl/tools/vote.ashx?act=get&bid=$bid", headersBuilder()
-                            .set("Referer", manga.url)
-                            .set("X-Requested-With", "XMLHttpRequest").build()
-                    )).enqueue(object : Callback {
-                        override fun onFailure(call: Call, e: IOException) = e.printStackTrace()
-                        override fun onResponse(call: Call, response: Response) = response.close()
-                    })
+                    client.newCall(
+                        GET(
+                            "$baseUrl/tools/vote.ashx?act=get&bid=$bid",
+                            headersBuilder()
+                                .set("Referer", manga.url)
+                                .set("X-Requested-With", "XMLHttpRequest").build()
+                        )
+                    ).enqueue(
+                        object : Callback {
+                            override fun onFailure(call: Call, e: IOException) = e.printStackTrace()
+                            override fun onResponse(call: Call, response: Response) = response.close()
+                        }
+                    )
                 }
             }
         }
@@ -146,8 +161,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
             val id = query.removePrefix(PREFIX_ID_SEARCH)
             client.newCall(searchMangaByIdRequest(id))
-                    .asObservableSuccess()
-                    .map { response -> searchMangaByIdParse(response, id) }
+                .asObservableSuccess()
+                .map { response -> searchMangaByIdParse(response, id) }
         } else {
             super.fetchSearchManga(page, query, filters)
         }
@@ -163,8 +178,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
-            .set("Referer", baseUrl)
-            .set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36")
+        .set("Referer", baseUrl)
+        .set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36")
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -207,8 +222,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             if (getShowR18()) {
                 // Hidden chapter list is LZString encoded
                 val decodedHiddenChapterList = Duktape.create().use {
-                    it.evaluate(jsDecodeFunc +
-                            """LZString.decompressFromBase64('${hiddenEncryptedChapterList.`val`()}');""") as String
+                    it.evaluate(
+                        jsDecodeFunc +
+                            """LZString.decompressFromBase64('${hiddenEncryptedChapterList.`val`()}');"""
+                    ) as String
                 }
                 val hiddenChapterList = Jsoup.parse(decodedHiddenChapterList, response.request().url().toString())
                 if (hiddenChapterList != null) {
@@ -270,7 +287,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         return manga
     }
 
-    private val jsDecodeFunc = """
+    private val jsDecodeFunc =
+        """
         var LZString=(function(){var f=String.fromCharCode;var keyStrBase64="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";var baseReverseDic={};function getBaseValue(alphabet,character){if(!baseReverseDic[alphabet]){baseReverseDic[alphabet]={};for(var i=0;i<alphabet.length;i++){baseReverseDic[alphabet][alphabet.charAt(i)]=i}}return baseReverseDic[alphabet][character]}var LZString={decompressFromBase64:function(input){if(input==null)return"";if(input=="")return null;return LZString._0(input.length,32,function(index){return getBaseValue(keyStrBase64,input.charAt(index))})},_0:function(length,resetValue,getNextValue){var dictionary=[],next,enlargeIn=4,dictSize=4,numBits=3,entry="",result=[],i,w,bits,resb,maxpower,power,c,data={val:getNextValue(0),position:resetValue,index:1};for(i=0;i<3;i+=1){dictionary[i]=i}bits=0;maxpower=Math.pow(2,2);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}switch(next=bits){case 0:bits=0;maxpower=Math.pow(2,8);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}c=f(bits);break;case 1:bits=0;maxpower=Math.pow(2,16);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}c=f(bits);break;case 2:return""}dictionary[3]=c;w=c;result.push(c);while(true){if(data.index>length){return""}bits=0;maxpower=Math.pow(2,numBits);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}switch(c=bits){case 0:bits=0;maxpower=Math.pow(2,8);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;case 1:bits=0;maxpower=Math.pow(2,16);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;case 2:return result.join('')}if(enlargeIn==0){enlargeIn=Math.pow(2,numBits);numBits++}if(dictionary[c]){entry=dictionary[c]}else{if(c===dictSize){entry=w+w.charAt(0)}else{return null}}result.push(entry);dictionary[dictSize++]=w+entry.charAt(0);enlargeIn--;w=entry;if(enlargeIn==0){enlargeIn=Math.pow(2,numBits);numBits++}}}};return LZString})();String.prototype.splic=function(f){return LZString.decompressFromBase64(this).split(f)};
     """
 

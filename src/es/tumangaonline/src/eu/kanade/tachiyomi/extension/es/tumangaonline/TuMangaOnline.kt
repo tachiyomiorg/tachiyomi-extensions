@@ -15,8 +15,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
@@ -26,6 +24,8 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
@@ -96,32 +96,44 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
                     }
                 }
                 is WebcomicFilter -> {
-                    url.addQueryParameter("webcomic", when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "true"
-                        Filter.TriState.STATE_EXCLUDE -> "false"
-                        else -> ""
-                    })
+                    url.addQueryParameter(
+                        "webcomic",
+                        when (filter.state) {
+                            Filter.TriState.STATE_INCLUDE -> "true"
+                            Filter.TriState.STATE_EXCLUDE -> "false"
+                            else -> ""
+                        }
+                    )
                 }
                 is FourKomaFilter -> {
-                    url.addQueryParameter("yonkoma", when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "true"
-                        Filter.TriState.STATE_EXCLUDE -> "false"
-                        else -> ""
-                    })
+                    url.addQueryParameter(
+                        "yonkoma",
+                        when (filter.state) {
+                            Filter.TriState.STATE_INCLUDE -> "true"
+                            Filter.TriState.STATE_EXCLUDE -> "false"
+                            else -> ""
+                        }
+                    )
                 }
                 is AmateurFilter -> {
-                    url.addQueryParameter("amateur", when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "true"
-                        Filter.TriState.STATE_EXCLUDE -> "false"
-                        else -> ""
-                    })
+                    url.addQueryParameter(
+                        "amateur",
+                        when (filter.state) {
+                            Filter.TriState.STATE_INCLUDE -> "true"
+                            Filter.TriState.STATE_EXCLUDE -> "false"
+                            else -> ""
+                        }
+                    )
                 }
                 is EroticFilter -> {
-                    url.addQueryParameter("erotic", when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "true"
-                        Filter.TriState.STATE_EXCLUDE -> "false"
-                        else -> ""
-                    })
+                    url.addQueryParameter(
+                        "erotic",
+                        when (filter.state) {
+                            Filter.TriState.STATE_INCLUDE -> "true"
+                            Filter.TriState.STATE_EXCLUDE -> "false"
+                            else -> ""
+                        }
+                    )
                 }
                 is GenreList -> {
                     filter.state
@@ -234,10 +246,16 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         if (getPageMethod() == "cascade") {
             document.select("div.viewer-container img").forEach {
-                add(Page(size, "", it.let {
-                    if (it.hasAttr("data-src"))
-                        it.attr("abs:data-src") else it.attr("abs:src")
-                }))
+                add(
+                    Page(
+                        size,
+                        "",
+                        it.let {
+                            if (it.hasAttr("data-src"))
+                                it.attr("abs:data-src") else it.attr("abs:src")
+                        }
+                    )
+                )
             }
         } else {
             val pageList = document.select("#viewer-pages-select").first().select("option").map { it.attr("value").toInt() }
@@ -277,31 +295,40 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
-        Pair("Ver todo", ""),
-        Pair("Manga", "manga"),
-        Pair("Manhua", "manhua"),
-        Pair("Manhwa", "manhwa"),
-        Pair("Novela", "novel"),
-        Pair("One shot", "one_shot"),
-        Pair("Doujinshi", "doujinshi"),
-        Pair("Oel", "oel")
-    ))
+    private class Types : UriPartFilter(
+        "Filtrar por tipo",
+        arrayOf(
+            Pair("Ver todo", ""),
+            Pair("Manga", "manga"),
+            Pair("Manhua", "manhua"),
+            Pair("Manhwa", "manhwa"),
+            Pair("Novela", "novel"),
+            Pair("One shot", "one_shot"),
+            Pair("Doujinshi", "doujinshi"),
+            Pair("Oel", "oel")
+        )
+    )
 
-    private class Demography : UriPartFilter("Filtrar por demografía", arrayOf(
-        Pair("Ver todo", ""),
-        Pair("Seinen", "seinen"),
-        Pair("Shoujo", "shoujo"),
-        Pair("Shounen", "shounen"),
-        Pair("Josei", "josei"),
-        Pair("Kodomo", "kodomo")
-    ))
+    private class Demography : UriPartFilter(
+        "Filtrar por demografía",
+        arrayOf(
+            Pair("Ver todo", ""),
+            Pair("Seinen", "seinen"),
+            Pair("Shoujo", "shoujo"),
+            Pair("Shounen", "shounen"),
+            Pair("Josei", "josei"),
+            Pair("Kodomo", "kodomo")
+        )
+    )
 
-    private class FilterBy : UriPartFilter("Campo de orden", arrayOf(
-        Pair("Título", "title"),
-        Pair("Autor", "author"),
-        Pair("Compañia", "company")
-    ))
+    private class FilterBy : UriPartFilter(
+        "Campo de orden",
+        arrayOf(
+            Pair("Título", "title"),
+            Pair("Autor", "author"),
+            Pair("Compañia", "company")
+        )
+    )
 
     class SortBy : Filter.Sort(
         "Ordenar por",

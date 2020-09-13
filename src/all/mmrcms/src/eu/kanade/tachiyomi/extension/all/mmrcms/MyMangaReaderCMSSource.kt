@@ -18,16 +18,16 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.net.URLDecoder
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLDecoder
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 open class MyMangaReaderCMSSource(
     final override val lang: String,
@@ -114,17 +114,20 @@ open class MyMangaReaderCMSSource(
             val jsonArray = jsonParser.parse(response.body()!!.string()).let {
                 if (name == "Mangas.pw") it.array else it["suggestions"].array
             }
-            MangasPage(jsonArray
-                .map {
-                    SManga.create().apply {
-                        val segment = it["data"].string
-                        url = getUrlWithoutBaseUrl(itemUrl + segment)
-                        title = it["value"].string
+            MangasPage(
+                jsonArray
+                    .map {
+                        SManga.create().apply {
+                            val segment = it["data"].string
+                            url = getUrlWithoutBaseUrl(itemUrl + segment)
+                            title = it["value"].string
 
-                        // Guess thumbnails
-                        // thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
-                    }
-                }, false)
+                            // Guess thumbnails
+                            // thumbnail_url = "$baseUrl/uploads/manga/$segment/cover/cover_250x350.jpg"
+                        }
+                    },
+                false
+            )
         } else {
             internalMangaParse(response)
         }
@@ -184,27 +187,30 @@ open class MyMangaReaderCMSSource(
             "Utsukushii" -> "div.content div.col-sm-6"
             else -> "div[class^=col-sm], div.col-xs-6"
         }
-        return MangasPage(document.select(internalMangaSelector).map {
-            SManga.create().apply {
-                val urlElement = it.getElementsByClass("chart-title")
-                if (urlElement.size == 0) {
-                    url = getUrlWithoutBaseUrl(it.select("a").attr("href"))
-                    title = it.select("div.caption").text()
-                    it.select("div.caption div").text().let { if (it.isNotEmpty()) title = title.substringBefore(it) } // To clean submanga's titles without breaking hentaishark's
-                } else {
-                    url = getUrlWithoutBaseUrl(urlElement.attr("href"))
-                    title = urlElement.text().trim()
-                }
+        return MangasPage(
+            document.select(internalMangaSelector).map {
+                SManga.create().apply {
+                    val urlElement = it.getElementsByClass("chart-title")
+                    if (urlElement.size == 0) {
+                        url = getUrlWithoutBaseUrl(it.select("a").attr("href"))
+                        title = it.select("div.caption").text()
+                        it.select("div.caption div").text().let { if (it.isNotEmpty()) title = title.substringBefore(it) } // To clean submanga's titles without breaking hentaishark's
+                    } else {
+                        url = getUrlWithoutBaseUrl(urlElement.attr("href"))
+                        title = urlElement.text().trim()
+                    }
 
-                it.select("img").let { img ->
-                    thumbnail_url = when {
-                        it.hasAttr("data-background-image") -> it.attr("data-background-image") // Utsukushii
-                        img.hasAttr("data-src") -> coverGuess(img.attr("abs:data-src"), url)
-                        else -> coverGuess(img.attr("abs:src"), url)
+                    it.select("img").let { img ->
+                        thumbnail_url = when {
+                            it.hasAttr("data-background-image") -> it.attr("data-background-image") // Utsukushii
+                            img.hasAttr("data-src") -> coverGuess(img.attr("abs:data-src"), url)
+                            else -> coverGuess(img.attr("abs:src"), url)
+                        }
                     }
                 }
-            }
-        }, document.select(".pagination a[rel=next]").isNotEmpty())
+            },
+            document.select(".pagination a[rel=next]").isNotEmpty()
+        )
     }
 
     // Guess thumbnails on broken websites
@@ -364,39 +370,43 @@ open class MyMangaReaderCMSSource(
     }
 
     override fun pageListParse(response: Response) = response.asJsoup().select("#all > .img-responsive")
-            .mapIndexed { i, e ->
-                var url = (if (e.hasAttr("data-src")) e.attr("abs:data-src") else e.attr("abs:src")).trim()
+        .mapIndexed { i, e ->
+            var url = (if (e.hasAttr("data-src")) e.attr("abs:data-src") else e.attr("abs:src")).trim()
 
-                // Mangas.pw encodes some of their urls, decode them
-                if (name.contains("Mangas.pw") && !url.contains(".")) {
-                    url = Base64.decode(url.substringAfter("//"), Base64.DEFAULT).toString(Charsets.UTF_8).substringBefore("=")
-                    url = URLDecoder.decode(url, "UTF-8")
-                }
-
-                Page(i, "", url)
+            // Mangas.pw encodes some of their urls, decode them
+            if (name.contains("Mangas.pw") && !url.contains(".")) {
+                url = Base64.decode(url.substringAfter("//"), Base64.DEFAULT).toString(Charsets.UTF_8).substringBefore("=")
+                url = URLDecoder.decode(url, "UTF-8")
             }
+
+            Page(i, "", url)
+        }
 
     override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method called!")
 
     private fun getInitialFilterList() = listOf<Filter<*>>(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            AuthorFilter(),
-            UriSelectFilter("Category",
-                    "cat",
-                    arrayOf("" to "Any",
-                            *categoryMappings.toTypedArray()
-                    )
-            ),
-            UriSelectFilter("Begins with",
-                    "alpha",
-                    arrayOf("" to "Any",
-                            *"#ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray().map {
-                                Pair(it.toString(), it.toString())
-                            }.toTypedArray()
-                    )
-            ),
-            SortFilter()
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        AuthorFilter(),
+        UriSelectFilter(
+            "Category",
+            "cat",
+            arrayOf(
+                "" to "Any",
+                *categoryMappings.toTypedArray()
+            )
+        ),
+        UriSelectFilter(
+            "Begins with",
+            "alpha",
+            arrayOf(
+                "" to "Any",
+                *"#ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray().map {
+                    Pair(it.toString(), it.toString())
+                }.toTypedArray()
+            )
+        ),
+        SortFilter()
     )
 
     /**
@@ -406,11 +416,16 @@ open class MyMangaReaderCMSSource(
         return when {
             name == "Mangas.pw" -> FilterList()
             tagMappings != null -> {
-                FilterList(getInitialFilterList() + UriSelectFilter("Tag",
-                    "tag",
-                    arrayOf("" to "Any",
-                        *tagMappings.toTypedArray()
-                    )))
+                FilterList(
+                    getInitialFilterList() + UriSelectFilter(
+                        "Tag",
+                        "tag",
+                        arrayOf(
+                            "" to "Any",
+                            *tagMappings.toTypedArray()
+                        )
+                    )
+                )
             }
             else -> FilterList(getInitialFilterList())
         }
@@ -429,7 +444,7 @@ open class MyMangaReaderCMSSource(
         private val firstIsUnspecified: Boolean = true,
         defaultValue: Int = 0
     ) :
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)
@@ -442,9 +457,13 @@ open class MyMangaReaderCMSSource(
         }
     }
 
-    class SortFilter : Filter.Sort("Sort",
+    class SortFilter :
+        Filter.Sort(
+            "Sort",
             sortables.map { it.second }.toTypedArray(),
-            Selection(0, true)), UriFilter {
+            Selection(0, true)
+        ),
+        UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             uri.appendQueryParameter("sortBy", sortables[state!!.index].first)
             uri.appendQueryParameter("asc", state!!.ascending.toString())
@@ -452,9 +471,9 @@ open class MyMangaReaderCMSSource(
 
         companion object {
             private val sortables = arrayOf(
-                    "name" to "Name",
-                    "views" to "Popularity",
-                    "last_release" to "Last update"
+                "name" to "Name",
+                "views" to "Popularity",
+                "last_release" to "Last update"
             )
         }
     }

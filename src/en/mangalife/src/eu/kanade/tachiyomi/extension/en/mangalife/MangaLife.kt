@@ -17,14 +17,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * Source responds to requests with their full database as a JsonArray, then sorts/filters it client-side
@@ -89,11 +89,13 @@ class MangaLife : HttpSource() {
         val endRange = ((page * 24) - 1).let { if (it <= directory.lastIndex) it else directory.lastIndex }
 
         for (i in (((page - 1) * 24)..endRange)) {
-            mangas.add(SManga.create().apply {
-                title = directory[i]["s"].string
-                url = "/manga/${directory[i]["i"].string}"
-                thumbnail_url = "https://cover.mangabeast01.com/cover/${directory[i]["i"].string}.jpg"
-            })
+            mangas.add(
+                SManga.create().apply {
+                    title = directory[i]["s"].string
+                    url = "/manga/${directory[i]["i"].string}"
+                    thumbnail_url = "https://cover.mangabeast01.com/cover/${directory[i]["i"].string}.jpg"
+                }
+            )
         }
         return MangasPage(mangas, endRange < directory.lastIndex)
     }
@@ -281,54 +283,54 @@ class MangaLife : HttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            YearField(),
-            AuthorField(),
-            SelectField("Scan Status", arrayOf("Any", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing")),
-            SelectField("Publish Status", arrayOf("Any", "Cancelled", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing", "Unfinished")),
-            SelectField("Type", arrayOf("Any", "Doujinshi", "Manga", "Manhua", "Manhwa", "OEL", "One-shot")),
-            SelectField("Translation", arrayOf("Any", "Official Only")),
-            Sort(),
-            GenreList(getGenreList())
+        YearField(),
+        AuthorField(),
+        SelectField("Scan Status", arrayOf("Any", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing")),
+        SelectField("Publish Status", arrayOf("Any", "Cancelled", "Complete", "Discontinued", "Hiatus", "Incomplete", "Ongoing", "Unfinished")),
+        SelectField("Type", arrayOf("Any", "Doujinshi", "Manga", "Manhua", "Manhwa", "OEL", "One-shot")),
+        SelectField("Translation", arrayOf("Any", "Official Only")),
+        Sort(),
+        GenreList(getGenreList())
     )
 
     // [...document.querySelectorAll("label.triStateCheckBox input")].map(el => `Filter("${el.getAttribute('name')}", "${el.nextSibling.textContent.trim()}")`).join(',\n')
     // https://manga4life.com/advanced-search/
     private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adult"),
-            Genre("Adventure"),
-            Genre("Comedy"),
-            Genre("Doujinshi"),
-            Genre("Drama"),
-            Genre("Ecchi"),
-            Genre("Fantasy"),
-            Genre("Gender Bender"),
-            Genre("Harem"),
-            Genre("Hentai"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Josei"),
-            Genre("Lolicon"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Mecha"),
-            Genre("Mystery"),
-            Genre("Psychological"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci-fi"),
-            Genre("Seinen"),
-            Genre("Shotacon"),
-            Genre("Shoujo"),
-            Genre("Shoujo Ai"),
-            Genre("Shounen"),
-            Genre("Shounen Ai"),
-            Genre("Slice of Life"),
-            Genre("Smut"),
-            Genre("Sports"),
-            Genre("Supernatural"),
-            Genre("Tragedy"),
-            Genre("Yaoi"),
-            Genre("Yuri")
+        Genre("Action"),
+        Genre("Adult"),
+        Genre("Adventure"),
+        Genre("Comedy"),
+        Genre("Doujinshi"),
+        Genre("Drama"),
+        Genre("Ecchi"),
+        Genre("Fantasy"),
+        Genre("Gender Bender"),
+        Genre("Harem"),
+        Genre("Hentai"),
+        Genre("Historical"),
+        Genre("Horror"),
+        Genre("Josei"),
+        Genre("Lolicon"),
+        Genre("Martial Arts"),
+        Genre("Mature"),
+        Genre("Mecha"),
+        Genre("Mystery"),
+        Genre("Psychological"),
+        Genre("Romance"),
+        Genre("School Life"),
+        Genre("Sci-fi"),
+        Genre("Seinen"),
+        Genre("Shotacon"),
+        Genre("Shoujo"),
+        Genre("Shoujo Ai"),
+        Genre("Shounen"),
+        Genre("Shounen Ai"),
+        Genre("Slice of Life"),
+        Genre("Smut"),
+        Genre("Sports"),
+        Genre("Supernatural"),
+        Genre("Tragedy"),
+        Genre("Yaoi"),
+        Genre("Yuri")
     )
 }

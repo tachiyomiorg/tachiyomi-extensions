@@ -159,8 +159,10 @@ fun searchComplexFilterMangaRequestBuilder(baseUrl: String, page: Int, query: St
     */
 
     if (query.isEmpty() && nameFilter == null && statusFilter == null && orderFilter == 0 && matchFilter == 1 && genresFilter.isEmpty()) {
-        return GET("$baseUrl/bbs/page.php?hid=manga_list" +
-            if (page > 1) "&page=${page - 1}" else "")
+        return GET(
+            "$baseUrl/bbs/page.php?hid=manga_list" +
+                if (page > 1) "&page=${page - 1}" else ""
+        )
     }
 
     val url = HttpUrl.parse("$baseUrl/bbs/page.php?hid=manga_list")!!.newBuilder()

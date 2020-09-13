@@ -8,9 +8,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.ArrayList
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -19,6 +16,9 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.select.Elements
+import java.text.SimpleDateFormat
+import java.util.ArrayList
+import java.util.Locale
 
 abstract class DynastyScans : ParsedHttpSource() {
 
@@ -70,8 +70,10 @@ abstract class DynastyScans : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = "div.pagination > ul > li.active + li > a"
 
     private fun buildListfromResponse(): List<Node> {
-        return client.newCall(Request.Builder().headers(headers)
-            .url(popularMangaInitialUrl()).build()).execute().asJsoup()
+        return client.newCall(
+            Request.Builder().headers(headers)
+                .url(popularMangaInitialUrl()).build()
+        ).execute().asJsoup()
             .select("div#main").first { it.hasText() }.childNodes()
     }
 
@@ -170,9 +172,9 @@ abstract class DynastyScans : ParsedHttpSource() {
             val imageUrls = JSONArray("[$imageUrl]")
 
             (0 until imageUrls.length())
-                    .map { imageUrls.getJSONObject(it) }
-                    .map { baseUrl + it.get("image") }
-                    .forEach { pages.add(Page(pages.size, "", it)) }
+                .map { imageUrls.getJSONObject(it) }
+                .map { baseUrl + it.get("image") }
+                .forEach { pages.add(Page(pages.size, "", it)) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -193,32 +195,32 @@ abstract class DynastyScans : ParsedHttpSource() {
             }
             if (type == "src") {
                 nodes
-                        .filter { it is Element && it.hasClass("thumbnails") }
-                        .flatMap { it.childNodes() }
-                        .filterIsInstance<Element>()
-                        .filter { it.hasClass("span2") }
-                        .forEach { this.add(it.child(0).child(0).attr(type)) }
+                    .filter { it is Element && it.hasClass("thumbnails") }
+                    .flatMap { it.childNodes() }
+                    .filterIsInstance<Element>()
+                    .filter { it.hasClass("span2") }
+                    .forEach { this.add(it.child(0).child(0).attr(type)) }
             }
             if (type == "href") {
                 nodes
-                        .filter { it is Element && it.hasClass("thumbnails") }
-                        .flatMap { it.childNodes() }
-                        .filterIsInstance<Element>()
-                        .filter { it.hasClass("span2") }
-                        .forEach { this.add(it.child(0).attr(type)) }
+                    .filter { it is Element && it.hasClass("thumbnails") }
+                    .flatMap { it.childNodes() }
+                    .filterIsInstance<Element>()
+                    .filter { it.hasClass("span2") }
+                    .forEach { this.add(it.child(0).attr(type)) }
             }
         }
 
         fun indexOfPartial(partial: String): Int {
             return (0..this.lastIndex).firstOrNull { this[it].contains(partial) }
-                    ?: -1
+                ?: -1
         }
 
         fun getItem(partial: String): String {
             return (0..this.lastIndex)
-                    .firstOrNull { super.get(it).contains(partial) }
-                    ?.let { super.get(it) }
-                    ?: ""
+                .firstOrNull { super.get(it).contains(partial) }
+                ?.let { super.get(it) }
+                ?: ""
         }
     }
 

@@ -7,13 +7,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 open class BoomManga(
     override val name: String,
@@ -69,11 +69,11 @@ open class BoomManga(
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-            chapter.url = element.select("a").attr("href")
-            chapter.chapter_number = element.select("[data-num]").attr("data-num").toFloat()
-            val date = element.select(".date").text()
-            if (date.isNotBlank()) { chapter.date_upload = parseDate(date) }
-            chapter.name = nameselector(element).trim()
+        chapter.url = element.select("a").attr("href")
+        chapter.chapter_number = element.select("[data-num]").attr("data-num").toFloat()
+        val date = element.select(".date").text()
+        if (date.isNotBlank()) { chapter.date_upload = parseDate(date) }
+        chapter.name = nameselector(element).trim()
         return chapter
     }
 
@@ -84,7 +84,7 @@ open class BoomManga(
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun mangaDetailsParse(document: Document): SManga {

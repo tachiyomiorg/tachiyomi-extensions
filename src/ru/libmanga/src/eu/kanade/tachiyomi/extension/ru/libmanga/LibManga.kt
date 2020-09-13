@@ -25,8 +25,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -36,6 +34,8 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class LibManga : ConfigurableSource, HttpSource() {
 
@@ -211,7 +211,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             body.select(".info-list__row:has(strong:contains(Перевод))")
                 .first()
                 .select("span.m-label")
-                .text()) {
+                .text()
+        ) {
             "продолжается" -> SManga.ONGOING
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
@@ -250,7 +251,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         chapter.name = element.select("div.chapter-item__name").first().text()
         chapter.date_upload = SimpleDateFormat("dd.MM.yyyy", Locale.US)
-            .parse(element.select("div.chapter-item__date").text()).time
+            .parse(element.select("div.chapter-item__date").text())?.time ?: 0L
         return chapter
     }
 
@@ -350,7 +351,8 @@ class LibManga : ConfigurableSource, HttpSource() {
 
             // +200ms
             val popup = client.newCall(
-                GET("$baseUrl/search?query=$searchRequest", popupSearchHeaders))
+                GET("$baseUrl/search?query=$searchRequest", popupSearchHeaders)
+            )
                 .execute().body()!!.string()
 
             val jsonList = jsonParser.parse(popup).array
@@ -361,9 +363,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         val searchedMangas = popularMangaParse(response)
 
         // Filtered out what find in popup search
-        mangas.addAll(searchedMangas.mangas.filter { search ->
-            mangas.find { search.title == it.title } == null
-        })
+        mangas.addAll(
+            searchedMangas.mangas.filter { search ->
+                mangas.find { search.title == it.title } == null
+            }
+        )
 
         return MangasPage(mangas, searchedMangas.hasNextPage)
     }
@@ -381,9 +385,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         OrderBy()
     )
 
-    private class OrderBy : Filter.Sort("Сортировка",
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
         arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
-        Selection(0, false))
+        Selection(0, false)
+    )
 
     /*
     * Use console

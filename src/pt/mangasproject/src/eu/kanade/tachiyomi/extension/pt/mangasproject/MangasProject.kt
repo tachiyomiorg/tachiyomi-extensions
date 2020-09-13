@@ -14,10 +14,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -27,6 +23,10 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 abstract class MangasProject(
     override val name: String,
@@ -144,13 +144,16 @@ abstract class MangasProject(
             .substringAfter("Completo")
             .substringBefore("+")
             .split("&")
-            .groupBy({ it.contains("(Arte)") }, {
-                it.replace(" (Arte)", "")
-                    .trim()
-                    .split(", ")
-                    .reversed()
-                    .joinToString(" ")
-            })
+            .groupBy(
+                { it.contains("(Arte)") },
+                {
+                    it.replace(" (Arte)", "")
+                        .trim()
+                        .split(", ")
+                        .reversed()
+                        .joinToString(" ")
+                }
+            )
 
         return SManga.create().apply {
             thumbnail_url = seriesData.select("div.series-img > div.cover > img").attr("src")
@@ -273,7 +276,7 @@ abstract class MangasProject(
         val token = document.select("script[src*=\"reader.\"]").firstOrNull()
             ?.attr("abs:src")
             ?.let { HttpUrl.parse(it)!!.queryParameter("token") }
-                ?: throw Exception(TOKEN_NOT_FOUND)
+            ?: throw Exception(TOKEN_NOT_FOUND)
 
         return chain.proceed(pageListApiRequest(request.url().toString(), token))
     }

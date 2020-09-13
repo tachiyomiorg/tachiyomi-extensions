@@ -9,13 +9,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Mangaclub : ParsedHttpSource() {
 
@@ -142,7 +142,8 @@ class Mangaclub : ParsedHttpSource() {
 
     private class Tag(values: Array<String>) : Filter.Select<String>("Жанр", values)
     private class Sort(values: List<Pair<String, String>>) : Filter.Sort(
-        "Сортировать результат поиска", values.map { it.first }.toTypedArray(),
+        "Сортировать результат поиска",
+        values.map { it.first }.toTypedArray(),
         Selection(2, false)
     )
 

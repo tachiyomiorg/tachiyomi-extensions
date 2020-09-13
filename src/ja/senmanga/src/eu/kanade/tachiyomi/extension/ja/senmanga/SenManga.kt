@@ -8,11 +8,11 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.Calendar
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
 
 /**
  * Sen Manga source
@@ -31,10 +31,13 @@ class SenManga : ParsedHttpSource() {
         // Enables bandwidth stealing feature
         val request = if (it.request().url().pathSegments().firstOrNull()?.trim()?.toLowerCase() == "viewer") {
             it.request().newBuilder()
-                    .addHeader("Referer", it.request().url().newBuilder()
-                            .removePathSegment(0)
-                            .toString())
-                    .build()
+                .addHeader(
+                    "Referer",
+                    it.request().url().newBuilder()
+                        .removePathSegment(0)
+                        .toString()
+                )
+                .build()
         } else it.request()
         it.proceed(request)
     }.build()!!
@@ -161,7 +164,7 @@ class SenManga : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) =
-            throw UnsupportedOperationException("This method should not be called!")
+        throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
         GenreFilter(getGenreList()),
@@ -176,12 +179,15 @@ class SenManga : ParsedHttpSource() {
         fun toUriPart() = vals[state].first
     }
 
-    private class SortFilter : UriPartFilter("Sort By", arrayOf(
-        Pair("total_views", "Total Views"),
-        Pair("title", "Title"),
-        Pair("rank", "Rank"),
-        Pair("last_update", "Last Update")
-    ))
+    private class SortFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
+            Pair("total_views", "Total Views"),
+            Pair("title", "Title"),
+            Pair("rank", "Rank"),
+            Pair("last_update", "Last Update")
+        )
+    )
 
     private fun getGenreList(): List<Genre> = listOf(
         Genre("Action", "Action"),

@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Onlinecomics : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga {
@@ -51,14 +51,14 @@ class Onlinecomics : ParsedHttpSource() {
     override val supportsLatest = false
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/online-reading/comicsonline/$page")
+        GET("$baseUrl/online-reading/comicsonline/$page")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "https://yandex.ru/search/site/?html=1&topdoc=http://jurnalu.ru/?searchid=2158851&" +
-                "text=$query&web=0&encoding=&tld=ru&htmlcss=1.x&updatehash=true&searchid=2158851&" +
-                "clid=&text=batman&web=0&p=&surl=&constraintid=&date=&within=&from_day=&" +
-                "from_month=&from_year=&to_day=&to_month=&to_year=&available=&priceLow=&priceHigh=&" +
-                "categoryId=&l10n=ru&callback=jQuery"
+            "text=$query&web=0&encoding=&tld=ru&htmlcss=1.x&updatehash=true&searchid=2158851&" +
+            "clid=&text=batman&web=0&p=&surl=&constraintid=&date=&within=&from_day=&" +
+            "from_month=&from_year=&to_day=&to_month=&to_year=&available=&priceLow=&priceHigh=&" +
+            "categoryId=&l10n=ru&callback=jQuery"
         return GET(url, headers)
     }
 
@@ -94,22 +94,22 @@ class Onlinecomics : ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         val body = response.body()!!.string()
-                .replace("\\/", "/")
-                .replace("\\-", "-")
-                .removePrefix("jQuery(Ya.Site.Results.triggerResultsDelivered('")
-                .removeSuffix("'))")
+            .replace("\\/", "/")
+            .replace("\\-", "-")
+            .removePrefix("jQuery(Ya.Site.Results.triggerResultsDelivered('")
+            .removeSuffix("'))")
         val document = Jsoup.parse(body)
 
         val mangaList = mutableListOf<SManga>()
         document.select(".b-serp-item__title-link").forEach { element ->
             val manga = SManga.create()
             val url = element.select("a.b-serp-item__title-link").first()
-                    .attr("href").removePrefix("http://www.jurnalu.ru")
+                .attr("href").removePrefix("http://www.jurnalu.ru")
             if (url.contains("/manga/")) return@forEach
             val splits = url.split('/')
             val newUrl = splits
-                    .joinToString("/", limit = 4, truncated = "")
-                    .removeSuffix("/")
+                .joinToString("/", limit = 4, truncated = "")
+                .removeSuffix("/")
             manga.setUrlWithoutDomain(newUrl)
             manga.title = element.select("yass-span").text().split('/')[0]
             mangaList.add(manga)
@@ -124,10 +124,12 @@ class Onlinecomics : ParsedHttpSource() {
 
         val manga = SManga.create()
         if (infoElement.select("strong").size > 5) {
-            manga.author = (infoElement.select("strong")[6].text() +
-                    infoElement.select("strong")[7].text())
-                    .removePrefix("Издательство: ")
-                    .split(" /")[0]
+            manga.author = (
+                infoElement.select("strong")[6].text() +
+                    infoElement.select("strong")[7].text()
+                )
+                .removePrefix("Издательство: ")
+                .split(" /")[0]
 
             val text = (document.select("p[align]")[0].parentNode() as Element).text()
             val begin = if (text.contains("Жанр:")) {
@@ -141,7 +143,7 @@ class Onlinecomics : ParsedHttpSource() {
 
             manga.status = parseStatus(infoElement.text())
             manga.description = infoElement.select("div").last().text()
-                    .split("Только у нас на сайте вы можете ")[0]
+                .split("Только у нас на сайте вы можете ")[0]
 
             manga.thumbnail_url = baseUrl + infoElement.select("div img")[1].attr("src")
         } else {
@@ -164,12 +166,14 @@ class Onlinecomics : ParsedHttpSource() {
         val lastPage: String? = document.select("div.navigationG .C").last()?.text()
         if (lastPage != null) {
             (2..lastPage.toInt()).forEach { i ->
-                val get = GET("${response.request().url()}/$i",
-                        headers = headers)
+                val get = GET(
+                    "${response.request().url()}/$i",
+                    headers = headers
+                )
                 chapterList.addAll(
-                        client.newCall(get).execute().asJsoup().select(chapterListSelector()).map {
-                            chapterFromElement(it)
-                        }
+                    client.newCall(get).execute().asJsoup().select(chapterListSelector()).map {
+                        chapterFromElement(it)
+                    }
                 )
             }
         }
@@ -185,7 +189,7 @@ class Onlinecomics : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.date").first()?.text()?.let {
-            SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(it).time
+            SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }

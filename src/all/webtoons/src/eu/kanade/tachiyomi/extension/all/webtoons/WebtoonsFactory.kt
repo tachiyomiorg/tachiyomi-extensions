@@ -58,7 +58,8 @@ class WebtoonsIndonesian : WebtoonsDefault("in", "id") {
     // Android seems to be unable to parse Indonesian dates; we'll use a short hard-coded table
     // instead.
     private val dateMap: Array<String> = arrayOf(
-        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    )
 
     override fun chapterParseDate(date: String): Long {
         val expr = Regex("""(\d{4}) ([A-Z][a-z]{2}) (\d+)""").find(date) ?: return 0

@@ -8,12 +8,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.concurrent.TimeUnit
 
 class TeamX : ParsedHttpSource() {
 
@@ -44,8 +44,10 @@ class TeamX : ParsedHttpSource() {
         return SManga.create().apply {
             title = element.select(titleSelector).text()
             setUrlWithoutDomain(element.select("a").first().attr("href"))
-            thumbnail_url = element.select("img").let { if (it.hasAttr("data-src"))
-                it.attr("abs:data-src") else it.attr("abs:src") }
+            thumbnail_url = element.select("img").let {
+                if (it.hasAttr("data-src"))
+                    it.attr("abs:data-src") else it.attr("abs:src")
+            }
         }
     }
 
@@ -106,8 +108,10 @@ class TeamX : ParsedHttpSource() {
                 title = info.select("div.col-md-9").text()
                 description = info.select("div.story p").text()
                 genre = info.select("div.genre a").joinToString { it.text() }
-                thumbnail_url = info.select("img").let { if (it.hasAttr("data-src"))
-                    it.attr("abs:data-src") else it.attr("abs:src") }
+                thumbnail_url = info.select("img").let {
+                    if (it.hasAttr("data-src"))
+                        it.attr("abs:data-src") else it.attr("abs:src")
+                }
             }
         }
     }
@@ -128,8 +132,14 @@ class TeamX : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#translationPageall img").mapIndexed { i, img ->
-            Page(i, "", img.let { if (it.hasAttr("data-src"))
-                it.attr("abs:data-src") else it.attr("abs:src") })
+            Page(
+                i,
+                "",
+                img.let {
+                    if (it.hasAttr("data-src"))
+                        it.attr("abs:data-src") else it.attr("abs:src")
+                }
+            )
         }
     }
 

@@ -1,9 +1,9 @@
 package eu.kanade.tachiyomi.extension.zh.manhuagui
 
 import android.os.SystemClock
-import java.util.concurrent.TimeUnit
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.util.concurrent.TimeUnit
 
 /**
  * An OkHttp interceptor modified for Manhuagui extension that handles rate limiting.

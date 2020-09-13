@@ -7,15 +7,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class NineAnime : ParsedHttpSource() {
 
@@ -140,7 +140,7 @@ class NineAnime : ParsedHttpSource() {
                     else -> 0
                 }
             } else {
-                SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(this).time
+                SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(this)?.time ?: 0L
             }
         } catch (_: ParseException) {
             0
@@ -172,7 +172,8 @@ class NineAnime : ParsedHttpSource() {
         GenreFilter()
     )
 
-    private class GenreFilter : UriPartFilter("Genres",
+    private class GenreFilter : UriPartFilter(
+        "Genres",
         arrayOf(
             Pair("All", "All"),
             Pair("4-Koma", "4-Koma"),

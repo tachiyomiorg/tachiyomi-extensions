@@ -8,6 +8,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.ArrayList
@@ -15,11 +20,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 
 class ComicExtra : ParsedHttpSource() {
 
@@ -141,15 +141,13 @@ class ComicExtra : ParsedHttpSource() {
     }
 
     private fun dateParse(dateAsString: String): Long {
-        val date: Date
-        date = try {
+        val date: Date? = try {
             SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
         } catch (e: ParseException) {
             val m = datePattern.matcher(dateAsString)
 
             if (dateAsString != "Today" && m.matches()) {
-                val amount = m.group(1).toInt()
-
+                val amount = m.group(1)!!.toInt()
                 Calendar.getInstance().apply {
                     add(Calendar.DATE, -amount)
                 }.time
@@ -158,7 +156,7 @@ class ComicExtra : ParsedHttpSource() {
             } else return 0
         }
 
-        return date.time
+        return date?.time ?: 0L
     }
 
     override fun pageListRequest(chapter: SChapter): Request {

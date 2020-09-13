@@ -18,13 +18,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.util.Date
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import rx.Observable
+import java.util.Date
 
 @Nsfw
 class NineHentai : HttpSource() {
@@ -51,26 +51,26 @@ class NineHentai : HttpSource() {
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         return client.newCall(popularMangaRequest(page))
-                .asObservableSuccess()
-                .map { response ->
-                    getMangaList(response, page)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                getMangaList(response, page)
+            }
     }
 
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         return client.newCall(latestUpdatesRequest(page))
-                .asObservableSuccess()
-                .map { response ->
-                    getMangaList(response, page)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                getMangaList(response, page)
+            }
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    getMangaList(response, page)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                getMangaList(response, page)
+            }
     }
 
     private fun getMangaList(response: Response, page: Int): MangasPage {
@@ -180,13 +180,15 @@ class NineHentai : HttpSource() {
 
     private class GenreList(tags: List<Tag>) : Filter.Group<Tag>("Tags", tags)
 
-    private class Sorting : Filter.Sort("Sorting",
-            arrayOf("Newest", "Popular Right now", "Most Fapped", "Most Viewed", "By Title"),
-            Selection(1, false))
+    private class Sorting : Filter.Sort(
+        "Sorting",
+        arrayOf("Newest", "Popular Right now", "Most Fapped", "Most Viewed", "By Title"),
+        Selection(1, false)
+    )
 
     override fun getFilterList() = FilterList(
-            Sorting(),
-            GenreList(NHTags.getTagsList())
+        Sorting(),
+        GenreList(NHTags.getTagsList())
     )
 
     override fun imageUrlParse(response: Response): String = throw Exception("Not Used")

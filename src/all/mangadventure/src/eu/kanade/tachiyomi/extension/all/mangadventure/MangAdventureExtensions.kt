@@ -3,10 +3,10 @@ package eu.kanade.tachiyomi.extension.all.mangadventure
 import android.net.Uri
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import java.text.DecimalFormat
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.DecimalFormat
 
 /** Returns the body of a response as a `String`. */
 fun Response.asString(): String = body()!!.string()
@@ -62,9 +62,9 @@ fun SManga.fromJSON(obj: JSONObject) = apply {
     title = obj.getString("title")
     description = obj.getString("description")
     thumbnail_url = obj.getString("cover")
-    author = obj.getJSONArray("authors")?.joinField(0)
-    artist = obj.getJSONArray("artists")?.joinField(0)
-    genre = obj.getJSONArray("categories")?.joinField("name")
+    author = obj.getJSONArray("authors").joinField(0)
+    artist = obj.getJSONArray("artists").joinField(0)
+    genre = obj.getJSONArray("categories").joinField("name")
     status = if (obj.getBoolean("completed"))
         SManga.COMPLETED else SManga.ONGOING
 }
@@ -82,11 +82,14 @@ fun SChapter.fromJSON(obj: JSONObject) = apply {
     url = obj.getString("url")
     chapter_number = obj.optString("chapter", "0").toFloat()
     date_upload = MangAdventure.httpDateToTimestamp(obj.getString("date"))
-    scanlator = obj.getJSONArray("groups")?.joinField("name", " & ")
-    name = obj.optString("full_title", buildString {
-        obj.optInt("volume").let { if (it != 0) append("Vol. $it, ") }
-        append("Ch. ${chapter_number.format("#.#")}: ")
-        append(obj.getString("title"))
-    })
+    scanlator = obj.getJSONArray("groups").joinField("name", " & ")
+    name = obj.optString(
+        "full_title",
+        buildString {
+            obj.optInt("volume").let { if (it != 0) append("Vol. $it, ") }
+            append("Ch. ${chapter_number.format("#.#")}: ")
+            append(obj.getString("title"))
+        }
+    )
     if (obj.getBoolean("final")) name += " [END]"
 }

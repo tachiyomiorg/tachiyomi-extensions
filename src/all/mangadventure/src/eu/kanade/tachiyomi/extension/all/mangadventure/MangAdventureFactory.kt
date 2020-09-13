@@ -10,7 +10,9 @@ class MangAdventureFactory : SourceFactory {
 
     /** Arc-Relight source. */
     class ArcRelight : MangAdventure(
-        "Arc-Relight", "https://arc-relight.com", arrayOf(
+        "Arc-Relight",
+        "https://arc-relight.com",
+        arrayOf(
             "4-Koma",
             "Chaos;Head",
             "Collection",

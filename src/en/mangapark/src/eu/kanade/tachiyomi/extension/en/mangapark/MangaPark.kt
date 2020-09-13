@@ -15,9 +15,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.CacheControl
 import okhttp3.Request
 import okhttp3.Response
@@ -26,6 +23,9 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
@@ -280,21 +280,21 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
-            AuthorArtistText(),
-            SearchTypeFilter("Title query", "name-match"),
-            SearchTypeFilter("Author/Artist query", "autart-match"),
-            SortFilter(),
-            GenreGroup(),
-            GenreInclusionFilter(),
-            ChapterCountFilter(),
-            StatusFilter(),
-            RatingFilter(),
-            TypeFilter(),
-            YearFilter()
+        AuthorArtistText(),
+        SearchTypeFilter("Title query", "name-match"),
+        SearchTypeFilter("Author/Artist query", "autart-match"),
+        SortFilter(),
+        GenreGroup(),
+        GenreInclusionFilter(),
+        ChapterCountFilter(),
+        StatusFilter(),
+        RatingFilter(),
+        TypeFilter(),
+        YearFilter()
     )
 
     private class SearchTypeFilter(name: String, val uriParam: String) :
-            Filter.Select<String>(name, STATE_MAP), UriFilter {
+        Filter.Select<String>(name, STATE_MAP), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (STATE_MAP[state] != "contain") {
                 uri.appendQueryParameter(uriParam, STATE_MAP[state])
@@ -316,107 +316,112 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     private class GenreFilter(val uriParam: String, displayName: String) : Filter.TriState(displayName)
 
-    private class GenreGroup : Filter.Group<GenreFilter>("Genres", listOf(
-            GenreFilter("4-koma", "4 koma"),
-            GenreFilter("action", "Action"),
-            GenreFilter("adaptation", "Adaptation"),
-            GenreFilter("adult", "Adult"),
-            GenreFilter("adventure", "Adventure"),
-            GenreFilter("aliens", "Aliens"),
-            GenreFilter("animals", "Animals"),
-            GenreFilter("anthology", "Anthology"),
-            GenreFilter("award-winning", "Award winning"),
-            GenreFilter("comedy", "Comedy"),
-            GenreFilter("cooking", "Cooking"),
-            GenreFilter("crime", "Crime"),
-            GenreFilter("crossdressing", "Crossdressing"),
-            GenreFilter("delinquents", "Delinquents"),
-            GenreFilter("demons", "Demons"),
-            GenreFilter("doujinshi", "Doujinshi"),
-            GenreFilter("drama", "Drama"),
-            GenreFilter("ecchi", "Ecchi"),
-            GenreFilter("fan-colored", "Fan colored"),
-            GenreFilter("fantasy", "Fantasy"),
-            GenreFilter("food", "Food"),
-            GenreFilter("full-color", "Full color"),
-            GenreFilter("game", "Game"),
-            GenreFilter("gender-bender", "Gender bender"),
-            GenreFilter("genderswap", "Genderswap"),
-            GenreFilter("ghosts", "Ghosts"),
-            GenreFilter("gore", "Gore"),
-            GenreFilter("gossip", "Gossip"),
-            GenreFilter("gyaru", "Gyaru"),
-            GenreFilter("harem", "Harem"),
-            GenreFilter("historical", "Historical"),
-            GenreFilter("horror", "Horror"),
-            GenreFilter("incest", "Incest"),
-            GenreFilter("isekai", "Isekai"),
-            GenreFilter("josei", "Josei"),
-            GenreFilter("kids", "Kids"),
-            GenreFilter("loli", "Loli"),
-            GenreFilter("lolicon", "Lolicon"),
-            GenreFilter("long-strip", "Long strip"),
-            GenreFilter("mafia", "Mafia"),
-            GenreFilter("magic", "Magic"),
-            GenreFilter("magical-girls", "Magical girls"),
-            GenreFilter("manhwa", "Manhwa"),
-            GenreFilter("martial-arts", "Martial arts"),
-            GenreFilter("mature", "Mature"),
-            GenreFilter("mecha", "Mecha"),
-            GenreFilter("medical", "Medical"),
-            GenreFilter("military", "Military"),
-            GenreFilter("monster-girls", "Monster girls"),
-            GenreFilter("monsters", "Monsters"),
-            GenreFilter("music", "Music"),
-            GenreFilter("mystery", "Mystery"),
-            GenreFilter("ninja", "Ninja"),
-            GenreFilter("office-workers", "Office workers"),
-            GenreFilter("official-colored", "Official colored"),
-            GenreFilter("one-shot", "One shot"),
-            GenreFilter("parody", "Parody"),
-            GenreFilter("philosophical", "Philosophical"),
-            GenreFilter("police", "Police"),
-            GenreFilter("post-apocalyptic", "Post apocalyptic"),
-            GenreFilter("psychological", "Psychological"),
-            GenreFilter("reincarnation", "Reincarnation"),
-            GenreFilter("reverse-harem", "Reverse harem"),
-            GenreFilter("romance", "Romance"),
-            GenreFilter("samurai", "Samurai"),
-            GenreFilter("school-life", "School life"),
-            GenreFilter("sci-fi", "Sci fi"),
-            GenreFilter("seinen", "Seinen"),
-            GenreFilter("shota", "Shota"),
-            GenreFilter("shotacon", "Shotacon"),
-            GenreFilter("shoujo", "Shoujo"),
-            GenreFilter("shoujo-ai", "Shoujo ai"),
-            GenreFilter("shounen", "Shounen"),
-            GenreFilter("shounen-ai", "Shounen ai"),
-            GenreFilter("slice-of-life", "Slice of life"),
-            GenreFilter("smut", "Smut"),
-            GenreFilter("space", "Space"),
-            GenreFilter("sports", "Sports"),
-            GenreFilter("super-power", "Super power"),
-            GenreFilter("superhero", "Superhero"),
-            GenreFilter("supernatural", "Supernatural"),
-            GenreFilter("survival", "Survival"),
-            GenreFilter("suspense", "Suspense"),
-            GenreFilter("thriller", "Thriller"),
-            GenreFilter("time-travel", "Time travel"),
-            GenreFilter("toomics", "Toomics"),
-            GenreFilter("traditional-games", "Traditional games"),
-            GenreFilter("tragedy", "Tragedy"),
-            GenreFilter("user-created", "User created"),
-            GenreFilter("vampire", "Vampire"),
-            GenreFilter("vampires", "Vampires"),
-            GenreFilter("video-games", "Video games"),
-            GenreFilter("virtual-reality", "Virtual reality"),
-            GenreFilter("web-comic", "Web comic"),
-            GenreFilter("webtoon", "Webtoon"),
-            GenreFilter("wuxia", "Wuxia"),
-            GenreFilter("yaoi", "Yaoi"),
-            GenreFilter("yuri", "Yuri"),
-            GenreFilter("zombies", "Zombies")
-    )), UriFilter {
+    private class GenreGroup :
+        Filter.Group<GenreFilter>(
+            "Genres",
+            listOf(
+                GenreFilter("4-koma", "4 koma"),
+                GenreFilter("action", "Action"),
+                GenreFilter("adaptation", "Adaptation"),
+                GenreFilter("adult", "Adult"),
+                GenreFilter("adventure", "Adventure"),
+                GenreFilter("aliens", "Aliens"),
+                GenreFilter("animals", "Animals"),
+                GenreFilter("anthology", "Anthology"),
+                GenreFilter("award-winning", "Award winning"),
+                GenreFilter("comedy", "Comedy"),
+                GenreFilter("cooking", "Cooking"),
+                GenreFilter("crime", "Crime"),
+                GenreFilter("crossdressing", "Crossdressing"),
+                GenreFilter("delinquents", "Delinquents"),
+                GenreFilter("demons", "Demons"),
+                GenreFilter("doujinshi", "Doujinshi"),
+                GenreFilter("drama", "Drama"),
+                GenreFilter("ecchi", "Ecchi"),
+                GenreFilter("fan-colored", "Fan colored"),
+                GenreFilter("fantasy", "Fantasy"),
+                GenreFilter("food", "Food"),
+                GenreFilter("full-color", "Full color"),
+                GenreFilter("game", "Game"),
+                GenreFilter("gender-bender", "Gender bender"),
+                GenreFilter("genderswap", "Genderswap"),
+                GenreFilter("ghosts", "Ghosts"),
+                GenreFilter("gore", "Gore"),
+                GenreFilter("gossip", "Gossip"),
+                GenreFilter("gyaru", "Gyaru"),
+                GenreFilter("harem", "Harem"),
+                GenreFilter("historical", "Historical"),
+                GenreFilter("horror", "Horror"),
+                GenreFilter("incest", "Incest"),
+                GenreFilter("isekai", "Isekai"),
+                GenreFilter("josei", "Josei"),
+                GenreFilter("kids", "Kids"),
+                GenreFilter("loli", "Loli"),
+                GenreFilter("lolicon", "Lolicon"),
+                GenreFilter("long-strip", "Long strip"),
+                GenreFilter("mafia", "Mafia"),
+                GenreFilter("magic", "Magic"),
+                GenreFilter("magical-girls", "Magical girls"),
+                GenreFilter("manhwa", "Manhwa"),
+                GenreFilter("martial-arts", "Martial arts"),
+                GenreFilter("mature", "Mature"),
+                GenreFilter("mecha", "Mecha"),
+                GenreFilter("medical", "Medical"),
+                GenreFilter("military", "Military"),
+                GenreFilter("monster-girls", "Monster girls"),
+                GenreFilter("monsters", "Monsters"),
+                GenreFilter("music", "Music"),
+                GenreFilter("mystery", "Mystery"),
+                GenreFilter("ninja", "Ninja"),
+                GenreFilter("office-workers", "Office workers"),
+                GenreFilter("official-colored", "Official colored"),
+                GenreFilter("one-shot", "One shot"),
+                GenreFilter("parody", "Parody"),
+                GenreFilter("philosophical", "Philosophical"),
+                GenreFilter("police", "Police"),
+                GenreFilter("post-apocalyptic", "Post apocalyptic"),
+                GenreFilter("psychological", "Psychological"),
+                GenreFilter("reincarnation", "Reincarnation"),
+                GenreFilter("reverse-harem", "Reverse harem"),
+                GenreFilter("romance", "Romance"),
+                GenreFilter("samurai", "Samurai"),
+                GenreFilter("school-life", "School life"),
+                GenreFilter("sci-fi", "Sci fi"),
+                GenreFilter("seinen", "Seinen"),
+                GenreFilter("shota", "Shota"),
+                GenreFilter("shotacon", "Shotacon"),
+                GenreFilter("shoujo", "Shoujo"),
+                GenreFilter("shoujo-ai", "Shoujo ai"),
+                GenreFilter("shounen", "Shounen"),
+                GenreFilter("shounen-ai", "Shounen ai"),
+                GenreFilter("slice-of-life", "Slice of life"),
+                GenreFilter("smut", "Smut"),
+                GenreFilter("space", "Space"),
+                GenreFilter("sports", "Sports"),
+                GenreFilter("super-power", "Super power"),
+                GenreFilter("superhero", "Superhero"),
+                GenreFilter("supernatural", "Supernatural"),
+                GenreFilter("survival", "Survival"),
+                GenreFilter("suspense", "Suspense"),
+                GenreFilter("thriller", "Thriller"),
+                GenreFilter("time-travel", "Time travel"),
+                GenreFilter("toomics", "Toomics"),
+                GenreFilter("traditional-games", "Traditional games"),
+                GenreFilter("tragedy", "Tragedy"),
+                GenreFilter("user-created", "User created"),
+                GenreFilter("vampire", "Vampire"),
+                GenreFilter("vampires", "Vampires"),
+                GenreFilter("video-games", "Video games"),
+                GenreFilter("virtual-reality", "Virtual reality"),
+                GenreFilter("web-comic", "Web comic"),
+                GenreFilter("webtoon", "Webtoon"),
+                GenreFilter("wuxia", "Wuxia"),
+                GenreFilter("yaoi", "Yaoi"),
+                GenreFilter("yuri", "Yuri"),
+                GenreFilter("zombies", "Zombies")
+            )
+        ),
+        UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             val genresParameterValue = state.filter { it.isIncluded() }.joinToString(",") { it.uriParam }
             if (genresParameterValue.isNotEmpty()) {
@@ -430,12 +435,19 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    private class GenreInclusionFilter : UriSelectFilter("Genre inclusion", "genres-mode", arrayOf(
+    private class GenreInclusionFilter : UriSelectFilter(
+        "Genre inclusion",
+        "genres-mode",
+        arrayOf(
             Pair("and", "And mode"),
             Pair("or", "Or mode")
-    ))
+        )
+    )
 
-    private class ChapterCountFilter : UriSelectFilter("Chapter count", "chapters", arrayOf(
+    private class ChapterCountFilter : UriSelectFilter(
+        "Chapter count",
+        "chapters",
+        arrayOf(
             Pair("any", "Any"),
             Pair("1", "1 +"),
             Pair("5", "5 +"),
@@ -447,15 +459,23 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             Pair("100", "100 +"),
             Pair("150", "150 +"),
             Pair("200", "200 +")
-    ))
+        )
+    )
 
-    private class StatusFilter : UriSelectFilter("Status", "status", arrayOf(
+    private class StatusFilter : UriSelectFilter(
+        "Status",
+        "status",
+        arrayOf(
             Pair("any", "Any"),
             Pair("completed", "Completed"),
             Pair("ongoing", "Ongoing")
-    ))
+        )
+    )
 
-    private class RatingFilter : UriSelectFilter("Rating", "rating", arrayOf(
+    private class RatingFilter : UriSelectFilter(
+        "Rating",
+        "rating",
+        arrayOf(
             Pair("any", "Any"),
             Pair("5", "5 stars"),
             Pair("4", "4 stars"),
@@ -463,26 +483,37 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             Pair("2", "2 stars"),
             Pair("1", "1 star"),
             Pair("0", "0 stars")
-    ))
+        )
+    )
 
-    private class TypeFilter : UriSelectFilter("Type", "types", arrayOf(
+    private class TypeFilter : UriSelectFilter(
+        "Type",
+        "types",
+        arrayOf(
             Pair("any", "Any"),
             Pair("manga", "Japanese Manga"),
             Pair("manhwa", "Korean Manhwa"),
             Pair("manhua", "Chinese Manhua"),
             Pair("unknown", "Unknown")
-    ))
-
-    private class YearFilter : UriSelectFilter("Release year", "years",
-            arrayOf(Pair("any", "Any"),
-                    // Get all years between today and 1946
-                    *(Calendar.getInstance().get(Calendar.YEAR) downTo 1946).map {
-                        Pair(it.toString(), it.toString())
-                    }.toTypedArray()
-            )
+        )
     )
 
-    private class SortFilter : UriSelectFilter("Sort", "orderby", arrayOf(
+    private class YearFilter : UriSelectFilter(
+        "Release year",
+        "years",
+        arrayOf(
+            Pair("any", "Any"),
+            // Get all years between today and 1946
+            *(Calendar.getInstance().get(Calendar.YEAR) downTo 1946).map {
+                Pair(it.toString(), it.toString())
+            }.toTypedArray()
+        )
+    )
+
+    private class SortFilter : UriSelectFilter(
+        "Sort",
+        "orderby",
+        arrayOf(
             Pair("a-z", "A-Z"),
             Pair("views_a", "Views all-time"),
             Pair("views_y", "Views last 365 days"),
@@ -491,7 +522,10 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
             Pair("rating", "Rating"),
             Pair("update", "Latest"),
             Pair("create", "New manga")
-    ), firstIsUnspecified = false, defaultValue = 1)
+        ),
+        firstIsUnspecified = false,
+        defaultValue = 1
+    )
 
     /**
      * Class that creates a select filter. Each entry in the dropdown has a name and a display name.
@@ -506,7 +540,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         val firstIsUnspecified: Boolean = true,
         defaultValue: Int = 0
     ) :
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
                 uri.appendQueryParameter(uriParam, vals[state].first)

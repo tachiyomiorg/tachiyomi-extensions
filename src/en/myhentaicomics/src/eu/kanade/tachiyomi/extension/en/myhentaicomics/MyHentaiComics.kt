@@ -146,7 +146,8 @@ class MyHentaiComics : ParsedHttpSource() {
         GenreFilter()
     )
 
-    private class GenreFilter : UriPartFilter("Genres",
+    private class GenreFilter : UriPartFilter(
+        "Genres",
         arrayOf(
             Pair("<Choose a genre>", ""),
             Pair("3D", "/index.php/tag/2403"),

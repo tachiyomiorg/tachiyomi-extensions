@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class Mangafreak : ParsedHttpSource() {
     override val name: String = "Mangafreak"
@@ -76,14 +76,16 @@ class Mangafreak : ParsedHttpSource() {
             uri.appendPath("Genre")
             when (filter) {
                 is GenreList -> {
-                    uri.appendPath(filter.state.joinToString("") {
-                        when (it.state) {
-                            Filter.TriState.STATE_IGNORE -> "0"
-                            Filter.TriState.STATE_INCLUDE -> "1"
-                            Filter.TriState.STATE_EXCLUDE -> "2"
-                            else -> "0"
+                    uri.appendPath(
+                        filter.state.joinToString("") {
+                            when (it.state) {
+                                Filter.TriState.STATE_IGNORE -> "0"
+                                Filter.TriState.STATE_INCLUDE -> "1"
+                                Filter.TriState.STATE_EXCLUDE -> "2"
+                                else -> "0"
+                            }
                         }
-                    })
+                    )
                 }
             }
             uri.appendEncodedPath("Status/0/Type/0")
@@ -120,7 +122,7 @@ class Mangafreak : ParsedHttpSource() {
         date_upload = parseDate(element.select(" td:eq(1)").text())
     }
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy/MM/dd", Locale.US).parse(date).time
+        return SimpleDateFormat("yyyy/MM/dd", Locale.US).parse(date)?.time ?: 0L
     }
     override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).reversed()
@@ -144,7 +146,8 @@ class Mangafreak : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-        GenreList(getGenreList()))
+        GenreList(getGenreList())
+    )
     private fun getGenreList() = listOf(
         Genre("Act"),
         Genre("Adult"),
@@ -185,5 +188,5 @@ class Mangafreak : ParsedHttpSource() {
         Genre("Vampire"),
         Genre("Yaoi"),
         Genre("Yuri")
-        )
+    )
 }

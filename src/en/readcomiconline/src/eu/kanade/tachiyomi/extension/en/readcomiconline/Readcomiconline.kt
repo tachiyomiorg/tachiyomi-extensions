@@ -13,8 +13,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -23,6 +21,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
@@ -117,7 +117,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
-            SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).parse(it).time
+            SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }
@@ -139,59 +139,59 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Status(),
-            GenreList(getGenreList())
+        Status(),
+        GenreList(getGenreList())
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
     // on https://readcomiconline.to/AdvanceSearch
     private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adventure"),
-            Genre("Anthology"),
-            Genre("Anthropomorphic"),
-            Genre("Biography"),
-            Genre("Children"),
-            Genre("Comedy"),
-            Genre("Crime"),
-            Genre("Drama"),
-            Genre("Family"),
-            Genre("Fantasy"),
-            Genre("Fighting"),
-            Genre("Graphic Novels"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Leading Ladies"),
-            Genre("LGBTQ"),
-            Genre("Literature"),
-            Genre("Manga"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Military"),
-            Genre("Movies & TV"),
-            Genre("Mystery"),
-            Genre("Mythology"),
-            Genre("Personal"),
-            Genre("Political"),
-            Genre("Post-Apocalyptic"),
-            Genre("Psychological"),
-            Genre("Pulp"),
-            Genre("Religious"),
-            Genre("Robots"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci-Fi"),
-            Genre("Slice of Life"),
-            Genre("Spy"),
-            Genre("Superhero"),
-            Genre("Supernatural"),
-            Genre("Suspense"),
-            Genre("Thriller"),
-            Genre("Vampires"),
-            Genre("Video Games"),
-            Genre("War"),
-            Genre("Western"),
-            Genre("Zombies")
+        Genre("Action"),
+        Genre("Adventure"),
+        Genre("Anthology"),
+        Genre("Anthropomorphic"),
+        Genre("Biography"),
+        Genre("Children"),
+        Genre("Comedy"),
+        Genre("Crime"),
+        Genre("Drama"),
+        Genre("Family"),
+        Genre("Fantasy"),
+        Genre("Fighting"),
+        Genre("Graphic Novels"),
+        Genre("Historical"),
+        Genre("Horror"),
+        Genre("Leading Ladies"),
+        Genre("LGBTQ"),
+        Genre("Literature"),
+        Genre("Manga"),
+        Genre("Martial Arts"),
+        Genre("Mature"),
+        Genre("Military"),
+        Genre("Movies & TV"),
+        Genre("Mystery"),
+        Genre("Mythology"),
+        Genre("Personal"),
+        Genre("Political"),
+        Genre("Post-Apocalyptic"),
+        Genre("Psychological"),
+        Genre("Pulp"),
+        Genre("Religious"),
+        Genre("Robots"),
+        Genre("Romance"),
+        Genre("School Life"),
+        Genre("Sci-Fi"),
+        Genre("Slice of Life"),
+        Genre("Spy"),
+        Genre("Superhero"),
+        Genre("Supernatural"),
+        Genre("Suspense"),
+        Genre("Thriller"),
+        Genre("Vampires"),
+        Genre("Video Games"),
+        Genre("War"),
+        Genre("Western"),
+        Genre("Zombies")
     )
     // Preferences Code
 

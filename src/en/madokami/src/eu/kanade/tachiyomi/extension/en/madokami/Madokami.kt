@@ -15,12 +15,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.io.IOException
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.Credentials
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -30,6 +24,12 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class Madokami : ConfigurableSource, ParsedHttpSource() {
     override val name = "Madokami"
@@ -145,7 +145,7 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
             }
             chapter.date_upload = newDate.time.time
         } else {
-            chapter.date_upload = dateFormat.parse(date).time
+            chapter.date_upload = dateFormat.parse(date)?.time ?: 0L
         }
         return chapter
     }

@@ -17,14 +17,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * Exact same code as Manga Life except for better chapter names thanks to Regex
@@ -92,11 +92,13 @@ class Mangasee : HttpSource() {
         val endRange = ((page * 24) - 1).let { if (it <= directory.lastIndex) it else directory.lastIndex }
 
         for (i in (((page - 1) * 24)..endRange)) {
-            mangas.add(SManga.create().apply {
-                title = directory[i]["s"].string
-                url = "/manga/${directory[i]["i"].string}"
-                thumbnail_url = "https://cover.mangabeast01.com/cover/${directory[i]["i"].string}.jpg"
-            })
+            mangas.add(
+                SManga.create().apply {
+                    title = directory[i]["s"].string
+                    url = "/manga/${directory[i]["i"].string}"
+                    thumbnail_url = "https://cover.mangabeast01.com/cover/${directory[i]["i"].string}.jpg"
+                }
+            )
         }
         return MangasPage(mangas, endRange < directory.lastIndex)
     }

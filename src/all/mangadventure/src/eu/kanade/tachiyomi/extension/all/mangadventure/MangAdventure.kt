@@ -12,14 +12,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * MangAdventure base source.
@@ -88,9 +88,11 @@ abstract class MangAdventure(
             when (it) {
                 is Person -> uri.appendQueryParameter("author", it.state)
                 is Status -> uri.appendQueryParameter("status", it.string())
-                is CategoryList -> cat.addAll(it.state.mapNotNull { c ->
-                    Uri.encode(c.optString())
-                })
+                is CategoryList -> cat.addAll(
+                    it.state.mapNotNull { c ->
+                        Uri.encode(c.optString())
+                    }
+                )
                 else -> Unit
             }
         }
@@ -99,18 +101,21 @@ abstract class MangAdventure(
 
     override fun latestUpdatesParse(response: Response) =
         JSONArray(response.asString()).run {
-            MangasPage((0 until length()).map {
-                val obj = getJSONObject(it)
-                SManga.create().apply {
-                    url = obj.getString("url")
-                    title = obj.getString("title")
-                    thumbnail_url = obj.getString("cover")
-                    // A bit of a hack to sort by date
-                    description = httpDateToTimestamp(
-                        obj.getJSONObject("latest_chapter").getString("date")
-                    ).toString()
-                }
-            }.sortedByDescending(SManga::description), false)
+            MangasPage(
+                (0 until length()).map {
+                    val obj = getJSONObject(it)
+                    SManga.create().apply {
+                        url = obj.getString("url")
+                        title = obj.getString("title")
+                        thumbnail_url = obj.getString("cover")
+                        // A bit of a hack to sort by date
+                        description = httpDateToTimestamp(
+                            obj.getJSONObject("latest_chapter").getString("date")
+                        ).toString()
+                    }
+                }.sortedByDescending(SManga::description),
+                false
+            )
         }
 
     override fun chapterListParse(response: Response) =
@@ -143,9 +148,12 @@ abstract class MangAdventure(
 
     override fun searchMangaParse(response: Response) =
         JSONArray(response.asString()).run {
-            MangasPage((0 until length()).map {
-                SManga.create().fromJSON(getJSONObject(it))
-            }.sortedBy(SManga::title), false)
+            MangasPage(
+                (0 until length()).map {
+                    SManga.create().fromJSON(getJSONObject(it))
+                }.sortedBy(SManga::title),
+                false
+            )
         }
 
     override fun getFilterList() =
@@ -226,7 +234,7 @@ abstract class MangAdventure(
          * @return The timestamp of the date.
          */
         fun httpDateToTimestamp(date: String) =
-            SimpleDateFormat(HTTP_DATE, Locale.US).parse(date).time
+            SimpleDateFormat(HTTP_DATE, Locale.US).parse(date)?.time ?: 0L
     }
 
     /**
@@ -260,7 +268,8 @@ abstract class MangAdventure(
      * @constructor Creates a [Filter.Group] object with categories.
      */
     inner class CategoryList : Filter.Group<Category>(
-        "Categories", categories.map(::Category)
+        "Categories",
+        categories.map(::Category)
     )
 
     /**

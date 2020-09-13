@@ -93,20 +93,25 @@ class Ngomik : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
     override fun getFilterList() = FilterList(
-            Filter.Header("Order by filter cannot be used with others"),
-            OrderByFilter(),
-            Filter.Separator(),
-            GenreList()
+        Filter.Header("Order by filter cannot be used with others"),
+        OrderByFilter(),
+        Filter.Separator(),
+        GenreList()
     )
 
-    private class OrderByFilter : UriPartFilter("Order By", arrayOf(
+    private class OrderByFilter : UriPartFilter(
+        "Order By",
+        arrayOf(
             Pair("", "<select>"),
             Pair("title", "A-Z"),
             Pair("update", "Latest Update"),
             Pair("create", "Latest Added")
-    ))
+        )
+    )
 
-    private class GenreList : UriPartFilter("Select Genre", arrayOf(
+    private class GenreList : UriPartFilter(
+        "Select Genre",
+        arrayOf(
             Pair("", "<select>"),
             Pair("4-koma", "4-Koma"),
             Pair("action", "Action"),
@@ -190,10 +195,11 @@ class Ngomik : ParsedHttpSource() {
             Pair("webtoons", "Webtoons"),
             Pair("yuri", "Yuri"),
             Pair("zombies", "Zombies")
-    ))
+        )
+    )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
         fun toUriPart() = vals[state].first
     }
 

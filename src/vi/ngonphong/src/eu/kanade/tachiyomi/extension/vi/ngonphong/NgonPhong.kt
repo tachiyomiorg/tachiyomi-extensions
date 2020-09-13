@@ -6,13 +6,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class NgonPhong : ParsedHttpSource() {
 
@@ -117,7 +117,7 @@ class NgonPhong : ParsedHttpSource() {
 
     private fun String.toChapterDate(): Long {
         return try {
-            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(this).time
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(this)?.time ?: 0L
         } catch (_: Exception) {
             0L
         }

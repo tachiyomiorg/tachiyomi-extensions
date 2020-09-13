@@ -5,8 +5,8 @@ import eu.kanade.tachiyomi.source.SourceFactory
 
 class NaverComicFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-            NaverWebtoon(),
-            NaverBestChallenge(),
-            NaverChallenge()
+        NaverWebtoon(),
+        NaverBestChallenge(),
+        NaverChallenge()
     )
 }

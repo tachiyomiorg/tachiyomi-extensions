@@ -4,6 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -11,10 +15,6 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.sin
 import kotlin.math.tan
-import okhttp3.Interceptor
-import okhttp3.MediaType
-import okhttp3.Response
-import okhttp3.ResponseBody
 
 /*
  * `v1` means url padding of image host.
@@ -132,10 +132,12 @@ internal class ImageDecoderInterceptor : Interceptor {
             val destX = (tx * rowWidth) + sx
             val destY = ty * rowHeight
 
-            canvas.drawBitmap(input,
+            canvas.drawBitmap(
+                input,
                 Rect(srcX, srcY, srcX + rowWidth, srcY + rowHeight),
                 Rect(destX, destY, destX + rowWidth, destY + rowHeight),
-                null)
+                null
+            )
         }
 
         return output
@@ -160,8 +162,10 @@ internal class ImageDecoderInterceptor : Interceptor {
         val n = 1000 * cos((13 * seed).toDouble())
         val a = 10000 * tan((14 * seed).toDouble())
 
-        return (floor(100 * (t - floor(t))) +
-            floor(1000 * (n - floor(n))) +
-            floor(10000 * (a - floor(a)))).toInt()
+        return (
+            floor(100 * (t - floor(t))) +
+                floor(1000 * (n - floor(n))) +
+                floor(10000 * (a - floor(a)))
+            ).toInt()
     }
 }

@@ -7,13 +7,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 open class MangaToon(
     override val lang: String,
@@ -73,16 +73,16 @@ open class MangaToon(
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-            chapter.url = element.select("a").first().attr("href")
-            chapter.chapter_number = element.select("div.item-left").text().trim().toFloat()
+        chapter.url = element.select("a").first().attr("href")
+        chapter.chapter_number = element.select("div.item-left").text().trim().toFloat()
         val date = element.select("div.episode-date").text()
-            chapter.date_upload = parseDate(date)
-            chapter.name = if (chapter.chapter_number> 20) { "\uD83D\uDD12 " } else { "" } + element.select("div.episode-title").text().trim()
+        chapter.date_upload = parseDate(date)
+        chapter.name = if (chapter.chapter_number> 20) { "\uD83D\uDD12 " } else { "" } + element.select("div.episode-title").text().trim()
         return chapter
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun mangaDetailsParse(document: Document): SManga {

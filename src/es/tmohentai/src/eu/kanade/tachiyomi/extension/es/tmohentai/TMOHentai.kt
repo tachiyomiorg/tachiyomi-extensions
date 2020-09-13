@@ -98,8 +98,8 @@ class TMOHentai : ParsedHttpSource() {
                 }
                 is GenreList -> {
                     filter.state
-                            .filter { genre -> genre.state }
-                            .forEach { genre -> url.addQueryParameter("genders[]", genre.id) }
+                        .filter { genre -> genre.state }
+                        .forEach { genre -> url.addQueryParameter("genders[]", genre.id) }
                 }
                 is FilterBy -> {
                     url.addQueryParameter("search[searchBy]", filter.toUriPart())
@@ -161,25 +161,31 @@ class TMOHentai : ParsedHttpSource() {
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 
-    private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
+    private class Types : UriPartFilter(
+        "Filtrar por tipo",
+        arrayOf(
             Pair("Ver todos", "all"),
             Pair("Manga", "hentai"),
             Pair("Light Hentai", "light-hentai"),
             Pair("Doujinshi", "doujinshi"),
             Pair("One-shot", "one-shot"),
             Pair("Other", "otro")
-    ))
+        )
+    )
 
-    private class FilterBy : UriPartFilter("Campo de orden", arrayOf(
-        Pair("Nombre", "name"),
-        Pair("Artista", "artist"),
-        Pair("Revista", "magazine"),
-        Pair("Tag", "tag")
-    ))
+    private class FilterBy : UriPartFilter(
+        "Campo de orden",
+        arrayOf(
+            Pair("Nombre", "name"),
+            Pair("Artista", "artist"),
+            Pair("Revista", "magazine"),
+            Pair("Tag", "tag")
+        )
+    )
 
     class SortBy : Filter.Sort(
         "Ordenar por",
@@ -191,52 +197,52 @@ class TMOHentai : ParsedHttpSource() {
     // .map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
     // https://tmohentai.com/section/hentai
     private fun getGenreList() = listOf(
-            Genre("Romance", "1"),
-            Genre("Fantasy", "2"),
-            Genre("Comedy", "3"),
-            Genre("Parody", "4"),
-            Genre("Student", "5"),
-            Genre("Adventure", "6"),
-            Genre("Milf", "7"),
-            Genre("Orgy", "8"),
-            Genre("Big Breasts", "9"),
-            Genre("Bondage", "10"),
-            Genre("Tentacles", "11"),
-            Genre("Incest", "12"),
-            Genre("Ahegao", "13"),
-            Genre("Bestiality", "14"),
-            Genre("Futanari", "15"),
-            Genre("Rape", "16"),
-            Genre("Monsters", "17"),
-            Genre("Pregnant", "18"),
-            Genre("Small Breast", "19"),
-            Genre("Bukkake", "20"),
-            Genre("Femdom", "21"),
-            Genre("Fetish", "22"),
-            Genre("Forced", "23"),
-            Genre("3D", "24"),
-            Genre("Furry", "25"),
-            Genre("Adultery", "26"),
-            Genre("Anal", "27"),
-            Genre("FootJob", "28"),
-            Genre("BlowJob", "29"),
-            Genre("Toys", "30"),
-            Genre("Vanilla", "31"),
-            Genre("Colour", "32"),
-            Genre("Uncensored", "33"),
-            Genre("Netorare", "34"),
-            Genre("Virgin", "35"),
-            Genre("Cheating", "36"),
-            Genre("Harem", "37"),
-            Genre("Horror", "38"),
-            Genre("Lolicon", "39"),
-            Genre("Mature", "40"),
-            Genre("Nympho", "41"),
-            Genre("Public Sex", "42"),
-            Genre("Sport", "43"),
-            Genre("Domination", "44"),
-            Genre("Tsundere", "45"),
-            Genre("Yandere", "46")
+        Genre("Romance", "1"),
+        Genre("Fantasy", "2"),
+        Genre("Comedy", "3"),
+        Genre("Parody", "4"),
+        Genre("Student", "5"),
+        Genre("Adventure", "6"),
+        Genre("Milf", "7"),
+        Genre("Orgy", "8"),
+        Genre("Big Breasts", "9"),
+        Genre("Bondage", "10"),
+        Genre("Tentacles", "11"),
+        Genre("Incest", "12"),
+        Genre("Ahegao", "13"),
+        Genre("Bestiality", "14"),
+        Genre("Futanari", "15"),
+        Genre("Rape", "16"),
+        Genre("Monsters", "17"),
+        Genre("Pregnant", "18"),
+        Genre("Small Breast", "19"),
+        Genre("Bukkake", "20"),
+        Genre("Femdom", "21"),
+        Genre("Fetish", "22"),
+        Genre("Forced", "23"),
+        Genre("3D", "24"),
+        Genre("Furry", "25"),
+        Genre("Adultery", "26"),
+        Genre("Anal", "27"),
+        Genre("FootJob", "28"),
+        Genre("BlowJob", "29"),
+        Genre("Toys", "30"),
+        Genre("Vanilla", "31"),
+        Genre("Colour", "32"),
+        Genre("Uncensored", "33"),
+        Genre("Netorare", "34"),
+        Genre("Virgin", "35"),
+        Genre("Cheating", "36"),
+        Genre("Harem", "37"),
+        Genre("Horror", "38"),
+        Genre("Lolicon", "39"),
+        Genre("Mature", "40"),
+        Genre("Nympho", "41"),
+        Genre("Public Sex", "42"),
+        Genre("Sport", "43"),
+        Genre("Domination", "44"),
+        Genre("Tsundere", "45"),
+        Genre("Yandere", "46")
     )
 
     companion object {

@@ -7,13 +7,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.Calendar
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
 
 class Komikcast : ParsedHttpSource() {
 
@@ -218,83 +218,89 @@ class Komikcast : ParsedHttpSource() {
         return GET(page.imageUrl!!, headers.build())
     }
 
-    private class SortBy : UriPartFilter("Sort by", arrayOf(
+    private class SortBy : UriPartFilter(
+        "Sort by",
+        arrayOf(
             Pair("Default", ""),
             Pair("A-Z", "title"),
             Pair("Z-A", "titlereverse"),
             Pair("Latest Update", "update"),
             Pair("Latest Added", "latest"),
             Pair("Popular", "popular")
-    ))
+        )
+    )
 
-    private class Status : UriPartFilter("Status", arrayOf(
+    private class Status : UriPartFilter(
+        "Status",
+        arrayOf(
             Pair("All", ""),
             Pair("Ongoing", "Ongoing"),
             Pair("Completed", "Completed")
-    ))
+        )
+    )
 
     private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            SortBy(),
-            Filter.Separator(),
-            Status(),
-            Filter.Separator(),
-            GenreList(getGenreList())
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        SortBy(),
+        Filter.Separator(),
+        Status(),
+        Filter.Separator(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("4-Koma", "4-koma"),
-            Genre("Action", "action"),
-            Genre("Adventure", "adventure"),
-            Genre("Comedy", "comedy"),
-            Genre("Cooking", "cooking"),
-            Genre("Demons", "demons"),
-            Genre("Drama", "drama"),
-            Genre("Ecchi", "ecchi"),
-            Genre("Fantasy", "fantasy"),
-            Genre("Game", "game"),
-            Genre("Gender Bender", "gender-bender"),
-            Genre("Harem", "harem"),
-            Genre("Historical", "historical"),
-            Genre("Horror", "horror"),
-            Genre("Isekai ", "isekai"),
-            Genre("Josei", "josei"),
-            Genre("Magic", "magic"),
-            Genre("Martial Arts", "martial-arts"),
-            Genre("Mature", "mature"),
-            Genre("Mecha", "mecha"),
-            Genre("Medical", "medical"),
-            Genre("Military", "military"),
-            Genre("Mistery", "mistery"),
-            Genre("Music", "music"),
-            Genre("Mystery", "mystery"),
-            Genre("Psychological", "psychological"),
-            Genre("Romance", "romance"),
-            Genre("School", "school"),
-            Genre("School Life", "school-life"),
-            Genre("Sci-Fi", "sci-fi"),
-            Genre("Seinen", "seinen"),
-            Genre("Shoujo", "shoujo"),
-            Genre("Shoujo Ai", "shoujo-ai"),
-            Genre("Shounen", "shounen"),
-            Genre("Shounen Ai", "shounen-ai"),
-            Genre("Slice of Life", "slice-of-life"),
-            Genre("Sports", "sports"),
-            Genre("Super Power", "super-power"),
-            Genre("Supernatural", "supernatural"),
-            Genre("Thriller", "thriller"),
-            Genre("Tragedy", "tragedy"),
-            Genre("Vampire", "vampire"),
-            Genre("Webtoons", "webtoons"),
-            Genre("Yuri", "yuri")
+        Genre("4-Koma", "4-koma"),
+        Genre("Action", "action"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Cooking", "cooking"),
+        Genre("Demons", "demons"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai ", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Magic", "magic"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Medical", "medical"),
+        Genre("Military", "military"),
+        Genre("Mistery", "mistery"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("School", "school"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-Fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yuri", "yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 }

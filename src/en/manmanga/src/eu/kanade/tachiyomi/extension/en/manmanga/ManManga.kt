@@ -9,12 +9,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.SimpleDateFormat
 
 class ManManga : ParsedHttpSource() {
     override val name = "Man Manga"
@@ -82,10 +82,10 @@ class ManManga : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response)
+            }
     }
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {

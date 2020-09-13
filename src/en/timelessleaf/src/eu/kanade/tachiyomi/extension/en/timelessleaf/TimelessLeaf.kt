@@ -9,10 +9,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.util.Locale
 
 /**
  *  @author Aria Moradi <aria.moradi007@gmail.com>
@@ -65,12 +65,15 @@ class TimelessLeaf : HttpSource() {
             }
         }.sortedBy { pair -> pair.first }
 
-        return MangasPage(combinedLinks.map { p ->
-            SManga.create().apply {
-                title = p.first
-                setUrlWithoutDomain(p.second)
-            }
-        }, false)
+        return MangasPage(
+            combinedLinks.map { p ->
+                SManga.create().apply {
+                    title = p.first
+                    setUrlWithoutDomain(p.second)
+                }
+            },
+            false
+        )
     }
 
     // manga details

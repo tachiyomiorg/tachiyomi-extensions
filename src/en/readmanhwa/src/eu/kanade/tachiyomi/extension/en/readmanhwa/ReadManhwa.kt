@@ -23,9 +23,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -34,6 +31,9 @@ import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Nsfw
 class ReadManhwa : ConfigurableSource, HttpSource() {
@@ -106,13 +106,13 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
             .addQueryParameter("q", query)
             .addQueryParameter("nsfw", enableNsfw.toString())
 
-            filters.forEach { filter ->
-                when (filter) {
-                    is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
-                    is GenreFilter -> url.addQueryParameter("tags", filter.toUriPart())
-                    is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
-                }
+        filters.forEach { filter ->
+            when (filter) {
+                is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
+                is GenreFilter -> url.addQueryParameter("tags", filter.toUriPart())
+                is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
             }
+        }
         return GET(url.toString(), headersBuilder(enableNsfw).build())
     }
 

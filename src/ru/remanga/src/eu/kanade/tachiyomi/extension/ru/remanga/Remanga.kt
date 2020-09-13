@@ -40,11 +40,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
@@ -60,6 +55,11 @@ import org.jsoup.Jsoup
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class Remanga : ConfigurableSource, HttpSource() {
     override val name = "Remanga"
@@ -233,8 +233,9 @@ class Remanga : ConfigurableSource, HttpSource() {
             }
             .map { response ->
                 (if (warnLogin) manga.apply { description = "Авторизуйтесь для просмотра списка глав" } else mangaDetailsParse(response))
-                    .apply { initialized = true
-                }
+                    .apply {
+                        initialized = true
+                    }
             }
     }
 
@@ -397,9 +398,11 @@ class Remanga : ConfigurableSource, HttpSource() {
         AgeList(getAgeList())
     )
 
-    private class OrderBy : Filter.Sort("Сортировка",
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
         arrayOf("Новизне", "Последним обновлениям", "Популярности", "Лайкам", "Просмотрам", "Мне повезет"),
-        Selection(2, false))
+        Selection(2, false)
+    )
 
     private fun getAgeList() = listOf(
         CheckFilter("Для всех", "0"),

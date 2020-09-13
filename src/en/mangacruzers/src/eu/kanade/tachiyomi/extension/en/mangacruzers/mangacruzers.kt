@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class mangacruzers : ParsedHttpSource() {
 
@@ -70,16 +70,16 @@ class mangacruzers : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-        private fun mangaFromElement(element: Element): SManga {
-            val manga = SManga.create()
-                manga.url = element.select("a").attr("abs:href")
-                manga.title = element.select("td").first().text().trim()
+    private fun mangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        manga.url = element.select("a").attr("abs:href")
+        manga.title = element.select("td").first().text().trim()
 
         return manga
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date).time
+        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {

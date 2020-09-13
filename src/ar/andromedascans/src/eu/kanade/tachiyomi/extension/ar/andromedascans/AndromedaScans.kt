@@ -7,13 +7,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class AndromedaScans : ParsedHttpSource() {
     override val name = "AndromedaScans"

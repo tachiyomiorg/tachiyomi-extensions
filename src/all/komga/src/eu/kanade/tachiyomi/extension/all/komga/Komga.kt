@@ -24,9 +24,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import okhttp3.Credentials
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -38,6 +35,9 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
@@ -215,8 +215,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 else -> SManga.UNKNOWN
             }
             // TODO: remove safe calls in next iteration
-            genre = (metadata.genres?.plus(metadata.tags ?: emptySet())
-                ?: emptySet()).joinToString(", ")
+            genre = (
+                metadata.genres?.plus(metadata.tags ?: emptySet())
+                    ?: emptySet()
+                ).joinToString(", ")
             description = metadata.summary
         }
 
@@ -225,10 +227,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             Date().time
         else {
             try {
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date).time
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date)?.time ?: 0L
             } catch (ex: Exception) {
                 try {
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S", Locale.US).parse(date).time
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S", Locale.US).parse(date)?.time ?: 0L
                 } catch (ex: Exception) {
                     Date().time
                 }
@@ -370,65 +372,80 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ response ->
-                libraries = try {
-                    gson.fromJson(response.body()?.charStream()!!)
-                } catch (e: Exception) {
-                    emptyList()
-                }
-            }, {})
+            .subscribe(
+                { response ->
+                    libraries = try {
+                        gson.fromJson(response.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                },
+                {}
+            )
 
         Single.fromCallable {
             client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ response ->
-                collections = try {
-                    gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
-                } catch (e: Exception) {
-                    emptyList()
-                }
-            }, {})
+            .subscribe(
+                { response ->
+                    collections = try {
+                        gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                },
+                {}
+            )
 
         Single.fromCallable {
             client.newCall(GET("$baseUrl/api/v1/genres", headers)).execute()
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ response ->
-                genres = try {
-                    gson.fromJson(response.body()?.charStream()!!)
-                } catch (e: Exception) {
-                    emptySet()
-                }
-            }, {})
+            .subscribe(
+                { response ->
+                    genres = try {
+                        gson.fromJson(response.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptySet()
+                    }
+                },
+                {}
+            )
 
         Single.fromCallable {
             client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ response ->
-                tags = try {
-                    gson.fromJson(response.body()?.charStream()!!)
-                } catch (e: Exception) {
-                    emptySet()
-                }
-            }, {})
+            .subscribe(
+                { response ->
+                    tags = try {
+                        gson.fromJson(response.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptySet()
+                    }
+                },
+                {}
+            )
 
         Single.fromCallable {
             client.newCall(GET("$baseUrl/api/v1/publishers", headers)).execute()
         }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ response ->
-                publishers = try {
-                    gson.fromJson(response.body()?.charStream()!!)
-                } catch (e: Exception) {
-                    emptySet()
-                }
-            }, {})
+            .subscribe(
+                { response ->
+                    publishers = try {
+                        gson.fromJson(response.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptySet()
+                    }
+                },
+                {}
+            )
     }
 
     companion object {

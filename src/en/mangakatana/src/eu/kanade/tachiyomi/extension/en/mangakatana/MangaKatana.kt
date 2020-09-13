@@ -6,13 +6,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MangaKatana : ParsedHttpSource() {
     override val name = "MangaKatana"

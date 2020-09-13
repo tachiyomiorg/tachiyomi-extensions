@@ -6,12 +6,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.regex.Pattern
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.regex.Pattern
 
 class ManhuaDB : ParsedHttpSource() {
 
@@ -70,11 +70,11 @@ class ManhuaDB : ParsedHttpSource() {
         val pageStr = document.select("ol.breadcrumb > li:eq(2)").text()
         val pageNumMatcher = Pattern.compile("共\\s*(\\d+)").matcher(pageStr)
         if (pageNumMatcher.find()) {
-            val page = Integer.parseInt(pageNumMatcher.group(1))
+            val page = Integer.parseInt(pageNumMatcher.group(1)!!)
             var path = document.select("ol.breadcrumb > li:eq(2) > a").attr("href")
             path = path.substring(1, path.length - 5)
             for (i in 0 until page)
-            pages.add(Page(i, "$baseUrl/${path}_p${i + 1}.html"))
+                pages.add(Page(i, "$baseUrl/${path}_p${i + 1}.html"))
         }
         return pages
     }

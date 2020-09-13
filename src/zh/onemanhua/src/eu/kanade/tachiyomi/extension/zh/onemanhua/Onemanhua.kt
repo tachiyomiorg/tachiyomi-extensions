@@ -9,14 +9,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.net.URLEncoder
-import java.util.regex.Pattern
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
+import java.util.regex.Pattern
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 
 class Onemanhua : ParsedHttpSource() {
     override val id = 8252565807829914103 // name used to be "One漫画"
@@ -110,11 +110,14 @@ class Onemanhua : ParsedHttpSource() {
             title = document.select("h1.fed-part-eone").first().text().trim()
             thumbnail_url = picElement.attr("data-original")
 
-            status = when (detailElements.firstOrNull {
-                it.children().firstOrNull {
-                    it2 -> it2.hasClass("fed-text-muted") && it2.ownText() == "状态"
-                } != null
-            }?.select("a")?.first()?.text()) {
+            status = when (
+                detailElements.firstOrNull {
+                    it.children().firstOrNull {
+                        it2 ->
+                        it2.hasClass("fed-text-muted") && it2.ownText() == "状态"
+                    } != null
+                }?.select("a")?.first()?.text()
+            ) {
                 "连载中" -> SManga.ONGOING
                 "已完结" -> SManga.COMPLETED
                 else -> SManga.UNKNOWN
@@ -122,13 +125,15 @@ class Onemanhua : ParsedHttpSource() {
 
             author = detailElements.firstOrNull {
                 it.children().firstOrNull {
-                    it2 -> it2.hasClass("fed-text-muted") && it2.ownText() == "作者"
+                    it2 ->
+                    it2.hasClass("fed-text-muted") && it2.ownText() == "作者"
                 } != null
             }?.select("a")?.first()?.text()
 
             genre = detailElements.firstOrNull {
                 it.children().firstOrNull {
-                    it2 -> it2.hasClass("fed-text-muted") && it2.ownText() == "类别"
+                    it2 ->
+                    it2.hasClass("fed-text-muted") && it2.ownText() == "类别"
                 } != null
             }?.select("a")?.joinToString { it.text() }
 
@@ -159,21 +164,31 @@ class Onemanhua : ParsedHttpSource() {
 
         // 4. Extract values from C_DATA to formulate page urls
         var imageServerDomain = regexExtractStringValue(
-            decryptedData, "domain:\"(.+?)\"", "Unable to match for imageServerDomain"
+            decryptedData,
+            "domain:\"(.+?)\"",
+            "Unable to match for imageServerDomain"
         )
         var mhId = regexExtractStringValue(
-            decryptedData, "mhid:\"(.+?)\"", "Unable to match for mhId"
+            decryptedData,
+            "mhid:\"(.+?)\"",
+            "Unable to match for mhId"
         )
         var pageName = regexExtractStringValue(
-            decryptedData, "pagename:\"(.+?)\"", "Unable to match for pagename"
+            decryptedData,
+            "pagename:\"(.+?)\"",
+            "Unable to match for pagename"
         )
         val startImg = regexExtractIntValue(
-            decryptedData, "startimg:([0-9]+?),", "Unable to match for startimg"
+            decryptedData,
+            "startimg:([0-9]+?),",
+            "Unable to match for startimg"
         )
 
         // 5. Decode and decrypt total pages
         var encodedTotalPages = regexExtractStringValue(
-            decryptedData, "enc_code1:\"(.+?)\"", "Unable to match for enc_code1"
+            decryptedData,
+            "enc_code1:\"(.+?)\"",
+            "Unable to match for enc_code1"
         )
         var decodedTotalPages = String(Base64.decode(encodedTotalPages, Base64.NO_WRAP))
         var decryptedTotalPages = Integer.parseInt(decryptAES(decodedTotalPages, decryptKey))

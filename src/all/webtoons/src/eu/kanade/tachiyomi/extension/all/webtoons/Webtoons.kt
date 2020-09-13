@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.util.Calendar
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Headers
@@ -19,6 +18,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
 
 abstract class Webtoons(
     override val lang: String,
@@ -33,21 +33,23 @@ abstract class Webtoons(
     override val supportsLatest = true
 
     override val client: OkHttpClient = super.client.newBuilder()
-        .cookieJar(object : CookieJar {
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
-            override fun loadForRequest(url: HttpUrl): List<Cookie> {
-                return listOf<Cookie>(
-                    Cookie.Builder()
-                        .domain("www.webtoons.com")
-                        .path("/")
-                        .name("ageGatePass")
-                        .value("true")
-                        .name("locale")
-                        .value(localeForCookie)
-                        .build()
-                )
+        .cookieJar(
+            object : CookieJar {
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
+                override fun loadForRequest(url: HttpUrl): List<Cookie> {
+                    return listOf<Cookie>(
+                        Cookie.Builder()
+                            .domain("www.webtoons.com")
+                            .path("/")
+                            .name("ageGatePass")
+                            .value("true")
+                            .name("locale")
+                            .value(localeForCookie)
+                            .build()
+                    )
+                }
             }
-        })
+        )
         .build()
 
     private val day: String
@@ -71,11 +73,11 @@ abstract class Webtoons(
     override fun latestUpdatesSelector() = "div#dailyList > $day li > a"
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
-            .add("Referer", "https://www.webtoons.com/$langCode/")
+        .add("Referer", "https://www.webtoons.com/$langCode/")
 
     protected val mobileHeaders: Headers = super.headersBuilder()
-            .add("Referer", "https://m.webtoons.com")
-            .build()
+        .add("Referer", "https://m.webtoons.com")
+        .build()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/$langCode/dailySchedule", headers)
 

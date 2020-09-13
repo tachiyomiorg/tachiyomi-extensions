@@ -10,7 +10,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import java.io.IOException
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
@@ -20,6 +19,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.io.IOException
 
 class WPMangaStreamFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -198,66 +198,72 @@ class WestManga : WPMangaStream("West Manga (WP Manga Stream)", "https://westman
         return manga
     }
 
-    private class SortByFilter : UriPartFilter("Sort By", arrayOf(
-        Pair("Default", ""),
-        Pair("A-Z", "A-Z"),
-        Pair("Latest Added", "latest"),
-        Pair("Popular", "popular")
-    ))
+    private class SortByFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("A-Z", "A-Z"),
+            Pair("Latest Added", "latest"),
+            Pair("Popular", "popular")
+        )
+    )
 
-    private class GenreListFilter : UriPartFilter("Genre", arrayOf(
-        Pair("Default", ""),
-        Pair("4-Koma", "4-koma"),
-        Pair("Action", "action"),
-        Pair("Adventure", "adventure"),
-        Pair("Comedy", "comedy"),
-        Pair("Cooking", "cooking"),
-        Pair("Demons", "demons"),
-        Pair("Drama", "drama"),
-        Pair("Ecchi", "ecchi"),
-        Pair("Fantasy", "fantasy"),
-        Pair("FantasyAction", "fantasyaction"),
-        Pair("Game", "game"),
-        Pair("Gender Bender", "gender-bender"),
-        Pair("Gore", "gore"),
-        Pair("Harem", "harem"),
-        Pair("Historical", "historical"),
-        Pair("Horro", "horro"),
-        Pair("Horror", "horror"),
-        Pair("Isekai", "isekai"),
-        Pair("Isekai Action", "isekai-action"),
-        Pair("Josei", "josei"),
-        Pair("Magic", "magic"),
-        Pair("Manga", "manga"),
-        Pair("Manhua", "manhua"),
-        Pair("Martial arts", "martial-arts"),
-        Pair("Mature", "mature"),
-        Pair("Mecha", "mecha"),
-        Pair("Medical", "medical"),
-        Pair("Music", "music"),
-        Pair("Mystery", "mystery"),
-        Pair("Oneshot", "oneshot"),
-        Pair("Project", "project"),
-        Pair("Psychological", "psychological"),
-        Pair("Romance", "romance"),
-        Pair("School", "school"),
-        Pair("School life", "school-life"),
-        Pair("Sci fi", "sci-fi"),
-        Pair("Seinen", "seinen"),
-        Pair("Shoujo", "shoujo"),
-        Pair("Shoujo Ai", "shoujo-ai"),
-        Pair("Shounen", "shounen"),
-        Pair("Slice of Life", "slice-of-life"),
-        Pair("Sports", "sports"),
-        Pair("Super Power", "super-power"),
-        Pair("Supernatural", "supernatural"),
-        Pair("Suspense", "suspense"),
-        Pair("Thriller", "thriller"),
-        Pair("Tragedy", "tragedy"),
-        Pair("Vampire", "vampire"),
-        Pair("Webtoons", "webtoons"),
-        Pair("Yuri", "yuri")
-    ))
+    private class GenreListFilter : UriPartFilter(
+        "Genre",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("4-Koma", "4-koma"),
+            Pair("Action", "action"),
+            Pair("Adventure", "adventure"),
+            Pair("Comedy", "comedy"),
+            Pair("Cooking", "cooking"),
+            Pair("Demons", "demons"),
+            Pair("Drama", "drama"),
+            Pair("Ecchi", "ecchi"),
+            Pair("Fantasy", "fantasy"),
+            Pair("FantasyAction", "fantasyaction"),
+            Pair("Game", "game"),
+            Pair("Gender Bender", "gender-bender"),
+            Pair("Gore", "gore"),
+            Pair("Harem", "harem"),
+            Pair("Historical", "historical"),
+            Pair("Horro", "horro"),
+            Pair("Horror", "horror"),
+            Pair("Isekai", "isekai"),
+            Pair("Isekai Action", "isekai-action"),
+            Pair("Josei", "josei"),
+            Pair("Magic", "magic"),
+            Pair("Manga", "manga"),
+            Pair("Manhua", "manhua"),
+            Pair("Martial arts", "martial-arts"),
+            Pair("Mature", "mature"),
+            Pair("Mecha", "mecha"),
+            Pair("Medical", "medical"),
+            Pair("Music", "music"),
+            Pair("Mystery", "mystery"),
+            Pair("Oneshot", "oneshot"),
+            Pair("Project", "project"),
+            Pair("Psychological", "psychological"),
+            Pair("Romance", "romance"),
+            Pair("School", "school"),
+            Pair("School life", "school-life"),
+            Pair("Sci fi", "sci-fi"),
+            Pair("Seinen", "seinen"),
+            Pair("Shoujo", "shoujo"),
+            Pair("Shoujo Ai", "shoujo-ai"),
+            Pair("Shounen", "shounen"),
+            Pair("Slice of Life", "slice-of-life"),
+            Pair("Sports", "sports"),
+            Pair("Super Power", "super-power"),
+            Pair("Supernatural", "supernatural"),
+            Pair("Suspense", "suspense"),
+            Pair("Thriller", "thriller"),
+            Pair("Tragedy", "tragedy"),
+            Pair("Vampire", "vampire"),
+            Pair("Webtoons", "webtoons"),
+            Pair("Yuri", "yuri")
+        )
+    )
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: sort and genre can't be combined and ignored when using text search!"),
@@ -384,15 +390,18 @@ class KomikGo : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
 
-    private class SortBy : UriPartFilter("Sort by", arrayOf(
-        Pair("Relevance", ""),
-        Pair("Latest", "latest"),
-        Pair("A-Z", "alphabet"),
-        Pair("Rating", "rating"),
-        Pair("Trending", "trending"),
-        Pair("Most View", "views"),
-        Pair("New", "new-manga")
-    ))
+    private class SortBy : UriPartFilter(
+        "Sort by",
+        arrayOf(
+            Pair("Relevance", ""),
+            Pair("Latest", "latest"),
+            Pair("A-Z", "alphabet"),
+            Pair("Rating", "rating"),
+            Pair("Trending", "trending"),
+            Pair("Most View", "views"),
+            Pair("New", "new-manga")
+        )
+    )
 
     private class Status(name: String, val id: String = name) : Filter.TriState(name)
     private class StatusList(statuses: List<Status>) : Filter.Group<Status>("Status", statuses)

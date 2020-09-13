@@ -13,7 +13,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.net.URL
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
@@ -24,6 +23,7 @@ import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URL
 
 fun asJsoup(response: Response, html: String? = null): Document {
     return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request().url().toString())
@@ -76,7 +76,7 @@ class Pufei : ParsedHttpSource() {
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", baseUrl)
+        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/manhua/paihang.html", headers)
 
@@ -167,11 +167,11 @@ class Pufei : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
-            "All"
+        "All"
     )
 
     // temp patch

@@ -13,10 +13,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -24,6 +20,10 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class CentralDeMangas : ParsedHttpSource() {
 
@@ -79,10 +79,10 @@ class CentralDeMangas : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response, query)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -117,10 +117,10 @@ class CentralDeMangas : ParsedHttpSource() {
         author = elementList.select("div.item:eq(3) div.content div.description").text()
         artist = elementList.select("div.item:eq(2) div.content div.description").text()
         genre = elementList.select("div.item:eq(4) div.content div.description a")
-                .joinToString { it.text() }
+            .joinToString { it.text() }
 
         status = elementList.select("div.item:eq(6) div.content div.description")
-                .text().orEmpty().let { parseStatus(it) }
+            .text().orEmpty().let { parseStatus(it) }
 
         description = elementList.select("div.item:eq(0) div.content div.description").text()
         thumbnail_url = elementList.select("div.item:eq(0) div.content div.description img")
@@ -153,7 +153,7 @@ class CentralDeMangas : ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date).time
+            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }

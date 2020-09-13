@@ -8,15 +8,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class Manhuadui : ParsedHttpSource() {
 
@@ -163,41 +163,53 @@ class Manhuadui : ParsedHttpSource() {
         ProgressGroup()
     )
 
-    private class CategoryGroup : UriPartFilter("按类型", arrayOf(
-        Pair("全部", ""),
-        Pair("儿童漫画", "ertong"),
-        Pair("少年漫画", "shaonian"),
-        Pair("少女漫画", "shaonv"),
-        Pair("青年漫画", "qingnian")
-    ))
+    private class CategoryGroup : UriPartFilter(
+        "按类型",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("儿童漫画", "ertong"),
+            Pair("少年漫画", "shaonian"),
+            Pair("少女漫画", "shaonv"),
+            Pair("青年漫画", "qingnian")
+        )
+    )
 
-    private class ProgressGroup : UriPartFilter("按进度", arrayOf(
-        Pair("全部", ""),
-        Pair("已完结", "wanjie"),
-        Pair("连载中", "lianzai")
-    ))
+    private class ProgressGroup : UriPartFilter(
+        "按进度",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("已完结", "wanjie"),
+            Pair("连载中", "lianzai")
+        )
+    )
 
-    private class RegionGroup : UriPartFilter("按地区", arrayOf(
-        Pair("全部", ""),
-        Pair("日本", "riben"),
-        Pair("大陆", "dalu"),
-        Pair("香港", "hongkong"),
-        Pair("台湾", "taiwan"),
-        Pair("欧美", "oumei"),
-        Pair("韩国", "hanguo"),
-        Pair("其他", "qita")
-    ))
+    private class RegionGroup : UriPartFilter(
+        "按地区",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("日本", "riben"),
+            Pair("大陆", "dalu"),
+            Pair("香港", "hongkong"),
+            Pair("台湾", "taiwan"),
+            Pair("欧美", "oumei"),
+            Pair("韩国", "hanguo"),
+            Pair("其他", "qita")
+        )
+    )
 
-    private class GenreGroup : UriPartFilter("按剧情", arrayOf(
-        Pair("全部", ""),
-        Pair("热血", "rexue"),
-        Pair("冒险", "maoxian"),
-        Pair("玄幻", "xuanhuan"),
-        Pair("搞笑", "gaoxiao"),
-        Pair("恋爱", "lianai"),
-        Pair("宠物", "chongwu"),
-        Pair("新作", "xinzuo")
-    ))
+    private class GenreGroup : UriPartFilter(
+        "按剧情",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("热血", "rexue"),
+            Pair("冒险", "maoxian"),
+            Pair("玄幻", "xuanhuan"),
+            Pair("搞笑", "gaoxiao"),
+            Pair("恋爱", "lianai"),
+            Pair("宠物", "chongwu"),
+            Pair("新作", "xinzuo")
+        )
+    )
 
     private open class UriPartFilter(
         displayName: String,

@@ -10,13 +10,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Mangachan : ParsedHttpSource() {
 
@@ -36,7 +36,7 @@ class Mangachan : ParsedHttpSource() {
         .addNetworkInterceptor(rateLimitInterceptor).build()
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
+        GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var pageNum = 1
@@ -207,7 +207,7 @@ class Mangachan : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.date").first()?.text()?.let {
-            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it).time
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }
@@ -231,14 +231,16 @@ class Mangachan : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
     private class Genre(name: String, val id: String = name.replace(' ', '_')) : Filter.TriState(name)
     private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Перевод завершен", "Выпуск завершен", "Онгоинг", "Новые главы"))
-    private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Дата", "Популярность", "Имя", "Главы"),
-            Selection(1, false))
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
+        arrayOf("Дата", "Популярность", "Имя", "Главы"),
+        Selection(1, false)
+    )
 
     override fun getFilterList() = FilterList(
-            Status(),
-            OrderBy(),
-            GenreList(getGenreList())
+        Status(),
+        OrderBy(),
+        GenreList(getGenreList())
     )
 
     /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")]
@@ -246,60 +248,60 @@ class Mangachan : ParsedHttpSource() {
     *  on https://mangachan.me/
     */
     private fun getGenreList() = listOf(
-            Genre("18_плюс"),
-            Genre("bdsm"),
-            Genre("арт"),
-            Genre("боевик"),
-            Genre("боевые_искусства"),
-            Genre("вампиры"),
-            Genre("веб"),
-            Genre("гарем"),
-            Genre("гендерная_интрига"),
-            Genre("героическое_фэнтези"),
-            Genre("детектив"),
-            Genre("дзёсэй"),
-            Genre("додзинси"),
-            Genre("драма"),
-            Genre("игра"),
-            Genre("инцест"),
-            Genre("искусство"),
-            Genre("история"),
-            Genre("киберпанк"),
-            Genre("кодомо"),
-            Genre("комедия"),
-            Genre("литРПГ"),
-            Genre("махо-сёдзё"),
-            Genre("меха"),
-            Genre("мистика"),
-            Genre("музыка"),
-            Genre("научная_фантастика"),
-            Genre("повседневность"),
-            Genre("постапокалиптика"),
-            Genre("приключения"),
-            Genre("психология"),
-            Genre("романтика"),
-            Genre("самурайский_боевик"),
-            Genre("сборник"),
-            Genre("сверхъестественное"),
-            Genre("сказка"),
-            Genre("спорт"),
-            Genre("супергерои"),
-            Genre("сэйнэн"),
-            Genre("сёдзё"),
-            Genre("сёдзё-ай"),
-            Genre("сёнэн"),
-            Genre("сёнэн-ай"),
-            Genre("тентакли"),
-            Genre("трагедия"),
-            Genre("триллер"),
-            Genre("ужасы"),
-            Genre("фантастика"),
-            Genre("фурри"),
-            Genre("фэнтези"),
-            Genre("школа"),
-            Genre("эротика"),
-            Genre("юри"),
-            Genre("яой"),
-            Genre("ёнкома")
+        Genre("18_плюс"),
+        Genre("bdsm"),
+        Genre("арт"),
+        Genre("боевик"),
+        Genre("боевые_искусства"),
+        Genre("вампиры"),
+        Genre("веб"),
+        Genre("гарем"),
+        Genre("гендерная_интрига"),
+        Genre("героическое_фэнтези"),
+        Genre("детектив"),
+        Genre("дзёсэй"),
+        Genre("додзинси"),
+        Genre("драма"),
+        Genre("игра"),
+        Genre("инцест"),
+        Genre("искусство"),
+        Genre("история"),
+        Genre("киберпанк"),
+        Genre("кодомо"),
+        Genre("комедия"),
+        Genre("литРПГ"),
+        Genre("махо-сёдзё"),
+        Genre("меха"),
+        Genre("мистика"),
+        Genre("музыка"),
+        Genre("научная_фантастика"),
+        Genre("повседневность"),
+        Genre("постапокалиптика"),
+        Genre("приключения"),
+        Genre("психология"),
+        Genre("романтика"),
+        Genre("самурайский_боевик"),
+        Genre("сборник"),
+        Genre("сверхъестественное"),
+        Genre("сказка"),
+        Genre("спорт"),
+        Genre("супергерои"),
+        Genre("сэйнэн"),
+        Genre("сёдзё"),
+        Genre("сёдзё-ай"),
+        Genre("сёнэн"),
+        Genre("сёнэн-ай"),
+        Genre("тентакли"),
+        Genre("трагедия"),
+        Genre("триллер"),
+        Genre("ужасы"),
+        Genre("фантастика"),
+        Genre("фурри"),
+        Genre("фэнтези"),
+        Genre("школа"),
+        Genre("эротика"),
+        Genre("юри"),
+        Genre("яой"),
+        Genre("ёнкома")
     )
 }

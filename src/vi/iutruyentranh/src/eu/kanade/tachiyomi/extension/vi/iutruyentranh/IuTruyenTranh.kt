@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.lang.UnsupportedOperationException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.lang.UnsupportedOperationException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class IuTruyenTranh : ParsedHttpSource() {
 
@@ -116,7 +116,7 @@ class IuTruyenTranh : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href") + "&load=all")
         chapter.name = urlElement.select("b").text()
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
-            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(it).time
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }
@@ -134,64 +134,64 @@ class IuTruyenTranh : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Thể loại", genres)
 
     override fun getFilterList() = FilterList(
-            Author(),
-            GenreList(getGenreList())
+        Author(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adult"),
-            Genre("Adventure"),
-            Genre("Anime"),
-            Genre("Bishounen"),
-            Genre("Comedy"),
-            Genre("Cookin"),
-            Genre("Demons"),
-            Genre("Doujinshi"),
-            Genre("Drama"),
-            Genre("Ecchi"),
-            Genre("Fantasy"),
-            Genre("Gender Bender"),
-            Genre("Harem"),
-            Genre("Hentai"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Josei"),
-            Genre("Live action"),
-            Genre("Magic"),
-            Genre("Manhua"),
-            Genre("Manhwa"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Mecha"),
-            Genre("Medical"),
-            Genre("Military"),
-            Genre("Mystery"),
-            Genre("One shot"),
-            Genre("Oneshot"),
-            Genre("Other"),
-            Genre("Psychological"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci fi"),
-            Genre("Seinen"),
-            Genre("Shotacon"),
-            Genre("Shoujo"),
-            Genre("Shoujo Ai"),
-            Genre("Shoujoai"),
-            Genre("Shounen"),
-            Genre("Shounen Ai"),
-            Genre("Shounenai"),
-            Genre("Slice of Life"),
-            Genre("Smut"),
-            Genre("Sports"),
-            Genre("Super power"),
-            Genre("Superma"),
-            Genre("Supernatural"),
-            Genre("Tragedy"),
-            Genre("Vampire"),
-            Genre("Webtoon"),
-            Genre("Yaoi"),
-            Genre("Yuri")
+        Genre("Action"),
+        Genre("Adult"),
+        Genre("Adventure"),
+        Genre("Anime"),
+        Genre("Bishounen"),
+        Genre("Comedy"),
+        Genre("Cookin"),
+        Genre("Demons"),
+        Genre("Doujinshi"),
+        Genre("Drama"),
+        Genre("Ecchi"),
+        Genre("Fantasy"),
+        Genre("Gender Bender"),
+        Genre("Harem"),
+        Genre("Hentai"),
+        Genre("Historical"),
+        Genre("Horror"),
+        Genre("Josei"),
+        Genre("Live action"),
+        Genre("Magic"),
+        Genre("Manhua"),
+        Genre("Manhwa"),
+        Genre("Martial Arts"),
+        Genre("Mature"),
+        Genre("Mecha"),
+        Genre("Medical"),
+        Genre("Military"),
+        Genre("Mystery"),
+        Genre("One shot"),
+        Genre("Oneshot"),
+        Genre("Other"),
+        Genre("Psychological"),
+        Genre("Romance"),
+        Genre("School Life"),
+        Genre("Sci fi"),
+        Genre("Seinen"),
+        Genre("Shotacon"),
+        Genre("Shoujo"),
+        Genre("Shoujo Ai"),
+        Genre("Shoujoai"),
+        Genre("Shounen"),
+        Genre("Shounen Ai"),
+        Genre("Shounenai"),
+        Genre("Slice of Life"),
+        Genre("Smut"),
+        Genre("Sports"),
+        Genre("Super power"),
+        Genre("Superma"),
+        Genre("Supernatural"),
+        Genre("Tragedy"),
+        Genre("Vampire"),
+        Genre("Webtoon"),
+        Genre("Yaoi"),
+        Genre("Yuri")
     )
 }

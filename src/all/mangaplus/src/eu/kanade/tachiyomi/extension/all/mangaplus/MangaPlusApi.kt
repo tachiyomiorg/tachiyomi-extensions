@@ -124,7 +124,8 @@ data class MangaPage(
 )
 
 // Used for the deserialization on KitKat devices.
-const val DECODE_SCRIPT: String = """
+const val DECODE_SCRIPT: String =
+    """
     Duktape.modSearch = function(id) {
         if (id == "protobufjs")
             return helper.getProtobuf();

@@ -51,11 +51,11 @@ private class RequestHandler(val chain: Interceptor.Chain) {
     }
 
     private fun proceedRequest(url: String): Response = chain.proceed(
-            req.newBuilder()!!
-                    .url(url)
-                    .removeHeader("ImageRequest")
-                    .removeHeader("ImageDecodeRequest")
-                    .removeHeader("SecondUrlToRequest")
-                    .build()!!
+        req.newBuilder()!!
+            .url(url)
+            .removeHeader("ImageRequest")
+            .removeHeader("ImageDecodeRequest")
+            .removeHeader("SecondUrlToRequest")
+            .build()!!
     )
 }

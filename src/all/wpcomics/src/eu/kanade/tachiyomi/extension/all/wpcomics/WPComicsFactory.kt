@@ -9,12 +9,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class WPComicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -113,9 +113,9 @@ private class ComicLatest : WPComics("ComicLatest", "https://comiclatest.com", "
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         element.select("h3 a").let {
-                title = it.text()
-                setUrlWithoutDomain(it.attr("href"))
-            }
+            title = it.text()
+            setUrlWithoutDomain(it.attr("href"))
+        }
         thumbnail_url = element.select("img").attr("data-original")
     }
 

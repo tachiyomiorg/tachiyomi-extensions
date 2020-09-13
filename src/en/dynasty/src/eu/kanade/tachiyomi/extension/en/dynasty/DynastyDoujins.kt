@@ -50,10 +50,12 @@ class DynastyDoujins : DynastyScans() {
         val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }.toMutableList()
 
         document.select("a.thumbnail img").let { images ->
-            if (images.isNotEmpty()) chapters.add(SChapter.create().apply {
-                name = "Images"
-                setUrlWithoutDomain(document.location() + "/images")
-            })
+            if (images.isNotEmpty()) chapters.add(
+                SChapter.create().apply {
+                    name = "Images"
+                    setUrlWithoutDomain(document.location() + "/images")
+                }
+            )
         }
 
         return chapters

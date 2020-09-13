@@ -20,11 +20,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -37,6 +32,11 @@ import org.jsoup.select.Elements
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 /**
  * ManaMoa Source
@@ -85,8 +85,10 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "ul.pagination > li:not(.disabled)"
 
     // Do not add page parameter if page is 1 to prevent tracking.
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/bbs/page.php?hid=manga_list" +
-            if (page > 1) "&page=${page - 1}" else "")
+    override fun popularMangaRequest(page: Int) = GET(
+        "$baseUrl/bbs/page.php?hid=manga_list" +
+            if (page > 1) "&page=${page - 1}" else ""
+    )
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
@@ -150,10 +152,10 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
         manga.thumbnail_url = urlFinder(thumbnailElement.attr("style"))
         manga.description =
             "\uD83D\uDCDD: $publishTypeText\n" +
-                "👍: $mangaLike ($mangaChaptersLike)\n" +
-                // "\uD83D\uDD0D: $mangaViews\n" +
-                "\uD83D\uDCAC: $mangaComments ($mangaChaptersComments)\n" +
-                "\uD83D\uDD16: $mangaBookmarks"
+            "👍: $mangaLike ($mangaChaptersLike)\n" +
+            // "\uD83D\uDD0D: $mangaViews\n" +
+            "\uD83D\uDCAC: $mangaComments ($mangaChaptersComments)\n" +
+            "\uD83D\uDD16: $mangaBookmarks"
         manga.author = authorText
         manga.genre = genres.joinToString(", ")
         manga.status = parseStatus(publishTypeText)
@@ -169,9 +171,12 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
     private fun mangaElementsSum(element: Elements?): String {
         if (element.isNullOrEmpty()) return "0"
         return try {
-            String.format("%,d", element.map {
-                it.text().toInt()
-            }.sum())
+            String.format(
+                "%,d",
+                element.map {
+                    it.text().toInt()
+                }.sum()
+            )
         } catch (_: Exception) {
             "0"
         }
@@ -217,7 +222,7 @@ class ManaMoa : ConfigurableSource, ParsedHttpSource() {
             val currYear = calendar.get(Calendar.YEAR)
             val year = if (month > calendar.get(Calendar.MONTH) + 1) // Before December now, // and Retrieved month is December == 2018.
                 currYear - 1 else currYear
-            SimpleDateFormat("yyyy-MM-dd").parse("$year-$date").time
+            SimpleDateFormat("yyyy-MM-dd").parse("$year-$date")?.time ?: 0L
         } catch (e: Exception) {
             e.printStackTrace()
             0

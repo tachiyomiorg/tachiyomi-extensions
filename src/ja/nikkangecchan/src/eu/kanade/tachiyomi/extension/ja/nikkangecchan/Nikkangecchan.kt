@@ -25,11 +25,11 @@ class Nikkangecchan : ParsedHttpSource() {
     override val supportsLatest = false
 
     private val catalogHeaders = Headers.Builder()
-            .apply {
-                add("User-Agent", USER_AGENT)
-                add("Referer", baseUrl)
-            }
-            .build()
+        .apply {
+            add("User-Agent", USER_AGENT)
+            add("Referer", baseUrl)
+        }
+        .build()
 
     override fun popularMangaRequest(page: Int): Request = GET(baseUrl, catalogHeaders)
 
@@ -50,15 +50,15 @@ class Nikkangecchan : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return super.fetchSearchManga(page, query, filters)
-                .map {
-                    val filtered = it.mangas.filter { e -> e.title.contains(query, true) }
-                    MangasPage(filtered, false)
-                }
+            .map {
+                val filtered = it.mangas.filter { e -> e.title.contains(query, true) }
+                MangasPage(filtered, false)
+            }
     }
 
     // Does not have search, use complete list (in popular) instead.
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-            popularMangaRequest(page)
+        popularMangaRequest(page)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -81,7 +81,7 @@ class Nikkangecchan : ParsedHttpSource() {
     override fun chapterListSelector(): String = ".episodeBox"
 
     override fun chapterListParse(response: Response): List<SChapter> =
-            super.chapterListParse(response).reversed()
+        super.chapterListParse(response).reversed()
 
     override fun chapterFromElement(element: Element): SChapter {
         val episodePage = element.select(".episode-page").first()
@@ -104,10 +104,10 @@ class Nikkangecchan : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val headers = Headers.Builder()
-                .apply {
-                    add("User-Agent", USER_AGENT)
-                    add("Referer", baseUrl + page.url.substringBeforeLast("/"))
-                }
+            .apply {
+                add("User-Agent", USER_AGENT)
+                add("Referer", baseUrl + page.url.substringBeforeLast("/"))
+            }
 
         return GET(page.imageUrl!!, headers.build())
     }

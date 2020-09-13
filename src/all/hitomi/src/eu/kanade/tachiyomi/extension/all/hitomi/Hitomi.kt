@@ -4,8 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.PreferenceScreen
-import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
-import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
@@ -28,6 +26,8 @@ import rx.Single
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
+import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 
 /**
  * Ported from TachiyomiSy
@@ -190,13 +190,13 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
             }
         }
 
-            return base.flatMap { (_, ids) ->
-                val chunks = ids.chunked(PAGE_SIZE)
+        return base.flatMap { (_, ids) ->
+            val chunks = ids.chunked(PAGE_SIZE)
 
-                nozomiIdsToMangas(chunks[page - 1]).map { mangas ->
-                    MangasPage(mangas, page < chunks.size)
-                }
-            }.toObservable()
+            nozomiIdsToMangas(chunks[page - 1]).map { mangas ->
+                MangasPage(mangas, page < chunks.size)
+            }
+        }.toObservable()
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw UnsupportedOperationException("Not used")

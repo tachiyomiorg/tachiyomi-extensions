@@ -7,14 +7,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class TruyenQQ : ParsedHttpSource() {
     override val name: String = "TruyenQQ"
@@ -91,14 +91,15 @@ class TruyenQQ : ParsedHttpSource() {
         chapter_number = name.substringAfter("Chương").trim().toFloat()
     }
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("dd/MM/yyyy", Locale.US).parse(date).time
+        return SimpleDateFormat("dd/MM/yyyy", Locale.US).parse(date)?.time ?: 0L
     }
 
     // Pages
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("img.lazy").forEachIndexed { index, element ->
-            add(Page(index, "", element.attr("abs:src"))) }
+            add(Page(index, "", element.attr("abs:src")))
+        }
     }
     override fun imageUrlParse(document: Document): String {
         throw Exception("Not Used")

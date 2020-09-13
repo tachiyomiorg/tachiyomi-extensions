@@ -14,17 +14,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.net.URL
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URL
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class Mangahub : ParsedHttpSource() {
 
@@ -55,7 +55,7 @@ class Mangahub : ParsedHttpSource() {
         manga.title = titleElement.text()
         manga.setUrlWithoutDomain(URL(titleElement.attr("href")).path)
         manga.thumbnail_url = element.select("img.manga-thumb.list-item-thumb")
-                ?.first()?.attr("src")
+            ?.first()?.attr("src")
 
         return manga
     }
@@ -78,7 +78,7 @@ class Mangahub : ParsedHttpSource() {
         manga.genre = document.select("._3Czbn a")?.joinToString { it.text() }
         manga.description = document.select("div#noanim-content-tab-pane-99 p.ZyMp7")?.first()?.text()
         manga.thumbnail_url = document.select("img.img-responsive")?.first()
-                ?.attr("src")
+            ?.attr("src")
 
         document.select("._3QCtP > div:nth-child(2) > div:nth-child(3) > span:nth-child(2)")?.first()?.text()?.also { statusText ->
             when {
@@ -133,7 +133,7 @@ class Mangahub : ParsedHttpSource() {
             // parses: "12-20-2019" and defaults everything that wasn't taken into account to 0
             else -> {
                 try {
-                    parsedDate = SimpleDateFormat("MM-dd-yyyy", Locale.US).parse(date).time
+                    parsedDate = SimpleDateFormat("MM-dd-yyyy", Locale.US).parse(date)?.time ?: 0L
                 } catch (e: ParseException) { /*nothing to do, parsedDate is initialized with 0L*/ }
             }
         }
@@ -208,16 +208,16 @@ class Mangahub : ParsedHttpSource() {
     private class GenreList(genres: Array<Genre>) : Filter.Select<Genre>("Genres", genres, 0)
 
     override fun getFilterList() = FilterList(
-            OrderBy(orderBy),
-            GenreList(genres)
+        OrderBy(orderBy),
+        GenreList(genres)
     )
 
     private val orderBy = arrayOf(
-            Order("Popular", "POPULAR"),
-            Order("Updates", "LATEST"),
-            Order("A-Z", "ALPHABET"),
-            Order("New", "NEW"),
-            Order("Completed", "COMPLETED")
+        Order("Popular", "POPULAR"),
+        Order("Updates", "LATEST"),
+        Order("A-Z", "ALPHABET"),
+        Order("New", "NEW"),
+        Order("Completed", "COMPLETED")
     )
 
     private val genres = arrayOf(

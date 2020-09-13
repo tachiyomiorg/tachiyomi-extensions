@@ -7,14 +7,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class MangaJar : ParsedHttpSource() {
 
@@ -43,8 +43,10 @@ class MangaJar : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("img").attr("title")
-        thumbnail_url = element.select("img").let { if (it.hasAttr("data-src"))
-                it.attr("data-src") else it.attr("src") }
+        thumbnail_url = element.select("img").let {
+            if (it.hasAttr("data-src"))
+                it.attr("data-src") else it.attr("src")
+        }
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
@@ -63,16 +65,18 @@ class MangaJar : ParsedHttpSource() {
         url.addQueryParameter("q", query)
         url.addQueryParameter("page", page.toString())
 
-        (filters.forEach { filter ->
-            when (filter) {
-                is OrderBy -> {
-                    url.addQueryParameter("sortBy", filter.toUriPart())
-                }
-                is SortBy -> {
-                    url.addQueryParameter("sortAscending", filter.toUriPart())
+        (
+            filters.forEach { filter ->
+                when (filter) {
+                    is OrderBy -> {
+                        url.addQueryParameter("sortBy", filter.toUriPart())
+                    }
+                    is SortBy -> {
+                        url.addQueryParameter("sortAscending", filter.toUriPart())
+                    }
                 }
             }
-        })
+            )
 
         return GET(url.toString(), headers)
     }
@@ -117,7 +121,7 @@ class MangaJar : ParsedHttpSource() {
         return if ("ago" in string) {
             parseRelativeDate(string) ?: 0
         } else {
-            dateFormat.parse(string).time
+            dateFormat.parse(string)?.time ?: 0L
         }
     }
 
@@ -146,25 +150,32 @@ class MangaJar : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
     override fun getFilterList() = FilterList(
-            OrderBy(),
-            SortBy(),
-            GenreList()
+        OrderBy(),
+        SortBy(),
+        GenreList()
     )
 
-    private class SortBy : UriPartFilter("Sort By", arrayOf(
+    private class SortBy : UriPartFilter(
+        "Sort By",
+        arrayOf(
             Pair("Descending", "0"),
             Pair("Ascending", "1")
-    ))
+        )
+    )
 
-    private class OrderBy : UriPartFilter("Order By", arrayOf(
+    private class OrderBy : UriPartFilter(
+        "Order By",
+        arrayOf(
             Pair("Popularity", "popular"),
             Pair("Year", "year"),
             Pair("Alphabet", "name"),
             Pair("Date added", "published_at"),
             Pair("Date updated", "last_chapter_at")
-    ))
+        )
+    )
 
-    private class GenreList : Filter.Select<String>("Select Genre",
+    private class GenreList : Filter.Select<String>(
+        "Select Genre",
         arrayOf(
             "",
             "Fantasy",
@@ -220,7 +231,7 @@ class MangaJar : ParsedHttpSource() {
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 }
