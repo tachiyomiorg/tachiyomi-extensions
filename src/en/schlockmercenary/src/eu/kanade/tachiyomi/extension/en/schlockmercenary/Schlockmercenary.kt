@@ -34,9 +34,7 @@ class Schlockmercenary : ParsedHttpSource() {
 
     private var chapterCount = 1
 
-    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
+    // Books
 
     override fun popularMangaRequest(page: Int): Request = GET("${baseUrl}$archiveUrl")
 
@@ -58,9 +56,9 @@ class Schlockmercenary : ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
+    // Chapters
 
-    override fun searchMangaNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
+    override fun chapterListSelector() = "ul.chapters > li:not(ul > li > ul > li) > a"
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         val requestUrl = "${baseUrl}$archiveUrl"
@@ -81,8 +79,6 @@ class Schlockmercenary : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "ul.chapters > li:not(ul > li > ul > li) > a"
-
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         chapter.url = element.attr("href")
@@ -93,6 +89,8 @@ class Schlockmercenary : ParsedHttpSource() {
         }
         return chapter
     }
+
+    // Pages
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         val requestUrl = "${baseUrl}$archiveUrl"
@@ -153,6 +151,14 @@ class Schlockmercenary : ParsedHttpSource() {
         urls.forEach { Log.d("schmc", it) }
         return urls
     }
+
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = Observable.just(manga)
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
+
+    override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
