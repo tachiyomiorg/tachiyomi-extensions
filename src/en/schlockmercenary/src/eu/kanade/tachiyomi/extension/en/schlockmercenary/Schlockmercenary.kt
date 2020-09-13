@@ -81,7 +81,7 @@ class Schlockmercenary : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "ul.chapters > li > a"
+    override fun chapterListSelector() = "ul.chapters > li:not(ul > li > ul > li) > a"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
