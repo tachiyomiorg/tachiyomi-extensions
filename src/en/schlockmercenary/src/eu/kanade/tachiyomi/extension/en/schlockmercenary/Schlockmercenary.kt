@@ -103,6 +103,7 @@ class Schlockmercenary : ParsedHttpSource() {
 
     private fun getPagesForChapter(response: Response, chapter: SChapter): List<Page> {
         val document = response.asJsoup()
+
         /**
          * To find the end page, first, the next chapter start must be found,
          * then subtract one day off of the next chapter start.
