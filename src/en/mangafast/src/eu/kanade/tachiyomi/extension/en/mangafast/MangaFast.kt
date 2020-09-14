@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -70,7 +71,15 @@ class MangaFast : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = element.select("a").attr("title")
-        date_upload = dateFormat.parse(element.select("td.tgs").text().trim())?.time ?: 0
+        date_upload = parseDate(element.select("td.tgs").text())
+    }
+
+    private fun parseDate(text: String): Long {
+        return try {
+            dateFormat.parse(text.trim())?.time ?: 0L
+        } catch (pe: ParseException) { // this can happen for spoiler & release date entries
+            0L
+        }
     }
 
     companion object {
