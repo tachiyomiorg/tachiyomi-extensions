@@ -66,7 +66,7 @@ class MangaFast : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "tr:has(td.tgs)"
+    override fun chapterListSelector() = "tr:has(td.tgs:matches(\\d{4}-\\d{2}-\\d{2}))"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
