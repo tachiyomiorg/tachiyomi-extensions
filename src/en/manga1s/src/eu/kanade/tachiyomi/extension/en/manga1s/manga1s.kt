@@ -160,7 +160,7 @@ class manga1s : ParsedHttpSource() {
             Pair("news", "Last Update"),
             Pair("rank", "Rank"),
             Pair("hourly", "Hourly View"),
-            Pair("daily", "daily View")
+            Pair("daily", "Daily View")
         )
     )
 
