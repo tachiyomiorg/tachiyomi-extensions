@@ -623,7 +623,7 @@ class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id
 
 class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
 
-class KomikTap : WPMangaStream("KomikTap", "https://komiktap.net", "id")
+class KomikTap : WPMangaStream("KomikTap", "http://komiktap.in/", "id")
 
 class Matakomik : WPMangaStream("Matakomik", "https://matakomik.com", "id") {
     override fun pageListParse(document: Document): List<Page> {
