@@ -5,7 +5,7 @@ ext {
     extName = 'NewToki'
     pkgNameSuffix = 'ko.newtoki'
     extClass = '.NewTokiFactory'
-    extVersionCode = 15
+    extVersionCode = 16
     libVersion = '1.2'
 }
 
