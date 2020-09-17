@@ -84,7 +84,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             client.newCall(GET("$baseUrl$urlPath"))
                 .asObservableSuccess()
                 .map { response ->
-                    // the id is matches any of 'post' from thier CMS board.
+                    // the id is matches any of 'post' from their CMS board.
                     // Includes Manga Details Page, Chapters, Comments, and etcs...
                     actualMangaParseById(urlPath, response)
                 }
@@ -99,11 +99,11 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         // only exists on chapter with proper manga detail page.
         val fullListButton = document.select(".comic-navbar .toon-nav a").last()
 
-        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기") ?: false) { // Check this id is detail page
+        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기") ?: false) { // Check this page is detail page
             val details = mangaDetailsParse(document)
             details.url = urlPath
             listOf(details)
-        } else if (fullListButton?.text()?.contains("전체목록") ?: false) { // Get detaul page from chapter page
+        } else if (fullListButton?.text()?.contains("전체목록") ?: false) { // Check this page is chapter page
             val url = fullListButton.attr("abs:href")
             val details = mangaDetailsParse(client.newCall(GET(url)).execute())
             details.url = getUrlPath(url)
@@ -276,8 +276,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
 
     private fun getUrlPath(orig: String): String {
         return try {
-            val uri = URI(orig)
-            uri.path
+            URI(orig).path
         } catch (e: URISyntaxException) {
             orig
         }
