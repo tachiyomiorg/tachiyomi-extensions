@@ -25,6 +25,8 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.net.URI
+import java.net.URISyntaxException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
@@ -82,12 +84,33 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             client.newCall(GET("$baseUrl$urlPath"))
                 .asObservableSuccess()
                 .map { response ->
-                    // TODO: Fix the error which caused by shares id field with detail and each chapters in the source
-                    val details = mangaDetailsParse(response.asJsoup())
-                    details.url = urlPath
-                    MangasPage(listOf(details), false)
+                    // the id is matches any of 'post' from thier CMS board.
+                    // Includes Manga Details Page, Chapters, Comments, and etcs...
+                    actualMangaParseById(urlPath, response)
                 }
         } else super.fetchSearchManga(page, query, filters)
+    }
+
+    private fun actualMangaParseById(urlPath: String, response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        // Only exists on detail page.
+        val firstChapterButton = document.select("tr > th > button.btn-blue").first()
+        // only exists on chapter with proper manga detail page.
+        val fullListButton = document.select(".comic-navbar .toon-nav a").last()
+
+        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기") ?: false) { // Check this id is detail page
+            val details = mangaDetailsParse(document)
+            details.url = urlPath
+            listOf(details)
+        } else if (fullListButton?.text()?.contains("전체목록") ?: false) { // Get detaul page from chapter page
+            val url = fullListButton.attr("abs:href")
+            val details = mangaDetailsParse(client.newCall(GET(url)).execute())
+            details.url = getUrlPath(url)
+            listOf(details)
+        } else emptyList()
+
+        return MangasPage(list, false)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -249,6 +272,15 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         }
 
         screen.addPreference(baseUrlPref)
+    }
+
+    private fun getUrlPath(orig: String): String {
+        return try {
+            val uri = URI(orig)
+            uri.path
+        } catch (e: URISyntaxException) {
+            orig
+        }
     }
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
