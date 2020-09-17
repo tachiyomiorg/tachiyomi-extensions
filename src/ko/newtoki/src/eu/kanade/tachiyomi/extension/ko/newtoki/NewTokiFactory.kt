@@ -23,7 +23,7 @@ import java.util.Locale
  * It was merged after shutdown of ManaMoa.
  * This is by the head of Manamoa, as they decided to move to Newtoki.
  */
-private val domainNumber = 33 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", Locale.US).parse("2019-11-14")!!.time) / 595000000)
+private val domainNumber = 32 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", Locale.US).parse("2019-11-14")!!.time) / 595000000)
 
 class NewTokiFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
