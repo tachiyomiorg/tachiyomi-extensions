@@ -8,6 +8,7 @@ import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -21,6 +22,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
@@ -73,6 +75,20 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override fun searchMangaNextPageSelector() = popularMangaSelector()
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/$boardName" + (if (page > 1) "/p$page" else "") + "?stx=$query")
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+            val urlPath = "/$boardName/$realQuery"
+            client.newCall(GET("$baseUrl$urlPath"))
+                .asObservableSuccess()
+                .map { response ->
+                    // TODO: Fix the error which caused by shares id field with detail and each chapters in the source
+                    val details = mangaDetailsParse(response.asJsoup())
+                    details.url = urlPath
+                    MangasPage(listOf(details), false)
+                }
+        } else super.fetchSearchManga(page, query, filters)
+    }
 
     override fun mangaDetailsParse(document: Document): SManga {
         val info = document.select("div.view-title > .view-content").first()
@@ -242,5 +258,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+
+        const val PREFIX_ID_SEARCH = "id:"
     }
 }
