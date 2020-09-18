@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.ko.newtoki
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
+import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
@@ -247,7 +248,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val latestExperimentPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_PREF, newValue as Boolean).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
+        if (name == "ManaToki") {
+            screen.addPreference(latestExperimentPref)
+        }
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -271,10 +292,30 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val latestExperimentPref = CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_PREF, newValue as Boolean).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
+        if (name == "ManaToki") {
+            screen.addPreference(latestExperimentPref)
+        }
     }
 
-    private fun getUrlPath(orig: String): String {
+    protected fun getUrlPath(orig: String): String {
         return try {
             URI(orig).path
         } catch (e: URISyntaxException) {
@@ -283,12 +324,18 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     }
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
+    protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
 
     companion object {
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+
+        // Setting: Experimental Latest Fetcher
+        private const val EXPERIMENTAL_LATEST_PREF_TITLE = "Enable Latest (Experimental)"
+        private const val EXPERIMENTAL_LATEST_PREF = "fetchLatestExperiment"
+        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates, Also requires LOTS OF requests (70 per page)"
 
         const val PREFIX_ID_SEARCH = "id:"
     }

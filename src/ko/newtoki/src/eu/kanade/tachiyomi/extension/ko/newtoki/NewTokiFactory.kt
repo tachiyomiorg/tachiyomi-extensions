@@ -5,9 +5,12 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.security.MessageDigest
@@ -35,7 +38,30 @@ class NewTokiFactory : SourceFactory {
 class NewTokiManga : NewToki("ManaToki", "https://manatoki$domainNumber.net", "comic") {
     // / ! DO NOT CHANGE THIS !  Only the site name changed from newtoki.
     override val id by lazy { generateSourceId("NewToki", lang, versionId) }
-    override val supportsLatest = false
+    override val supportsLatest by lazy { getExperimentLatest() }
+
+    // this does 70 request per page....
+    override fun latestUpdatesSelector() = ".media.post-list p > a"
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/update")
+    override fun latestUpdatesNextPageSelector() = "nav.pg_wrap > .pg > strong"
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(latestUpdatesSelector()).map { element ->
+            val url = element.attr("abs:href")
+            val manga = mangaDetailsParse(client.newCall(GET(url)).execute())
+            manga.url = getUrlPath(url)
+            manga
+        }
+
+        val hasNextPage = try {
+            !document.select(popularMangaNextPageSelector()).text().contains("10")
+        } catch (_: Exception) {
+            false
+        }
+
+        return MangasPage(mangas, hasNextPage)
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/comic" + (if (page > 1) "/p$page" else ""))!!.newBuilder()
