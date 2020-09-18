@@ -35,6 +35,7 @@ class NewTokiFactory : SourceFactory {
 class NewTokiManga : NewToki("ManaToki", "https://manatoki$domainNumber.net", "comic") {
     // / ! DO NOT CHANGE THIS !  Only the site name changed from newtoki.
     override val id by lazy { generateSourceId("NewToki", lang, versionId) }
+    override val supportsLatest = false
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/comic" + (if (page > 1) "/p$page" else ""))!!.newBuilder()
