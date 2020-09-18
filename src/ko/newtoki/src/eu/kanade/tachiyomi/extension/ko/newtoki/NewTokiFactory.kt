@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.CacheControl
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -17,6 +18,7 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit.DAYS
 
 /**
  * Source changes domain names every few days (e.g. newtoki31.net to newtoki32.net)
@@ -42,14 +44,16 @@ class NewTokiManga : NewToki("ManaToki", "https://manatoki$domainNumber.net", "c
 
     // this does 70 request per page....
     override fun latestUpdatesSelector() = ".media.post-list p > a"
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/update")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/update?hid=update&page=$page")
     override fun latestUpdatesNextPageSelector() = "nav.pg_wrap > .pg > strong"
     override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
+        // given cache time to prevent repeated lots of request in latest.
+        val cacheControl = CacheControl.Builder().maxAge(14, DAYS).maxStale(14, DAYS).build()
         val mangas = document.select(latestUpdatesSelector()).map { element ->
             val url = element.attr("abs:href")
-            val manga = mangaDetailsParse(client.newCall(GET(url)).execute())
+            val manga = mangaDetailsParse(client.newCall(GET(url, cache = cacheControl)).execute())
             manga.url = getUrlPath(url)
             manga
         }
