@@ -151,6 +151,7 @@ class NewTokiManga : NewToki("ManaToki", "https://manatoki$domainNumber.net", "c
     )
 
     override fun getFilterList() = FilterList(
+        Filter.Header("Filter can't use with query"),
         SearchPublishTypeList(),
         SearchJaumTypeList(),
         SearchGenreTypeList()
@@ -165,7 +166,7 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
         val url = HttpUrl.parse("$baseUrl/webtoon" + (if (page > 1) "/p$page" else ""))!!.newBuilder()
         filters.forEach { filter ->
             when (filter) {
-                is SearchTypeList -> {
+                is SearchTargetTypeList -> {
                     if (filter.state > 0) {
                         url.addQueryParameter("toon", filter.values[filter.state])
                     }
@@ -173,8 +174,31 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
             }
         }
 
+        // Imcompatible with Other Search Parametor
         if (!query.isBlank()) {
             url.addQueryParameter("stx", query)
+        } else {
+            filters.forEach { filter ->
+                when (filter) {
+                    is SearchYoilTypeList -> {
+                        if (filter.state > 0) {
+                            url.addQueryParameter("yoil", filter.values[filter.state])
+                        }
+                    }
+
+                    is SearchJaumTypeList -> {
+                        if (filter.state > 0) {
+                            url.addQueryParameter("jaum", filter.values[filter.state])
+                        }
+                    }
+
+                    is SearchGenreTypeList -> {
+                        if (filter.state > 0) {
+                            url.addQueryParameter("tag", filter.values[filter.state])
+                        }
+                    }
+                }
+            }
         }
 
         return GET(url.toString())
@@ -194,10 +218,73 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
             .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
-    private class SearchTypeList : Filter.Select<String>("Type", arrayOf("전체", "일반웹툰", "성인웹툰", "BL/GL", "완결웹툰"))
+    private class SearchTargetTypeList : Filter.Select<String>("Type", arrayOf("전체", "일반웹툰", "성인웹툰", "BL/GL", "완결웹툰"))
+
+    // [...document.querySelectorAll("form.form td")[1].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchYoilTypeList : Filter.Select<String>(
+        "Day of the Week",
+        arrayOf(
+            "전체",
+            "월",
+            "화",
+            "수",
+            "목",
+            "금",
+            "토",
+            "일",
+            "열흘"
+        )
+    )
+
+    // [...document.querySelectorAll("form.form td")[2].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchJaumTypeList : Filter.Select<String>(
+        "Jaum",
+        arrayOf(
+            "전체",
+            "ㄱ",
+            "ㄴ",
+            "ㄷ",
+            "ㄹ",
+            "ㅁ",
+            "ㅂ",
+            "ㅅ",
+            "ㅇ",
+            "ㅈ",
+            "ㅊ",
+            "ㅋ",
+            "ㅌ",
+            "ㅍ",
+            "ㅎ",
+            "a-z",
+            "0-9"
+        )
+    )
+    // [...document.querySelectorAll("form.form td")[3].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchGenreTypeList : Filter.Select<String>(
+        "Genre",
+        arrayOf(
+            "전체",
+            "판타지",
+            "액션",
+            "개그",
+            "미스터리",
+            "로맨스",
+            "드라마",
+            "무협",
+            "스포츠",
+            "일상",
+            "학원",
+            "성인"
+        )
+    )
 
     override fun getFilterList() = FilterList(
-        SearchTypeList()
+        SearchTargetTypeList(),
+        Filter.Separator(),
+        Filter.Header("Under 3 Filters can't use with query"),
+        SearchYoilTypeList(),
+        SearchJaumTypeList(),
+        SearchGenreTypeList()
     )
 }
 
