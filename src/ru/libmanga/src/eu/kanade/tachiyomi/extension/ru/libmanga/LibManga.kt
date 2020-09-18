@@ -325,7 +325,7 @@ class LibManga : ConfigurableSource, HttpSource() {
                 }
                 is GenreList -> filter.state.forEach { genre ->
                     if (genre.state != Filter.TriState.STATE_IGNORE) {
-                        url.addQueryParameter(if (genre.isIncluded()) "includeGenres[]" else "excludeGenres[]", genre.id)
+                        url.addQueryParameter(if (genre.isIncluded()) "genres[include][]" else "genres[exclude][]", genre.id)
                     }
                 }
                 is OrderBy -> {

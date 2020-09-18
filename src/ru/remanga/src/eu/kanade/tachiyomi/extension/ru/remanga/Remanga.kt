@@ -162,8 +162,8 @@ class Remanga : ConfigurableSource, HttpSource() {
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is OrderBy -> {
-                    val ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "random")[filter.state!!.index]
-                    url.addQueryParameter("ordering", if (filter.state!!.ascending) "-$ord" else ord)
+                    val ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "ount_chapters", "random")[filter.state!!.index]
+                    url.addQueryParameter("ordering", if (filter.state!!.ascending) "$ord" else "-$ord")
                 }
                 is CategoryList -> filter.state.forEach { category ->
                     if (category.state != Filter.TriState.STATE_IGNORE) {
@@ -400,7 +400,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private class OrderBy : Filter.Sort(
         "Сортировка",
-        arrayOf("Новизне", "Последним обновлениям", "Популярности", "Лайкам", "Просмотрам", "Мне повезет"),
+        arrayOf("Новизне", "Последним обновлениям", "Популярности", "Лайкам", "Просмотрам", "По кол-ву глав", "Мне повезет"),
         Selection(2, false)
     )
 
