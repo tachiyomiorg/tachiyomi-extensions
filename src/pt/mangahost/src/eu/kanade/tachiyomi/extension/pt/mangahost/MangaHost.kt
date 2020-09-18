@@ -36,10 +36,13 @@ class MangaHost : ParsedHttpSource() {
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
-    private fun genericMangaFromElement(element: Element, attr: String = "src"): SManga =
+    private fun genericMangaFromElement(element: Element): SManga =
         SManga.create().apply {
+            val thumbnailEl = element.select("img")
+            val thumbnailAttr = if (thumbnailEl.hasAttr("data-path")) "data-path" else "src"
+
             title = element.attr("title").withoutLanguage()
-            thumbnail_url = element.select("img").attr(attr).toLargeUrl()
+            thumbnail_url = thumbnailEl.attr(thumbnailAttr).toLargeUrl()
             setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
         }
 
@@ -71,8 +74,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "div#dados div.line-lancamentos div.column-img a"
 
-    override fun latestUpdatesFromElement(element: Element): SManga =
-        genericMangaFromElement(element, "data-lazy-src")
+    override fun latestUpdatesFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -85,8 +87,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
 
-    override fun searchMangaFromElement(element: Element): SManga =
-        genericMangaFromElement(element, "data-path")
+    override fun searchMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun searchMangaNextPageSelector(): String? = null
 
