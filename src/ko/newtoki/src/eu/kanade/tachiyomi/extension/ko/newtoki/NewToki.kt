@@ -217,7 +217,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
             .let { Jsoup.parse(it) }
             .select("img[alt]")
-            .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
+            .mapIndexed { i, img -> Page(i, "", if (img.hasAttr("abs:data-original")) img.attr("abs:data-original") else img.attr("abs:content")) }
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
