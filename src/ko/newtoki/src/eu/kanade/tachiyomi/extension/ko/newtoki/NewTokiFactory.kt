@@ -6,14 +6,11 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -233,20 +230,6 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
         }
 
         return GET(url.toString())
-    }
-
-    private val htmlDataRegex = Regex("""html_data\+='([^']+)'""")
-
-    override fun pageListParse(document: Document): List<Page> {
-        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("script not found")
-
-        return htmlDataRegex.findAll(script).map { it.groupValues[1] }
-            .asIterable()
-            .flatMap { it.split(".") }
-            .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
-            .let { Jsoup.parse(it) }
-            .select("img[alt]")
-            .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
     private class SearchTargetTypeList : Filter.Select<String>("Type", arrayOf("전체", "일반웹툰", "성인웹툰", "BL/GL", "완결웹툰"))

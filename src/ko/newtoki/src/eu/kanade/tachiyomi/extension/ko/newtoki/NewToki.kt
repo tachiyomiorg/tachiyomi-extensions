@@ -21,6 +21,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -205,10 +206,17 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         }
     }
 
+    private val htmlDataRegex = Regex("""html_data\+='([^']+)'""")
+
     override fun pageListParse(document: Document): List<Page> {
-        // <article> - <div> - optional <div> - <div> - optional <p> - <img>
-        return document.select("article > div div img")
-            .filterNot { !it.hasAttr("data-original") || it.attr("data-original").contains("blank.gif") }
+        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("script not found")
+
+        return htmlDataRegex.findAll(script).map { it.groupValues[1] }
+            .asIterable()
+            .flatMap { it.split(".") }
+            .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
+            .let { Jsoup.parse(it) }
+            .select("img[alt]")
             .mapIndexed { i, img -> Page(i, "", img.attr("abs:data-original")) }
     }
 
