@@ -158,7 +158,8 @@ class MadaraFactory : SourceFactory {
         ZManga(),
         ZinManga(),
         ShoujoHearts(),
-        AlianzaMarcial()
+        AlianzaMarcial(),
+        OlaoeManga()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -1264,3 +1265,5 @@ class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
 }
 
 class AlianzaMarcial : Madara("AlianzaMarcial", "https://alianzamarcial.xyz", "es")
+
+class OlaoeManga : Madara("مانجا اولاو", "https://olaoe.giize.com", "ar")
