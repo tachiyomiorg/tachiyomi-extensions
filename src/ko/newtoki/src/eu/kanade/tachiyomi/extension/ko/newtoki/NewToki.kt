@@ -209,7 +209,9 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     private val htmlDataRegex = Regex("""html_data\+='([^']+)'""")
 
     override fun pageListParse(document: Document): List<Page> {
-        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("script not found")
+        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("data script not found")
+        val loadScript = document.select("script:containsData(data_attribute)").firstOrNull()?.data() ?: throw Exception("load script not found")
+        val dataAttr = "abs:data-" + loadScript.substringAfter("data_attribute: '").substringBefore("',")
 
         return htmlDataRegex.findAll(script).map { it.groupValues[1] }
             .asIterable()
@@ -217,7 +219,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
             .let { Jsoup.parse(it) }
             .select("img[alt]")
-            .mapIndexed { i, img -> Page(i, "", if (img.hasAttr("abs:data-original")) img.attr("abs:data-original") else img.attr("abs:content")) }
+            .mapIndexed { i, img -> Page(i, "", if (img.hasAttr(dataAttr)) img.attr(dataAttr) else img.attr("abs:content")) }
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
