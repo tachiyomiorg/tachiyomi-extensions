@@ -67,7 +67,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     private val servers = mapOf(
         "secondary" to "https://img2.emanga.ru",
         "fourth" to "https://img4.imgslib.ru",
-        "compress" to "https://img3.ranobelib.me"
+        "compress" to "https://img3.cdnlib.org",
     )
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -180,8 +180,9 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     private fun popularMangaFromElement(el: JsonElement) = SManga.create().apply {
         val slug = el["slug"].string
+        val cover = el["cover"].string
         title = el["name"].string
-        thumbnail_url = "$baseUrl/uploads/cover/$slug/cover/cover_250x350.jpg"
+        thumbnail_url = "$baseUrl/uploads/cover/$slug/cover/${cover}_250x350.jpg"
         url = "/$slug"
     }
 
@@ -268,8 +269,9 @@ class LibManga : ConfigurableSource, HttpSource() {
             .select("script:containsData(window.__info)")
             .first()
             .html()
+            .split("window.__info = ")
+            .last()
             .trim()
-            .removePrefix("window.__info = ")
             .split(";")
             .first()
 
