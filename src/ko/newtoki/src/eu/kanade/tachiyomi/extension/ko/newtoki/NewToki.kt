@@ -218,7 +218,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             .flatMap { it.split(".") }
             .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
             .let { Jsoup.parse(it) }
-            .select("img[alt]")
+            .select("img[src=/img/loading-image.gif]")
             .mapIndexed { i, img -> Page(i, "", if (img.hasAttr(dataAttr)) img.attr(dataAttr) else img.attr("abs:content")) }
     }
 
