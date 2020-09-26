@@ -42,9 +42,12 @@ class WPMangaStreamFactory : SourceFactory {
         MangaP(),
         MangaProZ(),
         Boosei(),
-        Mangakyo()
+        Mangakyo(),
+        AsuraScans()
     )
 }
+
+class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en")
 
 class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
 

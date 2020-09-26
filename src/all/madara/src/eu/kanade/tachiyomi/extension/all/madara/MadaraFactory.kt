@@ -35,7 +35,6 @@ class MadaraFactory : SourceFactory {
         ArazNovel(),
         AsgardTeam(),
         AstralLibrary(),
-        AsuraScans(),
         Azora(),
         Bakaman(),
         BestManga(),
@@ -169,8 +168,6 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
-
-class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
 class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
     // site is a bit broken
