@@ -7,14 +7,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 open class Emerald(
     override val name: String,
@@ -76,8 +76,11 @@ open class Emerald(
                         }
                     }
                     if (styleToInclude.isNotEmpty()) {
-                        url.addQueryParameter("styles", styleToInclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "styles",
+                            styleToInclude
+                                .joinToString(",")
+                        )
                     }
                 }
                 is DemographicFilter -> {
@@ -88,8 +91,11 @@ open class Emerald(
                         }
                     }
                     if (demographicToInclude.isNotEmpty()) {
-                        url.addQueryParameter("demogs", demographicToInclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "demogs",
+                            demographicToInclude
+                                .joinToString(",")
+                        )
                     }
                 }
                 is StatusFilter -> {
@@ -110,8 +116,11 @@ open class Emerald(
                         }
                     }
                     if (genreToInclude.isNotEmpty()) {
-                        url.addQueryParameter("genres", genreToInclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "genres",
+                            genreToInclude
+                                .joinToString(",")
+                        )
                     }
                 }
                 is StarFilter -> {
@@ -154,8 +163,10 @@ open class Emerald(
         val manga = SManga.create()
         val genres = mutableListOf<String>()
         val status = infoElement.select("div.attr-item:contains(status) span").text()
-        infoElement.select("div.attr-item:contains(genres) span").text().split(" / "
-            .toRegex()).forEach { element ->
+        infoElement.select("div.attr-item:contains(genres) span").text().split(
+            " / "
+                .toRegex()
+        ).forEach { element ->
             genres.add(element)
         }
         manga.title = infoElement.select("h3").text()
@@ -259,10 +270,12 @@ open class Emerald(
         val imgJson = JSONObject(script)
         val imgNames = imgJson.names()
 
-        for (i in 0 until imgNames.length()) {
-            val imgKey = imgNames.getString(i)
-            val imgUrl = imgJson.getString(imgKey)
-            pages.add(Page(i, "", imgUrl))
+        if (imgNames != null) {
+            for (i in 0 until imgNames.length()) {
+                val imgKey = imgNames.getString(i)
+                val imgUrl = imgJson.getString(imgKey)
+                pages.add(Page(i, "", imgUrl))
+            }
         }
 
         return pages
@@ -276,40 +289,49 @@ open class Emerald(
     private class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
     private class StatusFilter : Filter.TriState("Completed")
 
-    private class StarFilter : UriPartFilter("Stars", arrayOf(
-        Pair("<select>", ""),
-        Pair("5 Stars", "5"),
-        Pair("4 Stars", "4"),
-        Pair("3 Stars", "3"),
-        Pair("2 Stars", "2"),
-        Pair("1 Stars", "1")
-    ))
+    private class StarFilter : UriPartFilter(
+        "Stars",
+        arrayOf(
+            Pair("<select>", ""),
+            Pair("5 Stars", "5"),
+            Pair("4 Stars", "4"),
+            Pair("3 Stars", "3"),
+            Pair("2 Stars", "2"),
+            Pair("1 Stars", "1")
+        )
+    )
 
-    private class ChapterFilter : UriPartFilter("Chapters", arrayOf(
-        Pair("<select>", ""),
-        Pair("1 ~ 9", "1-9"),
-        Pair("10 ~ 29", "10-29"),
-        Pair("30 ~ 99", "30-99"),
-        Pair("100 ~ 199", "100-199"),
-        Pair("200+", "200"),
-        Pair("100+", "100"),
-        Pair("50+", "50"),
-        Pair("10+", "10"),
-        Pair("1+", "1")
-    ))
+    private class ChapterFilter : UriPartFilter(
+        "Chapters",
+        arrayOf(
+            Pair("<select>", ""),
+            Pair("1 ~ 9", "1-9"),
+            Pair("10 ~ 29", "10-29"),
+            Pair("30 ~ 99", "30-99"),
+            Pair("100 ~ 199", "100-199"),
+            Pair("200+", "200"),
+            Pair("100+", "100"),
+            Pair("50+", "50"),
+            Pair("10+", "10"),
+            Pair("1+", "1")
+        )
+    )
 
-    private class SortBy : UriPartFilter("Sorts By", arrayOf(
-        Pair("<select>", ""),
-        Pair("Totally", "views_t"),
-        Pair("365 days", "views_y"),
-        Pair("30 days", "views_m"),
-        Pair("7 days", "views_w"),
-        Pair("24 hours", "views_d"),
-        Pair("60 minutes", "views_h"),
-        Pair("A-Z", "title"),
-        Pair("Update time", "update"),
-        Pair("Add time", "create")
-    ))
+    private class SortBy : UriPartFilter(
+        "Sorts By",
+        arrayOf(
+            Pair("<select>", ""),
+            Pair("Totally", "views_t"),
+            Pair("365 days", "views_y"),
+            Pair("30 days", "views_m"),
+            Pair("7 days", "views_w"),
+            Pair("24 hours", "views_d"),
+            Pair("60 minutes", "views_h"),
+            Pair("A-Z", "title"),
+            Pair("Update time", "update"),
+            Pair("Add time", "create")
+        )
+    )
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),

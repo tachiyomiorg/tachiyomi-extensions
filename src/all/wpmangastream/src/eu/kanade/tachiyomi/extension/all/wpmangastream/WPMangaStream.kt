@@ -13,10 +13,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -26,6 +22,10 @@ import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 abstract class WPMangaStream(
     override val name: String,
@@ -273,28 +273,37 @@ abstract class WPMangaStream(
 
     private class YearFilter : Filter.Text("Year")
 
-    protected class TypeFilter : UriPartFilter("Type", arrayOf(
-        Pair("Default", ""),
-        Pair("Manga", "Manga"),
-        Pair("Manhwa", "Manhwa"),
-        Pair("Manhua", "Manhua"),
-        Pair("Comic", "Comic")
-    ))
+    protected class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("Manga", "Manga"),
+            Pair("Manhwa", "Manhwa"),
+            Pair("Manhua", "Manhua"),
+            Pair("Comic", "Comic")
+        )
+    )
 
-    protected class SortByFilter : UriPartFilter("Sort By", arrayOf(
-        Pair("Default", ""),
-        Pair("A-Z", "title"),
-        Pair("Z-A", "titlereverse"),
-        Pair("Latest Update", "update"),
-        Pair("Latest Added", "latest"),
-        Pair("Popular", "popular")
-    ))
+    protected class SortByFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("A-Z", "title"),
+            Pair("Z-A", "titlereverse"),
+            Pair("Latest Update", "update"),
+            Pair("Latest Added", "latest"),
+            Pair("Popular", "popular")
+        )
+    )
 
-    protected class StatusFilter : UriPartFilter("Status", arrayOf(
-        Pair("All", ""),
-        Pair("Ongoing", "ongoing"),
-        Pair("Completed", "completed")
-    ))
+    protected class StatusFilter : UriPartFilter(
+        "Status",
+        arrayOf(
+            Pair("All", ""),
+            Pair("Ongoing", "ongoing"),
+            Pair("Completed", "completed")
+        )
+    )
 
     protected class Genre(name: String, val id: String = name) : Filter.TriState(name)
     protected class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)

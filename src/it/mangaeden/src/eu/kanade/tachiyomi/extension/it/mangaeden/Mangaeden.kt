@@ -7,15 +7,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class Mangaeden : ParsedHttpSource() {
 
@@ -52,17 +52,20 @@ class Mangaeden : ParsedHttpSource() {
         val url = HttpUrl.parse("$baseUrl/it/it-directory/")?.newBuilder()!!.addQueryParameter("title", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
-                is StatusList -> filter.state
-                    .filter { it.state }
-                    .map { it.id.toString() }
-                    .forEach { url.addQueryParameter("status", it) }
-                is Types -> filter.state
-                    .filter { it.state }
-                    .map { it.id.toString() }
-                    .forEach { url.addQueryParameter("type", it) }
-                is GenreList -> filter.state
-                    .filter { !it.isIgnored() }
-                    .forEach { genre -> url.addQueryParameter(if (genre.isIncluded()) "categoriesInc" else "categoriesExcl", genre.id) }
+                is StatusList ->
+                    filter.state
+                        .filter { it.state }
+                        .map { it.id.toString() }
+                        .forEach { url.addQueryParameter("status", it) }
+                is Types ->
+                    filter.state
+                        .filter { it.state }
+                        .map { it.id.toString() }
+                        .forEach { url.addQueryParameter("type", it) }
+                is GenreList ->
+                    filter.state
+                        .filter { !it.isIgnored() }
+                        .forEach { genre -> url.addQueryParameter(if (genre.isIncluded()) "categoriesInc" else "categoriesExcl", genre.id) }
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
                 is OrderBy -> filter.state?.let {
                     val sortId = it.index
@@ -129,11 +132,12 @@ class Mangaeden : ParsedHttpSource() {
                     set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
             }
-            else -> try {
-                SimpleDateFormat("d MMM yyyy", Locale.ITALIAN).parse(date).time
-            } catch (e: ParseException) {
-                0L
-            }
+            else ->
+                try {
+                    SimpleDateFormat("d MMM yyyy", Locale.ITALIAN).parse(date)?.time ?: 0L
+                } catch (e: ParseException) {
+                    0L
+                }
         }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -147,8 +151,11 @@ class Mangaeden : ParsedHttpSource() {
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
     private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)
-    private class OrderBy : Filter.Sort("Order by", arrayOf("Titolo manga", "Visite", "Capitoli", "Ultimo capitolo"),
-        Selection(1, false))
+    private class OrderBy : Filter.Sort(
+        "Order by",
+        arrayOf("Titolo manga", "Visite", "Capitoli", "Ultimo capitolo"),
+        Selection(1, false)
+    )
 
     private class StatusList(statuses: List<NamedId>) : Filter.Group<NamedId>("Stato", statuses)
     private class Types(types: List<NamedId>) : Filter.Group<NamedId>("Tipo", types)

@@ -105,11 +105,11 @@ class Vgperson : ParsedHttpSource() {
 
     // get known manga covers from imgur
     private fun getCover(title: String) = when (title) {
-            "The Festive Monster's Cheerful Failure" -> "kEK10GL.png"
-            "Azure and Claude" -> "buXnlmh.jpg"
-            "Three Days of Happiness" -> "kL5dvnp.jpg"
-            else -> null
-        }?.let { "https://i.imgur.com/$it" }
+        "The Festive Monster's Cheerful Failure" -> "kEK10GL.png"
+        "Azure and Claude" -> "buXnlmh.jpg"
+        "Three Days of Happiness" -> "kL5dvnp.jpg"
+        else -> null
+    }?.let { "https://i.imgur.com/$it" }
 
     override fun latestUpdatesSelector() = ""
 

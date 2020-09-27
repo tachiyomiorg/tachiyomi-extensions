@@ -126,10 +126,12 @@ class WuqiManga : ParsedHttpSource() {
         val chapters = mutableListOf<SChapter>()
         response.asJsoup().select("div.chapter div.chapter-list>ul").asReversed().forEach {
             it.select("li a").forEach {
-                chapters.add(SChapter.create().apply {
-                    url = it.attr("href")
-                    name = it.attr("title")
-                })
+                chapters.add(
+                    SChapter.create().apply {
+                        url = it.attr("href")
+                        name = it.attr("title")
+                    }
+                )
             }
         }
         return chapters

@@ -6,9 +6,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -16,6 +13,9 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MangaHost : ParsedHttpSource() {
 
@@ -24,7 +24,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahosted.com"
+    override val baseUrl = "https://mangahost2.com"
 
     override val lang = "pt-BR"
 
@@ -36,10 +36,13 @@ class MangaHost : ParsedHttpSource() {
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
-    private fun genericMangaFromElement(element: Element, attr: String = "src"): SManga =
+    private fun genericMangaFromElement(element: Element): SManga =
         SManga.create().apply {
+            val thumbnailEl = element.select("img")
+            val thumbnailAttr = if (thumbnailEl.hasAttr("data-path")) "data-path" else "src"
+
             title = element.attr("title").withoutLanguage()
-            thumbnail_url = element.select("img").attr(attr).toLargeUrl()
+            thumbnail_url = thumbnailEl.attr(thumbnailAttr).toLargeUrl()
             setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
         }
 
@@ -84,8 +87,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "table.table-search > tbody > tr > td:eq(0) > a"
 
-    override fun searchMangaFromElement(element: Element): SManga =
-        genericMangaFromElement(element, "data-path")
+    override fun searchMangaFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun searchMangaNextPageSelector(): String? = null
 
@@ -156,12 +158,12 @@ class MangaHost : ParsedHttpSource() {
 
     private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
 
-    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, ".")
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_full.")
 
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()

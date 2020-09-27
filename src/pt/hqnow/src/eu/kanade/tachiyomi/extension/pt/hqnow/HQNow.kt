@@ -155,35 +155,38 @@ class HQNow : HttpSource() {
         LetterFilter()
     )
 
-    private class LetterFilter : UriPartFilter("Letra", arrayOf(
-        Pair("---", "<Selecione>"),
-        Pair("a", "A"),
-        Pair("b", "B"),
-        Pair("c", "C"),
-        Pair("d", "D"),
-        Pair("e", "E"),
-        Pair("f", "F"),
-        Pair("g", "G"),
-        Pair("h", "H"),
-        Pair("i", "I"),
-        Pair("j", "J"),
-        Pair("k", "K"),
-        Pair("l", "L"),
-        Pair("m", "M"),
-        Pair("n", "N"),
-        Pair("o", "O"),
-        Pair("p", "P"),
-        Pair("q", "Q"),
-        Pair("r", "R"),
-        Pair("s", "S"),
-        Pair("t", "T"),
-        Pair("u", "U"),
-        Pair("v", "V"),
-        Pair("w", "W"),
-        Pair("x", "X"),
-        Pair("y", "Y"),
-        Pair("z", "Z")
-    ))
+    private class LetterFilter : UriPartFilter(
+        "Letra",
+        arrayOf(
+            Pair("---", "<Selecione>"),
+            Pair("a", "A"),
+            Pair("b", "B"),
+            Pair("c", "C"),
+            Pair("d", "D"),
+            Pair("e", "E"),
+            Pair("f", "F"),
+            Pair("g", "G"),
+            Pair("h", "H"),
+            Pair("i", "I"),
+            Pair("j", "J"),
+            Pair("k", "K"),
+            Pair("l", "L"),
+            Pair("m", "M"),
+            Pair("n", "N"),
+            Pair("o", "O"),
+            Pair("p", "P"),
+            Pair("q", "Q"),
+            Pair("r", "R"),
+            Pair("s", "S"),
+            Pair("t", "T"),
+            Pair("u", "U"),
+            Pair("v", "V"),
+            Pair("w", "W"),
+            Pair("x", "X"),
+            Pair("y", "Y"),
+            Pair("z", "Z")
+        )
+    )
 
     open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {

@@ -11,13 +11,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import kotlin.math.absoluteValue
-import kotlin.random.Random
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -29,6 +22,13 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 abstract class Madara(
     override val name: String,
@@ -189,19 +189,25 @@ abstract class Madara(
     private class ArtistFilter : Filter.Text("Artist")
     private class YearFilter : Filter.Text("Year of Released")
     private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
-    private class OrderByFilter : UriPartFilter("Order By", arrayOf(
-        Pair("<select>", ""),
-        Pair("Latest", "latest"),
-        Pair("A-Z", "alphabet"),
-        Pair("Rating", "rating"),
-        Pair("Trending", "trending"),
-        Pair("Most Views", "views"),
-        Pair("New", "new-manga")
-    ))
-    private class GenreConditionFilter : UriPartFilter("Genre condition", arrayOf(
-        Pair("or", ""),
-        Pair("and", "1")
-    ))
+    private class OrderByFilter : UriPartFilter(
+        "Order By",
+        arrayOf(
+            Pair("<select>", ""),
+            Pair("Latest", "latest"),
+            Pair("A-Z", "alphabet"),
+            Pair("Rating", "rating"),
+            Pair("Trending", "trending"),
+            Pair("Most Views", "views"),
+            Pair("New", "new-manga")
+        )
+    )
+    private class GenreConditionFilter : UriPartFilter(
+        "Genre condition",
+        arrayOf(
+            Pair("or", ""),
+            Pair("and", "1")
+        )
+    )
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
 
@@ -385,7 +391,7 @@ abstract class Madara(
             .let { elements ->
                 if (elements.isEmpty() && !document.select(dataIdSelector).isNullOrEmpty())
                     getXhrChapters(document.select(dataIdSelector).attr("data-id")).select(chapterListSelector())
-                        else elements
+                else elements
             }
             .map { chapterFromElement(it) }
     }
@@ -491,9 +497,13 @@ abstract class Madara(
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListParseSelector).mapIndexed { index, element ->
-            Page(index, document.location(), element.select("img").first()?.let {
-                it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
-            })
+            Page(
+                index,
+                document.location(),
+                element.select("img").first()?.let {
+                    it.absUrl(if (it.hasAttr("data-src")) "data-src" else "src")
+                }
+            )
         }
     }
 

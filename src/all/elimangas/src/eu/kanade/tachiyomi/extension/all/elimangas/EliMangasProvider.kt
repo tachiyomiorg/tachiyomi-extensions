@@ -37,14 +37,17 @@ open class EliMangasProvider(
     override fun popularMangaParse(response: Response): MangasPage {
         val json = gson.fromJson<JsonArray>(response.body()!!.string()).asJsonArray
 
-        return MangasPage(json.map {
-            SManga.create().apply {
-                val id = it["id"].asString
-                url = id
-                title = it["name"].asString
-                thumbnail_url = "https://www.elimangas.com/images/$id.jpg"
-            }
-        }, json.size() >= 30)
+        return MangasPage(
+            json.map {
+                SManga.create().apply {
+                    val id = it["id"].asString
+                    url = id
+                    title = it["name"].asString
+                    thumbnail_url = "https://www.elimangas.com/images/$id.jpg"
+                }
+            },
+            json.size() >= 30
+        )
     }
 
     // Latest

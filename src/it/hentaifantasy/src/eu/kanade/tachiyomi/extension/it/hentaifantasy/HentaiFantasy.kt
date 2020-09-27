@@ -9,16 +9,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.regex.Pattern
 
 @Nsfw
 class HentaiFantasy : ParsedHttpSource() {
@@ -74,13 +74,14 @@ class HentaiFantasy : ParsedHttpSource() {
         val paths = mutableListOf<String>()
         for (filter in if (filters.isEmpty()) getFilterList() else filters) {
             when (filter) {
-                is TagList -> filter.state
-                    .filter { it.state }
-                    .map {
-                        paths.add(it.name.toLowerCase().replace(" ", "_"))
-                        it.id.toString()
-                    }
-                    .forEach { tags.add(it) }
+                is TagList ->
+                    filter.state
+                        .filter { it.state }
+                        .map {
+                            paths.add(it.name.toLowerCase().replace(" ", "_"))
+                            it.id.toString()
+                        }
+                        .forEach { tags.add(it) }
             }
         }
 
@@ -162,7 +163,7 @@ class HentaiFantasy : ParsedHttpSource() {
             }
             else -> {
                 try {
-                    dateFormat.parse(date).time
+                    dateFormat.parse(date)?.time ?: 0L
                 } catch (e: ParseException) {
                     0L
                 }
@@ -181,7 +182,7 @@ class HentaiFantasy : ParsedHttpSource() {
 
         var i = 0
         while (m.find()) {
-            pages.add(Page(i++, "", m.group(1).replace("""\\""", "")))
+            pages.add(Page(i++, "", m.group(1)?.replace("""\\""", "")))
         }
         return pages
     }

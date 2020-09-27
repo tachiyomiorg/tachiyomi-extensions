@@ -13,14 +13,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Mangahasu : ParsedHttpSource() {
 
@@ -195,18 +195,24 @@ class Mangahasu : ParsedHttpSource() {
         fun toUriPart() = vals[state].second
     }
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
-        Pair("Any", ""),
-        Pair("Manga", "10"),
-        Pair("Manhwa", "12"),
-        Pair("Manhua", "19")
-    ))
+    private class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
+            Pair("Any", ""),
+            Pair("Manga", "10"),
+            Pair("Manhwa", "12"),
+            Pair("Manhua", "19")
+        )
+    )
 
-    private class StatusFilter : UriPartFilter("Status", arrayOf(
-        Pair("Any", ""),
-        Pair("Completed", "1"),
-        Pair("Ongoing", "2")
-    ))
+    private class StatusFilter : UriPartFilter(
+        "Status",
+        arrayOf(
+            Pair("Any", ""),
+            Pair("Completed", "1"),
+            Pair("Ongoing", "2")
+        )
+    )
 
     private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)

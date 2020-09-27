@@ -9,14 +9,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class TheLibraryOfOhara(override val lang: String, private val siteLang: String) : ParsedHttpSource() {
 
@@ -36,15 +36,16 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String)
 
     // only show entries which contain pictures only.
     override fun popularMangaSelector() = when (lang) {
-        "en" -> "#categories-7 ul li.cat-item-589813936," + // Chapter Secrets
-            "#categories-7 ul li.cat-item-607613583, " + // Chapter Secrets Specials
-            "#categories-7 ul li.cat-item-43972770, " + // Charlotte Family
-            "#categories-7 ul li.cat-item-9363667, " + // Complete Guides
-            "#categories-7 ul li.cat-item-634609261, " + // Parody Chapter
-            "#categories-7 ul li.cat-item-699200615, " + // Return to the Reverie
-            "#categories-7 ul li.cat-item-139757, " + // SBS
-            "#categories-7 ul li.cat-item-22695, " + // Timeline
-            "#categories-7 ul li.cat-item-648324575" // Vivre Card Databook
+        "en" ->
+            "#categories-7 ul li.cat-item-589813936," + // Chapter Secrets
+                "#categories-7 ul li.cat-item-607613583, " + // Chapter Secrets Specials
+                "#categories-7 ul li.cat-item-43972770, " + // Charlotte Family
+                "#categories-7 ul li.cat-item-9363667, " + // Complete Guides
+                "#categories-7 ul li.cat-item-634609261, " + // Parody Chapter
+                "#categories-7 ul li.cat-item-699200615, " + // Return to the Reverie
+                "#categories-7 ul li.cat-item-139757, " + // SBS
+                "#categories-7 ul li.cat-item-22695, " + // Timeline
+                "#categories-7 ul li.cat-item-648324575" // Vivre Card Databook
         "id" -> "#categories-7 ul li.cat-item-702404482, #categories-7 ul li.cat-item-699200615" // Chapter Secrets Bahasa Indonesia, Return to the Reverie
         "fr" -> "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
         "ar" -> "#categories-7 ul li.cat-item-699200615" // Return to the Reverie
@@ -144,7 +145,7 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String)
 
     private fun parseChapterDate(date: String): Long {
         val parsedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.getDefault()).parse(date.replace("+00:00", "+0000"))
-            return parsedDate?.time ?: 0L
+        return parsedDate?.time ?: 0L
     }
 
     private fun chapterNextPageSelector() = "div.nav-previous a"
@@ -180,7 +181,8 @@ class TheLibraryOfOhara(override val lang: String, private val siteLang: String)
                         !it.name.contains("Arabic") &&
                         !it.name.contains("Italian") &&
                         !it.name.contains("Indonesia") &&
-                        !it.name.contains("Spanish") }.toMutableList()
+                        !it.name.contains("Spanish")
+                }.toMutableList()
             }
         }
 

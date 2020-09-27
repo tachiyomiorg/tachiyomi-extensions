@@ -10,17 +10,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.FormBody
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.HashSet
 import java.util.Locale
-import okhttp3.FormBody
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 
 abstract class FoolSlide(
     override val name: String,
@@ -116,9 +116,9 @@ abstract class FoolSlide(
     // if there's no image on the details page, get the first page of the first chapter
     fun getDetailsThumbnail(document: Document, urlSelector: String = chapterUrlSelector): String? {
         return document.select("div.thumbnail img, table.thumb img").firstOrNull()?.attr("abs:src")
-        ?: document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
-            .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
-            .let { response -> pageListParse(response).first().imageUrl }
+            ?: document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
+                .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
+                .let { response -> pageListParse(response).first().imageUrl }
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -138,9 +138,12 @@ abstract class FoolSlide(
     private fun allowAdult(request: Request) = allowAdult(request.url().toString())
 
     private fun allowAdult(url: String): Request {
-        return POST(url, body = FormBody.Builder()
-            .add("adult", "true")
-            .build())
+        return POST(
+            url,
+            body = FormBody.Builder()
+                .add("adult", "true")
+                .build()
+        )
     }
 
     override fun chapterListRequest(manga: SManga) = allowAdult(super.chapterListRequest(manga))
@@ -216,7 +219,7 @@ abstract class FoolSlide(
                 if (result != null) {
                     // Result parsed but no year, copy current year over
                     result = Calendar.getInstance().apply {
-                        time = result
+                        time = result!!
                         set(Calendar.YEAR, Calendar.getInstance().get(Calendar.YEAR))
                     }.time
                 }

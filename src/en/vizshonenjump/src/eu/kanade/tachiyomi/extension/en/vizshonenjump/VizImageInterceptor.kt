@@ -6,14 +6,14 @@ import android.graphics.Canvas
 import android.graphics.Rect
 import com.drew.imaging.ImageMetadataReader
 import com.drew.metadata.exif.ExifSubIFDDirectory
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.InputStream
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.Response
 import okhttp3.ResponseBody
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
 
 class VizImageInterceptor : Interceptor {
 
@@ -57,29 +57,40 @@ class VizImageInterceptor : Interceptor {
         // Top border.
         canvas.drawImage(
             from = input,
-            srcX = 0, srcY = 0,
-            dstX = 0, dstY = 0,
-            width = newWidth, height = blockHeight
+            srcX = 0,
+            srcY = 0,
+            dstX = 0,
+            dstY = 0,
+            width = newWidth,
+            height = blockHeight
         )
         // Left border.
         canvas.drawImage(
             from = input,
-            srcX = 0, srcY = blockHeight + 10,
-            dstX = 0, dstY = blockHeight,
-            width = blockWidth, height = newHeight - 2 * blockHeight
+            srcX = 0,
+            srcY = blockHeight + 10,
+            dstX = 0,
+            dstY = blockHeight,
+            width = blockWidth,
+            height = newHeight - 2 * blockHeight
         )
         // Bottom border.
         canvas.drawImage(
             from = input,
-            srcX = 0, srcY = (CELL_HEIGHT_COUNT - 1) * (blockHeight + 10),
-            dstX = 0, dstY = (CELL_HEIGHT_COUNT - 1) * blockHeight,
-            width = newWidth, height = height - (CELL_HEIGHT_COUNT - 1) * (blockHeight + 10)
+            srcX = 0,
+            srcY = (CELL_HEIGHT_COUNT - 1) * (blockHeight + 10),
+            dstX = 0,
+            dstY = (CELL_HEIGHT_COUNT - 1) * blockHeight,
+            width = newWidth,
+            height = height - (CELL_HEIGHT_COUNT - 1) * (blockHeight + 10)
         )
         // Right border.
         canvas.drawImage(
             from = input,
-            srcX = (CELL_WIDTH_COUNT - 1) * (blockWidth + 10), srcY = blockHeight + 10,
-            dstX = (CELL_WIDTH_COUNT - 1) * blockWidth, dstY = blockHeight,
+            srcX = (CELL_WIDTH_COUNT - 1) * (blockWidth + 10),
+            srcY = blockHeight + 10,
+            dstX = (CELL_WIDTH_COUNT - 1) * blockWidth,
+            dstY = blockHeight,
             width = blockWidth + (newWidth - CELL_WIDTH_COUNT * blockWidth),
             height = newHeight - 2 * blockHeight
         )
@@ -92,7 +103,8 @@ class VizImageInterceptor : Interceptor {
                 srcY = (m / INNER_CELL_COUNT + 1) * (blockHeight + 10),
                 dstX = (y % INNER_CELL_COUNT + 1) * blockWidth,
                 dstY = (y / INNER_CELL_COUNT + 1) * blockHeight,
-                width = blockWidth, height = blockHeight
+                width = blockWidth,
+                height = blockHeight
             )
         }
 

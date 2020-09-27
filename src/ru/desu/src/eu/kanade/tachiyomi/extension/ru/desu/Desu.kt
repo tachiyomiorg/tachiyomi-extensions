@@ -8,12 +8,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.util.ArrayList
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.ArrayList
 
 class Desu : HttpSource() {
     override val name = "Desu"
@@ -34,9 +34,11 @@ class Desu : HttpSource() {
         val ret = ArrayList<SManga>(arr.length())
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
-            ret.add(SManga.create().apply {
-                mangaFromJSON(obj, false)
-            })
+            ret.add(
+                SManga.create().apply {
+                    mangaFromJSON(obj, false)
+                }
+            )
         }
         return MangasPage(ret, next)
     }
@@ -120,19 +122,21 @@ class Desu : HttpSource() {
         val arr = obj.getJSONObject("chapters").getJSONArray("list")
         for (i in 0 until arr.length()) {
             val obj2 = arr.getJSONObject(i)
-            ret.add(SChapter.create().apply {
-                val ch = obj2.getString("ch")
-                val title = if (obj2.getString("title") == "null") "" else obj2.getString("title")
-                name = if (title.isEmpty()) {
-                    "Глава $ch"
-                } else {
-                    "$ch - $title"
+            ret.add(
+                SChapter.create().apply {
+                    val ch = obj2.getString("ch")
+                    val title = if (obj2.getString("title") == "null") "" else obj2.getString("title")
+                    name = if (title.isEmpty()) {
+                        "Глава $ch"
+                    } else {
+                        "$ch - $title"
+                    }
+                    val id = obj2.getString("id")
+                    url = "/$cid/chapter/$id"
+                    chapter_number = ch.toFloat()
+                    date_upload = obj2.getLong("date") * 1000
                 }
-                val id = obj2.getString("id")
-                url = "/$cid/chapter/$id"
-                chapter_number = ch.toFloat()
-                date_upload = obj2.getLong("date") * 1000
-            })
+            )
         }
         return ret
     }
@@ -149,10 +153,12 @@ class Desu : HttpSource() {
     }
 
     override fun imageUrlParse(response: Response) =
-            throw UnsupportedOperationException("This method should not be called!")
+        throw UnsupportedOperationException("This method should not be called!")
 
-    private class OrderBy : Filter.Select<String>("Сортировка",
-            arrayOf("Популярность", "Дата", "Имя"))
+    private class OrderBy : Filter.Select<String>(
+        "Сортировка",
+        arrayOf("Популярность", "Дата", "Имя")
+    )
 
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Жанр", genres)
     private class TypeList(types: List<Type>) : Filter.Group<Type>("Тип", types)
@@ -160,64 +166,64 @@ class Desu : HttpSource() {
     private class Type(name: String, val id: String) : Filter.CheckBox(name)
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)
     override fun getFilterList() = FilterList(
-            OrderBy(),
-            TypeList(getTypeList()),
-            GenreList(getGenreList())
+        OrderBy(),
+        TypeList(getTypeList()),
+        GenreList(getGenreList())
     )
 
     private fun getTypeList() = listOf(
-            Type("Манга", "manga"),
-            Type("Манхва", "manhwa"),
-            Type("Маньхуа", "manhua"),
-            Type("Ваншот", "one_shot"),
-            Type("Комикс", "comics")
+        Type("Манга", "manga"),
+        Type("Манхва", "manhwa"),
+        Type("Маньхуа", "manhua"),
+        Type("Ваншот", "one_shot"),
+        Type("Комикс", "comics")
     )
 
     private fun getGenreList() = listOf(
-            Genre("Безумие", "Dementia"),
-            Genre("Боевые искусства", "Martial Arts"),
-            Genre("Вампиры", "Vampire"),
-            Genre("Военное", "Military"),
-            Genre("Гарем", "Harem"),
-            Genre("Демоны", "Demons"),
-            Genre("Детектив", "Mystery"),
-            Genre("Детское", "Kids"),
-            Genre("Дзёсей", "Josei"),
-            Genre("Додзинси", "Doujinshi"),
-            Genre("Драма", "Drama"),
-            Genre("Игры", "Game"),
-            Genre("Исторический", "Historical"),
-            Genre("Комедия", "Comedy"),
-            Genre("Космос", "Space"),
-            Genre("Магия", "Magic"),
-            Genre("Машины", "Cars"),
-            Genre("Меха", "Mecha"),
-            Genre("Музыка", "Music"),
-            Genre("Пародия", "Parody"),
-            Genre("Повседневность", "Slice of Life"),
-            Genre("Полиция", "Police"),
-            Genre("Приключения", "Adventure"),
-            Genre("Психологическое", "Psychological"),
-            Genre("Романтика", "Romance"),
-            Genre("Самураи", "Samurai"),
-            Genre("Сверхъестественное", "Supernatural"),
-            Genre("Сёдзе", "Shoujo"),
-            Genre("Сёдзе Ай", "Shoujo Ai"),
-            Genre("Сейнен", "Seinen"),
-            Genre("Сёнен", "Shounen"),
-            Genre("Сёнен Ай", "Shounen Ai"),
-            Genre("Смена пола", "Gender Bender"),
-            Genre("Спорт", "Sports"),
-            Genre("Супер сила", "Super Power"),
-            Genre("Триллер", "Thriller"),
-            Genre("Ужасы", "Horror"),
-            Genre("Фантастика", "Sci-Fi"),
-            Genre("Фэнтези", "Fantasy"),
-            Genre("Хентай", "Hentai"),
-            Genre("Школа", "School"),
-            Genre("Экшен", "Action"),
-            Genre("Этти", "Ecchi"),
-            Genre("Юри", "Yuri"),
-            Genre("Яой", "Yaoi")
+        Genre("Безумие", "Dementia"),
+        Genre("Боевые искусства", "Martial Arts"),
+        Genre("Вампиры", "Vampire"),
+        Genre("Военное", "Military"),
+        Genre("Гарем", "Harem"),
+        Genre("Демоны", "Demons"),
+        Genre("Детектив", "Mystery"),
+        Genre("Детское", "Kids"),
+        Genre("Дзёсей", "Josei"),
+        Genre("Додзинси", "Doujinshi"),
+        Genre("Драма", "Drama"),
+        Genre("Игры", "Game"),
+        Genre("Исторический", "Historical"),
+        Genre("Комедия", "Comedy"),
+        Genre("Космос", "Space"),
+        Genre("Магия", "Magic"),
+        Genre("Машины", "Cars"),
+        Genre("Меха", "Mecha"),
+        Genre("Музыка", "Music"),
+        Genre("Пародия", "Parody"),
+        Genre("Повседневность", "Slice of Life"),
+        Genre("Полиция", "Police"),
+        Genre("Приключения", "Adventure"),
+        Genre("Психологическое", "Psychological"),
+        Genre("Романтика", "Romance"),
+        Genre("Самураи", "Samurai"),
+        Genre("Сверхъестественное", "Supernatural"),
+        Genre("Сёдзе", "Shoujo"),
+        Genre("Сёдзе Ай", "Shoujo Ai"),
+        Genre("Сейнен", "Seinen"),
+        Genre("Сёнен", "Shounen"),
+        Genre("Сёнен Ай", "Shounen Ai"),
+        Genre("Смена пола", "Gender Bender"),
+        Genre("Спорт", "Sports"),
+        Genre("Супер сила", "Super Power"),
+        Genre("Триллер", "Thriller"),
+        Genre("Ужасы", "Horror"),
+        Genre("Фантастика", "Sci-Fi"),
+        Genre("Фэнтези", "Fantasy"),
+        Genre("Хентай", "Hentai"),
+        Genre("Школа", "School"),
+        Genre("Экшен", "Action"),
+        Genre("Этти", "Ecchi"),
+        Genre("Юри", "Yuri"),
+        Genre("Яой", "Yaoi")
     )
 }

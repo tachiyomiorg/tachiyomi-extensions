@@ -9,12 +9,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.net.URLEncoder
-import java.util.ArrayList
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.URLEncoder
+import java.util.ArrayList
 
 /**
  * Dmzj source
@@ -31,14 +31,16 @@ class Dmzj : HttpSource() {
     else url
 
     private fun myGet(url: String) = GET(url)
-            .newBuilder()
-            .header("User-Agent",
-                    "Mozilla/5.0 (X11; Linux x86_64) " +
-                            "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                            "Chrome/56.0.2924.87 " +
-                            "Safari/537.36 " +
-                            "Tachiyomi/1.0")
-            .build()!!
+        .newBuilder()
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (X11; Linux x86_64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/56.0.2924.87 " +
+                "Safari/537.36 " +
+                "Tachiyomi/1.0"
+        )
+        .build()!!
 
     // for simple searches (query only, no filters)
     private fun simpleSearchJsonParse(json: String): MangasPage {
@@ -47,12 +49,14 @@ class Dmzj : HttpSource() {
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
             val cid = obj.getString("id")
-            ret.add(SManga.create().apply {
-                title = obj.getString("comic_name")
-                thumbnail_url = cleanUrl(obj.getString("comic_cover"))
-                author = obj.optString("comic_author")
-                url = "/comic/comic_$cid.json?version=2.7.019"
-            })
+            ret.add(
+                SManga.create().apply {
+                    title = obj.getString("comic_name")
+                    thumbnail_url = cleanUrl(obj.getString("comic_cover"))
+                    author = obj.optString("comic_author")
+                    url = "/comic/comic_$cid.json?version=2.7.019"
+                }
+            )
         }
         return MangasPage(ret, false)
     }
@@ -64,17 +68,19 @@ class Dmzj : HttpSource() {
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
             val cid = obj.getString("id")
-            ret.add(SManga.create().apply {
-                title = obj.getString("title")
-                thumbnail_url = obj.getString("cover")
-                author = obj.optString("authors")
-                status = when (obj.getString("status")) {
-                    "已完结" -> SManga.COMPLETED
-                    "连载中" -> SManga.ONGOING
-                    else -> SManga.UNKNOWN
+            ret.add(
+                SManga.create().apply {
+                    title = obj.getString("title")
+                    thumbnail_url = obj.getString("cover")
+                    author = obj.optString("authors")
+                    status = when (obj.getString("status")) {
+                        "已完结" -> SManga.COMPLETED
+                        "连载中" -> SManga.ONGOING
+                        else -> SManga.UNKNOWN
+                    }
+                    url = "/comic/comic_$cid.json?version=2.7.019"
                 }
-                url = "/comic/comic_$cid.json?version=2.7.019"
-            })
+            )
         }
         return MangasPage(ret, arr.length() != 0)
     }
@@ -157,11 +163,13 @@ class Dmzj : HttpSource() {
             val prefix = obj2.getString("title")
             for (j in 0 until arr2.length()) {
                 val chapter = arr2.getJSONObject(j)
-                ret.add(SChapter.create().apply {
-                    name = "$prefix: ${chapter.getString("chapter_title")}"
-                    date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                    url = "https://api.m.dmzj.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
-                })
+                ret.add(
+                    SChapter.create().apply {
+                        name = "$prefix: ${chapter.getString("chapter_title")}"
+                        date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
+                        url = "https://api.m.dmzj.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
+                    }
+                )
             }
         }
         return ret
@@ -202,17 +210,19 @@ class Dmzj : HttpSource() {
 
     // Unused, we can get image urls directly from the chapter page
     override fun imageUrlParse(response: Response) =
-            throw UnsupportedOperationException("This method should not be called!")
+        throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList(
-            SortFilter(),
-            GenreGroup(),
-            StatusFilter(),
-            TypeFilter(),
-            ReaderFilter()
+        SortFilter(),
+        GenreGroup(),
+        StatusFilter(),
+        TypeFilter(),
+        ReaderFilter()
     )
 
-    private class GenreGroup : UriPartFilter("分类", arrayOf(
+    private class GenreGroup : UriPartFilter(
+        "分类",
+        arrayOf(
             Pair("全部", ""),
             Pair("冒险", "4"),
             Pair("百合", "3243"),
@@ -255,15 +265,21 @@ class Dmzj : HttpSource() {
             Pair("西方魔幻", "3365"),
             Pair("音乐舞蹈", "3326"),
             Pair("机战", "3325")
-    ))
+        )
+    )
 
-    private class StatusFilter : UriPartFilter("连载状态", arrayOf(
+    private class StatusFilter : UriPartFilter(
+        "连载状态",
+        arrayOf(
             Pair("全部", ""),
             Pair("连载", "2309"),
             Pair("完结", "2310")
-    ))
+        )
+    )
 
-    private class TypeFilter : UriPartFilter("地区", arrayOf(
+    private class TypeFilter : UriPartFilter(
+        "地区",
+        arrayOf(
             Pair("全部", ""),
             Pair("日本", "2304"),
             Pair("韩国", "2305"),
@@ -271,30 +287,37 @@ class Dmzj : HttpSource() {
             Pair("港台", "2307"),
             Pair("内地", "2308"),
             Pair("其他", "8453")
-    ))
+        )
+    )
 
-    private class SortFilter : UriPartFilter("排序", arrayOf(
+    private class SortFilter : UriPartFilter(
+        "排序",
+        arrayOf(
             Pair("人气", "0"),
             Pair("更新", "1")
-    ))
+        )
+    )
 
-    private class ReaderFilter : UriPartFilter("读者", arrayOf(
+    private class ReaderFilter : UriPartFilter(
+        "读者",
+        arrayOf(
             Pair("全部", ""),
             Pair("少年", "3262"),
             Pair("少女", "3263"),
             Pair("青年", "3264")
-    ))
+        )
+    )
 
     // Headers
     override fun headersBuilder() =
-            super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
+        super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
 
     private open class UriPartFilter(
         displayName: String,
         val vals: Array<Pair<String, String>>,
         defaultValue: Int = 0
     ) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
     }
 }

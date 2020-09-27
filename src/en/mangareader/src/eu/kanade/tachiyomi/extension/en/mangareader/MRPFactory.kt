@@ -14,8 +14,9 @@ import org.jsoup.nodes.Element
 
 class MRPFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-            Mangareader(),
-            Mangapanda())
+        Mangareader(),
+        Mangapanda()
+    )
 }
 
 class Mangareader : MRP("Mangareader", "https://www.mangareader.net") {

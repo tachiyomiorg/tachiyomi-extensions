@@ -6,9 +6,6 @@ import android.os.Build
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
-import androidx.preference.ListPreference as AndroidXListPreference
-import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
@@ -20,7 +17,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.util.UUID
 import kotlinx.serialization.protobuf.ProtoBuf
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -33,6 +29,10 @@ import okhttp3.ResponseBody
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.UUID
+import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
+import androidx.preference.ListPreference as AndroidXListPreference
+import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 
 abstract class MangaPlus(
     override val lang: String,
@@ -428,7 +428,7 @@ abstract class MangaPlus(
 
     private fun Response.asProto(): MangaPlusResponse {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT)
-            return ProtoBuf.load(MangaPlusSerializer, body()!!.bytes())
+            return ProtoBuf.decodeFromByteArray(MangaPlusSerializer, body()!!.bytes())
 
         // Apparently, the version used of Kotlinx Serialization lib causes a crash
         // on KitKat devices (see #1678). So, if the device is running KitKat or lower,
@@ -438,9 +438,13 @@ abstract class MangaPlus(
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
 
         val res = Duktape.create().use {
-            it.set("helper", DuktapeHelper::class.java, object : DuktapeHelper {
-                override fun getProtobuf(): String = protobufJs
-            })
+            it.set(
+                "helper",
+                DuktapeHelper::class.java,
+                object : DuktapeHelper {
+                    override fun getProtobuf(): String = protobufJs
+                }
+            )
             it.evaluate(messageBytes + DECODE_SCRIPT) as String
         }
 

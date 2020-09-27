@@ -9,14 +9,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MerakiScans : ParsedHttpSource() {
     override val name = "MerakiScans"
@@ -60,7 +60,7 @@ class MerakiScans : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) =
-            GET("$baseUrl/manga", headers)
+        GET("$baseUrl/manga", headers)
 
     override fun searchMangaSelector() = popularMangaSelector()
 
@@ -83,10 +83,10 @@ class MerakiScans : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response, query)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
     }
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
@@ -117,7 +117,7 @@ class MerakiScans : ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long {
         return try {
-            dateFormat.parse(date.replace(Regex("(st|nd|rd|th)"), "")).time
+            dateFormat.parse(date.replace(Regex("(st|nd|rd|th)"), ""))?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }

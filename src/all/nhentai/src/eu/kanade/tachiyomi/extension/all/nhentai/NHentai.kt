@@ -251,12 +251,14 @@ open class NHentai(
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        return listOf(SChapter.create().apply {
-            name = "Chapter"
-            scanlator = getGroups(document)
-            date_upload = getTime(document)
-            setUrlWithoutDomain(response.request().url().encodedPath())
-        })
+        return listOf(
+            SChapter.create().apply {
+                name = "Chapter"
+                scanlator = getGroups(document)
+                date_upload = getTime(document)
+                setUrlWithoutDomain(response.request().url().encodedPath())
+            }
+        )
     }
 
     override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Not used")

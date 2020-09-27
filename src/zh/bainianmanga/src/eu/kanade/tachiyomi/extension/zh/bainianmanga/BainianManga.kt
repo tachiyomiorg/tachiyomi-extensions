@@ -43,7 +43,7 @@ class BainianManga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", baseUrl)
+        .add("Referer", baseUrl)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -103,10 +103,10 @@ class BainianManga : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
-            "All"
+        "All"
     )
 }

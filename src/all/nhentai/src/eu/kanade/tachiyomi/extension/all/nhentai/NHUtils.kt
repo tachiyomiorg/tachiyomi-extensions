@@ -1,8 +1,8 @@
 package eu.kanade.tachiyomi.extension.all.nhentai
 
-import java.text.SimpleDateFormat
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
 
 object NHUtils {
     fun getArtists(document: Document): String {
@@ -57,7 +57,7 @@ object NHUtils {
     fun getTime(document: Document): Long {
         val timeString = document.toString().substringAfter("datetime=\"").substringBefore("\">").replace("T", " ")
 
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSSZ").parse(timeString).time
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSSZ").parse(timeString)?.time ?: 0L
     }
 
     private fun Element.cleanTag(): String = text().replace(Regex("\\(.*\\)"), "").trim()

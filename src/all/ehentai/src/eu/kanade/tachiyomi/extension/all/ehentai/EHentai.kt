@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.CheckBoxPreference as LegacyCheckBoxPreference
-import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 import androidx.preference.CheckBoxPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
@@ -24,7 +22,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.net.URLEncoder
 import okhttp3.CacheControl
 import okhttp3.CookieJar
 import okhttp3.Headers
@@ -34,6 +31,9 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.net.URLEncoder
+import android.support.v7.preference.CheckBoxPreference as LegacyCheckBoxPreference
+import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
 open class EHentai(override val lang: String, private val ehLang: String) : ConfigurableSource, HttpSource() {
 
@@ -85,11 +85,15 @@ open class EHentai(override val lang: String, private val ehLang: String) : Conf
         return MangasPage(parsedMangas, hasNextPage)
     }
 
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = Observable.just(listOf(SChapter.create().apply {
-        url = manga.url
-        name = "Chapter"
-        chapter_number = 1f
-    }))
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = Observable.just(
+        listOf(
+            SChapter.create().apply {
+                url = manga.url
+                name = "Chapter"
+                chapter_number = 1f
+            }
+        )
+    )
 
     override fun fetchPageList(chapter: SChapter) = fetchChapterPage(chapter, "$baseUrl/${chapter.url}").map {
         it.mapIndexed { i, s ->
@@ -218,8 +222,10 @@ open class EHentai(override val lang: String, private val ehLang: String) : Conf
                             ?.trim()
                             ?.let { right ->
                                 ignore {
-                                    when (left.removeSuffix(":")
-                                        .toLowerCase()) {
+                                    when (
+                                        left.removeSuffix(":")
+                                            .toLowerCase()
+                                    ) {
                                         "posted" -> datePosted = EX_DATE_FORMAT.parse(right)?.time ?: 0
                                         "visible" -> visible = right.nullIfBlank()
                                         "language" -> {
@@ -255,8 +261,10 @@ open class EHentai(override val lang: String, private val ehLang: String) : Conf
             select("#taglist tr").forEach {
                 val namespace = it.select(".tc").text().removeSuffix(":")
                 val currentTags = it.select("div").map { element ->
-                    Tag(element.text().trim(),
-                        element.hasClass("gtl"))
+                    Tag(
+                        element.text().trim(),
+                        element.hasClass("gtl")
+                    )
                 }
                 tags[namespace] = currentTags
             }
@@ -367,18 +375,21 @@ open class EHentai(override val lang: String, private val ehLang: String) : Conf
         }
     }
 
-    class GenreGroup : UriGroup<GenreOption>("Genres", listOf(
-        GenreOption("Dōjinshi", "doujinshi"),
-        GenreOption("Manga", "manga"),
-        GenreOption("Artist CG", "artistcg"),
-        GenreOption("Game CG", "gamecg"),
-        GenreOption("Western", "western"),
-        GenreOption("Non-H", "non-h"),
-        GenreOption("Image Set", "imageset"),
-        GenreOption("Cosplay", "cosplay"),
-        GenreOption("Asian Porn", "asianporn"),
-        GenreOption("Misc", "misc")
-    ))
+    class GenreGroup : UriGroup<GenreOption>(
+        "Genres",
+        listOf(
+            GenreOption("Dōjinshi", "doujinshi"),
+            GenreOption("Manga", "manga"),
+            GenreOption("Artist CG", "artistcg"),
+            GenreOption("Game CG", "gamecg"),
+            GenreOption("Western", "western"),
+            GenreOption("Non-H", "non-h"),
+            GenreOption("Image Set", "imageset"),
+            GenreOption("Cosplay", "cosplay"),
+            GenreOption("Asian Porn", "asianporn"),
+            GenreOption("Misc", "misc")
+        )
+    )
 
     class AdvancedOption(name: String, private val param: String, defValue: Boolean = false) : CheckBox(name, defValue), UriFilter {
         override fun addToUri(builder: Uri.Builder) {
@@ -423,19 +434,22 @@ open class EHentai(override val lang: String, private val ehLang: String) : Conf
     }
 
     // Explicit type arg for listOf() to workaround this: KT-16570
-    class AdvancedGroup : UriGroup<Filter<*>>("Advanced Options", listOf(
-        AdvancedOption("Search Gallery Name", "f_sname", true),
-        AdvancedOption("Search Gallery Tags", "f_stags", true),
-        AdvancedOption("Search Gallery Description", "f_sdesc"),
-        AdvancedOption("Search Torrent Filenames", "f_storr"),
-        AdvancedOption("Only Show Galleries With Torrents", "f_sto"),
-        AdvancedOption("Search Low-Power Tags", "f_sdt1"),
-        AdvancedOption("Search Downvoted Tags", "f_sdt2"),
-        AdvancedOption("Show Expunged Galleries", "f_sh"),
-        RatingOption(),
-        MinPagesOption(),
-        MaxPagesOption()
-    ))
+    class AdvancedGroup : UriGroup<Filter<*>>(
+        "Advanced Options",
+        listOf(
+            AdvancedOption("Search Gallery Name", "f_sname", true),
+            AdvancedOption("Search Gallery Tags", "f_stags", true),
+            AdvancedOption("Search Gallery Description", "f_sdesc"),
+            AdvancedOption("Search Torrent Filenames", "f_storr"),
+            AdvancedOption("Only Show Galleries With Torrents", "f_sto"),
+            AdvancedOption("Search Low-Power Tags", "f_sdt1"),
+            AdvancedOption("Search Downvoted Tags", "f_sdt2"),
+            AdvancedOption("Show Expunged Galleries", "f_sh"),
+            RatingOption(),
+            MinPagesOption(),
+            MaxPagesOption()
+        )
+    )
 
     private class EnforceLanguageFilter(default: Boolean) : CheckBox("Enforce language", default)
 

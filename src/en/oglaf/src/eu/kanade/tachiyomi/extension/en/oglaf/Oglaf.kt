@@ -47,14 +47,16 @@ class Oglaf : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapterList = super.chapterListParse(response).distinct()
         return chapterList.mapIndexed {
-            i, ch -> ch.apply { chapter_number = chapterList.size.toFloat() - i }
+            i, ch ->
+            ch.apply { chapter_number = chapterList.size.toFloat() - i }
         }
     }
 
     override fun chapterListSelector() = "a:has(img[width=400])"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val nameRegex = """/(.*)/""".toRegex()
+        val nameRegex =
+            """/(.*)/""".toRegex()
         val chapter = SChapter.create()
         chapter.url = element.attr("href")
         chapter.name = nameRegex.find(element.attr("href"))!!.groupValues[1]
@@ -62,7 +64,8 @@ class Oglaf : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val urlRegex = """/.*/\d*/""".toRegex()
+        val urlRegex =
+            """/.*/\d*/""".toRegex()
         val pages = mutableListOf<Page>()
 
         fun addPage(document: Document) {

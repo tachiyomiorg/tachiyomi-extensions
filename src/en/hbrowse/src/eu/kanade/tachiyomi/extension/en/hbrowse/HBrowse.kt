@@ -9,13 +9,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.io.IOException
 import okhttp3.CookieJar
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.io.IOException
 
 @Nsfw
 class HBrowse : ParsedHttpSource() {
@@ -185,7 +185,7 @@ class HBrowse : ParsedHttpSource() {
     override fun getFilterList(): FilterList {
         return FilterList(
             listOf(Filter.Header("Can't combine with text search!"), Filter.Separator()) +
-            advFilterMap.map { AdvancedFilter(getAdvTriStateList(it.key, it.value.split(", "))) }
+                advFilterMap.map { AdvancedFilter(getAdvTriStateList(it.key, it.value.split(", "))) }
         )
     }
 

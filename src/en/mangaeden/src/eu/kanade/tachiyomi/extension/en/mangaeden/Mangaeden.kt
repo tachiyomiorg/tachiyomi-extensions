@@ -7,15 +7,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class Mangaeden : ParsedHttpSource() {
 
@@ -52,15 +52,18 @@ class Mangaeden : ParsedHttpSource() {
         val url = HttpUrl.parse("$baseUrl/en/en-directory/")?.newBuilder()!!.addQueryParameter("title", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
-                is StatusList -> filter.state
+                is StatusList ->
+                    filter.state
                         .filter { it.state }
                         .map { it.id.toString() }
                         .forEach { url.addQueryParameter("status", it) }
-                is Types -> filter.state
+                is Types ->
+                    filter.state
                         .filter { it.state }
                         .map { it.id.toString() }
                         .forEach { url.addQueryParameter("type", it) }
-                is GenreList -> filter.state
+                is GenreList ->
+                    filter.state
                         .filter { !it.isIgnored() }
                         .forEach { genre -> url.addQueryParameter(if (genre.isIncluded()) "categoriesInc" else "categoriesExcl", genre.id) }
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
@@ -129,11 +132,12 @@ class Mangaeden : ParsedHttpSource() {
                     set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
             }
-            else -> try {
-                SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
-            } catch (e: ParseException) {
-                0L
-            }
+            else ->
+                try {
+                    SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
+                } catch (e: ParseException) {
+                    0L
+                }
         }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -147,69 +151,72 @@ class Mangaeden : ParsedHttpSource() {
     private class NamedId(name: String, val id: Int) : Filter.CheckBox(name)
     private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class TextField(name: String, val key: String) : Filter.Text(name)
-    private class OrderBy : Filter.Sort("Order by", arrayOf("Manga title", "Views", "Chapters", "Latest chapter"),
-            Selection(1, false))
+    private class OrderBy : Filter.Sort(
+        "Order by",
+        arrayOf("Manga title", "Views", "Chapters", "Latest chapter"),
+        Selection(1, false)
+    )
 
     private class StatusList(statuses: List<NamedId>) : Filter.Group<NamedId>("Stato", statuses)
     private class Types(types: List<NamedId>) : Filter.Group<NamedId>("Tipo", types)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            TextField("Author", "author"),
-            TextField("Artist", "artist"),
-            OrderBy(),
-            Types(types()),
-            StatusList(statuses()),
-            GenreList(genres())
+        TextField("Author", "author"),
+        TextField("Artist", "artist"),
+        OrderBy(),
+        Types(types()),
+        StatusList(statuses()),
+        GenreList(genres())
     )
 
     private fun types() = listOf(
-            NamedId("Japanese Manga", 0),
-            NamedId("Korean Manhwa", 1),
-            NamedId("Chinese Manhua", 2),
-            NamedId("Comic", 3),
-            NamedId("Doujinshi", 4)
+        NamedId("Japanese Manga", 0),
+        NamedId("Korean Manhwa", 1),
+        NamedId("Chinese Manhua", 2),
+        NamedId("Comic", 3),
+        NamedId("Doujinshi", 4)
     )
 
     private fun statuses() = listOf(
-            NamedId("Ongoing", 1),
-            NamedId("Completed", 2),
-            NamedId("Suspended", 0)
+        NamedId("Ongoing", 1),
+        NamedId("Completed", 2),
+        NamedId("Suspended", 0)
     )
 
     private fun genres() = listOf(
-            Genre("Action", "4e70e91bc092255ef70016f8"),
-            Genre("Adult", "4e70e92fc092255ef7001b94"),
-            Genre("Adventure", "4e70e918c092255ef700168e"),
-            Genre("Comedy", "4e70e918c092255ef7001675"),
-            Genre("Doujinshi", "4e70e928c092255ef7001a0a"),
-            Genre("Drama", "4e70e918c092255ef7001693"),
-            Genre("Ecchi", "4e70e91ec092255ef700175e"),
-            Genre("Fantasy", "4e70e918c092255ef7001676"),
-            Genre("Gender Bender", "4e70e921c092255ef700184b"),
-            Genre("Harem", "4e70e91fc092255ef7001783"),
-            Genre("Historical", "4e70e91ac092255ef70016d8"),
-            Genre("Horror", "4e70e919c092255ef70016a8"),
-            Genre("Josei", "4e70e920c092255ef70017de"),
-            Genre("Martial Arts", "4e70e923c092255ef70018d0"),
-            Genre("Mature", "4e70e91bc092255ef7001705"),
-            Genre("Mecha", "4e70e922c092255ef7001877"),
-            Genre("Mystery", "4e70e918c092255ef7001681"),
-            Genre("One Shot", "4e70e91dc092255ef7001747"),
-            Genre("Psychological", "4e70e919c092255ef70016a9"),
-            Genre("Romance", "4e70e918c092255ef7001677"),
-            Genre("School Life", "4e70e918c092255ef7001688"),
-            Genre("Sci-fi", "4e70e91bc092255ef7001706"),
-            Genre("Seinen", "4e70e918c092255ef700168b"),
-            Genre("Shoujo", "4e70e918c092255ef7001667"),
-            Genre("Shounen", "4e70e918c092255ef700166f"),
-            Genre("Slice of Life", "4e70e918c092255ef700167e"),
-            Genre("Smut", "4e70e922c092255ef700185a"),
-            Genre("Sports", "4e70e91dc092255ef700172e"),
-            Genre("Supernatural", "4e70e918c092255ef700166a"),
-            Genre("Tragedy", "4e70e918c092255ef7001672"),
-            Genre("Webtoons", "4e70ea70c092255ef7006d9c"),
-            Genre("Yaoi", "4e70e91ac092255ef70016e5"),
-            Genre("Yuri", "4e70e92ac092255ef7001a57")
+        Genre("Action", "4e70e91bc092255ef70016f8"),
+        Genre("Adult", "4e70e92fc092255ef7001b94"),
+        Genre("Adventure", "4e70e918c092255ef700168e"),
+        Genre("Comedy", "4e70e918c092255ef7001675"),
+        Genre("Doujinshi", "4e70e928c092255ef7001a0a"),
+        Genre("Drama", "4e70e918c092255ef7001693"),
+        Genre("Ecchi", "4e70e91ec092255ef700175e"),
+        Genre("Fantasy", "4e70e918c092255ef7001676"),
+        Genre("Gender Bender", "4e70e921c092255ef700184b"),
+        Genre("Harem", "4e70e91fc092255ef7001783"),
+        Genre("Historical", "4e70e91ac092255ef70016d8"),
+        Genre("Horror", "4e70e919c092255ef70016a8"),
+        Genre("Josei", "4e70e920c092255ef70017de"),
+        Genre("Martial Arts", "4e70e923c092255ef70018d0"),
+        Genre("Mature", "4e70e91bc092255ef7001705"),
+        Genre("Mecha", "4e70e922c092255ef7001877"),
+        Genre("Mystery", "4e70e918c092255ef7001681"),
+        Genre("One Shot", "4e70e91dc092255ef7001747"),
+        Genre("Psychological", "4e70e919c092255ef70016a9"),
+        Genre("Romance", "4e70e918c092255ef7001677"),
+        Genre("School Life", "4e70e918c092255ef7001688"),
+        Genre("Sci-fi", "4e70e91bc092255ef7001706"),
+        Genre("Seinen", "4e70e918c092255ef700168b"),
+        Genre("Shoujo", "4e70e918c092255ef7001667"),
+        Genre("Shounen", "4e70e918c092255ef700166f"),
+        Genre("Slice of Life", "4e70e918c092255ef700167e"),
+        Genre("Smut", "4e70e922c092255ef700185a"),
+        Genre("Sports", "4e70e91dc092255ef700172e"),
+        Genre("Supernatural", "4e70e918c092255ef700166a"),
+        Genre("Tragedy", "4e70e918c092255ef7001672"),
+        Genre("Webtoons", "4e70ea70c092255ef7006d9c"),
+        Genre("Yaoi", "4e70e91ac092255ef70016e5"),
+        Genre("Yuri", "4e70e92ac092255ef7001a57")
     )
 }

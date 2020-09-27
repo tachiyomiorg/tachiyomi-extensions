@@ -12,8 +12,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -23,6 +21,8 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -35,7 +35,6 @@ class MadaraFactory : SourceFactory {
         ArazNovel(),
         AsgardTeam(),
         AstralLibrary(),
-        AsuraScans(),
         Azora(),
         Bakaman(),
         BestManga(),
@@ -158,7 +157,8 @@ class MadaraFactory : SourceFactory {
         ZManga(),
         ZinManga(),
         ShoujoHearts(),
-        AlianzaMarcial()
+        AlianzaMarcial(),
+        OlaoeManga()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -168,8 +168,6 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
-
-class AsuraScans : Madara("AsuraScans", "https://asurascans.com", "en")
 
 class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
     // site is a bit broken
@@ -197,13 +195,21 @@ class MangaRawr : Madara("MangaRawr", "https://mangarawr.com", "en")
 
 class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
 
-class ReadManhua : Madara("ReadManhua", "https://readmanhua.net", "en",
-    dateFormat = SimpleDateFormat("dd MMM yy", Locale.US))
+class ReadManhua : Madara(
+    "ReadManhua",
+    "https://readmanhua.net",
+    "en",
+    dateFormat = SimpleDateFormat("dd MMM yy", Locale.US)
+)
 
 class IsekaiScanCom : Madara("IsekaiScan.com", "https://isekaiscan.com", "en")
 
-class JustForFun : Madara("Just For Fun", "https://just-for-fun.ru", "ru",
-    dateFormat = SimpleDateFormat("yy.MM.dd", Locale.US))
+class JustForFun : Madara(
+    "Just For Fun",
+    "https://just-for-fun.ru",
+    "ru",
+    dateFormat = SimpleDateFormat("yy.MM.dd", Locale.US)
+)
 
 class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe", "en") {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
@@ -243,11 +249,19 @@ class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
 
 class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com", "en")
 
-class TsubakiNoScan : Madara("Tsubaki No Scan", "https://tsubakinoscan.com", "fr",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
+class TsubakiNoScan : Madara(
+    "Tsubaki No Scan",
+    "https://tsubakinoscan.com",
+    "fr",
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)
+)
 
-class YokaiJump : Madara("Yokai Jump", "https://yokaijump.fr", "fr",
-    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
+class YokaiJump : Madara(
+    "Yokai Jump",
+    "https://yokaijump.fr",
+    "fr",
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)
+)
 
 class ZManga : Madara("ZManga", "https://zmanga.org", "es")
 
@@ -261,8 +275,12 @@ class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club", "ja")
 
 class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club", "ko")
 
-class FirstKissManga : Madara("1st Kiss", "https://1stkissmanga.com", "en",
-    dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
+class FirstKissManga : Madara(
+    "1st Kiss",
+    "https://1stkissmanga.com",
+    "en",
+    dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
+) {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 }
 
@@ -287,8 +305,12 @@ class ManyToonMe : Madara("ManyToon.me", "https://manytoon.me", "en")
 
 class BoysLove : Madara("BoysLove", "https://boyslove.me", "en")
 
-class ChibiManga : Madara("Chibi Manga", "http://www.cmreader.info", "en",
-    dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)) {
+class ChibiManga : Madara(
+    "Chibi Manga",
+    "http://www.cmreader.info",
+    "en",
+    dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+) {
     override fun chapterListParse(response: Response): List<SChapter> {
         response.asJsoup().let { documet ->
             documet.select("li.parent.has-child").let { volumes ->
@@ -562,41 +584,43 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
         GenreSelectFilter()
     )
 
-    class GenreSelectFilter : UriPartFilter("Búsqueda de género", arrayOf(
-        Pair("<seleccionar>", ""),
-        Pair("Ecchi", "ecchi"),
-        Pair("Yaoi", "yaoi"),
-        Pair("Yuri", "yuri"),
-        Pair("Anal", "anal"),
-        Pair("Tetonas", "tetonas"),
-        Pair("Escolares", "escolares"),
-        Pair("Incesto", "incesto"),
-        Pair("Virgenes", "virgenes"),
-        Pair("Masturbacion", "masturbacion"),
-        Pair("Maduras", "maduras"),
-        Pair("Lolicon", "lolicon"),
-        Pair("Bikini", "bikini"),
-        Pair("Sirvientas", "sirvientas"),
-        Pair("Enfermera", "enfermera"),
-        Pair("Embarazada", "embarazada"),
-        Pair("Ahegao", "ahegao"),
-        Pair("Casadas", "casadas"),
-        Pair("Chica Con Pene", "chica-con-pene"),
-        Pair("Juguetes Sexuales", "juguetes-sexuales"),
-        Pair("Orgias", "orgias"),
-        Pair("Harem", "harem"),
-        Pair("Romance", "romance"),
-        Pair("Profesores", "profesores"),
-        Pair("Tentaculos", "tentaculos"),
-        Pair("Mamadas", "mamadas"),
-        Pair("Shota", "shota"),
-        Pair("Interracial", "interracial"),
-        Pair("Full Color", "full-colo"),
-        Pair("Sin Censura", "sin-censura"),
-        Pair("Futanari", "futanari"),
-        Pair("Doble Penetracion", "doble-penetracion"),
-        Pair("Cosplay", "cosplay")
-    )
+    class GenreSelectFilter : UriPartFilter(
+        "Búsqueda de género",
+        arrayOf(
+            Pair("<seleccionar>", ""),
+            Pair("Ecchi", "ecchi"),
+            Pair("Yaoi", "yaoi"),
+            Pair("Yuri", "yuri"),
+            Pair("Anal", "anal"),
+            Pair("Tetonas", "tetonas"),
+            Pair("Escolares", "escolares"),
+            Pair("Incesto", "incesto"),
+            Pair("Virgenes", "virgenes"),
+            Pair("Masturbacion", "masturbacion"),
+            Pair("Maduras", "maduras"),
+            Pair("Lolicon", "lolicon"),
+            Pair("Bikini", "bikini"),
+            Pair("Sirvientas", "sirvientas"),
+            Pair("Enfermera", "enfermera"),
+            Pair("Embarazada", "embarazada"),
+            Pair("Ahegao", "ahegao"),
+            Pair("Casadas", "casadas"),
+            Pair("Chica Con Pene", "chica-con-pene"),
+            Pair("Juguetes Sexuales", "juguetes-sexuales"),
+            Pair("Orgias", "orgias"),
+            Pair("Harem", "harem"),
+            Pair("Romance", "romance"),
+            Pair("Profesores", "profesores"),
+            Pair("Tentaculos", "tentaculos"),
+            Pair("Mamadas", "mamadas"),
+            Pair("Shota", "shota"),
+            Pair("Interracial", "interracial"),
+            Pair("Full Color", "full-colo"),
+            Pair("Sin Censura", "sin-censura"),
+            Pair("Futanari", "futanari"),
+            Pair("Doble Penetracion", "doble-penetracion"),
+            Pair("Cosplay", "cosplay")
+        )
     )
 }
 
@@ -1238,3 +1262,5 @@ class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
 }
 
 class AlianzaMarcial : Madara("AlianzaMarcial", "https://alianzamarcial.xyz", "es")
+
+class OlaoeManga : Madara("مانجا اولاو", "https://olaoe.giize.com", "ar")

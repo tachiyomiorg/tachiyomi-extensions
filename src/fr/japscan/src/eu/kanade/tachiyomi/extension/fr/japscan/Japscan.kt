@@ -119,7 +119,6 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
             webview.settings.userAgentString = webview.settings.userAgentString.replace("Mobile", "eliboM").replace("Android", "diordnA")
             webview.addJavascriptInterface(jsinterface, "android")
             var retries = 1
-
             webview.webChromeClient = object : WebChromeClient() {
                 @SuppressLint("NewApi")
                 override fun onProgressChanged(view: WebView, progress: Int) {

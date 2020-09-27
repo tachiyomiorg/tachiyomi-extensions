@@ -21,8 +21,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
@@ -30,6 +28,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Tapastic : ConfigurableSource, ParsedHttpSource() {
 
@@ -212,7 +212,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
 
     private fun String?.toDate(): Long {
         this ?: return 0L
-        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(this).time
+        return SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(this)?.time ?: 0L
     }
 
     // Pages
@@ -241,18 +241,24 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     )
 
     private class FilterFilter : UriSelectFilter(
-        "Filter", "b", arrayOf(
+        "Filter",
+        "b",
+        arrayOf(
             Pair("ALL", "None"),
             Pair("POPULAR", "Popular"),
             Pair("TRENDING", "Trending"),
             Pair("FRESH", "Fresh"),
             Pair("BINGE", "Binge"),
             Pair("ORIGINAL", "Tapas Originals")
-        ), firstIsUnspecified = false, defaultValue = 1
+        ),
+        firstIsUnspecified = false,
+        defaultValue = 1
     )
 
     private class GenreFilter : UriSelectFilter(
-        "Genre", "g", arrayOf(
+        "Genre",
+        "g",
+        arrayOf(
             Pair("", "Any"),
             Pair("7", "Action"),
             Pair("22", "Boys Love"),
@@ -271,7 +277,9 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     )
 
     private class StatusFilter : UriSelectFilter(
-        "Status", "f", arrayOf(
+        "Status",
+        "f",
+        arrayOf(
             Pair("NONE", "All"),
             Pair("F2R", "Free to read"),
             Pair("PRM", "Premium")
@@ -279,7 +287,9 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     )
 
     private class SortFilter : UriSelectFilter(
-        "Sort", "s", arrayOf(
+        "Sort",
+        "s",
+        arrayOf(
             Pair("DATE", "Date"),
             Pair("LIKE", "Likes"),
             Pair("SUBSCRIBE", "Subscribers")

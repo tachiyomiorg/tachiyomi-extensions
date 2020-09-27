@@ -18,13 +18,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-import kotlin.math.floor
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
@@ -36,6 +29,13 @@ import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.math.floor
 
 class ShonenJumpPlus : ParsedHttpSource() {
 
@@ -201,8 +201,10 @@ class ShonenJumpPlus : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private class SeriesListModeFilter : Filter.Select<String>("一覧",
-        LIST_MODES.map { it.first }.toTypedArray())
+    private class SeriesListModeFilter : Filter.Select<String>(
+        "一覧",
+        LIST_MODES.map { it.first }.toTypedArray()
+    )
 
     override fun getFilterList(): FilterList = FilterList(SeriesListModeFilter())
 

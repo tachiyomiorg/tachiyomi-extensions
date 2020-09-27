@@ -9,14 +9,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Nsfw
 class Jinmantiantang : ParsedHttpSource() {
@@ -207,86 +207,95 @@ class Jinmantiantang : ParsedHttpSource() {
         TimeFilter()
     )
 
-    private class CategoryGroup : UriPartFilter("按类型", arrayOf(
-        Pair("全部", "/albums?"),
-        Pair("其他", "/albums/another?"),
-        Pair("同人", "/albums/doujin?"),
-        Pair("韩漫", "/albums/hanman?"),
-        Pair("美漫", "/albums/meiman?"),
-        Pair("短篇", "/albums/short?"),
-        Pair("单本", "/albums/single?"),
+    private class CategoryGroup : UriPartFilter(
+        "按类型",
+        arrayOf(
+            Pair("全部", "/albums?"),
+            Pair("其他", "/albums/another?"),
+            Pair("同人", "/albums/doujin?"),
+            Pair("韩漫", "/albums/hanman?"),
+            Pair("美漫", "/albums/meiman?"),
+            Pair("短篇", "/albums/short?"),
+            Pair("单本", "/albums/single?"),
 
-        Pair("中文", "/search/photos?search_query=中文&"),
-        Pair("汉化", "/search/photos?search_query=漢化&"),
-        Pair("P站", "/search/photos?search_query=PIXIV&"),
-        Pair("图集", "/search/photos?search_query=CG&"),
+            Pair("中文", "/search/photos?search_query=中文&"),
+            Pair("汉化", "/search/photos?search_query=漢化&"),
+            Pair("P站", "/search/photos?search_query=PIXIV&"),
+            Pair("图集", "/search/photos?search_query=CG&"),
 
-        Pair("剧情", "/search/photos?search_query=劇情&"),
-        Pair("校园", "/search/photos?search_query=校園&"),
-        Pair("纯爱", "/search/photos?search_query=純愛&"),
-        Pair("人妻", "/search/photos?search_query=人妻&"),
-        Pair("师生", "/search/photos?search_query=師生&"),
-        Pair("近亲", "/search/photos?search_query=近親&"),
-        Pair("百合", "/search/photos?search_query=百合&"),
-        Pair("男同", "/search/photos?search_query=YAOI&"),
-        Pair("性转换", "/search/photos?search_query=性轉換&"),
-        Pair("NTR", "/search/photos?search_query=NTR&"),
-        Pair("伪娘", "/search/photos?search_query=偽娘&"),
-        Pair("痴女", "/search/photos?search_query=癡女&"),
-        Pair("全彩", "/search/photos?search_query=全彩&"),
+            Pair("剧情", "/search/photos?search_query=劇情&"),
+            Pair("校园", "/search/photos?search_query=校園&"),
+            Pair("纯爱", "/search/photos?search_query=純愛&"),
+            Pair("人妻", "/search/photos?search_query=人妻&"),
+            Pair("师生", "/search/photos?search_query=師生&"),
+            Pair("近亲", "/search/photos?search_query=近親&"),
+            Pair("百合", "/search/photos?search_query=百合&"),
+            Pair("男同", "/search/photos?search_query=YAOI&"),
+            Pair("性转换", "/search/photos?search_query=性轉換&"),
+            Pair("NTR", "/search/photos?search_query=NTR&"),
+            Pair("伪娘", "/search/photos?search_query=偽娘&"),
+            Pair("痴女", "/search/photos?search_query=癡女&"),
+            Pair("全彩", "/search/photos?search_query=全彩&"),
 
-        Pair("萝莉", "/search/photos?search_query=蘿莉&"),
-        Pair("御姐", "/search/photos?search_query=御姐&"),
-        Pair("熟女", "/search/photos?search_query=熟女&"),
-        Pair("正太", "/search/photos?search_query=正太&"),
-        Pair("巨乳", "/search/photos?search_query=巨乳&"),
-        Pair("贫乳", "/search/photos?search_query=貧乳&"),
-        Pair("女王", "/search/photos?search_query=女王&"),
-        Pair("教室", "/search/photos?search_query=教師&"),
-        Pair("女仆", "/search/photos?search_query=女僕&"),
-        Pair("护士", "/search/photos?search_query=護士&"),
-        Pair("泳裝", "/search/photos?search_query=泳裝&"),
-        Pair("眼镜", "/search/photos?search_query=眼鏡&"),
-        Pair("丝袜", "/search/photos?search_query=絲襪&"),
-        Pair("制服", "/search/photos?search_query=制服&"),
+            Pair("萝莉", "/search/photos?search_query=蘿莉&"),
+            Pair("御姐", "/search/photos?search_query=御姐&"),
+            Pair("熟女", "/search/photos?search_query=熟女&"),
+            Pair("正太", "/search/photos?search_query=正太&"),
+            Pair("巨乳", "/search/photos?search_query=巨乳&"),
+            Pair("贫乳", "/search/photos?search_query=貧乳&"),
+            Pair("女王", "/search/photos?search_query=女王&"),
+            Pair("教室", "/search/photos?search_query=教師&"),
+            Pair("女仆", "/search/photos?search_query=女僕&"),
+            Pair("护士", "/search/photos?search_query=護士&"),
+            Pair("泳裝", "/search/photos?search_query=泳裝&"),
+            Pair("眼镜", "/search/photos?search_query=眼鏡&"),
+            Pair("丝袜", "/search/photos?search_query=絲襪&"),
+            Pair("制服", "/search/photos?search_query=制服&"),
 
-        Pair("群交", "/search/photos?search_query=群交&"),
-        Pair("足交", "/search/photos?search_query=足交&"),
-        Pair("SM", "/search/photos?search_query=SM&"),
-        Pair("肛交", "/search/photos?search_query=肛交&"),
-        Pair("阿黑颜", "/search/photos?search_query=阿黑顏&"),
-        Pair("药物", "/search/photos?search_query=藥物&"),
-        Pair("扶他", "/search/photos?search_query=扶他&"),
-        Pair("调教", "/search/photos?search_query=調教&"),
-        Pair("野外", "/search/photos?search_query=野外&"),
-        Pair("露出", "/search/photos?search_query=露出&"),
-        Pair("催眠", "/search/photos?search_query=催眠&"),
-        Pair("自慰", "/search/photos?search_query=自慰&"),
-        Pair("触手", "/search/photos?search_query=觸手&"),
-        Pair("兽交", "/search/photos?search_query=獸交&"),
-        Pair("亚人", "/search/photos?search_query=亞人&"),
-        Pair("魔物", "/search/photos?search_query=魔物&"),
+            Pair("群交", "/search/photos?search_query=群交&"),
+            Pair("足交", "/search/photos?search_query=足交&"),
+            Pair("SM", "/search/photos?search_query=SM&"),
+            Pair("肛交", "/search/photos?search_query=肛交&"),
+            Pair("阿黑颜", "/search/photos?search_query=阿黑顏&"),
+            Pair("药物", "/search/photos?search_query=藥物&"),
+            Pair("扶他", "/search/photos?search_query=扶他&"),
+            Pair("调教", "/search/photos?search_query=調教&"),
+            Pair("野外", "/search/photos?search_query=野外&"),
+            Pair("露出", "/search/photos?search_query=露出&"),
+            Pair("催眠", "/search/photos?search_query=催眠&"),
+            Pair("自慰", "/search/photos?search_query=自慰&"),
+            Pair("触手", "/search/photos?search_query=觸手&"),
+            Pair("兽交", "/search/photos?search_query=獸交&"),
+            Pair("亚人", "/search/photos?search_query=亞人&"),
+            Pair("魔物", "/search/photos?search_query=魔物&"),
 
-        Pair("重口", "/search/photos?search_query=重口&"),
-        Pair("猎奇", "/search/photos?search_query=獵奇&"),
-        Pair("非H", "/search/photos?search_query=非H&"),
-        Pair("血腥", "/search/photos?search_query=血腥&"),
-        Pair("暴力", "/search/photos?search_query=暴力&")
-    ))
+            Pair("重口", "/search/photos?search_query=重口&"),
+            Pair("猎奇", "/search/photos?search_query=獵奇&"),
+            Pair("非H", "/search/photos?search_query=非H&"),
+            Pair("血腥", "/search/photos?search_query=血腥&"),
+            Pair("暴力", "/search/photos?search_query=暴力&")
+        )
+    )
 
-    private class SortFilter : UriPartFilter("排序", arrayOf(
-        Pair("最多订阅", "o=mv&"),
-        Pair("最新", "o=mr&"),
-        Pair("最多爱心", "o=tf&"),
-        Pair("最多图片", "o=mp&")
-    ))
+    private class SortFilter : UriPartFilter(
+        "排序",
+        arrayOf(
+            Pair("最多订阅", "o=mv&"),
+            Pair("最新", "o=mr&"),
+            Pair("最多爱心", "o=tf&"),
+            Pair("最多图片", "o=mp&")
+        )
+    )
 
-    private class TimeFilter : UriPartFilter("时间", arrayOf(
-        Pair("全部", "t=a"),
-        Pair("今天", "t=t"),
-        Pair("这周", "t=w"),
-        Pair("本月", "t=m")
-    ))
+    private class TimeFilter : UriPartFilter(
+        "时间",
+        arrayOf(
+            Pair("全部", "t=a"),
+            Pair("今天", "t=t"),
+            Pair("这周", "t=w"),
+            Pair("本月", "t=m")
+        )
+    )
 
     /**
      *创建选择过滤器的类。 下拉菜单中的每个条目都有一个名称和一个显示名称。

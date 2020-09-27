@@ -15,9 +15,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.io.IOException
-import java.util.HashMap
-import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
@@ -29,6 +26,9 @@ import org.json.JSONObject
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
+import java.util.HashMap
+import java.util.concurrent.TimeUnit
 
 open class Guya : ConfigurableSource, HttpSource() {
 
@@ -40,10 +40,13 @@ open class Guya : ConfigurableSource, HttpSource() {
     private val scanlatorCacheUrl = "$baseUrl/api/get_all_groups"
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "(Android ${Build.VERSION.RELEASE}; " +
-            "${Build.MANUFACTURER} ${Build.MODEL}) " +
-            "Tachiyomi/${BuildConfig.VERSION_NAME} " +
-            Build.ID)
+        add(
+            "User-Agent",
+            "(Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MANUFACTURER} ${Build.MODEL}) " +
+                "Tachiyomi/${BuildConfig.VERSION_NAME} " +
+                Build.ID
+        )
     }
 
     private val scanlators: ScanlatorStore = ScanlatorStore()
@@ -131,9 +134,12 @@ open class Guya : ConfigurableSource, HttpSource() {
         metadata.put("chapter", chapterNum)
         metadata.put("scanlator", scanlators.getKeyFromValue(chapter.scanlator.toString()))
         metadata.put("slug", json.getString("slug"))
-        metadata.put("folder", json.getJSONObject("chapters")
-            .getJSONObject(chapterNum)
-            .getString("folder"))
+        metadata.put(
+            "folder",
+            json.getJSONObject("chapters")
+                .getJSONObject(chapterNum)
+                .getString("folder")
+        )
 
         return parsePageFromJson(pages, metadata)
     }
@@ -320,10 +326,16 @@ open class Guya : ConfigurableSource, HttpSource() {
         val pageArray = ArrayList<Page>()
 
         for (i in 0 until pages.length()) {
-            val page = Page(i + 1, "", pageBuilder(metadata.getString("slug"),
-                metadata.getString("folder"),
-                pages[i].toString(),
-                metadata.getString("scanlator")))
+            val page = Page(
+                i + 1,
+                "",
+                pageBuilder(
+                    metadata.getString("slug"),
+                    metadata.getString("folder"),
+                    pages[i].toString(),
+                    metadata.getString("scanlator")
+                )
+            )
             pageArray.add(page)
         }
 

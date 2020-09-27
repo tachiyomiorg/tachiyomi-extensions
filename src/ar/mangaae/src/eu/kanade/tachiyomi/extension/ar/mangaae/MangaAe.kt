@@ -147,13 +147,16 @@ class MangaAe : ParsedHttpSource() {
         fun toUriPart() = vals[state].second
     }
 
-    private class OrderByFilter : UriPartFilter("الترتيب حسب", arrayOf(
-        Pair("اختيار", ""),
-        Pair("اسم المانجا", "english_name"),
-        Pair("تاريخ النشر", "release_date"),
-        Pair("عدد الفصول", "chapter_count"),
-        Pair("الحالة", "status")
-    ))
+    private class OrderByFilter : UriPartFilter(
+        "الترتيب حسب",
+        arrayOf(
+            Pair("اختيار", ""),
+            Pair("اسم المانجا", "english_name"),
+            Pair("تاريخ النشر", "release_date"),
+            Pair("عدد الفصول", "chapter_count"),
+            Pair("الحالة", "status")
+        )
+    )
 
     override fun getFilterList() = FilterList(
         OrderByFilter()

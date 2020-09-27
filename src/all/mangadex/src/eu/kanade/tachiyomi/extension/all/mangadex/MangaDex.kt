@@ -28,10 +28,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.net.URLEncoder
-import java.util.Date
-import java.util.concurrent.TimeUnit
-import kotlin.collections.set
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -45,6 +41,10 @@ import org.jsoup.parser.Parser
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.net.URLEncoder
+import java.util.Date
+import java.util.concurrent.TimeUnit
+import kotlin.collections.set
 
 abstract class MangaDex(
     override val lang: String,
@@ -421,7 +421,8 @@ abstract class MangaDex(
 
     // Remove bbcode tags as well as parses any html characters in description or chapter name to actual characters for example &hearts; will show ♥
     private fun cleanString(string: String): String {
-        val bbRegex = """\[(\w+)[^]]*](.*?)\[/\1]""".toRegex()
+        val bbRegex =
+            """\[(\w+)[^]]*](.*?)\[/\1]""".toRegex()
         var intermediate = string
             .replace("[list]", "")
             .replace("[/list]", "")
@@ -801,9 +802,11 @@ abstract class MangaDex(
     private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
 
     // default selection (Rating Descending) matches popularMangaRequest url
-    class SortFilter : Filter.Sort("Sort",
+    class SortFilter : Filter.Sort(
+        "Sort",
         sortables.map { it.first }.toTypedArray(),
-        Selection(3, false))
+        Selection(3, false)
+    )
 
     private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it.first }.toTypedArray())
 
@@ -955,7 +958,8 @@ abstract class MangaDex(
             Triple("Number of comments", 4, 5),
             Triple("Rating", 6, 7),
             Triple("Views", 8, 9),
-            Triple("Follows", 10, 11))
+            Triple("Follows", 10, 11)
+        )
 
         private val SOURCE_LANG_LIST = listOf(
             Pair("All", "0"),
@@ -970,7 +974,8 @@ abstract class MangaDex(
             Pair("Korean", "28"),
             Pair("Spanish (LATAM)", "29"),
             Pair("Thai", "32"),
-            Pair("Filipino", "34"))
+            Pair("Filipino", "34")
+        )
 
         private var hasMangaPlus = false
     }

@@ -8,15 +8,15 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 abstract class Zbulu(
     override val name: String,
@@ -82,9 +82,9 @@ abstract class Zbulu(
             filters.forEach { filter ->
                 when (filter) {
                     is AuthorField -> {
-                            if (filter.state.isNotBlank()) {
-                                ret = "$baseUrl/author/${filter.state.replace(" ", "-")}/page-$page"
-                            }
+                        if (filter.state.isNotBlank()) {
+                            ret = "$baseUrl/author/${filter.state.replace(" ", "-")}/page-$page"
+                        }
                     }
                     is GenreFilter -> {
                         if (filter.toUriPart().isNotBlank() && filter.state != 0) {
@@ -193,7 +193,8 @@ abstract class Zbulu(
 
     // [...document.querySelectorAll('.sub-menu li a')].map(a => `Pair("${a.textContent}", "${a.getAttribute('href')}")`).join(',\n')
     // from $baseUrl
-    private class GenreFilter : UriPartFilter("Genres",
+    private class GenreFilter : UriPartFilter(
+        "Genres",
         arrayOf(
             Pair("Choose a genre", ""),
             Pair("Action", "action"),

@@ -12,13 +12,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Nsfw
 class DoujinYang : ParsedHttpSource() {
@@ -158,7 +158,9 @@ class DoujinYang : ParsedHttpSource() {
     )
 
     class GenreFilter : UriPartFilter(
-        "Género", "genero", arrayOf(
+        "Género",
+        "genero",
+        arrayOf(
             Pair("all", "All"),
             Pair("1", "Ahegao"),
             Pair("379", "Alien"),
@@ -244,7 +246,9 @@ class DoujinYang : ParsedHttpSource() {
     )
 
     class LetterFilter : UriPartFilter(
-        "Letra", "letra", arrayOf(
+        "Letra",
+        "letra",
+        arrayOf(
             Pair("all", "All"),
             Pair("a", "A"),
             Pair("b", "B"),
@@ -276,13 +280,19 @@ class DoujinYang : ParsedHttpSource() {
     )
 
     class StatusFilter : UriPartFilter(
-        "Estado", "estado", arrayOf(
-            Pair("all", "All"), Pair("1", "En desarrollo"), Pair("0", "Finalizado")
+        "Estado",
+        "estado",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("1", "En desarrollo"),
+            Pair("0", "Finalizado")
         )
     )
 
     class SortFilter : UriPartFilterreq(
-        "Sort", "orden", arrayOf(
+        "Sort",
+        "orden",
+        arrayOf(
             Pair("visitas", "Visitas"),
             Pair("desc", "Descendente"),
             Pair("asc", "Ascendente"),

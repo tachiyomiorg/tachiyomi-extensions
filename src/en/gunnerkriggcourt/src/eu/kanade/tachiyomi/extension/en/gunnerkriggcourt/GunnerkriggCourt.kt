@@ -46,7 +46,8 @@ class GunnerkriggCourt : ParsedHttpSource() {
         return Observable.just(manga)
     }
 
-    override fun chapterListSelector() = """div.chapters option[value~=\d*]"""
+    override fun chapterListSelector() =
+        """div.chapters option[value~=\d*]"""
 
     override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).reversed()

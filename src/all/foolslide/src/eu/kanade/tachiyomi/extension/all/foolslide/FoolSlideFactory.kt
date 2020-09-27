@@ -27,7 +27,6 @@ import uy.kohesive.injekt.api.get
 
 class FoolSlideFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-        JaiminisBox(),
         SenseScans(),
         KireiCake(),
         SilentSky(),
@@ -65,26 +64,6 @@ class FoolSlideFactory : SourceFactory {
         Mabushimajo(),
         EdensZero()
     )
-}
-
-class JaiminisBox : FoolSlide("Jaimini's Box", "https://jaiminisbox.com", "en", "/reader") {
-    private val slugRegex = "(?:/read/)([\\w\\d-]+?)(?:/)".toRegex()
-    override fun pageListRequest(chapter: SChapter): Request {
-        val (slug) = slugRegex.find(chapter.url)!!.destructured
-        var (major, minor) = chapter.chapter_number.toString().split(".")
-        if (major == "-1") major = "0" // Some oneshots don't have a chapter
-        return GET("$baseUrl$urlModifier/api/reader/chapter?comic_stub=$slug&chapter=$major&subchapter=$minor")
-    }
-
-    override fun pageListParse(document: Document): List<Page> {
-        val pagesJson = JSONObject(document.body().ownText())
-        val json = JsonParser().parse(pagesJson.getString("pages")).asJsonArray
-        val pages = ArrayList<Page>()
-        json.forEach {
-            pages.add(Page(pages.size, "", JsonParser().parse(it.toString())["url"].asString))
-        }
-        return pages
-    }
 }
 
 class TheCatScans : FoolSlide("The Cat Scans", "https://reader2.thecatscans.com/", "en")

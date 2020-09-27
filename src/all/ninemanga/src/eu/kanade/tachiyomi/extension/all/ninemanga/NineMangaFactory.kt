@@ -4,12 +4,12 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
+import okhttp3.Request
+import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import okhttp3.Request
-import org.jsoup.nodes.Element
 
 class NineMangaFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -756,7 +756,7 @@ fun parseChapterDateByLang(date: String): Long {
     if (dateWords.size == 3) {
         if (dateWords[1].contains(",")) {
             return try {
-                SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date).time
+                SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
             } catch (e: ParseException) {
                 0L
             }

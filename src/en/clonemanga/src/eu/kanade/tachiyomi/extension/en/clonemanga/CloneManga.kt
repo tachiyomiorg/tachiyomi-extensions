@@ -47,8 +47,10 @@ class CloneManga : ParsedHttpSource() {
             status = SManga.UNKNOWN
             url = element.select("a").first().attr("href")
             description = element.select("h4").first()?.text() ?: ""
-            thumbnail_url = baseUrl + attr.substring(attr.indexOf("site/themes"),
-                attr.indexOf(")"))
+            thumbnail_url = baseUrl + attr.substring(
+                attr.indexOf("site/themes"),
+                attr.indexOf(")")
+            )
         }
     }
 
@@ -65,8 +67,10 @@ class CloneManga : ParsedHttpSource() {
         val document = response.asJsoup()
         val series = document.location()
         val numChapters = Regex(
-            pattern = "&page=(.*)&lang=").findAll(
-            input = document.getElementsByTag("script")[3].toString())
+            pattern = "&page=(.*)&lang="
+        ).findAll(
+            input = document.getElementsByTag("script")[3].toString()
+        )
             .elementAt(3).destructured.component1()
             .toInt()
         val chapters = ArrayList<SChapter>()

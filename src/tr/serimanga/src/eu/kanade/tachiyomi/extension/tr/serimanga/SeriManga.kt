@@ -7,12 +7,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class SeriManga : ParsedHttpSource() {
     override val name = "SeriManga"
@@ -105,7 +105,7 @@ class SeriManga : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         name = "${element.select("span").first().text()}: ${element.select("span")[1].text()}"
-        date_upload = dateFormat.parse(element.select("span")[2].ownText()).time ?: 0
+        date_upload = dateFormat.parse(element.select("span")[2].ownText())?.time ?: 0
     }
 
     companion object {

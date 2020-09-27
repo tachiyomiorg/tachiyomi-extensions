@@ -8,9 +8,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -20,6 +17,9 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class VizShonenJump : ParsedHttpSource() {
 

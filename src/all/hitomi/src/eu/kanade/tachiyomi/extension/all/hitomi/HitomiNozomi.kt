@@ -4,12 +4,12 @@ import eu.kanade.tachiyomi.extension.all.hitomi.Hitomi.Companion.LTN_BASE_URL
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import java.security.MessageDigest
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import rx.Observable
 import rx.Single
+import java.security.MessageDigest
 
 private typealias HashedTerm = ByteArray
 

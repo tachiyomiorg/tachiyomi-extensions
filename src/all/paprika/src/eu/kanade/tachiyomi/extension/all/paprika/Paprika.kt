@@ -8,9 +8,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -18,6 +15,9 @@ import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 abstract class Paprika(
     override val name: String,
@@ -161,8 +161,9 @@ abstract class Paprika(
                         else -> null
                     }?.timeInMillis ?: 0L
                 }
-                else -> SimpleDateFormat("MMM d yy", Locale.US)
-                    .parse("${this.substringBefore(",")} $currentYear")?.time ?: 0
+                else ->
+                    SimpleDateFormat("MMM d yy", Locale.US)
+                        .parse("${this.substringBefore(",")} $currentYear")?.time ?: 0
             }
         } catch (_: Exception) {
             0L

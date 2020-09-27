@@ -9,13 +9,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Nsfw
 class Yaoichan : ParsedHttpSource() {
@@ -165,7 +165,7 @@ class Yaoichan : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.date").first()?.text()?.let {
-            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it).time
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }
@@ -189,9 +189,11 @@ class Yaoichan : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
     private class Genre(name: String, val id: String = name.replace(' ', '_')) : Filter.TriState(name)
     private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Перевод завершен", "Выпуск завершен", "Онгоинг", "Новые главы"))
-    private class OrderBy : Filter.Sort("Сортировка",
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
         arrayOf("Дата", "Популярность", "Имя", "Главы"),
-        Selection(1, false))
+        Selection(1, false)
+    )
 
     override fun getFilterList() = FilterList(
         Status(),

@@ -86,24 +86,24 @@ class Bacakomik : ParsedHttpSource() {
         }
         return GET(url.build().toString(), headers)
     }
-override fun mangaDetailsParse(document: Document): SManga {
-    val infoElement = document.select("div.infoanime").first()
-    val descElement = document.select("div.desc > .entry-content.entry-content-single").first()
-    val sepName = infoElement.select(".infox > .spe > span:nth-child(2)").last()
-    val manga = SManga.create()
-    manga.author = sepName.ownText()
-    manga.artist = sepName.ownText()
-    val genres = mutableListOf<String>()
-    infoElement.select(".infox > .genre-info > a").forEach { element ->
-        val genre = element.text()
-        genres.add(genre)
+    override fun mangaDetailsParse(document: Document): SManga {
+        val infoElement = document.select("div.infoanime").first()
+        val descElement = document.select("div.desc > .entry-content.entry-content-single").first()
+        val sepName = infoElement.select(".infox > .spe > span:nth-child(2)").last()
+        val manga = SManga.create()
+        manga.author = sepName.ownText()
+        manga.artist = sepName.ownText()
+        val genres = mutableListOf<String>()
+        infoElement.select(".infox > .genre-info > a").forEach { element ->
+            val genre = element.text()
+            genres.add(genre)
+        }
+        manga.genre = genres.joinToString(", ")
+        manga.status = parseStatus(infoElement.select(".infox > .spe > span:nth-child(1)").text())
+        manga.description = descElement.select("p").text()
+        manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
+        return manga
     }
-    manga.genre = genres.joinToString(", ")
-    manga.status = parseStatus(infoElement.select(".infox > .spe > span:nth-child(1)").text())
-    manga.description = descElement.select("p").text()
-    manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
-    return manga
-}
 
     private fun parseStatus(element: String): Int = when {
         element.toLowerCase().contains("ongoing") -> SManga.ONGOING
@@ -160,28 +160,37 @@ override fun mangaDetailsParse(document: Document): SManga {
 
     private class YearFilter : Filter.Text("Year")
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
-        Pair("Default", ""),
-        Pair("Manga", "Manga"),
-        Pair("Manhwa", "Manhwa"),
-        Pair("Manhua", "Manhua"),
-        Pair("Comic", "Comic")
-    ))
+    private class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("Manga", "Manga"),
+            Pair("Manhwa", "Manhwa"),
+            Pair("Manhua", "Manhua"),
+            Pair("Comic", "Comic")
+        )
+    )
 
-    private class SortByFilter : UriPartFilter("Sort By", arrayOf(
-        Pair("Default", ""),
-        Pair("A-Z", "title"),
-        Pair("Z-A", "titlereverse"),
-        Pair("Latest Update", "update"),
-        Pair("Latest Added", "latest"),
-        Pair("Popular", "popular")
-    ))
+    private class SortByFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("A-Z", "title"),
+            Pair("Z-A", "titlereverse"),
+            Pair("Latest Update", "update"),
+            Pair("Latest Added", "latest"),
+            Pair("Popular", "popular")
+        )
+    )
 
-    private class StatusFilter : UriPartFilter("Status", arrayOf(
-        Pair("All", ""),
-        Pair("Ongoing", "ongoing"),
-        Pair("Completed", "completed")
-    ))
+    private class StatusFilter : UriPartFilter(
+        "Status",
+        arrayOf(
+            Pair("All", ""),
+            Pair("Ongoing", "ongoing"),
+            Pair("Completed", "completed")
+        )
+    )
 
     private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)

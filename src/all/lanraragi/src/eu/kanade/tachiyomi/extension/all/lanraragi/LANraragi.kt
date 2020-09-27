@@ -59,7 +59,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                 url = "${uriBuild.encodedPath}?${uriBuild.encodedQuery}"
                 chapter_number = 1F
                 name = "Chapter"
-            })
+            }
+        )
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -118,7 +119,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                     artist = getArtist(it.tags)
                     author = artist
                 }
-            }, currentStart + jsonResult.data.size < jsonResult.recordsFiltered)
+            },
+            currentStart + jsonResult.data.size < jsonResult.recordsFiltered
+        )
     }
 
     // Preferences

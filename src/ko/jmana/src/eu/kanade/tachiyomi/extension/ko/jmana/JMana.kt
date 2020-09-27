@@ -15,8 +15,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -25,6 +23,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * JMana Source
@@ -77,14 +77,14 @@ class JMana : ConfigurableSource, ParsedHttpSource() {
 
         val manga = SManga.create()
         descriptionElement
-                .map { it.text() }
-                .forEach { text ->
-                    when {
-                        DETAIL_TITLE in text -> manga.title = text.substringAfter(DETAIL_TITLE).trim()
-                        DETAIL_AUTHOR in text -> manga.author = text.substringAfter(DETAIL_AUTHOR).trim()
-                        DETAIL_GENRE in text -> manga.genre = text.substringAfter("장르 : [").substringBefore("]").trim()
-                    }
+            .map { it.text() }
+            .forEach { text ->
+                when {
+                    DETAIL_TITLE in text -> manga.title = text.substringAfter(DETAIL_TITLE).trim()
+                    DETAIL_AUTHOR in text -> manga.author = text.substringAfter(DETAIL_AUTHOR).trim()
+                    DETAIL_GENRE in text -> manga.genre = text.substringAfter("장르 : [").substringBefore("]").trim()
                 }
+            }
         manga.description = descriptionElement.select("#desc").text().substringAfter(DETAIL_DESCRIPTION).trim()
         manga.thumbnail_url = document.select("div.media-left img").attr("abs:src")
         manga.status = SManga.UNKNOWN

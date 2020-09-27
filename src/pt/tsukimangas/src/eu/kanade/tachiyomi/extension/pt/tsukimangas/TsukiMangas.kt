@@ -17,16 +17,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class TsukiMangas : HttpSource() {
 
@@ -326,7 +326,7 @@ class TsukiMangas : HttpSource() {
 
     private fun SimpleDateFormat.tryParseDate(date: String): Long {
         return try {
-            parse(date).time
+            parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }

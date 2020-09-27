@@ -10,8 +10,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.nio.charset.Charset
-import java.util.Calendar
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -20,6 +18,8 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import java.nio.charset.Charset
+import java.util.Calendar
 
 /**
  * For sites based on the Flat-Manga CMS
@@ -81,11 +81,14 @@ abstract class FMReader(
                     url.addQueryParameter("ungenre", ungenre)
                 }
                 is SortBy -> {
-                    url.addQueryParameter("sort", when (filter.state?.index) {
-                        0 -> "name"
-                        1 -> "views"
-                        else -> "last_update"
-                    })
+                    url.addQueryParameter(
+                        "sort",
+                        when (filter.state?.index) {
+                            0 -> "name"
+                            1 -> "views"
+                            else -> "last_update"
+                        }
+                    )
                     if (filter.state?.ascending == true)
                         url.addQueryParameter("sort_type", "ASC")
                 }

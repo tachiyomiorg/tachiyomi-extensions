@@ -315,18 +315,26 @@ abstract class SuperMangasGeneric(
 
     protected class ContentFilter(contents: List<Content>) : Filter.Select<String>(
         "Tipo de Conteúdo",
-        contents.map { it.third }.toTypedArray())
+        contents.map { it.third }.toTypedArray()
+    )
 
     protected class LetterFilter : Filter.Select<String>("Letra inicial", LETTER_LIST)
 
-    protected class StatusFilter : Filter.Select<String>("Status",
-        STATUS_LIST.map { it.second }.toTypedArray())
+    protected class StatusFilter : Filter.Select<String>(
+        "Status",
+        STATUS_LIST.map { it.second }.toTypedArray()
+    )
 
-    protected class CensureFilter : Filter.Select<String>("Censura",
-        CENSURE_LIST.map { it.second }.toTypedArray())
+    protected class CensureFilter : Filter.Select<String>(
+        "Censura",
+        CENSURE_LIST.map { it.second }.toTypedArray()
+    )
 
-    protected class SortFilter : Filter.Sort("Ordem",
-        SORT_LIST.map { it.third }.toTypedArray(), Selection(2, false))
+    protected class SortFilter : Filter.Sort(
+        "Ordem",
+        SORT_LIST.map { it.third }.toTypedArray(),
+        Selection(2, false)
+    )
 
     protected class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Gêneros", genres)
     protected class ExclusiveModeFilter : Filter.CheckBox("Modo Exclusivo", true)

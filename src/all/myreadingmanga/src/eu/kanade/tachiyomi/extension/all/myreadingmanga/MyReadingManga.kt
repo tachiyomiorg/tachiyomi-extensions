@@ -13,9 +13,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -24,6 +21,9 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 open class MyReadingManga(override val lang: String, private val siteLang: String, private val latestLang: String) : ParsedHttpSource() {
 
@@ -159,8 +159,12 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
             }
 
             if (needCover) {
-                thumbnail_url = getThumbnail(getImage(client.newCall(GET("$baseUrl/search/?search=${document.location()}", headers))
-                    .execute().asJsoup().select("div.wdm_results div.p_content img").first()))
+                thumbnail_url = getThumbnail(
+                    getImage(
+                        client.newCall(GET("$baseUrl/search/?search=${document.location()}", headers))
+                            .execute().asJsoup().select("div.wdm_results div.p_content img").first()
+                    )
+                )
             }
         }
     }

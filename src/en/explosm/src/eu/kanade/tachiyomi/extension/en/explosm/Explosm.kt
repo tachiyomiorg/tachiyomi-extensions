@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Explosm : HttpSource() {
 
@@ -92,7 +92,7 @@ class Explosm : HttpSource() {
                 element.select("div#comic-author").text().let { cName ->
                     name = cName
                     date_upload = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault())
-                        .parse(cName.substringBefore(" ")).time
+                        .parse(cName.substringBefore(" "))?.time ?: 0L
                 }
             }
         }

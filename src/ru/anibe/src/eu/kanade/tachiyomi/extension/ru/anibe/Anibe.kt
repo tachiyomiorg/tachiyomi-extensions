@@ -120,15 +120,17 @@ class Anibe : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val allChapters = mutableListOf<SChapter>()
         val jsonManga = gson.fromJson<JsonObject>(response.body()!!.string())
-        val jsonChapters = jsonManga["episodes"].asJsonObject.keys().sortedWith(Comparator<String> { a, b ->
-            when {
-                a.substringBefore("_").toInt() < b.substringBefore("_").toInt() -> 1
-                a.substringBefore("_").toInt() > b.substringBefore("_").toInt() -> -1
-                a.substringAfter("_") < b.substringAfter("_") -> 1
-                a.substringAfter("_") > b.substringAfter("_") -> -1
-                else -> 0
+        val jsonChapters = jsonManga["episodes"].asJsonObject.keys().sortedWith(
+            Comparator<String> { a, b ->
+                when {
+                    a.substringBefore("_").toInt() < b.substringBefore("_").toInt() -> 1
+                    a.substringBefore("_").toInt() > b.substringBefore("_").toInt() -> -1
+                    a.substringAfter("_") < b.substringAfter("_") -> 1
+                    a.substringAfter("_") > b.substringAfter("_") -> -1
+                    else -> 0
+                }
             }
-        })
+        )
 
         for (i in jsonChapters.indices) {
             val chapter = SChapter.create()

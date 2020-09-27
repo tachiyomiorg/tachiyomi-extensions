@@ -10,11 +10,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-import kotlin.experimental.and
-import kotlin.experimental.xor
 import okhttp3.HttpUrl
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -23,6 +18,11 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.experimental.and
+import kotlin.experimental.xor
 
 class MangaRockEs : ParsedHttpSource() {
 
@@ -35,16 +35,18 @@ class MangaRockEs : ParsedHttpSource() {
     override val supportsLatest = true
 
     // Handles the page decoding
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor(fun(chain): Response {
-        val url = chain.request().url().toString()
-        val response = chain.proceed(chain.request())
-        if (!url.endsWith(".mri")) return response
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor(
+        fun(chain): Response {
+            val url = chain.request().url().toString()
+            val response = chain.proceed(chain.request())
+            if (!url.endsWith(".mri")) return response
 
-        val decoded: ByteArray = decodeMri(response)
-        val mediaType = MediaType.parse("image/webp")
-        val rb = ResponseBody.create(mediaType, decoded)
-        return response.newBuilder().body(rb).build()
-    }).build()
+            val decoded: ByteArray = decodeMri(response)
+            val mediaType = MediaType.parse("image/webp")
+            val rb = ResponseBody.create(mediaType, decoded)
+            return response.newBuilder().body(rb).build()
+        }
+    ).build()
 
     // Popular
 
@@ -150,7 +152,7 @@ class MangaRockEs : ParsedHttpSource() {
 
                     calendar.timeInMillis
                 } else {
-                    SimpleDateFormat("MMM d, yyyy", Locale.US).parse(date).time
+                    SimpleDateFormat("MMM d, yyyy", Locale.US).parse(date)?.time ?: 0L
                 }
             } ?: 0
         }
@@ -215,13 +217,18 @@ class MangaRockEs : ParsedHttpSource() {
 
     // Filters
 
-    private class StatusFilter : UriPartFilter("Status", arrayOf(
-        Pair("All", "all"),
-        Pair("Completed", "completed"),
-        Pair("Ongoing", "ongoing")
-    ))
+    private class StatusFilter : UriPartFilter(
+        "Status",
+        arrayOf(
+            Pair("All", "all"),
+            Pair("Completed", "completed"),
+            Pair("Ongoing", "ongoing")
+        )
+    )
 
-    private class RankFilter : UriPartFilter("Rank", arrayOf(
+    private class RankFilter : UriPartFilter(
+        "Rank",
+        arrayOf(
             Pair("All", "all"),
             Pair("1 - 999", "1-999"),
             Pair("1k - 2k", "1000-2000"),
@@ -234,80 +241,84 @@ class MangaRockEs : ParsedHttpSource() {
             Pair("8k - 9k", "8000-9000"),
             Pair("9k - 19k", "9000-10000"),
             Pair("10k - 11k", "10000-11000")
-    ))
+        )
+    )
 
-    private class SortBy : UriPartFilter("Sort by", arrayOf(
+    private class SortBy : UriPartFilter(
+        "Sort by",
+        arrayOf(
             Pair("Name", "name"),
             Pair("Rank", "rank")
-    ))
+        )
+    )
 
     private class Genre(name: String, val uriPart: String) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            // Search and filter don't work at the same time
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            StatusFilter(),
-            RankFilter(),
-            SortBy(),
-            GenreList(getGenreList())
+        // Search and filter don't work at the same time
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        StatusFilter(),
+        RankFilter(),
+        SortBy(),
+        GenreList(getGenreList())
     )
 
     // [...document.querySelectorAll('._2DMqI .mdl-checkbox')].map(n => `Genre("${n.querySelector('.mdl-checkbox__label').innerText}", "${n.querySelector('input').dataset.oid}")`).sort().join(',\n')
     // on https://mangarock.com/manga
     private fun getGenreList() = listOf(
-            Genre("4-koma", "4-koma"),
-            Genre("Action", "action"),
-            Genre("Adult", "adult"),
-            Genre("Adventure", "adventure"),
-            Genre("Comedy", "comedy"),
-            Genre("Demons", "demons"),
-            Genre("Doujinshi", "doujinshi"),
-            Genre("Drama", "drama"),
-            Genre("Ecchi", "ecchi"),
-            Genre("Fantasy", "fantasy"),
-            Genre("Gender Bender", "gender-bender"),
-            Genre("Harem", "harem"),
-            Genre("Historical", "historical"),
-            Genre("Horror", "horror"),
-            Genre("Isekai", "isekai"),
-            Genre("Josei", "josei"),
-            Genre("Kids", "kids"),
-            Genre("Magic", "magic"),
-            Genre("Martial Arts", "martial-arts"),
-            Genre("Mature", "mature"),
-            Genre("Mecha", "mecha"),
-            Genre("Military", "military"),
-            Genre("Music", "music"),
-            Genre("Mystery", "mystery"),
-            Genre("One Shot", "one-shot"),
-            Genre("Parody", "parody"),
-            Genre("Police", "police"),
-            Genre("Psychological", "psychological"),
-            Genre("Romance", "romance"),
-            Genre("School Life", "school-life"),
-            Genre("Sci-Fi", "sci-fi"),
-            Genre("Seinen", "seinen"),
-            Genre("Shoujo Ai", "shoujo-ai"),
-            Genre("Shoujo", "shoujo"),
-            Genre("Shounen Ai", "shounen-ai"),
-            Genre("Shounen", "shounen"),
-            Genre("Slice of Life", "slice-of-life"),
-            Genre("Smut", "smut"),
-            Genre("Space", "space"),
-            Genre("Sports", "sports"),
-            Genre("Super Power", "super-power"),
-            Genre("Supernatural", "supernatural"),
-            Genre("Tragedy", "tragedy"),
-            Genre("Vampire", "vampire"),
-            Genre("Webtoons", "webtoons"),
-            Genre("Yaoi", "yaoi"),
-            Genre("Yuri", "yuri")
+        Genre("4-koma", "4-koma"),
+        Genre("Action", "action"),
+        Genre("Adult", "adult"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Demons", "demons"),
+        Genre("Doujinshi", "doujinshi"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Kids", "kids"),
+        Genre("Magic", "magic"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Military", "military"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("One Shot", "one-shot"),
+        Genre("Parody", "parody"),
+        Genre("Police", "police"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-Fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Smut", "smut"),
+        Genre("Space", "space"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yaoi", "yaoi"),
+        Genre("Yuri", "yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 }

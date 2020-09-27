@@ -8,7 +8,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.Date
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -16,6 +15,7 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Date
 
 class QuestionableContent : ParsedHttpSource() {
 
@@ -64,10 +64,12 @@ class QuestionableContent : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = """div#container a[href^="view.php?comic="]"""
+    override fun chapterListSelector() =
+        """div#container a[href^="view.php?comic="]"""
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlregex = """view\.php\?comic=(.*)""".toRegex()
+        val urlregex =
+            """view\.php\?comic=(.*)""".toRegex()
         val chapterUrl = element.attr("href")
         val number = urlregex.find(chapterUrl)!!.groupValues[1]
 

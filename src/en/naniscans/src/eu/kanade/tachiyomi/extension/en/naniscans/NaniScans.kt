@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import java.lang.UnsupportedOperationException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import java.lang.UnsupportedOperationException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class NaniScans : HttpSource() {
     override val baseUrl = "https://naniscans.com"
@@ -109,12 +109,14 @@ class NaniScans : HttpSource() {
         for (i in 0 until chaptersJson.length()) {
             val chapter = chaptersJson.getJSONObject(i)
 
-            chaptersList.add(SChapter.create().apply {
-                chapter_number = chapter.get("number").toString().toFloat()
-                name = getChapterTitle(chapter)
-                date_upload = dateParser.parse(chapter.getString("releaseDate"))!!.time
-                url = "${titleJson.getString("id")}_${chapter.getString("id")}"
-            })
+            chaptersList.add(
+                SChapter.create().apply {
+                    chapter_number = chapter.get("number").toString().toFloat()
+                    name = getChapterTitle(chapter)
+                    date_upload = dateParser.parse(chapter.getString("releaseDate"))!!.time
+                    url = "${titleJson.getString("id")}_${chapter.getString("id")}"
+                }
+            )
         }
 
         return chaptersList

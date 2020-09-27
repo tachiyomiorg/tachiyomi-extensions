@@ -46,8 +46,10 @@ class Kuaikanmanhua : ParsedHttpSource() {
     private fun parseMangaDocument(document: Document): MangasPage {
         val mangas = mutableListOf<SManga>()
 
-        gson.fromJson<JsonArray>(document.select("script:containsData(datalist)").first().data()
-            .substringAfter("dataList:").substringBefore("}],error"))
+        gson.fromJson<JsonArray>(
+            document.select("script:containsData(datalist)").first().data()
+                .substringAfter("dataList:").substringBefore("}],error")
+        )
             .forEach { mangas.add(mangaFromJson(it.asJsonObject)) }
 
         return MangasPage(mangas, document.select(popularMangaNextPageSelector()).isNotEmpty())
@@ -112,8 +114,10 @@ class Kuaikanmanhua : ParsedHttpSource() {
         document.select("script:containsData(resultList)").let {
             return if (it.isNotEmpty()) {
                 // for search by query
-                gson.fromJson<JsonArray>(it.first().data()
-                    .substringAfter("resultList:").substringBefore(",noResult"))
+                gson.fromJson<JsonArray>(
+                    it.first().data()
+                        .substringAfter("resultList:").substringBefore(",noResult")
+                )
                     .forEach { result -> mangas.add(searchMangaFromJson(result.asJsonObject)) }
                 MangasPage(mangas, document.select(searchMangaNextPageSelector()).isNotEmpty())
             } else {
@@ -176,8 +180,10 @@ class Kuaikanmanhua : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        gson.fromJson<JsonArray>(document.select("script:containsData(comicImages)").first().data()
-            .substringAfter("comicImages:").substringBefore("},nextComicInfo"))
+        gson.fromJson<JsonArray>(
+            document.select("script:containsData(comicImages)").first().data()
+                .substringAfter("comicImages:").substringBefore("},nextComicInfo")
+        )
             .forEachIndexed { i, json -> pages.add(Page(i, "", json.asJsonObject["url"].asString)) }
 
         return pages
@@ -193,35 +199,41 @@ class Kuaikanmanhua : ParsedHttpSource() {
         GenreFilter()
     )
 
-    private class GenreFilter : UriPartFilter("题材", arrayOf(
-        Pair("全部", "0"),
-        Pair("恋爱", "20"),
-        Pair("古风", "46"),
-        Pair("校园", "47"),
-        Pair("奇幻", "22"),
-        Pair("大女主", "77"),
-        Pair("治愈", "27"),
-        Pair("总裁", "52"),
-        Pair("完结", "40"),
-        Pair("唯美", "58"),
-        Pair("日漫", "57"),
-        Pair("韩漫", "60"),
-        Pair("穿越", "80"),
-        Pair("正能量", "54"),
-        Pair("灵异", "32"),
-        Pair("爆笑", "24"),
-        Pair("都市", "48"),
-        Pair("萌系", "62"),
-        Pair("玄幻", "63"),
-        Pair("日常", "19"),
-        Pair("投稿", "76")
-    ))
+    private class GenreFilter : UriPartFilter(
+        "题材",
+        arrayOf(
+            Pair("全部", "0"),
+            Pair("恋爱", "20"),
+            Pair("古风", "46"),
+            Pair("校园", "47"),
+            Pair("奇幻", "22"),
+            Pair("大女主", "77"),
+            Pair("治愈", "27"),
+            Pair("总裁", "52"),
+            Pair("完结", "40"),
+            Pair("唯美", "58"),
+            Pair("日漫", "57"),
+            Pair("韩漫", "60"),
+            Pair("穿越", "80"),
+            Pair("正能量", "54"),
+            Pair("灵异", "32"),
+            Pair("爆笑", "24"),
+            Pair("都市", "48"),
+            Pair("萌系", "62"),
+            Pair("玄幻", "63"),
+            Pair("日常", "19"),
+            Pair("投稿", "76")
+        )
+    )
 
-    private class StatusFilter : UriPartFilter("类别", arrayOf(
-        Pair("全部", "1"),
-        Pair("连载中", "2"),
-        Pair("已完结", "3")
-    ))
+    private class StatusFilter : UriPartFilter(
+        "类别",
+        arrayOf(
+            Pair("全部", "1"),
+            Pair("连载中", "2"),
+            Pair("已完结", "3")
+        )
+    )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {

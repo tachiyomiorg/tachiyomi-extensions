@@ -48,7 +48,7 @@ class Tsumino : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/Search/Operate/?PageNumber=$page&Sort=Newest")
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-    val allManga = mutableListOf<SManga>()
+        val allManga = mutableListOf<SManga>()
         val body = response.body()!!.string()
         val jsonManga = gson.fromJson<JsonObject>(body)["data"].asJsonArray
         for (i in 0 until jsonManga.size()) {
@@ -207,23 +207,23 @@ class Tsumino : ParsedHttpSource() {
     data class AdvSearchEntry(val type: Int, val text: String, val exclude: Boolean)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("Separate tags with commas (,)"),
-            Filter.Header("Prepend with dash (-) to exclude"),
-            TagFilter(),
-            CategoryFilter(),
-            CollectionFilter(),
-            GroupFilter(),
-            ArtistFilter(),
-            ParodyFilter(),
-            CharactersFilter(),
-            UploaderFilter(),
+        Filter.Header("Separate tags with commas (,)"),
+        Filter.Header("Prepend with dash (-) to exclude"),
+        TagFilter(),
+        CategoryFilter(),
+        CollectionFilter(),
+        GroupFilter(),
+        ArtistFilter(),
+        ParodyFilter(),
+        CharactersFilter(),
+        UploaderFilter(),
 
-            Filter.Separator(),
+        Filter.Separator(),
 
-            SortFilter(),
-            LengthFilter(),
-            MinimumRatingFilter(),
-            ExcludeParodiesFilter()
+        SortFilter(),
+        LengthFilter(),
+        MinimumRatingFilter(),
+        ExcludeParodiesFilter()
     )
 
     class TagFilter : AdvSearchEntryFilter("Tags", 1)

@@ -13,13 +13,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MangaOnlineBiz : ParsedHttpSource() {
     override val name = "MangaOnlineBiz"
@@ -145,7 +145,7 @@ class MangaOnlineBiz : ParsedHttpSource() {
         chapter.setUrlWithoutDomain("/$mangaName/${element.get("volume").string}/${element.get("number").string})/1")
         chapter.name = "Том ${element.get("volume").string} - Глава ${element.get("number").string} ${element.get("title").string}"
         chapter.chapter_number = element.get("number").float
-        chapter.date_upload = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(element.get("date").string).time
+        chapter.date_upload = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(element.get("date").string)?.time ?: 0L
         return chapter
     }
 

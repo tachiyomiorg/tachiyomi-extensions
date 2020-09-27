@@ -11,7 +11,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.util.Calendar
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -19,6 +18,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.util.Calendar
 
 @Nsfw
 class Eggporncomics : ParsedHttpSource() {
@@ -129,21 +129,25 @@ class Eggporncomics : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             thumbnail_url = document.select(pageListSelector).first().toFullSizeImage()
-            description = document.select("div.links ul").joinToString("\n") { element -> element.select("a")
-                .joinToString(prefix = element.select("span").text().replace(descriptionPrefixRegex, ": ")) { it.text() } }
+            description = document.select("div.links ul").joinToString("\n") { element ->
+                element.select("a")
+                    .joinToString(prefix = element.select("span").text().replace(descriptionPrefixRegex, ": ")) { it.text() }
+            }
         }
     }
 
     // Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return listOf(SChapter.create().apply {
-            setUrlWithoutDomain(response.request().url().toString())
-            name = "Chapter"
-            date_upload = response.asJsoup().select("div.info > div.meta li:contains(days ago)").firstOrNull()
-                ?.let { Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -(it.text().substringBefore(" ").toIntOrNull() ?: 0)) }.timeInMillis }
-                ?: 0
-        })
+        return listOf(
+            SChapter.create().apply {
+                setUrlWithoutDomain(response.request().url().toString())
+                name = "Chapter"
+                date_upload = response.asJsoup().select("div.info > div.meta li:contains(days ago)").firstOrNull()
+                    ?.let { Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -(it.text().substringBefore(" ").toIntOrNull() ?: 0)) }.timeInMillis }
+                    ?: 0
+            }
+        )
     }
 
     override fun chapterListSelector() = throw UnsupportedOperationException("Not used")
