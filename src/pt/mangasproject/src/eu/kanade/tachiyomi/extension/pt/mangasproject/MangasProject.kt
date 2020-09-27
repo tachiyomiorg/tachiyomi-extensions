@@ -17,10 +17,10 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.ParseException
@@ -42,7 +42,6 @@ abstract class MangasProject(
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
-        .addInterceptor { pageListIntercept(it) }
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -265,29 +264,23 @@ abstract class MangasProject(
         return GET("$baseUrl/leitor/pages/$id.json?key=$token", newHeaders)
     }
 
-    private fun pageListIntercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        val result = chain.proceed(request)
-
-        if (!request.url().toString().contains("capitulo-"))
-            return result
-
-        val document = result.asJsoup()
-        val token = document.select("script[src*=\"reader.\"]").firstOrNull()
-            ?.attr("abs:src")
-            ?.let { HttpUrl.parse(it)!!.queryParameter("token") }
-            ?: throw Exception(TOKEN_NOT_FOUND)
-
-        return chain.proceed(pageListApiRequest(request.url().toString(), token))
-    }
-
     override fun pageListParse(response: Response): List<Page> {
-        val result = response.asJsonObject()
-        val chapterUrl = response.request().header("Referer")!!
+        val document = response.asJsoup()
+        val readerToken = getReaderToken(document) ?: throw Exception(TOKEN_NOT_FOUND)
+        val chapterUrl = response.request().url().toString()
 
-        return result["images"].array
+        val apiRequest = pageListApiRequest(chapterUrl, readerToken)
+        val apiResponse = client.newCall(apiRequest).execute().asJsonObject()
+
+        return apiResponse["images"].array
             .filter { it.string.startsWith("http") }
             .mapIndexed { i, obj -> Page(i, chapterUrl, obj.string) }
+    }
+
+    protected open fun getReaderToken(document: Document): String? {
+        return document.select("script[src*=\"reader.\"]").firstOrNull()
+            ?.attr("abs:src")
+            ?.let { HttpUrl.parse(it)!!.queryParameter("token") }
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
@@ -314,7 +307,7 @@ abstract class MangasProject(
 
     companion object {
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 

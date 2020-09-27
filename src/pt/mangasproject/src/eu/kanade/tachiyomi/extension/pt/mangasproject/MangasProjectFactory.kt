@@ -8,11 +8,13 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.nodes.Document
 
 class MangasProjectFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LeitorNet(),
-        MangaLivre()
+        MangaLivre(),
+        Toonei()
     )
 }
 
@@ -80,5 +82,15 @@ class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net") {
     companion object {
         private const val FILTER_WARNING = "O filtro abaixo é ignorado durante a busca!"
         private const val DEFAULT_TYPE = "manga"
+    }
+}
+
+class Toonei : MangasProject("Toonei", "https://toonei.com") {
+
+    override fun getReaderToken(document: Document): String? {
+        return document.select("script:containsData(window.PAGES_KEY)").firstOrNull()
+            ?.data()
+            ?.substringAfter("\"")
+            ?.substringBefore("\";")
     }
 }
