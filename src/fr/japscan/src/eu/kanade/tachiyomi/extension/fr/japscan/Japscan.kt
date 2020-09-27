@@ -55,7 +55,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "Japscan"
 
-    override val baseUrl = "https://www.japscan.co"
+    override val baseUrl = "https://www.japscan.se"
 
     override val lang = "fr"
 
