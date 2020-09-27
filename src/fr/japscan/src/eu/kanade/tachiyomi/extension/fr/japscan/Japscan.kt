@@ -10,7 +10,9 @@ import android.os.Handler
 import android.os.Looper
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
+import android.util.Log
 import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -37,6 +39,17 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import kotlin.collections.ArrayList
+import kotlin.collections.List
+import kotlin.collections.distinctBy
+import kotlin.collections.filter
+import kotlin.collections.first
+import kotlin.collections.forEach
+import kotlin.collections.forEachIndexed
+import kotlin.collections.map
+import kotlin.collections.mapIndexed
+import kotlin.collections.mutableListOf
+import kotlin.collections.toTypedArray
 import okhttp3.FormBody
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -55,7 +68,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "Japscan"
 
-    override val baseUrl = "https://www.japscan.co"
+    override val baseUrl = "https://www.japscan.se"
 
     override val lang = "fr"
 
@@ -65,10 +78,20 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
+    internal class JsObject(private val latch: CountDownLatch, var width: Int = 0, var height: Int = 0) {
+        @JavascriptInterface
+        fun passSize(widthjs: Int, ratio: Float) {
+            Log.d("japscan", "wvsc js returned $widthjs, $ratio")
+            width = widthjs
+            height = (width.toFloat() / ratio).toInt()
+            latch.countDown()
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
         val indicator = "&wvsc"
-        val cleanupjs = "var db=document.body,chl=db.children;for(db.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=chl[0].tagName;)db.removeChild(chl[0]);for(var i of[].slice.call(chl[0].all_canvas)){i.style.maxWidth=(i.width+\"px\")}window.variable={w:chl[0].all_canvas[0].width,h:chl[0].all_canvas[0].height};"
+        val cleanupjs = "var checkExist=setInterval(function(){if(document.getElementsByTagName('CNV-VV').length){clearInterval(checkExist);var e=document.body,a=e.children;for(e.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=a[0].tagName;)e.removeChild(a[0]);for(var t of[].slice.call(a[0].all_canvas))t.style.maxWidth='100%';window.android.passSize(a[0].all_canvas[0].width,a[0].all_canvas[0].width/a[0].all_canvas[0].height)}},100);"
         val request = chain.request()
         val url = request.url().toString()
 
@@ -83,28 +106,26 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         var webView: WebView? = null
         var height = 0
         var width = 0
-
+        val jsinterface = JsObject(latch)
+        Log.d("japscan", "init wvsc")
         handler.post {
             val webview = WebView(Injekt.get<Application>())
             webView = webview
             webview.settings.javaScriptEnabled = true
             webview.settings.domStorageEnabled = true
             webview.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            webview.settings.useWideViewPort = false
+            webview.settings.loadWithOverviewMode = false
+            webview.settings.userAgentString = webview.settings.userAgentString.replace("Mobile", "eliboM").replace("Android", "diordnA")
+            webview.addJavascriptInterface(jsinterface, "android")
+            var retries = 1
 
             webview.webChromeClient = object : WebChromeClient() {
                 @SuppressLint("NewApi")
                 override fun onProgressChanged(view: WebView, progress: Int) {
-                    if (progress == 100) {
-                        view.evaluateJavascript(cleanupjs) {
-                            if (it.contains('{')) {
-                                val j = JsonParser().parse(it).asJsonObject
-                                width = j["w"].asInt
-                                height = j["h"].asInt
-                                latch.countDown()
-                            } else {
-                                webview.loadUrl(url.replace("&wvsc", ""))
-                            }
-                        }
+                    if (progress == 100 && retries--> 0) {
+                        Log.d("japscan", "wvsc loading finished")
+                        view.evaluateJavascript(cleanupjs) {}
                     }
                 }
             }
@@ -112,11 +133,12 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         }
 
         latch.await()
-
+        width = jsinterface.width
+        height = jsinterface.height
         // webView!!.isDrawingCacheEnabled = true
 
-        webView!!.measure(width + 100, height + 100)
-        webView!!.layout(0, 0, width + 100, height + 100)
+        webView!!.measure(width, height)
+        webView!!.layout(0, 0, width, height)
         Thread.sleep(350)
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -126,8 +148,8 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         // val bitmap: Bitmap = webView!!.drawingCache
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-
         val rb = ResponseBody.create(MediaType.parse("image/png"), output.toByteArray())
+        handler.post { webView!!.destroy() }
         response.newBuilder().body(rb).build()
     }.build()
 
@@ -312,13 +334,16 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return if (document.getElementsByTag("script").size> 12) { // scrambled images, webview screenshotting
+        return if (document.getElementsByTag("script").filter { it.attr("src").contains("ujs") }.size > 2) { // scrambled images, webview screenshotting
+            Log.d("japscan", "scrambled, loading in WVSC urls")
             document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
         } else {
             // unscrambled images, check for single page
             val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
+            Log.d("japscan", "ZJS at $zjsurl")
             val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body()!!.string()
             if ((zjs.toLowerCase().split("new image").size - 1) == 1) { // single page, webview request dumping
+                Log.d("japscan", "webtoon, netdumping initiated")
                 val pagecount = document.getElementsByTag("option").size
                 val pages = ArrayList<Page>()
                 val handler = Handler(Looper.getMainLooper())
@@ -339,6 +364,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                         ): WebResourceResponse? {
                             if (request.url.toString().startsWith("https://c.")) {
                                 pages.add(Page(pages.size, "", request.url.toString()))
+                                Log.d("japscan", "intercepted ${request.url}")
                                 if (pages.size == pagecount) { latch.countDown() }
                                 return WebResourceResponse("image/jpeg", "UTF-8", ByteArrayInputStream(dummystream.toByteArray()))
                             }
@@ -350,6 +376,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                 latch.await()
                 return pages
             } else { // page by page, just do webview screenshotting because it's easier
+                Log.d("japscan", "unscrambled, loading WVSC urls")
                 document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
             }
         }
