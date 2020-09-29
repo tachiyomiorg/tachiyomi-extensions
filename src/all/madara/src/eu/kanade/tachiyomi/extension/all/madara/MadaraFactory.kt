@@ -158,7 +158,9 @@ class MadaraFactory : SourceFactory {
         ZinManga(),
         ShoujoHearts(),
         AlianzaMarcial(),
-        OlaoeManga()
+        OlaoeManga(),
+        FdmScan(),
+        ArgosScan()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -1264,3 +1266,7 @@ class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
 class AlianzaMarcial : Madara("AlianzaMarcial", "https://alianzamarcial.xyz", "es")
 
 class OlaoeManga : Madara("مانجا اولاو", "https://olaoe.giize.com", "ar")
+
+class FdmScan : Madara("FDM Scan", "https://fdmscan.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt", "BR")))
+
+class ArgosScan : Madara("Argos Scan", "https://argosscan.com", "pt-BR", SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR")))
