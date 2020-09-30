@@ -50,10 +50,8 @@ class SocialComics : HttpSource(), ConfigurableSource {
 
     override val supportsLatest = false
 
-    // Sometimes the site is slow.
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addInterceptor { authIntercept(it) }
-//        .addInterceptor { thumbnailIntercept(it) }
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
