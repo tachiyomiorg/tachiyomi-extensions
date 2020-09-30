@@ -1,11 +1,13 @@
 package eu.kanade.tachiyomi.extension.fr.japscan
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.support.v7.preference.ListPreference
@@ -187,12 +189,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
-
-            val s = StringUtils.stripAccents(it.text())
-                .replace("[\\W]".toRegex(), "-")
-                .replace("[-]{2,}".toRegex(), "-")
-                .replace("^-|-$".toRegex(), "")
-            manga.thumbnail_url = "$baseUrl/imgs/mangas/$s.jpg".toLowerCase(Locale.ROOT)
+            manga.thumbnail_url = "$baseUrl/imgs/${it.attr("href").replace(Regex("/$"),".jpg")}".toLowerCase(Locale.ROOT)
         }
         return manga
     }
@@ -357,6 +354,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                     webview.settings.javaScriptEnabled = true
                     webview.settings.domStorageEnabled = true
                     webview.webViewClient = object : WebViewClient() {
+                        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                         override fun shouldInterceptRequest(
                             view: WebView,
                             request: WebResourceRequest
