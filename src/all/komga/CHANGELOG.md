@@ -2,6 +2,8 @@
 
 * Fix seriesIds being casted to Long when fetching collections.
 
+Minimum Komga version required: `0.59.0`
+
 ## 1.2.16
 
 Minimum Komga version required: `0.59.0`
