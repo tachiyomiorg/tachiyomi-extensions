@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.zh.wnacg
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -19,7 +18,6 @@ class wnacg : ParsedHttpSource() {
     override val baseUrl = "https://www.wnacg.org"
     override val lang = "zh"
     override val supportsLatest = false
-    val enableDebug = false
 
     override fun popularMangaSelector() = "div.pic_box"
     override fun latestUpdatesSelector() = throw Exception("Not used")
@@ -61,7 +59,7 @@ class wnacg : ParsedHttpSource() {
         manga.thumbnail_url = "https://" + element.select("img").attr("data-original").replace("//", "")
         // maybe the local cache cause the old source (url) can not be update. but the image can be update on detailpage.
         // ps. new machine can be load img normal.
-        debug(manga.thumbnail_url, "mangaFromElement")
+
         return manga
     }
 
@@ -88,7 +86,6 @@ class wnacg : ParsedHttpSource() {
         // val glist = document.select("a.tagshow").map { it?.text() }
         // manga.genre = glist.joinToString(", ")
         manga.thumbnail_url = "https://" + document.select("div.uwthumb img").first().attr("data-original").replace("//", "")
-        debug(manga.thumbnail_url, "mangaDetailsParse")
         return manga
     }
 
@@ -107,12 +104,4 @@ class wnacg : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = throw Exception("Not used")
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
-    private fun debug(msg: String?, pre_fix: String = "") {
-        if (!enableDebug) return
-        if (msg.isNullOrEmpty()) {
-            Log.d(name + pre_fix, "空对象")
-            return
-        }
-        Log.d(name + pre_fix, msg)
-    }
 }
