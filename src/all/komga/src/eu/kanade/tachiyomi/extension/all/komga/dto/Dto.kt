@@ -88,7 +88,7 @@ data class CollectionDto(
     val id: String,
     val name: String,
     val ordered: Boolean,
-    val seriesIds: List<Long>,
+    val seriesIds: List<String>,
     val createdDate: String,
     val lastModifiedDate: String,
     val filtered: Boolean
