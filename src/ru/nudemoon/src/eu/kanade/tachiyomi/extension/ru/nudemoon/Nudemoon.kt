@@ -22,11 +22,33 @@ class Nudemoon : ParsedHttpSource() {
 
     override val name = "Nude-Moon"
 
-    override val baseUrl = "https://nude-moon.net"
+    override val baseUrl = "https://nude-moon.me"
 
     override val lang = "ru"
 
     override val supportsLatest = true
+
+    private val cookiesHeader by lazy {
+        val cookies = mutableMapOf<String, String>()
+        cookies["NMfYa"] = "1"
+        buildCookies(cookies)
+    }
+
+    private fun buildCookies(cookies: Map<String, String>) =
+        cookies.entries.joinToString(separator = "; ", postfix = ";") {
+            "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+        }
+
+    override val client = network.client.newBuilder()
+        .addNetworkInterceptor { chain ->
+            val newReq = chain
+                .request()
+                .newBuilder()
+                .addHeader("Cookie", cookiesHeader)
+                .build()
+
+            chain.proceed(newReq)
+        }.build()!!
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/all_manga?views&rowstart=${30 * (page - 1)}", headers)
