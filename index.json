@@ -567,15 +567,6 @@
     "nsfw": 1
   },
   {
-    "name": "Tachiyomi: Manga Cruzers",
-    "pkg": "eu.kanade.tachiyomi.extension.en.mangacruzers",
-    "apk": "tachiyomi-en.mangacruzers-v1.2.1.apk",
-    "lang": "en",
-    "code": 1,
-    "version": "1.2.1",
-    "nsfw": 0
-  },
-  {
     "name": "Tachiyomi: MangaDog",
     "pkg": "eu.kanade.tachiyomi.extension.en.mangadog",
     "apk": "tachiyomi-en.mangadog-v1.2.1.apk",
