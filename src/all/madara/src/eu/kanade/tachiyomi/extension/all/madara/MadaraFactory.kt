@@ -23,6 +23,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -855,7 +856,12 @@ class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en") {
     )
 }
 
-class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))) {
+class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.net", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))) {
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(1, TimeUnit.MINUTES)
+        .readTimeout(1, TimeUnit.MINUTES)
+        .build()
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
@@ -865,7 +871,8 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscans.com", "pt-BR",
     override fun getFilterList(): FilterList = FilterList(super.getFilterList().slice(3..4))
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
     }
 }
 
