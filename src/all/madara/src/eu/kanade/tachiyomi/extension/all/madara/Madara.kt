@@ -350,8 +350,8 @@ abstract class Madara(
                 manga.status = when (it.text()) {
                     // I don't know what's the corresponding for COMPLETED and LICENSED
                     // There's no support for "Canceled" or "On Hold"
-                    "Completed", "Completo" -> SManga.COMPLETED
-                    "OnGoing", "Продолжается", "Updating", "Em Lançamento" -> SManga.ONGOING
+                    "Completed", "Completo", "Concluído" -> SManga.COMPLETED
+                    "OnGoing", "Продолжается", "Updating", "Em Lançamento", "Em andamento" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
             }
