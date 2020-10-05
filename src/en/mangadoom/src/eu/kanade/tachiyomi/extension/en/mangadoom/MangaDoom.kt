@@ -174,13 +174,13 @@ class MangaDoom : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapters = response.asJsoup().select("ul.chapter-list > li").reversed()
+        val chapters = response.asJsoup().select("ul.chapter-list > li")
 
         return chapters.map {
             SChapter.create().apply {
                 this.name = it.select("span.val").first().ownText()
                 this.url = it.select("a").first().attr("href")
-                this.chapter_number = chapters.indexOf(it).toFloat()
+                this.chapter_number = this.url.split("/").last().toFloat()
 
                 val calculatedDate = it.select("span.date").first().ownText()?.let {
                     parseDate(it)

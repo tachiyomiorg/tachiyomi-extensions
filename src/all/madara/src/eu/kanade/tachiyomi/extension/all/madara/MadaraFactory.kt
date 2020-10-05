@@ -44,6 +44,7 @@ class MadaraFactory : SourceFactory {
         ComicKiba(),
         ComicsValley(),
         CopyPasteScan(),
+        DarkyuRealm(),
         DecadenceScans(),
         DetectiveConanAr(),
         DisasterScans(),
@@ -65,6 +66,7 @@ class MadaraFactory : SourceFactory {
         ImmortalUpdates(),
         IsekaiScanCom(),
         JustForFun(),
+        JJutsuScans(),
         KMangaIn(),
         KingzManga(),
         KlanKomik(),
@@ -80,16 +82,19 @@ class MadaraFactory : SourceFactory {
         MangaBob(),
         MangaDods(),
         MangaHentai(),
+        MangaKiss(),
         MangaKomi(),
         MangaLord(),
+        MangaLandArabic(),
         MangaPhoenix(),
         MangaRawr(),
         MangaRead(),
         MangaReadOrg(),
         MangaRockTeam(),
-        MangaSY(),
+        MangaRocky(),
         MangaScantrad(),
         MangaStream(),
+        MangaSY(),
         MangaTX(),
         MangaTurf(),
         MangaWT(),
@@ -123,6 +128,7 @@ class MadaraFactory : SourceFactory {
         NinjaScans(),
         Ninjavi(),
         OnManga(),
+        OrigamiOrpheans(),
         PMScans(),
         PojokManga(),
         PornComix(),
@@ -130,6 +136,7 @@ class MadaraFactory : SourceFactory {
         RaiderScans(),
         ReadManhua(),
         RenaScans(),
+        S2Manga(),
         SheaManga(),
         Skymanga(),
         TheTopComic(),
@@ -158,7 +165,10 @@ class MadaraFactory : SourceFactory {
         ZinManga(),
         ShoujoHearts(),
         AlianzaMarcial(),
-        OlaoeManga()
+        OlaoeManga(),
+        FdmScan(),
+        ArgosScan(),
+        Kombatch()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -1264,3 +1274,23 @@ class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
 class AlianzaMarcial : Madara("AlianzaMarcial", "https://alianzamarcial.xyz", "es")
 
 class OlaoeManga : Madara("مانجا اولاو", "https://olaoe.giize.com", "ar")
+
+class FdmScan : Madara("FDM Scan", "https://fdmscan.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt", "BR")))
+
+class ArgosScan : Madara("Argos Scan", "https://argosscan.com", "pt-BR", SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR")))
+
+class OrigamiOrpheans : Madara("Origami Orpheans", "https://origami-orpheans.com.br", "pt-BR")
+
+class DarkyuRealm : Madara("Darkyu Realm", "https://darkyuerealm.site", "pt-BR")
+
+class MangaKiss : Madara("Manga Kiss", "https://mangakiss.org", "en")
+
+class MangaRocky : Madara("Manga Rocky", "https://mangarocky.com", "en")
+
+class JJutsuScans : Madara("JJutsuScans", "https://jjutsuscans.com", "en")
+
+class S2Manga : Madara("S2Manga", "https://s2manga.com", "en")
+
+class MangaLandArabic : Madara("Manga Land Arabic", "https://mangalandarabic.com", "ar")
+
+class Kombatch : Madara("Kombatch", "https://kombatch.com", "id")
