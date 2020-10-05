@@ -189,7 +189,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
-            manga.thumbnail_url = "$baseUrl/imgs/${it.attr("href").replace(Regex("/$"),".jpg")}".toLowerCase(Locale.ROOT)
+            manga.thumbnail_url = "$baseUrl/imgs/${it.attr("href").replace(Regex("/$"),".jpg").replace("/lecture-en-ligne/","")}".toLowerCase(Locale.ROOT)
         }
         return manga
     }
