@@ -214,11 +214,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 "ENDED" -> SManga.COMPLETED
                 else -> SManga.UNKNOWN
             }
-            // TODO: remove safe calls in next iteration
-            genre = (
-                metadata.genres?.plus(metadata.tags ?: emptySet())
-                    ?: emptySet()
-                ).joinToString(", ")
+            genre = (metadata.genres + metadata.tags).joinToString(", ")
             description = metadata.summary
         }
 
@@ -227,10 +223,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             Date().time
         else {
             try {
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date)?.time ?: 0L
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(date).time
             } catch (ex: Exception) {
                 try {
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S", Locale.US).parse(date)?.time ?: 0L
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S", Locale.US).parse(date).time
                 } catch (ex: Exception) {
                     Date().time
                 }

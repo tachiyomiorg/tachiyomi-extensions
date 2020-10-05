@@ -1,3 +1,11 @@
+## 1.2.17
+
+Minimum Komga version required: `0.63.2`
+
+### Fix
+
+* list of collections for filtering could be empty in some conditions
+
 ## 1.2.16
 
 Minimum Komga version required: `0.59.0`

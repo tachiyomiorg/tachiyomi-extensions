@@ -32,9 +32,9 @@ data class SeriesMetadataDto(
     val ageRatingLock: Boolean,
     val language: String,
     val languageLock: Boolean,
-    val genres: Set<String>?, // TODO: remove optional in next iteration
+    val genres: Set<String>,
     val genresLock: Boolean,
-    val tags: Set<String>?, // TODO: remove optional in next iteration
+    val tags: Set<String>,
     val tagsLock: Boolean
 )
 
@@ -88,7 +88,7 @@ data class CollectionDto(
     val id: String,
     val name: String,
     val ordered: Boolean,
-    val seriesIds: List<Long>,
+    val seriesIds: List<String>,
     val createdDate: String,
     val lastModifiedDate: String,
     val filtered: Boolean

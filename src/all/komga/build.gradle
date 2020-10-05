@@ -5,7 +5,7 @@ ext {
     extName = 'Komga'
     pkgNameSuffix = 'all.komga'
     extClass = '.KomgaFactory'
-    extVersionCode = 16
+    extVersionCode = 17
     libVersion = '1.2'
 }
 
