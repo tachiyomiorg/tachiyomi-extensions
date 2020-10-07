@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'OhManhua (OneManHua)'
+    extName = 'CoCoManhua (OhManhua)'
     pkgNameSuffix = 'zh.onemanhua'
     extClass = '.Onemanhua'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
