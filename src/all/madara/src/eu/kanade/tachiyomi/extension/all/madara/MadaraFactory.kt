@@ -1239,9 +1239,9 @@ class DetectiveConanAr : Madara("شبكة كونان العربية", "https://w
 
 // mostly novels, doesn't include year in chapter dates (even for past years)
 class WordExcerpt : Madara("Word Excerpt", "https://wordexcerpt.com", "en") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/archive/webtoon/page/$page/?m_orderby=views", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/team/webtoon/page/$page/?m_orderby=views", headers)
     override fun popularMangaNextPageSelector() = "div.nav-previous a"
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/archive/webtoon/page/$page/?m_orderby=latest", headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/team/webtoon/page/$page/?m_orderby=latest", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/?s=the&post_type=wp-manga&genre[]=webtoon", headers)
     override fun getFilterList(): FilterList = FilterList()
 }
