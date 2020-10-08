@@ -87,6 +87,7 @@ class MadaraFactory : SourceFactory {
         MangaKomi(),
         MangaLord(),
         MangaLandArabic(),
+        MangaNine(),
         MangaPhoenix(),
         MangaRawr(),
         MangaRead(),
@@ -121,6 +122,7 @@ class MadaraFactory : SourceFactory {
         ManyToon(),
         ManyToonClub(),
         ManyToonMe(),
+        MarkScans(),
         MartialScans(),
         Milftoon(),
         MiracleScans(),
@@ -1365,3 +1367,7 @@ class AniMangaEs : Madara("AniMangaEs", "http://animangaes.com", "en") {
     override val chapterUrlSuffix = ""
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
+
+class MangaNine : Madara("Manga Nine", "https://manganine.com", "en")
+
+class MarkScans : Madara("Mark Scans", "https://markscans.online", "pt-BR")
