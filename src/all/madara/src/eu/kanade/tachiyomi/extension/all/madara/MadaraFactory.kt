@@ -125,6 +125,7 @@ class MadaraFactory : SourceFactory {
         Milftoon(),
         MiracleScans(),
         MixedManga(),
+        MysticalMerries(),
         NazarickScans(),
         NeoxScanlator(),
         NightComic(),
@@ -1354,4 +1355,9 @@ class MangaStarz : Madara("Manga Starz", "https://mangastarz.com", "ar") {
 
         return manga
     }
+}
+
+class MysticalMerries : Madara("Mystical Merries", "https://mysticalmerries.com", "en") {
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/genre/manhwa/page/$page/?m_orderby=trending", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/genre/manhwa/page/$page/?m_orderby=latest", headers)
 }
