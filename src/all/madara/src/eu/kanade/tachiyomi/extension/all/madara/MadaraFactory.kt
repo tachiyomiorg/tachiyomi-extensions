@@ -123,6 +123,7 @@ class MadaraFactory : SourceFactory {
         Milftoon(),
         MiracleScans(),
         MixedManga(),
+        NazarickScans(),
         NeoxScanlator(),
         NightComic(),
         NijiTranslations(),
@@ -1307,3 +1308,10 @@ class Kombatch : Madara("Kombatch", "https://kombatch.com", "id")
 class ProjetoScanlator : Madara("Projeto Scanlator", "https://projetoscanlator.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")))
 
 class HikariScan : Madara("Hikari Scan", "https://hikariscan.com.br", "pt-BR", SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR")))
+
+class NazarickScans : Madara("Nazarick Scans", "https://nazarickscans.com", "en") {
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga/page/$page/?m_orderby=trending", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/page/$page/?m_orderby=trending", headers)
+    override fun popularMangaNextPageSelector(): String? = null
+    override fun latestUpdatesNextPageSelector(): String? = null
+}
