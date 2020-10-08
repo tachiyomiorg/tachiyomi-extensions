@@ -94,6 +94,8 @@ class MadaraFactory : SourceFactory {
         MangaRockTeam(),
         MangaRocky(),
         MangaScantrad(),
+        MangaSpark(),
+        MangaStarz(),
         MangaStream(),
         MangaSY(),
         MangaTX(),
@@ -102,7 +104,6 @@ class MadaraFactory : SourceFactory {
         MangaYosh(),
         Mangalek(),
         Mangareceh(),
-        MangasPark(),
         Mangasushi(),
         MangazukiClubJP(),
         MangazukiClubKO(),
@@ -1317,7 +1318,7 @@ class NazarickScans : Madara("Nazarick Scans", "https://nazarickscans.com", "en"
     override fun latestUpdatesNextPageSelector(): String? = null
 }
 
-class MangasPark : Madara("MangasPark", "https://mangaspark.com", "ar") {
+class MangaSpark : Madara("MangaSpark", "https://mangaspark.com", "ar") {
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
@@ -1329,6 +1330,25 @@ class MangasPark : Madara("MangasPark", "https://mangaspark.com", "ar") {
 
             select("img").first()?.let {
                 manga.thumbnail_url = imageFromElement(it)?.replace("mangaspark", "mangalek")
+            }
+        }
+
+        return manga
+    }
+}
+
+class MangaStarz : Madara("Manga Starz", "https://mangastarz.com", "ar") {
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+
+        with(element) {
+            select(popularMangaUrlSelector).first()?.let {
+                manga.setUrlWithoutDomain(it.attr("abs:href"))
+                manga.title = it.ownText()
+            }
+
+            select("img").first()?.let {
+                manga.thumbnail_url = imageFromElement(it)?.replace("mangastarz", "mangalek")
             }
         }
 
