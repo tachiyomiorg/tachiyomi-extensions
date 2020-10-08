@@ -400,13 +400,15 @@ abstract class Madara(
 
     open val chapterUrlSelector = "a"
 
+    open val chapterUrlSuffix = "?style=list"
+
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
         with(element) {
             select(chapterUrlSelector).first()?.let { urlElement ->
                 chapter.url = urlElement.attr("abs:href").let {
-                    it.substringBefore("?style=paged") + if (!it.endsWith("?style=list")) "?style=list" else ""
+                    it.substringBefore("?style=paged") + if (!it.endsWith(chapterUrlSuffix)) chapterUrlSuffix else ""
                 }
                 chapter.name = urlElement.text()
             }

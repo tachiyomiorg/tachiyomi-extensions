@@ -31,6 +31,7 @@ class MadaraFactory : SourceFactory {
         AdonisFansub(),
         AkuManga(),
         AllPornComic(),
+        AniMangaEs(),
         AoCTranslations(),
         ArangScans(),
         ArazNovel(),
@@ -74,7 +75,6 @@ class MadaraFactory : SourceFactory {
         KlikManga(),
         KomikGo(),
         LilyManga(),
-        LuxyScans(),
         Manga347(),
         Manga3asq(),
         Manga68(),
@@ -263,8 +263,6 @@ class AoCTranslations : Madara("Agent of Change Translations", "https://aoc.moe"
 }
 
 class KomikGo : Madara("KomikGo", "https://komikgo.com", "id")
-
-class LuxyScans : Madara("Luxy Scans", "https://luxyscans.com", "en")
 
 class TsubakiNoScan : Madara(
     "Tsubaki No Scan",
@@ -1360,4 +1358,10 @@ class MangaStarz : Madara("Manga Starz", "https://mangastarz.com", "ar") {
 class MysticalMerries : Madara("Mystical Merries", "https://mysticalmerries.com", "en") {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/genre/manhwa/page/$page/?m_orderby=trending", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/genre/manhwa/page/$page/?m_orderby=latest", headers)
+}
+
+class AniMangaEs : Madara("AniMangaEs", "http://animangaes.com", "en") {
+    override val pageListParseSelector = "div.text-left noscript"
+    override val chapterUrlSuffix = ""
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
