@@ -102,6 +102,7 @@ class MadaraFactory : SourceFactory {
         MangaYosh(),
         Mangalek(),
         Mangareceh(),
+        MangasPark(),
         Mangasushi(),
         MangazukiClubJP(),
         MangazukiClubKO(),
@@ -1314,4 +1315,23 @@ class NazarickScans : Madara("Nazarick Scans", "https://nazarickscans.com", "en"
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/page/$page/?m_orderby=trending", headers)
     override fun popularMangaNextPageSelector(): String? = null
     override fun latestUpdatesNextPageSelector(): String? = null
+}
+
+class MangasPark : Madara("MangasPark", "https://mangaspark.com", "ar") {
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+
+        with(element) {
+            select(popularMangaUrlSelector).first()?.let {
+                manga.setUrlWithoutDomain(it.attr("abs:href"))
+                manga.title = it.ownText()
+            }
+
+            select("img").first()?.let {
+                manga.thumbnail_url = imageFromElement(it)?.replace("mangaspark", "mangalek")
+            }
+        }
+
+        return manga
+    }
 }
