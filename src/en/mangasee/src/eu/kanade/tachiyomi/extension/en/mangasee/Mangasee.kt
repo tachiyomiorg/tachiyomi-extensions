@@ -195,7 +195,7 @@ class Mangasee : HttpSource() {
                 title = info.select("h1").text()
                 author = info.select("li.list-group-item:has(span:contains(Author)) a").first()?.text()
                 genre = info.select("li.list-group-item:has(span:contains(Genre)) a").joinToString { it.text() }
-                status = info.select("li.list-group-item:has(span:contains(Status)) a:contains(publish)").text().toStatus()
+                status = info.select("li.list-group-item:has(span:contains(Status)) a:contains(scan)").text().toStatus()
                 description = info.select("div.Content").text()
                 thumbnail_url = info.select("img").attr("abs:src")
             }
