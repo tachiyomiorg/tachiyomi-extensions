@@ -66,7 +66,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return POST("$baseUrl${chapter.url}", headers)
+        return POST(chapter.url, headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
