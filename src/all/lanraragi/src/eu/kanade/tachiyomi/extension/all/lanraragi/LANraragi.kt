@@ -5,11 +5,13 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
+import android.util.Base64
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchivePage
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchiveSearchResult
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -17,6 +19,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import uy.kohesive.injekt.Injekt
@@ -49,18 +52,21 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val id = getId(response)
 
-        val uri = getApiUriBuilder("/api/extract")
-        uri.appendQueryParameter("id", id)
+        val uri = getApiUriBuilder("/api/archives/$id/extract")
 
         return listOf(
             SChapter.create().apply {
                 val uriBuild = uri.build()
 
-                url = "${uriBuild.encodedPath}?${uriBuild.encodedQuery}"
+                url = "${uriBuild.encodedPath}"
                 chapter_number = 1F
                 name = "Chapter"
             }
         )
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        return POST("$baseUrl${chapter.url}", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
@@ -100,7 +106,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             uri.appendQueryParameter("filter", query)
         }
 
-        return GET(uri.toString())
+        return GET(uri.toString(), headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -122,6 +128,13 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             },
             currentStart + jsonResult.data.size < jsonResult.recordsFiltered
         )
+    }
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        if (apiKey.isNotEmpty()) {
+            val apiKey64 = Base64.encodeToString(apiKey.toByteArray(), Base64.DEFAULT).trim()
+            add("Authorization", "Bearer $apiKey64")
+        }
     }
 
     // Preferences
@@ -224,16 +237,12 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     // Helper
     private fun getApiUriBuilder(path: String): Uri.Builder {
         val uri = Uri.parse("$baseUrl$path").buildUpon()
-        if (apiKey.isNotEmpty()) {
-            uri.appendQueryParameter("key", apiKey)
-        }
 
         return uri
     }
 
     private fun getThumbnailUri(id: String): String {
-        val uri = getApiUriBuilder("/api/thumbnail")
-        uri.appendQueryParameter("id", id)
+        val uri = getApiUriBuilder("/api/archives/$id/thumbnail")
 
         return uri.toString()
     }
