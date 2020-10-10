@@ -45,6 +45,7 @@ class Nudemoon : ParsedHttpSource() {
                 .request()
                 .newBuilder()
                 .addHeader("Cookie", cookiesHeader)
+                .addHeader("Referer", baseUrl)
                 .build()
 
             chain.proceed(newReq)
