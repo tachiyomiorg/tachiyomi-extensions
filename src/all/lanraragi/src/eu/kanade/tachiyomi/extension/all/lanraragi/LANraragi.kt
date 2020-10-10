@@ -58,7 +58,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             SChapter.create().apply {
                 val uriBuild = uri.build()
 
-                url = "${uriBuild.encodedPath}"
+                url = uriBuild.toString()
                 chapter_number = 1F
                 name = "Chapter"
             }
