@@ -5,7 +5,7 @@ ext {
     extName = 'LANraragi'
     pkgNameSuffix = 'all.lanraragi'
     extClass = '.LANraragi'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
