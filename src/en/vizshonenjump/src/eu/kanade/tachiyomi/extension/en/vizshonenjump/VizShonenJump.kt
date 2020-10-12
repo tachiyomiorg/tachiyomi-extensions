@@ -167,7 +167,7 @@ class VizShonenJump : ParsedHttpSource() {
             date_upload = leftSide.select("td[align=right]").first()!!.text().toDate()
         }
 
-        chapter_number = name.substringAfter("Ch. ").toFloatOrNull() ?: 0F
+        chapter_number = name.substringAfter("Ch. ").toFloatOrNull() ?: -1F
         scanlator = "VIZ Media"
         url = element.attr("data-target-url")
     }

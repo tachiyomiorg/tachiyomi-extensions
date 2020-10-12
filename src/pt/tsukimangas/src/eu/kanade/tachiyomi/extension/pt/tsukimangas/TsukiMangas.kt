@@ -230,7 +230,7 @@ class TsukiMangas : HttpSource() {
     private fun chapterListItemParse(obj: JsonObject, slug: String): SChapter = SChapter.create().apply {
         name = "Cap. " + obj["NUMERO"].string +
             (if (obj["TITULO"].string.isNotEmpty()) " - " + obj["TITULO"].string else "")
-        chapter_number = obj["NUMERO"].string.toFloatOrNull() ?: 0f
+        chapter_number = obj["NUMERO"].string.toFloatOrNull() ?: -1f
         scanlator = obj["scans"].array.joinToString { it.obj["NOME"].string }
         date_upload = DATE_FORMATTER.tryParseDate(obj["DATA"].string.substringBefore("T"))
         url = "/leitor/$slug/" + obj["NUMERO"].string

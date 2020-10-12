@@ -239,7 +239,7 @@ abstract class MangasProject(
                     .sorted()
                     .joinToString()
                 url = release["link"].string
-                chapter_number = obj["number"].string.toFloatOrNull() ?: 0f
+                chapter_number = obj["number"].string.toFloatOrNull() ?: -1f
             }
         }
     }

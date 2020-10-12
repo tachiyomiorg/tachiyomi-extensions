@@ -240,7 +240,7 @@ class Henchan : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(element.select("h2 a").attr("href"))
         val chapterName = element.select("h2 a").attr("title")
         chapter.name = chapterName
-        chapter.chapter_number = "(глава\\s|часть\\s)(\\d+)".toRegex(RegexOption.IGNORE_CASE).find(chapterName)?.groupValues?.get(2)?.toFloat() ?: 0F
+        chapter.chapter_number = "(глава\\s|часть\\s)(\\d+)".toRegex(RegexOption.IGNORE_CASE).find(chapterName)?.groupValues?.get(2)?.toFloat() ?: -1F
         chapter.date_upload = Date().time // setting to current date because of a sorting in the "Recent updates" section
         return chapter
     }

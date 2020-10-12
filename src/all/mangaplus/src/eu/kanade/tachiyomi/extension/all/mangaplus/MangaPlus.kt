@@ -238,7 +238,7 @@ abstract class MangaPlus(
                     scanlator = "Shueisha"
                     date_upload = 1000L * it.startTimeStamp
                     url = "#/viewer/${it.chapterId}"
-                    chapter_number = it.name.substringAfter("#").toFloatOrNull() ?: 0f
+                    chapter_number = it.name.substringAfter("#").toFloatOrNull() ?: -1f
                 }
             }
     }

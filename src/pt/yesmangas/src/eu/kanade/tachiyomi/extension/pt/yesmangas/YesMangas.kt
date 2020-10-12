@@ -90,7 +90,7 @@ class YesMangas : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.attr("title").substringAfter(" - ")
-        chapter_number = element.text().toFloatOrNull() ?: 1f
+        chapter_number = element.text().toFloatOrNull() ?: -1f
         setUrlWithoutDomain(element.attr("href"))
     }
 

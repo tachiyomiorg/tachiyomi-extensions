@@ -168,7 +168,7 @@ class Hipercool : HttpSource() {
 
     private fun chapterListItemParse(book: JsonObject, obj: JsonObject): SChapter = SChapter.create().apply {
         name = obj["title"].string
-        chapter_number = obj["title"].string.toFloatOrNull() ?: 0f
+        chapter_number = obj["title"].string.toFloatOrNull() ?: -1f
         // The property is written wrong.
         date_upload = DATE_FORMATTER.tryParseTime(obj["publishied_at"].string)
 

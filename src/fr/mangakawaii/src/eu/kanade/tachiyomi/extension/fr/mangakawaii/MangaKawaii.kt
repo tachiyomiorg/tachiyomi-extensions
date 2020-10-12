@@ -69,7 +69,7 @@ class MangaKawaii : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.url = element.select("a.list-item__title").attr("href")
         chapter.name = element.select("a.list-item__title").text().trim()
-        chapter.chapter_number = element.select("a.list-item__title").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull() ?: 0F
+        chapter.chapter_number = element.select("a.list-item__title").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull() ?: -1F
         chapter.date_upload = parseDate(element.select("div.chapter-item__date").text())
         return chapter
     }

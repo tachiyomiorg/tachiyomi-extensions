@@ -119,7 +119,7 @@ class SaikaiScan : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         scanlator = "Saikai Scan"
-        chapter_number = CHAPTER_REGEX.find(element.text())?.groupValues?.get(1)?.toFloatOrNull() ?: 1f
+        chapter_number = CHAPTER_REGEX.find(element.text())?.groupValues?.get(1)?.toFloatOrNull() ?: -1f
         name = element.text()
         url = element.attr("href")
     }

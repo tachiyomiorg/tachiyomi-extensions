@@ -126,7 +126,7 @@ abstract class ToomicsGlobal(
         val numText = if (num.isNotEmpty()) "$num - " else ""
 
         name = numText + element.select("div.cell-title")?.first()?.ownText()
-        chapter_number = num.toFloatOrNull() ?: 0f
+        chapter_number = num.toFloatOrNull() ?: -1f
         date_upload = parseChapterDate(element.select("div.cell-time time").text()!!)
         scanlator = "Toomics"
         url = element.select("a").attr("onclick")

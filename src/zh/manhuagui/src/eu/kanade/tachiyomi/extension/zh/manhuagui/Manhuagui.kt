@@ -246,7 +246,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             val currentChapter = SChapter.create()
             currentChapter.url = it.attr("href")
             currentChapter.name = it?.attr("title")?.trim() ?: it.select("span").first().ownText()
-            currentChapter.chapter_number = chNumRegex.find(currentChapter.name)?.value?.toFloatOrNull() ?: 0F
+            currentChapter.chapter_number = chNumRegex.find(currentChapter.name)?.value?.toFloatOrNull() ?: -1F
 
             // Manhuagui only provide upload date for latest chapter
             if (currentChapter.url == latestChapterHref) {

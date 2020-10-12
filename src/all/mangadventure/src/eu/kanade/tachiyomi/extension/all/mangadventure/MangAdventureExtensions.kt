@@ -80,7 +80,7 @@ val SChapter.path: String
  */
 fun SChapter.fromJSON(obj: JSONObject) = apply {
     url = obj.getString("url")
-    chapter_number = obj.optString("chapter", "0").toFloat()
+    chapter_number = obj.optString("chapter", "-1").toFloat()
     date_upload = MangAdventure.httpDateToTimestamp(obj.getString("date"))
     scanlator = obj.getJSONArray("groups").joinField("name", " & ")
     name = obj.optString(

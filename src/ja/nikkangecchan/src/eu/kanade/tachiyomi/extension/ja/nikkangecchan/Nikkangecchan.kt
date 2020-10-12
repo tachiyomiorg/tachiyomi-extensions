@@ -90,7 +90,7 @@ class Nikkangecchan : ParsedHttpSource() {
 
         return SChapter.create().apply {
             name = "$title - $dataTitle"
-            chapter_number = element.select("h4.episodeTitle").first().text().toFloatOrNull() ?: 0f
+            chapter_number = element.select("h4.episodeTitle").first().text().toFloatOrNull() ?: -1f
             scanlator = "Akita Publishing"
             setUrlWithoutDomain(baseUrl + episodePage.attr("data-src").substringBeforeLast("/"))
         }

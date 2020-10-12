@@ -290,7 +290,7 @@ abstract class SuperMangasGeneric(
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("a").first()!!.text()
-        chapter_number = element.select("span[style]").first()!!.text().toFloatOrNull() ?: 0f
+        chapter_number = element.select("span[style]").first()!!.text().toFloatOrNull() ?: -1f
         setUrlWithoutDomain(element.select("a").first()!!.attr("href"))
     }
 

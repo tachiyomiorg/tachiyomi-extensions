@@ -5,7 +5,7 @@ ext {
     extName = 'HipercooL'
     pkgNameSuffix = 'pt.hipercool'
     extClass = '.Hipercool'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
     containsNsfw = true
 }
