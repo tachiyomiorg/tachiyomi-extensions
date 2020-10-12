@@ -157,46 +157,52 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        val splitQuery = query.split(" ")
-
-        val positive = splitQuery.filter { !it.startsWith('-') }.toMutableList()
-        if (nozomiLang != "all") positive += "language:$nozomiLang"
-        val negative = (splitQuery - positive).map { it.removePrefix("-") }
-
-        // TODO Cache the results coming out of HitomiNozomi (this TODO dates back to TachiyomiEH)
-        val hn = Single.zip(tagIndexVersion(), galleryIndexVersion()) { tv, gv -> tv to gv }
-            .map { HitomiNozomi(client, it.first, it.second) }
-
-        var base = if (positive.isEmpty()) {
-            hn.flatMap { n -> n.getGalleryIdsFromNozomi(null, "index", "all").map { n to it.toSet() } }
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val id = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(GET("$baseUrl/cg/$id", headers)).asObservableSuccess()
+                .map { MangasPage(listOf(mangaDetailsParse(it).apply { url = "/cg/$id" }), false) }
         } else {
-            val q = positive.removeAt(0)
-            hn.flatMap { n -> n.getGalleryIdsForQuery(q).map { n to it.toSet() } }
-        }
+            val splitQuery = query.split(" ")
 
-        base = positive.fold(base) { acc, q ->
-            acc.flatMap { (nozomi, mangas) ->
-                nozomi.getGalleryIdsForQuery(q).map {
-                    nozomi to mangas.intersect(it)
+            val positive = splitQuery.filter { !it.startsWith('-') }.toMutableList()
+            if (nozomiLang != "all") positive += "language:$nozomiLang"
+            val negative = (splitQuery - positive).map { it.removePrefix("-") }
+
+            // TODO Cache the results coming out of HitomiNozomi (this TODO dates back to TachiyomiEH)
+            val hn = Single.zip(tagIndexVersion(), galleryIndexVersion()) { tv, gv -> tv to gv }
+                .map { HitomiNozomi(client, it.first, it.second) }
+
+            var base = if (positive.isEmpty()) {
+                hn.flatMap { n -> n.getGalleryIdsFromNozomi(null, "index", "all").map { n to it.toSet() } }
+            } else {
+                val q = positive.removeAt(0)
+                hn.flatMap { n -> n.getGalleryIdsForQuery(q).map { n to it.toSet() } }
+            }
+
+            base = positive.fold(base) { acc, q ->
+                acc.flatMap { (nozomi, mangas) ->
+                    nozomi.getGalleryIdsForQuery(q).map {
+                        nozomi to mangas.intersect(it)
+                    }
                 }
             }
-        }
 
-        base = negative.fold(base) { acc, q ->
-            acc.flatMap { (nozomi, mangas) ->
-                nozomi.getGalleryIdsForQuery(q).map {
-                    nozomi to (mangas - it)
+            base = negative.fold(base) { acc, q ->
+                acc.flatMap { (nozomi, mangas) ->
+                    nozomi.getGalleryIdsForQuery(q).map {
+                        nozomi to (mangas - it)
+                    }
                 }
             }
+
+            base.flatMap { (_, ids) ->
+                val chunks = ids.chunked(PAGE_SIZE)
+
+                nozomiIdsToMangas(chunks[page - 1]).map { mangas ->
+                    MangasPage(mangas, page < chunks.size)
+                }
+            }.toObservable()
         }
-
-        return base.flatMap { (_, ids) ->
-            val chunks = ids.chunked(PAGE_SIZE)
-
-            nozomiIdsToMangas(chunks[page - 1]).map { mangas ->
-                MangasPage(mangas, page < chunks.size)
-            }
-        }.toObservable()
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw UnsupportedOperationException("Not used")
@@ -306,6 +312,8 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
     companion object {
         private const val INDEX_VERSION_CACHE_TIME_MS = 1000 * 60 * 10
         private const val PAGE_SIZE = 25
+
+        const val PREFIX_ID_SEARCH = "id:"
 
         // From HitomiSearchMetaData
         const val LTN_BASE_URL = "https://ltn.hitomi.la"
