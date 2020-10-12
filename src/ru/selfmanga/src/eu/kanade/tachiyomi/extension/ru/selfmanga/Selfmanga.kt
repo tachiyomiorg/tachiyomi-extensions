@@ -138,7 +138,7 @@ class Selfmanga : ParsedHttpSource() {
                 }
             }
             extra.containsMatchIn(chapter.name) -> // Extra chapters doesn't contain chapter number
-                chapter.chapter_number = -1f
+                chapter.chapter_number = -2f
             single.containsMatchIn(chapter.name) -> // Oneshoots, doujinshi and other mangas with one chapter
                 chapter.chapter_number = 1f
         }
