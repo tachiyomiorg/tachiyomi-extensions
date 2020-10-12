@@ -2,8 +2,10 @@ package eu.kanade.tachiyomi.extension.en.hentainexus
 
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -12,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.net.URLEncoder
 
 @Nsfw
@@ -90,6 +93,16 @@ class HentaiNexus : ParsedHttpSource() {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
         val builtUrl = if (page == 1) url else "${url}page/$page"
         return GET(if (queryString != null) "$builtUrl?$queryString" else builtUrl)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val id = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(GET("$baseUrl/view/$id", headers)).asObservableSuccess()
+                .map { MangasPage(listOf(mangaDetailsParse(it).apply { url = "/view/$id" }), false) }
+        } else {
+            super.fetchSearchManga(page, query, filters)
+        }
     }
 
     override fun searchMangaSelector() = latestUpdatesSelector()
@@ -199,6 +212,10 @@ class HentaiNexus : ParsedHttpSource() {
 
     class ArtistFilter : Filter.Text("Search by Artist (must be exact match)")
     class TagFilter : Filter.Text("Search by Tag (must be exact match)")
+
+    companion object {
+        const val PREFIX_ID_SEARCH = "id:"
+    }
 }
 
 private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
