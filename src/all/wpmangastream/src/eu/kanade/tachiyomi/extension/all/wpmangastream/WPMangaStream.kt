@@ -17,6 +17,7 @@ import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
@@ -179,14 +180,14 @@ abstract class WPMangaStream(
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "div.bxcl ul li, div.cl ul li"
+    override fun chapterListSelector() = "div.bxcl ul li, div.cl ul li, li:has(div.chbox):has(div.eph-num)"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select(".lchx > a, span.leftoff a").first()
+        val urlElement = element.select(".lchx > a, span.leftoff a, div.eph-num > a").first()
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.text()
-        chapter.date_upload = element.select("span.rightoff, time").firstOrNull()?.text()?.let { parseChapterDate(it) } ?: 0
+        chapter.name = if (urlElement.select("span.chapternum").isNotEmpty()) urlElement.select("span.chapternum").text() else urlElement.text()
+        chapter.date_upload = element.select("span.rightoff, time, span.chapterdate").firstOrNull()?.text()?.let { parseChapterDate(it) } ?: 0
         return chapter
     }
 
@@ -237,9 +238,25 @@ abstract class WPMangaStream(
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div#readerarea img")
+        var pages = mutableListOf<Page>()
+        document.select("div#readerarea img")
             .filterNot { it.attr("src").isNullOrEmpty() }
-            .mapIndexed { i, img -> Page(i, "", img.attr("abs:src")) }
+            .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
+
+        // Some wpmangastream sites like AsuraScans now load pages via javascript
+        if (pages.isNotEmpty()) { return pages }
+
+        val docString = document.toString()
+        val imageListRegex = Regex("images.*?:.*?(\\[.*?\\])")
+
+        val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
+
+
+        for (i in 0 until imageList.length()) {
+            pages.add(Page(i, "", imageList.getString(i)))
+        }
+
+        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
