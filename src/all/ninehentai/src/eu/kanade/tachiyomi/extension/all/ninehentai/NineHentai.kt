@@ -29,7 +29,7 @@ import java.util.Date
 @Nsfw
 class NineHentai : HttpSource() {
 
-    override val baseUrl = "https://9hentai.com"
+    override val baseUrl = "https://9hentai.ru"
 
     override val name = "NineHentai"
 
