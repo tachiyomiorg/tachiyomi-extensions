@@ -96,7 +96,7 @@ class Mangasee : HttpSource() {
                 SManga.create().apply {
                     title = directory[i]["s"].string
                     url = "/manga/${directory[i]["i"].string}"
-                    thumbnail_url = "https://cover.mangabeast01.com/cover/${directory[i]["i"].string}.jpg"
+                    thumbnail_url = "https://cover.nep.li/cover/${directory[i]["i"].string}.jpg"
                 }
             )
         }
