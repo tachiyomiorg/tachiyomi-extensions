@@ -144,7 +144,6 @@ class MadaraFactory : SourceFactory {
         ReadManhua(),
         RenaScans(),
         S2Manga(),
-        SheaManga(),
         Skymanga(),
         TheTopComic(),
         ThreeSixtyFiveManga(),
@@ -1203,8 +1202,6 @@ class TruyenTranhAudioOnline : Madara("TruyenTranhAudio.online", "https://truyen
 }
 
 class MangaTurf : Madara("Manga Turf", "https://mangaturf.com", "en")
-
-class SheaManga : Madara("Shea Manga", "https://sheamanga.my.id", "id")
 
 class FurioScans : Madara("Furio Scans", "https://furioscans.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()))
 

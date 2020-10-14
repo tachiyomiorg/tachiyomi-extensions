@@ -50,9 +50,12 @@ class WPMangaStreamFactory : SourceFactory {
         Boosei(),
         Mangakyo(),
         AsuraScans(),
-        SilenceScan()
+        SilenceScan(),
+        SheaManga()
     )
 }
+
+class SheaManga : WPMangaStream("Shea Manga", "https://sheamanga.my.id", "id")
 
 class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en")
 
