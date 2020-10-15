@@ -164,7 +164,6 @@ class MadaraFactory : SourceFactory {
         WebNovel(),
         WebtoonXYZ(),
         WoopRead(),
-        WordExcerpt(),
         WuxiaWorld(),
         YaoiToshokan(),
         YokaiJump(),
@@ -1240,15 +1239,6 @@ class BestManga : Madara("BestManga", "https://bestmanga.club", "ru", SimpleDate
 class TwilightScans : Madara("Twilight Scans", "https://twilightscans.com", "en")
 
 class DetectiveConanAr : Madara("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar")
-
-// mostly novels, doesn't include year in chapter dates (even for past years)
-class WordExcerpt : Madara("Word Excerpt", "https://wordexcerpt.com", "en") {
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/team/webtoon/page/$page/?m_orderby=views", headers)
-    override fun popularMangaNextPageSelector() = "div.nav-previous a"
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/team/webtoon/page/$page/?m_orderby=latest", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/?s=the&post_type=wp-manga&genre[]=webtoon", headers)
-    override fun getFilterList(): FilterList = FilterList()
-}
 
 // mostly novels
 class WoopRead : Madara("WoopRead", "https://woopread.com", "en")
