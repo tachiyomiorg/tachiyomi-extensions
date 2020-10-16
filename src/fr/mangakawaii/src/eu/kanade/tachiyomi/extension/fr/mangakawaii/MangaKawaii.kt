@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
 import android.net.Uri
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -44,7 +43,8 @@ class MangaKawaii : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
-            .appendQueryParameter("query", query).appendQueryParameter("search_type", "manga")
+            .appendQueryParameter("query", query)
+            .appendQueryParameter("search_type", "manga")
         return GET(uri.toString(), headers)
     }
 
@@ -55,11 +55,13 @@ class MangaKawaii : ParsedHttpSource() {
         manga.thumbnail_url = element.select("a").attr("abs:data-background-image")
         return manga
     }
+
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select(" a").text().trim()
         setUrlWithoutDomain(element.select("a").attr("href"))
         thumbnail_url = element.select("img").attr("data-src")
     }
+
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.url = element.select("a").attr("href")
@@ -69,10 +71,10 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-
         chapter.url = element.select("td.table__chapter").select("a").attr("href")
         chapter.name = element.select("td.table__chapter").select("span").text().trim()
-        chapter.chapter_number = element.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull() ?: -1F
+        chapter.chapter_number = element.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull()
+            ?: -1F
         chapter.date_upload = parseDate(element.select("td.table__date").text())
         return chapter
     }
@@ -100,18 +102,14 @@ class MangaKawaii : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         var div = body.select("div#all")
-       var elements= div.select("img")
+        var elements = div.select("img")
 
         val pages = mutableListOf<Page>()
         for (i in 0 until elements.count()) {
-            Log.i(TAG, elements[i].attr("data-src").trim())
-            pages.add(Page(i, "", elements[i].attr("data-src").trim() ))
+            pages.add(Page(i, "", elements[i].attr("data-src").trim()))
         }
         return pages
     }
-
-
-
     override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
     override fun imageUrlParse(document: Document): String = throw Exception("Not used")
 
