@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: HQ Dragon'
+    extName = 'HQ Dragon'
     pkgNameSuffix = 'pt.hqdragon'
     extClass = '.HQDragon'
     extVersionCode = 2

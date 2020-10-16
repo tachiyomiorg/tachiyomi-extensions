@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.comicpunch
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -9,6 +14,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class Comicpunch : ParsedHttpSource() {
 
@@ -59,32 +65,31 @@ class Comicpunch : ParsedHttpSource() {
 
     // Search
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/node/$query?page=${page - 1}", headers)
+        return GET("$baseUrl/comics-list", headers)
     }
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val mangas = mutableListOf<SManga>()
-        val document = response.asJsoup()
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        val mangas = response.asJsoup().select(searchMangaSelector())
+            .filter { it.text().contains(query, ignoreCase = true) }
+            .map { searchMangaFromElement(it) }
 
-        document.select(searchMangaSelector())
-            .asSequence()
-            .filterNot { it.attr("href").contains("/comic/") }
-            .filterNot { it.attr("href").contains("/asiancomics/") }
-            .filterNot { it.attr("href").contains("/latest-issues") }
-            .filterNot { it.attr("href").contains("$baseUrl/latest-issues") }
-            .filterNot { it.attr("href").contains("$baseUrl/newest-issues") }
-            .map { mangas.add(searchMangaFromElement(it)) }
-            .toList()
-
-        return MangasPage(mangas, document.select(searchMangaNextPageSelector()).isNotEmpty())
+        return MangasPage(mangas, false)
     }
 
-    override fun searchMangaSelector() = "li.search-result h3 a"
+    override fun searchMangaSelector() = "table.cols-2 td a"
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
 
     // Details
 
@@ -96,7 +101,7 @@ class Comicpunch : ParsedHttpSource() {
             manga.author = details.select("div.field-label:contains(publisher:) + div a").text()
             manga.genre = details.select("div.field-label:contains(genres:) + div a").joinToString { it.text() }
             manga.description = details.select("div.field-type-text-with-summary:not(:has(ul.splash))").text().let { desc ->
-                if (desc.isNotEmpty()) desc else  document.select("ul.splash li.summary").first()?.ownText()
+                if (desc.isNotEmpty()) desc else document.select("ul.splash li.summary").first()?.ownText()
             }
             manga.thumbnail_url = details.select("img").attr("abs:src") ?: document.select("li.pic img").attr("abs:src")
         }
@@ -111,7 +116,7 @@ class Comicpunch : ParsedHttpSource() {
         var elements = response.asJsoup().select(chapterListSelector()).toList()
 
         // Check if latest chapter is just a placeholder, drop it if it is
-        client.newCall(GET(elements[0].attr("abs:href"), headers)).execute().asJsoup().select("img.picture").attr("src").let { img ->
+        client.newCall(GET(elements[0].attr("abs:href"), headers)).execute().asJsoup().select("img").last().attr("src").let { img ->
             if (img.contains("placeholder", ignoreCase = true)) elements = elements.drop(1)
         }
         elements.map { chapters.add(chapterFromElement(it)) }
@@ -119,7 +124,7 @@ class Comicpunch : ParsedHttpSource() {
         return chapters
     }
 
-    override fun chapterListSelector() = "div#chapterlist li.chapter a"
+    override fun chapterListSelector() = "li.chapter a"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
@@ -132,15 +137,14 @@ class Comicpunch : ParsedHttpSource() {
 
     // Pages
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url + "/?q=fullchapter", headers)
-    }
-
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("img.picture").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:src")))
+        val pageUrls = document.select("div#code_contain > script")
+            .eq(1).first().data()
+            .substringAfter("= [").substringBefore("]").split(",")
+        pageUrls.forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.removeSurrounding("\"")))
         }
 
         return pages
@@ -149,5 +153,4 @@ class Comicpunch : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

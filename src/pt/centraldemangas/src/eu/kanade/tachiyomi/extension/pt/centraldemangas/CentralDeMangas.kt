@@ -7,7 +7,11 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -18,16 +22,19 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class CentralDeMangas : ParsedHttpSource() {
+
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 711589261250964163
 
     override val name = "Central de Mangás"
 
     override val baseUrl = "http://centraldemangas.online"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -72,10 +79,10 @@ class CentralDeMangas : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response, query)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -110,10 +117,10 @@ class CentralDeMangas : ParsedHttpSource() {
         author = elementList.select("div.item:eq(3) div.content div.description").text()
         artist = elementList.select("div.item:eq(2) div.content div.description").text()
         genre = elementList.select("div.item:eq(4) div.content div.description a")
-                .joinToString { it.text() }
+            .joinToString { it.text() }
 
         status = elementList.select("div.item:eq(6) div.content div.description")
-                .text().orEmpty().let { parseStatus(it) }
+            .text().orEmpty().let { parseStatus(it) }
 
         description = elementList.select("div.item:eq(0) div.content div.description").text()
         thumbnail_url = elementList.select("div.item:eq(0) div.content div.description img")
@@ -144,9 +151,9 @@ class CentralDeMangas : ParsedHttpSource() {
             ?.let { parseChapterDate(it) } ?: 0
     }
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date).time
+            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
@@ -188,7 +195,7 @@ class CentralDeMangas : ParsedHttpSource() {
     private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body()!!.string()).array
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
         private const val COVER_CDN = "http://capas.centraldemangas.com.br"
 
         private const val SCRIPT_URL_BEGIN = "var urlSulfix = '"

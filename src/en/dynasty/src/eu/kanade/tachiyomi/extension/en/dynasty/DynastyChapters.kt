@@ -9,8 +9,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
-import java.util.*
 
 class DynastyChapters : DynastyScans() {
     override val name = "Dynasty-Chapters"
@@ -71,9 +69,7 @@ class DynastyChapters : DynastyScans() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(element.baseUri())
         chapter.name = element.select("h3").text()
-        chapter.date_upload = element.select("span.released")?.first().let {
-            SimpleDateFormat("MMM dd, yy", Locale.ENGLISH).parse(it!!.text()).time
-        }
+        chapter.date_upload = element.select("span.released").firstOrNull()?.text().toDate("MMM dd, yyyy")
         return chapter
     }
 
@@ -96,5 +92,4 @@ class DynastyChapters : DynastyScans() {
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
     override fun latestUpdatesParse(response: Response) = searchMangaParse(response)
-
 }

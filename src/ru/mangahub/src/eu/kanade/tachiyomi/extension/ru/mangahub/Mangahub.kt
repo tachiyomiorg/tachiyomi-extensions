@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.mangahub
 
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -13,7 +14,7 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 open class Mangahub : ParsedHttpSource() {
 
@@ -27,9 +28,10 @@ open class Mangahub : ParsedHttpSource() {
 
     private val rateLimitInterceptor = RateLimitInterceptor(2)
 
+    private val jsonParser = JsonParser()
+
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor).build()
-
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/explore?filter[sort]=rating&filter[dateStart][left_number]=1900&filter[dateStart][right_number]=2099&page=$page", headers)
@@ -94,7 +96,7 @@ open class Mangahub : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.text-muted").text()?.let {
-            SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(it).time
+            SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(it)?.time ?: 0L
         } ?: 0
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         return chapter
@@ -112,11 +114,13 @@ open class Mangahub : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val pictures = document.select("div.row > div > div.mb-4").attr("data-js-scans").replace("&quot;", "\"").replace("\\/", "/")
-        val r = Regex("""\/\/([\w\.\/])+""")
+        val chapInfo = document.select("reader").attr("data-reader-store").replace("&quot;", "\"").replace("\\/", "/")
+        val chapter = jsonParser.parse(chapInfo).asJsonObject
+        val scans = chapter["scans"].asJsonArray
+
         val pages = mutableListOf<Page>()
-        for ((index, value) in r.findAll(pictures).withIndex()) {
-            pages.add(Page(index = index, imageUrl = "https:${value.value}"))
+        scans.mapIndexed { i, page ->
+            pages.add(Page(i, "", "https:${page.asJsonObject.get("src").asString}"))
         }
 
         return pages

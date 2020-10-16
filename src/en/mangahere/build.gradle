@@ -2,17 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Mangahere'
+    extName = 'Mangahere'
     pkgNameSuffix = 'en.mangahere'
     extClass = '.Mangahere'
-    extVersionCode = 14
+    extVersionCode = 15
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly project(':duktape-stub')
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
 }
 
 apply from: "$rootDir/common.gradle"

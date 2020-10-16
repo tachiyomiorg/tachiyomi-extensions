@@ -1,14 +1,22 @@
 package eu.kanade.tachiyomi.extension.ja.rawdevart
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class Rawdevart : ParsedHttpSource() {
 
@@ -73,12 +81,18 @@ class Rawdevart : ParsedHttpSource() {
                             typeToInclude.add(content.id)
                     }
                     if (typeToExclude.isNotEmpty()) {
-                        url.addQueryParameter("ctype_exc", typeToExclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "ctype_exc",
+                            typeToExclude
+                                .joinToString(",")
+                        )
                     }
                     if (typeToInclude.isNotEmpty()) {
-                        url.addQueryParameter("ctype_inc", typeToInclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "ctype_inc",
+                            typeToInclude
+                                .joinToString(",")
+                        )
                     }
                 }
                 is StatusFilter -> {
@@ -91,12 +105,18 @@ class Rawdevart : ParsedHttpSource() {
                             statusToInclude.add(content.id)
                     }
                     if (statusToExclude.isNotEmpty()) {
-                        url.addQueryParameter("status_exc", statusToExclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "status_exc",
+                            statusToExclude
+                                .joinToString(",")
+                        )
                     }
                     if (statusToInclude.isNotEmpty()) {
-                        url.addQueryParameter("status_inc", statusToInclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "status_inc",
+                            statusToInclude
+                                .joinToString(",")
+                        )
                     }
                 }
                 is GenreFilter -> {
@@ -109,12 +129,18 @@ class Rawdevart : ParsedHttpSource() {
                             genreToInclude.add(content.id)
                     }
                     if (genreToExclude.isNotEmpty()) {
-                        url.addQueryParameter("genre_exc", genreToExclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "genre_exc",
+                            genreToExclude
+                                .joinToString(",")
+                        )
                     }
                     if (genreToInclude.isNotEmpty()) {
-                        url.addQueryParameter("genre_inc", genreToInclude
-                            .joinToString(","))
+                        url.addQueryParameter(
+                            "genre_inc",
+                            genreToInclude
+                                .joinToString(",")
+                        )
                     }
                 }
             }
@@ -152,7 +178,7 @@ class Rawdevart : ParsedHttpSource() {
         manga.genre = genres.joinToString(", ")
         manga.description = infoElement.select("div.description").text()
             .substringAfter("Description ")
-        manga.thumbnail_url =infoElement.select("img.img-fluid.not-lazy").attr("abs:src")
+        manga.thumbnail_url = infoElement.select("img.img-fluid.not-lazy").attr("abs:src")
 
         return manga
     }
@@ -198,8 +224,8 @@ class Rawdevart : ParsedHttpSource() {
                 when {
                     it.contains("ago") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 60 * 1000).time
                     it.contains("Yesterday") -> Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000).time
-                    it.contains(".") -> SimpleDateFormat("MMM. dd, yyyy", Locale.US).parse(it).time
-                    else -> SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it).time
+                    it.contains(".") -> SimpleDateFormat("MMM. dd, yyyy", Locale.US).parse(it)?.time ?: 0L
+                    else -> SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it)?.time ?: 0L
                 }
             } catch (e: Exception) {
                 Date(System.currentTimeMillis()).time
@@ -210,20 +236,22 @@ class Rawdevart : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        var pages = mutableListOf<Page>()
+        val pages = mutableListOf<Page>()
         document.select("img.not-lazy[data-src]").forEachIndexed { i, img ->
             pages.add(Page(i, "", img.attr("data-src")))
         }
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class AuthorFilter : Filter.Text("Author")
 
     private class ArtistFilter : Filter.Text("Artist")
 
-    private class SortFilter : UriPartFilter("Sort By", arrayOf(
+    private class SortFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
             Pair("<select>", ""),
             Pair("Latest", "0"),
             Pair("A-Z", "1"),
@@ -231,7 +259,8 @@ class Rawdevart : ParsedHttpSource() {
             Pair("Star", "3"),
             Pair("Bookmark", "4"),
             Pair("View", "5")
-    ))
+        )
+    )
 
     private class TypeFilter(type: List<Tag>) : Filter.Group<Tag>("Types", type)
 
@@ -240,77 +269,77 @@ class Rawdevart : ParsedHttpSource() {
     private class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("Combine Sort filter with other filters."),
-            Filter.Separator(),
-            AuthorFilter(),
-            ArtistFilter(),
-            SortFilter(),
-            TypeFilter(getTypeList()),
-            StatusFilter(getStatusList()),
-            GenreFilter(getGenreList())
+        Filter.Header("Combine Sort filter with other filters."),
+        Filter.Separator(),
+        AuthorFilter(),
+        ArtistFilter(),
+        SortFilter(),
+        TypeFilter(getTypeList()),
+        StatusFilter(getStatusList()),
+        GenreFilter(getGenreList())
     )
 
     private fun getTypeList() = listOf(
-            Tag("0", "Manga"),
-            Tag("1", "Webtoon"),
-            Tag("2", "Manhwa - Korean"),
-            Tag("3", "Manhua - Chinese"),
-            Tag("4", "Comic"),
-            Tag("5", "Doujinshi")
+        Tag("0", "Manga"),
+        Tag("1", "Webtoon"),
+        Tag("2", "Manhwa - Korean"),
+        Tag("3", "Manhua - Chinese"),
+        Tag("4", "Comic"),
+        Tag("5", "Doujinshi")
     )
 
     private fun getStatusList() = listOf(
-            Tag("0", "Ongoing"),
-            Tag("1", "Haitus"),
-            Tag("2", "Axed"),
-            Tag("3", "Unknown"),
-            Tag("4", "Finished")
+        Tag("0", "Ongoing"),
+        Tag("1", "Haitus"),
+        Tag("2", "Axed"),
+        Tag("3", "Unknown"),
+        Tag("4", "Finished")
     )
 
     private fun getGenreList() = listOf(
-            Tag("29", "4-koma"),
-            Tag("1", "Action"),
-            Tag("37", "Adult"),
-            Tag("2", "Adventure"),
-            Tag("3", "Comedy"),
-            Tag("33", "Cooking"),
-            Tag("4", "Crime"),
-            Tag("5", "Drama"),
-            Tag("30", "Ecchi"),
-            Tag("6", "Fantasy"),
-            Tag("34", "Gender Bender"),
-            Tag("31", "Gore"),
-            Tag("39", "Harem"),
-            Tag("7", "Historical"),
-            Tag("8", "Horror"),
-            Tag("9", "Isekai"),
-            Tag("42", "Josei"),
-            Tag("35", "Martial Arts"),
-            Tag("36", "Mature"),
-            Tag("10", "Mecha"),
-            Tag("11", "Medical"),
-            Tag("38", "Music"),
-            Tag("12", "Mystery"),
-            Tag("13", "Philosophical"),
-            Tag("14", "Psychological"),
-            Tag("15", "Romance"),
-            Tag("40", "School Life"),
-            Tag("16", "Sci-Fi"),
-            Tag("41", "Seinen"),
-            Tag("28", "Shoujo"),
-            Tag("17", "Shoujo Ai"),
-            Tag("27", "Shounen"),
-            Tag("18", "Shounen Ai"),
-            Tag("19", "Slice of Life"),
-            Tag("32", "Smut"),
-            Tag("20", "Sports"),
-            Tag("21", "Super Powers"),
-            Tag("43", "Supernatural"),
-            Tag("22", "Thriller"),
-            Tag("23", "Tragedy"),
-            Tag("24", "Wuxia"),
-            Tag("25", "Yaoi"),
-            Tag("26", "Yuri")
+        Tag("29", "4-koma"),
+        Tag("1", "Action"),
+        Tag("37", "Adult"),
+        Tag("2", "Adventure"),
+        Tag("3", "Comedy"),
+        Tag("33", "Cooking"),
+        Tag("4", "Crime"),
+        Tag("5", "Drama"),
+        Tag("30", "Ecchi"),
+        Tag("6", "Fantasy"),
+        Tag("34", "Gender Bender"),
+        Tag("31", "Gore"),
+        Tag("39", "Harem"),
+        Tag("7", "Historical"),
+        Tag("8", "Horror"),
+        Tag("9", "Isekai"),
+        Tag("42", "Josei"),
+        Tag("35", "Martial Arts"),
+        Tag("36", "Mature"),
+        Tag("10", "Mecha"),
+        Tag("11", "Medical"),
+        Tag("38", "Music"),
+        Tag("12", "Mystery"),
+        Tag("13", "Philosophical"),
+        Tag("14", "Psychological"),
+        Tag("15", "Romance"),
+        Tag("40", "School Life"),
+        Tag("16", "Sci-Fi"),
+        Tag("41", "Seinen"),
+        Tag("28", "Shoujo"),
+        Tag("17", "Shoujo Ai"),
+        Tag("27", "Shounen"),
+        Tag("18", "Shounen Ai"),
+        Tag("19", "Slice of Life"),
+        Tag("32", "Smut"),
+        Tag("20", "Sports"),
+        Tag("21", "Super Powers"),
+        Tag("43", "Supernatural"),
+        Tag("22", "Thriller"),
+        Tag("23", "Tragedy"),
+        Tag("24", "Wuxia"),
+        Tag("25", "Yaoi"),
+        Tag("26", "Yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :

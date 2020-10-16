@@ -100,8 +100,8 @@ class TsuminoUtils {
                 name = "Chapter"
                 scanlator = getGroups(document)
                 chapter_number = 1f
-                url = response.request().url().encodedPath().
-                    replace("entry", "Read/Index")
+                url = response.request().url().encodedPath()
+                    .replace("entry", "Read/Index")
             }
             chapterList.add(chapter)
             return chapterList

@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
-class MangadexDescription(private val internalLang: String) {
+class MangadexDescription(internalLang: String) {
 
     private val listOfLangs = when (internalLang) {
         "ru" -> RUSSIAN
@@ -14,19 +14,19 @@ class MangadexDescription(private val internalLang: String) {
         else -> emptyList()
     }
 
-    fun clean(internalLang: String, description: String): String {
+    fun clean(description: String): String {
         val langList = ALL_LANGS.toMutableList()
 
-        //remove any languages before the ones provided in the langTextToCheck, if no matches or empty
+        // remove any languages before the ones provided in the langTextToCheck, if no matches or empty
         // just uses the original description, also removes the potential lang from all lang list
-        var newDescription = description;
-        listOfLangs.forEach { it ->
+        var newDescription = description
+        listOfLangs.forEach {
             newDescription = newDescription.substringAfter(it)
             langList.remove(it)
         }
 
         // remove any possible languages that remain to get the new description
-        langList.forEach { it -> newDescription = newDescription.substringBefore(it) }
+        langList.forEach { newDescription = newDescription.substringBefore(it) }
         return newDescription
     }
 

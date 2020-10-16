@@ -50,10 +50,12 @@ class DynastyDoujins : DynastyScans() {
         val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }.toMutableList()
 
         document.select("a.thumbnail img").let { images ->
-            if (images.isNotEmpty()) chapters.add(SChapter.create().apply {
-                name = "Images"
-                setUrlWithoutDomain(document.location() + "/images")
-            })
+            if (images.isNotEmpty()) chapters.add(
+                SChapter.create().apply {
+                    name = "Images"
+                    setUrlWithoutDomain(document.location() + "/images")
+                }
+            )
         }
 
         return chapters
@@ -72,5 +74,4 @@ class DynastyDoujins : DynastyScans() {
     override fun imageUrlParse(document: Document): String {
         return document.select("div.image img").attr("abs:src")
     }
-
 }

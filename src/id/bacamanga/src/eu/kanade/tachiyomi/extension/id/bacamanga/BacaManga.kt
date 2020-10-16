@@ -2,10 +2,18 @@ package eu.kanade.tachiyomi.extension.id.bacamanga
 
 import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -13,7 +21,7 @@ import org.jsoup.nodes.Element
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class BacaManga : ParsedHttpSource() {
 
@@ -117,15 +125,15 @@ class BacaManga : ParsedHttpSource() {
         // Add date for latest chapter only
         document.select("script.yoast-schema-graph").html()
             .let {
-                val date = JSONObject(it).getJSONArray("@graph").
-                    getJSONObject(3).getString("dateModified")
+                val date = JSONObject(it).getJSONArray("@graph")
+                    .getJSONObject(3).getString("dateModified")
                 chapters[0].date_upload = parseDate(date)
             }
         return chapters
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH).parse(date)?.time ?: 0L
     }
 
     override fun chapterListSelector() = ".lchx"
@@ -178,101 +186,107 @@ class BacaManga : ParsedHttpSource() {
 
     private class YearFilter : Filter.Text("Year")
 
-    private class OrderByFilter : UriPartFilter("Sort by", arrayOf(
+    private class OrderByFilter : UriPartFilter(
+        "Sort by",
+        arrayOf(
             Pair("Default", ""),
             Pair("A-Z", "title"),
             Pair("Z-A", "titlereverse"),
             Pair("Latest Update", "update"),
             Pair("Latest Added", "latest"),
             Pair("Popular", "popular")
-    ))
+        )
+    )
 
     private class StatusFilter : Filter.TriState("Completed")
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
+    private class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
             Pair("All", ""),
             Pair("Manga", "Manga"),
             Pair("Manhua", "Manhua"),
             Pair("Manhwa", "Manhwa")
-    ))
+        )
+    )
 
     private class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            AuthorFilter(),
-            Filter.Separator(),
-            YearFilter(),
-            Filter.Separator(),
-            StatusFilter(),
-            Filter.Separator(),
-            OrderByFilter(),
-            Filter.Separator(),
-            TypeFilter(),
-            Filter.Separator(),
-            GenreList(getGenreList())
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        AuthorFilter(),
+        Filter.Separator(),
+        YearFilter(),
+        Filter.Separator(),
+        StatusFilter(),
+        Filter.Separator(),
+        OrderByFilter(),
+        Filter.Separator(),
+        TypeFilter(),
+        Filter.Separator(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("Action", "action"),
-            Genre("Adult", "adult"),
-            Genre("Adventure", "adventure"),
-            Genre("Comedy", "comedy"),
-            Genre("Crime", "crime"),
-            Genre("Demons", "demons"),
-            Genre("Doujinshi", "doujinshi"),
-            Genre("Drama", "drama"),
-            Genre("Ecchi", "ecchi"),
-            Genre("Echi", "echi"),
-            Genre("Fantasy", "fantasy"),
-            Genre("Game", "game"),
-            Genre("Gender Bender", "gender-bender"),
-            Genre("Harem", "harem"),
-            Genre("Historical", "historical"),
-            Genre("Horor", "horor"),
-            Genre("Horror", "horror"),
-            Genre("Isekai", "isekai"),
-            Genre("Josei", "josei"),
-            Genre("Magic", "magic"),
-            Genre("Manhua", "manhua"),
-            Genre("Manhwa", "manhwa"),
-            Genre("Martial Art", "martial-art"),
-            Genre("Martial Arts", "martial-arts"),
-            Genre("Mature", "mature"),
-            Genre("Mecha", "mecha"),
-            Genre("Medical", "medical"),
-            Genre("Military", "military"),
-            Genre("Monster", "monster"),
-            Genre("Monster Girls", "monster-girls"),
-            Genre("Music", "music"),
-            Genre("Mystery", "mystery"),
-            Genre("Post-Apocalyptic", "post-apocalyptic"),
-            Genre("Psychological", "psychological"),
-            Genre("Romance", "romance"),
-            Genre("School", "school"),
-            Genre("School Life", "school-life"),
-            Genre("Sci-Fi", "sci-fi"),
-            Genre("Seinen", "seinen"),
-            Genre("Shoujo Ai", "shoujo-ai"),
-            Genre("Shoujo", "shoujo"),
-            Genre("Shounen Ai", "shounen-ai"),
-            Genre("Shounen", "shounen"),
-            Genre("Si-fi", "si-fi"),
-            Genre("Slice of Life", "slice-of-life"),
-            Genre("Smut", "smut"),
-            Genre("Sports", "sports"),
-            Genre("Super Power", "super-power"),
-            Genre("Supernatural", "supernatural"),
-            Genre("Thriller", "thriller"),
-            Genre("Tragedy", "tragedy"),
-            Genre("Vampire", "vampire"),
-            Genre("Webtoon", "webtoon"),
-            Genre("Webtoons", "webtoons"),
-            Genre("Yaoi", "yaoi"),
-            Genre("Yuri", "yuri"),
-            Genre("Zombies", "zombies")
+        Genre("Action", "action"),
+        Genre("Adult", "adult"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Crime", "crime"),
+        Genre("Demons", "demons"),
+        Genre("Doujinshi", "doujinshi"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Echi", "echi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horor", "horor"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Magic", "magic"),
+        Genre("Manhua", "manhua"),
+        Genre("Manhwa", "manhwa"),
+        Genre("Martial Art", "martial-art"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Medical", "medical"),
+        Genre("Military", "military"),
+        Genre("Monster", "monster"),
+        Genre("Monster Girls", "monster-girls"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("Post-Apocalyptic", "post-apocalyptic"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("School", "school"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-Fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Si-fi", "si-fi"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Smut", "smut"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoon", "webtoon"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yaoi", "yaoi"),
+        Genre("Yuri", "yuri"),
+        Genre("Zombies", "zombies")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :

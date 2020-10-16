@@ -59,7 +59,7 @@ class NaverChallenge : NaverComicChallengeBase("challenge") {
         while (document.select(paginationNextPageSelector).hasText()) {
             document.select(paginationNextPageSelector).let {
                 document = client.newCall(GET(it.attr("abs:href"))).execute().asJsoup()
-                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+                document.select(chapterListSelector()).map { element -> chapters.add(chapterFromElement(element)) }
             }
         }
         return chapters
@@ -81,10 +81,11 @@ class NaverChallenge : NaverComicChallengeBase("challenge") {
 
     @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
-        return if (date.contains(":")) { Calendar.getInstance().timeInMillis
+        return if (date.contains(":")) {
+            Calendar.getInstance().timeInMillis
         } else {
             return try {
-                SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).parse(date).time
+                SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).parse(date)?.time ?: 0L
             } catch (e: Exception) {
                 e.printStackTrace()
                 0

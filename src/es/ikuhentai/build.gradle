@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Ikuhentai'
+    extName = 'Ikuhentai'
     pkgNameSuffix = 'es.ikuhentai'
     extClass = '.Ikuhentai'
     extVersionCode = 1
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

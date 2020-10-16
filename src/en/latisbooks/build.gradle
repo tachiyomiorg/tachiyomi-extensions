@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Latis Books'
+    extName = 'Latis Books'
     pkgNameSuffix = 'en.latisbooks'
     extClass = '.Latisbooks'
     extVersionCode = 1

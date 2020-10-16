@@ -133,7 +133,7 @@ abstract class Genkan(
         return if ("ago" in string) {
             parseRelativeDate(string) ?: 0
         } else {
-            dateFormat.parse(string).time
+            dateFormat.parse(string)?.time ?: 0
         }
     }
 
@@ -169,7 +169,7 @@ abstract class Genkan(
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun imageRequest(page: Page): Request {
         return if (page.imageUrl!!.startsWith("http")) GET(page.imageUrl!!, headers) else GET(baseUrl + page.imageUrl!!, headers)
@@ -203,7 +203,7 @@ abstract class GenkanOriginal(
 
         /* call another function if there's more pages to search
            not doing it this way can lead to a false "no results found"
-           if no matches are found on the first page but there are matcheszz
+           if no matches are found on the first page but there are matches
            on subsequent pages */
         nextPageSelectorElement = document.select(searchMangaNextPageSelector())
         while (nextPageSelectorElement.hasText()) {
@@ -239,5 +239,4 @@ abstract class GenkanOriginal(
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
-
 }

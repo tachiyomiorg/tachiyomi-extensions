@@ -1,7 +1,11 @@
 package eu.kanade.tachiyomi.extension.ja.rawkuma
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
@@ -14,7 +18,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class Rawkuma: ParsedHttpSource() {
+class Rawkuma : ParsedHttpSource() {
 
     override val name = "Rawkuma"
 
@@ -28,9 +32,9 @@ class Rawkuma: ParsedHttpSource() {
 
     override fun latestUpdatesSelector() = "div.bsx a"
 
-    override fun latestUpdatesRequest(page: Int):  Request {
+    override fun latestUpdatesRequest(page: Int): Request {
         // The site redirects page 1 -> url-without-page so we do this redirect early for optimization
-        val builtUrl =  if(page == 1) "$baseUrl/manga/?order=update" else "$baseUrl/manga/page/$page/?order=update"
+        val builtUrl = if (page == 1) "$baseUrl/manga/?order=update" else "$baseUrl/manga/page/$page/?order=update"
         return GET(builtUrl)
     }
 
@@ -45,8 +49,8 @@ class Rawkuma: ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = "a.next"
 
-    override fun popularMangaRequest(page: Int):  Request {
-        val builtUrl =  if(page == 1) "$baseUrl/manga/?order=popular" else "$baseUrl/manga/page/$page/?order=popular"
+    override fun popularMangaRequest(page: Int): Request {
+        val builtUrl = if (page == 1) "$baseUrl/manga/?order=popular" else "$baseUrl/manga/page/$page/?order=popular"
         return GET(builtUrl)
     }
 
@@ -57,7 +61,7 @@ class Rawkuma: ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl =  if(page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
+        val builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
         val url = HttpUrl.parse(builtUrl)!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
@@ -85,8 +89,8 @@ class Rawkuma: ParsedHttpSource() {
                 }
                 is GenreList -> {
                     filter.state
-                            .filter { it.state != Filter.TriState.STATE_IGNORE }
-                            .forEach { url.addQueryParameter("genre[]", it.id) }
+                        .filter { it.state != Filter.TriState.STATE_IGNORE }
+                        .forEach { url.addQueryParameter("genre[]", it.id) }
                 }
             }
         }
@@ -165,7 +169,7 @@ class Rawkuma: ParsedHttpSource() {
 
     private fun parseDate(date: String): Long {
         return try {
-            SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date).time
+            SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
@@ -197,17 +201,17 @@ class Rawkuma: ParsedHttpSource() {
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw  UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
-            Filter.Header("You can combine filter."),
-            Filter.Separator(),
-            AuthorFilter(),
-            YearFilter(),
-            StatusFilter(),
-            TypeFilter(),
-            OrderByFilter(),
-            GenreList(getGenreList())
+        Filter.Header("You can combine filter."),
+        Filter.Separator(),
+        AuthorFilter(),
+        YearFilter(),
+        StatusFilter(),
+        TypeFilter(),
+        OrderByFilter(),
+        GenreList(getGenreList())
     )
 
     private class AuthorFilter : Filter.Text("Author")
@@ -216,61 +220,67 @@ class Rawkuma: ParsedHttpSource() {
 
     private class StatusFilter : Filter.TriState("Completed")
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
+    private class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
             Pair("All", ""),
             Pair("Manga", "Manga"),
             Pair("Manhwa", "Manhwa"),
             Pair("Manhua", "Manhua")
-    ))
-    private class OrderByFilter : UriPartFilter("Order By", arrayOf(
+        )
+    )
+    private class OrderByFilter : UriPartFilter(
+        "Order By",
+        arrayOf(
             Pair("<select>", ""),
             Pair("A-Z", "title"),
             Pair("Z-A", "titlereverse"),
             Pair("Latest Update", "update"),
             Pair("Latest Added", "latest"),
             Pair("Popular", "popular")
-    ))
+        )
+    )
 
     private fun getGenreList() = listOf(
-            Tag("action", "Action"),
-            Tag("adult", "Adult"),
-            Tag("adventure", "Adventure"),
-            Tag("blood", "Blood"),
-            Tag("comedy", "Comedy"),
-            Tag("drama", "Drama"),
-            Tag("ecchi", "Ecchi"),
-            Tag("fanta", "Fanta"),
-            Tag("fantasy", "Fantasy"),
-            Tag("gender-bender", "Gender Bender"),
-            Tag("harem", "Harem"),
-            Tag("historical", "Historical"),
-            Tag("horror", "Horror"),
-            Tag("isekai", "Isekai"),
-            Tag("josei", "Josei"),
-            Tag("lolicon", "Lolicon"),
-            Tag("martial-arts", "Martial Arts"),
-            Tag("mature", "Mature"),
-            Tag("mecha", "Mecha"),
-            Tag("mystery", "Mystery"),
-            Tag("parody", "Parody"),
-            Tag("psychological", "Psychological"),
-            Tag("romance", "Romance"),
-            Tag("school-life", "School Life"),
-            Tag("sci-fi", "Sci-fi"),
-            Tag("seinen", "Seinen"),
-            Tag("shoujo", "Shoujo"),
-            Tag("shoujo-ai", "Shoujo Ai"),
-            Tag("shounen", "Shounen"),
-            Tag("slice-of-life", "Slice of Life"),
-            Tag("sports", "Sports"),
-            Tag("supernatural", "Supernatural"),
-            Tag("thriller", "Thriller"),
-            Tag("tragedy", "Tragedy"),
-            Tag("yuri", "Yuri")
+        Tag("action", "Action"),
+        Tag("adult", "Adult"),
+        Tag("adventure", "Adventure"),
+        Tag("blood", "Blood"),
+        Tag("comedy", "Comedy"),
+        Tag("drama", "Drama"),
+        Tag("ecchi", "Ecchi"),
+        Tag("fanta", "Fanta"),
+        Tag("fantasy", "Fantasy"),
+        Tag("gender-bender", "Gender Bender"),
+        Tag("harem", "Harem"),
+        Tag("historical", "Historical"),
+        Tag("horror", "Horror"),
+        Tag("isekai", "Isekai"),
+        Tag("josei", "Josei"),
+        Tag("lolicon", "Lolicon"),
+        Tag("martial-arts", "Martial Arts"),
+        Tag("mature", "Mature"),
+        Tag("mecha", "Mecha"),
+        Tag("mystery", "Mystery"),
+        Tag("parody", "Parody"),
+        Tag("psychological", "Psychological"),
+        Tag("romance", "Romance"),
+        Tag("school-life", "School Life"),
+        Tag("sci-fi", "Sci-fi"),
+        Tag("seinen", "Seinen"),
+        Tag("shoujo", "Shoujo"),
+        Tag("shoujo-ai", "Shoujo Ai"),
+        Tag("shounen", "Shounen"),
+        Tag("slice-of-life", "Slice of Life"),
+        Tag("sports", "Sports"),
+        Tag("supernatural", "Supernatural"),
+        Tag("thriller", "Thriller"),
+        Tag("tragedy", "Tragedy"),
+        Tag("yuri", "Yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 

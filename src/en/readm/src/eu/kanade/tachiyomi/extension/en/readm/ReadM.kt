@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
 
 class ReadM : ParsedHttpSource() {
 
-    //Info
+    // Info
     override val name: String = "ReadM"
     override val baseUrl: String = "https://readm.org"
     override val lang: String = "en"
@@ -30,7 +30,7 @@ class ReadM : ParsedHttpSource() {
         .followRedirects(true)
         .build()
 
-    //Popular
+    // Popular
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/popular-manga/$page", headers)
     override fun popularMangaNextPageSelector(): String? = "div.pagination a:contains(»)"
@@ -41,23 +41,22 @@ class ReadM : ParsedHttpSource() {
             title = this.text().trim()
             url = this.attr("href")
         }
-
     }
 
-    //Latest
+    // Latest
 
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/latest-releases/$page", headers)
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
-    override fun latestUpdatesSelector(): String = "ul.latest-updates li"
+    override fun latestUpdatesSelector(): String = "ul.latest-updates > li"
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("data-src")
-        element.select("a").first().apply {
+        thumbnail_url = element.select("img").attr("abs:data-src")
+        element.select("h2 a").first().apply {
             title = this.text().trim()
             url = this.attr("href")
         }
     }
 
-    //Search
+    // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val formBody = FormBody.Builder()
@@ -83,12 +82,11 @@ class ReadM : ParsedHttpSource() {
         return POST("$baseUrl/service/advanced_search", searchHeaders, formBody.build())
     }
 
-
     override fun searchMangaNextPageSelector(): String? = null
     override fun searchMangaSelector(): String = "div.poster-with-subject"
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    //Details
+    // Details
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         thumbnail_url = document.select("img.series-profile-thumb").attr("abs:src")
@@ -99,7 +97,7 @@ class ReadM : ParsedHttpSource() {
         genre = document.select("div.series-summary-wrapper div.item a").joinToString(", ") { it.text().trim() }
     }
 
-    //Chapters
+    // Chapters
 
     override fun chapterListSelector(): String = "div.season_start"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
@@ -142,14 +140,14 @@ class ReadM : ParsedHttpSource() {
         return 0L
     }
 
-    //Pages
+    // Pages
 
     override fun imageUrlParse(document: Document): String = throw Exception("Not Used")
     override fun pageListParse(document: Document): List<Page> = document.select("div.ch-images img").mapIndexed { index, element ->
-        Page(index, "", element.attr("abs:data-src"))
+        Page(index, "", element.attr("abs:src"))
     }
 
-    //Filters
+    // Filters
 
     override fun getFilterList(): FilterList = FilterList(
         TypeFilter(typeArray),
@@ -165,7 +163,6 @@ class ReadM : ParsedHttpSource() {
     private class StatusFilter(values: Array<Pair<String, String>>) : Filter.Select<String>("Status", values.map { it.first }.toTypedArray())
     private class GenreFilter(state: List<Tag>) : Filter.Group<Tag>("Genres", state)
     private class Tag(name: String, val id: String) : Filter.TriState(name)
-
 
     private val typeArray = arrayOf(
         Pair("All", "all"),
@@ -221,6 +218,4 @@ class ReadM : ParsedHttpSource() {
         Tag("Yaoi", "28"),
         Tag("Yuri", "20")
     ).sortedWith(compareBy { it.name })
-
-
 }

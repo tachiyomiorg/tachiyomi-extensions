@@ -2,7 +2,11 @@ package eu.kanade.tachiyomi.extension.id.komikindo
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -11,7 +15,7 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
 
 class KomikIndo : ParsedHttpSource() {
 
@@ -22,7 +26,7 @@ class KomikIndo : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request {
-        val url = if (page == 1) "$baseUrl" else "$baseUrl/page/$page"
+        val url = if (page == 1) baseUrl else "$baseUrl/page/$page"
         return GET(url, headers)
     }
 
@@ -33,7 +37,7 @@ class KomikIndo : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
-        if (!query.equals("")) {
+        if (query != "") {
             builtUrl = if (page == 1) "$baseUrl/search/$query/" else "$baseUrl/search/$query/page/$page/"
         } else if (filters.size > 0) {
             filters.forEach { filter ->
@@ -81,17 +85,17 @@ class KomikIndo : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElm = document.select(".listinfo > ul > li")
         val manga = SManga.create()
-        infoElm.forEachIndexed { index, element ->
+        infoElm.forEach { element ->
             val infoTitle = element.select("b").text().toLowerCase()
-            var infoContent = element.text()
+            val infoContent = element.text()
             when {
                 infoTitle.contains("status") -> manga.status = parseStatus(infoContent)
                 infoTitle.contains("author") -> manga.author = infoContent
                 infoTitle.contains("artist") -> manga.artist = infoContent
                 infoTitle.contains("genres") -> {
                     val genres = mutableListOf<String>()
-                    element.select("a").forEach { element ->
-                        val genre = element.text()
+                    element.select("a").forEach { a ->
+                        val genre = a.text()
                         genres.add(genre)
                     }
                     manga.genre = genres.joinToString(", ")
@@ -124,9 +128,8 @@ class KomikIndo : ParsedHttpSource() {
     @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
         val sdf = SimpleDateFormat("MMM dd, yyyy")
-        val parse = sdf.parse(date)
         val cal = Calendar.getInstance()
-        cal.time = parse
+        cal.time = sdf.parse(date)!!
         return cal.timeInMillis
     }
 
@@ -147,7 +150,7 @@ class KomikIndo : ParsedHttpSource() {
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }
@@ -164,58 +167,61 @@ class KomikIndo : ParsedHttpSource() {
         return GET(page.imageUrl!!, imgHeader)
     }
 
-    private class GenreListFilter : UriPartFilter("Genre", arrayOf(
-        Pair("Default", ""),
-        Pair("4-Koma", "4-koma"),
-        Pair("Action", "action"),
-        Pair("Adventure", "adventure"),
-        Pair("Comedy", "comedy"),
-        Pair("Cooking", "cooking"),
-        Pair("Crime", "crime"),
-        Pair("Dark Fantasy", "dark-fantasy"),
-        Pair("Demons", "demons"),
-        Pair("Drama", "drama"),
-        Pair("Ecchi", "ecchi"),
-        Pair("Fantasy", "fantasy"),
-        Pair("Game", "game"),
-        Pair("Gender Bender", "gender-bender"),
-        Pair("Harem", "harem"),
-        Pair("Historical", "historical"),
-        Pair("Horor", "horor"),
-        Pair("Horror", "horror"),
-        Pair("Isekai", "isekai"),
-        Pair("Josei", "josei"),
-        Pair("Komik Tamat", "komik-tamat"),
-        Pair("Life", "life"),
-        Pair("Magic", "magic"),
-        Pair("Manhua", "manhua"),
-        Pair("Martial Art", "martial-art"),
-        Pair("Martial Arts", "martial-arts"),
-        Pair("Mature", "mature"),
-        Pair("Mecha", "mecha"),
-        Pair("Military", "military"),
-        Pair("Music", "music"),
-        Pair("Mystery", "mystery"),
-        Pair("Post-Apocalyptic", "post-apocalyptic"),
-        Pair("Psychological", "psychological"),
-        Pair("Romance", "romance"),
-        Pair("School", "school"),
-        Pair("School Life", "school-life"),
-        Pair("Sci-Fi", "sci-fi"),
-        Pair("Seinen", "seinen"),
-        Pair("Shonen", "shonen"),
-        Pair("Shoujo", "shoujo"),
-        Pair("Shounen", "shounen"),
-        Pair("Slice of Life", "slice-of-life"),
-        Pair("Sports", "sports"),
-        Pair("Super Power", "super-power"),
-        Pair("Superheroes", "superheroes"),
-        Pair("Supernatural", "supernatural"),
-        Pair("Survival", "survival"),
-        Pair("Thriller", "thriller"),
-        Pair("Tragedy", "tragedy"),
-        Pair("Zombies", "zombies")
-    ))
+    private class GenreListFilter : UriPartFilter(
+        "Genre",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("4-Koma", "4-koma"),
+            Pair("Action", "action"),
+            Pair("Adventure", "adventure"),
+            Pair("Comedy", "comedy"),
+            Pair("Cooking", "cooking"),
+            Pair("Crime", "crime"),
+            Pair("Dark Fantasy", "dark-fantasy"),
+            Pair("Demons", "demons"),
+            Pair("Drama", "drama"),
+            Pair("Ecchi", "ecchi"),
+            Pair("Fantasy", "fantasy"),
+            Pair("Game", "game"),
+            Pair("Gender Bender", "gender-bender"),
+            Pair("Harem", "harem"),
+            Pair("Historical", "historical"),
+            Pair("Horor", "horor"),
+            Pair("Horror", "horror"),
+            Pair("Isekai", "isekai"),
+            Pair("Josei", "josei"),
+            Pair("Komik Tamat", "komik-tamat"),
+            Pair("Life", "life"),
+            Pair("Magic", "magic"),
+            Pair("Manhua", "manhua"),
+            Pair("Martial Art", "martial-art"),
+            Pair("Martial Arts", "martial-arts"),
+            Pair("Mature", "mature"),
+            Pair("Mecha", "mecha"),
+            Pair("Military", "military"),
+            Pair("Music", "music"),
+            Pair("Mystery", "mystery"),
+            Pair("Post-Apocalyptic", "post-apocalyptic"),
+            Pair("Psychological", "psychological"),
+            Pair("Romance", "romance"),
+            Pair("School", "school"),
+            Pair("School Life", "school-life"),
+            Pair("Sci-Fi", "sci-fi"),
+            Pair("Seinen", "seinen"),
+            Pair("Shonen", "shonen"),
+            Pair("Shoujo", "shoujo"),
+            Pair("Shounen", "shounen"),
+            Pair("Slice of Life", "slice-of-life"),
+            Pair("Sports", "sports"),
+            Pair("Super Power", "super-power"),
+            Pair("Superheroes", "superheroes"),
+            Pair("Supernatural", "supernatural"),
+            Pair("Survival", "survival"),
+            Pair("Thriller", "thriller"),
+            Pair("Tragedy", "tragedy"),
+            Pair("Zombies", "zombies")
+        )
+    )
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: filter will be ignored when using text search!"),

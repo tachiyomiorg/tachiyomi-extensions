@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
-
 import android.net.Uri
 import android.util.Log
 import eu.kanade.tachiyomi.network.GET
@@ -18,7 +17,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
-
 
 class MangaKawaii : ParsedHttpSource() {
 
@@ -40,7 +38,9 @@ class MangaKawaii : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun searchMangaNextPageSelector() = "no selector"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/liste-manga/filterMangaList?page=$page&sortBy=views&asc=false", headers)
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/liste-manga/filterMangaList?page=$page&sortBy=views&asc=false", headersBuilder().add("X-Requested-With", "XMLHttpRequest").build())
+
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/search").buildUpon()
@@ -67,19 +67,18 @@ class MangaKawaii : ParsedHttpSource() {
         return manga
     }
 
-
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
-        Log.i("robert", "toto")
+
         chapter.url = element.select("td.table__chapter").select("a").attr("href")
         chapter.name = element.select("td.table__chapter").select("span").text().trim()
-        chapter.chapter_number = element.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(",", ".").trim().toFloat()
+        chapter.chapter_number = element.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull() ?: -1F
         chapter.date_upload = parseDate(element.select("td.table__date").text())
         return chapter
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date).time
+        return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -100,16 +99,8 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        val TAG = "MyActivity"
-        Log.i(TAG, "start read")
         var div = body.select("div#all")
-        Log.i(TAG, div.html())
-
-
        var elements= div.select("img")
-
-
-
 
         val pages = mutableListOf<Page>()
         for (i in 0 until elements.count()) {

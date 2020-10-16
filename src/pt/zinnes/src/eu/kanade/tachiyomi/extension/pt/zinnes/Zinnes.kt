@@ -1,23 +1,33 @@
 package eu.kanade.tachiyomi.extension.pt.zinnes
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class Zinnes : ParsedHttpSource() {
+
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 568551799323473384
 
     override val name = "Zinnes"
 
     override val baseUrl = "https://www.zinnes.com.br"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = false
 
@@ -116,16 +126,16 @@ class Zinnes : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("This method should not be called!")
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("dd MMM, yyyy", Locale("pt", "BR")).parse(date).time
+            SimpleDateFormat("dd MMM, yyyy", Locale("pt", "BR")).parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
 
         private val ID_REGEX = "var titulo = \\{\"id\":\"(\\d+)\"".toRegex()
         private val FILES_REGEX = "var arquivos = \\[(.*)\\];".toRegex()

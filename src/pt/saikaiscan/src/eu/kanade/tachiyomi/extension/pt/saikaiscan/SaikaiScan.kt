@@ -1,7 +1,11 @@
 package eu.kanade.tachiyomi.extension.pt.saikaiscan
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -12,11 +16,14 @@ import org.jsoup.nodes.Element
 
 class SaikaiScan : ParsedHttpSource() {
 
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 2686610366990303664
+
     override val name = "Saikai Scan"
 
     override val baseUrl = "https://saikaiscan.com.br"
 
-    override val lang = "pt"
+    override val lang = "pt-BR"
 
     override val supportsLatest = true
 
@@ -112,7 +119,7 @@ class SaikaiScan : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         scanlator = "Saikai Scan"
-        chapter_number = CHAPTER_REGEX.find(element.text())?.groupValues?.get(1)?.toFloatOrNull() ?: 1f
+        chapter_number = CHAPTER_REGEX.find(element.text())?.groupValues?.get(1)?.toFloatOrNull() ?: -1f
         name = element.text()
         url = element.attr("href")
     }
@@ -129,8 +136,7 @@ class SaikaiScan : ParsedHttpSource() {
     private fun removeLabel(info: String) = info.substringAfter(":")
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
         private val CHAPTER_REGEX = "Capítulo (\\d+)".toRegex()
     }
-
 }

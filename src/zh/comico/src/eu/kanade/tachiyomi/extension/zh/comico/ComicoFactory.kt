@@ -36,7 +36,7 @@ class ComicoChallenge : Comico("Comico Challenge", "/challenge", true) {
         val mangas = mutableListOf<SManga>()
         val body = response.body()!!.string()
 
-        gson.fromJson<JsonObject>(body)["result"]["list"].asJsonArray.forEach{
+        gson.fromJson<JsonObject>(body)["result"]["list"].asJsonArray.forEach {
             val manga = SManga.create()
 
             manga.thumbnail_url = it["img_url"].asString
@@ -83,7 +83,7 @@ class ComicoChallenge : Comico("Comico Challenge", "/challenge", true) {
         val chapters = mutableListOf<SChapter>()
 
         gson.fromJson<JsonObject>(response.body()!!.string())["result"]["list"].asJsonArray
-            .forEach{ chapters.add(chapterFromJson(it)) }
+            .forEach { chapters.add(chapterFromJson(it)) }
 
         return chapters.reversed()
     }
@@ -91,13 +91,10 @@ class ComicoChallenge : Comico("Comico Challenge", "/challenge", true) {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("img.comic-image__image").forEachIndexed{ i, img ->
+        document.select("img.comic-image__image").forEachIndexed { i, img ->
             pages.add(Page(i, "", img.attr("src")))
         }
 
         return pages
     }
 }
-
-
-

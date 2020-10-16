@@ -2,16 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: NewToki'
+    extName = 'NewToki / ManaToki(ManaMoa)'
     pkgNameSuffix = 'ko.newtoki'
     extClass = '.NewTokiFactory'
-    extVersionCode = 11
+    extVersionCode = 18
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly project(':preference-stub')
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

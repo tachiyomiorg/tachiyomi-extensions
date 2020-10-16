@@ -6,13 +6,15 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -124,11 +126,12 @@ class MangaLinkz : ParsedHttpSource() {
                     }
                 }
             }
-            else -> try {
-                SimpleDateFormat("MMM d, yyyy", Locale.US).parse(this).time
-            } catch (_: Exception) {
-                0L
-            }
+            else ->
+                try {
+                    SimpleDateFormat("MMM d, yyyy", Locale.US).parse(this)?.time ?: 0L
+                } catch (_: Exception) {
+                    0L
+                }
         }
     }
 
@@ -141,11 +144,10 @@ class MangaLinkz : ParsedHttpSource() {
             .substringAfter("atob(\"").substringBefore("\"")
         val decoded = Base64.decode(encoded, Base64.DEFAULT).toString(Charsets.UTF_8).removeSurrounding("[", "]")
 
-        return gson.fromJson<JsonObject>(decoded)["pages"].asJsonArray.mapIndexed{ i, jsonElement -> Page(i, "", jsonElement.string) }
+        return gson.fromJson<JsonObject>(decoded)["pages"].asJsonArray.mapIndexed { i, jsonElement -> Page(i, "", jsonElement.string) }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

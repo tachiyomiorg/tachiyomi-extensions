@@ -55,7 +55,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         while (document.select(paginationNextPageSelector).isNotEmpty()) {
             document.select(paginationNextPageSelector).let {
                 document = client.newCall(chapterListRequest(it.attr("href"), nextPage)).execute().asJsoup()
-                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+                document.select(chapterListSelector()).map { element -> chapters.add(chapterFromElement(element)) }
                 nextPage++
             }
         }
@@ -91,10 +91,11 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
 
     @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
-        return if (date.contains(":")) { Calendar.getInstance().timeInMillis
+        return if (date.contains(":")) {
+            Calendar.getInstance().timeInMillis
         } else {
             return try {
-                SimpleDateFormat("yy.MM.dd", Locale.KOREA).parse(date).time
+                SimpleDateFormat("yy.MM.dd", Locale.KOREA).parse(date)?.time ?: 0L
             } catch (e: Exception) {
                 e.printStackTrace()
                 0
@@ -118,12 +119,12 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         val pages = mutableListOf<Page>()
         try {
             document.select(".wt_viewer img")
-                    .map {
-                        it.attr("src")
-                    }
-                    .forEach {
-                        pages.add(Page(pages.size, "", it))
-                    }
+                .map {
+                    it.attr("src")
+                }
+                .forEach {
+                    pages.add(Page(pages.size, "", it))
+                }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -131,7 +132,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         return pages
     }
 
-    //We are able to get the image URL directly from the page list
+    // We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
 
     override fun getFilterList() = FilterList()

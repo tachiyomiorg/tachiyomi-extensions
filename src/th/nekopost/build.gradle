@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Nekopost'
+    extName = 'Nekopost'
     pkgNameSuffix = 'th.nekopost'
     extClass = '.Nekopost'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

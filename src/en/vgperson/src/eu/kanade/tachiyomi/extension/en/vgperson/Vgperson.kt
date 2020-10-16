@@ -4,7 +4,11 @@ import android.os.Build.VERSION
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.Response
@@ -34,7 +38,7 @@ class Vgperson : ParsedHttpSource() {
 
     override fun popularMangaSelector() = ".content a[href^=?m]"
 
-    override fun popularMangaNextPageSelector() = null
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun popularMangaRequest(page: Int) = GET(baseUrl, headers)
 
@@ -44,7 +48,7 @@ class Vgperson : ParsedHttpSource() {
         thumbnail_url = getCover(title)
     }
 
-    override fun fetchMangaDetails(manga: SManga) =
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> =
         client.newCall(mangaDetailsRequest(manga)).asObservableSuccess().map {
             mangaDetailsParse(it).apply {
                 url = manga.url
@@ -96,20 +100,20 @@ class Vgperson : ParsedHttpSource() {
     override fun pageListParse(document: Document) =
         document.select("img").mapIndexed { i, img -> Page(i, "", img.attr("src")) }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList):
-        Observable<MangasPage> = Observable.empty()
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = fetchPopularManga(1)
+        .map { mp -> MangasPage(mp.mangas.filter { it.title.contains(query, ignoreCase = true) }, false) }
 
     // get known manga covers from imgur
     private fun getCover(title: String) = when (title) {
-            "The Festive Monster's Cheerful Failure" -> "kEK10GL.png"
-            "Azure and Claude" -> "buXnlmh.jpg"
-            "Three Days of Happiness" -> "kL5dvnp.jpg"
-            else -> null
-        }?.let { "https://i.imgur.com/$it" }
+        "The Festive Monster's Cheerful Failure" -> "kEK10GL.png"
+        "Azure and Claude" -> "buXnlmh.jpg"
+        "Three Days of Happiness" -> "kL5dvnp.jpg"
+        else -> null
+    }?.let { "https://i.imgur.com/$it" }
 
     override fun latestUpdatesSelector() = ""
 
-    override fun latestUpdatesNextPageSelector() = null
+    override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun latestUpdatesRequest(page: Int) =
         throw UnsupportedOperationException("This method should not be called!")
@@ -119,7 +123,7 @@ class Vgperson : ParsedHttpSource() {
 
     override fun searchMangaSelector() = ""
 
-    override fun searchMangaNextPageSelector() = null
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) =
         throw UnsupportedOperationException("This method should not be called!")

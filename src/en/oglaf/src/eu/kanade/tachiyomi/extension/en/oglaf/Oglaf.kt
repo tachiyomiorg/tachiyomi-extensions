@@ -1,14 +1,21 @@
 package eu.kanade.tachiyomi.extension.en.oglaf
 
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.annotations.Nsfw
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import org.jsoup.Jsoup
 
+@Nsfw
 class Oglaf : ParsedHttpSource() {
 
     override val name = "Oglaf"
@@ -40,14 +47,16 @@ class Oglaf : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapterList = super.chapterListParse(response).distinct()
         return chapterList.mapIndexed {
-            i, ch -> ch.apply { chapter_number = chapterList.size.toFloat() - i }
+            i, ch ->
+            ch.apply { chapter_number = chapterList.size.toFloat() - i }
         }
     }
 
     override fun chapterListSelector() = "a:has(img[width=400])"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val nameRegex = """/(.*)/""".toRegex()
+        val nameRegex =
+            """/(.*)/""".toRegex()
         val chapter = SChapter.create()
         chapter.url = element.attr("href")
         chapter.name = nameRegex.find(element.attr("href"))!!.groupValues[1]
@@ -55,15 +64,18 @@ class Oglaf : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val urlRegex = """/.*/\d*/""".toRegex()
-        val imageUrl = document.select("img#strip").attr("src")
+        val urlRegex =
+            """/.*/\d*/""".toRegex()
         val pages = mutableListOf<Page>()
-        pages.add(Page(0, "", imageUrl))
-        val next = document.select("a[rel=next]").attr("href")
-        if (urlRegex.matches(next)) {
-            val nextPage = Jsoup.connect(baseUrl + next).get()
-            pages.addAll(pageListParse(nextPage))
+
+        fun addPage(document: Document) {
+            pages.add(Page(pages.size, "", document.select("img#strip").attr("abs:src")))
+            val next = document.select("a[rel=next]").attr("href")
+            if (urlRegex.matches(next)) addPage(client.newCall(GET(baseUrl + next, headers)).execute().asJsoup())
         }
+
+        addPage(document)
+
         return pages
     }
 
@@ -94,5 +106,4 @@ class Oglaf : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
 
     override fun latestUpdatesSelector(): String = throw Exception("Not used")
-
 }

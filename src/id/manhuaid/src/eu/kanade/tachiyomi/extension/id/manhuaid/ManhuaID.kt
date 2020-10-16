@@ -2,22 +2,15 @@ package eu.kanade.tachiyomi.extension.id.manhuaid
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
-class ManhuaID: ParsedHttpSource() {
+class ManhuaID : ParsedHttpSource() {
 
     override val name = "ManhuaID"
 
@@ -56,17 +49,17 @@ class ManhuaID: ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaNextPageSelector(): String? = null
-   
+
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select("table").first().select("td").get(3).text()
+        author = document.select("table").first().select("td")[3].text()
         title = document.select("title").text()
         description = document.select(".text-justify").text()
         genre = document.select("span.badge.badge-success.mr-1.mb-1").joinToString { it.text() }
         status = document.select("td > span.badge.badge-success").text().let {
-            parseStatus(it)   
-        }    
+            parseStatus(it)
+        }
         thumbnail_url = document.select("img.img-fluid").attr("abs:src")
     }
 
@@ -76,7 +69,7 @@ class ManhuaID: ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "table.table.table-striped td[width] > a.text-success.text-decoration-none"
+    override fun chapterListSelector() = "table.table tr td:first-of-type a"
 
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
 
@@ -93,5 +86,5 @@ class ManhuaID: ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
-     override fun getFilterList() = FilterList()
+    override fun getFilterList() = FilterList()
 }

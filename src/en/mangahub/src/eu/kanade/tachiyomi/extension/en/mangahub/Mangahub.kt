@@ -2,16 +2,20 @@ package eu.kanade.tachiyomi.extension.en.mangahub
 
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
 import com.github.salomonbrys.kotson.keys
+import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.Request
 import okhttp3.HttpUrl
+import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -51,7 +55,7 @@ class Mangahub : ParsedHttpSource() {
         manga.title = titleElement.text()
         manga.setUrlWithoutDomain(URL(titleElement.attr("href")).path)
         manga.thumbnail_url = element.select("img.manga-thumb.list-item-thumb")
-                ?.first()?.attr("src")
+            ?.first()?.attr("src")
 
         return manga
     }
@@ -68,13 +72,13 @@ class Mangahub : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.title = document.select("h1._3xnDj").first().text()
+        manga.title = document.select("h1._3xnDj").first().ownText()
         manga.author = document.select("._3QCtP > div:nth-child(2) > div:nth-child(1) > span:nth-child(2)")?.first()?.text()
         manga.artist = document.select("._3QCtP > div:nth-child(2) > div:nth-child(2) > span:nth-child(2)")?.first()?.text()
         manga.genre = document.select("._3Czbn a")?.joinToString { it.text() }
         manga.description = document.select("div#noanim-content-tab-pane-99 p.ZyMp7")?.first()?.text()
         manga.thumbnail_url = document.select("img.img-responsive")?.first()
-                ?.attr("src")
+            ?.attr("src")
 
         document.select("._3QCtP > div:nth-child(2) > div:nth-child(3) > span:nth-child(2)")?.first()?.text()?.also { statusText ->
             when {
@@ -129,7 +133,7 @@ class Mangahub : ParsedHttpSource() {
             // parses: "12-20-2019" and defaults everything that wasn't taken into account to 0
             else -> {
                 try {
-                    parsedDate = SimpleDateFormat("MM-dd-yyyy", Locale.US).parse(date).time
+                    parsedDate = SimpleDateFormat("MM-dd-yyyy", Locale.US).parse(date)?.time ?: 0L
                 } catch (e: ParseException) { /*nothing to do, parsedDate is initialized with 0L*/ }
             }
         }
@@ -164,7 +168,7 @@ class Mangahub : ParsedHttpSource() {
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
-    //https://mangahub.io/search/page/1?q=a&order=POPULAR&genre=all
+    // https://mangahub.io/search/page/1?q=a&order=POPULAR&genre=all
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/search/page/$page")?.newBuilder()!!.addQueryParameter("q", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
@@ -200,20 +204,20 @@ class Mangahub : ParsedHttpSource() {
         }
     }
 
-    private class OrderBy(orders: Array<Order>) : Filter.Select<Order>("Order", orders,0)
+    private class OrderBy(orders: Array<Order>) : Filter.Select<Order>("Order", orders, 0)
     private class GenreList(genres: Array<Genre>) : Filter.Select<Genre>("Genres", genres, 0)
 
     override fun getFilterList() = FilterList(
-            OrderBy(orderBy),
-            GenreList(genres)
+        OrderBy(orderBy),
+        GenreList(genres)
     )
 
     private val orderBy = arrayOf(
-            Order("Popular", "POPULAR"),
-            Order("Updates", "LATEST"),
-            Order("A-Z", "ALPHABET"),
-            Order("New", "NEW"),
-            Order("Completed", "COMPLETED")
+        Order("Popular", "POPULAR"),
+        Order("Updates", "LATEST"),
+        Order("A-Z", "ALPHABET"),
+        Order("New", "NEW"),
+        Order("Completed", "COMPLETED")
     )
 
     private val genres = arrayOf(

@@ -1,10 +1,21 @@
 package eu.kanade.tachiyomi.extension.all.webtoons
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter.Header
+import eu.kanade.tachiyomi.source.model.Filter.Select
+import eu.kanade.tachiyomi.source.model.Filter.Separator
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
@@ -21,23 +32,24 @@ abstract class Webtoons(
 
     override val supportsLatest = true
 
-    override val client = super.client.newBuilder()
-        .cookieJar(object : CookieJar {
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
-            override fun loadForRequest(url: HttpUrl): List<Cookie> {
-                return listOf<Cookie>(
-                    Cookie.Builder()
-                        .domain("www.webtoons.com")
-                        .path("/")
-                        .name("ageGatePass")
-                        .value("true")
-                        .name("locale")
-                        .value(localeForCookie)
-                        .build()
-                )
+    override val client: OkHttpClient = super.client.newBuilder()
+        .cookieJar(
+            object : CookieJar {
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
+                override fun loadForRequest(url: HttpUrl): List<Cookie> {
+                    return listOf<Cookie>(
+                        Cookie.Builder()
+                            .domain("www.webtoons.com")
+                            .path("/")
+                            .name("ageGatePass")
+                            .value("true")
+                            .name("locale")
+                            .value(localeForCookie)
+                            .build()
+                    )
+                }
             }
-
-        })
+        )
         .build()
 
     private val day: String
@@ -58,14 +70,14 @@ abstract class Webtoons(
 
     override fun popularMangaSelector() = "not using"
 
-    override fun latestUpdatesSelector() = "div#dailyList > $day li > a:has(span:contains(UP))"
+    override fun latestUpdatesSelector() = "div#dailyList > $day li > a"
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
-            .add("Referer", "https://www.webtoons.com/$langCode/")
+        .add("Referer", "https://www.webtoons.com/$langCode/")
 
     protected val mobileHeaders: Headers = super.headersBuilder()
-            .add("Referer", "https://m.webtoons.com")
-            .build()
+        .add("Referer", "https://m.webtoons.com")
+        .build()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/$langCode/dailySchedule", headers)
 
@@ -82,7 +94,7 @@ abstract class Webtoons(
         }
 
         // Process each row
-        for (i in 1 .. maxChild) {
+        for (i in 1..maxChild) {
             document.select("div#dailyList > div li:nth-child($i) a").map { mangas.add(popularMangaFromElement(it)) }
         }
 
@@ -104,40 +116,27 @@ abstract class Webtoons(
         return manga
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga  = popularMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() : String? = null
+    override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search?keyword=$query")?.newBuilder()!!
-        url.addQueryParameter("searchType", "WEBTOON")
+        val url = HttpUrl.parse("$baseUrl/$langCode/search?keyword=$query")?.newBuilder()!!
+        val uriPart = (filters.find { it is SearchType } as? SearchType)?.toUriPart() ?: ""
+
+        url.addQueryParameter("searchType", uriPart)
+        if (uriPart != "WEBTOON" && page > 1) url.addQueryParameter("page", page.toString())
+
         return GET(url.toString(), headers)
-    }
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        val query = response.request().url().queryParameter("keyword")
-        val toonDocument = response.asJsoup()
-        val discDocument = client.newCall(GET("$baseUrl/search?keyword=$query&searchType=CHALLENGE", headers)).execute().asJsoup()
-
-        val elements = mutableListOf<Element>().apply {
-            addAll(toonDocument.select(searchMangaSelector()))
-            addAll(discDocument.select(searchMangaSelector()))
-        }
-
-        val mangas = elements.map { element ->
-            searchMangaFromElement(element)
-        }
-
-        return MangasPage(mangas, false)
     }
 
     override fun searchMangaSelector() = "#content > div.card_wrap.search li a"
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector(): String? = null
+    override fun searchMangaNextPageSelector() = "div.more_area, div.paginate a[onclick] + a"
 
     open fun parseDetailsThumbnail(document: Document): String? {
         val picElement = document.select("#content > div.cont_box > div.detail_body")
@@ -167,4 +166,26 @@ abstract class Webtoons(
 
     override fun imageUrlParse(document: Document): String = document.select("img").first().attr("src")
 
+    // Filters
+
+    override fun getFilterList(): FilterList {
+        return FilterList(
+            Header("Query can not be blank"),
+            Separator(),
+            SearchType(getOfficialList())
+        )
+    }
+
+    private class SearchType(vals: Array<Pair<String, String>>) : UriPartFilter("Official or Challenge", vals)
+
+    private fun getOfficialList() = arrayOf(
+        Pair("Any", ""),
+        Pair("Official only", "WEBTOON"),
+        Pair("Challenge only", "CHALLENGE")
+    )
+
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 }

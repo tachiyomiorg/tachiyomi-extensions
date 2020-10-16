@@ -1,12 +1,16 @@
 package eu.kanade.tachiyomi.extension.en.mangaowl
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -63,7 +67,7 @@ class MangaOwl : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/$query/$page", headers)
+        return GET("$baseUrl/search/$page?search=$query", headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -108,7 +112,7 @@ class MangaOwl : ParsedHttpSource() {
             chapter.setUrlWithoutDomain(it.attr("href").replace("/reader/reader/", "/reader/"))
             chapter.name = it.select("label")[0].text()
         }
-        chapter.date_upload = parseChapterDate(element.select("small").text())
+        chapter.date_upload = parseChapterDate(element.select("small:last-of-type").text())
 
         return chapter
     }
@@ -120,7 +124,11 @@ class MangaOwl : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long {
-        return dateFormat.parse(string).time
+        return try {
+            dateFormat.parse(string)?.time ?: 0
+        } catch (_: ParseException) {
+            0
+        }
     }
 
     // Pages
@@ -134,5 +142,4 @@ class MangaOwl : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

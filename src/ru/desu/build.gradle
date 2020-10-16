@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Desu'
+    extName = 'Desu'
     pkgNameSuffix = 'ru.desu'
     extClass = '.Desu'
     extVersionCode = 5

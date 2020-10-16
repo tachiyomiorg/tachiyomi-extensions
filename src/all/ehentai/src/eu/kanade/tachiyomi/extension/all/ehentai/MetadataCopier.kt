@@ -22,27 +22,28 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
 
     (title ?: altTitle)?.let { manga.title = it }
 
-    //Set artist (if we can find one)
+    // Set artist (if we can find one)
     tags[EH_ARTIST_NAMESPACE]?.let {
         if (it.isNotEmpty()) manga.artist = it.joinToString(transform = Tag::name)
     }
-    //Set author (if we can find one)
+    // Set author (if we can find one)
     tags[EH_AUTHOR_NAMESPACE]?.let {
         if (it.isNotEmpty()) manga.author = it.joinToString(transform = Tag::name)
     }
-    //Set genre
+    // Set genre
     genre?.let { manga.genre = it }
 
-    //Try to automatically identify if it is ongoing, we try not to be too lenient here to avoid making mistakes
-    //We default to completed
+    // Try to automatically identify if it is ongoing, we try not to be too lenient here to avoid making mistakes
+    // We default to completed
     manga.status = SManga.COMPLETED
     title?.let { t ->
         if (ONGOING_SUFFIX.any {
-                t.endsWith(it, ignoreCase = true)
-            }) manga.status = SManga.ONGOING
+            t.endsWith(it, ignoreCase = true)
+        }
+        ) manga.status = SManga.ONGOING
     }
 
-    //Build a nice looking description out of what we know
+    // Build a nice looking description out of what we know
     val titleDesc = StringBuilder()
     title?.let { titleDesc += "Title: $it\n" }
     altTitle?.let { titleDesc += "Alternate Title: $it\n" }
@@ -61,7 +62,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     favorites?.let { detailsDesc += "Favorited: $it times\n" }
     averageRating?.let {
         detailsDesc += "Rating: $it"
-        ratingCount?.let { detailsDesc += " ($it)" }
+        ratingCount?.let { count -> detailsDesc += " ($count)" }
         detailsDesc += "\n"
     }
 
@@ -73,7 +74,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
 }
 
 private fun buildTagsDescription(metadata: ExGalleryMetadata) = StringBuilder("Tags:\n").apply {
-    //BiConsumer only available in Java 8, we have to use destructuring here
+    // BiConsumer only available in Java 8, we have to use destructuring here
     metadata.tags.forEach { (namespace, tags) ->
         if (tags.isNotEmpty()) {
             val joinedTags = tags.joinToString(separator = " ", transform = { "<${it.name}>" })

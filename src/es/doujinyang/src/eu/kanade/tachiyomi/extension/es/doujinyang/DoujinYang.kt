@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.doujinyang
 
 import android.net.Uri
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -19,7 +20,8 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-open class DoujinYang : ParsedHttpSource() {
+@Nsfw
+class DoujinYang : ParsedHttpSource() {
 
     override val name = "Doujin-Yang"
     override val baseUrl = "https://doujin-yang.es"
@@ -35,7 +37,6 @@ open class DoujinYang : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "nav#paginacion a:contains(Última)"
     override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-
     override fun popularMangaRequest(page: Int) =
         GET("$baseUrl/directorio/?orden=visitas&p=$page", headers)
 
@@ -46,7 +47,7 @@ open class DoujinYang : ParsedHttpSource() {
                 .appendQueryParameter("s", query)
         } else {
             val uri = Uri.parse("$baseUrl/directorio").buildUpon()
-            //Append uri filters
+            // Append uri filters
             filters.forEach {
                 if (it is UriFilter)
                     it.addToUri(uri)
@@ -56,8 +57,8 @@ open class DoujinYang : ParsedHttpSource() {
         return GET(uri.toString(), headers)
     }
 
-    //override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    //override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
+    // override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
+    // override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
 
     override fun chapterListRequest(manga: SManga): Request {
         return GET(baseUrl + manga.url, headers)
@@ -88,11 +89,10 @@ open class DoujinYang : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.select("a").first().attr("abs:href"))
         manga.title = element.select("h2").text().trim()
-        //manga.thumbnail_url = "https:" + element.select("img").attr("src")
+        // manga.thumbnail_url = "https:" + element.select("img").attr("src")
         manga.thumbnail_url = element.select("img").attr("abs:src")
         return manga
     }
-
 
     override fun chapterListParse(response: Response): List<SChapter> {
         return response.asJsoup().select("div#c_list a").map { element ->
@@ -123,7 +123,7 @@ open class DoujinYang : ParsedHttpSource() {
         manga.genre = glist.joinToString(", ")
         manga.status = when (document.select("span[id=desarrollo]")?.first()?.text()) {
             "En desarrollo" -> SManga.ONGOING
-            //"Completed" -> SManga.COMPLETED
+            // "Completed" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
         return manga
@@ -158,7 +158,9 @@ open class DoujinYang : ParsedHttpSource() {
     )
 
     class GenreFilter : UriPartFilter(
-        "Género", "genero", arrayOf(
+        "Género",
+        "genero",
+        arrayOf(
             Pair("all", "All"),
             Pair("1", "Ahegao"),
             Pair("379", "Alien"),
@@ -244,7 +246,9 @@ open class DoujinYang : ParsedHttpSource() {
     )
 
     class LetterFilter : UriPartFilter(
-        "Letra", "letra", arrayOf(
+        "Letra",
+        "letra",
+        arrayOf(
             Pair("all", "All"),
             Pair("a", "A"),
             Pair("b", "B"),
@@ -276,13 +280,19 @@ open class DoujinYang : ParsedHttpSource() {
     )
 
     class StatusFilter : UriPartFilter(
-        "Estado", "estado", arrayOf(
-            Pair("all", "All"), Pair("1", "En desarrollo"), Pair("0", "Finalizado")
+        "Estado",
+        "estado",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("1", "En desarrollo"),
+            Pair("0", "Finalizado")
         )
     )
 
     class SortFilter : UriPartFilterreq(
-        "Sort", "orden", arrayOf(
+        "Sort",
+        "orden",
+        arrayOf(
             Pair("visitas", "Visitas"),
             Pair("desc", "Descendente"),
             Pair("asc", "Ascendente"),
@@ -296,7 +306,7 @@ open class DoujinYang : ParsedHttpSource() {
      * If an entry is selected it is appended as a query parameter onto the end of the URI.
      * If `firstIsUnspecified` is set to true, if the first entry is selected, nothing will be appended on the the URI.
      */
-    //vals: <name, display>
+    // vals: <name, display>
     open class UriPartFilter(
         displayName: String,
         private val uriParam: String,
@@ -330,4 +340,3 @@ open class DoujinYang : ParsedHttpSource() {
         fun addToUri(uri: Uri.Builder)
     }
 }
-

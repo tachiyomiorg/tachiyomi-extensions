@@ -7,7 +7,11 @@ import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
@@ -19,7 +23,6 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.regex.Pattern
 
 class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
@@ -70,7 +73,6 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
             for (filter in if (filters.isEmpty()) getFilterList() else filters) {
                 when (filter) {
-                    is Author -> add("authorArtist", filter.state)
                     is Status -> add("status", arrayOf("", "Completed", "Ongoing")[filter.state])
                     is GenreList -> filter.state.forEach { genre -> add("genres", genre.state.toString()) }
                 }
@@ -115,7 +117,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("td:eq(1)").first()?.text()?.let {
-            SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).parse(it).time
+            SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }
@@ -123,89 +125,76 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url + "&quality=${qualitypref()}", headers)
 
     override fun pageListParse(response: Response): List<Page> {
-        val pages = mutableListOf<Page>()
-        //language=RegExp
-        val p = Pattern.compile("""lstImages.push\("(.+?)"""")
-        val m = p.matcher(response.body()!!.string())
-
-        var i = 0
-        while (m.find()) {
-            pages.add(Page(i++, "", m.group(1)))
-        }
-        return pages
+        return Regex("""lstImages\.push\("(http.*)"\)""").findAll(response.body()!!.string())
+            .toList()
+            .mapIndexed { i, mr -> Page(i, "", mr.groupValues[1]) }
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        throw Exception("Not used")
-    }
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
 
-    override fun imageUrlRequest(page: Page) = GET(page.url)
-
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     private class Status : Filter.TriState("Completed")
-    private class Author : Filter.Text("Author")
     private class Genre(name: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Author(),
-            Status(),
-            GenreList(getGenreList())
+        Status(),
+        GenreList(getGenreList())
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
     // on https://readcomiconline.to/AdvanceSearch
     private fun getGenreList() = listOf(
-            Genre("Action"),
-            Genre("Adventure"),
-            Genre("Anthology"),
-            Genre("Anthropomorphic"),
-            Genre("Biography"),
-            Genre("Children"),
-            Genre("Comedy"),
-            Genre("Crime"),
-            Genre("Drama"),
-            Genre("Family"),
-            Genre("Fantasy"),
-            Genre("Fighting"),
-            Genre("Graphic Novels"),
-            Genre("Historical"),
-            Genre("Horror"),
-            Genre("Leading Ladies"),
-            Genre("LGBTQ"),
-            Genre("Literature"),
-            Genre("Manga"),
-            Genre("Martial Arts"),
-            Genre("Mature"),
-            Genre("Military"),
-            Genre("Movies & TV"),
-            Genre("Mystery"),
-            Genre("Mythology"),
-            Genre("Personal"),
-            Genre("Political"),
-            Genre("Post-Apocalyptic"),
-            Genre("Psychological"),
-            Genre("Pulp"),
-            Genre("Religious"),
-            Genre("Robots"),
-            Genre("Romance"),
-            Genre("School Life"),
-            Genre("Sci-Fi"),
-            Genre("Slice of Life"),
-            Genre("Spy"),
-            Genre("Superhero"),
-            Genre("Supernatural"),
-            Genre("Suspense"),
-            Genre("Thriller"),
-            Genre("Vampires"),
-            Genre("Video Games"),
-            Genre("War"),
-            Genre("Western"),
-            Genre("Zombies")
+        Genre("Action"),
+        Genre("Adventure"),
+        Genre("Anthology"),
+        Genre("Anthropomorphic"),
+        Genre("Biography"),
+        Genre("Children"),
+        Genre("Comedy"),
+        Genre("Crime"),
+        Genre("Drama"),
+        Genre("Family"),
+        Genre("Fantasy"),
+        Genre("Fighting"),
+        Genre("Graphic Novels"),
+        Genre("Historical"),
+        Genre("Horror"),
+        Genre("Leading Ladies"),
+        Genre("LGBTQ"),
+        Genre("Literature"),
+        Genre("Manga"),
+        Genre("Martial Arts"),
+        Genre("Mature"),
+        Genre("Military"),
+        Genre("Movies & TV"),
+        Genre("Mystery"),
+        Genre("Mythology"),
+        Genre("Personal"),
+        Genre("Political"),
+        Genre("Post-Apocalyptic"),
+        Genre("Psychological"),
+        Genre("Pulp"),
+        Genre("Religious"),
+        Genre("Robots"),
+        Genre("Romance"),
+        Genre("School Life"),
+        Genre("Sci-Fi"),
+        Genre("Slice of Life"),
+        Genre("Spy"),
+        Genre("Superhero"),
+        Genre("Supernatural"),
+        Genre("Suspense"),
+        Genre("Thriller"),
+        Genre("Vampires"),
+        Genre("Video Games"),
+        Genre("War"),
+        Genre("Western"),
+        Genre("Zombies")
     )
     // Preferences Code
-    
+
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val qualitypref = androidx.preference.ListPreference(screen.context).apply {
             key = QUALITY_PREF_Title
@@ -217,14 +206,12 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(QUALITY_PREF, entry).commit()
             }
         }
         screen.addPreference(qualitypref)
     }
-
-    
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val qualitypref = ListPreference(screen.context).apply {
@@ -237,7 +224,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
-                val entry = entryValues.get(index) as String
+                val entry = entryValues[index] as String
                 preferences.edit().putString(QUALITY_PREF, entry).commit()
             }
         }

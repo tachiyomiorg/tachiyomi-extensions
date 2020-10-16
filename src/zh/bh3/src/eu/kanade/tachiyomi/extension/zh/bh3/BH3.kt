@@ -35,20 +35,20 @@ class BH3 : ParsedHttpSource() {
         .build()!!
 
     override fun popularMangaSelector() = "a[href*=book]"
-    override fun latestUpdatesSelector() = throw Exception ("Not Used")
-    override fun searchMangaSelector() = throw Exception ("Not Used")
-    override fun chapterListSelector() = throw Exception ("Not Used")
+    override fun latestUpdatesSelector() = throw Exception("Not Used")
+    override fun searchMangaSelector() = throw Exception("Not Used")
+    override fun chapterListSelector() = throw Exception("Not Used")
 
     override fun popularMangaNextPageSelector() = "none"
     override fun latestUpdatesNextPageSelector() = "none"
     override fun searchMangaNextPageSelector() = "none"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/book", headers)
-    override fun latestUpdatesRequest(page: Int) = throw Exception ("Not Used")
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception ("No search")
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Not Used")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("No search")
 
-    //override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    //override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
+    // override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
+    // override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url + "/get_chapter", headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
@@ -83,7 +83,7 @@ class BH3 : ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US ).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -101,8 +101,6 @@ class BH3 : ParsedHttpSource() {
         }
     }
 
-    override fun pageListParse(document: Document)= throw Exception("Not Used")
+    override fun pageListParse(document: Document) = throw Exception("Not Used")
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
-
 }
-

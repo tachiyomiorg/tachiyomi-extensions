@@ -1,8 +1,11 @@
 package eu.kanade.tachiyomi.extension.en.clonemanga
 
-
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
@@ -10,7 +13,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-
 
 class CloneManga : ParsedHttpSource() {
 
@@ -45,10 +47,15 @@ class CloneManga : ParsedHttpSource() {
             status = SManga.UNKNOWN
             url = element.select("a").first().attr("href")
             description = element.select("h4").first()?.text() ?: ""
-            thumbnail_url = baseUrl + attr.substring(attr.indexOf("site/themes"),
-                attr.indexOf(")"))
+            thumbnail_url = baseUrl + attr.substring(
+                attr.indexOf("site/themes"),
+                attr.indexOf(")")
+            )
         }
     }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = fetchPopularManga(1)
+        .map { mp -> MangasPage(mp.mangas.filter { it.title.contains(query, ignoreCase = true) }, false) }
 
     override fun mangaDetailsParse(document: Document): SManga {
         // Populate with already fetched details
@@ -60,13 +67,15 @@ class CloneManga : ParsedHttpSource() {
         val document = response.asJsoup()
         val series = document.location()
         val numChapters = Regex(
-            pattern = "&page=(.*)&lang=").findAll(
-            input = document.getElementsByTag("script")[3].toString())
+            pattern = "&page=(.*)&lang="
+        ).findAll(
+            input = document.getElementsByTag("script")[3].toString()
+        )
             .elementAt(3).destructured.component1()
             .toInt()
         val chapters = ArrayList<SChapter>()
 
-        for(i in 1..numChapters) {
+        for (i in 1..numChapters) {
             val chapter = SChapter.create().apply {
                 url = "$series&page=$i"
                 name = "Chapter $i"
@@ -88,11 +97,6 @@ class CloneManga : ParsedHttpSource() {
             .select("img").first().absUrl("src")
         // List of pages will always contain only one page
         return listOf(Page(1, "", imgAbsoluteUrl))
-    }
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList):
-        Observable<MangasPage> {
-        return Observable.empty()
     }
 
     override fun imageUrlParse(document: Document): String { throw Exception("Not used") }
@@ -120,5 +124,4 @@ class CloneManga : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request { throw Exception("Not used") }
 
     override fun searchMangaSelector(): String { throw Exception("Not used") }
-
 }

@@ -12,16 +12,17 @@ import kotlin.system.exitProcess
  * intents and redirects them to the main Tachiyomi process.
  */
 class MangAdventureActivity : Activity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         intent?.data?.pathSegments?.takeIf { it.size > 1 }?.let {
             try {
-                startActivity(Intent().apply {
-                    action = "eu.kanade.tachiyomi.SEARCH"
-                    putExtra("query", MangAdventure.SLUG_QUERY + it[1])
-                    putExtra("filter", packageName)
-                })
+                startActivity(
+                    Intent().apply {
+                        action = "eu.kanade.tachiyomi.SEARCH"
+                        putExtra("query", MangAdventure.SLUG_QUERY + it[1])
+                        putExtra("filter", packageName)
+                    }
+                )
             } catch (ex: ActivityNotFoundException) {
                 Log.e("MangAdventureActivity", ex.message, ex)
             }
@@ -31,7 +32,7 @@ class MangAdventureActivity : Activity() {
     }
 
     private fun logInvalidIntent(intent: Intent) = Log.e(
-        "MangAdventureActivity", "Failed to parse URI from intent: $intent"
+        "MangAdventureActivity",
+        "Failed to parse URI from intent: $intent"
     )
-
 }

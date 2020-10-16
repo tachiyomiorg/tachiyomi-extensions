@@ -1,11 +1,15 @@
 package eu.kanade.tachiyomi.extension.zh.manhuadui
 
 import android.util.Base64
-import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -17,43 +21,45 @@ import javax.crypto.spec.SecretKeySpec
 class Manhuadui : ParsedHttpSource() {
 
     override val name = "漫画堆"
-    override val baseUrl = "https://www.manhuadui.com"
+    override val baseUrl = "https://www.manhuabei.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
+    private val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
+
+    companion object {
+        private const val DECRYPTION_KEY = "KA58ZAQ321oobbG8"
+        private const val DECRYPTION_IV = "A1B2C3DEF1G321o8"
+    }
+
+    override val client: OkHttpClient = super.client.newBuilder()
+        .followRedirects(true)
+        .build()
 
     override fun popularMangaSelector() = "li.list-comic"
     override fun searchMangaSelector() = popularMangaSelector()
     override fun latestUpdatesSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "ul[id^=chapter-list] > li"
+    override fun chapterListSelector() = "ul[id^=chapter-list] > li a"
 
     override fun searchMangaNextPageSelector() = "li.next"
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
-    override fun headersBuilder() = super.headersBuilder()
-        .add("Referer", baseUrl)
-
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/list_$page/", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query != "") {
+        return if (query != "") {
             val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
-            return GET(url.toString(), headers)
+            GET(url.toString(), headers)
         } else {
-            var params = filters.map {
+            val params = filters.map {
                 if (it is UriPartFilter) {
                     it.toUriPart()
                 } else ""
             }.filter { it != "" }.joinToString("-")
             val url = HttpUrl.parse("$baseUrl/list/$params/$page/")?.newBuilder()
-            return GET(url.toString(), headers)
+            GET(url.toString(), headers)
         }
     }
-
-    override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url, headers)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -92,11 +98,9 @@ class Manhuadui : ParsedHttpSource() {
     }
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a")
-
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlElement.attr("href"))
-        chapter.name = urlElement.attr("title").trim()
+        chapter.setUrlWithoutDomain(element.attr("href"))
+        chapter.name = element.select("span:first-child").text().trim()
         return chapter
     }
 
@@ -107,56 +111,50 @@ class Manhuadui : ParsedHttpSource() {
         return manga
     }
 
+    override fun chapterListRequest(manga: SManga) = GET(baseUrl.replace("www", "m") + manga.url)
     override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).asReversed()
     }
 
     // ref: https://jueyue.iteye.com/blog/1830792
-    fun decryptAES(value: String, key: String, iv: String): String? {
-        try {
-            val secretKey = SecretKeySpec(key.toByteArray(), "AES")
-            val iv = IvParameterSpec(iv.toByteArray())
+    private fun decryptAES(value: String): String? {
+        return try {
+            val secretKey = SecretKeySpec(DECRYPTION_KEY.toByteArray(), "AES")
+            val ivParams = IvParameterSpec(DECRYPTION_IV.toByteArray())
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParams)
 
             val code = Base64.decode(value, Base64.NO_WRAP)
 
-            return String(cipher.doFinal(code))
-
+            String(cipher.doFinal(code))
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
-
-        return null
     }
 
-    fun decrypt(code : String):String?{
-        val key = "123456781234567G"
-        val iv = "ABCDEF1G34123412"
-
-        return decryptAES(code, key, iv)
-    }
+    private val chapterImagesRegex = Regex("""var chapterImages =\s*"(.*?)";""")
+    private val imgPathRegex = Regex("""var chapterPath =\s*"(.*?)";""")
+    private val imgCodeCleanupRegex = Regex("""[\[\]"\\]""")
 
     override fun pageListParse(document: Document): List<Page> {
         val html = document.html()
-        val re = Regex("""var chapterImages =\s*"(.*?)";""")
-        val imgCodeStr = re.find(html)?.groups?.get(1)?.value
-        val imgCode = decrypt(imgCodeStr!!)
-        val imgPath = Regex("""var chapterPath =\s*"(.*?)";""").find(html)?.groups?.get(1)?.value
-        val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode!! + """.join('|')""") as String
-        }
-        return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            //Log.i("Tachidebug", "img => ${imageServer[0]}/$imgPath$imgStr")
+        val imgCodeStr = chapterImagesRegex.find(html)?.groups?.get(1)?.value ?: throw Exception("imgCodeStr not found")
+        val imgCode = decryptAES(imgCodeStr)
+            ?.replace(imgCodeCleanupRegex, "")
+            ?.replace("%", "%25")
+            ?: throw Exception("Decryption failed")
+        val imgPath = imgPathRegex.find(document.html())?.groups?.get(1)?.value ?: throw Exception("imgPath not found")
+        return imgCode.split(",").mapIndexed { i, imgStr ->
             if (imgStr.startsWith("http://images.dmzj.com")) {
-                Page(i, "", "https://mhcdn.manhuazj.com/showImage.php?url=$imgStr")
+                Page(i, "", "https://img01.eshanyao.com/showImage.php?url=$imgStr")
             } else {
                 Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgPath$imgStr" else imgStr)
             }
         }
     }
 
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
         CategoryGroup(),
@@ -165,46 +163,60 @@ class Manhuadui : ParsedHttpSource() {
         ProgressGroup()
     )
 
-    private class CategoryGroup : UriPartFilter("按类型", arrayOf(
-        Pair("全部", ""),
-        Pair("儿童漫画", "ertong"),
-        Pair("少年漫画", "shaonian"),
-        Pair("少女漫画", "shaonv"),
-        Pair("青年漫画", "qingnian")
-    ))
+    private class CategoryGroup : UriPartFilter(
+        "按类型",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("儿童漫画", "ertong"),
+            Pair("少年漫画", "shaonian"),
+            Pair("少女漫画", "shaonv"),
+            Pair("青年漫画", "qingnian")
+        )
+    )
 
-    private class ProgressGroup : UriPartFilter("按进度", arrayOf(
-        Pair("全部", ""),
-        Pair("已完结", "wanjie"),
-        Pair("连载中", "lianzai")
-    ))
+    private class ProgressGroup : UriPartFilter(
+        "按进度",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("已完结", "wanjie"),
+            Pair("连载中", "lianzai")
+        )
+    )
 
-    private class RegionGroup : UriPartFilter("按地区", arrayOf(
-        Pair("全部", ""),
-        Pair("日本", "riben"),
-        Pair("大陆", "dalu"),
-        Pair("香港", "hongkong"),
-        Pair("台湾", "taiwan"),
-        Pair("欧美", "oumei"),
-        Pair("韩国", "hanguo"),
-        Pair("其他", "qita")
-    ))
+    private class RegionGroup : UriPartFilter(
+        "按地区",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("日本", "riben"),
+            Pair("大陆", "dalu"),
+            Pair("香港", "hongkong"),
+            Pair("台湾", "taiwan"),
+            Pair("欧美", "oumei"),
+            Pair("韩国", "hanguo"),
+            Pair("其他", "qita")
+        )
+    )
 
-    private class GenreGroup : UriPartFilter("按剧情", arrayOf(
-        Pair("全部", ""),
-        Pair("热血", "rexue"),
-        Pair("冒险", "maoxian"),
-        Pair("玄幻", "xuanhuan"),
-        Pair("搞笑", "gaoxiao"),
-        Pair("恋爱", "lianai"),
-        Pair("宠物", "chongwu"),
-        Pair("新作", "xinzuo")
-    ))
+    private class GenreGroup : UriPartFilter(
+        "按剧情",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("热血", "rexue"),
+            Pair("冒险", "maoxian"),
+            Pair("玄幻", "xuanhuan"),
+            Pair("搞笑", "gaoxiao"),
+            Pair("恋爱", "lianai"),
+            Pair("宠物", "chongwu"),
+            Pair("新作", "xinzuo")
+        )
+    )
 
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>,
-                                     defaultValue: Int = 0) :
+    private open class UriPartFilter(
+        displayName: String,
+        val vals: Array<Pair<String, String>>,
+        defaultValue: Int = 0
+    ) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
     }
 }
-

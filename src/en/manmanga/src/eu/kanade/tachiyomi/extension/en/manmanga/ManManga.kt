@@ -1,16 +1,19 @@
 package eu.kanade.tachiyomi.extension.en.manmanga
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import okhttp3.OkHttpClient
-import rx.Observable
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.ParseException
+import rx.Observable
 import java.text.SimpleDateFormat
 
 class ManManga : ParsedHttpSource() {
@@ -30,21 +33,20 @@ class ManManga : ParsedHttpSource() {
         }
     }
 
-
     override fun popularMangaSelector() = "#scrollBox > #scrollContent > li > a"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun popularMangaRequest(page: Int)
-        = GET("$baseUrl/category?sort=hot&page=$page", headers)
+    override fun popularMangaRequest(page: Int) =
+        GET("$baseUrl/category?sort=hot&page=$page", headers)
 
-    override fun latestUpdatesRequest(page: Int)
-        = GET("$baseUrl/category?sort=new&page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) =
+        GET("$baseUrl/category?sort=new&page=$page", headers)
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList)
-        = GET("$baseUrl/search?keyword=$query&page=$page", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) =
+        GET("$baseUrl/search?keyword=$query&page=$page", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
@@ -71,7 +73,7 @@ class ManManga : ParsedHttpSource() {
             searchMangaFromElement(element)
         }
 
-        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = searchMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
@@ -80,24 +82,24 @@ class ManManga : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response)
+            }
     }
 
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply{
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val getThumbnailUrl = document.select(".bg-box .bg").attr("style")
 
-        author = document.select(".author").text().replace("Author：","").trim()
-        genre = document.select(".tags span").map {
+        author = document.select(".author").text().replace("Author：", "").trim()
+        genre = document.select(".tags span").joinToString(", ") {
             it.text().trim()
-        }.joinToString(", ")
-        status = document.select(".type").text().replace("Status：","").trim().let {
+        }
+        status = document.select(".type").text().replace("Status：", "").trim().let {
             parseStatus(it)
         }
         description = document.select(".inner-text").text().trim()
-        thumbnail_url = getThumbnailUrl.substring( getThumbnailUrl.indexOf("https://"), getThumbnailUrl.indexOf("')") )
+        thumbnail_url = getThumbnailUrl.substring(getThumbnailUrl.indexOf("https://"), getThumbnailUrl.indexOf("')"))
     }
 
     private fun parseStatus(status: String) = when {
@@ -120,15 +122,15 @@ class ManManga : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        if(document.select("ul.img-list > li.unloaded > img").toString().isNotEmpty()) {
+        if (document.select("ul.img-list > li.unloaded > img").toString().isNotEmpty()) {
             document.select("ul.img-list > li.unloaded > img").forEach {
                 val imgUrl = it.attr("data-src")
-                pages.add(Page(pages.size, "", "$imgUrl"))
+                pages.add(Page(pages.size, "", imgUrl))
             }
-        } else  {
+        } else {
             document.select("ul.img-list > li.loaded > img").forEach {
                 val imgUrl = it.attr("data-src")
-                pages.add(Page(pages.size, "", "$imgUrl"))
+                pages.add(Page(pages.size, "", imgUrl))
             }
         }
         return pages

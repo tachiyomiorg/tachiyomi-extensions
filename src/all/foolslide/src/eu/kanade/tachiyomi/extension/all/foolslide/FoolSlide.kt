@@ -39,7 +39,7 @@ abstract class FoolSlide(
         return GET("$baseUrl$urlModifier/directory/$page/", headers)
     }
 
-    private val latestUpdatesUrls = HashSet<String>()
+    val latestUpdatesUrls = HashSet<String>()
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val mp = super.latestUpdatesParse(response)
@@ -85,13 +85,15 @@ abstract class FoolSlide(
 
     override fun popularMangaNextPageSelector() = "div.next"
 
-    override fun latestUpdatesNextPageSelector() = "div.next"
+    override fun latestUpdatesNextPageSelector(): String? = "div.next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val searchHeaders = headersBuilder().add("Content-Type", "application/x-www-form-urlencoded").build()
+
         val form = FormBody.Builder()
             .add("search", query)
 
-        return POST("$baseUrl$urlModifier/search/", headers, form.build())
+        return POST("$baseUrl$urlModifier/search/", searchHeaders, form.build())
     }
 
     override fun searchMangaSelector() = "div.group"
@@ -113,22 +115,21 @@ abstract class FoolSlide(
 
     // if there's no image on the details page, get the first page of the first chapter
     fun getDetailsThumbnail(document: Document, urlSelector: String = chapterUrlSelector): String? {
-        return document.select("div.thumbnail img").firstOrNull()?.attr("abs:src") ?:
-        document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
-            .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
-            .let { response -> pageListParse(response).first().imageUrl }
+        return document.select("div.thumbnail img, table.thumb img").firstOrNull()?.attr("abs:src")
+            ?: document.select(chapterListSelector()).last().select(urlSelector).attr("abs:href")
+                .let { url -> client.newCall(allowAdult(GET(url, headers))).execute() }
+                .let { response -> pageListParse(response).first().imageUrl }
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select(mangaDetailsInfoSelector).first().text()
-
-        val manga = SManga.create()
-        manga.author = infoElement.substringAfter("Author:").substringBefore("Artist:")
-        manga.artist = infoElement.substringAfter("Artist:").substringBefore("Synopsis:")
-        manga.description = infoElement.substringAfter("Synopsis:")
-        manga.thumbnail_url = getDetailsThumbnail(document)
-
-        return manga
+        return SManga.create().apply {
+            document.select(mangaDetailsInfoSelector).firstOrNull()?.html()?.let { infoHtml ->
+                author = Regex("""Author</b>:\s?([^\n<]*)[\n<]""").find(infoHtml)?.groupValues?.get(1)
+                artist = Regex("""Artist</b>:\s?([^\n<]*)[\n<]""").find(infoHtml)?.groupValues?.get(1)
+                description = Regex("""(Synopsis|Description)</b>:\s?([^\n<]*)[\n<]""").find(infoHtml)?.groupValues?.get(2)
+            }
+            thumbnail_url = getDetailsThumbnail(document)
+        }
     }
 
     /**
@@ -137,9 +138,12 @@ abstract class FoolSlide(
     private fun allowAdult(request: Request) = allowAdult(request.url().toString())
 
     private fun allowAdult(url: String): Request {
-        return POST(url, body = FormBody.Builder()
-            .add("adult", "true")
-            .build())
+        return POST(
+            url,
+            body = FormBody.Builder()
+                .add("adult", "true")
+                .build()
+        )
     }
 
     override fun chapterListRequest(manga: SManga) = allowAdult(super.chapterListRequest(manga))
@@ -166,28 +170,33 @@ abstract class FoolSlide(
         if (lcDate.endsWith(" ago"))
             parseRelativeDate(lcDate)?.let { return it }
 
-        //Handle 'yesterday' and 'today', using midnight
+        // Handle 'yesterday' and 'today', using midnight
         var relativeDate: Calendar? = null
-        if (lcDate.startsWith("yesterday")) {
-            relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, -1) //yesterday
-            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
-            relativeDate.set(Calendar.MINUTE, 0)
-            relativeDate.set(Calendar.SECOND, 0)
-            relativeDate.set(Calendar.MILLISECOND, 0)
-        } else if (lcDate.startsWith("today")) {
-            relativeDate = Calendar.getInstance()
-            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
-            relativeDate.set(Calendar.MINUTE, 0)
-            relativeDate.set(Calendar.SECOND, 0)
-            relativeDate.set(Calendar.MILLISECOND, 0)
-        } else if (lcDate.startsWith("tomorrow")) {
-            relativeDate = Calendar.getInstance()
-            relativeDate.add(Calendar.DAY_OF_MONTH, +1) //tomorrow
-            relativeDate.set(Calendar.HOUR_OF_DAY, 0)
-            relativeDate.set(Calendar.MINUTE, 0)
-            relativeDate.set(Calendar.SECOND, 0)
-            relativeDate.set(Calendar.MILLISECOND, 0)
+        // Result parsed but no year, copy current year over
+        when {
+            lcDate.startsWith("yesterday") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.add(Calendar.DAY_OF_MONTH, -1) // yesterday
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+            lcDate.startsWith("today") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+            lcDate.startsWith("tomorrow") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.add(Calendar.DAY_OF_MONTH, +1) // tomorrow
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
         }
 
         relativeDate?.timeInMillis?.let {
@@ -210,7 +219,7 @@ abstract class FoolSlide(
                 if (result != null) {
                     // Result parsed but no year, copy current year over
                     result = Calendar.getInstance().apply {
-                        time = result
+                        time = result!!
                         set(Calendar.YEAR, Calendar.getInstance().get(Calendar.YEAR))
                     }.time
                 }

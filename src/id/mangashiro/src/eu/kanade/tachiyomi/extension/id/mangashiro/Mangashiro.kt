@@ -1,14 +1,18 @@
 package eu.kanade.tachiyomi.extension.id.mangashiro
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import eu.kanade.tachiyomi.source.model.*
-import java.text.SimpleDateFormat
-import java.util.*
-import java.text.ParseException
 
 class Mangashiro : ParsedHttpSource() {
 
@@ -19,11 +23,11 @@ class Mangashiro : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=popular", headers)
+        return GET("$baseUrl/manga/?order=popular&page=$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=latest", headers)
+        return GET("$baseUrl/manga/?order=update&page=$page", headers)
     }
 
     override fun popularMangaSelector() = "div.bs"
@@ -32,8 +36,8 @@ class Mangashiro : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga = searchMangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element): SManga = searchMangaFromElement(element)
-    
-    override fun popularMangaNextPageSelector() = "a.next.page-numbers"
+
+    override fun popularMangaNextPageSelector() = "a.r"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
@@ -137,7 +141,7 @@ class Mangashiro : ParsedHttpSource() {
         document.select("div#readerarea img").forEach { element ->
             val url = element.attr("src")
             i++
-            if (url.length != 0) {
+            if (url.isNotEmpty()) {
                 pages.add(Page(i, "", url))
             }
         }
@@ -158,28 +162,37 @@ class Mangashiro : ParsedHttpSource() {
 
     private class YearFilter : Filter.Text("Year")
 
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
-        Pair("Default", ""),
-        Pair("Manga", "Manga"),
-        Pair("Manhwa", "Manhwa"),
-        Pair("Manhua", "Manhua"),
-        Pair("Comic", "Comic")
-    ))
+    private class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("Manga", "Manga"),
+            Pair("Manhwa", "Manhwa"),
+            Pair("Manhua", "Manhua"),
+            Pair("Comic", "Comic")
+        )
+    )
 
-    private class SortByFilter : UriPartFilter("Sort By", arrayOf(
-        Pair("Default", ""),
-        Pair("A-Z", "title"),
-        Pair("Z-A", "titlereverse"),
-        Pair("Latest Update", "update"),
-        Pair("Latest Added", "latest"),
-        Pair("Popular", "popular")
-    ))
+    private class SortByFilter : UriPartFilter(
+        "Sort By",
+        arrayOf(
+            Pair("Default", ""),
+            Pair("A-Z", "title"),
+            Pair("Z-A", "titlereverse"),
+            Pair("Latest Update", "update"),
+            Pair("Latest Added", "latest"),
+            Pair("Popular", "popular")
+        )
+    )
 
-    private class StatusFilter : UriPartFilter("Status", arrayOf(
-        Pair("All", ""),
-        Pair("Ongoing", "ongoing"),
-        Pair("Completed", "completed")
-    ))
+    private class StatusFilter : UriPartFilter(
+        "Status",
+        arrayOf(
+            Pair("All", ""),
+            Pair("Ongoing", "ongoing"),
+            Pair("Completed", "completed")
+        )
+    )
 
     private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
@@ -196,71 +209,69 @@ class Mangashiro : ParsedHttpSource() {
     )
 
     private fun getGenreList() = listOf(
-            Genre("4-Koma", "4-koma"),
-            Genre("4-Koma. Comedy", "4-koma-comedy"),
-            Genre("Action", "action"),
-            Genre("Action. Adventure", "action-adventure"),
-            Genre("Adult", "adult"),
-            Genre("Adventure", "adventure"),
-            Genre("Comedy", "comedy"),
-            Genre("Cooking", "cooking"),
-            Genre("Demons", "demons"),
-            Genre("Doujinshi", "doujinshi"),
-            Genre("Drama", "drama"),
-            Genre("Ecchi", "ecchi"),
-            Genre("Echi", "echi"),
-            Genre("Fantasy", "fantasy"),
-            Genre("Game", "game"),
-            Genre("Gender Bender", "gender-bender"),
-            Genre("Gore", "gore"),
-            Genre("Harem", "harem"),
-            Genre("Historical", "historical"),
-            Genre("Horror", "horror"),
-            Genre("Isekai", "isekai"),
-            Genre("Josei", "josei"),
-            Genre("Magic", "magic"),
-            Genre("Manga", "manga"),
-            Genre("Manhua", "manhua"),
-            Genre("Manhwa", "manhwa"),
-            Genre("Martial Arts", "martial-arts"),
-            Genre("Mature", "mature"),
-            Genre("Mecha", "mecha"),
-            Genre("Medical", "medical"),
-            Genre("Military", "military"),
-            Genre("Music", "music"),
-            Genre("Mystery", "mystery"),
-            Genre("One Shot", "one-shot"),
-            Genre("Oneshot", "oneshot"),
-            Genre("Parody", "parody"),
-            Genre("Police", "police"),
-            Genre("Psychological", "psychological"),
-            Genre("Romance", "romance"),
-            Genre("Samurai", "samurai"),
-            Genre("School", "school"),
-            Genre("School Life", "school-life"),
-            Genre("Sci-fi", "sci-fi"),
-            Genre("Seinen", "seinen"),
-            Genre("Shoujo", "shoujo"),
-            Genre("Shoujo Ai", "shoujo-ai"),
-            Genre("Shounen", "shounen"),
-            Genre("Shounen Ai", "shounen-ai"),
-            Genre("Slice of Life", "slice-of-life"),
-            Genre("Smut", "smut"),
-            Genre("Sports", "sports"),
-            Genre("Super Power", "super-power"),
-            Genre("Supernatural", "supernatural"),
-            Genre("Thriller", "thriller"),
-            Genre("Tragedy", "tragedy"),
-            Genre("Vampire", "vampire"),
-            Genre("Webtoon", "webtoon"),
-            Genre("Webtoons", "webtoons"),
-            Genre("Yuri", "yuri")
+        Genre("4-Koma", "4-koma"),
+        Genre("4-Koma. Comedy", "4-koma-comedy"),
+        Genre("Action", "action"),
+        Genre("Action. Adventure", "action-adventure"),
+        Genre("Adult", "adult"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Cooking", "cooking"),
+        Genre("Demons", "demons"),
+        Genre("Doujinshi", "doujinshi"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Echi", "echi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Gore", "gore"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Magic", "magic"),
+        Genre("Manga", "manga"),
+        Genre("Manhua", "manhua"),
+        Genre("Manhwa", "manhwa"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Medical", "medical"),
+        Genre("Military", "military"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("One Shot", "one-shot"),
+        Genre("Oneshot", "oneshot"),
+        Genre("Parody", "parody"),
+        Genre("Police", "police"),
+        Genre("Psychological", "psychological"),
+        Genre("Romance", "romance"),
+        Genre("Samurai", "samurai"),
+        Genre("School", "school"),
+        Genre("School Life", "school-life"),
+        Genre("Sci-fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Smut", "smut"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoon", "webtoon"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yuri", "yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
-
 }

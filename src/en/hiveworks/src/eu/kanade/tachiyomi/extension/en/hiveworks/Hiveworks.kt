@@ -25,14 +25,14 @@ import java.util.concurrent.TimeUnit
 
 class Hiveworks : ParsedHttpSource() {
 
-    //Info
+    // Info
 
     override val name = "Hiveworks Comics"
     override val baseUrl = "https://hiveworkscomics.com"
     override val lang = "en"
     override val supportsLatest = true
 
-    //Client
+    // Client
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
@@ -52,7 +52,7 @@ class Hiveworks : ParsedHttpSource() {
 
         val mangas = document.select(popularMangaSelector()).filterNot {
             val url = it.select("a.comiclink").first().attr("abs:href")
-            url.contains("sparklermonthly.com") || url.contains("explosm.net") //Filter Unsupported Comics
+            url.contains("sparklermonthly.com") || url.contains("explosm.net") // Filter Unsupported Comics
         }.map { element ->
             popularMangaFromElement(element)
         }
@@ -76,7 +76,6 @@ class Hiveworks : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
 
-
     // Search
     // Source's website doesn't appear to have a search function; so searching locally
 
@@ -85,7 +84,7 @@ class Hiveworks : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse(baseUrl).buildUpon()
         if (filters.isNotEmpty()) uri.appendPath("home")
-        //Append uri filters
+        // Append uri filters
         filters.forEach { filter ->
             when (filter) {
                 is UriFilter -> filter.addToUri(uri)
@@ -108,12 +107,16 @@ class Hiveworks : ParsedHttpSource() {
         val document = response.asJsoup()
 
         val selectManga = document.select(searchMangaSelector())
-        val mangas = if (url.endsWith("localSearch")) {
-            selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
-        } else if (url.contains("originals")) {
-            selectManga.map { element -> searchOriginalMangaFromElement(element) }
-        } else {
-            selectManga.map { element -> searchMangaFromElement(element) }
+        val mangas = when {
+            url.endsWith("localSearch") -> {
+                selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
+            }
+            url.contains("originals") -> {
+                selectManga.map { element -> searchOriginalMangaFromElement(element) }
+            }
+            else -> {
+                selectManga.map { element -> searchMangaFromElement(element) }
+            }
         }
 
         val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
@@ -168,10 +171,9 @@ class Hiveworks : ParsedHttpSource() {
             ?.let { mangaFromElement(it) } ?: SManga.create()
     }
 
-
     // Chapters
 
-    //Included to call custom error codes
+    // Included to call custom error codes
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return if (manga.status != SManga.LICENSED) {
             client.newCall(chapterListRequest(manga))
@@ -221,7 +223,7 @@ class Hiveworks : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
 
-    //Pages
+    // Pages
 
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
     override fun pageListParse(response: Response): List<Page> {
@@ -233,7 +235,7 @@ class Hiveworks : ParsedHttpSource() {
             pages.add(Page(pages.size, "", it.attr("src")))
         }
 
-        //Site specific pages can be added here
+        // Site specific pages can be added here
         when {
             "smbc-comics" in url -> {
                 pages.add(Page(pages.size, "", document.select("div#aftercomic img").attr("src")))
@@ -248,7 +250,7 @@ class Hiveworks : ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = throw Exception("Not used")
     override fun imageUrlParse(document: Document) = throw Exception("Not used")
 
-    //Filters
+    // Filters
 
     override fun getFilterList() = FilterList(
         Filter.Header("Only one filter can be used at a time"),
@@ -269,10 +271,13 @@ class Hiveworks : ParsedHttpSource() {
     private class KidsFilter : Filter.CheckBox("Kids Comics")
     private class CompletedFilter : Filter.CheckBox("Completed Comics")
 
-
-    private open class UriSelectFilter(displayName: String, val uriParam: String, val vals: Array<Pair<String, String>>,
-                                       val firstIsUnspecified: Boolean = true,
-                                       defaultValue: Int = 0) :
+    private open class UriSelectFilter(
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
         override fun addToUri(uri: Uri.Builder) {
             if (state != 0 || !firstIsUnspecified)
@@ -285,88 +290,108 @@ class Hiveworks : ParsedHttpSource() {
         fun addToUri(uri: Uri.Builder)
     }
 
-    private class UpdateDay : UriSelectFilter("Update Day", "update-day", arrayOf(
-        Pair("all", "All"),
-        Pair("monday", "Monday"),
-        Pair("tuesday", "Tuesday"),
-        Pair("wednesday", "Wednesday"),
-        Pair("thursday", "Thursday"),
-        Pair("friday", "Friday"),
-        Pair("saturday", "Saturday"),
-        Pair("sunday", "Sunday")
-    ))
+    private class UpdateDay : UriSelectFilter(
+        "Update Day",
+        "update-day",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("monday", "Monday"),
+            Pair("tuesday", "Tuesday"),
+            Pair("wednesday", "Wednesday"),
+            Pair("thursday", "Thursday"),
+            Pair("friday", "Friday"),
+            Pair("saturday", "Saturday"),
+            Pair("sunday", "Sunday")
+        )
+    )
 
-    private class RatingFilter : UriSelectFilter("Rating", "age", arrayOf(
-        Pair("all", "All"),
-        Pair("everyone", "Everyone"),
-        Pair("teen", "Teen"),
-        Pair("young-adult", "Young Adult"),
-        Pair("mature", "Mature")
-    ))
+    private class RatingFilter : UriSelectFilter(
+        "Rating",
+        "age",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("everyone", "Everyone"),
+            Pair("teen", "Teen"),
+            Pair("young-adult", "Young Adult"),
+            Pair("mature", "Mature")
+        )
+    )
 
-    private class GenreFilter : UriSelectFilter("Genre", "genre", arrayOf(
-        Pair("all", "All"),
-        Pair("action/adventure", "Action/Adventure"),
-        Pair("animated", "Animated"),
-        Pair("autobio", "Autobio"),
-        Pair("comedy", "Comedy"),
-        Pair("drama", "Drama"),
-        Pair("dystopian", "Dystopian"),
-        Pair("fairytale", "Fairytale"),
-        Pair("fantasy", "Fantasy"),
-        Pair("finished", "Finished"),
-        Pair("historical-fiction", "Historical Fiction"),
-        Pair("horror", "Horror"),
-        Pair("lgbt", "LGBT"),
-        Pair("mystery", "Mystery"),
-        Pair("romance", "Romance"),
-        Pair("sci-fi", "Science Fiction"),
-        Pair("slice-of-life", "Slice of Life"),
-        Pair("steampunk", "Steampunk"),
-        Pair("superhero", "Superhero"),
-        Pair("urban-fantasy", "Urban Fantasy")
-    ))
+    private class GenreFilter : UriSelectFilter(
+        "Genre",
+        "genre",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("action/adventure", "Action/Adventure"),
+            Pair("animated", "Animated"),
+            Pair("autobio", "Autobio"),
+            Pair("comedy", "Comedy"),
+            Pair("drama", "Drama"),
+            Pair("dystopian", "Dystopian"),
+            Pair("fairytale", "Fairytale"),
+            Pair("fantasy", "Fantasy"),
+            Pair("finished", "Finished"),
+            Pair("historical-fiction", "Historical Fiction"),
+            Pair("horror", "Horror"),
+            Pair("lgbt", "LGBT"),
+            Pair("mystery", "Mystery"),
+            Pair("romance", "Romance"),
+            Pair("sci-fi", "Science Fiction"),
+            Pair("slice-of-life", "Slice of Life"),
+            Pair("steampunk", "Steampunk"),
+            Pair("superhero", "Superhero"),
+            Pair("urban-fantasy", "Urban Fantasy")
+        )
+    )
 
-    private class TitleFilter : UriSelectFilter("Title", "alpha", arrayOf(
-        Pair("all", "All"),
-        Pair("a", "A"),
-        Pair("b", "B"),
-        Pair("c", "C"),
-        Pair("d", "D"),
-        Pair("e", "E"),
-        Pair("f", "F"),
-        Pair("g", "G"),
-        Pair("h", "H"),
-        Pair("i", "I"),
-        Pair("j", "J"),
-        Pair("k", "K"),
-        Pair("l", "L"),
-        Pair("m", "M"),
-        Pair("n", "N"),
-        Pair("o", "O"),
-        Pair("p", "P"),
-        Pair("q", "Q"),
-        Pair("r", "R"),
-        Pair("s", "S"),
-        Pair("t", "T"),
-        Pair("u", "U"),
-        Pair("v", "V"),
-        Pair("w", "W"),
-        Pair("x", "X"),
-        Pair("y", "Y"),
-        Pair("z", "Z"),
-        Pair("numbers-symbols", "Numbers / Symbols")
-    ))
+    private class TitleFilter : UriSelectFilter(
+        "Title",
+        "alpha",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("a", "A"),
+            Pair("b", "B"),
+            Pair("c", "C"),
+            Pair("d", "D"),
+            Pair("e", "E"),
+            Pair("f", "F"),
+            Pair("g", "G"),
+            Pair("h", "H"),
+            Pair("i", "I"),
+            Pair("j", "J"),
+            Pair("k", "K"),
+            Pair("l", "L"),
+            Pair("m", "M"),
+            Pair("n", "N"),
+            Pair("o", "O"),
+            Pair("p", "P"),
+            Pair("q", "Q"),
+            Pair("r", "R"),
+            Pair("s", "S"),
+            Pair("t", "T"),
+            Pair("u", "U"),
+            Pair("v", "V"),
+            Pair("w", "W"),
+            Pair("x", "X"),
+            Pair("y", "Y"),
+            Pair("z", "Z"),
+            Pair("numbers-symbols", "Numbers / Symbols")
+        )
+    )
 
-    private class SortFilter : UriSelectFilter("Sort By", "sortby", arrayOf(
-        Pair("none", "None"),
-        Pair("a-z", "A-Z"),
-        Pair("z-a", "Z-A")
-    ))
+    private class SortFilter : UriSelectFilter(
+        "Sort By",
+        "sortby",
+        arrayOf(
+            Pair("none", "None"),
+            Pair("a-z", "A-Z"),
+            Pair("z-a", "Z-A")
+        )
+    )
 
-    //Other Code
+    // Other Code
 
-    //Builds Image from mouse tooltip text
+    // Builds Image from mouse tooltip text
     private fun smbcTextHandler(document: Document): String {
         val title = document.select("title").text().trim()
         val altText = document.select("div#cc-comicbody img").attr("title")
@@ -400,7 +425,7 @@ class Hiveworks : ParsedHttpSource() {
         return "https://fakeimg.pl/1500x2126/ffffff/000000/?text=$builder&font_size=42&font=museo"
     }
 
-    //Used to throw custom error codes for http codes
+    // Used to throw custom error codes for http codes
     private fun Call.asObservableSuccess(): Observable<Response> {
         return asObservable().doOnNext { response ->
             if (!response.isSuccessful) {
@@ -412,7 +437,4 @@ class Hiveworks : ParsedHttpSource() {
             }
         }
     }
-
 }
-
-

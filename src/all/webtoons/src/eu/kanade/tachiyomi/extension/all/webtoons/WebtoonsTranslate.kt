@@ -2,7 +2,11 @@ package eu.kanade.tachiyomi.extension.all.webtoons
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
@@ -10,8 +14,8 @@ import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
 import rx.Observable
+import java.util.ArrayList
 
 open class WebtoonsTranslate(override val lang: String, private val translateLangCode: String, languageNameExtra: String = "") : Webtoons(lang) {
     // popularMangaRequest already returns manga sorted by latest update
@@ -76,20 +80,20 @@ open class WebtoonsTranslate(override val lang: String, private val translateLan
             ?: json.getString("thumbnailMobileUrl")
 
         return SManga.create().apply {
-                title = json.getString("representTitle")
-                author = json.getString("writeAuthorName")
-                artist = json.getString("pictureAuthorName") ?: author
-                thumbnail_url = if (relativeThumnailURL != null) "$thumbnailBaseUrl$relativeThumnailURL" else null
-                status = SManga.UNKNOWN
-                url = mobileBaseUrl
-                    .resolve("/translate/episodeList")!!
-                    .newBuilder()
-                    .addQueryParameter("titleNo", json.getInt("titleNo").toString())
-                    .addQueryParameter("languageCode", translateLangCode)
-                    .addQueryParameter("teamVersion", json.optInt("teamVersion", 0).toString())
-                    .build()
-                    .toString()
-            }
+            title = json.getString("representTitle")
+            author = json.getString("writeAuthorName")
+            artist = json.getString("pictureAuthorName") ?: author
+            thumbnail_url = if (relativeThumnailURL != null) "$thumbnailBaseUrl$relativeThumnailURL" else null
+            status = SManga.UNKNOWN
+            url = mobileBaseUrl
+                .resolve("/translate/episodeList")!!
+                .newBuilder()
+                .addQueryParameter("titleNo", json.getInt("titleNo").toString())
+                .addQueryParameter("languageCode", translateLangCode)
+                .addQueryParameter("teamVersion", json.optInt("teamVersion", 0).toString())
+                .build()
+                .toString()
+        }
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
@@ -219,4 +223,5 @@ open class WebtoonsTranslate(override val lang: String, private val translateLan
         return ret
     }
 
+    override fun getFilterList(): FilterList = FilterList()
 }

@@ -119,7 +119,7 @@ class WieManga : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.getDefault()).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.getDefault()).parse(date)?.time ?: 0L
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -134,5 +134,4 @@ class WieManga : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String {
         return document.select("img#comicpic").first().attr("abs:src")
     }
-
 }

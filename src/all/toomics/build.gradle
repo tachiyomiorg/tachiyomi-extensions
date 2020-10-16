@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Toomics'
+    extName = 'Toomics'
     pkgNameSuffix = 'all.toomics'
     extClass = '.ToomicsFactory'
-    extVersionCode = 2
+    extVersionCode = 5
     libVersion = '1.2'
 }
 

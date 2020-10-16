@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Yaoichan'
+    pkgNameSuffix = 'ru.yaoichan'
+    extClass = '.Yaoichan'
+    extVersionCode = 1
+    libVersion = '1.2'
+    containsNsfw = true
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
+}
+
+apply from: "$rootDir/common.gradle"

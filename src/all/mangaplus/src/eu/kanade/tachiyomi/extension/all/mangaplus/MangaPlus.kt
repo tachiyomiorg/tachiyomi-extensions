@@ -6,15 +6,16 @@ import android.os.Build
 import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
-import androidx.preference.ListPreference as AndroidXListPreference
-import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.protobuf.ProtoBuf
 import okhttp3.Headers
@@ -28,8 +29,10 @@ import okhttp3.ResponseBody
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.lang.Exception
 import java.util.UUID
+import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
+import androidx.preference.ListPreference as AndroidXListPreference
+import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 
 abstract class MangaPlus(
     override val lang: String,
@@ -37,7 +40,7 @@ abstract class MangaPlus(
     private val langCode: Language
 ) : HttpSource(), ConfigurableSource {
 
-    override val name = "Manga Plus by Shueisha"
+    override val name = "MANGA Plus by SHUEISHA"
 
     override val baseUrl = "https://mangaplus.shueisha.co.jp"
 
@@ -51,6 +54,7 @@ abstract class MangaPlus(
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addInterceptor { imageIntercept(it) }
+        .addInterceptor { thumbnailIntercept(it) }
         .build()
 
     private val protobufJs: String by lazy {
@@ -69,6 +73,8 @@ abstract class MangaPlus(
     private val splitImages: String
         get() = if (preferences.getBoolean("${SPLIT_PREF_KEY}_$lang", SPLIT_PREF_DEFAULT_VALUE)) "yes" else "no"
 
+    private var titleList: List<Title>? = null
+
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
             .set("Referer", "$baseUrl/manga_list/hot")
@@ -83,15 +89,16 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        val mangas = result.success.titleRankingView!!.titles
+        titleList = result.success.titleRankingView!!.titles
             .filter { it.language == langCode }
-            .map {
-                SManga.create().apply {
-                    title = it.name
-                    thumbnail_url = it.portraitImageUrl.toWeservUrl()
-                    url = "#/titles/${it.titleId}"
-                }
+
+        val mangas = titleList!!.map {
+            SManga.create().apply {
+                title = it.name
+                thumbnail_url = it.portraitImageUrl
+                url = "#/titles/${it.titleId}"
             }
+        }
 
         return MangasPage(mangas, false)
     }
@@ -110,6 +117,14 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
+        // Fetch all titles to get newer thumbnail urls at the interceptor.
+        val popularResponse = client.newCall(popularMangaRequest(1)).execute().asProto()
+
+        if (popularResponse.success != null) {
+            titleList = popularResponse.success.titleRankingView!!.titles
+                .filter { it.language == langCode }
+        }
+
         val mangas = result.success.webHomeView!!.groups
             .flatMap { it.titles }
             .mapNotNull { it.title }
@@ -117,7 +132,7 @@ abstract class MangaPlus(
             .map {
                 SManga.create().apply {
                     title = it.name
-                    thumbnail_url = it.portraitImageUrl.toWeservUrl()
+                    thumbnail_url = it.portraitImageUrl
                     url = "#/titles/${it.titleId}"
                 }
             }
@@ -145,15 +160,16 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        val mangas = result.success.allTitlesView!!.titles
+        titleList = result.success.allTitlesView!!.titles
             .filter { it.language == langCode }
-            .map {
-                SManga.create().apply {
-                    title = it.name
-                    thumbnail_url = it.portraitImageUrl.toWeservUrl()
-                    url = "#/titles/${it.titleId}"
-                }
+
+        val mangas = titleList!!.map {
+            SManga.create().apply {
+                title = it.name
+                thumbnail_url = it.portraitImageUrl
+                url = "#/titles/${it.titleId}"
             }
+        }
 
         return MangasPage(mangas, false)
     }
@@ -190,13 +206,14 @@ abstract class MangaPlus(
 
         val details = result.success.titleDetailView!!
         val title = details.title
+        val isCompleted = details.nonAppearanceInfo.contains(COMPLETE_REGEX)
 
         return SManga.create().apply {
-            author = title.author
-            artist = title.author
+            author = title.author.replace(" / ", ", ")
+            artist = author
             description = details.overview + "\n\n" + details.viewingPeriodDescription
-            status = SManga.ONGOING
-            thumbnail_url = title.portraitImageUrl.toWeservUrl()
+            status = if (isCompleted) SManga.COMPLETED else SManga.ONGOING
+            thumbnail_url = title.portraitImageUrl
         }
     }
 
@@ -221,7 +238,7 @@ abstract class MangaPlus(
                     scanlator = "Shueisha"
                     date_upload = 1000L * it.startTimeStamp
                     url = "#/viewer/${it.chapterId}"
-                    chapter_number = it.name.substringAfter("#").toFloatOrNull() ?: 0f
+                    chapter_number = it.name.substringAfter("#").toFloatOrNull() ?: -1f
                 }
             }
     }
@@ -381,23 +398,37 @@ abstract class MangaPlus(
         return ByteArray(content.size) { pos -> content[pos].toByte() }
     }
 
-    private fun String.toWeservUrl(): String {
-        val imageUrl = substringBefore("&duration")
+    private fun thumbnailIntercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val response = chain.proceed(request)
 
-        return HttpUrl.parse(IMAGES_WESERV_URL)!!.newBuilder()
-            .addEncodedQueryParameter("url", imageUrl)
-            .toString()
+        // Check if it is 404 to maintain compatibility when the extension used Weserv.
+        val isBadCode = (response.code() == 401 || response.code() == 404)
+
+        if (isBadCode && request.url().toString().contains(TITLE_THUMBNAIL_PATH)) {
+            val titleId = request.url().toString()
+                .substringBefore("/$TITLE_THUMBNAIL_PATH")
+                .substringAfterLast("/")
+                .toInt()
+            val title = titleList?.find { it.titleId == titleId } ?: return response
+
+            response.close()
+            val thumbnailRequest = GET(title.portraitImageUrl, request.headers())
+            return chain.proceed(thumbnailRequest)
+        }
+
+        return response
     }
 
     private val ErrorResult.langPopup: Popup
-        get() = when(lang) {
+        get() = when (lang) {
             "es" -> spanishPopup
             else -> englishPopup
         }
 
     private fun Response.asProto(): MangaPlusResponse {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT)
-            return ProtoBuf.load(MangaPlusSerializer, body()!!.bytes())
+            return ProtoBuf.decodeFromByteArray(MangaPlusSerializer, body()!!.bytes())
 
         // Apparently, the version used of Kotlinx Serialization lib causes a crash
         // on KitKat devices (see #1678). So, if the device is running KitKat or lower,
@@ -407,9 +438,13 @@ abstract class MangaPlus(
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
 
         val res = Duktape.create().use {
-            it.set("helper", DuktapeHelper::class.java, object : DuktapeHelper {
-                override fun getProtobuf(): String = protobufJs
-            })
+            it.set(
+                "helper",
+                DuktapeHelper::class.java,
+                object : DuktapeHelper {
+                    override fun getProtobuf(): String = protobufJs
+                }
+            )
             it.evaluate(messageBytes + DECODE_SCRIPT) as String
         }
 
@@ -425,7 +460,6 @@ abstract class MangaPlus(
 
     companion object {
         private const val API_URL = "https://jumpg-webapi.tokyo-cdn.com/api"
-        private const val IMAGES_WESERV_URL = "https://images.weserv.nl"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.92 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
@@ -434,13 +468,17 @@ abstract class MangaPlus(
 
         private const val RESOLUTION_PREF_KEY = "imageResolution"
         private const val RESOLUTION_PREF_TITLE = "Image resolution"
-        private val RESOLUTION_PREF_ENTRIES = arrayOf("Low resolution", "High resolution")
-        private val RESOLUTION_PREF_ENTRY_VALUES = arrayOf("low", "high")
-        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[1]
+        private val RESOLUTION_PREF_ENTRIES = arrayOf("Low resolution", "Medium resolution", "High resolution")
+        private val RESOLUTION_PREF_ENTRY_VALUES = arrayOf("low", "high", "super_high")
+        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[2]
 
         private const val SPLIT_PREF_KEY = "splitImage"
         private const val SPLIT_PREF_TITLE = "Split double pages"
         private const val SPLIT_PREF_SUMMARY = "Not all titles support disabling this."
         private const val SPLIT_PREF_DEFAULT_VALUE = true
+
+        private val COMPLETE_REGEX = "completado|complete".toRegex()
+
+        private const val TITLE_THUMBNAIL_PATH = "title_thumbnail_portrait_list"
     }
 }

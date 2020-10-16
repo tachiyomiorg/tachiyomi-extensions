@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'ReadManhwa'
+    pkgNameSuffix = 'en.readmanhwa'
+    extClass = '.ReadManhwa'
+    extVersionCode = 6
+    libVersion = '1.2'
+    containsNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"

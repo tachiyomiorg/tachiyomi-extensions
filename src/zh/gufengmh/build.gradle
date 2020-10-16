@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Gufeng Manhua'
+    extName = 'Gufeng Manhua'
     pkgNameSuffix = 'zh.gufengmh'
     extClass = '.Gufengmh'
     extVersionCode = 3

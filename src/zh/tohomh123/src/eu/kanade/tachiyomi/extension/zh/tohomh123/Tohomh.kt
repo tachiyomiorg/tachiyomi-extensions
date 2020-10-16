@@ -16,7 +16,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class Tohomh : ParsedHttpSource() {
 
@@ -124,7 +124,7 @@ class Tohomh : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long {
-            return dateFormat.parse(string).time
+        return dateFormat.parse(string)?.time ?: 0L
     }
 
     // Pages
@@ -151,5 +151,4 @@ class Tohomh : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

@@ -1,14 +1,21 @@
 package eu.kanade.tachiyomi.extension.en.myhentaicomics
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
+@Nsfw
 class MyHentaiComics : ParsedHttpSource() {
 
     override val name = "MyHentaiComics"
@@ -113,9 +120,20 @@ class MyHentaiComics : ParsedHttpSource() {
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("img.g-thumbnail").mapIndexed { i, img ->
-            Page(i, "", img.attr("abs:src").replace("/thumbs/", "/resizes/"))
+        val pages = mutableListOf<Page>()
+
+        // recursively parse paginated pages
+        fun parsePage(document: Document) {
+            document.select("img.g-thumbnail").map { img ->
+                pages.add(Page(pages.size, "", img.attr("abs:src").replace("/thumbs/", "/resizes/")))
+            }
+            document.select("ul.g-paginator a.ui-state-default:contains(Next)").firstOrNull()?.let { a ->
+                parsePage(client.newCall(GET(a.attr("abs:href"), headers)).execute().asJsoup())
+            }
         }
+
+        parsePage(document)
+        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
@@ -125,10 +143,11 @@ class MyHentaiComics : ParsedHttpSource() {
     override fun getFilterList() = FilterList(
         Filter.Header("Cannot combine search types!"),
         Filter.Separator("-----------------"),
-        GenreFilter ()
+        GenreFilter()
     )
 
-    private class GenreFilter: UriPartFilter("Genres",
+    private class GenreFilter : UriPartFilter(
+        "Genres",
         arrayOf(
             Pair("<Choose a genre>", ""),
             Pair("3D", "/index.php/tag/2403"),

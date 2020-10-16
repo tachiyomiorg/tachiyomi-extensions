@@ -2,14 +2,18 @@ package eu.kanade.tachiyomi.extension.en.readmangatoday
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 
 class Readmangatoday : ParsedHttpSource() {
 
@@ -140,18 +144,25 @@ class Readmangatoday : ParsedHttpSource() {
             val timeAgo = Integer.parseInt(dateWords[0])
             val calendar = Calendar.getInstance()
 
-            if (dateWords[1].contains("Minute")) {
-                calendar.add(Calendar.MINUTE, -timeAgo)
-            } else if (dateWords[1].contains("Hour")) {
-                calendar.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            } else if (dateWords[1].contains("Day")) {
-                calendar.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("Week")) {
-                calendar.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("Month")) {
-                calendar.add(Calendar.MONTH, -timeAgo)
-            } else if (dateWords[1].contains("Year")) {
-                calendar.add(Calendar.YEAR, -timeAgo)
+            when {
+                dateWords[1].contains("Minute") -> {
+                    calendar.add(Calendar.MINUTE, -timeAgo)
+                }
+                dateWords[1].contains("Hour") -> {
+                    calendar.add(Calendar.HOUR_OF_DAY, -timeAgo)
+                }
+                dateWords[1].contains("Day") -> {
+                    calendar.add(Calendar.DAY_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("Week") -> {
+                    calendar.add(Calendar.WEEK_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("Month") -> {
+                    calendar.add(Calendar.MONTH, -timeAgo)
+                }
+                dateWords[1].contains("Year") -> {
+                    calendar.add(Calendar.YEAR, -timeAgo)
+                }
             }
 
             return calendar.timeInMillis
@@ -165,7 +176,7 @@ class Readmangatoday : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.content-list > img").mapIndexed{ i, img ->
+        return document.select("div.content-list > img").mapIndexed { i, img ->
             Page(i, "", img.attr("abs:src"))
         }
     }
@@ -179,50 +190,50 @@ class Readmangatoday : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            TextField("Author", "author-name"),
-            TextField("Artist", "artist-name"),
-            Type(),
-            Status(),
-            GenreList(getGenreList())
+        TextField("Author", "author-name"),
+        TextField("Artist", "artist-name"),
+        Type(),
+        Status(),
+        GenreList(getGenreList())
     )
 
     // [...document.querySelectorAll("ul.manga-cat span")].map(el => `Genre("${el.nextSibling.textContent.trim()}", ${el.getAttribute('data-id')})`).join(',\n')
     // https://www.readmng.com/advanced-search
     private fun getGenreList() = listOf(
-            Genre("Action", 2),
-            Genre("Adventure", 4),
-            Genre("Comedy", 5),
-            Genre("Doujinshi", 6),
-            Genre("Drama", 7),
-            Genre("Ecchi", 8),
-            Genre("Fantasy", 9),
-            Genre("Gender Bender", 10),
-            Genre("Harem", 11),
-            Genre("Historical", 12),
-            Genre("Horror", 13),
-            Genre("Josei", 14),
-            Genre("Lolicon", 15),
-            Genre("Martial Arts", 16),
-            Genre("Mature", 17),
-            Genre("Mecha", 18),
-            Genre("Mystery", 19),
-            Genre("One shot", 20),
-            Genre("Psychological", 21),
-            Genre("Romance", 22),
-            Genre("School Life", 23),
-            Genre("Sci-fi", 24),
-            Genre("Seinen", 25),
-            Genre("Shotacon", 26),
-            Genre("Shoujo", 27),
-            Genre("Shoujo Ai", 28),
-            Genre("Shounen", 29),
-            Genre("Shounen Ai", 30),
-            Genre("Slice of Life", 31),
-            Genre("Smut", 32),
-            Genre("Sports", 33),
-            Genre("Supernatural", 34),
-            Genre("Tragedy", 35),
-            Genre("Yaoi", 36),
-            Genre("Yuri", 37)
+        Genre("Action", 2),
+        Genre("Adventure", 4),
+        Genre("Comedy", 5),
+        Genre("Doujinshi", 6),
+        Genre("Drama", 7),
+        Genre("Ecchi", 8),
+        Genre("Fantasy", 9),
+        Genre("Gender Bender", 10),
+        Genre("Harem", 11),
+        Genre("Historical", 12),
+        Genre("Horror", 13),
+        Genre("Josei", 14),
+        Genre("Lolicon", 15),
+        Genre("Martial Arts", 16),
+        Genre("Mature", 17),
+        Genre("Mecha", 18),
+        Genre("Mystery", 19),
+        Genre("One shot", 20),
+        Genre("Psychological", 21),
+        Genre("Romance", 22),
+        Genre("School Life", 23),
+        Genre("Sci-fi", 24),
+        Genre("Seinen", 25),
+        Genre("Shotacon", 26),
+        Genre("Shoujo", 27),
+        Genre("Shoujo Ai", 28),
+        Genre("Shounen", 29),
+        Genre("Shounen Ai", 30),
+        Genre("Slice of Life", 31),
+        Genre("Smut", 32),
+        Genre("Sports", 33),
+        Genre("Supernatural", 34),
+        Genre("Tragedy", 35),
+        Genre("Yaoi", 36),
+        Genre("Yuri", 37)
     )
 }

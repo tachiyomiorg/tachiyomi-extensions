@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: HentaiFox'
+    extName = 'HentaiFox'
     pkgNameSuffix = 'en.hentaifox'
     extClass = '.HentaiFox'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

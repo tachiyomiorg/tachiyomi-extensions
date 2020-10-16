@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Rawdevart'
+    extName = 'Rawdevart'
     pkgNameSuffix = 'ja.rawdevart'
     extClass = '.Rawdevart'
     extVersionCode = 4

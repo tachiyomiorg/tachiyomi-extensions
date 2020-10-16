@@ -73,7 +73,9 @@ abstract class MangAdventure(
     override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
 
     override fun searchMangaRequest(
-        page: Int, query: String, filters: FilterList
+        page: Int,
+        query: String,
+        filters: FilterList
     ): Request {
         val uri = Uri.parse("$apiUrl/series/").buildUpon()
         if (query.startsWith(SLUG_QUERY)) {
@@ -86,9 +88,12 @@ abstract class MangAdventure(
             when (it) {
                 is Person -> uri.appendQueryParameter("author", it.state)
                 is Status -> uri.appendQueryParameter("status", it.string())
-                is CategoryList -> cat.addAll(it.state.mapNotNull { c ->
-                    Uri.encode(c.optString())
-                })
+                is CategoryList -> cat.addAll(
+                    it.state.mapNotNull { c ->
+                        Uri.encode(c.optString())
+                    }
+                )
+                else -> Unit
             }
         }
         return GET("$uri&categories=${cat.joinToString(",")}", headers)
@@ -96,18 +101,21 @@ abstract class MangAdventure(
 
     override fun latestUpdatesParse(response: Response) =
         JSONArray(response.asString()).run {
-            MangasPage((0 until length()).map {
-                val obj = getJSONObject(it)
-                SManga.create().apply {
-                    url = obj.getString("url")
-                    title = obj.getString("title")
-                    thumbnail_url = obj.getString("cover")
-                    // A bit of a hack to sort by date
-                    description = httpDateToTimestamp(
-                        obj.getJSONObject("latest_chapter").getString("date")
-                    ).toString()
-                }
-            }.sortedByDescending(SManga::description), false)
+            MangasPage(
+                (0 until length()).map {
+                    val obj = getJSONObject(it)
+                    SManga.create().apply {
+                        url = obj.getString("url")
+                        title = obj.getString("title")
+                        thumbnail_url = obj.getString("cover")
+                        // A bit of a hack to sort by date
+                        description = httpDateToTimestamp(
+                            obj.getJSONObject("latest_chapter").getString("date")
+                        ).toString()
+                    }
+                }.sortedByDescending(SManga::description),
+                false
+            )
         }
 
     override fun chapterListParse(response: Response) =
@@ -131,9 +139,7 @@ abstract class MangAdventure(
     override fun pageListParse(response: Response) =
         JSONObject(response.asString()).run {
             val url = getString("url")
-            // Workaround for a bug in MangAdventure < 0.6.3
             val root = getString("pages_root")
-                .replace("://media/series", "://reader")
             val arr = getJSONArray("pages_list")
             (0 until arr.length()).map {
                 Page(it, "$url${it + 1}", "$root${arr.getString(it)}")
@@ -142,9 +148,12 @@ abstract class MangAdventure(
 
     override fun searchMangaParse(response: Response) =
         JSONArray(response.asString()).run {
-            MangasPage((0 until length()).map {
-                SManga.create().fromJSON(getJSONObject(it))
-            }.sortedBy(SManga::title), false)
+            MangasPage(
+                (0 until length()).map {
+                    SManga.create().fromJSON(getJSONObject(it))
+                }.sortedBy(SManga::title),
+                false
+            )
         }
 
     override fun getFilterList() =
@@ -225,7 +234,7 @@ abstract class MangAdventure(
          * @return The timestamp of the date.
          */
         fun httpDateToTimestamp(date: String) =
-            SimpleDateFormat(HTTP_DATE, Locale.US).parse(date).time
+            SimpleDateFormat(HTTP_DATE, Locale.US).parse(date)?.time ?: 0L
     }
 
     /**
@@ -235,7 +244,7 @@ abstract class MangAdventure(
      */
     inner class Status : Filter.Select<String>("Status", STATUSES) {
         /** Returns the [state] as a string. */
-        fun string() = values[state].toLowerCase()
+        fun string() = values[state].toLowerCase(Locale(lang))
     }
 
     /**
@@ -247,8 +256,8 @@ abstract class MangAdventure(
     inner class Category(name: String) : Filter.TriState(name) {
         /** Returns the [state] as a string, or null if [isIgnored]. */
         fun optString() = when (state) {
-            STATE_INCLUDE -> name.toLowerCase()
-            STATE_EXCLUDE -> "-" + name.toLowerCase()
+            STATE_INCLUDE -> name.toLowerCase(Locale(lang))
+            STATE_EXCLUDE -> "-" + name.toLowerCase(Locale(lang))
             else -> null
         }
     }
@@ -259,7 +268,8 @@ abstract class MangAdventure(
      * @constructor Creates a [Filter.Group] object with categories.
      */
     inner class CategoryList : Filter.Group<Category>(
-        "Categories", categories.map(::Category)
+        "Categories",
+        categories.map(::Category)
     )
 
     /**

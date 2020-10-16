@@ -2,7 +2,12 @@ package eu.kanade.tachiyomi.extension.ru.mangachan
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
@@ -11,7 +16,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class Mangachan : ParsedHttpSource() {
 
@@ -30,14 +35,13 @@ class Mangachan : ParsedHttpSource() {
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor).build()
 
-
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
+        GET("$baseUrl/mostfavorites?offset=${20 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var pageNum = 1
         when {
-            page <  1 -> pageNum = 1
+            page < 1 -> pageNum = 1
             page >= 1 -> pageNum = page
         }
         val url = if (query.isNotEmpty()) {
@@ -173,10 +177,15 @@ class Mangachan : ParsedHttpSource() {
         val infoElement = document.select("table.mangatitle").first()
         val descElement = document.select("div#description").first()
         val imgElement = document.select("img#cover").first()
-
+        val rawCategory = infoElement.select("tr:eq(1) > td:eq(1)").text()
+        val category = if (rawCategory.isNotEmpty()) {
+            rawCategory.toLowerCase()
+        } else {
+            "манга"
+        }
         val manga = SManga.create()
         manga.author = infoElement.select("tr:eq(2) > td:eq(1)").text()
-        manga.genre = infoElement.select("tr:eq(5) > td:eq(1)").text()
+        manga.genre = infoElement.select("tr:eq(5) > td:eq(1)").text().split(",").plusElement(category).joinToString { it.trim() }
         manga.status = parseStatus(infoElement.select("tr:eq(4) > td:eq(1)").text())
         manga.description = descElement.textNodes().first().text()
         manga.thumbnail_url = imgElement.attr("src")
@@ -198,7 +207,7 @@ class Mangachan : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.date").first()?.text()?.let {
-            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it).time
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(it)?.time ?: 0L
         } ?: 0
         return chapter
     }
@@ -222,77 +231,77 @@ class Mangachan : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
     private class Genre(name: String, val id: String = name.replace(' ', '_')) : Filter.TriState(name)
     private class Status : Filter.Select<String>("Статус", arrayOf("Все", "Перевод завершен", "Выпуск завершен", "Онгоинг", "Новые главы"))
-    private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Дата", "Популярность", "Имя", "Главы"),
-            Filter.Sort.Selection(1, false))
-
-
-    override fun getFilterList() = FilterList(
-            Status(),
-            OrderBy(),
-            GenreList(getGenreList())
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
+        arrayOf("Дата", "Популярность", "Имя", "Главы"),
+        Selection(1, false)
     )
 
+    override fun getFilterList() = FilterList(
+        Status(),
+        OrderBy(),
+        GenreList(getGenreList())
+    )
 
     /* [...document.querySelectorAll("li.sidetag > a:nth-child(1)")]
     *  .map(el => `Genre("${el.getAttribute('href').substr(6)}")`).join(',\n')
     *  on https://mangachan.me/
     */
     private fun getGenreList() = listOf(
-            Genre("18_плюс"),
-            Genre("bdsm"),
-            Genre("арт"),
-            Genre("боевик"),
-            Genre("боевые_искусства"),
-            Genre("вампиры"),
-            Genre("веб"),
-            Genre("гарем"),
-            Genre("гендерная_интрига"),
-            Genre("героическое_фэнтези"),
-            Genre("детектив"),
-            Genre("дзёсэй"),
-            Genre("додзинси"),
-            Genre("драма"),
-            Genre("игра"),
-            Genre("инцест"),
-            Genre("искусство"),
-            Genre("история"),
-            Genre("киберпанк"),
-            Genre("кодомо"),
-            Genre("комедия"),
-            Genre("литРПГ"),
-            Genre("махо-сёдзё"),
-            Genre("меха"),
-            Genre("мистика"),
-            Genre("музыка"),
-            Genre("научная_фантастика"),
-            Genre("повседневность"),
-            Genre("постапокалиптика"),
-            Genre("приключения"),
-            Genre("психология"),
-            Genre("романтика"),
-            Genre("самурайский_боевик"),
-            Genre("сборник"),
-            Genre("сверхъестественное"),
-            Genre("сказка"),
-            Genre("спорт"),
-            Genre("супергерои"),
-            Genre("сэйнэн"),
-            Genre("сёдзё"),
-            Genre("сёдзё-ай"),
-            Genre("сёнэн"),
-            Genre("сёнэн-ай"),
-            Genre("тентакли"),
-            Genre("трагедия"),
-            Genre("триллер"),
-            Genre("ужасы"),
-            Genre("фантастика"),
-            Genre("фурри"),
-            Genre("фэнтези"),
-            Genre("школа"),
-            Genre("эротика"),
-            Genre("юри"),
-            Genre("яой"),
-            Genre("ёнкома")
+        Genre("18_плюс"),
+        Genre("bdsm"),
+        Genre("арт"),
+        Genre("боевик"),
+        Genre("боевые_искусства"),
+        Genre("вампиры"),
+        Genre("веб"),
+        Genre("гарем"),
+        Genre("гендерная_интрига"),
+        Genre("героическое_фэнтези"),
+        Genre("детектив"),
+        Genre("дзёсэй"),
+        Genre("додзинси"),
+        Genre("драма"),
+        Genre("игра"),
+        Genre("инцест"),
+        Genre("искусство"),
+        Genre("история"),
+        Genre("киберпанк"),
+        Genre("кодомо"),
+        Genre("комедия"),
+        Genre("литРПГ"),
+        Genre("махо-сёдзё"),
+        Genre("меха"),
+        Genre("мистика"),
+        Genre("музыка"),
+        Genre("научная_фантастика"),
+        Genre("повседневность"),
+        Genre("постапокалиптика"),
+        Genre("приключения"),
+        Genre("психология"),
+        Genre("романтика"),
+        Genre("самурайский_боевик"),
+        Genre("сборник"),
+        Genre("сверхъестественное"),
+        Genre("сказка"),
+        Genre("спорт"),
+        Genre("супергерои"),
+        Genre("сэйнэн"),
+        Genre("сёдзё"),
+        Genre("сёдзё-ай"),
+        Genre("сёнэн"),
+        Genre("сёнэн-ай"),
+        Genre("тентакли"),
+        Genre("трагедия"),
+        Genre("триллер"),
+        Genre("ужасы"),
+        Genre("фантастика"),
+        Genre("фурри"),
+        Genre("фэнтези"),
+        Genre("школа"),
+        Genre("эротика"),
+        Genre("юри"),
+        Genre("яой"),
+        Genre("ёнкома")
     )
 }

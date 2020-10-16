@@ -10,19 +10,31 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.lang.Exception
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 import kotlin.math.floor
 
 class ShonenJumpPlus : ParsedHttpSource() {
@@ -39,16 +51,11 @@ class ShonenJumpPlus : ParsedHttpSource() {
         .addInterceptor { imageIntercept(it) }
         .build()
 
-    private val dayOfWeek: String
-        get() = when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
-            Calendar.SUNDAY -> "sunday"
-            Calendar.MONDAY -> "monday"
-            Calendar.TUESDAY -> "tuesday"
-            Calendar.WEDNESDAY -> "wednesday"
-            Calendar.THURSDAY -> "thursday"
-            Calendar.FRIDAY -> "friday"
-            else -> "saturday"
-        }
+    private val dayOfWeek: String by lazy {
+        Calendar.getInstance()
+            .getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.US)!!
+            .toLowerCase(Locale.US)
+    }
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
@@ -60,8 +67,9 @@ class ShonenJumpPlus : ParsedHttpSource() {
     override fun popularMangaSelector(): String = "ul.series-list li a"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("h2.series-list-title").first()!!.text()
-        thumbnail_url = element.select("div.series-list-thumb img").first()!!.attr("data-src")
+        title = element.select("h2.series-list-title").text()
+        thumbnail_url = element.select("div.series-list-thumb img")
+            .attr("data-src")
         setUrlWithoutDomain(element.attr("href"))
     }
 
@@ -83,8 +91,8 @@ class ShonenJumpPlus : ParsedHttpSource() {
             return GET(url.toString(), headers)
         }
 
-        val path = arrayOf("", "oneshot", "finished")[(filters[0] as SeriesListMode).state]
-        return GET("$baseUrl/series/$path", headers)
+        val listMode = (filters[0] as SeriesListModeFilter).state
+        return GET("$baseUrl/series/${LIST_MODES[listMode].second}", headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -97,9 +105,9 @@ class ShonenJumpPlus : ParsedHttpSource() {
     override fun searchMangaSelector() = "ul.search-series-list li"
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("div.title-box p.series-title").first()!!.text()
-        thumbnail_url = element.select("div.thmb-container a img").first()!!.attr("src")
-        setUrlWithoutDomain(element.select("div.thmb-container a").first()!!.attr("href"))
+        title = element.select("div.title-box p.series-title").text()
+        thumbnail_url = element.select("div.thmb-container a img").attr("src")
+        setUrlWithoutDomain(element.select("div.thmb-container a").attr("href"))
     }
 
     override fun searchMangaNextPageSelector(): String? = null
@@ -107,11 +115,12 @@ class ShonenJumpPlus : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("section.series-information div.series-header")
 
-        title = infoElement.select("h1.series-header-title").first()!!.text()
-        author = infoElement.select("h2.series-header-author").first()!!.text()
+        title = infoElement.select("h1.series-header-title").text()
+        author = infoElement.select("h2.series-header-author").text()
         artist = author
-        description = infoElement.select("p.series-header-description").first()!!.text()
-        thumbnail_url = infoElement.select("div.series-header-image-wrapper img").first()!!.attr("data-src")
+        description = infoElement.select("p.series-header-description").text()
+        thumbnail_url = infoElement.select("div.series-header-image-wrapper img")
+            .attr("data-src")
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -131,18 +140,20 @@ class ShonenJumpPlus : ParsedHttpSource() {
 
         val chapters = mutableListOf<SChapter>()
 
-        var result = client.newCall(GET(readMoreEndpoint, newHeaders)).execute()
+        var request = GET(readMoreEndpoint, newHeaders)
+        var result = client.newCall(request).execute()
 
         while (result.code() != 404) {
             val json = result.asJsonObject()
             readMoreEndpoint = json["nextUrl"].string
-            val tempDocument = Jsoup.parse(json["html"].string)
+            val tempDocument = Jsoup.parse(json["html"].string, response.request().url().toString())
 
             chapters += tempDocument
                 .select("ul.series-episode-list " + chapterListSelector())
-                .map { element -> chapterFromElement(element, response.request().url().toString()) }
+                .map { element -> chapterFromElement(element) }
 
-            result = client.newCall(GET(readMoreEndpoint, newHeaders)).execute()
+            request = GET(readMoreEndpoint, newHeaders)
+            result = client.newCall(request).execute()
         }
 
         return chapters
@@ -150,43 +161,52 @@ class ShonenJumpPlus : ParsedHttpSource() {
 
     override fun chapterListSelector() = "li.episode:has(span.series-episode-list-is-free)"
 
-    private fun chapterFromElement(element: Element, mangaUrl: String): SChapter {
+    override fun chapterFromElement(element: Element): SChapter {
         val info = element.select("a.series-episode-list-container").first() ?: element
+        val mangaUrl = element.ownerDocument().location()
 
         return SChapter.create().apply {
-            name = info.select("h4.series-episode-list-title").first()!!.text()
-            date_upload = parseChapterDate(info.select("span.series-episode-list-date").first()?.text().orEmpty())
+            name = info.select("h4.series-episode-list-title").text()
+            date_upload = info.select("span.series-episode-list-date").first()
+                ?.text().orEmpty()
+                .tryParseDate()
             scanlator = "集英社"
             setUrlWithoutDomain(if (info.tagName() == "a") info.attr("href") else mangaUrl)
         }
     }
 
-    override fun pageListRequest(chapter: SChapter): Request {
-        val episodeId = chapter.url.substringAfterLast("/")
-        return GET("$baseUrl/episode/$episodeId.json", headers)
-    }
+    override fun pageListParse(document: Document): List<Page> {
+        val episodeJson = document.select("script#episode-json")
+            .attr("data-value")
+            .let { JSON_PARSER.parse(it).obj }
 
-    override fun pageListParse(response: Response): List<Page> {
-        val json = response.asJsonObject()
-        val pages = json["readableProduct"]["pageStructure"]["pages"].asJsonArray
-
-        return pages
+        return episodeJson["readableProduct"]["pageStructure"]["pages"].asJsonArray
             .filter { it["type"].string == "main" }
             .mapIndexed { i, pageObj ->
-                val imageUrl = "${pageObj["src"].string}?width=${pageObj["width"].string}&height=${pageObj["height"].string}"
-                Page(i, "", imageUrl)
+                val imageUrl = HttpUrl.parse(pageObj["src"].string)!!.newBuilder()
+                    .addQueryParameter("width", pageObj["width"].string)
+                    .addQueryParameter("height", pageObj["height"].string)
+                    .toString()
+                Page(i, document.location(), imageUrl)
             }
     }
 
     override fun imageUrlParse(document: Document) = ""
 
-    private class SeriesListMode : Filter.Select<String>("一覧", arrayOf("ジャンプ＋連載一覧", "ジャンプ＋読切シリーズ", "連載終了作品"))
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", page.url)
+            .build()
 
-    override fun getFilterList(): FilterList = FilterList(SeriesListMode())
+        return GET(page.imageUrl!!, newHeaders)
+    }
 
-    override fun chapterFromElement(element: Element): SChapter = throw Exception("This method should not be called!")
+    private class SeriesListModeFilter : Filter.Select<String>(
+        "一覧",
+        LIST_MODES.map { it.first }.toTypedArray()
+    )
 
-    override fun pageListParse(document: Document): List<Page> = throw Exception("This method should not be called!")
+    override fun getFilterList(): FilterList = FilterList(SeriesListModeFilter())
 
     private fun imageIntercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
@@ -239,9 +259,9 @@ class ShonenJumpPlus : ParsedHttpSource() {
         return output.toByteArray()
     }
 
-    private fun parseChapterDate(date: String) : Long {
+    private fun String.tryParseDate(): Long {
         return try {
-            DATE_PARSER.parse(date).time
+            DATE_PARSER.parse(this)!!.time
         } catch (e: ParseException) {
             0L
         }
@@ -250,9 +270,15 @@ class ShonenJumpPlus : ParsedHttpSource() {
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
         private val JSON_PARSER by lazy { JsonParser() }
         private val DATE_PARSER by lazy { SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH) }
+
+        private val LIST_MODES = listOf(
+            Pair("ジャンプ＋連載一覧", ""),
+            Pair("ジャンプ＋読切シリーズ", "oneshot"),
+            Pair("連載終了作品", "finished")
+        )
 
         private const val CDN_URL = "https://cdn-ak-img.shonenjumpplus.com"
         private const val DIVIDE_NUM = 4
