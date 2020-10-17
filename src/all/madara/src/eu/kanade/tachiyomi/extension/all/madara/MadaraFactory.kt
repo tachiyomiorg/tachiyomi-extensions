@@ -41,6 +41,7 @@ class MadaraFactory : SourceFactory {
         Bakaman(),
         BestManga(),
         BoysLove(),
+        CatOnHeadTranslations(),
         CatTranslator(),
         ChibiManga(),
         ComicKiba(),
@@ -81,6 +82,7 @@ class MadaraFactory : SourceFactory {
         MangaAction(),
         MangaArabTeam(),
         MangaBob(),
+        MangaClash(),
         MangaDods(),
         MangaHentai(),
         MangaKiss(),
@@ -134,6 +136,7 @@ class MadaraFactory : SourceFactory {
         NijiTranslations(),
         NinjaScans(),
         Ninjavi(),
+        OffScan(),
         OnManga(),
         OrigamiOrpheans(),
         PMScans(),
@@ -185,6 +188,22 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class CatOnHeadTranslations : Madara("CatOnHeadTranslations", "https://catonhead.com", "en")
+
+class OffScan : Madara(
+    "Off Scan",
+    "https://offscan.top",
+    "pt-BR",
+    dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US)
+)
+
+class MangaClash : Madara(
+    "Manga Clash",
+    "https://mangaclash.com",
+    "en",
+    dateFormat = SimpleDateFormat("MM/dd/yy", Locale.US)
+)
 
 class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
     // site is a bit broken
