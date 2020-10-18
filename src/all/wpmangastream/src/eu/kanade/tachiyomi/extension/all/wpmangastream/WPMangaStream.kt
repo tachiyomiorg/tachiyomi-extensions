@@ -163,11 +163,11 @@ abstract class WPMangaStream(
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             document.select("div.bigcontent, div.animefull").firstOrNull()?.let { infoElement ->
-                genre = infoElement.select("span:contains(Genres:) a").joinToString { it.text() }
-                status = parseStatus(infoElement.select("span:contains(Status:)").firstOrNull()?.ownText())
-                author = infoElement.select("span:contains(Author:)").firstOrNull()?.ownText()
-                artist = author
-                description = infoElement.select("div.desc p").joinToString("\n") { it.text() }
+                genre = infoElement.select(".mgen a").joinToString { it.text() }
+                status = parseStatus(infoElement.select(".imptdt:contains(Status) i").firstOrNull()?.ownText())
+                author = infoElement.select(".fmed b:contains(Author)+span").firstOrNull()?.ownText()
+                artist = infoElement.select(".fmed b:contains(Artist)+span").firstOrNull()?.ownText()
+                description = infoElement.select("div.entry-content p").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
             }
         }
@@ -250,7 +250,6 @@ abstract class WPMangaStream(
         val imageListRegex = Regex("images.*?:.*?(\\[.*?\\])")
 
         val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
-
 
         for (i in 0 until imageList.length()) {
             pages.add(Page(i, "", imageList.getString(i)))
