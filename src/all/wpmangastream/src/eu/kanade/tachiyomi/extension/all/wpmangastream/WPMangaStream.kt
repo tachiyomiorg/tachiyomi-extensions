@@ -169,6 +169,15 @@ abstract class WPMangaStream(
                 artist = infoElement.select(".fmed b:contains(Artist)+span").firstOrNull()?.ownText()
                 description = infoElement.select("div.entry-content p").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
+
+                // Some wpmangastream sites still use old wpmangastream manga detail layout
+                if (author == artist && artist == null) {
+                    genre = infoElement.select("span:contains(Genres:) a").joinToString { it.text() }
+                    status = parseStatus(infoElement.select("span:contains(Status:)").firstOrNull()?.ownText())
+                    author = infoElement.select("span:contains(Author:)").firstOrNull()?.ownText()
+                    artist = author
+                    description = infoElement.select("div.desc p").joinToString("\n") { it.text() }
+                }
             }
         }
     }
