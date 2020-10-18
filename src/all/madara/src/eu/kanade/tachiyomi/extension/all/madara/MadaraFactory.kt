@@ -775,7 +775,7 @@ class GoldenManga : Madara("موقع لترجمة المانجا", "https://gold
 
 class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
 
-class AstralLibrary : Madara("Astral Library", "https://astrallibrary.net", "en") {
+class AstralLibrary : Madara("Astral Library", "https://astrallibrary.net", "en", SimpleDateFormat("d MMM", Locale.US)) {
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
 
@@ -1229,7 +1229,7 @@ class ComicKiba : Madara("ComicKiba", "https://comickiba.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item img:nth-child(1)"
 }
 
-class KlanKomik : Madara("KlanKomik", "https://klankomik.com", "id")
+class KlanKomik : Madara("KlanKomik", "https://klankomik.com", "id", SimpleDateFormat("d MMM yyyy", Locale.US))
 
 class ToonPoint : Madara("ToonPoint", "https://toonpoint.com", "en") {
     override val userAgentRandomizer = ""
