@@ -58,7 +58,12 @@ class WPMangaStreamFactory : SourceFactory {
 
 class FlameScans : WPMangaStream("Flame Scans", "https://www.flame-scans.com", "en")
 
-class SheaManga : WPMangaStream("Shea Manga", "https://sheamanga.my.id", "id")
+class SheaManga : WPMangaStream(
+    "Shea Manga",
+    "https://sheamanga.my.id",
+    "id",
+    dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id"))
+)
 
 class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en")
 
@@ -71,7 +76,13 @@ class Kiryuu : WPMangaStream("Kiryuu (WP Manga Stream)", "https://kiryuu.co", "i
             .mapIndexed { i, image -> Page(i, "", image) }
     }
 }
-class KomikAV : WPMangaStream("Komik AV (WP Manga Stream)", "https://komikav.com", "id")
+
+class KomikAV : WPMangaStream(
+    "Komik AV (WP Manga Stream)",
+    "https://komikav.com",
+    "id",
+    dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id"))
+)
 
 class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
 
