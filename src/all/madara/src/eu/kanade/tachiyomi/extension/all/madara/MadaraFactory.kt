@@ -63,6 +63,7 @@ class MadaraFactory : SourceFactory {
         GoldenManga(),
         GuncelManga(),
         HeroManhua(),
+        HerozScanlation(),
         Hiperdex(),
         HunterFansub(),
         IchirinNoHanaYuri(),
@@ -189,6 +190,8 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class HerozScanlation : Madara("Heroz Scanlation", "https://herozscans.com", "en")
 
 class CatOnHeadTranslations : Madara("CatOnHeadTranslations", "https://catonhead.com", "en")
 
