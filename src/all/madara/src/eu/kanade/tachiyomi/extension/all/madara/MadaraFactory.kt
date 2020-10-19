@@ -1315,7 +1315,7 @@ class S2Manga : Madara("S2Manga", "https://s2manga.com", "en")
 
 class MangaLandArabic : Madara("Manga Land Arabic", "https://mangalandarabic.com", "ar")
 
-class Kombatch : Madara("Kombatch", "https://kombatch.com", "id")
+class Kombatch : Madara("Kombatch", "https://kombatch.com", "id", SimpleDateFormat("d MMMM yyyy", Locale.forLanguageTag("id")))
 
 class ProjetoScanlator : Madara("Projeto Scanlator", "https://projetoscanlator.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")))
 
