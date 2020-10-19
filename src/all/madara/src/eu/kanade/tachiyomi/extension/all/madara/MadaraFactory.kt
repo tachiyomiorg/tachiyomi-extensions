@@ -80,6 +80,7 @@ class MadaraFactory : SourceFactory {
         Manga3asq(),
         Manga68(),
         MangaAction(),
+        MangaArabOnline(),
         MangaArabTeam(),
         MangaBob(),
         MangaClash(),
@@ -679,6 +680,8 @@ class HunterFansub : Madara("Hunter Fansub", "https://hunterfansub.com", "es") {
     override fun popularMangaNextPageSelector() = "div.nav-previous"
     override val popularMangaUrlSelector = "div.post-title a:last-child"
 }
+
+class MangaArabOnline : Madara("Manga Arab Online مانجا عرب اون لاين", "https://mangaarabonline.com", "ar", SimpleDateFormat("MMM d, yyyy", Locale.forLanguageTag("ar")))
 
 class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar") {
     override fun imageRequest(page: Page): Request {
