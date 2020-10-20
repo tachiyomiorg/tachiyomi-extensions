@@ -52,9 +52,12 @@ class WPMangaStreamFactory : SourceFactory {
         AsuraScans(),
         SilenceScan(),
         SheaManga(),
-        FlameScans()
+        FlameScans(),
+        Mangashiro()
     )
 }
+
+class Mangashiro : WPMangaStream("Mangashiro (WP Manga Stream)", "https://mangashiro.co", "id")
 
 class FlameScans : WPMangaStream("Flame Scans", "https://www.flame-scans.com", "en")
 
