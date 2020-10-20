@@ -61,6 +61,7 @@ class Komiku : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         description = document.select("#Sinopsis > p").text().trim()
+        author = document.select("table.inftable td:contains(Komikus)+td").text()
         genre = document.select("li[itemprop=genre] > a").joinToString { it.text() }
         status = parseStatus(document.select("table.inftable tr > td:contains(Status) + td").text())
         thumbnail_url = document.select("div.ims > img").attr("abs:src")
