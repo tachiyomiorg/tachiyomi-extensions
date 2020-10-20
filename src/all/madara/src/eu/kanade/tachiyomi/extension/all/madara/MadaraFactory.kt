@@ -180,7 +180,9 @@ class MadaraFactory : SourceFactory {
         ArgosScan(),
         Kombatch(),
         ProjetoScanlator(),
-        HikariScan()
+        HikariScan(),
+        YuriVerso(),
+        MangaTeca()
         // Removed by request of site owner
         // EarlyManga(),
         // MangaGecesi(),
@@ -885,7 +887,12 @@ class MangaStream : Madara("MangaStream", "https://www.mangastream.cc", "en") {
     )
 }
 
-class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.net", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))) {
+class NeoxScanlator : Madara(
+    "Neox Scanlator",
+    "https://neoxscans.com",
+    "pt-BR",
+    SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+) {
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
@@ -901,7 +908,7 @@ class NeoxScanlator : Madara("Neox Scanlator", "https://neoxscan.net", "pt-BR", 
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
     }
 }
 
@@ -1383,3 +1390,37 @@ class AniMangaEs : Madara("AniMangaEs", "http://animangaes.com", "en") {
 class MangaNine : Madara("Manga Nine", "https://manganine.com", "en")
 
 class MarkScans : Madara("Mark Scans", "https://markscans.online", "pt-BR")
+
+class YuriVerso : Madara(
+    "Yuri Verso",
+    "https://yuri.live",
+    "pt-BR",
+    SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+)
+
+class MangaTeca : Madara(
+    "MangaTeca",
+    "https://www.mangateca.com",
+    "pt-BR",
+    SimpleDateFormat("MMMM dd, yyyy", Locale("pt", "BR"))
+) {
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", USER_AGENT)
+        .add("Referer", baseUrl)
+        .add("Origin", baseUrl)
+
+    override fun chapterFromElement(element: Element): SChapter {
+        val parsedChapter = super.chapterFromElement(element)
+
+        parsedChapter.date_upload = element.select("img").firstOrNull()?.attr("alt")
+            ?.let { parseChapterDate(it) }
+            ?: parseChapterDate(element.select("span.chapter-release-date i").firstOrNull()?.text())
+
+        return parsedChapter
+    }
+
+    companion object {
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
+    }
+}
