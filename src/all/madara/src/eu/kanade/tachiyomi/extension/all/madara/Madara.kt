@@ -440,6 +440,10 @@ abstract class Madara(
             date.endsWith(" atrás", ignoreCase = true) -> {
                 parseRelativeDate(date)
             }
+            // Handle translated 'ago' in Turkish.
+            date.endsWith(" önce", ignoreCase = true) -> {
+                parseRelativeDate(date)
+            }
             // Handle 'yesterday' and 'today', using midnight
             date.startsWith("year", ignoreCase = true) -> {
                 Calendar.getInstance().apply {
@@ -480,9 +484,9 @@ abstract class Madara(
         val cal = Calendar.getInstance()
 
         return when {
-            WordSet("jour", "día", "dia", "day").anyWordIn(date) -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
-            WordSet("heure", "hora", "hour").anyWordIn(date) -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
-            WordSet("min", "minute", "minuto").anyWordIn(date) -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
+            WordSet("gün", "jour", "día", "dia", "day").anyWordIn(date) -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
+            WordSet("saat", "heure", "hora", "hour").anyWordIn(date) -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
+            WordSet("dakika", "min", "minute", "minuto").anyWordIn(date) -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
             WordSet("segundo", "second").anyWordIn(date) -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
             else -> 0
         }
