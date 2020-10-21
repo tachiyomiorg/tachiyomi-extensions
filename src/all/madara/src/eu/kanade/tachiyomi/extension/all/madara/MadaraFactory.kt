@@ -64,6 +64,7 @@ class MadaraFactory : SourceFactory {
         GuncelManga(),
         HeroManhua(),
         HerozScanlation(),
+        HimeraFansub(),
         Hiperdex(),
         HunterFansub(),
         IchirinNoHanaYuri(),
@@ -83,8 +84,10 @@ class MadaraFactory : SourceFactory {
         MangaAction(),
         MangaArabOnline(),
         MangaArabTeam(),
+        MangaBaz(),
         MangaBob(),
         MangaClash(),
+        MangaCultivator(),
         MangaDods(),
         MangaHentai(),
         MangaKiss(),
@@ -115,6 +118,7 @@ class MadaraFactory : SourceFactory {
         MangazukiMe(),
         MangazukiOnline(),
         ManhuaBox(),
+        Manhuaga(),
         ManhuaPlus(),
         ManhuaUS(),
         ManhuasWorld(),
@@ -148,6 +152,7 @@ class MadaraFactory : SourceFactory {
         RaiderScans(),
         ReadManhua(),
         RenaScans(),
+        RuyaManga(),
         S2Manga(),
         Skymanga(),
         TheTopComic(),
@@ -192,6 +197,16 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class RuyaManga : Madara("Rüya Manga", "https://www.ruyamanga.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
+
+class HimeraFansub : Madara("Himera Fansub", "https://himera-fansub.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
+
+class MangaBaz : Madara("MangaBaz", "https://mangabaz.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
+
+class Manhuaga : Madara("Manhuaga", "https://manhuaga.com", "en")
+
+class MangaCultivator : Madara("MangaCultivator", "https://mangacultivator.com", "en")
 
 class HerozScanlation : Madara("Heroz Scanlation", "https://herozscans.com", "en")
 
