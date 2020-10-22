@@ -1,3 +1,11 @@
+## 1.2.18
+
+Minimum Komga version required: `0.63.2`
+
+### Fix
+
+* use metadata.releaseDate or fileLastModified for chapter date
+
 ## 1.2.17
 
 Minimum Komga version required: `0.63.2`

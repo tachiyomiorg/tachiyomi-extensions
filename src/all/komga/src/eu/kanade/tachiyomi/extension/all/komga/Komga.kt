@@ -168,7 +168,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 chapter_number = book.metadata.numberSort
                 name = "${book.metadata.number} - ${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
-                date_upload = parseDate(book.lastModified)
+                date_upload = book.metadata.releaseDate?.let { parseDate(it) }
+                    ?: parseDateTime(book.fileLastModified)
             }
         }.sortedByDescending { it.chapter_number }
     }
@@ -219,6 +220,17 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
 
     private fun parseDate(date: String?): Long =
+        if (date == null)
+            Date().time
+        else {
+            try {
+                SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date).time
+            } catch (ex: Exception) {
+                Date().time
+            }
+        }
+
+    private fun parseDateTime(date: String?): Long =
         if (date == null)
             Date().time
         else {
