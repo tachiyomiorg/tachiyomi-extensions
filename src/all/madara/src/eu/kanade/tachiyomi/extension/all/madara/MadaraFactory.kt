@@ -40,6 +40,7 @@ class MadaraFactory : SourceFactory {
         Azora(),
         Bakaman(),
         BestManga(),
+        BestManhua(),
         BoysLove(),
         CatOnHeadTranslations(),
         CatTranslator(),
@@ -47,9 +48,11 @@ class MadaraFactory : SourceFactory {
         ComicKiba(),
         ComicsValley(),
         CopyPasteScan(),
+        CutiePie(),
         DarkyuRealm(),
         DecadenceScans(),
         DetectiveConanAr(),
+        DiamondFansub(),
         DisasterScans(),
         DoujinHentai(),
         DoujinYosh(),
@@ -113,6 +116,7 @@ class MadaraFactory : SourceFactory {
         Mangalek(),
         Mangareceh(),
         Mangasushi(),
+        MangaYaku(),
         MangazukiClubJP(),
         MangazukiClubKO(),
         MangazukiMe(),
@@ -197,6 +201,16 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class BestManhua : Madara("BestManhua", "https://bestmanhua.com", "en") {
+    override val pageListParseSelector = "li.blocks-gallery-item"
+}
+
+class CutiePie : Madara("Cutie Pie", "https://cutiepie.ga", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
+
+class DiamondFansub : Madara("DiamondFansub", "https://diamondfansub.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("tr")))
+
+class MangaYaku : Madara("MangaYaku", "https://mangayaku.my.id", "id")
 
 class RuyaManga : Madara("Rüya Manga", "https://www.ruyamanga.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
 
