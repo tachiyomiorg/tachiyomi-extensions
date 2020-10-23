@@ -81,6 +81,7 @@ class MadaraFactory : SourceFactory {
         KlikManga(),
         KomikGo(),
         LilyManga(),
+        Manga18Fun(),
         Manga347(),
         Manga3asq(),
         Manga68(),
@@ -201,6 +202,8 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class Manga18Fun : Madara("Manga18 Fun", "https://manga18.fun", "en")
 
 class BestManhua : Madara("BestManhua", "https://bestmanhua.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
