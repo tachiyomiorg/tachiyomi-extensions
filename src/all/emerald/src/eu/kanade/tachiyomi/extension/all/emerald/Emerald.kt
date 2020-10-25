@@ -48,7 +48,7 @@ open class Emerald(
         return manga
     }
 
-    override fun latestUpdatesNextPageSelector() = "div.browse-pager:contains(order) .page-item:not(.disabled) a.page-link:contains(»)"
+    override fun latestUpdatesNextPageSelector() = "div#mainer .pagination .page-item:not(.disabled) a.page-link:contains(»)"
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/browse?langs=$Mtlang&sort=views_w&page=$page")
