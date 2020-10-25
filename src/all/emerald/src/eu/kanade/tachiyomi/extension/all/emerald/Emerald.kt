@@ -175,7 +175,7 @@ open class Emerald(
         manga.author = infoElement.select("div.attr-item:contains(author) a:first-child").text()
         manga.artist = infoElement.select("div.attr-item:contains(author) a:last-child").text()
         manga.status = parseStatus(status)
-        manga.genre = genres.joinToString(", ")
+        manga.genre = infoElement.select(".attr-item b:contains(genres) + span ").joinToString { it.text() }
         manga.description = infoElement.select("h5:contains(summary) + pre").text()
         manga.thumbnail_url = document.select("div.attr-cover img")
             .attr("abs:src")
