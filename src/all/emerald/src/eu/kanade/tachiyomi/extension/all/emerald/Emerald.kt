@@ -161,7 +161,7 @@ open class Emerald(
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div#series-page div.container")
+        val infoElement = document.select("div#mainer div.container-fluid")
         val manga = SManga.create()
         val genres = mutableListOf<String>()
         val status = infoElement.select("div.attr-item:contains(status) span").text()
