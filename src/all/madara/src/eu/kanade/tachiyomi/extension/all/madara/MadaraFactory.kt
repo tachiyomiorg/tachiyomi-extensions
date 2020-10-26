@@ -69,6 +69,7 @@ class MadaraFactory : SourceFactory {
         HerozScanlation(),
         HimeraFansub(),
         Hiperdex(),
+        Hscans(),
         HunterFansub(),
         IchirinNoHanaYuri(),
         ImmortalUpdates(),
@@ -147,6 +148,7 @@ class MadaraFactory : SourceFactory {
         NijiTranslations(),
         NinjaScans(),
         Ninjavi(),
+        NTSVoidScans(),
         OffScan(),
         OnManga(),
         OrigamiOrpheans(),
@@ -164,6 +166,7 @@ class MadaraFactory : SourceFactory {
         ThreeSixtyFiveManga(),
         ToonPoint(),
         Toonily(),
+        ToonGod(),
         ToonilyNet(),
         TopManhua(),
         TritiniaScans(),
@@ -174,6 +177,7 @@ class MadaraFactory : SourceFactory {
         TwilightScans(),
         Wakamics(),
         Wakascan(),
+        WebToonily(),
         WeScans(),
         WebNovel(),
         WebtoonXYZ(),
@@ -202,6 +206,14 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class NTSVoidScans : Madara("NTS Void Scans", "https://ntsvoidscans.com", "en")
+
+class ToonGod : Madara("ToonGod", "https://www.toongod.com", "en", SimpleDateFormat("dd MMM yyyy", Locale.US))
+
+class Hscans : Madara("Hscans", "https://hscans.com", "en", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("es")))
+
+class WebToonily : Madara("WebToonily", "https://webtoonily.com", "en")
 
 class Manga18Fun : Madara("Manga18 Fun", "https://manga18.fun", "en")
 
