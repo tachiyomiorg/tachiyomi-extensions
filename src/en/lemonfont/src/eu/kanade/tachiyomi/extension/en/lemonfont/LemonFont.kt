@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.en.lemonfont
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -79,6 +80,10 @@ class LemonFont : ParsedHttpSource() {
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         return Observable.just(listOf(Page(0, "", baseUrl + chapter.url)))
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return Observable.just(MangasPage(emptyList(), false))
     }
 
     override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not Used")
