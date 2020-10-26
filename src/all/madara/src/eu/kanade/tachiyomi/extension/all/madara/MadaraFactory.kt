@@ -106,6 +106,7 @@ class MadaraFactory : SourceFactory {
         MangaReadOrg(),
         MangaRockTeam(),
         MangaRocky(),
+        MangaRoma(),
         MangaScantrad(),
         MangaSpark(),
         MangaStarz(),
@@ -206,6 +207,8 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class MangaRoma : Madara("MangaRoma", "https://mangaroma.com", "en")
 
 class NTSVoidScans : Madara("NTS Void Scans", "https://ntsvoidscans.com", "en")
 
