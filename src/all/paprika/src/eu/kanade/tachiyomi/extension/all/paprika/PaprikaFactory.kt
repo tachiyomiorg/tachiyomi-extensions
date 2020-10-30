@@ -9,10 +9,14 @@ class PaprikaFactory : SourceFactory {
         MangaTensei(),
         MangaNelo(),
         MangaWindowClub(),
-        MangaDogs()
+        MangaDogs(),
+        ReadMangaFox(),
+        MangaStreamXyz()
     )
 }
 
+class MangaStreamXyz : Paprika("MangaStream.xyz", "http://mangastream.xyz", "en")
+class ReadMangaFox : Paprika("ReadMangaFox", "http://readmangafox.xyz", "en")
 class MangazukiXyz : Paprika("MangaZuki.xyz", "http://mangazuki.xyz", "en")
 class MangaTensei : Paprika("MangaTensei", "https://www.mangatensei.com", "en")
 class MangaNelo : Paprika("MangaNelos.com", "http://manganelos.com", "en")
