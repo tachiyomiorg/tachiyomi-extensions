@@ -60,9 +60,12 @@ class FoolSlideFactory : SourceFactory {
         TortugaCeviri(),
         Rama(),
         Mabushimajo(),
-        EdensZero()
+        EdensZero(),
+        MenudoFansub()
     )
 }
+
+class MenudoFansub : FoolSlide("Menudo-Fansub", "http://www.menudo-fansub.com", "es", "/slide")
 
 class TheCatScans : FoolSlide("The Cat Scans", "https://reader2.thecatscans.com/", "en")
 
