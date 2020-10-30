@@ -54,9 +54,12 @@ class WPMangaStreamFactory : SourceFactory {
         SheaManga(),
         FlameScans(),
         GURUKomik(),
-        Rawkuma()
+        Rawkuma(),
+        KaisarKomik()
     )
 }
+
+class KaisarKomik : WPMangaStream("Kaisar Komik", "https://kaisarkomik.com", "id")
 
 class Rawkuma : WPMangaStream("Rawkuma", "https://rawkuma.com/", "ja")
 
