@@ -35,16 +35,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.FormBody
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.text.ParseException
@@ -62,6 +52,16 @@ import kotlin.collections.map
 import kotlin.collections.mapIndexed
 import kotlin.collections.mutableListOf
 import kotlin.collections.toTypedArray
+import okhttp3.FormBody
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class Japscan : ConfigurableSource, ParsedHttpSource() {
 
@@ -89,10 +89,11 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "NewApi")
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
         val indicator = "&wvsc"
-        val cleanupjs = "var checkExist=setInterval(function(){if(document.getElementsByTagName('CNV-VV').length){clearInterval(checkExist);var e=document.body,a=e.children;for(e.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=a[0].tagName;)e.removeChild(a[0]);for(var t of[].slice.call(a[0].all_canvas))t.style.maxWidth='100%';window.android.passSize(a[0].all_canvas[0].width,a[0].all_canvas[0].width/a[0].all_canvas[0].height)}},100);"
+        val webtoonprefix = "&wt"
+        val cleanupjs = "var checkExist=setInterval(function(){if(document.getElementsByTagName('CNV-VV').length){clearInterval(checkExist);var e=document.body,a=e.children;for(e.appendChild(document.getElementsByTagName('CNV-VV')[document.getElementsByTagName('CNV-VV').length-1]);'CNV-VV'!=a[0].tagName;)e.removeChild(a[0]);for(var t of[].slice.call(a[0].all_canvas))t.style.maxWidth='100%';window.android.passSize(a[0].all_canvas[0].width,a[0].all_canvas[0].width/a[0].all_canvas[0].height)}},100);"
         val request = chain.request()
         val url = request.url().toString()
 
@@ -101,15 +102,25 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
             .build()
         val response = chain.proceed(newRequest)
         if (!url.endsWith(indicator)) return@addInterceptor response
+
         // Webview screenshotting code
+        val pageNum = url.replace(indicator, "").replace(webtoonprefix, "").split("/").last().replace(".html", "").toInt()
+        val iswt = url.endsWith(webtoonprefix + indicator)
+        val wtcleanupjs = "var checkExist=setInterval(function(){if(document.getElementById('image').children.length){clearInterval(checkExist);var e=document.body,n=e.children;for(e.appendChild(document.getElementById('image'));'image'!=n[0].id;)e.removeChild(n[0]);var t=document.getElementById('image');for(i=t.children.length-1;i>=$pageNum;i--)t.removeChild(t.children[i])}});"
+        val wtscreenshotjs = "for(var z=document.getElementById('image');z.children.length>1;)z.removeChild(z.children[0]);var x=document.getElementsByTagName('CNV-VV')[0].all_canvas[0];window.android.passSize(x.width,x.width/x.height);"
+
         val handler = Handler(Looper.getMainLooper())
         val latch = CountDownLatch(1)
+        val wtlatch = CountDownLatch(1)
         var webView: WebView? = null
         var height = 0
         var width = 0
         val jsinterface = JsObject(latch)
-        Log.d("japscan", "init wvsc")
+        Log.d("japscan", "init wvsc for page $pageNum")
+        if (iswt) { Log.d("japscan", "is webtoon") }
+
         handler.post {
+            WebView.setWebContentsDebuggingEnabled(true)
             val webview = WebView(Injekt.get<Application>())
             webView = webview
             webview.settings.javaScriptEnabled = true
@@ -119,38 +130,84 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
             webview.settings.loadWithOverviewMode = false
             webview.settings.userAgentString = webview.settings.userAgentString.replace("Mobile", "eliboM").replace("Android", "diordnA")
             webview.addJavascriptInterface(jsinterface, "android")
+
+            if (iswt) {
+                val dummyimage = Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565)
+                val dummystream = ByteArrayOutputStream()
+                dummyimage.compress(Bitmap.CompressFormat.JPEG, 100, dummystream)
+
+                var interceptCount = 0
+                webview.webViewClient = object : WebViewClient() {
+                    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+                    override fun shouldInterceptRequest(
+                        view: WebView,
+                        request: WebResourceRequest
+                    ): WebResourceResponse? {
+                        if (request.url.toString().startsWith("https://c.")) {
+                            interceptCount++
+                            Log.d("japscan", "wtwvsc intercepted $interceptCount")
+                            return when {
+                                pageNum == interceptCount -> {
+                                    Log.d("japscan", "wtwvsc done intercepting, returning real image")
+                                    wtlatch.countDown()
+                                    null
+                                }
+                                interceptCount < pageNum -> {
+                                    WebResourceResponse("image/jpeg", "UTF-8", ByteArrayInputStream(dummystream.toByteArray()))
+                                }
+                                else -> {
+                                    null
+                                }
+                            }
+                        }
+                        return null
+                    }
+                }
+            }
+
             var retries = 1
             webview.webChromeClient = object : WebChromeClient() {
                 @SuppressLint("NewApi")
                 override fun onProgressChanged(view: WebView, progress: Int) {
                     if (progress == 100 && retries--> 0) {
-                        Log.d("japscan", "wvsc loading finished")
-                        view.evaluateJavascript(cleanupjs) {}
+                        Log.d("japscan", "wvsc loading finished, running JS")
+                        if (iswt) { view.evaluateJavascript(wtcleanupjs) {} } else { view.evaluateJavascript(cleanupjs) {} }
                     }
                 }
             }
-            webview.loadUrl(url.replace("&wvsc", ""))
+
+            webview.loadUrl(url.replace(indicator, "").replace(webtoonprefix, ""))
+        }
+
+        if (iswt) {
+            wtlatch.await()
+            handler.post {
+                webView!!.evaluateJavascript(cleanupjs) {}
+            }
         }
 
         latch.await()
+
         width = jsinterface.width
         height = jsinterface.height
         // webView!!.isDrawingCacheEnabled = true
+        Log.d("japscan", "generating bitmap from screenshot with size $width $height")
 
         webView!!.measure(width, height)
         webView!!.layout(0, 0, width, height)
+        Log.d("japscan", "resized webview, waiting for drawing")
         Thread.sleep(350)
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         var canvas = Canvas(bitmap)
         webView!!.draw(canvas)
-
+        Log.d("japscan", "Drew webview to canvas, generating bitmap")
         // val bitmap: Bitmap = webView!!.drawingCache
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
         val rb = ResponseBody.create(MediaType.parse("image/png"), output.toByteArray())
         handler.post { webView!!.destroy() }
-        response.newBuilder().body(rb).build()
+        return@addInterceptor response.newBuilder().body(rb).build()
     }.build()
 
     companion object {
@@ -329,14 +386,20 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
+        Log.d("japscan", "ZJS at $zjsurl")
+        val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body()!!.string()
+
         return if (document.getElementsByTag("script").filter { it.attr("src").contains("ujs") }.size > 2) { // scrambled images, webview screenshotting
             Log.d("japscan", "scrambled, loading in WVSC urls")
-            document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
+            if ((zjs.toLowerCase().split("new image").size - 1) != 1) { // single page, webview request dumping
+                document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
+            } else {
+                Log.d("japscan", "scrambled webtoon, using webtoon wvsc")
+                document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wt&wvsc") }
+            }
         } else {
             // unscrambled images, check for single page
-            val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
-            Log.d("japscan", "ZJS at $zjsurl")
-            val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body()!!.string()
             if ((zjs.toLowerCase().split("new image").size - 1) == 1) { // single page, webview request dumping
                 Log.d("japscan", "webtoon, netdumping initiated")
                 val pagecount = document.getElementsByTag("option").size
