@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Rect
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -9,23 +13,78 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.HttpUrl
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 @Nsfw
 class Jinmantiantang : ParsedHttpSource() {
+
     override val baseUrl: String = "https://18comic2.biz"
     override val lang: String = "zh"
     override val name: String = "禁漫天堂"
     override val supportsLatest: Boolean = true
 
+    // 220980
+    // 算法 html页面 1800 行左右
+    // 图片开始分割的ID编号
+    var scramble_id = 220980
+    // 对只有一章的漫画进行判断条件
     private var chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
+
+    // 处理URL请求
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor(fun(chain): Response {
+        val url = chain.request().url().toString()
+        val response = chain.proceed(chain.request())
+        if (!url.contains("media/photos", ignoreCase = true)) return response // 对非漫画图片连接直接放行
+        if (url.substring(url.indexOf("photos/") + 7, url.lastIndexOf("/")).toInt() < scramble_id) return response // 对在漫画章节ID为220980之前的图片未进行图片分割,直接放行
+        // 章节ID:220980(包含)之后的漫画(2020.10.27之后)图片进行了分割倒序处理
+        val res = response.body()!!.byteStream().use {
+            decodeImage(it)
+        }
+        val mediaType = MediaType.parse("image/avif,image/webp,image/apng,image/*,*/*")
+        val outputBytes = ResponseBody.create(mediaType, res)
+        return response.newBuilder().body(outputBytes).build()
+    }).build()
+
+    // 对被分割的图片进行分割,排序处理
+    private fun decodeImage(img: InputStream): ByteArray {
+        // 使用bitmap进行图片处理
+        val input = BitmapFactory.decodeStream(img)
+        // 漫画高度
+        val height = input.height
+        val width = input.width
+        // 水平分割10个小图
+        val rows = 10
+        // 计算每个小图的高度
+        val chunkHeight = input.getHeight() / rows
+        // 创建新的图片对象
+        val resultBitmap = Bitmap.createBitmap(input.width, input.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(resultBitmap)
+        // 分割图片
+        for (x in 0 until rows) {
+            // 要裁剪的区域
+            val crop = Rect(0, height - (chunkHeight * (x + 1)), width, height - (chunkHeight * x))
+            // 裁剪后应放置到新图片对象的区域
+            val splic = Rect(0, chunkHeight * x, width, chunkHeight * (x + 1))
+
+            canvas.drawBitmap(input, crop, splic, null)
+        }
+        // 创建输出流
+        val output = ByteArrayOutputStream()
+        resultBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+        return output.toByteArray()
+    }
 
     // 点击量排序(人气)
     override fun popularMangaRequest(page: Int): Request {
