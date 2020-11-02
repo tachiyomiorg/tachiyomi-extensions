@@ -178,7 +178,7 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val result = response.asJson().array[0].obj
+        val result = response.asJson().obj["manga"].array[0].obj
 
         return SManga.create().apply {
             title = result["TITULO"].string
@@ -335,7 +335,8 @@ class TsukiMangas : HttpSource() {
     private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
