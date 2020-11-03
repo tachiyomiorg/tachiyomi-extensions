@@ -11,6 +11,10 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.SimpleDateFormat
 
+/**
+ *  @author Kevin Johnson <kevin@kj800x.com>
+ */
+ 
 class PepperAndCarrot : ParsedHttpSource() {
     override val name = "Pepper and Carrot"
     override val baseUrl = "https://www.peppercarrot.com/"

@@ -11,6 +11,10 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.SimpleDateFormat
 
+/**
+ *  @author Kevin Johnson <kevin@kj800x.com>
+ */
+
 class SMBC : ParsedHttpSource() {
     override val name = "SMBC"
     override val baseUrl = "https://www.smbc-comics.com/"

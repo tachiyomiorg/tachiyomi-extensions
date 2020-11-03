@@ -11,6 +11,10 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.SimpleDateFormat
 
+/**
+ *  @author Kevin Johnson <kevin@kj800x.com>
+ */
+ 
 class KiwiBlitz : ParsedHttpSource() {
     override val name = "KiwiBlitz"
     override val baseUrl = "http://www.kiwiblitz.com/"
