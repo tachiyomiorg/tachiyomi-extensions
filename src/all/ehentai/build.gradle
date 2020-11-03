@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: E-Hentai'
+    extName = 'E-Hentai'
     pkgNameSuffix = 'all.ehentai'
-    extClass = '.EHJapanese; .EHEnglish; .EHChinese; .EHDutch; .EHFrench; .EHGerman; .EHHungarian; .EHItalian; .EHKorean; .EHPolish; .EHPolish; .EHPortuguese; .EHRussian; .EHSpanish; .EHThai; .EHVietnamese; .EHSpeechless; .EHOther'
-    extVersionCode = 1
-    libVersion = '1.0'
+    extClass = '.EHFactory'
+    extVersionCode = 13
+    libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

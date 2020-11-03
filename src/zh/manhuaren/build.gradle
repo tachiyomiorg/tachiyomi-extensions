@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Manhuaren'
+    extName = 'Manhuaren'
     pkgNameSuffix = 'zh.manhuaren'
     extClass = '.Manhuaren'
-    extVersionCode = 4
+    extVersionCode = 7
     libVersion = '1.2'
 }
 

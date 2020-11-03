@@ -1,91 +1,64 @@
 package eu.kanade.tachiyomi.extension.all.nhentai
 
 import org.jsoup.nodes.Document
-import java.lang.StringBuilder
+import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 
-class NHUtils {
-    companion object {
-        fun getArtists(document: Document): String {
-            val stringBuilder = StringBuilder()
-            val artists = document.select("#tags > div:nth-child(4) > span > a")
-
-            artists.forEach {
-                stringBuilder.append(cleanTag(it.text()))
-
-                if (it != artists.last())
-                    stringBuilder.append(", ")
-            }
-
-            return stringBuilder.toString()
-        }
-
-        fun getGroups(document: Document): String? {
-            val stringBuilder = StringBuilder()
-            val groups = document.select("#tags > div:nth-child(5) > span > a")
-
-            groups.forEach {
-                stringBuilder.append(cleanTag(it.text()))
-
-                if (it != groups.last())
-                    stringBuilder.append(", ")
-            }
-
-            return if (stringBuilder.toString().isEmpty()) null else stringBuilder.toString()
-        }
-
-        fun getTags(document: Document): String {
-            val stringBuilder = StringBuilder()
-            val parodies = document.select("#tags > div:nth-child(1) > span > a")
-            val characters = document.select("#tags > div:nth-child(2) > span > a")
-            val tags = document.select("#tags > div:nth-child(3) > span > a")
-
-            if (parodies.size > 0) {
-                stringBuilder.append("Parodies: ")
-
-                parodies.forEach {
-                    stringBuilder.append(cleanTag(it.text()))
-
-                    if (it != parodies.last())
-                        stringBuilder.append(", ")
-                }
-
-                stringBuilder.append("\n\n")
-            }
-
-            if (characters.size > 0) {
-                stringBuilder.append("Characters: ")
-
-                characters.forEach {
-                    stringBuilder.append(cleanTag(it.text()))
-
-                    if (it != characters.last())
-                        stringBuilder.append(", ")
-                }
-
-                stringBuilder.append("\n\n")
-            }
-
-            if (tags.size > 0) {
-                stringBuilder.append("Tags: ")
-
-                tags.forEach {
-                    stringBuilder.append(cleanTag(it.text()))
-
-                    if (it != tags.last())
-                        stringBuilder.append(", ")
-                }
-            }
-
-            return stringBuilder.toString()
-        }
-
-        fun getTime(document: Document): Long {
-            val timeString = document.toString().substringAfter("datetime=\"").substringBefore("\">").replace("T", " ")
-
-            return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSSZ").parse(timeString).time
-        }
-
-        private fun cleanTag(tag: String): String = tag.replace(Regex("\\(.*\\)"), "").trim()
+object NHUtils {
+    fun getArtists(document: Document): String {
+        val artists = document.select("#tags > div:nth-child(4) > span > a .name")
+        return artists.joinToString(", ") { it.cleanTag() }
     }
+
+    fun getGroups(document: Document): String? {
+        val groups = document.select("#tags > div:nth-child(5) > span > a .name")
+        return if (groups.isNotEmpty()) {
+            groups.joinToString(", ") { it.cleanTag() }
+        } else {
+            null
+        }
+    }
+
+    fun getTagDescription(document: Document): String {
+        val stringBuilder = StringBuilder()
+
+        val categories = document.select("#tags > div:nth-child(7) > span > a .name")
+        if (categories.isNotEmpty()) {
+            stringBuilder.append("Categories: ")
+            stringBuilder.append(categories.joinToString(", ") { it.cleanTag() })
+            stringBuilder.append("\n\n")
+        }
+
+        val parodies = document.select("#tags > div:nth-child(1) > span > a .name")
+        if (parodies.isNotEmpty()) {
+            stringBuilder.append("Parodies: ")
+            stringBuilder.append(parodies.joinToString(", ") { it.cleanTag() })
+            stringBuilder.append("\n\n")
+        }
+
+        val characters = document.select("#tags > div:nth-child(2) > span > a .name")
+        if (characters.isNotEmpty()) {
+            stringBuilder.append("Characters: ")
+            stringBuilder.append(characters.joinToString(", ") { it.cleanTag() })
+        }
+
+        return stringBuilder.toString()
+    }
+
+    fun getTags(document: Document): String {
+        val tags = document.select("#tags > div:nth-child(3) > span > a .name")
+        return tags.map { it.cleanTag() }.sorted().joinToString(", ")
+    }
+
+    fun getNumPages(document: Document): String {
+        return document.select("#tags > div:nth-child(8) > span > a .name").first().cleanTag()
+    }
+
+    fun getTime(document: Document): Long {
+        val timeString = document.toString().substringAfter("datetime=\"").substringBefore("\">").replace("T", " ")
+
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSSZ").parse(timeString)?.time ?: 0L
+    }
+
+    private fun Element.cleanTag(): String = text().replace(Regex("\\(.*\\)"), "").trim()
 }

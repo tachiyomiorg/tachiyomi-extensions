@@ -2,11 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Mangaeden'
+    extName = 'Mangaeden'
     pkgNameSuffix = 'it.mangaeden'
     extClass = '.Mangaeden'
-    extVersionCode = 1
-    libVersion = '1.0'
+    extVersionCode = 6
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

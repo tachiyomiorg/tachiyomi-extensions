@@ -1,4 +1,6 @@
-package eu.kanade.tachiyomi.extension.all.ehentai;
+package eu.kanade.tachiyomi.extension.all.ehentai
+
+import android.net.Uri
 
 /**
  * Gallery metadata storage model
@@ -16,7 +18,7 @@ class ExGalleryMetadata {
 
     var datePosted: Long? = null
     var parent: String? = null
-    var visible: String? = null //Not a boolean
+    var visible: String? = null // Not a boolean
     var language: String? = null
     var translated: Boolean? = null
     var size: Long? = null
@@ -28,4 +30,23 @@ class ExGalleryMetadata {
     var uploader: String? = null
 
     val tags: MutableMap<String, List<Tag>> = mutableMapOf()
+
+    companion object {
+        private fun splitGalleryUrl(url: String) = url.let {
+            // Only parse URL if is full URL
+            val pathSegments = if (it.startsWith("http"))
+                Uri.parse(it).pathSegments
+            else
+                it.split('/')
+            pathSegments.filterNot(String::isNullOrBlank)
+        }
+
+        private fun galleryId(url: String) = splitGalleryUrl(url)[1]
+
+        private fun galleryToken(url: String) = splitGalleryUrl(url)[2]
+
+        private fun normalizeUrl(id: String, token: String) = "/g/$id/$token/?nw=always"
+
+        fun normalizeUrl(url: String) = normalizeUrl(galleryId(url), galleryToken(url))
+    }
 }

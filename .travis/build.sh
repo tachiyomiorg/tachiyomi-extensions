@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 ./gradlew --no-daemon clean assembleRelease
@@ -18,7 +17,8 @@ for APK in ${APKS[@]}; do
     APKNAME="${BASENAME%%+(-release*)}.apk"
     APKDEST="$DEST/$APKNAME"
 
-    ${TOOLS}/zipalign -v -p 4 $APK $APKDEST
+    ${TOOLS}/zipalign -c -v -p 4 $APK
+    cp $APK $APKDEST
     if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
         ${TOOLS}/apksigner sign --ks $STORE_PATH --ks-key-alias $STORE_ALIAS --ks-pass env:STORE_PASS --key-pass env:KEY_PASS $APKDEST
     fi

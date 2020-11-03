@@ -2,11 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ComX'
+    extName = 'ComX'
     pkgNameSuffix = 'ru.comx'
     extClass = '.ComX'
-    extVersionCode = 2
+    extVersionCode = 6
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

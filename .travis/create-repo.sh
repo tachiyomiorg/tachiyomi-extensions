@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 TOOLS="$(ls -d ${ANDROID_HOME}/build-tools/* | tail -1)"
@@ -15,12 +14,13 @@ APKS=( ../apk/*".apk"* )
 
 for APK in ${APKS[@]}; do
     FILENAME=$(basename ${APK})
-    BADGING="$(${TOOLS}/aapt dump badging $APK)"
+    BADGING="$(${TOOLS}/aapt dump --include-meta-data badging $APK)"
 
     PACKAGE=$(echo "$BADGING" | grep package:)
-    PKGNAME=$(echo $PACKAGE | grep -Po "name='\K[^']+")
+    PKGNAME=$(echo $PACKAGE | grep -Po "package: name='\K[^']+")
     VCODE=$(echo $PACKAGE | grep -Po "versionCode='\K[^']+")
     VNAME=$(echo $PACKAGE | grep -Po "versionName='\K[^']+")
+    NSFW=$(echo $BADGING | grep -Po "tachiyomi.extension.nsfw' value='\K[^']+")
 
     APPLICATION=$(echo "$BADGING" | grep application:)
     LABEL=$(echo $APPLICATION | grep -Po "label='\K[^']+")
@@ -37,6 +37,12 @@ for APK in ${APKS[@]}; do
         --arg lang "$LANG" \
         --argjson code $VCODE \
         --arg version "$VNAME" \
-        '{name:$name, pkg:$pkg, apk:$apk, lang:$lang, code:$code, version:$version}'
+        --argjson nsfw $NSFW \
+        '{name:$name, pkg:$pkg, apk:$apk, lang:$lang, code:$code, version:$version, nsfw:$nsfw}'
 
 done | jq -sr '[.[]]' > index.json
+
+# Alternate gzipped copy
+gzip -c index.json > index.json.gz
+
+cat index.json

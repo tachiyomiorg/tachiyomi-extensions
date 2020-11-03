@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: WieManga'
+    extName = 'WieManga'
     pkgNameSuffix = 'de.wiemanga'
     extClass = '.WieManga'
-    extVersionCode = 2
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

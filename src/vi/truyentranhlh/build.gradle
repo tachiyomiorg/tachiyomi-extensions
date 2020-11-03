@@ -2,15 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: TruyenTranhLh'
+    extName = 'TruyenTranhLH'
     pkgNameSuffix = 'vi.truyentranhlh'
-    extClass = '.Truyentranhlh'
-    extVersionCode = 4
+    extClass = '.TruyenTranhLH'
+    extVersionCode = 8
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly 'com.google.code.gson:gson:2.8.2'
 }
 
 apply from: "$rootDir/common.gradle"

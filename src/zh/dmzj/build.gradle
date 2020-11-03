@@ -2,11 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Dmzj'
+    extName = 'Dmzj'
     pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
-    extVersionCode = 4
-    libVersion = '1.0'
+    extVersionCode = 12
+    libVersion = '1.2'
 }
 
 apply from: "$rootDir/common.gradle"

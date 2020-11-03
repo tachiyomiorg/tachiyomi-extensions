@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.extension.en.webcomics
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
@@ -9,13 +14,12 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
 
 class Webcomics : ParsedHttpSource() {
 
     override val name = "Webcomics"
 
-    override val baseUrl = "http://www.webcomicsapp.com"
+    override val baseUrl = "https://www.webcomicsapp.com"
 
     override val lang = "en"
 
@@ -26,7 +30,7 @@ class Webcomics : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "section.mangas div div.col-md-3"
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", "http://www.webcomicsapp.com")
+        .add("Referer", "https://www.webcomicsapp.com")
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/popular.html", headers)
 
@@ -56,6 +60,9 @@ class Webcomics : ParsedHttpSource() {
         manga.genre = infoElement.select(".labels > label").joinToString(", ") { it.text() }
         manga.description = infoElement.select("p.p-description").text()
         manga.thumbnail_url = infoElement.select("img").first()?.attr("src")
+        infoElement.select("p.p-schedule:first-of-type").text().let {
+            if (it.contains("IDK")) manga.status = SManga.COMPLETED else manga.status = SManga.ONGOING
+        }
         return manga
     }
 
@@ -112,7 +119,22 @@ class Webcomics : ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        return document.select(chapterListSelector()).asReversed().map {chapterFromElement(it)}
+
+        /* Source only allows 20 chapters to be readable on their website, trying to read past
+           that results in a page list empty error; so might as well not grab them. */
+        return if (document.select("${chapterListSelector()}:nth-child(21)").isEmpty()) {
+            document.select(chapterListSelector()).asReversed().map { chapterFromElement(it) }
+        } else {
+            val chapters = mutableListOf<SChapter>()
+            for (i in 1..20)
+                document.select("${chapterListSelector()}:nth-child($i)").map { chapters.add(chapterFromElement(it)) }
+            // Add a chapter notifying the user of the situation
+            val lockedNotification = SChapter.create()
+            lockedNotification.name = "[Attention] Additional chapters are restricted by the source to their own app"
+            lockedNotification.url = "wiki.html"
+            chapters.add(lockedNotification)
+            chapters.reversed()
+        }
     }
 
     override fun chapterFromElement(element: Element): SChapter {
@@ -129,36 +151,36 @@ class Webcomics : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + "/" + chapter.url, headers)
 
     override fun pageListParse(document: Document) = document
-            .select("section.book-reader .img-list > li > img")
-            .mapIndexed {
-                i, element ->
-                Page(i, "", element.attr("data-original"))
-            }
+        .select("section.book-reader .img-list > li > img")
+        .mapIndexed {
+            i, element ->
+            Page(i, "", element.attr("data-original"))
+        }
 
     override fun imageUrlParse(document: Document) = ""
 
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     // [...$('.row.wiki-book-nav .col-md-8 ul a')].map(el => `"${el.textContent.trim()}"`).join(',\n')
-    // http://www.webcomicsapp.com/wiki.html
+    // https://www.webcomicsapp.com/wiki.html
     private fun getGenreList() = arrayOf(
-            "All",
-            "Fantasy",
-            "Comedy",
-            "Drama",
-            "Modern",
-            "Action",
-            "Monster",
-            "Romance",
-            "Boys'Love",
-            "Harem",
-            "Thriller",
-            "Historical",
-            "Sci-fi",
-            "Slice of Life"
+        "All",
+        "Fantasy",
+        "Comedy",
+        "Drama",
+        "Modern",
+        "Action",
+        "Monster",
+        "Romance",
+        "Boys'Love",
+        "Harem",
+        "Thriller",
+        "Historical",
+        "Sci-fi",
+        "Slice of Life"
     )
 }

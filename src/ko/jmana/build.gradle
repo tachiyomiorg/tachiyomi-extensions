@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: JMana'
+    extName = 'JMana'
     pkgNameSuffix = 'ko.jmana'
     extClass = '.JMana'
-    extVersionCode = 2
+    extVersionCode = 11
     libVersion = '1.2'
 }
 

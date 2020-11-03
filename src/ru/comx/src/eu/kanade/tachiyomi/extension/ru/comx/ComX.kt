@@ -1,8 +1,10 @@
 package eu.kanade.tachiyomi.extension.ru.comx
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -10,6 +12,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -24,15 +27,39 @@ class ComX : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    private val userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:72.0) Gecko/20100101 Firefox/72.0"
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addNetworkInterceptor(RateLimitInterceptor(2))
+        .build()
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", userAgent)
+        .add("Referer", baseUrl)
+
     override fun popularMangaSelector() = "div.shortstory1"
 
     override fun latestUpdatesSelector() = "ul.last-comix li"
 
-    override fun popularMangaRequest(page: Int): Request =
-              GET("$baseUrl/comix/page/$page/", headers)
+    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/comix/page/$page/", headers)
 
-    override fun latestUpdatesRequest(page: Int): Request =
-            GET(baseUrl, headers)
+    override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select(popularMangaSelector()).map { element ->
+            popularMangaFromElement(element)
+        }
+
+        if (mangas.isEmpty()) throw UnsupportedOperationException("Error: Open in WebView and solve the Antirobot!")
+
+        val hasNextPage = popularMangaNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -54,19 +81,19 @@ class ComX : ParsedHttpSource() {
         return manga
     }
 
-
     override fun popularMangaNextPageSelector() = "div.nextprev:last-child"
 
     override fun latestUpdatesNextPageSelector(): Nothing? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return POST("$baseUrl/comix/",
-                body = FormBody.Builder()
-                        .add("do", "search")
-                        .add("story", query)
-                        .add("subaction", "search")
-                        .build(),
-                headers = headers
+        return POST(
+            "$baseUrl/comix/",
+            body = FormBody.Builder()
+                .add("do", "search")
+                .add("story", query)
+                .add("subaction", "search")
+                .build(),
+            headers = headers
         )
     }
 
@@ -83,17 +110,19 @@ class ComX : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = infoElement.select("p:eq(2)").text().removePrefix("Издатель: ")
         manga.genre = infoElement.select("p:eq(3)").text()
-                .removePrefix("Жанр: ")
+            .removePrefix("Жанр: ").split(",").plusElement("Комикс").joinToString { it.trim() }
 
-        manga.status = parseStatus(infoElement.select("p:eq(4)").text()
-                .removePrefix("Статус: "))
+        manga.status = parseStatus(
+            infoElement.select("p:eq(4)").text()
+                .removePrefix("Статус: ")
+        )
 
         val text = infoElement.select("*").text()
         if (!text.contains("Добавить описание на комикс")) {
             val fromRemove = "Отслеживать"
             val toRemove = "Читать комикс"
-            val desc = text.removeRange(0,  text.indexOf(fromRemove)+fromRemove.length)
-            manga.description = desc.removeRange(desc.indexOf(toRemove)+toRemove.length, desc.length)
+            val desc = text.removeRange(0, text.indexOf(fromRemove) + fromRemove.length)
+            manga.description = desc.removeRange(desc.indexOf(toRemove) + toRemove.length, desc.length)
         }
 
         val src = infoElement.select("img").attr("src")
@@ -108,21 +137,21 @@ class ComX : ParsedHttpSource() {
     private fun parseStatus(element: String): Int = when {
         element.contains("Продолжается") -> SManga.ONGOING
         element.contains("Завершён") ||
-                element.contains("Лимитка") ||
-                element.contains("Ван шот") ||
-                element.contains("Графический роман") -> SManga.COMPLETED
+            element.contains("Лимитка") ||
+            element.contains("Ван шот") ||
+            element.contains("Графический роман") -> SManga.COMPLETED
 
         else -> SManga.UNKNOWN
     }
 
     override fun chapterListSelector() = "li[id^=cmx-]"
 
-    private fun chapterResponseParse(document: Document) : List<SChapter> {
+    private fun chapterResponseParse(document: Document): List<SChapter> {
         return document.select(chapterListSelector()).map { chapterFromElement(it) }
     }
 
-    private fun chapterPageListParse(document: Document) : List<String> {
-        return document.select("span[class=\"\"]").map { it -> it.text() }
+    private fun chapterPageListParse(document: Document): List<String> {
+        return document.select("span[class=\"\"]").map { it.text() }
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -135,12 +164,14 @@ class ComX : ParsedHttpSource() {
         val pages = chapterPageListParse(document).distinct()
 
         for (page in pages) {
-            val post = POST("$baseUrl/engine/mods/comix/listPages.php",
-                    body = FormBody.Builder()
-                            .add("newsid", id)
-                            .add("page", page)
-                            .build(),
-                    headers = headers)
+            val post = POST(
+                "$baseUrl/engine/mods/comix/listPages.php",
+                body = FormBody.Builder()
+                    .add("newsid", id)
+                    .add("page", page)
+                    .build(),
+                headers = headers
+            )
 
             list += chapterResponseParse(client.newCall(post).execute().asJsoup())
         }
@@ -152,7 +183,7 @@ class ComX : ParsedHttpSource() {
         val urlElement = element.select("a").first()
         val urlText = urlElement.text()
         val chapter = SChapter.create()
-        chapter.name = urlText
+        chapter.name = urlText.split('/')[0] // Remove english part of name
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.date_upload = 0
         return chapter
@@ -168,14 +199,12 @@ class ComX : ParsedHttpSource() {
 
         val link = html.substring(endIndex + endTag.length, comixIndex)
         val urls: List<String> = html.substring(beginIndex + beginTag.length, endIndex)
-                .split(',')
-
+            .split(',')
 
         val pages = mutableListOf<Page>()
-        for (i in 0 until urls.size) {
-            pages.add(Page(i, "", link+(urls[i].removeSurrounding("'"))))
+        for (i in urls.indices) {
+            pages.add(Page(i, "", link + (urls[i].removeSurrounding("'"))))
         }
-
         return pages
     }
 
@@ -186,10 +215,6 @@ class ComX : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        val imgHeader = Headers.Builder().apply {
-            add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-            add("Referer", baseUrl)
-        }.build()
-        return GET(page.imageUrl!!, imgHeader)
+        return GET(page.imageUrl!!, headers)
     }
 }

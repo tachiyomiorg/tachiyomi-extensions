@@ -1,0 +1,20 @@
+name: Issue closer
+on:
+  issues:
+    types: [opened, edited, reopened]
+jobs:
+  autoclose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+      - name: Install Node v14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - name: Install dependencies
+        run: cd ./.github/actions/issue-closer && npm install
+      - name: Autoclose issue
+        uses: ./.github/actions/issue-closer
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}

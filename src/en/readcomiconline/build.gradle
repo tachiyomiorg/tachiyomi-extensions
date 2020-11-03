@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ReadComicOnline'
+    extName = 'ReadComicOnline'
     pkgNameSuffix = 'en.readcomiconline'
     extClass = '.Readcomiconline'
-    extVersionCode = 4
+    extVersionCode = 8
     libVersion = '1.2'
 }
 

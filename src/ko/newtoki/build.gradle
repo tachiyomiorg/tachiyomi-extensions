@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: NewToki'
+    extName = 'NewToki / ManaToki(ManaMoa)'
     pkgNameSuffix = 'ko.newtoki'
-    extClass = '.NewToki'
-    extVersionCode = 1
+    extClass = '.NewTokiFactory'
+    extVersionCode = 18
     libVersion = '1.2'
 }
 

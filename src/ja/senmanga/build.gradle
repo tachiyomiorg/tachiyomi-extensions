@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Sen Manga'
+    extName = 'Sen Manga'
     pkgNameSuffix = 'ja.senmanga'
     extClass = '.SenManga'
-    extVersionCode = 2
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

@@ -2,18 +2,16 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaDex'
+    extName = 'MangaDex'
     pkgNameSuffix = 'all.mangadex'
-    extClass = '.MangadexFactory'
-    extVersionCode = 46
+    extClass = '.MangaDexFactory'
+    extVersionCode = 97
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 dependencies {
-    compileOnly project(':preference-stub')
-    compileOnly 'com.google.code.gson:gson:2.8.2'
-    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

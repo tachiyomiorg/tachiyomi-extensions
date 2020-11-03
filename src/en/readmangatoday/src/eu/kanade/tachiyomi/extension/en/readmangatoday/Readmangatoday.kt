@@ -2,14 +2,18 @@ package eu.kanade.tachiyomi.extension.en.readmangatoday
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.*
+import java.util.Calendar
 
 class Readmangatoday : ParsedHttpSource() {
 
@@ -26,11 +30,13 @@ class Readmangatoday : ParsedHttpSource() {
     override val client: OkHttpClient get() = network.cloudflareClient
 
     /**
-     * Search only returns data with this set
+     * Search only returns data with user-agent and x-requeted-with set
+     * Referer needed due to some chapters linking images from other domains
      */
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
         add("X-Requested-With", "XMLHttpRequest")
+        add("Referer", baseUrl)
     }
 
     override fun popularMangaRequest(page: Int): Request {
@@ -51,6 +57,7 @@ class Readmangatoday : ParsedHttpSource() {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.attr("title")
         }
+        manga.thumbnail_url = element.select("img").attr("src")
         return manga
     }
 
@@ -105,7 +112,7 @@ class Readmangatoday : ParsedHttpSource() {
         manga.status = detailElement.select("dl.dl-horizontal > dd:eq(3)").first()?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = detailElement.select("img.img-responsive").first()?.attr("src")
 
-        var genres = mutableListOf<String>()
+        val genres = mutableListOf<String>()
         genreElement?.forEach { genres.add(it.text()) }
         manga.genre = genres.joinToString(", ")
 
@@ -135,38 +142,46 @@ class Readmangatoday : ParsedHttpSource() {
 
         if (dateWords.size == 3) {
             val timeAgo = Integer.parseInt(dateWords[0])
-            val date: Calendar = Calendar.getInstance()
+            val calendar = Calendar.getInstance()
 
-            if (dateWords[1].contains("Minute")) {
-                date.add(Calendar.MINUTE, -timeAgo)
-            } else if (dateWords[1].contains("Hour")) {
-                date.add(Calendar.HOUR_OF_DAY, -timeAgo)
-            } else if (dateWords[1].contains("Day")) {
-                date.add(Calendar.DAY_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("Week")) {
-                date.add(Calendar.WEEK_OF_YEAR, -timeAgo)
-            } else if (dateWords[1].contains("Month")) {
-                date.add(Calendar.MONTH, -timeAgo)
-            } else if (dateWords[1].contains("Year")) {
-                date.add(Calendar.YEAR, -timeAgo)
+            when {
+                dateWords[1].contains("Minute") -> {
+                    calendar.add(Calendar.MINUTE, -timeAgo)
+                }
+                dateWords[1].contains("Hour") -> {
+                    calendar.add(Calendar.HOUR_OF_DAY, -timeAgo)
+                }
+                dateWords[1].contains("Day") -> {
+                    calendar.add(Calendar.DAY_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("Week") -> {
+                    calendar.add(Calendar.WEEK_OF_YEAR, -timeAgo)
+                }
+                dateWords[1].contains("Month") -> {
+                    calendar.add(Calendar.MONTH, -timeAgo)
+                }
+                dateWords[1].contains("Year") -> {
+                    calendar.add(Calendar.YEAR, -timeAgo)
+                }
             }
 
-            return date.timeInMillis
+            return calendar.timeInMillis
         }
 
         return 0L
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        document.select("ul.list-switcher-2 > li > select.jump-menu").first().getElementsByTag("option").forEach {
-            pages.add(Page(pages.size, it.attr("value")))
-        }
-        pages.getOrNull(0)?.imageUrl = imageUrlParse(document)
-        return pages
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET("$baseUrl/${chapter.url}/all-pages", headers)
     }
 
-    override fun imageUrlParse(document: Document) = document.select("#chapter_img").first().attr("src")
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("div.content-list > img").mapIndexed { i, img ->
+            Page(i, "", img.attr("abs:src"))
+        }
+    }
+
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class Status : Filter.TriState("Completed")
     private class Genre(name: String, val id: Int) : Filter.TriState(name)
@@ -175,50 +190,50 @@ class Readmangatoday : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            TextField("Author", "author-name"),
-            TextField("Artist", "artist-name"),
-            Type(),
-            Status(),
-            GenreList(getGenreList())
+        TextField("Author", "author-name"),
+        TextField("Artist", "artist-name"),
+        Type(),
+        Status(),
+        GenreList(getGenreList())
     )
 
     // [...document.querySelectorAll("ul.manga-cat span")].map(el => `Genre("${el.nextSibling.textContent.trim()}", ${el.getAttribute('data-id')})`).join(',\n')
-    // http://www.readmanga.today/advanced-search
+    // https://www.readmng.com/advanced-search
     private fun getGenreList() = listOf(
-            Genre("Action", 2),
-            Genre("Adventure", 4),
-            Genre("Comedy", 5),
-            Genre("Doujinshi", 6),
-            Genre("Drama", 7),
-            Genre("Ecchi", 8),
-            Genre("Fantasy", 9),
-            Genre("Gender Bender", 10),
-            Genre("Harem", 11),
-            Genre("Historical", 12),
-            Genre("Horror", 13),
-            Genre("Josei", 14),
-            Genre("Lolicon", 15),
-            Genre("Martial Arts", 16),
-            Genre("Mature", 17),
-            Genre("Mecha", 18),
-            Genre("Mystery", 19),
-            Genre("One shot", 20),
-            Genre("Psychological", 21),
-            Genre("Romance", 22),
-            Genre("School Life", 23),
-            Genre("Sci-fi", 24),
-            Genre("Seinen", 25),
-            Genre("Shotacon", 26),
-            Genre("Shoujo", 27),
-            Genre("Shoujo Ai", 28),
-            Genre("Shounen", 29),
-            Genre("Shounen Ai", 30),
-            Genre("Slice of Life", 31),
-            Genre("Smut", 32),
-            Genre("Sports", 33),
-            Genre("Supernatural", 34),
-            Genre("Tragedy", 35),
-            Genre("Yaoi", 36),
-            Genre("Yuri", 37)
+        Genre("Action", 2),
+        Genre("Adventure", 4),
+        Genre("Comedy", 5),
+        Genre("Doujinshi", 6),
+        Genre("Drama", 7),
+        Genre("Ecchi", 8),
+        Genre("Fantasy", 9),
+        Genre("Gender Bender", 10),
+        Genre("Harem", 11),
+        Genre("Historical", 12),
+        Genre("Horror", 13),
+        Genre("Josei", 14),
+        Genre("Lolicon", 15),
+        Genre("Martial Arts", 16),
+        Genre("Mature", 17),
+        Genre("Mecha", 18),
+        Genre("Mystery", 19),
+        Genre("One shot", 20),
+        Genre("Psychological", 21),
+        Genre("Romance", 22),
+        Genre("School Life", 23),
+        Genre("Sci-fi", 24),
+        Genre("Seinen", 25),
+        Genre("Shotacon", 26),
+        Genre("Shoujo", 27),
+        Genre("Shoujo Ai", 28),
+        Genre("Shounen", 29),
+        Genre("Shounen Ai", 30),
+        Genre("Slice of Life", 31),
+        Genre("Smut", 32),
+        Genre("Sports", 33),
+        Genre("Supernatural", 34),
+        Genre("Tragedy", 35),
+        Genre("Yaoi", 36),
+        Genre("Yuri", 37)
     )
 }

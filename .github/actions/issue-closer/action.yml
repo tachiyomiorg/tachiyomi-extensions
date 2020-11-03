@@ -1,0 +1,13 @@
+name: Issue matching auto-closer
+description: Automatically close issues.
+author: arkon
+branding:
+  icon: alert-circle
+  color: red
+inputs:
+  repo-token:
+    required: true
+    description: GitHub token
+runs:
+  using: node12
+  main: dist/index.js
