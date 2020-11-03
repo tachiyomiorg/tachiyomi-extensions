@@ -1,6 +1,10 @@
 package eu.kanade.tachiyomi.extension.en.sandraandwoo
 
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -11,7 +15,7 @@ import java.text.SimpleDateFormat
 /**
  *  @author Kevin Johnson <kevin@kj800x.com>
  */
- 
+
 class SandraAndWoo : ParsedHttpSource() {
     override val name = "Sandra and Woo"
     override val baseUrl = "http://www.sandraandwoo.com"
@@ -43,7 +47,7 @@ class SandraAndWoo : ParsedHttpSource() {
         val chapter = SChapter.create()
         val rawUrl = element.attr("href")
         chapter.url = rawUrl.replace("http://www.sandraandwoo.com", "")
-        val number = try { element.text().split(" ")[0].replace("[", "").replace("]", "").toFloat() } catch (e: NumberFormatException) {0.0f}
+        val number = try { element.text().split(" ")[0].replace("[", "").replace("]", "").toFloat() } catch (e: NumberFormatException) { 0.0f }
         chapter.chapter_number = number
         chapter.name = element.text()
         val year = rawUrl.split("/")[3]
@@ -93,5 +97,4 @@ class SandraAndWoo : ParsedHttpSource() {
     companion object {
         const val thumbnailUrl = "http://www.sandraandwoo.com/10years/sandra-and-woo-10-years-cover-e3jDcipN.png"
     }
-
 }

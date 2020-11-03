@@ -1,7 +1,10 @@
 package eu.kanade.tachiyomi.extension.en.pepperandcarrot
 
-import com.github.salomonbrys.kotson.string
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
@@ -14,7 +17,7 @@ import java.text.SimpleDateFormat
 /**
  *  @author Kevin Johnson <kevin@kj800x.com>
  */
- 
+
 class PepperAndCarrot : ParsedHttpSource() {
     override val name = "Pepper and Carrot"
     override val baseUrl = "https://www.peppercarrot.com/"
@@ -61,11 +64,11 @@ class PepperAndCarrot : ParsedHttpSource() {
      */
     private fun chapterListFromElement(element: Element): List<SChapter> {
         try {
-            val caption = element.select("figcaption");
-            val a = element.select("a");
+            val caption = element.select("figcaption")
+            val a = element.select("a")
 
             val chapter = SChapter.create()
-            chapter.url = a.attr("href").removePrefix(baseUrl);
+            chapter.url = a.attr("href").removePrefix(baseUrl)
             chapter.name = a.attr("title")
             val dateString = caption.text().split(",")[0]
             chapter.date_upload = SimpleDateFormat("yyyy/MM/dd").parse(dateString).time
@@ -119,5 +122,4 @@ class PepperAndCarrot : ParsedHttpSource() {
     companion object {
         const val thumbnailUrl = "https://fakeimg.pl/550x780/ffffff/6E7B91/?text=P&C&font=museo"
     }
-
 }

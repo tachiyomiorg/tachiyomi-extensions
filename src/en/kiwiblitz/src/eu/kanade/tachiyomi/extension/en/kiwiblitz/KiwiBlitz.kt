@@ -1,7 +1,10 @@
 package eu.kanade.tachiyomi.extension.en.kiwiblitz
 
-import com.github.salomonbrys.kotson.string
-import eu.kanade.tachiyomi.source.model.*
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
@@ -14,7 +17,7 @@ import java.text.SimpleDateFormat
 /**
  *  @author Kevin Johnson <kevin@kj800x.com>
  */
- 
+
 class KiwiBlitz : ParsedHttpSource() {
     override val name = "KiwiBlitz"
     override val baseUrl = "http://www.kiwiblitz.com/"
@@ -151,5 +154,4 @@ class KiwiBlitz : ParsedHttpSource() {
         val pageAltTextRegex = Regex("Page\\s?\\d*")
         val trackAltTextRegex = Regex("Track\\s?\\d*\\s?[–\\-]\\s?\\d*") // TODO Note this isn't a regular dash
     }
-
 }
