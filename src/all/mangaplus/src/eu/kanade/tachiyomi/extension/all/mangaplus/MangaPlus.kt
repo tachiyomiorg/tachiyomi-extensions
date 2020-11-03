@@ -58,7 +58,8 @@ abstract class MangaPlus(
         .build()
 
     private val protobufJs: String by lazy {
-        client.newCall(GET(PROTOBUFJS_CDN, headers)).execute().body()!!.string()
+        val request = GET(PROTOBUFJS_CDN, headers)
+        client.newCall(request).execute().body()!!.string()
     }
 
     private val gson: Gson by lazy { Gson() }
@@ -427,44 +428,35 @@ abstract class MangaPlus(
         }
 
     private fun Response.asProto(): MangaPlusResponse {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT)
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M)
             return ProtoBuf.decodeFromByteArray(MangaPlusSerializer, body()!!.bytes())
 
-        // Apparently, the version used of Kotlinx Serialization lib causes a crash
-        // on KitKat devices (see #1678). So, if the device is running KitKat or lower,
-        // we use the old method of parsing their API -- using ProtobufJS + Duktape + Gson.
+        // The kotlinx.serialization library eventually always have some issues with
+        // devices with Android version below Nougat. So, if the device is running Marshmallow
+        // or lower, the deserialization is done using ProtobufJS + Duktape + Gson.
 
         val bytes = body()!!.bytes()
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
 
         val res = Duktape.create().use {
-            it.set(
-                "helper",
-                DuktapeHelper::class.java,
-                object : DuktapeHelper {
-                    override fun getProtobuf(): String = protobufJs
-                }
-            )
+            // The current Kotlin versions brokes Duktape's module feature,
+            // so we need to provide an workaround to prevent the usage of 'require'.
+            it.evaluate("var module = { exports: true };")
+            it.evaluate(protobufJs)
             it.evaluate(messageBytes + DECODE_SCRIPT) as String
         }
 
-        // The Json.parse method of the Kotlinx Serialization causes the app to crash too,
-        // so unfortunately we have to use Gson to deserialize.
         return gson.fromJson(res, MangaPlusResponse::class.java)
-    }
-
-    private interface DuktapeHelper {
-        @Suppress("unused")
-        fun getProtobuf(): String
     }
 
     companion object {
         private const val API_URL = "https://jumpg-webapi.tokyo-cdn.com/api"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.92 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
 
-        private const val PROTOBUFJS_CDN = "https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.8/dist/light/protobuf.min.js"
+        private const val PROTOBUFJS_CDN = "https://cdn.jsdelivr.net/npm/protobufjs@6.10.1/dist/light/protobuf.js"
 
         private const val RESOLUTION_PREF_KEY = "imageResolution"
         private const val RESOLUTION_PREF_TITLE = "Image resolution"

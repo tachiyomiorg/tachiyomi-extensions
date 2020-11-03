@@ -6,12 +6,12 @@ ext {
     extName = 'MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 13
+    extVersionCode = 14
     libVersion = '1.2'
 }
 
 dependencies {
-    final serialization_version = '1.0.0-RC'
+    final serialization_version = '1.0.1'
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version"
 }

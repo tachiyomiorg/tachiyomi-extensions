@@ -123,16 +123,10 @@ data class MangaPage(
     @ProtoNumber(5) val encryptionKey: String? = null
 )
 
-// Used for the deserialization on KitKat devices.
+// Used for the deserialization on older devices.
 const val DECODE_SCRIPT: String =
     """
-    Duktape.modSearch = function(id) {
-        if (id == "protobufjs")
-            return helper.getProtobuf();
-        throw new Error("Cannot find module: " + id);
-    }
-
-    var protobuf = require("protobufjs");
+    var protobuf = module.exports;
 
     var Root = protobuf.Root;
     var Type = protobuf.Type;
