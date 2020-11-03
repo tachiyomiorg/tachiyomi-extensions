@@ -11,7 +11,7 @@ ext {
 }
 
 dependencies {
-    final serialization_version = '1.0.1'
+    final serialization_version = '1.0.0'
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version"
 }
