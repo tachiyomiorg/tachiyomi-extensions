@@ -439,7 +439,7 @@ abstract class MangaPlus(
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
 
         val res = Duktape.create().use {
-            // The current Kotlin versions brokes Duktape's module feature,
+            // The current Kotlin version brokes Duktape's module feature,
             // so we need to provide an workaround to prevent the usage of 'require'.
             it.evaluate("var module = { exports: true };")
             it.evaluate(protobufJs)
