@@ -66,17 +66,27 @@ class Jinmantiantang : ParsedHttpSource() {
         val width = input.width
         // 水平分割10个小图
         val rows = 10
-        // 计算每个小图的高度
-        val chunkHeight = input.getHeight() / rows
+        // 未除尽像素
+        var remainder = (height % rows)
         // 创建新的图片对象
         val resultBitmap = Bitmap.createBitmap(input.width, input.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(resultBitmap)
         // 分割图片
         for (x in 0 until rows) {
+            // 分割算法(详情见html源码页的方法"function scramble_image(img)")
+            var copyH = Math.floor(height / rows.toDouble()).toInt()
+            var py = copyH * (x)
+            var y = height - (copyH * (x + 1)) - remainder
+
+            if (x == 0) {
+                copyH = copyH + remainder
+            } else {
+                py = py + remainder
+            }
             // 要裁剪的区域
-            val crop = Rect(0, height - (chunkHeight * (x + 1)), width, height - (chunkHeight * x))
+            val crop = Rect(0, y, width, (height - (copyH * x) - remainder))
             // 裁剪后应放置到新图片对象的区域
-            val splic = Rect(0, chunkHeight * x, width, chunkHeight * (x + 1))
+            val splic = Rect(0, py, width, (py + copyH))
 
             canvas.drawBitmap(input, crop, splic, null)
         }
