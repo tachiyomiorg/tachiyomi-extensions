@@ -17,7 +17,7 @@ open class WebtoonsDefault(
     private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
 ) : Webtoons(lang, langCode, lang) {
 
-    override fun chapterListSelector() = "ul#_episodeList > li[id*=episode]"
+    override fun chapterListSelector() = "ul#_episodeList li[id*=episode]"
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select("a")
