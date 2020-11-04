@@ -33,6 +33,7 @@ class MadaraFactory : SourceFactory {
         AllPornComic(),
         AniMangaEs(),
         AoCTranslations(),
+        ApollComics(),
         ArangScans(),
         ArazNovel(),
         AsgardTeam(),
@@ -60,6 +61,7 @@ class MadaraFactory : SourceFactory {
         EinherjarScan(),
         FirstKissManga(),
         FirstKissManhua(),
+        FreeWebtoonCoins(),
         FriendlyTranslations(),
         FunList(),
         FurioScans(),
@@ -78,6 +80,7 @@ class MadaraFactory : SourceFactory {
         JJutsuScans(),
         KMangaIn(),
         KingzManga(),
+        KisekiManga(),
         KlanKomik(),
         KlikManga(),
         KomikGo(),
@@ -99,6 +102,7 @@ class MadaraFactory : SourceFactory {
         MangaKomi(),
         MangaLord(),
         MangaLandArabic(),
+        ManganeloLink(),
         MangaNine(),
         MangaPhoenix(),
         MangaRawr(),
@@ -144,6 +148,7 @@ class MadaraFactory : SourceFactory {
         MixedManga(),
         MysticalMerries(),
         NazarickScans(),
+        NekoBreaker(),
         NeoxScanlator(),
         NightComic(),
         NijiTranslations(),
@@ -207,6 +212,16 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class NekoBreaker : Madara("NekoBreaker", "https://nekobreaker.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt")))
+
+class ManganeloLink : Madara("Manganelo.link", "https://manganelo.link", "en")
+
+class ApollComics : Madara("ApollComics", "https://apollcomics.xyz", "es", SimpleDateFormat("dd MMMM, yyyy", Locale("es")))
+
+class KisekiManga : Madara("KisekiManga", "https://kisekimanga.com", "en")
+
+class FreeWebtoonCoins : Madara("FreeWebtoonCoins", "https://freewebtooncoins.com", "en")
 
 class MangaRoma : Madara("MangaRoma", "https://mangaroma.com", "en")
 
