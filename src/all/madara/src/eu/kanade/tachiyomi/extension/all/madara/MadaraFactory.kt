@@ -861,7 +861,7 @@ class ATMSubs : Madara("ATM-Subs", "https://atm-subs.fr", "fr", SimpleDateFormat
 
 class OnManga : Madara("OnManga", "https://onmanga.com", "en")
 
-class MangaAction : Madara("Manga Action", "https://manga-action.com", "ar", SimpleDateFormat("yyyy-MM-dd", Locale("ar")))
+class MangaAction : Madara("Manga Action", "https://mangaaction.com", "ar", SimpleDateFormat("yyyy-MM-dd", Locale("ar")))
 
 class NijiTranslations : Madara("Niji Translations", "https://niji-translations.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
 
