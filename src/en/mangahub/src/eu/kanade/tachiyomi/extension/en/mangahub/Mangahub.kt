@@ -186,7 +186,7 @@ class Mangahub : ParsedHttpSource() {
         return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = "div#mangalist"
+    override fun searchMangaSelector() = "div#mangalist div.media-manga.media"
 
     override fun searchMangaFromElement(element: Element): SManga {
         return popularMangaFromElement(element)
