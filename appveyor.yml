@@ -8,4 +8,4 @@ install:
 build_script:
   - gradlew.bat assemble
 artifacts:
-  - path: src/en/*/build/outputs/apk/debug/*.apk
+  - path: src/*/*/build/outputs/apk/debug/*.apk

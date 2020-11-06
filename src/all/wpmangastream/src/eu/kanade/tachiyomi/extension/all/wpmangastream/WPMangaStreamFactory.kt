@@ -91,7 +91,11 @@ class KomikAV : WPMangaStream(
     "https://komikav.com",
     "id",
     dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id"))
-)
+) {
+    override fun imageRequest(page: Page): Request {
+        return GET(page.imageUrl!!, headers)
+    }
+}
 
 class KomikStation : WPMangaStream("Komik Station (WP Manga Stream)", "https://komikstation.com", "id")
 
