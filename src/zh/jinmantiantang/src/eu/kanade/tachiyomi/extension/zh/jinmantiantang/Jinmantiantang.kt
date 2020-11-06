@@ -38,7 +38,8 @@ class Jinmantiantang : ParsedHttpSource() {
     // 220980
     // 算法 html页面 1800 行左右
     // 图片开始分割的ID编号
-    var scramble_id = 220980
+    val scramble_id = 220980
+
     // 对只有一章的漫画进行判断条件
     private var chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
 
@@ -61,22 +62,31 @@ class Jinmantiantang : ParsedHttpSource() {
     private fun decodeImage(img: InputStream): ByteArray {
         // 使用bitmap进行图片处理
         val input = BitmapFactory.decodeStream(img)
-        // 漫画高度
+        // 漫画高度 and width
         val height = input.height
         val width = input.width
         // 水平分割10个小图
         val rows = 10
-        // 计算每个小图的高度
-        val chunkHeight = input.getHeight() / rows
+        // 未除尽像素
+        var remainder = (height % rows)
         // 创建新的图片对象
         val resultBitmap = Bitmap.createBitmap(input.width, input.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(resultBitmap)
         // 分割图片
         for (x in 0 until rows) {
+            // 分割算法(详情见html源码页的方法"function scramble_image(img)")
+            var copyH = Math.floor(height / rows.toDouble()).toInt()
+            var py = copyH * (x)
+            var y = height - (copyH * (x + 1)) - remainder
+            if (x == 0) {
+                copyH = copyH + remainder
+            } else {
+                py = py + remainder
+            }
             // 要裁剪的区域
-            val crop = Rect(0, height - (chunkHeight * (x + 1)), width, height - (chunkHeight * x))
+            val crop = Rect(0, y, width, (height - (copyH * x) - remainder))
             // 裁剪后应放置到新图片对象的区域
-            val splic = Rect(0, chunkHeight * x, width, chunkHeight * (x + 1))
+            val splic = Rect(0, py, width, (py + copyH))
 
             canvas.drawBitmap(input, crop, splic, null)
         }
@@ -140,6 +150,7 @@ class Jinmantiantang : ParsedHttpSource() {
         }
         return GET(url.toString(), headers)
     }
+
     // 默认过滤类型, 仅针对能够自己编译应用的读者
     private val defaultRemovedGenres: String = "" // like ”YAOI+扶他+毛絨絨+獵奇+“
 
@@ -276,17 +287,21 @@ class Jinmantiantang : ParsedHttpSource() {
             Pair("美漫", "/albums/meiman?"),
             Pair("短篇", "/albums/short?"),
             Pair("单本", "/albums/single?"),
+            Pair("汉化", "/albums/doujin/sub/chinese?"),
+            Pair("日语", "/albums/doujin/sub/japanese?"),
+            Pair("汉化", "/albums/doujin/sub/chinese?"),
+            Pair("Cosplay", "/albums/doujin/sub/cosplay?"),
+            Pair("CG图集", "/albums/doujin/sub/CG?"),
 
-            Pair("中文", "/search/photos?search_query=中文&"),
-            Pair("汉化", "/search/photos?search_query=漢化&"),
             Pair("P站", "/search/photos?search_query=PIXIV&"),
-            Pair("图集", "/search/photos?search_query=CG&"),
+            Pair("3D", "/search/photos?search_query=3D&"),
 
             Pair("剧情", "/search/photos?search_query=劇情&"),
             Pair("校园", "/search/photos?search_query=校園&"),
             Pair("纯爱", "/search/photos?search_query=純愛&"),
             Pair("人妻", "/search/photos?search_query=人妻&"),
             Pair("师生", "/search/photos?search_query=師生&"),
+            Pair("乱伦", "/search/photos?search_query=亂倫&"),
             Pair("近亲", "/search/photos?search_query=近親&"),
             Pair("百合", "/search/photos?search_query=百合&"),
             Pair("男同", "/search/photos?search_query=YAOI&"),
@@ -295,6 +310,7 @@ class Jinmantiantang : ParsedHttpSource() {
             Pair("伪娘", "/search/photos?search_query=偽娘&"),
             Pair("痴女", "/search/photos?search_query=癡女&"),
             Pair("全彩", "/search/photos?search_query=全彩&"),
+            Pair("女性向", "/search/photos?search_query=女性向&"),
 
             Pair("萝莉", "/search/photos?search_query=蘿莉&"),
             Pair("御姐", "/search/photos?search_query=御姐&"),
@@ -309,7 +325,9 @@ class Jinmantiantang : ParsedHttpSource() {
             Pair("泳裝", "/search/photos?search_query=泳裝&"),
             Pair("眼镜", "/search/photos?search_query=眼鏡&"),
             Pair("丝袜", "/search/photos?search_query=絲襪&"),
+            Pair("连裤袜", "/search/photos?search_query=連褲襪&"),
             Pair("制服", "/search/photos?search_query=制服&"),
+            Pair("兔女郎", "/search/photos?search_query=兔女郎&"),
 
             Pair("群交", "/search/photos?search_query=群交&"),
             Pair("足交", "/search/photos?search_query=足交&"),
@@ -328,11 +346,13 @@ class Jinmantiantang : ParsedHttpSource() {
             Pair("亚人", "/search/photos?search_query=亞人&"),
             Pair("魔物", "/search/photos?search_query=魔物&"),
 
+            Pair("CG集", "/search/photos?search_query=CG集&"),
             Pair("重口", "/search/photos?search_query=重口&"),
             Pair("猎奇", "/search/photos?search_query=獵奇&"),
             Pair("非H", "/search/photos?search_query=非H&"),
             Pair("血腥", "/search/photos?search_query=血腥&"),
-            Pair("暴力", "/search/photos?search_query=暴力&")
+            Pair("暴力", "/search/photos?search_query=暴力&"),
+            Pair("血腥暴力", "/search/photos?search_query=血腥暴力&")
         )
     )
 
