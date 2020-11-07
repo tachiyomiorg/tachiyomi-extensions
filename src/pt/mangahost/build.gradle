@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'MangaHost'
+    pkgNameSuffix = 'pt.mangahost'
+    extClass = '.MangaHost'
+    extVersionCode = 14
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

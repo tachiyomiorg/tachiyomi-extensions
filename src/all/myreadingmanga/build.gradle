@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'MyReadingManga'
+    pkgNameSuffix = 'all.myreadingmanga'
+    extClass = '.MyReadingMangaFactory'
+    extVersionCode = 41
+    libVersion = '1.2'
+    containsNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"

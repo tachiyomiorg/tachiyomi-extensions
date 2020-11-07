@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Japscan'
+    pkgNameSuffix = 'fr.japscan'
+    extClass = '.Japscan'
+    extVersionCode = 24
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation 'org.apache.commons:commons-lang3:3.8.1'
+}
+
+apply from: "$rootDir/common.gradle"

@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Komga'
+    pkgNameSuffix = 'all.komga'
+    extClass = '.KomgaFactory'
+    extVersionCode = 18
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation 'io.reactivex:rxandroid:1.2.1'
+    implementation 'io.reactivex:rxjava:1.3.6'
+}
+
+apply from: "$rootDir/common.gradle"

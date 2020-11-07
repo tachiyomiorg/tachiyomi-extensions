@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Scantrad'
+    pkgNameSuffix = 'fr.scantrad'
+    extClass = '.Scantrad'
+    extVersionCode = 6
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

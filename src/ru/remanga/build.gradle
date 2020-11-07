@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Remanga'
+    pkgNameSuffix = 'ru.remanga'
+    extClass = '.Remanga'
+    extVersionCode = 8
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-dataimage')
+}
+
+apply from: "$rootDir/common.gradle"
