@@ -65,7 +65,7 @@ src/<lang>/<mysourcename>/
 #### build.gradle
 Make sure that your new extension's `build.gradle` file follows the following structure:
 
-```groovy
+```gradle
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
@@ -102,7 +102,7 @@ Extensions rely on [extensions-lib](https://github.com/tachiyomiorg/extensions-l
 
 [`duktape-stub`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/duktape-stub) provides stubs for using Duktape functionality without pulling in the full library. Functionality is bundled into the main Tachiyomi app.
 
-```groovy
+```gradle
 dependencies {
     compileOnly project(':duktape-stub')
 }
@@ -112,7 +112,7 @@ dependencies {
 
 [`lib-ratelimit`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/ratelimit) is a library for adding rate limiting functionality as an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
 
-```groovy
+```gradle
 dependencies {
     implementation project(':lib-ratelimit')
 }
@@ -122,7 +122,7 @@ dependencies {
 
 [`lib-dataimage`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/dataimage) is a library for handling [base 64 encoded image data](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs) using an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
 
-```groovy
+```gradle
 dependencies {
     implementation project(':lib-dataimage')
 }
@@ -134,7 +134,7 @@ You may find yourself needing additional functionality and wanting to add more d
 
 For example, an extension that needs Gson could add the following:
 
-```groovy
+```gradle
 dependencies {
     compileOnly 'com.google.code.gson:gson:2.8.2'
 }
