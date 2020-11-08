@@ -172,9 +172,10 @@ The class which is refrenced and defined by `extClass` in `build.gradle`. This c
 
 a.k.a. the Browse source entry point in the app (invoked by tapping on the source name).
 
-- The app calls `fetchPopularManga` with `page=1`, and it returns a `MangasPage` and will continue to call it for next pages, when the user scrolls the manga list and more results must be fetched (until you pass `MangasPage.hasNextPage` as `false` which marks the end of the found manga list).
-- While passing magnas here you should at least set `url`, `title` and `thumbnail_url`.
-    - If `thumbnail_url` is not set, `fetchMangaDetails` will be **immediately** called.
+- The app calls `fetchPopularManga` which should return a `MangasPage` containing the first batch of found `SManga` entries.
+    - This method supports pagination. When user scrolls the manga list and more results must be fetched, the app calls it again with increasing `page` values(starting with `page=1`). This continues until you pass `MangasPage.hasNextPage` as `false` which marks the end of the found manga list.
+- To show the list properly, the app needs `url`, `title` and `thumbnail_url`. You must set them here. The rest of the fields could be filled later.(refer to Manga Details below)
+    - If `thumbnail_url` is not avialable, you could not set it, in this case `fetchMangaDetails` will be **immediately** called. To fetch the info.
 
 #### Latest Manga
 
@@ -192,9 +193,12 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 #### Manga Details
 
 - When user taps on a manga, `fetchMangaDetails` and `fetchChapterList` will be called and the results will be cached.
+    - A `SManga` entry is identified by it's `url`.
 - `fetchMangaDetails` is called to update a manga's details from when it was initialized earlier.
     - During a backup, only `url` and `title` are stored. To restore the rest of the manga data, the app calls `fetchMangaDetails`, so all fields should be (re)filled in if possible.
     - `SManga.initialized` tells the app if it should call `fetchMangaDetails`. If you are overriding `fetchMangaDetails`, make sure to pass it as `true`.
+    - If a `SManga` is cached and you update the details in `fetchPopularManga`(or similar methods), details it won't change in the database(and thumbnails won't update). updates to database are only done after `fetchMangaDetails` is called.
+    - If a `SManga` is cached `fetchMangaDetails` will be only called when the user does a manual update(Swipe-to-Refresh).
 - `fetchChapterList` is called to display the chapter list.
     - The list should be sorted descending by date/chapter number.
     - If `Page.imageUrl`s are available immediately, you should pass them here. Otherwise, you should set `page.url` to a page that contains them and override `imageUrlParse` to fill those `imageUrl`s.
