@@ -170,7 +170,7 @@ The class which is refrenced and defined by `extClass` in `build.gradle`. This c
 
 #### Popular Manga
 
-a.k.a. the "Browse" source entry point in the app.
+a.k.a. the Browse source entry point in the app(invoked by tapping on the extention name in recent versions of the app).
 
 - The app calls `fetchPopularManga` with `page=1`, and it returns a `MangasPage` and will continue to call it for next pages, when the user scrolls the manga list and more results must be fetched (until you pass `MangasPage.hasNextPage` as `false` which marks the end of the found manga list).
 - While passing magnas here you should at least set `url`, `title` and `thumbnail_url`.
@@ -178,7 +178,7 @@ a.k.a. the "Browse" source entry point in the app.
 
 #### Latest Manga
 
-a.k.a. the "Latest" source entry point in the app.
+a.k.a. the Latest source entry point in the app(invoked by tapping on the "Latest" button in fornt of the extention name in the app).
 
 - Used if `supportsLatest` is `true` for a source
 - Similar to popular manga, but should be fetching the latest entries from a source.
