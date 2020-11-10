@@ -32,7 +32,7 @@ class ThePropertyOfHate : HttpSource() {
     fun manga(): SManga {
         return SManga.create().apply {
             title = "The Property of Hate"
-            thumbnail_url = "https://dummyimage.com/768x994/000/ffffff.jpg&text=$title" // the comic has no real cover
+            thumbnail_url = "https://pbs.twimg.com/media/DOBCcMiWkAA8Hvu.jpg"
             artist = "Sarah Jolley"
             author = "Sarah Jolley"
             status = SManga.UNKNOWN
