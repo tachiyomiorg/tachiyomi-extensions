@@ -290,9 +290,16 @@ open class Emerald(
 
             val imgArray = JSONArray(script.substringAfter("const images = ").substringBefore(";"))
             if (imgArray != null) {
-                for (i in 0 until imgArray.length()) {
-                    val imgUrl = imgArray.get(i)
-                    pages.add(Page(i, "", "https:${server}$imgUrl"))
+                if (script.contains("bato.to/images")) {
+                    for (i in 0 until imgArray.length()) {
+                        val imgUrl = imgArray.get(i)
+                        pages.add(Page(i, "", "$imgUrl"))
+                    }
+                } else {
+                    for (i in 0 until imgArray.length()) {
+                        val imgUrl = imgArray.get(i)
+                        pages.add(Page(i, "", "https:${server}$imgUrl"))
+                    }
                 }
             }
         }
