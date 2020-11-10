@@ -5,7 +5,7 @@ ext {
     extName = 'The Property of Hate'
     pkgNameSuffix = 'en.thepropertyofhate'
     extClass = '.ThePropertyOfHate'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
