@@ -87,7 +87,7 @@ class ThePropertyOfHate : HttpSource() {
                 )
         }
 
-        return chapters
+        return chapters.reversed()
     }
 
     override fun pageListParse(response: Response): List<Page> {
