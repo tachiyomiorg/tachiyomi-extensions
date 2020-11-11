@@ -2,32 +2,36 @@ package eu.kanade.tachiyomi.extension.es.zahard
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
 class Zahard : ParsedHttpSource() {
 
     override val name = "Zahard"
     override val baseUrl = "https://zahard.top"
     override val lang = "es"
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     // common
 
-    private fun mangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.url = element.select("a").first().attr("href")
-        manga.title = element.select("h6").text().trim()
-        manga.thumbnail_url = element.select("img").attr("src")
-        return manga
-    }
+    private fun mangaFromElement(element: Element): SManga =
+        SManga.create().apply {
+            url = element.select("a").first().attr("href")
+            title = element.select("h6").text().trim()
+            thumbnail_url = element.select("img").attr("src")
+        }
 
     // poplular manga
 
@@ -40,11 +44,75 @@ class Zahard : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
     // latest manga
+    // refer to: https://github.com/inorichi/tachiyomi-extensions/issues/4847
 
-    override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
-    override fun latestUpdatesSelector() = throw Exception("Not used")
-    override fun latestUpdatesNextPageSelector() = throw Exception("Not used")
-    override fun latestUpdatesFromElement(element: Element) = throw Exception("Not used")
+    override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
+        return client.newCall(latestUpdatesRequest(page))
+            .asObservableSuccess()
+            .map { response ->
+                latestUpdatesParse(response, page)
+            }
+    }
+
+    val mangasLoaded = mutableListOf<SManga>()
+
+    override fun latestUpdatesParse(response: Response): MangasPage = throw Exception("Not Used")
+
+    fun latestUpdatesParse(response: Response, page: Int): MangasPage {
+        val document = response.asJsoup()
+
+        val potentialMangas = document.select(latestUpdatesSelector()).map { element ->
+            latestUpdatesFromElement(element)
+        }.distinctBy { it.title }
+
+        // remve duplicates globaly
+        if (page == 1)
+            mangasLoaded.clear()
+        var mangas = mutableListOf<SManga>()
+        potentialMangas.forEach { manga ->
+            var flag = false
+            for (i in 0 until mangasLoaded.size) {
+                if (manga.title == mangasLoaded.get(i).title) {
+                    flag = true
+                    break
+                }
+            }
+
+            if (!flag) {
+                mangasLoaded.add(manga)
+                mangas.add(manga)
+            }
+        }
+
+        // extract manga urls from chapters
+        mangas = mangas.map { manga ->
+            manga.apply {
+                url = client.newCall(GET(url, headers)).execute().asJsoup().select("body > div.container.mb-3.mibg.rounded.px-4.py-2 > div:nth-child(2) > div > a")[0].attr("href")
+            }
+        }.toMutableList()
+
+        val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
+
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/fastpass?page=$page", headers)
+
+    override fun latestUpdatesSelector() = "div.col-6.col-md-3.p-1"
+
+    override fun latestUpdatesNextPageSelector() = "a[rel=next]"
+
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val manga = SManga.create().apply {
+            url = element.select("a").first().attr("href")
+            title = element.select("h6").text().trim().substringBefore(" episodio")
+            thumbnail_url = element.select("img").attr("src")
+        }
+
+        return manga
+    }
 
     // search manga
 
@@ -77,11 +145,11 @@ class Zahard : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter =
         SChapter.create().apply {
-            this.url = element.attr("href")
-            this.name = element.ownText().trim() + " [" + element.select("span").text().trim() + "]"
+            url = element.attr("href")
+            name = element.ownText().trim() + " [" + element.select("span").text().trim() + "]"
 
             // general pattern: "Chapter <number in float> - <manga name>"
-            this.chapter_number = element.ownText().split(" ")[1].toFloat()
+            chapter_number = element.ownText().split(" ")[1].toFloat()
         }
 
     // manga details
