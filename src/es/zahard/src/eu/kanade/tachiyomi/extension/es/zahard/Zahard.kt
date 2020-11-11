@@ -91,6 +91,12 @@ class Zahard : ParsedHttpSource() {
             }
         }.toMutableList()
 
+        // if is empty must pass something or we will get cut off
+        // ref: tachiyomi/app/src/main/java/eu/kanade/tachiyomi/ui/browse/source/browse/Pager.kt:27
+        if (mangas.isEmpty()) {
+            mangas.add(potentialMangas.get(0))
+        }
+
         val hasNextPage = latestUpdatesNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
