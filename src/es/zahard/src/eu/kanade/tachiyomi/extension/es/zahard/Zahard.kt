@@ -19,14 +19,35 @@ class Zahard : ParsedHttpSource() {
     override val lang = "es"
     override val supportsLatest = false
 
-    override fun popularMangaSelector() = "div.col-6.col-md-3.p-1"
-    override fun searchMangaSelector() = popularMangaSelector()
-    override fun chapterListSelector() = "a.list-group-item"
+    // common
 
-    override fun popularMangaNextPageSelector() = "a[rel=next]"
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    private fun mangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        manga.url = element.select("a").first().attr("href")
+        manga.title = element.select("h6").text().trim()
+        manga.thumbnail_url = element.select("img").attr("src")
+        return manga
+    }
+
+    // poplular manga
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/biblioteca?page=$page", headers)
+
+    override fun popularMangaSelector() = "div.col-6.col-md-3.p-1"
+
+    override fun popularMangaNextPageSelector() = "a[rel=next]"
+
+    override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
+
+    // latest manga
+
+    override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
+    override fun latestUpdatesSelector() = throw Exception("Not used")
+    override fun latestUpdatesNextPageSelector() = throw Exception("Not used")
+    override fun latestUpdatesFromElement(element: Element) = throw Exception("Not used")
+
+    // search manga
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotBlank()) {
             throw Exception("Source does not support search")
@@ -42,32 +63,30 @@ class Zahard : ParsedHttpSource() {
         }
     }
 
-    override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
-    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
-    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
+    override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
-    override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
-    private fun mangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.url = element.select("a").first().attr("href")
-        manga.title = element.select("h6").text().trim()
-        manga.thumbnail_url = element.select("img").attr("src")
-        return manga
-    }
+    // chapter list
 
-    override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-        element.select("a").let {
-            chapter.url = it.attr("href")
-            chapter.name = it.select("a").first().ownText().trim() + " [" + it.select("span").text().trim() + "]"
-            chapter.chapter_number = it.select("a").first().ownText().substringAfter("Capitulo ").substringBefore("-").trim().toFloat()
+    override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
+
+    override fun chapterListSelector() = "a.list-group-item"
+
+    override fun chapterFromElement(element: Element): SChapter =
+        SChapter.create().apply {
+            this.url = element.attr("href")
+            this.name = element.ownText().trim() + " [" + element.select("span").text().trim() + "]"
+
+            // general pattern: "Chapter <number in float> - <manga name>"
+            this.chapter_number = element.ownText().split(" ")[1].toFloat()
         }
 
-        return chapter
-    }
+    // manga details
+
+    override fun mangaDetailsRequest(manga: SManga) = GET(manga.url, headers)
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
@@ -79,6 +98,10 @@ class Zahard : ParsedHttpSource() {
         return manga
     }
 
+    // page list
+
+    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
+
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
@@ -89,17 +112,34 @@ class Zahard : ParsedHttpSource() {
         return pages
     }
 
-    override fun latestUpdatesSelector() = throw Exception("Not used")
-    override fun latestUpdatesNextPageSelector() = throw Exception("Not used")
-    override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
+    // image url
+
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
 
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Filters are ignored if using text search."),
-        Filter.Header("Only one filter can be used at a time."),
-        TypeFilter(),
-        GenreFilter()
-    )
+    // filters
+
+    /**
+     * Represents a filter that is able to modify a URI.
+     */
+    private interface UriFilter {
+        fun addToUri(uri: Uri.Builder)
+    }
+
+    private open class UriSelectFilter(
+        displayName: String,
+        val uriParam: String,
+        val vals: Array<Pair<String, String>>,
+        val firstIsUnspecified: Boolean = true,
+        defaultValue: Int = 0
+    ) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
+        override fun addToUri(uri: Uri.Builder) {
+            if (state != 0 || !firstIsUnspecified)
+                uri.appendPath(uriParam)
+                    .appendPath(vals[state].first)
+        }
+    }
+
     private class TypeFilter : UriSelectFilter(
         "Type",
         "biblioteca",
@@ -169,25 +209,10 @@ class Zahard : ParsedHttpSource() {
         )
     )
 
-    private open class UriSelectFilter(
-        displayName: String,
-        val uriParam: String,
-        val vals: Array<Pair<String, String>>,
-        val firstIsUnspecified: Boolean = true,
-        defaultValue: Int = 0
-    ) :
-        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
-        override fun addToUri(uri: Uri.Builder) {
-            if (state != 0 || !firstIsUnspecified)
-                uri.appendPath(uriParam)
-                    .appendPath(vals[state].first)
-        }
-    }
-
-    /**
-     * Represents a filter that is able to modify a URI.
-     */
-    private interface UriFilter {
-        fun addToUri(uri: Uri.Builder)
-    }
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: Filters are ignored if using text search."),
+        Filter.Header("Only one filter can be used at a time."),
+        TypeFilter(),
+        GenreFilter()
+    )
 }
