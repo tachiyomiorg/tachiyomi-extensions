@@ -15,7 +15,7 @@ import org.jsoup.nodes.Element
 class Zahard : ParsedHttpSource() {
 
     override val name = "Zahard"
-    override val baseUrl = "https://zahard.win"
+    override val baseUrl = "https://zahard.top"
     override val lang = "es"
     override val supportsLatest = false
 
