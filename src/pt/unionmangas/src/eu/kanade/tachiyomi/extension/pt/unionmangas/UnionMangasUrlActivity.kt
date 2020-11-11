@@ -16,10 +16,10 @@ class UnionMangasUrlActivity : Activity() {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
         if (pathSegments != null && pathSegments.size > 1) {
-            val id = pathSegments[1]
+            val slug = pathSegments[1]
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", "${UnionMangas.PREFIX_ID_SEARCH}$id")
+                putExtra("query", "${UnionMangas.PREFIX_SLUG_SEARCH}$slug")
                 putExtra("filter", packageName)
             }
 

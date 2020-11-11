@@ -50,7 +50,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
-        .add("Referer", "$baseUrl/ayx")
+        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int): Request {
         val listPath = if (page == 1) "" else "/visualizacoes/${page - 1}"
@@ -99,9 +99,9 @@ class UnionMangas : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "div#linha-botao-mais"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        if (query.startsWith(PREFIX_ID_SEARCH)) {
-            val id = query.removePrefix(PREFIX_ID_SEARCH)
-            return GET("$baseUrl/perfil-manga/$id", headers)
+        if (query.startsWith(PREFIX_SLUG_SEARCH)) {
+            val slug = query.removePrefix(PREFIX_SLUG_SEARCH)
+            return GET("$baseUrl/perfil-manga/$slug", headers)
         }
 
         val newHeaders = headersBuilder()
@@ -119,9 +119,9 @@ class UnionMangas : ParsedHttpSource() {
         val requestUrl = response.request().url().toString()
 
         if (requestUrl.contains("perfil-manga")) {
-            val id = requestUrl.substringAfter("perfil-manga/")
+            val slug = requestUrl.substringAfter("perfil-manga/")
             val manga = mangaDetailsParse(response)
-                .apply { url = "/perfil-manga/$id" }
+                .apply { url = "/perfil-manga/$slug" }
             return MangasPage(listOf(manga), false)
         }
 
@@ -143,7 +143,7 @@ class UnionMangas : ParsedHttpSource() {
         val infoElement = document.select("div.tamanho-bloco-perfil").first()
         val rowInfo = infoElement.select("div.row:eq(2)").first()
 
-        title = infoElement.select("h2").text().withoutLanguage()
+        title = infoElement.select("h2").first().text().withoutLanguage()
         author = rowInfo.select("div.col-md-8:eq(4)").first().textWithoutLabel()
         artist = rowInfo.select("div.col-md-8:eq(5)").first().textWithoutLabel()
         genre = rowInfo.select("div.col-md-8:eq(3)").first().textWithoutLabel()
@@ -215,7 +215,8 @@ class UnionMangas : ParsedHttpSource() {
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
@@ -223,6 +224,6 @@ class UnionMangas : ParsedHttpSource() {
             SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH)
         }
 
-        const val PREFIX_ID_SEARCH = "id:"
+        const val PREFIX_SLUG_SEARCH = "slug:"
     }
 }

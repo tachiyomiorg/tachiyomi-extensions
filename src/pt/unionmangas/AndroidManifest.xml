@@ -13,6 +13,10 @@
                     android:scheme="https"
                     android:host="unionleitor.top"
                     android:pathPattern="/perfil-manga/..*" />
+                <data
+                    android:scheme="https"
+                    android:host="unionmangas.top"
+                    android:pathPattern="/perfil-manga/..*" />
             </intent-filter>
         </activity>
     </application>
