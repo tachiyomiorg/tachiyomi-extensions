@@ -70,15 +70,15 @@ class Zahard : ParsedHttpSource() {
             mangasLoaded.clear()
         var mangas = mutableListOf<SManga>()
         potentialMangas.forEach { manga ->
-            var flag = false
+            var isDuplicate = false
             for (i in 0 until mangasLoaded.size) {
                 if (manga.title == mangasLoaded.get(i).title) {
-                    flag = true
+                    isDuplicate = true
                     break
                 }
             }
 
-            if (!flag) {
+            if (!isDuplicate) {
                 mangasLoaded.add(manga)
                 mangas.add(manga)
             }
