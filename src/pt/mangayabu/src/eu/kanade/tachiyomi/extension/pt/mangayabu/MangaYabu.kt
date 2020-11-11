@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -17,6 +18,7 @@ import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaYabu : ParsedHttpSource() {
 
@@ -25,11 +27,18 @@ class MangaYabu : ParsedHttpSource() {
 
     override val name = "MangaYabu!"
 
-    override val baseUrl = "https://mangayabu.com"
+    override val baseUrl = "https://mangayabu.top"
 
     override val lang = "pt-BR"
 
     override val supportsLatest = true
+
+    override val client: OkHttpClient =
+        network.client.newBuilder()
+            .connectTimeout(2, TimeUnit.MINUTES)
+            .readTimeout(2, TimeUnit.MINUTES)
+            .writeTimeout(2, TimeUnit.MINUTES)
+            .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
@@ -52,14 +61,12 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         return super.fetchLatestUpdates(page)
-            .map {
-                MangasPage(it.mangas.distinctBy { m -> m.url }, it.hasNextPage)
-            }
+            .map { MangasPage(it.mangas.distinctBy { m -> m.url }, it.hasNextPage) }
     }
 
     override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
 
-    override fun latestUpdatesSelector() = "main.home div.features:contains(Lançamentos) div.feature > a"
+    override fun latestUpdatesSelector() = "main.home div.features:contains(Lançamentos) div.feature div.img-container > a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         val thumb = element.select("img").first()!!
@@ -89,7 +96,7 @@ class MangaYabu : ParsedHttpSource() {
     override fun searchMangaSelector() = "ul li.gsuggested a"
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("div.contento span.search-name").first()!!.text()
+        title = element.select("div.contento span.search-name").first()!!.text().withoutFlags()
         thumbnail_url = element.select("img.search-thumb")!!.attr("src")
         setUrlWithoutDomain(element.attr("href"))
     }
@@ -118,7 +125,7 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("a").first()!!.text()
-        date_upload = DATE_FORMATTER.tryParseTime(element.select("small")!!.text())
+        date_upload = element.select("small")!!.text().toDate()
         setUrlWithoutDomain(element.select("a").first()!!.attr("href"))
     }
 
@@ -155,20 +162,21 @@ class MangaYabu : ParsedHttpSource() {
         return "/manga/" + (SLUG_EXCEPTIONS[chapterSlug] ?: chapterSlug)
     }
 
-    private fun String.withoutFlags(): String = replace(FLAG_REGEX, "").trim()
-
-    private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
-
-    private fun SimpleDateFormat.tryParseTime(date: String): Long {
+    private fun String.toDate(): Long {
         return try {
-            parse(date)?.time ?: 0L
+            DATE_FORMATTER.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
+    private fun String.withoutFlags(): String = replace(FLAG_REGEX, "").trim()
+
+    private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
+
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36"
 
         private val FLAG_REGEX = "\\((Pt[-/]br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
 
