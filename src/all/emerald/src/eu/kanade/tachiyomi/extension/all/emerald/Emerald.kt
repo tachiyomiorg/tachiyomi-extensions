@@ -269,6 +269,7 @@ open class Emerald(
         val pages = mutableListOf<Page>()
 
         val script = document.select("script").html()
+
         if (script.contains("var images =")) {
             val imgJson = JSONObject(script.substringAfter("var images = ").substringBefore(";"))
             val imgNames = imgJson.names()
@@ -280,7 +281,7 @@ open class Emerald(
                     pages.add(Page(i, "", imgUrl))
                 }
             }
-        } else if (script.contains("const server =")) {
+        } else if (script.contains("const server =")) { // bato.to
             val duktape = Duktape.create()
             val encryptedServer = script.substringAfter("const server = ").substringBefore(";")
             val batojs = duktape.evaluate(script.substringAfter("const batojs = ").substringBefore(";")).toString()
@@ -298,7 +299,11 @@ open class Emerald(
                 } else {
                     for (i in 0 until imgArray.length()) {
                         val imgUrl = imgArray.get(i)
-                        pages.add(Page(i, "", "https:${server}$imgUrl"))
+                        if (server.startsWith("http"))
+                            pages.add(Page(i, "", "${server}$imgUrl"))
+                        else
+                            pages.add(Page(i, "", "https:${server}$imgUrl"))
+
                     }
                 }
             }

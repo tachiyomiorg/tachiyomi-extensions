@@ -5,7 +5,7 @@ ext {
     extName = 'Emerald'
     pkgNameSuffix = 'all.emerald'
     extClass = '.EmeraldFactory'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
