@@ -131,7 +131,7 @@ class TeamX : ParsedHttpSource() {
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div#translationPageall img").mapIndexed { i, img ->
+        return document.select("div#translationPageall embed").mapIndexed { i, img ->
             Page(
                 i,
                 "",
