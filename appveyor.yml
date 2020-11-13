@@ -1,0 +1,16 @@
+environment:
+  matrix:
+    - ANDROID_HOME: "C:\\android-sdk-windows"
+install:
+  - appveyor DownloadFile https://dl.google.com/android/repository/sdk-tools-windows-3859397.zip
+  - 7z x sdk-tools-windows-3859397.zip -oC:\android-sdk-windows > nul
+  - yes | C:\android-sdk-windows\tools\bin\sdkmanager.bat --licenses
+build_script:
+  - cd src
+  - rm -rf ar de en es fr id it ja ko pt ru th tr vi zh
+  - cd all
+  - rm -rf boommanga ciayo comicake dragonball_multiverse ehentai elimangas emerald eromuse fmreader foolslide genkan hitomi komga lanraragi madara mangabox mangadex mangadventure mangaplus mangatoon mmrcms myreadingmanga nhentai ninehentai ninemanga noisemanga paprika simplyhentai thelibraryofohara toomics webtoons wpcomicszbulu
+  - cd ../..
+  - gradlew.bat assemble
+artifacts:
+  - path: src/all/*/build/outputs/apk/debug/*.apk
