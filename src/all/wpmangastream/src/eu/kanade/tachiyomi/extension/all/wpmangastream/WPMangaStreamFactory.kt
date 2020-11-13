@@ -77,7 +77,9 @@ class SheaManga : WPMangaStream(
     dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id"))
 )
 
-class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en")
+class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en") {
+    override val pageSelector = "div#readerarea img[lazy]"
+}
 
 class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
 

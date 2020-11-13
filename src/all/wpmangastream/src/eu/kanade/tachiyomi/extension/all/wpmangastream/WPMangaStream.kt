@@ -246,9 +246,11 @@ abstract class WPMangaStream(
         }
     }
 
+    open val pageSelector = "div#readerarea img"
+
     override fun pageListParse(document: Document): List<Page> {
         var pages = mutableListOf<Page>()
-        document.select("div#readerarea img")
+        document.select(pageSelector)
             .filterNot { it.attr("src").isNullOrEmpty() }
             .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
 
