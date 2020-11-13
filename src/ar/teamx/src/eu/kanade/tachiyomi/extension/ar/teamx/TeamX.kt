@@ -117,6 +117,29 @@ class TeamX : ParsedHttpSource() {
     }
 
     // Chapters
+    private fun chapterNextPageSelector() = "span.nextx_text a:contains(»)"
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val allChapters = mutableListOf<SChapter>()
+        var document = response.asJsoup()
+
+        while (true) {
+            val pageChapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
+            if (pageChapters.isEmpty())
+                break
+
+            allChapters += pageChapters
+
+            val hasNextPage = document.select(chapterNextPageSelector()).isNotEmpty()
+            if (!hasNextPage)
+                break
+
+            val nextUrl = document.select(chapterNextPageSelector()).attr("href")
+            document = client.newCall(GET(nextUrl, headers)).execute().asJsoup()
+        }
+
+        return allChapters
+    }
 
     // Filter out the fake chapters
     override fun chapterListSelector() = "div.single-manga-chapter div.col-md-12 a[href^=$baseUrl]"
