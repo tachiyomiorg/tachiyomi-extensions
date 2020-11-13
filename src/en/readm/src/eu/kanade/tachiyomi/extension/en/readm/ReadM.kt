@@ -95,6 +95,14 @@ class ReadM : ParsedHttpSource() {
         artist = document.select("span#last_episode a").text().trim()
         description = document.select("div.series-summary-wrapper p").text().trim()
         genre = document.select("div.series-summary-wrapper div.item a").joinToString(", ") { it.text().trim() }
+        status = parseStatus(document.select("div.series-genres .series-status").firstOrNull()?.ownText())
+    }
+
+    protected fun parseStatus(element: String?): Int = when {
+        element == null -> SManga.UNKNOWN
+        listOf("ongoing").any { it.contains(element, ignoreCase = true) } -> SManga.ONGOING
+        listOf("completed").any { it.contains(element, ignoreCase = true) } -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
     }
 
     // Chapters
