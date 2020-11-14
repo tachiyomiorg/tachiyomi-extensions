@@ -1,0 +1,16 @@
+environment:
+  matrix:
+    - ANDROID_HOME: "C:\\android-sdk-windows"
+install:
+  - appveyor DownloadFile https://dl.google.com/android/repository/sdk-tools-windows-3859397.zip
+  - 7z x sdk-tools-windows-3859397.zip -oC:\android-sdk-windows > nul
+  - yes | C:\android-sdk-windows\tools\bin\sdkmanager.bat --licenses
+build_script:
+  - cd src
+  - rm -rf all ar de es fr id it ja ko pt ru th tr vi zh
+  - cd en
+  - rm -rf boommanga clonemanga comicastle comicextra comicpunch dilbert dynasty eggporncomics existentialcomics explosm gunnerkriggcourt guya hbrowse hentai2read hentaifox hentainexus hiveworks honkaiimpact3 killsixbilliondemons latisbooks lemonfont madokami manga1s mangadog mangadoom mangaeden mangafast mangafreak mangahasu mangahere mangahub mangajar mangakatana mangalife mangalinkz mangamainac mangamutiny mangaowl mangapark mangareader mangarockes mangasail mangasee mangatown manhwamanga manhwatime manmanga merakiscans myhentaicomics myhentaigallery naniscans nineanime oglaf patchfriday perveden pururin questionablecontent readcomiconline readjumpreadmangatoday readmanhwa schlockmercenary silentmangaaudition sleepypandascans swordscomic tapastic thepropertyofhate timelessleaf tsumino vgperson vizshonenjump webcomics wutopia xkcd
+  - cd ../..
+  - gradlew.bat assemble
+artifacts:
+  - path: src/en/*/build/outputs/apk/debug/*.apk
