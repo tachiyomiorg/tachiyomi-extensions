@@ -5,7 +5,7 @@ ext {
     extName = 'ReadM'
     pkgNameSuffix = 'en.readm'
     extClass = '.ReadM'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 
