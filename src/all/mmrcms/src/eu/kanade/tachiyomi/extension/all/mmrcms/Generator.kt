@@ -267,7 +267,6 @@ class Generator {
             SourceData("pt-BR", "Remangas", "https://remangas.top"),
             SourceData("pt-BR", "AnimaRegia", "https://animaregia.net"),
             SourceData("tr", "NoxSubs", "https://noxsubs.com"),
-            SourceData("id", "MangaYu", "https://mangayu.com"),
             SourceData("tr", "MangaVadisi", "http://manga-v2.mangavadisi.org"),
             SourceData("id", "MangaID", "https://mangaid.click"),
             SourceData("fr", "Jpmangas", "https://www.jpmangas.com"),
@@ -277,6 +276,7 @@ class Generator {
             SourceData("other", "HentaiShark", "https://www.hentaishark.com", true)
         )
         // Changed CMS
+        // SourceData("id", "MangaYu", "https://mangayu.com"),
         // SourceData("en", "MangaTreat Scans", "http://www.mangatreat.com"),
         // SourceData("en", "Chibi Manga Reader", "https://www.cmreader.info"),
         // SourceData("tr", "Epikmanga", "https://www.epikmanga.com"),

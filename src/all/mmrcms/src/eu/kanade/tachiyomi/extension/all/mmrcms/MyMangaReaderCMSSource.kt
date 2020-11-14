@@ -147,7 +147,7 @@ open class MyMangaReaderCMSSource(
                     elements.select("a.fa-info-circle + a").firstOrNull()?.hasText() == true -> elements.map { latestUpdatesFromElement(it, "a.fa-info-circle + a") }
                     // List layout (most sources)
                     elements.select("a").firstOrNull()?.hasText() == true -> elements.map { latestUpdatesFromElement(it, "a") }
-                    // Grid layout (e.g. MangaYu and MangaID)
+                    // Grid layout (e.g. MangaID)
                     else -> document.select(gridLatestUpdatesSelector()).map { gridLatestUpdatesFromElement(it) }
                 }
             }
