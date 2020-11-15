@@ -341,12 +341,16 @@ class Remanga : ConfigurableSource, HttpSource() {
 
         val cs = Bitmap.createBitmap(b.width, b.height * pages.size, Bitmap.Config.ARGB_8888)
         val comboImage = Canvas(cs)
+        var totalHeight = b.height
         comboImage.drawBitmap(b, 0f, 0f, null)
         for (i in 1 until pages.size) {
             val bytes = client.newCall(GET(pages[i], refererHeaders)).execute().body()!!.bytes()
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             comboImage.drawBitmap(bitmap, 0f, (b.height * i).toFloat(), null)
+            totalHeight += bitmap.getHeight()
         }
+        cs.reconfigure(cs.getWidth(), totalHeight, cs.getConfig())
+
         val output = ByteArrayOutputStream()
         cs.compress(Bitmap.CompressFormat.JPEG, 100, output)
         return Base64.encodeToString(output.toByteArray(), Base64.DEFAULT)
