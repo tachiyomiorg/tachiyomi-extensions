@@ -116,7 +116,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         return user.content.access_token
     }
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/api/search/catalog/?ordering=rating&count=$count&page=$page", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/api/search/catalog/?ordering=-rating&count=$count&page=$page", headers)
 
     override fun popularMangaParse(response: Response): MangasPage = searchMangaParse(response)
 
@@ -159,7 +159,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is OrderBy -> {
-                    val ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "ount_chapters", "random")[filter.state!!.index]
+                    val ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "count_chapters", "random")[filter.state!!.index]
                     url.addQueryParameter("ordering", if (filter.state!!.ascending) "$ord" else "-$ord")
                 }
                 is CategoryList -> filter.state.forEach { category ->
@@ -348,7 +348,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             comboImage.drawBitmap(bitmap, 0f, (b.height * i).toFloat(), null)
         }
         val output = ByteArrayOutputStream()
-        cs.compress(Bitmap.CompressFormat.PNG, 100, output)
+        cs.compress(Bitmap.CompressFormat.JPEG, 100, output)
         return Base64.encodeToString(output.toByteArray(), Base64.DEFAULT)
     }
 
