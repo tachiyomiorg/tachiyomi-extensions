@@ -57,4 +57,4 @@ class Mangareader : MRP("Mangareader", "https://www.mangareader.net") {
         }
     }
 }
-class Mangapanda : MRP("Mangapanda", "https://www.mangapanda.com")
+class Mangapanda : MRP("Mangapanda", "http://www.mangapanda.com")
