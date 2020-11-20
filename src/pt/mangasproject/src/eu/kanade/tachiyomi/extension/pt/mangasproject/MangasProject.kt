@@ -156,7 +156,7 @@ abstract class MangasProject(
 
         return SManga.create().apply {
             thumbnail_url = seriesData.select("div.series-img > div.cover > img").attr("src")
-            description = seriesData.select("span.series-desc").text()
+            description = seriesData.select("span.series-desc span").text()
 
             status = parseStatus(seriesBlocked, isCompleted)
             author = seriesAuthors[false]?.joinToString(", ") ?: author
@@ -231,9 +231,7 @@ abstract class MangasProject(
             SChapter.create().apply {
                 name = "Cap. ${obj["number"].string}" +
                     (if (chapterName == "") "" else " - $chapterName")
-                date_upload = DATE_FORMATTER.tryParseDate(
-                    obj["date_created"].string.substringBefore("T")
-                )
+                date_upload = obj["date_created"].string.substringBefore("T").toDate()
                 scanlator = release["scanlators"]!!.array
                     .map { scanObj -> scanObj.obj["name"].string }
                     .sorted()
@@ -295,19 +293,20 @@ abstract class MangasProject(
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun SimpleDateFormat.tryParseDate(date: String): Long {
+    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
+
+    private fun String.toDate(): Long {
         return try {
-            parse(date)?.time ?: 0L
+            DATE_FORMATTER.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
-
     companion object {
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
