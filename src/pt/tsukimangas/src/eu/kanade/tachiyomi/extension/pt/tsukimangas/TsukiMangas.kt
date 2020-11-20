@@ -232,7 +232,7 @@ class TsukiMangas : HttpSource() {
             (if (obj["TITULO"].string.isNotEmpty()) " - " + obj["TITULO"].string else "")
         chapter_number = obj["NUMERO"].string.toFloatOrNull() ?: -1f
         scanlator = obj["scans"].array.joinToString { it.obj["NOME"].string }
-        date_upload = DATE_FORMATTER.tryParseDate(obj["DATA"].string.substringBefore("T"))
+        date_upload = obj["DATA"].string.substringBefore("T").toDate()
         url = "/leitor/$slug/" + obj["NUMERO"].string
     }
 
@@ -246,9 +246,8 @@ class TsukiMangas : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val result = response.asJson().array
-        val chapterUrl = response.request().header("Referer")!!
 
-        return result.mapIndexed { i, page -> Page(i, chapterUrl, page.obj["IMG"].string) }
+        return result.mapIndexed { i, page -> Page(i, baseUrl, page.obj["IMG"].string) }
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
@@ -257,7 +256,7 @@ class TsukiMangas : HttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
-            .set("Accept", "image/webp,image/apng,image/*,*/*;q=0.8")
+            .set("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
             .set("Referer", page.url)
             .build()
 
@@ -324,9 +323,9 @@ class TsukiMangas : HttpSource() {
         Genre("Zumbi")
     )
 
-    private fun SimpleDateFormat.tryParseDate(date: String): Long {
+    private fun String.toDate(): Long {
         return try {
-            parse(date)?.time ?: 0L
+            DATE_FORMATTER.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
@@ -336,7 +335,7 @@ class TsukiMangas : HttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
