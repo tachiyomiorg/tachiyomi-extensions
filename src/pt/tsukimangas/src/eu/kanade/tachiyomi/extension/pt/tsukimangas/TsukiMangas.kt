@@ -45,7 +45,8 @@ class TsukiMangas : HttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("Accept", "application/json, text/plain, */*")
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
@@ -247,7 +248,7 @@ class TsukiMangas : HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val result = response.asJson().array
 
-        return result.mapIndexed { i, page -> Page(i, baseUrl, page.obj["IMG"].string) }
+        return result.mapIndexed { i, page -> Page(i, baseUrl + "/", page.obj["IMG"].string) }
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
@@ -256,7 +257,8 @@ class TsukiMangas : HttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
-            .set("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
+            .set("Accept", ACCEPT_IMAGE)
+            .set("Accept-Language", ACCEPT_LANGUAGE)
             .set("Referer", page.url)
             .build()
 
@@ -334,6 +336,9 @@ class TsukiMangas : HttpSource() {
     private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
 
     companion object {
+        private const val ACCEPT = "application/json, text/plain, */*"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
 
