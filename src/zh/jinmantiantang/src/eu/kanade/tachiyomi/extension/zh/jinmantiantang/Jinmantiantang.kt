@@ -30,7 +30,7 @@ import java.util.Locale
 @Nsfw
 class Jinmantiantang : ParsedHttpSource() {
 
-    override val baseUrl: String = "https://18comic2.biz"
+    override val baseUrl: String = "https://18comic5.biz"
     override val lang: String = "zh"
     override val name: String = "禁漫天堂"
     override val supportsLatest: Boolean = true
