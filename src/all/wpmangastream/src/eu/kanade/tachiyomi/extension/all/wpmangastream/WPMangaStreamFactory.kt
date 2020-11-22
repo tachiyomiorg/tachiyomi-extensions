@@ -56,9 +56,12 @@ class WPMangaStreamFactory : SourceFactory {
         GURUKomik(),
         Rawkuma(),
         KaisarKomik(),
-        MasterKomik()
+        MasterKomik(),
+        KomikRu()
     )
 }
+
+class KomikRu : WPMangaStream("KomikRu", "https://komikru.com", "id")
 
 class MasterKomik : WPMangaStream("MasterKomik", "https://masterkomik.com", "id")
 
