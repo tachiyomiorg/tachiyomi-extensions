@@ -9,7 +9,9 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.OkHttpClient
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 class Komiku : ParsedHttpSource() {
     override val name = "Komiku"
@@ -73,15 +75,21 @@ class Komiku : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "table.chapter tr:has(td.judulseries)"
+    override fun chapterListSelector() = "table#Daftar_Chapter tr:has(td.judulseries)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("a.popunder").attr("href"))
-        name = element.select("a.popunder").attr("title")
+        setUrlWithoutDomain(element.select("a").attr("href"))
+        name = element.select("a").attr("title")
 
-        // Has datetime attribute, but all are set to start of current day for whatever reason, so parsing text instead
-        date_upload = parseRelativeDate(element.select("time").text().trim()) ?: 0
+        val timeStamp = element.select("td.tanggalseries")
+        if (timeStamp.text().contains("lalu")) {
+            date_upload = parseRelativeDate(timeStamp.text().trim()) ?: 0
+        } else {
+            date_upload = parseDate(timeStamp.last())
+        }
     }
+
+    private fun parseDate(element: Element): Long = SimpleDateFormat("dd/MM/yyyy", Locale.US).parse(element.text())?.time ?: 0
 
     // Used Google translate here
     private fun parseRelativeDate(date: String): Long? {
@@ -89,10 +97,6 @@ class Komiku : ParsedHttpSource() {
 
         val calendar = Calendar.getInstance()
         when (trimmedDate[1]) {
-            "tahun" -> calendar.apply { add(Calendar.YEAR, -trimmedDate[0].toInt()) }
-            "bulan" -> calendar.apply { add(Calendar.MONTH, -trimmedDate[0].toInt()) }
-            "minggu" -> calendar.apply { add(Calendar.WEEK_OF_MONTH, -trimmedDate[0].toInt()) }
-            "hari" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }
             "jam" -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }
             "menit" -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }
             "detik" -> calendar.apply { add(Calendar.SECOND, 0) }
