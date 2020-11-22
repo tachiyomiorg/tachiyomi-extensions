@@ -5,7 +5,7 @@ ext {
     extName = 'WP-Comics'
     pkgNameSuffix = 'all.wpcomics'
     extClass = '.WPComicsFactory'
-    extVersionCode = 13
+    extVersionCode = 14
     libVersion = '1.2'
 }
 

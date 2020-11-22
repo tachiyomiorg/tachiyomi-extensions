@@ -41,7 +41,7 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
         }
     }
 
-    override val pageListSelector = "div.chapter-detail img"
+    override val pageListSelector = "div.chapter-detail ul img"
 }
 
 private class MangaSum : WPComics("MangaSum", "https://mangasum.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
