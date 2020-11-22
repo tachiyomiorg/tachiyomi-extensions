@@ -16,8 +16,7 @@
                 <data
                     android:scheme="https"
                     android:host="mangalib.me"
-                    android:pathPattern="/..*"/>
-
+                    android:pathPattern="/..*/v..*/c..*/..*"/>
             </intent-filter>
         </activity>
     </application>
