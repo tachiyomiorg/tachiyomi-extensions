@@ -212,10 +212,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         manga.author = body.select(".info-list__row:nth-child(2) > a").text()
         manga.artist = body.select(".info-list__row:nth-child(3) > a").text()
         manga.status = when (
-            body.select(".info-list__row:has(strong:contains(Перевод))")
+            body.select(".info-list__row:has(strong:contains(перевод))")
                 .first()
-                .select("span.m-label")
+                .select("span")
                 .text()
+                .toLowerCase()
         ) {
             "продолжается" -> SManga.ONGOING
             "завершен" -> SManga.COMPLETED
