@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".LibMangaActivity"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <!-- LibMangaActivity sites can be added here. -->
+                <data
+                    android:scheme="https"
+                    android:host="mangalib.me"
+                    android:pathPattern="/..*"/>
+
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
