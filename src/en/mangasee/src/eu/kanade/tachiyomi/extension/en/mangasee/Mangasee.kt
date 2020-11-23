@@ -313,6 +313,7 @@ class Mangasee : HttpSource() {
         Genre("Hentai"),
         Genre("Historical"),
         Genre("Horror"),
+        Genre("Isekai"),
         Genre("Josei"),
         Genre("Lolicon"),
         Genre("Martial Arts"),
