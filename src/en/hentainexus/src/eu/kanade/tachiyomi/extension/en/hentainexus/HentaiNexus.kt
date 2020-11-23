@@ -16,6 +16,12 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
+import android.util.Base64
+import kotlin.experimental.xor
+import com.google.gson.Gson
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 
 @Nsfw
 class HentaiNexus : ParsedHttpSource() {
@@ -194,11 +200,36 @@ class HentaiNexus : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("script:containsData(initreader)").first().data()
-            .substringAfter("[")
-            .substringBefore("]")
-            .replace(Regex("""["\\]"""), "")
-            .split(",")
+            .substringAfter("initReader(\"")
+            .substringBefore("\", 1")
+            .let(::decodePages)
             .mapIndexed { i, image -> Page(i, "", image) }
+    }
+
+    private fun decodePages(code: String): List<String> {
+        val hidden: ByteArray = Base64.decode(code, Base64.DEFAULT)
+        var key: ByteArray = hidden.sliceArray(0..63)
+        var body: ByteArray = hidden.sliceArray(64..hidden.size-1)
+
+        val buf = StringBuilder()
+
+        for (begin in 0 until body.size step 64) {
+            var chunk: ByteArray = body.sliceArray(begin..begin+63)
+            for (x in 0 until 64) {
+                buf.append((chunk[x] xor key[x]).toChar())
+            }
+            key = chunk
+        }
+
+        val json = JsonParser().parse(buf.toString()).asJsonObject
+
+        val base = json.get("b").asString
+        val folder = json.get("r").asString
+        val id = json.get("i").asString
+        return json.get("f").asJsonArray.map { it ->
+            val page = it.asJsonObject
+            "${base}${folder}${page.get("h").asString}/${id}/${page.get("p").asString}"
+        }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
