@@ -32,51 +32,38 @@ class CopyManga : HttpSource() {
     private val searchPageSize = 12 // default
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize", headers)
-    override fun popularMangaParse(response: Response): MangasPage = parsePopularAndLatestResponse(response)
+    override fun popularMangaParse(response: Response): MangasPage = parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/comics?ordering=-datetime_updated&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize", headers)
-    override fun latestUpdatesParse(response: Response): MangasPage = parsePopularAndLatestResponse(response)
+    override fun latestUpdatesParse(response: Response): MangasPage = parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var urlString = "$baseUrl/api/kb/web/search/count?format=json&limit=$searchPageSize&offset=${(page - 1) * searchPageSize}&platform=2&q=$query"
+        // when perform html search, sort by popular
+        var apiUrlString = "$baseUrl/api/kb/web/search/count?format=json&limit=$searchPageSize&offset=${(page - 1) * searchPageSize}&platform=2&q=$query"
+        var htmlUrlString = "$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize"
+        var requestUrlString: String
 
         val params = filters.map {
             if (it is ThemeFilter) {
                 it.toUriPart()
             } else ""
         }.filter { it != "" }.joinToString("&")
-        if (params != "") {
-            urlString += "&$params"
+        // perform html search only when do have filter and not search anything
+        if (params != "" && query == "") {
+            requestUrlString = htmlUrlString + "&$params"
+        } else {
+            requestUrlString = apiUrlString
         }
-
-        val url = HttpUrl.parse(urlString)?.newBuilder()
+        val url = HttpUrl.parse(requestUrlString)?.newBuilder()
         return GET(url.toString(), headers)
     }
     override fun searchMangaParse(response: Response): MangasPage {
-        val body = response.body()!!.string()
-
-        // results > comic > list []
-        val res = JSONObject(body)
-        val comicArray = res.optJSONObject("results")?.optJSONObject("comic")?.optJSONArray("list")
-        if (comicArray == null) {
-            return MangasPage(listOf(), false)
+        if (response.headers("content-type").filter { it.contains("json", true) }.any()) {
+            // result from api request
+            return parseSearchMangaResponseAsJson(response)
+        } else {
+            // result from html request
+            return parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
         }
-
-        val ret = ArrayList<SManga>(comicArray.length())
-        for (i in 0 until comicArray.length()) {
-            val obj = comicArray.getJSONObject(i)
-            val authorArray = obj.getJSONArray("author")
-            ret.add(
-                SManga.create().apply {
-                    title = obj.getString("name")
-                    thumbnail_url = obj.getString("cover")
-                    author = Array<String?>(authorArray.length()) { i -> authorArray.getJSONObject(i).getString("name") }.joinToString(", ")
-                    status = SManga.UNKNOWN
-                    url = "/comic/${obj.getString("path_word")}"
-                }
-            )
-        }
-
-        return MangasPage(ret, comicArray.length() != 0)
     }
 
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
@@ -96,7 +83,7 @@ class CopyManga : HttpSource() {
                 "連載中" -> SManga.ONGOING
                 else -> SManga.UNKNOWN
             }
-            manga.genre = items[6].select("a").map { i -> i.text().trim() }.joinToString(", ")
+            manga.genre = items[6].select("a").map { i -> i.text().trim().trim('#') }.joinToString(", ")
         }
         return manga
     }
@@ -178,13 +165,68 @@ class CopyManga : HttpSource() {
     override fun imageUrlParse(response: Response) =
         throw UnsupportedOperationException("This method should not be called!")
 
-    // NOT WORK!!! As for now, copymanga has different logic in polular and search page
+    // Copymanga has different logic in polular and search page, mix two logic in search progress for now
     override fun getFilterList() = FilterList(
         ThemeFilter(
             "题材",
             "theme",
             arrayOf(
-                Pair("全部", "")
+                Pair("全部", ""),
+                Pair("愛情", "aiqing"),
+                Pair("歡樂向", "huanlexiang"),
+                Pair("冒险", "maoxian"),
+                Pair("百合", "baihe"),
+                Pair("東方", "dongfang"),
+                Pair("奇幻", "qihuan"),
+                Pair("校园", "xiaoyuan"),
+                Pair("科幻", "kehuan"),
+                Pair("生活", "shenghuo"),
+                Pair("轻小说", "qingxiaoshuo"),
+                Pair("格鬥", "gedou"),
+                Pair("神鬼", "shengui"),
+                Pair("悬疑", "xuanyi"),
+                Pair("耽美", "danmei"),
+                Pair("其他", "qita"),
+                Pair("舰娘", "jianniang"),
+                Pair("职场", "zhichang"),
+                Pair("治愈", "zhiyu"),
+                Pair("萌系", "mengxi"),
+                Pair("四格", "sige"),
+                Pair("伪娘", "weiniang"),
+                Pair("竞技", "jingji"),
+                Pair("搞笑", "gaoxiao"),
+                Pair("長條", "changtiao"),
+                Pair("性转换", "xingzhuanhuan"),
+                Pair("侦探", "zhentan"),
+                Pair("节操", "jiecao"),
+                Pair("热血", "rexue"),
+                Pair("美食", "meishi"),
+                Pair("後宮", "hougong"),
+                Pair("励志", "lizhi"),
+                Pair("音乐舞蹈", "yinyuewudao"),
+                Pair("彩色", "COLOR"),
+                Pair("AA", "aa"),
+                Pair("异世界", "yishijie"),
+                Pair("历史", "lishi"),
+                Pair("战争", "zhanzheng"),
+                Pair("机战", "jizhan"),
+                Pair("C97", "comiket97"),
+                Pair("C96", "comiket96"),
+                Pair("宅系", "zhaixi"),
+                Pair("C98", "C98"),
+                Pair("C95", "comiket95"),
+                Pair("恐怖", "%E6%81%90%E6%80 %96"),
+                Pair("FATE", "fate"),
+                Pair("無修正", "Uncensored"),
+                Pair("穿越", "chuanyue"),
+                Pair("武侠", "wuxia"),
+                Pair("生存", "shengcun"),
+                Pair("惊悚", "jingsong"),
+                Pair("都市", "dushi"),
+                Pair("LoveLive", "loveLive"),
+                Pair("转生", "zhuansheng"),
+                Pair("重生", "chongsheng"),
+                Pair("仙侠", "xianxia")
             )
         )
     )
@@ -197,13 +239,13 @@ class CopyManga : HttpSource() {
     ) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         val searchName = searchName
-        open fun toUriPart(): String {
+        fun toUriPart(): String {
             val selectVal = vals[state].second
             return if (selectVal != "") "$searchName=$selectVal" else ""
         }
     }
 
-    private fun parsePopularAndLatestResponse(response: Response): MangasPage {
+    private fun parseSearchMangaWithFilterOrPopularOrLatestResponse(response: Response): MangasPage {
         val document = response.asJsoup()
 
         val mangas = document.select("div.exemptComicList div.exemptComicItem").map { element ->
@@ -211,9 +253,36 @@ class CopyManga : HttpSource() {
         }
 
         // There is always a next pager, so use itemCount to check. XD
-        val hasNextPage = mangas.size < popularLatestPageSize
+        val hasNextPage = mangas.size == popularLatestPageSize
 
         return MangasPage(mangas, hasNextPage)
+    }
+
+    private fun parseSearchMangaResponseAsJson(response: Response): MangasPage {
+        val body = response.body()!!.string()
+        // results > comic > list []
+        val res = JSONObject(body)
+        val comicArray = res.optJSONObject("results")?.optJSONObject("comic")?.optJSONArray("list")
+        if (comicArray == null) {
+            return MangasPage(listOf(), false)
+        }
+
+        val ret = ArrayList<SManga>(comicArray.length())
+        for (i in 0 until comicArray.length()) {
+            val obj = comicArray.getJSONObject(i)
+            val authorArray = obj.getJSONArray("author")
+            ret.add(
+                SManga.create().apply {
+                    title = obj.getString("name")
+                    thumbnail_url = obj.getString("cover")
+                    author = Array<String?>(authorArray.length()) { i -> authorArray.getJSONObject(i).getString("name") }.joinToString(", ")
+                    status = SManga.UNKNOWN
+                    url = "/comic/${obj.getString("path_word")}"
+                }
+            )
+        }
+
+        return MangasPage(ret, comicArray.length() == searchPageSize)
     }
 
     private fun mangaFromPage(element: Element): SManga {
