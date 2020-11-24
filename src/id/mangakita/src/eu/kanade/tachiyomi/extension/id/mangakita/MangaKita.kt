@@ -21,47 +21,40 @@ class MangaKita : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun popularMangaSelector() = "a.series:not([href*=novel])"
+    override fun popularMangaSelector() = ".utao .uta .imgu"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga-list", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/daftar-manga/page/$page/?order=popular", headers)
 
-    // The page I'm getting these from has no thumbnails
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        title = element.attr("title")
-    }
-
-    override fun popularMangaNextPageSelector() = null
-
-    override fun latestUpdatesSelector() = "div.latestSeries"
-
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/$page", headers)
-
-    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a").first().attr("href"))
-        title = element.select("p.clamp2").first().ownText()
         thumbnail_url = element.select("img").attr("src")
+        title = element.select("a").attr("title")
+        setUrlWithoutDomain(element.select("a").attr("href"))
     }
 
-    override fun latestUpdatesNextPageSelector() = "[rel=next]"
+    override fun popularMangaNextPageSelector() = "div.pagination .next"
 
-    override fun searchMangaSelector() = "div.result-search"
+    override fun latestUpdatesSelector() = popularMangaSelector()
+
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/daftar-manga/page/$page/?order=update", headers)
+
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+
+    override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/page/$page/?s=$query", headers)
 
-    override fun searchMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("span.titlex > a").attr("href"))
-        title = element.select("span.titlex > a").text()
-        thumbnail_url = element.select("img").attr("src")
-    }
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select("div.row > div")[5].ownText().trim()
-        genre = document.select("[rel=tag]").joinToString { it.text() }
-        status = parseStatus(document.select("div.row > div")[10].ownText())
-        thumbnail_url = document.select("div#wrap img").attr("src")
+        author = document.select(".listinfo li:contains(Author)").firstOrNull()?.ownText()
+        genre = document.select(".gnr a").joinToString { it.text() }
+        status = parseStatus(document.select(".listinfo li:contains(Status)").text())
+        thumbnail_url = document.select(".infomanga > div img").attr("src")
+        description = document.select(".desc p").joinToString("\n") { it.text() }
     }
 
     private fun parseStatus(status: String) = when {
@@ -70,7 +63,7 @@ class MangaKita : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "span.chapterLabel > a:not([href*=pdf])"
+    override fun chapterListSelector() = "div.bxcl li .lch a"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.attr("href"))
@@ -80,7 +73,7 @@ class MangaKita : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select(".mangaimg").mapIndexed { i, element ->
+        document.select("#readerarea img").mapIndexed { i, element ->
             val image = element.attr("src")
             if (image != "") {
                 pages.add(Page(i, "", image))
