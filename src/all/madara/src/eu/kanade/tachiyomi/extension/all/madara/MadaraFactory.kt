@@ -89,6 +89,7 @@ class MadaraFactory : SourceFactory {
         Manga18Fun(),
         Manga347(),
         Manga3asq(),
+        Manga3S(),
         Manga68(),
         MangaAction(),
         MangaArabOnline(),
@@ -152,6 +153,7 @@ class MadaraFactory : SourceFactory {
         MysticalMerries(),
         NazarickScans(),
         NekoBreaker(),
+        NekoScan(),
         NeoxScanlator(),
         NightComic(),
         NijiTranslations(),
@@ -185,7 +187,6 @@ class MadaraFactory : SourceFactory {
         TsubakiNoScan(),
         TurkceManga(),
         TwilightScans(),
-        Wakamics(),
         Wakascan(),
         WebToonily(),
         WeScans(),
@@ -217,6 +218,10 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class NekoScan : Madara("NekoScan", "https://nekoscan.com", "en")
+
+class Manga3S : Madara("Manga3S", "https://manga3s.com", "en")
 
 class MGKomik : Madara("MG Komik", "https://mgkomik.my.id", "id")
 
@@ -816,8 +821,6 @@ class Toonily : Madara("Toonily", "https://toonily.com", "en") {
 }
 
 class MangaKomi : Madara("MangaKomi", "https://mangakomi.com", "en")
-
-class Wakamics : Madara("Wakamics", "https://wakamics.com", "en")
 
 class KingzManga : Madara("KingzManga", "https://kingzmanga.com", "ar")
 
