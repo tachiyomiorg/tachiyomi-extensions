@@ -31,6 +31,7 @@ class MadaraFactory : SourceFactory {
         AdonisFansub(),
         AkuManga(),
         AllPornComic(),
+        Aloalivn(),
         AniMangaEs(),
         AoCTranslations(),
         ApollComics(),
@@ -112,6 +113,7 @@ class MadaraFactory : SourceFactory {
         MangaRocky(),
         MangaRoma(),
         MangaScantrad(),
+        MangaSco(),
         MangaSpark(),
         MangaStarz(),
         MangaStream(),
@@ -143,6 +145,7 @@ class MadaraFactory : SourceFactory {
         ManyToonMe(),
         MarkScans(),
         MartialScans(),
+        MGKomik(),
         Milftoon(),
         MiracleScans(),
         MixedManga(),
@@ -161,6 +164,7 @@ class MadaraFactory : SourceFactory {
         PMScans(),
         PojokManga(),
         PornComix(),
+        PrimeManga(),
         QueensManga(),
         RaiderScans(),
         ReadManhua(),
@@ -202,6 +206,7 @@ class MadaraFactory : SourceFactory {
         ProjetoScanlator(),
         HikariScan(),
         YuriVerso(),
+        MangaKitsu(),
         MangaTeca()
         // Removed by request of site owner
         // EarlyManga(),
@@ -212,6 +217,18 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class MGKomik : Madara("MG Komik", "https://mgkomik.my.id", "id")
+
+class Aloalivn : Madara("Aloalivn", "https://aloalivn.com", "en") {
+    override val pageListParseSelector = "li.blocks-gallery-item"
+}
+
+class MangaSco : Madara("MangaSco", "https://mangasco.com", "en")
+
+class MangaKitsu : Madara("Manga Kitsu", "https://mangakitsu.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale("tr")))
+
+class PrimeManga : Madara("Prime Manga", "https://primemanga.com", "en")
 
 class NekoBreaker : Madara("NekoBreaker", "https://nekobreaker.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt")))
 
