@@ -1,9 +1,12 @@
 package eu.kanade.tachiyomi.extension.pt.supermangas.source
 
 import eu.kanade.tachiyomi.extension.pt.supermangas.SuperMangasGeneric
+import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.FormBody
+import okhttp3.HttpUrl
+import okhttp3.Request
 
 class SuperMangas : SuperMangasGeneric(
     "Super Mangás",
@@ -16,6 +19,15 @@ class SuperMangas : SuperMangasGeneric(
         Triple("9", "", "Manhwa"),
         Triple("10", "", "Manhua")
     )
+
+    override fun searchMangaWithQueryRequest(query: String): Request {
+        val searchUrl = HttpUrl.parse("$baseUrl/busca")!!.newBuilder()
+            .addEncodedQueryParameter("parametro", query)
+            .addEncodedQueryParameter("search_type", "serie")
+            .toString()
+
+        return GET(searchUrl, headers)
+    }
 
     override fun chapterListPaginatedBody(idCategory: Int, page: Int, totalPage: Int): FormBody.Builder =
         super.chapterListPaginatedBody(idCategory, page, totalPage)

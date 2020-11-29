@@ -352,7 +352,8 @@ abstract class SuperMangasGeneric(
         else -> SManga.UNKNOWN
     }
 
-    protected fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
+    protected fun Response.asJsonObject(): JsonObject =
+        JSON_PARSER.parse(body()!!.string().substringAfter("</b>")).obj
 
     private fun Map<String, String>.toUrlQueryParams(): String =
         map { (k, v) -> "$k=$v" }.joinToString("&")
@@ -364,10 +365,12 @@ abstract class SuperMangasGeneric(
     }
 
     companion object {
-        private const val ACCEPT_COMMON = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_COMMON = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
