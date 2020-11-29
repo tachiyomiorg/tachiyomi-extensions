@@ -21,7 +21,7 @@ import javax.crypto.spec.SecretKeySpec
 class Manhuadui : ParsedHttpSource() {
 
     override val name = "漫画堆"
-    override val baseUrl = "https://www.manhuabei.com"
+    override val baseUrl = "https://www.manhuadai.com"
     override val lang = "zh"
     override val supportsLatest = true
     private val imageServer = arrayOf("https://mhcdn.manhuazj.com", "https://res.333dm.com", "https://res02.333dm.com")
