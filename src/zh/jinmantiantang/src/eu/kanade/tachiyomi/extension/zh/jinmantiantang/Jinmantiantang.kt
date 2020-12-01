@@ -362,7 +362,7 @@ class Jinmantiantang : ParsedHttpSource() {
         "排序",
         arrayOf(
             Pair("最新", "o=mr&"),
-            Pair("最多订阅", "o=mv&"),
+            Pair("最多浏览", "o=mv&"),
             Pair("最多爱心", "o=tf&"),
             Pair("最多图片", "o=mp&")
         )
