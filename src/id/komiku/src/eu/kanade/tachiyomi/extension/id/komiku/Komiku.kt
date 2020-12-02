@@ -75,7 +75,7 @@ class Komiku : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "table#Daftar_Chapter tr:has(td.judulseries)"
+    override fun chapterListSelector() = "table.chapter tr:has(td.judulseries)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
