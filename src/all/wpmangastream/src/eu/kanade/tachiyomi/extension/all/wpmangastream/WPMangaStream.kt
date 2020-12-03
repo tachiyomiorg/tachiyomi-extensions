@@ -13,10 +13,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -181,6 +183,21 @@ abstract class WPMangaStream(
     }
 
     override fun chapterListSelector() = "div.bxcl ul li, div.cl ul li, li:has(div.chbox):has(div.eph-num)"
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
+
+        // Add timestamp to latest chapter, taken from "Updated On". so source which not provide chapter timestamp will have atleast one
+        val date = document.select(".fmed:contains(update) time ,span:contains(update) time").attr("datetime")
+        if (date != "") chapters[0].date_upload = parseDate(date)
+
+        return chapters
+    }
+
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).parse(date)?.time ?: 0L
+    }
 
     override fun chapterFromElement(element: Element): SChapter {
         val urlElement = element.select(".lchx > a, span.leftoff a, div.eph-num > a").first()
