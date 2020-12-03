@@ -16,7 +16,7 @@ class Ngomik : ParsedHttpSource() {
 
     override val name = "Ngomik"
 
-    override val baseUrl = "https://ngomik.in"
+    override val baseUrl = "https://ngomik.net"
 
     override val lang = "id"
 
