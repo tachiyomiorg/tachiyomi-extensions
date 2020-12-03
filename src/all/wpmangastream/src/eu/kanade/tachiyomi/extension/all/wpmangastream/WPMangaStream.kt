@@ -266,7 +266,7 @@ abstract class WPMangaStream(
         if (pages.isNotEmpty()) { return pages }
 
         val docString = document.toString()
-        val imageListRegex = Regex("images.*?:.*?(\\[.*?\\])")
+        val imageListRegex = Regex("\\\"images.*?:.*?(\\[.*?\\])")
 
         val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
 
