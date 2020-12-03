@@ -61,7 +61,7 @@ class WPMangaStreamFactory : SourceFactory {
     )
 }
 
-class KomikRu : WPMangaStream("KomikRu", "https://komikru.com", "id")
+class KomikRu : WPMangaStream("KomikRu", "https://komikru.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id")))
 
 class MasterKomik : WPMangaStream("MasterKomik", "https://masterkomik.com", "id")
 
