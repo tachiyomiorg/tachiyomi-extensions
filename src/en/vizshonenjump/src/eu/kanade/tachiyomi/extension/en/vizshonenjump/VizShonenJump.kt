@@ -40,6 +40,8 @@ class VizShonenJump : ParsedHttpSource() {
         .add("Origin", baseUrl)
         .add("Referer", "$baseUrl/shonenjump")
 
+    private var mangaList: List<SManga>? = null
+
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
             .set("Referer", baseUrl)
@@ -49,12 +51,14 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val mangas = super.popularMangaParse(response).mangas
+        val mangasPage = super.popularMangaParse(response)
 
-        if (mangas.isEmpty())
+        if (mangasPage.mangas.isEmpty())
             throw Exception(COUNTRY_NOT_SUPPORTED)
 
-        return MangasPage(mangas.sortedBy { it.title }, false)
+        mangaList = mangasPage.mangas.sortedBy { it.title }
+
+        return mangasPage
     }
 
     override fun popularMangaSelector(): String =
@@ -76,6 +80,8 @@ class VizShonenJump : ParsedHttpSource() {
 
         if (mangasPage.mangas.isEmpty())
             throw Exception(COUNTRY_NOT_SUPPORTED)
+
+        mangaList = mangasPage.mangas.sortedBy { it.title }
 
         return mangasPage
     }
@@ -116,12 +122,25 @@ class VizShonenJump : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val seriesIntro = document.select("section#series-intro").first()
 
+        // Get the thumbnail url from the manga list (if available),
+        // or fetch it for the first time (in backup restore, for example).
+        if (mangaList == null) {
+            val request = popularMangaRequest(1)
+            val response = client.newCall(request).execute()
+            // Call popularMangaParse to fill the manga list.
+            popularMangaParse(response)
+        }
+
+        val mangaUrl = document.location().substringAfter(baseUrl)
+        val mangaFromList = mangaList!!.firstOrNull { it.url == mangaUrl }
+
         return SManga.create().apply {
             author = seriesIntro.select("div.type-rg span").first()?.text()
                 ?.replace("Created by ", "")
             artist = author
             status = SManga.ONGOING
             description = seriesIntro.select("h4").first().text()
+            thumbnail_url = mangaFromList?.thumbnail_url ?: ""
         }
     }
 
@@ -251,7 +270,8 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
 
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)
