@@ -50,6 +50,7 @@ class WPMangaStreamFactory : SourceFactory {
         Boosei(),
         Mangakyo(),
         AsuraScans(),
+		BestManhua(),
         SilenceScan(),
         SheaManga(),
         FlameScans(),
@@ -83,6 +84,7 @@ class SheaManga : WPMangaStream(
 class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en") {
     override val pageSelector = "div#readerarea img[lazy]"
 }
+class BestManhua : WPMangaStream("BestManhua", "https://bestmanhua.com", "en") 
 
 class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
 
