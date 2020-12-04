@@ -95,8 +95,10 @@ class Bacakomik : ParsedHttpSource() {
         val descElement = document.select("div.desc > .entry-content.entry-content-single").first()
         val sepName = infoElement.select(".infox > .spe > span:nth-child(2)").last()
         val manga = SManga.create()
-        manga.author = sepName.ownText()
-        manga.artist = sepName.ownText()
+        //need authorCleaner to take "pengarang:" string to remove it from author
+        val authorCleaner = document.select(".infox .spe b:contains(Pengarang)").text()
+        manga.author = document.select(".infox .spe span:contains(Pengarang)").text().substringAfter(authorCleaner)
+        manga.artist = manga.author
         val genres = mutableListOf<String>()
         infoElement.select(".infox > .genre-info > a").forEach { element ->
             val genre = element.text()
@@ -110,8 +112,8 @@ class Bacakomik : ParsedHttpSource() {
     }
 
     private fun parseStatus(element: String): Int = when {
-        element.toLowerCase().contains("ongoing") -> SManga.ONGOING
-        element.toLowerCase().contains("completed") -> SManga.COMPLETED
+        element.toLowerCase().contains("berjalan") -> SManga.ONGOING
+        element.toLowerCase().contains("tamat") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
