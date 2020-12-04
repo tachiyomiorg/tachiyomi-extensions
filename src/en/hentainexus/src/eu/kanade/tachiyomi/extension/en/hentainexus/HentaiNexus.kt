@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.hentainexus
 
+import android.util.Base64
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -16,12 +18,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
-import android.util.Base64
 import kotlin.experimental.xor
-import com.google.gson.Gson
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 
 @Nsfw
 class HentaiNexus : ParsedHttpSource() {
@@ -207,18 +204,29 @@ class HentaiNexus : ParsedHttpSource() {
     }
 
     private fun decodePages(code: String): List<String> {
-        val hidden: ByteArray = Base64.decode(code, Base64.DEFAULT)
-        var key: ByteArray = hidden.sliceArray(0..63)
-        var body: ByteArray = hidden.sliceArray(64..hidden.size-1)
+        val bin: ByteArray = Base64.decode(code, Base64.DEFAULT)
+        val head: ByteArray = bin.sliceArray(0..63)
+        val arr = ByteArray(256) { it.toByte() }
+        var num: Int = 0
+        var tmp: Byte
 
+        for (i in 0..255) {
+            num = (num + arr[i] + head[i % head.size] + 256) % 256
+            tmp = arr[i]
+            arr[i] = arr[num]
+            arr[num] = tmp
+        }
+        var i = 0
+        num = 0
         val buf = StringBuilder()
 
-        for (begin in 0 until body.size step 64) {
-            var chunk: ByteArray = body.sliceArray(begin..begin+63)
-            for (x in 0 until 64) {
-                buf.append((chunk[x] xor key[x]).toChar())
-            }
-            key = chunk
+        for (j in 0..bin.size - 65) {
+            i = (i + 1) % 256
+            num = (num + arr[i] + 256) % 256
+            tmp = arr[i]
+            arr[i] = arr[num]
+            arr[num] = tmp
+            buf.append((bin[j + 64] xor arr[(arr[i] + arr[num] + 256) % 256]).toChar())
         }
 
         val json = JsonParser().parse(buf.toString()).asJsonObject
@@ -228,7 +236,7 @@ class HentaiNexus : ParsedHttpSource() {
         val id = json.get("i").asString
         return json.get("f").asJsonArray.map { it ->
             val page = it.asJsonObject
-            "${base}${folder}${page.get("h").asString}/${id}/${page.get("p").asString}"
+            "${base}${folder}${page.get("h").asString}/$id/${page.get("p").asString}"
         }
     }
 
