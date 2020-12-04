@@ -5,7 +5,7 @@ ext {
     extName = 'Bacakomik'
     pkgNameSuffix = 'id.bacakomik'
     extClass = '.Bacakomik'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
