@@ -994,7 +994,7 @@ class MangaLord : Madara("Manga Lord", "https://mangalord.com", "en")
 @Nsfw
 class PornComix : Madara("PornComix", "https://www.porncomixonline.net", "en")
 
-class PMScans : Madara("PMScans", "http://www.pmscans.com", "en")
+class PMScans : Madara("PMScans", "https://www.pmscans.com", "en")
 
 class MangaRead : Madara("Manga Read", "https://mangaread.co", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
