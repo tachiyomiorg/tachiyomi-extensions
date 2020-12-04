@@ -35,7 +35,8 @@ class FMReaderFactory : SourceFactory {
         SayTruyen(),
         EpikManga(),
         ManhuaScan(),
-        ManhwaSmut()
+        ManhwaSmut(),
+        HeroScan()
     )
 }
 
@@ -52,6 +53,22 @@ class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
     // Referer needs to be chapter URL
     override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
+}
+
+class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
+    override val client: OkHttpClient = super.client.newBuilder()
+        .addInterceptor { chain ->
+            val originalRequest = chain.request()
+            chain.proceed(originalRequest).let { response ->
+                if (response.code() == 403 && originalRequest.url().host().contains("b-cdn")) {
+                    response.close()
+                    chain.proceed(originalRequest.newBuilder().removeHeader("Referer").addHeader("Referer", "https://isekaiscan.com").build())
+                } else {
+                    response
+                }
+            }
+        }
+        .build()
 }
 
 class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
