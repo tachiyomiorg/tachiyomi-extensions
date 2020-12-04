@@ -25,7 +25,6 @@ class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LHTranslation(),
         KissLove(),
-        ReadComicOnlineOrg(),
         HanaScan(),
         RawLH(),
         Manhwa18(),
@@ -47,42 +46,6 @@ class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en
 
 class KissLove : FMReader("KissLove", "https://kisslove.net", "ja") {
     override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
-}
-
-class ReadComicOnlineOrg : FMReader("ReadComicOnline.org", "https://readcomiconline.org", "en") {
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor { requestIntercept(it) }
-        .build()
-
-    private fun requestIntercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        val response = chain.proceed(request)
-
-        return if (response.headers("set-cookie").isNotEmpty()) {
-            val body = FormBody.Builder()
-                .add("dqh_firewall", URLEncoder.encode(request.url().toString().substringAfter(baseUrl), "utf-8"))
-                .build()
-            val cookie = response.headers("set-cookie")[0].split(" ")
-                .filter { it.contains("__cfduid") || it.contains("PHPSESSID") }
-                .joinToString("; ") { it.substringBefore(";") }
-            headers.newBuilder().add("Cookie", cookie).build()
-            client.newCall(POST(request.url().toString(), headers, body)).execute()
-        } else {
-            response
-        }
-    }
-
-    override val requestPath = "comic-list.html"
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = document.select("div#divImage > select:first-of-type option").mapIndexed { i, imgPage ->
-            Page(i, imgPage.attr("value"))
-        }
-        return pages.dropLast(1) // last page is a comments page
-    }
-
-    override fun imageUrlRequest(page: Page): Request = GET(baseUrl + page.url, headers)
-    override fun imageUrlParse(document: Document): String = document.select("img.chapter-img").attr("abs:src").trim()
-    override fun getGenreList() = getComicsGenreList()
 }
 
 class HanaScan : FMReader("HanaScan (RawQQ)", "https://hanascan.com", "ja") {
