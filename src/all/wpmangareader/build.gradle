@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'WP MangaReader (multiple sources)'
+    pkgNameSuffix = 'all.wpmangareader'
+    extClass = '.WPMangaReaderFactory'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"
