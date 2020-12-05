@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'HipercooL'
+    extName = 'Bruttal'
     pkgNameSuffix = 'pt.bruttal'
     extClass = '.Bruttal'
     extVersionCode = 1
