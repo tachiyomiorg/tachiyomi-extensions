@@ -1,7 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.hentainexus
 
-import android.util.Base64
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -12,13 +10,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLEncoder
-import kotlin.experimental.xor
 
 @Nsfw
 class HentaiNexus : ParsedHttpSource() {
@@ -181,10 +180,27 @@ class HentaiNexus : ParsedHttpSource() {
 
     override fun chapterListSelector() = "div.container nav.depict-button-set"
 
-    override fun chapterFromElement(element: Element): SChapter {
-        return SChapter.create().apply {
-            url = element.select("div.level-item a").attr("href")
-            name = "Read Online: Chapter 0"
+    // Chapters
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return listOf(
+            SChapter.create().apply {
+                name = "Read Online: Chapter 0"
+                // page path with a marker at the end
+                url = "${response.request().url().toString().replace("/view/", "/read/")}#"
+                // number of pages
+                url += response.asJsoup().select("td.viewcolumn:containsOwn(Pages) + td").text()
+            }
+        )
+    }
+
+    override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
+
+    // Pages
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        // split the "url" to get the page path and number of pages
+        return chapter.url.split("#").let { list ->
+            // repeat() turns 1 -> 001 and 10 -> 010
+            Observable.just(listOf(1..list[1].toInt()).flatten().map { Page(it, list[0] + "/${"0".repeat(maxOf(3 - it.toString().length, 0))}$it") })
         }
     }
 
@@ -195,52 +211,11 @@ class HentaiNexus : ParsedHttpSource() {
         return super.pageListRequest(chapter)
     }
 
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select("script:containsData(initreader)").first().data()
-            .substringAfter("initReader(\"")
-            .substringBefore("\", 1")
-            .let(::decodePages)
-            .mapIndexed { i, image -> Page(i, "", image) }
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not used")
+
+    override fun imageUrlParse(document: Document): String {
+        return document.select("img#currImage").attr("abs:src")
     }
-
-    private fun decodePages(code: String): List<String> {
-        val bin: ByteArray = Base64.decode(code, Base64.DEFAULT)
-        val head: ByteArray = bin.sliceArray(0..63)
-        val arr = ByteArray(256) { it.toByte() }
-        var num: Int = 0
-        var tmp: Byte
-
-        for (i in 0..255) {
-            num = (num + arr[i] + head[i % head.size] + 256) % 256
-            tmp = arr[i]
-            arr[i] = arr[num]
-            arr[num] = tmp
-        }
-        var i = 0
-        num = 0
-        val buf = StringBuilder()
-
-        for (j in 0..bin.size - 65) {
-            i = (i + 1) % 256
-            num = (num + arr[i] + 256) % 256
-            tmp = arr[i]
-            arr[i] = arr[num]
-            arr[num] = tmp
-            buf.append((bin[j + 64] xor arr[(arr[i] + arr[num] + 256) % 256]).toChar())
-        }
-
-        val json = JsonParser().parse(buf.toString()).asJsonObject
-
-        val base = json.get("b").asString
-        val folder = json.get("r").asString
-        val id = json.get("i").asString
-        return json.get("f").asJsonArray.map { it ->
-            val page = it.asJsonObject
-            "${base}${folder}${page.get("h").asString}/$id/${page.get("p").asString}"
-        }
-    }
-
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
         Filter.Header("Only one filter may be used at a time."),
