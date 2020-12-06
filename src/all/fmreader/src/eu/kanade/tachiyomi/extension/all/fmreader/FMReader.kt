@@ -161,7 +161,7 @@ abstract class FMReader(
             author = infoElement.select("li a.btn-info").text()
             genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
             status = parseStatus(infoElement.select("li a.btn-success").first()?.text())
-            description = document.select("div.row ~ div.row p").text().trim()
+            description = document.select("div.detail .content, div.row ~ div.row:has(h3:first-child) p").text().trim()
             thumbnail_url = infoElement.select("img.thumbnail").imgAttr()
         }
     }
