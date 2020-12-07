@@ -167,7 +167,7 @@ class CopyManga : HttpSource() {
 
     // Copymanga has different logic in polular and search page, mix two logic in search progress for now
     override fun getFilterList() = FilterList(
-        ThemeFilter(
+        MangaFilter(
             "题材",
             "theme",
             arrayOf(
@@ -231,7 +231,7 @@ class CopyManga : HttpSource() {
         )
     )
 
-    private class ThemeFilter(
+    private class MangaFilter(
         displayName: String,
         searchName: String,
         val vals: Array<Pair<String, String>>,
