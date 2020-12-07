@@ -43,7 +43,7 @@ class CopyManga : HttpSource() {
         var requestUrlString: String
 
         val params = filters.map {
-            if (it is ThemeFilter) {
+            if (it is MangaFilter) {
                 it.toUriPart()
             } else ""
         }.filter { it != "" }.joinToString("&")
