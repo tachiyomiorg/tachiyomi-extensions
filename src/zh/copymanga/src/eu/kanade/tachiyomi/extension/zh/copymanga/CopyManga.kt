@@ -228,8 +228,18 @@ class CopyManga : HttpSource() {
                 Pair("重生", "chongsheng"),
                 Pair("仙侠", "xianxia")
             )
-        )
-    )
+        ),
+        MangaFilter(
+            "排序",
+            "ordering",
+            arrayOf(
+                Pair("最热门", "-popular"),
+                Pair("最冷门", "popular"),
+                Pair("最新", "-datetime_updated"),
+                Pair("最早", "datetime_updated"),
+            )
+        ),
+    )   
 
     private class MangaFilter(
         displayName: String,
