@@ -39,7 +39,7 @@ class CopyManga : HttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         // when perform html search, sort by popular
         var apiUrlString = "$baseUrl/api/kb/web/search/count?format=json&limit=$searchPageSize&offset=${(page - 1) * searchPageSize}&platform=2&q=$query"
-        var htmlUrlString = "$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize"
+        var htmlUrlString = "$baseUrl/comics?offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize"
         var requestUrlString: String
 
         val params = filters.map {
