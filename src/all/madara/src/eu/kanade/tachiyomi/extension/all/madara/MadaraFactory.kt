@@ -135,6 +135,7 @@ class MadaraFactory : SourceFactory {
         ManhuaPlus(),
         ManhuaUS(),
         ManhuasWorld(),
+        ManhuaSY(),
         Manhuasnet(),
         ManhwaRaw(),
         ManhwaTop(),
@@ -217,6 +218,8 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class ManhuaSY : Madara("Manhua SY", "https://www.manhuasy.com", "en")
 
 class MangaRave : Madara("MangaRave", "http://www.mangarave.com", "en")
 
