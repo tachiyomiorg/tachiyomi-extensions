@@ -1,6 +1,12 @@
 package eu.kanade.tachiyomi.extension.zh.copymanga
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.CheckBoxPreference
+import android.support.v7.preference.PreferenceScreen
+import com.luhuiguo.chinese.ChineseUtils
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -15,6 +21,8 @@ import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -22,7 +30,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-class CopyManga : HttpSource() {
+class CopyManga : ConfigurableSource, HttpSource() {
 
     override val name = "拷贝漫画"
     override val baseUrl = "https://www.copymanga.com"
@@ -30,6 +38,9 @@ class CopyManga : HttpSource() {
     override val supportsLatest = true
     private val popularLatestPageSize = 50 // default
     private val searchPageSize = 12 // default
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize", headers)
     override fun popularMangaParse(response: Response): MangasPage = parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
@@ -69,8 +80,12 @@ class CopyManga : HttpSource() {
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
-
+        var _title: String = document.select("div.comicParticulars-title-right > ul > li:eq(0) ").first().text()
+        if (preferences.getBoolean(SHOW_Simplified_Chinese_TITLE_PREF, false)) {
+            _title = ChineseUtils.toSimplified(_title)
+        }
         val manga = SManga.create().apply {
+            title = _title
             thumbnail_url = document.select("div.comicParticulars-title-left img").first().attr("data-src")
             description = document.select("div.comicParticulars-synopsis p.intro").first().text().trim()
         }
@@ -239,7 +254,7 @@ class CopyManga : HttpSource() {
                 Pair("最早", "datetime_updated"),
             )
         ),
-    )   
+    )
 
     private class MangaFilter(
         displayName: String,
@@ -281,9 +296,13 @@ class CopyManga : HttpSource() {
         for (i in 0 until comicArray.length()) {
             val obj = comicArray.getJSONObject(i)
             val authorArray = obj.getJSONArray("author")
+            var _title: String = obj.getString("name")
+            if (preferences.getBoolean(SHOW_Simplified_Chinese_TITLE_PREF, false)) {
+                _title = ChineseUtils.toSimplified(_title)
+            }
             ret.add(
                 SManga.create().apply {
-                    title = obj.getString("name")
+                    title = _title
                     thumbnail_url = obj.getString("cover")
                     author = Array<String?>(authorArray.length()) { i -> authorArray.getJSONObject(i).getString("name") }.joinToString(", ")
                     status = SManga.UNKNOWN
@@ -302,7 +321,11 @@ class CopyManga : HttpSource() {
         }
         element.select("div.exemptComicItem-txt > a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.select("p").first().text().trim()
+            var _title: String = it.select("p").first().text().trim()
+            if (preferences.getBoolean(SHOW_Simplified_Chinese_TITLE_PREF, false)) {
+                _title = ChineseUtils.toSimplified(_title)
+            }
+            manga.title = _title
         }
         return manga
     }
@@ -343,5 +366,49 @@ class CopyManga : HttpSource() {
         val result = String(cipher.doFinal(dataByteArray), Charsets.UTF_8)
 
         return result
+    }
+
+    // Change Title to Simplified Chinese For Library Gobal Search Optionally
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val zhPreference = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = SHOW_Simplified_Chinese_TITLE_PREF
+            title = "将标题转换为简体中文"
+            summary = "需要重启软件以生效。已添加漫画需要迁移改变标题。"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putBoolean(SHOW_Simplified_Chinese_TITLE_PREF, newValue as Boolean).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+        screen.addPreference(zhPreference)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val zhPreference = CheckBoxPreference(screen.context).apply {
+            key = SHOW_Simplified_Chinese_TITLE_PREF
+            title = "将标题转换为简体中文"
+            summary = "需要重启软件以生效。已添加漫画需要迁移改变标题。"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putBoolean(SHOW_Simplified_Chinese_TITLE_PREF, newValue as Boolean).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(zhPreference)
+    }
+
+    companion object {
+        private const val SHOW_Simplified_Chinese_TITLE_PREF = "showSCTitle"
     }
 }
