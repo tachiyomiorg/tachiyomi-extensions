@@ -21,13 +21,13 @@ abstract class PaprikaAlt(
     override fun popularMangaFromElement(element: Element): SManga {
         // Log.d("Paprika", "processing popular element")
         return SManga.create().apply {
-            element.select("a:has(h2)").let {
+            element.select("a:has(h3)").let {
                 setUrlWithoutDomain(it.attr("href"))
                 title = it.text()
                 // Log.d("Paprika", "manga url: $url")
                 // Log.d("Paprika", "manga title: $title")
             }
-            thumbnail_url = element.select("img").attr("abs:src")
+            thumbnail_url = element.select("img").attr("src")
             // Log.d("Paprika", "manga thumb: $thumbnail_url")
         }
     }
@@ -56,7 +56,7 @@ abstract class PaprikaAlt(
                 it.text().apply {
                     when {
                         this.startsWith("Author") -> author = this.substringAfter(":").trim()
-                        this.startsWith("Artist") -> artist = this.substringAfter(":").trim()
+                        this.startsWith("Artist") -> artist = this.substringAfter(":").trim().replace(";", ",")
                         this.startsWith("Genre") -> genre = this.substringAfter(":").trim().replace(";", ",")
                         this.startsWith("Status") -> status = this.substringAfter(":").trim().toStatus()
                     }
