@@ -428,27 +428,10 @@ class BoysLove : Madara("BoysLove", "https://boyslove.me", "en")
 
 class ChibiManga : Madara(
     "Chibi Manga",
-    "http://www.cmreader.info",
+    "https://www.cmreader.info",
     "en",
-    dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-) {
-    override fun chapterListParse(response: Response): List<SChapter> {
-        response.asJsoup().let { documet ->
-            documet.select("li.parent.has-child").let { volumes ->
-                return if (volumes.isNullOrEmpty()) {
-                    documet.select(chapterListSelector()).map { chapterFromElement(it) }
-                } else {
-                    val chapters = mutableListOf<SChapter>()
-                    volumes.reversed().forEach { v ->
-                        val vName = v.select("a[href^=javascript]").text()
-                        v.select(chapterListSelector()).map { chapters.add(chapterFromElement(it).apply { name = "$vName - $name" }) }
-                    }
-                    chapters
-                }
-            }
-        }
-    }
-}
+    dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+)
 
 class ZinManga : Madara("Zin Translator", "https://zinmanga.com", "en") {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
