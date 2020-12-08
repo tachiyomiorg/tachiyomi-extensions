@@ -761,7 +761,7 @@ class MangaArabTeam : Madara("مانجا عرب تيم Manga Arab Team", "https:
     }
 }
 
-class NightComic : Madara("Night Comic", "https://nightcomic.com", "en") {
+class NightComic : Madara("Night Comic", "https://www.nightcomic.com", "en") {
     override val formHeaders: Headers = headersBuilder()
         .add("Content-Type", "application/x-www-form-urlencoded")
         .add("X-MOD-SBB-CTYPE", "xhr")
