@@ -237,6 +237,7 @@ class Generator {
             SourceData("en", "Read Comics Online", "https://readcomicsonline.ru"),
             SourceData("en", "Biamam Scans", "https://biamam.com"),
             SourceData("en", "Fallen Angels", "https://manga.fascans.com"),
+            SourceData("en", "Manhwas Men", "https://manhwas.men"),
             SourceData("en", "White Cloud Pavilion", "https://www.whitecloudpavilion.com/manga/free"),
             SourceData("fr", "Scan FR", "https://www.scan-fr.co"),
             SourceData("fr", "Scan VF", "https://www.scan-vf.net"),
