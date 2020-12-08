@@ -40,7 +40,7 @@ class MangaFast : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("h3").text().trim()
-        thumbnail_url = element.select("img").attr("abs:data-src")
+        thumbnail_url = element.select("img").attr("abs:data-src").substringBeforeLast("resize")
     }
 
     override fun latestUpdatesNextPageSelector() = "a.next"
