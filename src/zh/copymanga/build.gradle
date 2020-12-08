@@ -5,8 +5,13 @@ ext {
     extName = 'CopyManga'
     pkgNameSuffix = 'zh.copymanga'
     extClass = '.CopyManga'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
-
 apply from: "$rootDir/common.gradle"
+
+dependencies {
+    compileOnly project(':duktape-stub')
+    implementation 'org.apache.commons:commons-text:1.8'
+    implementation 'com.luhuiguo:chinese-utils:1.0'
+}
