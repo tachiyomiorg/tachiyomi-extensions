@@ -62,8 +62,6 @@ class MadaraFactory : SourceFactory {
         FirstKissManga(),
         FirstKissManhua(),
         FreeWebtoonCoins(),
-        FriendlyTranslations(),
-        FunList(),
         FurioScans(),
         GoldenManga(),
         GuncelManga(),
@@ -157,7 +155,6 @@ class MadaraFactory : SourceFactory {
         NeoxScanlator(),
         NightComic(),
         NijiTranslations(),
-        NinjaScans(),
         Ninjavi(),
         NTSVoidScans(),
         OffScan(),
@@ -313,13 +310,9 @@ class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
 
 class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
 
-class FunList : Madara("FunList", "https://funlist.online", "en")
-
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
 
 class MangaRawr : Madara("MangaRawr", "https://mangarawr.com", "en")
-
-class NinjaScans : Madara("NinjaScans", "https://ninjascans.com", "en")
 
 class ReadManhua : Madara(
     "ReadManhua",
@@ -1306,8 +1299,6 @@ class CatTranslator : Madara("CAT-translator", "https://cat-translator.com", "th
 
 @Nsfw
 class ComicsValley : Madara("Comics Valley", "https://comicsvalley.com", "hi")
-
-class FriendlyTranslations : Madara("Friendly Translations", "https://friendlytranslationsscan.website", "en")
 
 class Wakascan : Madara("Wakascan", "https://wakascan.com", "fr")
 
