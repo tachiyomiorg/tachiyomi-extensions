@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.id.bacamanga
-
 import android.util.Base64
+import android.util.Log
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -14,11 +15,9 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.io.UnsupportedEncodingException
-import java.net.URLDecoder
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -142,14 +141,26 @@ class BacaManga : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val script = document.select("div#readerarea script").html()
-        val key = script.substringAfter("atob(").substringBefore(");")
-        val coded = script.substringAfter("*/var $key = \"").substringBefore("\";")
-        val decoded = URLDecoder.decode(decodeBase64(coded), "UTF-8")
-        val images = Jsoup.parse(decoded)
-        images.select("img").forEachIndexed { i, element ->
-            val url = element.attr("src")
-            pages.add(Page(i, "", url))
+
+        val script = document.select("div#content script:nth-child(3)").html()
+        val key = script.substringAfter("JSON['parse'](window[").substringAfter("\"").substringBefore("\"")
+        val decoded_t = key.rot13Decode()
+        // throw Exception(decodeBase64(decoded_t))
+        // val coded = script.substringAfter("*/var $key = \"").substringBefore("\";")
+        val decoded = decodeBase64(decoded_t)
+        val json = JsonParser().parse(decoded).asJsonArray
+        // val images = decoded.split(',')
+
+        json.forEachIndexed { i, url ->
+            Log.e("BacaManga", url.toString())
+            // throw Exception(url.toString())
+            // throw Exception(JsonParser().parse(url).asJsonObject)
+            // Log.e(JsonParser().parse(url).asJsonArray)
+            // val url = element.attr("src")
+            // throw Exception(i.toString())
+
+            pages.add(Page(i, "", "$url"))
+            // throw Exception(url.toString())
         }
         return pages
     }
@@ -163,37 +174,23 @@ class BacaManga : ParsedHttpSource() {
 
         return String(valueDecoded)
     }
-
-    private fun newDecoding(coded: String): String{
-        // Actually i don't have a better solution. If you can find something
-        // better with regex you're welcome to trash this nightmare.
-
-        // NOTE: base64 encoded string have char byte increased by 13
-        // Index goes from 97 to 122 for a-z and from 65 to 90 for A-Z
-        // A become N
-        // I become V
-        // O become B because when it reach the last item it restart the count
-        // So O + 11 = Z    We have 2 more then Z + 2 = B
-        // Hope this is clear
-        var coded = "PVNB"
-        var encoded_alphabet = "nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM"
-        var needed_alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-        for (i in encoded_alphabet.indices) {
-            coded.replace(encoded_alphabet[i], needed_alphabet[i])
+    private fun String.rot13Decode() = map {
+        when {
+            it.isUpperCase() -> { val x = it + 13; if (x > 'Z') x - 26 else x }
+            it.isLowerCase() -> { val x = it + 13; if (x > 'z') x - 26 else x }
+            else -> it
         }
-    }
+    }.toCharArray().joinToString("")
 
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        return if (page.imageUrl!!.contains("i0.wp.com")) {
-            val headers = Headers.Builder()
-            headers.apply {
-                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
-            }
-            GET(page.imageUrl!!, headers.build())
-        } else GET(page.imageUrl!!, headers)
+        throw Exception(page.imageUrl)
+        val imgHeader = Headers.Builder().apply {
+            add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.1.1; en-gb; Build/KLP) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30")
+            add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+        }.build()
+        return GET(page.imageUrl!!, imgHeader)
     }
 
     private class AuthorFilter : Filter.Text("Author")
