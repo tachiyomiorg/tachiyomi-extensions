@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.text.SimpleDateFormat
 import java.util.Locale
 
 /**
@@ -27,6 +28,8 @@ class TimelessLeaf : HttpSource() {
     override val lang = "en"
 
     override val supportsLatest: Boolean = false
+
+    private val dateFormat: SimpleDateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.US)
 
     // popular manga
 
@@ -100,9 +103,22 @@ class TimelessLeaf : HttpSource() {
         return hostedHere.map { el ->
             SChapter.create().apply {
                 setUrlWithoutDomain(el.attr("href"))
+                // taking timeStamp from url
+                date_upload = parseChapterDate(el.attr("href").substringAfter("com/").substringAfter("php/"))
                 name = el.text()
             }
         }.asReversed()
+    }
+
+    private fun parseChapterDate(date: String): Long {
+        return try {
+            dateFormat.parse(date)?.time ?: 0
+        } catch (_: Exception) {
+            0L
+        }
+    }
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH).parse(date)?.time ?: 0L
     }
 
     // page list
