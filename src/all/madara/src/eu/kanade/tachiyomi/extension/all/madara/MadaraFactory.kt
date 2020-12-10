@@ -42,6 +42,7 @@ class MadaraFactory : SourceFactory {
         Azora(),
         Bakaman(),
         BestManga(),
+        BestManhua(),
         BoysLove(),
         CatOnHeadTranslations(),
         CatTranslator(),
@@ -214,6 +215,10 @@ class MadaraFactory : SourceFactory {
         // KnightNoScanlation(),
         // AhStudios(),
     )
+}
+
+class BestManhua : Madara("BestManhua", "https://bestmanhua.com", "en") {
+    override val pageListParseSelector = "li.blocks-gallery-item"
 }
 
 class ManhuaSY : Madara("Manhua SY", "https://www.manhuasy.com", "en")
