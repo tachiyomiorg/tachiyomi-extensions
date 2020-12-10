@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.id.bacamanga
 import android.util.Base64
-import android.util.Log
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -145,22 +144,12 @@ class BacaManga : ParsedHttpSource() {
         val script = document.select("div#content script:nth-child(3)").html()
         val key = script.substringAfter("JSON['parse'](window[").substringAfter("\"").substringBefore("\"")
         val decoded_t = key.rot13Decode()
-        // throw Exception(decodeBase64(decoded_t))
-        // val coded = script.substringAfter("*/var $key = \"").substringBefore("\";")
         val decoded = decodeBase64(decoded_t)
         val json = JsonParser().parse(decoded).asJsonArray
-        // val images = decoded.split(',')
-
         json.forEachIndexed { i, url ->
-            Log.e("BacaManga", url.toString())
-            // throw Exception(url.toString())
-            // throw Exception(JsonParser().parse(url).asJsonObject)
-            // Log.e(JsonParser().parse(url).asJsonArray)
-            // val url = element.attr("src")
-            // throw Exception(i.toString())
-
-            pages.add(Page(i, "", "$url"))
-            // throw Exception(url.toString())
+            /* REMOVING QUOTES AROUND STRING */
+            val url_clean = url.toString().removeSurrounding("\"")
+            pages.add(Page(i, "", url_clean))
         }
         return pages
     }
@@ -174,6 +163,13 @@ class BacaManga : ParsedHttpSource() {
 
         return String(valueDecoded)
     }
+
+    /**
+     * rot13 decoding
+     * More aboure rot13 https://rosettacode.org/wiki/Rot-13
+     * Kotlin implementation https://rosettacode.org/wiki/Rot-13#Kotlin
+     */
+
     private fun String.rot13Decode() = map {
         when {
             it.isUpperCase() -> { val x = it + 13; if (x > 'Z') x - 26 else x }
@@ -185,12 +181,13 @@ class BacaManga : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        throw Exception(page.imageUrl)
-        val imgHeader = Headers.Builder().apply {
-            add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.1.1; en-gb; Build/KLP) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30")
-            add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
-        }.build()
-        return GET(page.imageUrl!!, imgHeader)
+        return if (page.imageUrl!!.contains("i0.wp.com")) {
+            val headers = Headers.Builder()
+            headers.apply {
+                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+            }
+            GET(page.imageUrl!!, headers.build())
+        } else GET(page.imageUrl!!, headers)
     }
 
     private class AuthorFilter : Filter.Text("Author")
