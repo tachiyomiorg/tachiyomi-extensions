@@ -142,10 +142,9 @@ class BacaManga : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
 
         val script = document.select("div#content script:nth-child(3)").html()
-        val key = script.substringAfter("JSON['parse'](window[").substringAfter("\"").substringBefore("\"")
-        val decoded_t = key.rot13Decode()
-        val decoded = decodeBase64(decoded_t)
-        val json = JsonParser().parse(decoded).asJsonArray
+        val encodedImagesList = script.substringAfter("JSON['parse'](window[").substringAfter("\"").substringBefore("\"")
+        val decodedImagesList = decodeBase64(encodedImagesList.rot13Decode())
+        val json = JsonParser().parse(decodedImagesList).asJsonArray
         json.forEachIndexed { i, url ->
             /* REMOVING QUOTES AROUND STRING */
             val url_clean = url.toString().removeSurrounding("\"")
