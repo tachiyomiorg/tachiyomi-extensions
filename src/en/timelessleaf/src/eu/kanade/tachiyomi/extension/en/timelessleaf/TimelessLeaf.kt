@@ -117,6 +117,7 @@ class TimelessLeaf : HttpSource() {
             0L
         }
     }
+    
     private fun parseDate(date: String): Long {
         return SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH).parse(date)?.time ?: 0L
     }
