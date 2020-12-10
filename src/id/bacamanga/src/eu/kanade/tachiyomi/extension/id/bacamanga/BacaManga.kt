@@ -14,7 +14,6 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -123,17 +122,12 @@ class BacaManga : ParsedHttpSource() {
         val document = response.asJsoup()
         val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
         // Add date for latest chapter only
-        document.select("script.yoast-schema-graph").html()
-            .let {
-                val date = JSONObject(it).getJSONArray("@graph")
-                    .getJSONObject(3).getString("dateModified")
-                chapters[0].date_upload = parseDate(date)
-            }
+        chapters[0].date_upload = parseDate(document.select(".lchx+span.dt .dt-small").first().text())
         return chapters
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH).parse(date)?.time ?: 0L
+        return SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).parse(date)?.time ?: 0L
     }
 
     override fun chapterListSelector() = ".lchx"
@@ -168,6 +162,26 @@ class BacaManga : ParsedHttpSource() {
         }
 
         return String(valueDecoded)
+    }
+
+    private fun newDecoding(coded: String): String{
+        // Actually i don't have a better solution. If you can find something
+        // better with regex you're welcome to trash this nightmare.
+
+        // NOTE: base64 encoded string have char byte increased by 13
+        // Index goes from 97 to 122 for a-z and from 65 to 90 for A-Z
+        // A become N
+        // I become V
+        // O become B because when it reach the last item it restart the count
+        // So O + 11 = Z    We have 2 more then Z + 2 = B
+        // Hope this is clear
+        var coded = "PVNB"
+        var encoded_alphabet = "nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM"
+        var needed_alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+        for (i in encoded_alphabet.indices) {
+            coded.replace(encoded_alphabet[i], needed_alphabet[i])
+        }
     }
 
     override fun imageUrlParse(document: Document) = ""
