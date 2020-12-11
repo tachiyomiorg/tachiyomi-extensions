@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.manhwamanga
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -16,6 +17,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
+@Nsfw
 class ManhwaManga : ParsedHttpSource() {
     override val name = "ManhwaManga.net"
     override val baseUrl = "https://manhwamanga.net"
