@@ -222,7 +222,6 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
 - If possible try to stick to the general workflow from `HttpSource`/`ParsedHttpSource`; breaking them may cause you more headache than necessary.
 - By implementing `ConfigurableSource` you can add settings to your source, which is backed by [`SharedPreferences`](https://developer.android.com/reference/android/content/SharedPreferences).
-- If you don't pass 
 
 ## Running
 
