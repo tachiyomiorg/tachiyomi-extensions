@@ -12,13 +12,9 @@ android {
 
     sourceSets {
         main {
-            manifest.srcFile "$rootDir/AndroidManifest.xml"
+            manifest.srcFile "$rootDir/src/AndroidManifest.xml"
             java.srcDirs = ['src']
-            resources.srcDirs = ['src']
-            aidl.srcDirs = ['src']
-            renderscript.srcDirs = ['src']
             res.srcDirs = ["$rootDir/res"]
-            assets.srcDirs = ['assets']
         }
         release {
             res.srcDirs = ['res']
