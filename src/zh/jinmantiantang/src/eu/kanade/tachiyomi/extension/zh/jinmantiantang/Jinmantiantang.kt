@@ -175,7 +175,7 @@ class Jinmantiantang : ParsedHttpSource() {
         // When the index passed by the "selectDetailsStatusAndGenre(document: Document, index: Int)" index is 1,
         // it will definitely return a String type of 0, 1 or 2. This warning can be ignored
         status = selectDetailsStatusAndGenre(document, 1).trim().toInt()
-        description = document.select("div.p-t-5.p-b-5")[7].text().removePrefix("敘述：")
+        description = document.select("#intro-block .p-t-5.p-b-5").text().substringAfter("敘述：").trim()
     }
 
     // 查询作者信息
