@@ -181,7 +181,7 @@ a.k.a. the Browse source entry point in the app (invoked by tapping on the sourc
 
 a.k.a. the Latest source entry point in the app (invoked by tapping on the "Latest" button beside the source name).
 
-- Used if `supportsLatest` is `true` for a source
+- Enabled if `supportsLatest` is `true` for a source
 - Similar to popular manga, but should be fetching the latest entries from a source.
 
 #### Manga Search
