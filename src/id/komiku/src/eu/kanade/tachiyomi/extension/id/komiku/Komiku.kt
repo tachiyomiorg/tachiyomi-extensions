@@ -16,7 +16,7 @@ import java.util.Locale
 class Komiku : ParsedHttpSource() {
     override val name = "Komiku"
 
-    override val baseUrl = "https://komiku.co.id/"
+    override val baseUrl = "https://komiku.id/"
 
     override val lang = "id"
 
@@ -24,9 +24,10 @@ class Komiku : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    // popular
     override fun popularMangaSelector() = "div.bge"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/other/hot/page/$page/?orderby=modified", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/other/hot/page/$page/?orderby=meta_value_num", headers)
 
     private val coverRegex = Regex("""(/Manga-|/Manhua-|/Manhwa-)""")
     private val coverUploadRegex = Regex("""/uploads/\d\d\d\d/\d\d/""")
@@ -36,31 +37,35 @@ class Komiku : ParsedHttpSource() {
         title = element.select("h3").text().trim()
 
         // scraped image doesn't make for a good cover; so try to transform it
-        // make it null if it contains upload date as those URLs aren't very useful
-        thumbnail_url = element.select("img").attr("abs:src")
-            .substringBeforeLast("?")
-            .replace(coverRegex, "/Komik-")
-            .let { if (it.contains(coverUploadRegex)) null else it }
+        // make it take bad cover instead of null if it contains upload date as those URLs aren't very useful
+        if (element.select("img").attr("data-src").contains(coverUploadRegex)) {
+            thumbnail_url = element.select("img").attr("data-src")
+        } else {
+            thumbnail_url = element.select("img").attr("data-src").substringBeforeLast("?").replace(coverRegex, "/Komik-")
+        }
     }
 
-    override fun popularMangaNextPageSelector() = "a.next.popunder"
+    override fun popularMangaNextPageSelector() = ".pag-nav a.next"
 
+    // latest
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/manga/page/$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/other/hot/page/$page/?orderby=modified", headers)
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
+    // search
     override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/page/$page/?post_type=manga&s=$query", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/cari/page/$page/?post_type=manga&s=$query", headers)
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaNextPageSelector() = "a.next"
 
+    // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         description = document.select("#Sinopsis > p").text().trim()
         author = document.select("table.inftable td:contains(Komikus)+td").text()
@@ -75,7 +80,8 @@ class Komiku : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "table.chapter tr:has(td.judulseries)"
+    // chapters
+    override fun chapterListSelector() = "#Daftar_Chapter tr:has(td.judulseries)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
@@ -105,8 +111,9 @@ class Komiku : ParsedHttpSource() {
         return calendar.timeInMillis
     }
 
+    // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.bc > img").mapIndexed { i, element ->
+        return document.select("#Baca_Komik img").mapIndexed { i, element ->
             Page(i, "", element.attr("abs:src"))
         }
     }
