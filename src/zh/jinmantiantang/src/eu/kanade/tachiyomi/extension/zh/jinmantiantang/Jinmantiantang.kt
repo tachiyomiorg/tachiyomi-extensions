@@ -86,9 +86,9 @@ class Jinmantiantang : ParsedHttpSource() {
                 py = py + remainder
             }
             // 要裁剪的区域
-            val crop = Rect(0, y, width, (height - (copyH * x) - remainder))
+            val crop = Rect(0, y, width, y + copyH)
             // 裁剪后应放置到新图片对象的区域
-            val splic = Rect(0, py, width, (py + copyH))
+            val splic = Rect(0, py, width, py + copyH)
 
             canvas.drawBitmap(input, crop, splic, null)
         }
