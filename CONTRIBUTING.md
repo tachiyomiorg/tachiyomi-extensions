@@ -207,8 +207,8 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 #### Chapter
 
 - After a chapter list for the manga is fetched and the app is going to cache the data, `prepareNewChapter` will be called.
-- `SChapter.date_upload` is in the [UNIX Epoch time](https://en.wikipedia.org/wiki/Unix_time) format.
-    - If you don't pass `SChapter.date_upload`, the user won't get notifications for new chapters. refer to [this issue](https://github.com/inorichi/tachiyomi/issues/2089) for more info.
+- `SChapter.date_upload` is the [UNIX Epoch time](https://en.wikipedia.org/wiki/Unix_time) **expressed in miliseconds**.
+    - If you don't pass `SChapter.date_upload`, the user won't get notifications for new chapters. refer to [this issue](https://github.com/inorichi/tachiyomi/issues/2089) for more info. `System.currentTimeMillis()` works as a substitute when real data is not available. 
 
 #### Chapter Pages
 
