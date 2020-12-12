@@ -100,7 +100,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 点击量排序(人气)
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/albums?o=mv&page=$page&screen=$defaultRemovedGenres", headers)
+        return GET("$baseUrl/albums?o=mv&page=$page", headers)
     }
 
     override fun popularMangaNextPageSelector(): String? = "a.prevnext"
@@ -114,7 +114,7 @@ class Jinmantiantang : ParsedHttpSource() {
 
     // 最新排序
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/albums?o=mr&page=$page&screen=$defaultRemovedGenres", headers)
+        return GET("$baseUrl/albums?o=mr&page=$page", headers)
     }
 
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
@@ -143,18 +143,16 @@ class Jinmantiantang : ParsedHttpSource() {
         } else {
             params = if (params == "") "/albums?" else params
             if (query == "") {
-                HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres")?.newBuilder()
+                HttpUrl.parse("$baseUrl$params&page=$page")?.newBuilder()
             } else {
                 // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
                 val removedGenres = query.split(" ").filter { it.startsWith("-") }.joinToString("+") { it.removePrefix("-") }
-                HttpUrl.parse("$baseUrl$params&page=$page&screen=$defaultRemovedGenres$removedGenres")?.newBuilder()
+                HttpUrl.parse("$baseUrl$params&page=$page")?.newBuilder()
             }
         }
         return GET(url.toString(), headers)
     }
 
-    // 默认过滤类型, 仅针对能够自己编译应用的读者
-    private val defaultRemovedGenres: String = "" // like ”YAOI+扶他+毛絨絨+獵奇+“
 
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
