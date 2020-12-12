@@ -56,6 +56,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
         add("Accept", "image/webp,*/*;q=0.8")
+        add("Referer", baseUrl)
     }
 
     private val jsonParser = JsonParser()
