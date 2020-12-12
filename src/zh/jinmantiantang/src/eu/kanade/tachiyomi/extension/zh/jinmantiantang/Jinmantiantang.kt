@@ -319,7 +319,7 @@ class Jinmantiantang : ParsedHttpSource() {
             Pair("巨乳", "/search/photos?search_query=巨乳&"),
             Pair("贫乳", "/search/photos?search_query=貧乳&"),
             Pair("女王", "/search/photos?search_query=女王&"),
-            Pair("教室", "/search/photos?search_query=教師&"),
+            Pair("教师", "/search/photos?search_query=教師&"),
             Pair("女仆", "/search/photos?search_query=女僕&"),
             Pair("护士", "/search/photos?search_query=護士&"),
             Pair("泳裝", "/search/photos?search_query=泳裝&"),
