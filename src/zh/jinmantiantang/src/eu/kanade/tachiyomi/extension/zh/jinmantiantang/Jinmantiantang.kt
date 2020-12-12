@@ -145,8 +145,6 @@ class Jinmantiantang : ParsedHttpSource() {
             if (query == "") {
                 HttpUrl.parse("$baseUrl$params&page=$page")?.newBuilder()
             } else {
-                // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
-                val removedGenres = query.split(" ").filter { it.startsWith("-") }.joinToString("+") { it.removePrefix("-") }
                 HttpUrl.parse("$baseUrl$params&page=$page")?.newBuilder()
             }
         }
