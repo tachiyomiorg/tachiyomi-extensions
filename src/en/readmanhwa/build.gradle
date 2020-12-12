@@ -5,7 +5,7 @@ ext {
     extName = 'ReadManhwa'
     pkgNameSuffix = 'en.readmanhwa'
     extClass = '.ReadManhwa'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
     containsNsfw = true
 }
