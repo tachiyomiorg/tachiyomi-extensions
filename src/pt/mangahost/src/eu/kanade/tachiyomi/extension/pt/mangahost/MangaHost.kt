@@ -1,18 +1,22 @@
 package eu.kanade.tachiyomi.extension.pt.mangahost
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -91,6 +95,18 @@ class MangaHost : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector(): String? = null
 
+    /**
+     * The site wrongly return 404 for some titles, even if they are present.
+     * In those cases, the extension will parse the response normally.
+     */
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(mangaDetailsRequest(manga))
+            .asObservableIgnoreCode(404)
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("div.box-content div.w-row div.w-col:eq(1) article")
 
@@ -102,6 +118,20 @@ class MangaHost : ParsedHttpSource() {
         status = infoElement.select("div.text li div:contains(Status:)").text().toStatus()
         thumbnail_url = document.select("div.box-content div.w-row div.w-col:eq(0) div.widget img")
             .attr("src")
+    }
+
+    /**
+     * The site wrongly return 404 for some titles, even if they are present.
+     * In those cases, the extension will parse the response normally.
+     */
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return if (manga.status != SManga.LICENSED) {
+            client.newCall(chapterListRequest(manga))
+                .asObservableIgnoreCode(404)
+                .map(::chapterListParse)
+        } else {
+            Observable.error(Exception("Licensed - No chapters to show"))
+        }
     }
 
     override fun chapterListSelector(): String =
@@ -116,6 +146,16 @@ class MangaHost : ParsedHttpSource() {
         chapter_number = element.select("div.pop-title span.btn-caps").text()
             .toFloatOrNull() ?: 1f
         setUrlWithoutDomain(element.select("div.tags a").attr("href"))
+    }
+
+    /**
+     * The site wrongly return 404 for some chapters, even if they are present.
+     * In those cases, the extension will parse the response normally.
+     */
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        return client.newCall(pageListRequest(chapter))
+            .asObservableIgnoreCode(404)
+            .map(::pageListParse)
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -142,6 +182,15 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private fun Call.asObservableIgnoreCode(code: Int): Observable<Response> {
+        return asObservable().doOnNext { response ->
+            if (!response.isSuccessful && response.code() != code) {
+                response.close()
+                throw Exception("HTTP error ${response.code()}")
+            }
+        }
+    }
+
     private fun String.toDate(): Long {
         return try {
             DATE_FORMAT.parse(this)?.time ?: 0L
@@ -164,7 +213,7 @@ class MangaHost : ParsedHttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
