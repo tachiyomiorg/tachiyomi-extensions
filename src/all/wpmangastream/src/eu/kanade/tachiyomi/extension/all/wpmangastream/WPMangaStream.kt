@@ -190,7 +190,8 @@ abstract class WPMangaStream(
 
         // Add timestamp to latest chapter, taken from "Updated On". so source which not provide chapter timestamp will have atleast one
         val date = document.select(".fmed:contains(update) time ,span:contains(update) time").attr("datetime")
-        if (date != "") chapters[0].date_upload = parseDate(date)
+        val checkChapter = document.select(chapterListSelector()).firstOrNull()
+        if (date != "" && checkChapter != null) chapters[0].date_upload = parseDate(date)
 
         return chapters
     }
