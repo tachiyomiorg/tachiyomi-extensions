@@ -136,7 +136,7 @@ class TwoKinds : HttpSource() {
             val pages = mutableListOf<Page>()
             val firstPage = chapter.url.substringAfter("-").toInt()
 
-            for (i in firstPage..firstPage + 20) {
+            for (i in firstPage..firstPage + 19) {
                 pages.add(
                     Page(i - firstPage, baseUrl + "/comic/$i/")
                 )
