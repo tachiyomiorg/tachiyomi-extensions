@@ -1,20 +1,17 @@
-package eu.kanade.tachiyomi.extension.en.fakenhentai
+package eu.kanade.tachiyomi.extension.en.nhentai.com
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -30,13 +27,11 @@ import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
-class FakeNhentai : ConfigurableSource, HttpSource() {
+@Nsfw
+class NHentaiCom : HttpSource() {
 
-    override val name = "fakenhentai"
+    override val name = "nHentai.com (unoriginal)"
 
     override val baseUrl = "https://nhentai.com"
 
@@ -44,11 +39,8 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
 
     override val supportsLatest = true
 
-    override fun headersBuilder(): Headers.Builder = headersBuilder(true)
-
-    private fun headersBuilder(enableNsfw: Boolean) = Headers.Builder()
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-        .add("X-NSFW", enableNsfw.toString())
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -73,7 +65,7 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
     }
     private fun getMangaUrl(url: String): String {
         return HttpUrl.parse(url)!!.newBuilder()
-            .setQueryParameter("nsfw", isNSFWEnabledInPref().toString()).toString()
+            .setQueryParameter("nsfw", "false").toString()
     }
 
     // Popular
@@ -95,23 +87,20 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val enableNsfw = (filters.find { it is NSFWFilter } as? Filter.CheckBox)?.state ?: true
-
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
             .addQueryParameter("per_page", "18")
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
-            .addQueryParameter("nsfw", enableNsfw.toString())
+            .addQueryParameter("nsfw", "false")
 
         filters.forEach { filter ->
             when (filter) {
                 is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
-                is GenreFilter -> url.addQueryParameter("tags", filter.toUriPart())
                 is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
             }
         }
-        return GET(url.toString(), headersBuilder(enableNsfw).build())
+        return GET(url.toString(), headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -153,40 +142,17 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
     // Chapters
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return client.newCall(chapterListRequest(manga))
-            .asObservableSuccess()
-            .map { response ->
-                chapterListParse(response, manga.url)
-            }
-    }
-
-    override fun chapterListRequest(manga: SManga): Request {
-        return GET(getMangaUrl("$baseUrl/api/comics/${manga.url}/chapters"), headers)
-    }
-
-    private fun chapterListParse(response: Response, titleSlug: String): List<SChapter> {
-        return gson.fromJson<JsonArray>(response.body()!!.string()).map { json ->
-            SChapter.create().apply {
-                name = json["name"].string
-                url = "$titleSlug/${json["slug"].string}"
-                date_upload = json["added_at"].string.let { dateString ->
-                    if (dateString.contains("ago")) {
-                        val trimmedDate = dateString.substringBefore(" ago").removeSuffix("s").split(" ")
-                        val calendar = Calendar.getInstance()
-                        when (trimmedDate[1]) {
-                            "day" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }.timeInMillis
-                            "hour" -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }.timeInMillis
-                            "minute" -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }.timeInMillis
-                            "second" -> calendar.apply { add(Calendar.SECOND, -trimmedDate[0].toInt()) }.timeInMillis
-                            else -> 0L
-                        }
-                    } else {
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString)?.time ?: 0
-                    }
+        return Observable.just(
+            listOf(
+                SChapter.create().apply {
+                    name = "chapter"
+                    url = manga.url
                 }
-            }
-        }
+            )
+        )
     }
+
+    override fun chapterListRequest(manga: SManga): Request = throw Exception("not used")
 
     override fun chapterListParse(response: Response): List<SChapter> = throw UnsupportedOperationException("Not used")
 
@@ -207,15 +173,9 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
-        NSFWFilter().apply { state = isNSFWEnabledInPref() },
-        GenreFilter(getGenreList()),
         DurationFilter(getDurationList()),
         SortFilter(getSortList())
     )
-
-    private class NSFWFilter : Filter.CheckBox("Show NSFW", true)
-
-    private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
 
     private class DurationFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Duration", pairs)
 
@@ -225,63 +185,6 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
-
-    private fun getGenreList() = arrayOf(
-        Pair("All", "0"),
-        Pair("Action", "14"),
-        Pair("Adult", "27"),
-        Pair("Adventure", "6"),
-        Pair("Angst", "50"),
-        Pair("BL", "20"),
-        Pair("Comedy", "1"),
-        Pair("Completed", "53"),
-        Pair("Crime", "18"),
-        Pair("Cultivation", "37"),
-        Pair("Drama", "2"),
-        Pair("Ecchi", "46"),
-        Pair("Fantasy", "8"),
-        Pair("GL", "42"),
-        Pair("Gender Bender", "35"),
-        Pair("Gossip", "12"),
-        Pair("Harem", "7"),
-        Pair("Historical", "33"),
-        Pair("Horror", "19"),
-        Pair("Incest", "10"),
-        Pair("Isekai", "28"),
-        Pair("Josei", "48"),
-        Pair("M", "43"),
-        Pair("Manhua", "38"),
-        Pair("Manhwa", "40"),
-        Pair("Martial arts", "26"),
-        Pair("Mature", "30"),
-        Pair("Medical", "24"),
-        Pair("Modern", "51"),
-        Pair("Mystery", "15"),
-        Pair("NTR", "32"),
-        Pair("Philosophical", "44"),
-        Pair("Post Apocalyptic", "49"),
-        Pair("Psychological", "16"),
-        Pair("Romance", "3"),
-        Pair("Rpg", "41"),
-        Pair("School LIfe", "11"),
-        Pair("Sci Fi", "9"),
-        Pair("Seinen", "31"),
-        Pair("Shoujo", "36"),
-        Pair("Shounen", "29"),
-        Pair("Slice of Life", "4"),
-        Pair("Smut", "13"),
-        Pair("Sports", "5"),
-        Pair("Superhero", "45"),
-        Pair("Supernatural", "22"),
-        Pair("Suspense", "47"),
-        Pair("Thriller", "17"),
-        Pair("TimeTravel", "52"),
-        Pair("Tragedy", "23"),
-        Pair("Vanilla", "34"),
-        Pair("Webtoon", "39"),
-        Pair("Yaoi", "21"),
-        Pair("Yuri", "25")
-    )
 
     private fun getDurationList() = arrayOf(
         Pair("All time", "all"),
@@ -295,42 +198,4 @@ class FakeNhentai : ConfigurableSource, HttpSource() {
         Pair("Popularity", "popularity"),
         Pair("Date", "uploaded_at")
     )
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val nsfw = CheckBoxPreference(screen.context).apply {
-            key = NSFW
-            title = NSFW_TITLE
-            setDefaultValue(NSFW_DEFAULT)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as Boolean
-                preferences.edit().putBoolean(NSFW, selected).commit()
-            }
-        }
-        screen.addPreference(nsfw)
-    }
-
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val nsfw = androidx.preference.CheckBoxPreference(screen.context).apply {
-            key = NSFW
-            title = NSFW_TITLE
-            setDefaultValue(NSFW_DEFAULT)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as Boolean
-                preferences.edit().putBoolean(NSFW, selected).commit()
-            }
-        }
-        screen.addPreference(nsfw)
-    }
-
-    private fun isNSFWEnabledInPref(): Boolean {
-        return preferences.getBoolean(NSFW, NSFW_DEFAULT)
-    }
-
-    companion object {
-        private const val NSFW = "NSFW"
-        private const val NSFW_TITLE = "Show NSFW"
-        private const val NSFW_DEFAULT = true
-    }
 }

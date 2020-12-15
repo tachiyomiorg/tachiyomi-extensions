@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'fakenhentai'
-    pkgNameSuffix = 'en.fakenhentai'
-    extClass = '.FakeNhentai'
+    extName = 'nHentai.com (unoriginal)'
+    pkgNameSuffix = 'en.nhentai.com'
+    extClass = '.NHentaiCom'
     extVersionCode = 1
     libVersion = '1.2'
     containsNsfw = true
