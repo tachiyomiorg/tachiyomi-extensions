@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Keenspot'
+    extName = 'keenspot'
     pkgNameSuffix = 'en.keenspot'
     extClass = '.KeenspotFactory'
     extVersionCode = 1
