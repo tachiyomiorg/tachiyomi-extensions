@@ -89,6 +89,8 @@ class TimelessLeaf : HttpSource() {
             thumbnail_url = document.select(".site-main img").attr("srcset").substringBefore(" ")
             if (thumbnail_url == "")
                 thumbnail_url = document.select(".site-main img").attr("abs:src")
+            description = document.select(".page-content p:not(:has(a)):not(:contains(chapter)):not(:has(strong))")
+                .text().substringAfter("Summary: ")
         }
     }
 
