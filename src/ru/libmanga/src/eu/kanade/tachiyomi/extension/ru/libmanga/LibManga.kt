@@ -56,6 +56,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
         add("Accept", "image/webp,*/*;q=0.8")
+        add("Referer", baseUrl)
     }
 
     private val jsonParser = JsonParser()
@@ -67,7 +68,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     private val servers = mapOf(
         "secondary" to "https://img2.emanga.ru",
         "fourth" to "https://img4.imgslib.ru",
-        "compress" to "https://img3.cdnlib.org",
+        "compress" to "https://img3.yaoilib.org",
     )
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -300,7 +301,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val pages = mutableListOf<Page>()
 
         pagesJson.forEach { page ->
-            pages.add(Page(page["p"].int, "", imageServerUrl + imgUrl + page["u"].string))
+            pages.add(Page(page["p"].int, "", imageServerUrl + "/" + imgUrl + page["u"].string))
         }
         return pages
     }

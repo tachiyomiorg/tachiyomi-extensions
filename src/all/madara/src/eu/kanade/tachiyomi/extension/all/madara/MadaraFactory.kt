@@ -130,6 +130,7 @@ class MadaraFactory : SourceFactory {
         MangazukiMe(),
         MangazukiOnline(),
         ManhuaBox(),
+        ManhuaFast(),
         Manhuaga(),
         ManhuaPlus(),
         ManhuaUS(),
@@ -215,6 +216,10 @@ class MadaraFactory : SourceFactory {
         // KnightNoScanlation(),
         // AhStudios(),
     )
+}
+
+class ManhuaFast : Madara("ManhuaFast", "https://manhuafast.com", "en") {
+    override val pageListParseSelector = "li.blocks-gallery-item"
 }
 
 class BestManhua : Madara("BestManhua", "https://bestmanhua.com", "en") {

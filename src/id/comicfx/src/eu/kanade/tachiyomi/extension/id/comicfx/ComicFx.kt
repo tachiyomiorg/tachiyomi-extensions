@@ -104,7 +104,8 @@ class ComicFx : ParsedHttpSource() {
         // Add timestamp to latest chapter, taken from "Updated On". so source which not provide chapter timestamp will have atleast one
         val updateOn = document.select(".infokomik .infolengkap span:contains(update) b").text()
         val date = document.select(".infokomik .infolengkap span:contains(update)").text().substringAfter(updateOn)
-        if (date != "") chapters[0].date_upload = parseDate(date)
+        val checkChapter = document.select(chapterListSelector()).firstOrNull()
+        if (date != "" && checkChapter != null) chapters[0].date_upload = parseDate(date)
 
         return chapters
     }

@@ -57,9 +57,12 @@ class WPMangaStreamFactory : SourceFactory {
         Rawkuma(),
         KaisarKomik(),
         MasterKomik(),
-        KomikRu()
+        KomikRu(),
+        MangaShiro()
     )
 }
+
+class MangaShiro : WPMangaStream("MangaShiro", "https://mangashiro.co", "id")
 
 class KomikRu : WPMangaStream("KomikRu", "https://komikru.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id")))
 

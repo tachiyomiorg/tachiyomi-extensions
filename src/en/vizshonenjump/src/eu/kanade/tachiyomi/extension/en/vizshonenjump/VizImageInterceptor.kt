@@ -32,7 +32,7 @@ class VizImageInterceptor : Interceptor {
 
     private fun decodeImage(image: InputStream): ByteArray {
         // See: https://stackoverflow.com/a/5924132
-        // See: https://github.com/inorichi/tachiyomi-extensions/issues/2678#issuecomment-645857603
+        // See: https://github.com/tachiyomiorg/tachiyomi-extensions/issues/2678#issuecomment-645857603
         val byteOutputStream = ByteArrayOutputStream()
         image.copyTo(byteOutputStream)
 
