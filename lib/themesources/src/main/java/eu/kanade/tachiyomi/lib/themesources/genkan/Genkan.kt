@@ -18,7 +18,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
-abstract class Genkan(
+open class Genkan(
     override val name: String,
     override val baseUrl: String,
     override val lang: String

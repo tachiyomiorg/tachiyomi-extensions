@@ -31,7 +31,12 @@ interface ThemeSourceGenerator {
     }
 
     companion object {
-        fun pkgNameSuffix(source: ThemeSourceData, separator: String) = listOf(source.lang, source.className.toLowerCase(Locale.ENGLISH)).joinToString(separator)
+        private fun pkgNameSuffix(source: ThemeSourceData, separator: String): String {
+            return if (source is SingleLangThemeSourceData)
+                listOf(source.lang, source.pkgName).joinToString(separator)
+            else
+                listOf("all", source.pkgName).joinToString(separator)
+        }
 
         private fun writeGradle(gradle: File, source: ThemeSourceData, version: Int = 1) {
             gradle.writeText("apply plugin: 'com.android.application'\n" +
@@ -46,7 +51,7 @@ interface ThemeSourceGenerator {
                 if (source.isNsfw) "    containsNsfw = true\n" else "" +
                     "}\n" +
                     "\n" +
-                    "apply from: \"\$rootDir/common.gradle\"")
+                    "apply from: \"\$rootDir/common.gradle\"\n")
         }
 
         fun createOrUpdateSource(source: ThemeSourceData, themeName: String, userDir: String) {
@@ -61,15 +66,38 @@ interface ThemeSourceGenerator {
                     file.mkdirs()
                     writeGradle(gradleFile, source)
                     classPath.mkdirs()
-                    classFile.writeText("package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
-                        "\n" +
-                        "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n" +
-                        "\n" +
-                        "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n")
+                    var classText =
+                        "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
+                            "\n" +
+                            "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n"
+
+                    if (source is MultiLangThemeSourceData) {
+                        classText += "import eu.kanade.tachiyomi.source.Source\n" +
+                            "import eu.kanade.tachiyomi.source.SourceFactory\n"
+                    }
+
+                    classText += "\n"
+
+                    if (source is SingleLangThemeSourceData) {
+                        classText += "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
+                    } else {
+                        classText +=
+                            "class ${source.className} : SourceFactory { \n" +
+                                "    override fun createSources(): List<Source> = listOf(\n"
+                        for (lang in (source as MultiLangThemeSourceData).lang)
+                            classText += "        $themeName(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
+                        classText +=
+                            "    )\n" +
+                                "}"
+                    }
+
+                    classFile.writeText(classText)
+
+
                     File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
                         if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
                     }
-                // update current source
+                    // update current source
                 } else {
                     val version = Regex("""extVersionCode = (\d+)""").find(gradleFile.readText())!!.groupValues[1].toInt() + 1
                     writeGradle(gradleFile, source, version)
@@ -77,13 +105,29 @@ interface ThemeSourceGenerator {
             }
         }
 
-        data class ThemeSourceData(
-            val name: String,
-            val baseUrl: String,
-            val lang: String,
-            val className: String = name.replace(" ", ""),
+        abstract class ThemeSourceData {
+            abstract val name: String
+            abstract val baseUrl: String
             val isNsfw: Boolean = false
-        )
+            abstract val className: String
+            abstract val pkgName: String
+        }
+
+        data class SingleLangThemeSourceData(
+            override val name: String,
+            override val baseUrl: String,
+            val lang: String,
+            override val className: String = name.replace(" ", ""),
+            override val pkgName: String = className.toLowerCase(Locale.ENGLISH)
+        ) : ThemeSourceData()
+
+        data class MultiLangThemeSourceData(
+            override val name: String,
+            override val baseUrl: String,
+            val lang: List<String>,
+            override val className: String = name.replace(" ", "") + "Factory",
+            override val pkgName: String = name.replace(" ", "").toLowerCase(Locale.ENGLISH)
+        ) : ThemeSourceData()
     }
 }
 

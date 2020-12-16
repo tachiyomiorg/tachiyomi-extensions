@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Hatigarm Scans'
+    pkgNameSuffix = 'en.hatigarmscans'
+    extClass = '.HatigarmScans'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

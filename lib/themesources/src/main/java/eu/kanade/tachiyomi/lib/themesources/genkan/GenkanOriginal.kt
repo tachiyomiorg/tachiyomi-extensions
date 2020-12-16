@@ -12,7 +12,7 @@ import org.jsoup.select.Elements
 
 // For sites using the older Genkan CMS that didn't have a search function
 
-abstract class GenkanOriginal(
+open class GenkanOriginal(
     override val name: String,
     override val baseUrl: String,
     override val lang: String
