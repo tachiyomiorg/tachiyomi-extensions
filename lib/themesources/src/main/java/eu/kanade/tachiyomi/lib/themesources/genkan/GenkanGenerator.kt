@@ -18,9 +18,7 @@ class GenkanGenerator : ThemeSourceGenerator {
         ThemeSourceData("Edelgarde Scans", "https://edelgardescans.com", "en"),
         ThemeSourceData("SecretScans", "https://secretscans.co", "en"),
         ThemeSourceData("Method Scans", "https://methodscans.com", "en"),
-        ThemeSourceData("Sleeping Knight Scans", "https://skscans.com", "en"),
-        ThemeSourceData("KKJ Scans", "https://kkjscans.co", "en"),
-        ThemeSourceData("Kraken Scans", "https://krakenscans.com", "en")
+        ThemeSourceData("Sleeping Knight Scans", "https://skscans.com", "en")
     )
 
     companion object {
