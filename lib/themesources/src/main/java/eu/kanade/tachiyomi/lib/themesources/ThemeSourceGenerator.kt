@@ -58,7 +58,6 @@ interface ThemeSourceGenerator {
             val gradlePath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}/"
             val gradleFile = File("$gradlePath/build.gradle")
             val classPath = File("$gradlePath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
-            val classFile = File("$classPath/${source.className}.kt")
             File(gradlePath).let { file ->
                 println("Working on $source")
                 // new source
@@ -66,32 +65,40 @@ interface ThemeSourceGenerator {
                     file.mkdirs()
                     writeGradle(gradleFile, source)
                     classPath.mkdirs()
-                    var classText =
-                        "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
-                            "\n" +
-                            "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n"
 
-                    if (source is MultiLangThemeSourceData) {
-                        classText += "import eu.kanade.tachiyomi.source.Source\n" +
-                            "import eu.kanade.tachiyomi.source.SourceFactory\n"
+                    val srcOverride = File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/src-override/${source.pkgName}")
+                    if (srcOverride.exists())
+                        srcOverride.copyRecursively(File("$classPath"))
+                    else {
+                        val classFile = File("$classPath/${source.className}.kt")
+
+                        var classText =
+                            "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
+                                "\n" +
+                                "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n"
+
+                        if (source is MultiLangThemeSourceData) {
+                            classText += "import eu.kanade.tachiyomi.source.Source\n" +
+                                "import eu.kanade.tachiyomi.source.SourceFactory\n"
+                        }
+
+                        classText += "\n"
+
+                        if (source is SingleLangThemeSourceData) {
+                            classText += "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
+                        } else {
+                            classText +=
+                                "class ${source.className} : SourceFactory { \n" +
+                                    "    override fun createSources(): List<Source> = listOf(\n"
+                            for (lang in (source as MultiLangThemeSourceData).lang)
+                                classText += "        $themeName(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
+                            classText +=
+                                "    )\n" +
+                                    "}"
+                        }
+
+                        classFile.writeText(classText)
                     }
-
-                    classText += "\n"
-
-                    if (source is SingleLangThemeSourceData) {
-                        classText += "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
-                    } else {
-                        classText +=
-                            "class ${source.className} : SourceFactory { \n" +
-                                "    override fun createSources(): List<Source> = listOf(\n"
-                        for (lang in (source as MultiLangThemeSourceData).lang)
-                            classText += "        $themeName(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
-                        classText +=
-                            "    )\n" +
-                                "}"
-                    }
-
-                    classFile.writeText(classText)
 
                     // copy res files
                     // check if res override exists if not copy default res
