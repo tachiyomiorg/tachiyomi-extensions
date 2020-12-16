@@ -58,6 +58,9 @@ interface ThemeSourceGenerator {
             val gradlePath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}/"
             val gradleFile = File("$gradlePath/build.gradle")
             val classPath = File("$gradlePath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
+            val overridesPath = "$userDir/lib/themesources-overrides"
+            val resOverridePath = "$overridesPath/res/${themeName.toLowerCase(Locale.ENGLISH)}/"
+            val srcOverridePath = "$overridesPath/src/${themeName.toLowerCase(Locale.ENGLISH)}/"
             File(gradlePath).let { file ->
                 println("Working on $source")
                 // new source
@@ -66,7 +69,7 @@ interface ThemeSourceGenerator {
                     writeGradle(gradleFile, source)
                     classPath.mkdirs()
 
-                    val srcOverride = File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/src-override/${source.pkgName}")
+                    val srcOverride = File("$srcOverridePath/${source.pkgName}")
                     if (srcOverride.exists())
                         srcOverride.copyRecursively(File("$classPath"))
                     else {
@@ -102,12 +105,12 @@ interface ThemeSourceGenerator {
 
                     // copy res files
                     // check if res override exists if not copy default res
-                    val resOverride = File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res-override/${source.pkgName}")
+                    val resOverride = File("$resOverridePath/${source.pkgName}")
                     if (resOverride.exists())
                         resOverride.copyRecursively(File("$gradlePath/res"))
                     else
 
-                        File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
+                        File("$resOverridePath/default").let { res ->
                             if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
                         }
                     // update current source
