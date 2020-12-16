@@ -9,14 +9,10 @@ class GenkanGenerator : ThemeSourceGenerator {
 
     override val sources = listOf(
         ThemeSourceData("Leviatan Scans", "https://leviatanscans.com", "en"),
-        ThemeSourceData("Leviatan Scans", "https://es.leviatanscans.com", "es", "LeviatanScansES"),
         ThemeSourceData("Hunlight Scans", "https://hunlight-scans.info", "en"),
         ThemeSourceData("ZeroScans", "https://zeroscans.com", "en"),
-        ThemeSourceData("Reaper Scans", "https://reaperscans.com", "en"),
         ThemeSourceData("The Nonames Scans", "https://the-nonames.com", "en"),
-        ThemeSourceData("Hatigarm Scans", "https://hatigarmscanz.net", "en"),
         ThemeSourceData("Edelgarde Scans", "https://edelgardescans.com", "en"),
-        ThemeSourceData("SecretScans", "https://secretscans.co", "en"),
         ThemeSourceData("Method Scans", "https://methodscans.com", "en"),
         ThemeSourceData("Sleeping Knight Scans", "https://skscans.com", "en")
     )
