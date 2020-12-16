@@ -9,3 +9,4 @@ build/
 repo/
 apk/
 gen
+generated-src/

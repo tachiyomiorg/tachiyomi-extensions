@@ -21,6 +21,14 @@ File(rootDir, "src").eachDir { dir ->
         project(name).projectDir = File("src/${dir.name}/${subdir.name}")
     }
 }
+// Loads generated sources from lib-themesources
+File(rootDir, "generated-src").eachDir { dir ->
+    dir.eachDir { subdir ->
+        val name = ":${dir.name}-${subdir.name}"
+        include(name)
+        project(name).projectDir = File("generated-src/${dir.name}/${subdir.name}")
+    }
+}
 
 // Use this to load a single extension during development
 // val lang = "all"

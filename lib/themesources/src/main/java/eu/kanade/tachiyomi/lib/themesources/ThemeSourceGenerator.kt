@@ -55,7 +55,7 @@ interface ThemeSourceGenerator {
         }
 
         fun createOrUpdateSource(source: ThemeSourceData, themeName: String, userDir: String) {
-            val gradlePath = userDir + "/src/${pkgNameSuffix(source, "/")}/"
+            val gradlePath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}/"
             val gradleFile = File("$gradlePath/build.gradle")
             val classPath = File("$gradlePath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
             val classFile = File("$classPath/${source.className}.kt")
@@ -93,10 +93,16 @@ interface ThemeSourceGenerator {
 
                     classFile.writeText(classText)
 
+                    // copy res files
+                    // check if res override exists if not copy default res
+                    val resOverride = File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res-override/${source.pkgName}")
+                    if (resOverride.exists())
+                        resOverride.copyRecursively(File("$gradlePath/res"))
+                    else
 
-                    File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
-                        if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
-                    }
+                        File("$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources/${themeName.toLowerCase(Locale.ENGLISH)}/res").let { res ->
+                            if (res.exists()) res.copyRecursively(File("$gradlePath/res"))
+                        }
                     // update current source
                 } else {
                     val version = Regex("""extVersionCode = (\d+)""").find(gradleFile.readText())!!.groupValues[1].toInt() + 1
