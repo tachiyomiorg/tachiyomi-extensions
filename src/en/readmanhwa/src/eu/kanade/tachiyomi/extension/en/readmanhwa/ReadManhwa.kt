@@ -81,7 +81,7 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET(getMangaUrl("$baseUrl/api/comics?page=$page&q=&sort=popularity&order=desc&duration=week"), headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?per_page=36&page=$page&q=&sort=popularity&order=desc&duration=week"), headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -89,7 +89,7 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET(getMangaUrl("$baseUrl/api/comics?page=$page&q=&sort=uploaded_at&order=desc&duration=day"), headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?per_page=36&page=$page&q=&sort=uploaded_at&order=desc&duration=day"), headers)
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -100,7 +100,7 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
         val enableNsfw = (filters.find { it is NSFWFilter } as? Filter.CheckBox)?.state ?: true
 
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
-            .addQueryParameter("per_page", "18")
+            .addQueryParameter("per_page", "36")
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
@@ -108,8 +108,44 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
-                is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
-                is GenreFilter -> url.addQueryParameter("tags", filter.toUriPart())
+                is GenreFilter -> {
+
+                    val genreInclude = mutableListOf<String>()
+                    filter.state.forEach {
+                        if (it.state == 1) {
+                            genreInclude.add(it.id)
+                        }
+                    }
+                    if (genreInclude.isNotEmpty()) {
+                        genreInclude.forEach { genre ->
+                            url.addQueryParameter("tags[]", genre)
+                        }
+                    }
+                }
+                is StatusFilter -> {
+                    val statusInclude = mutableListOf<String>()
+                    filter.state.forEach {
+                        if (it.state == 1) {
+                            statusInclude.add(it.id)
+                        }
+                    }
+                    if (statusInclude.isNotEmpty()) {
+                        statusInclude.forEach { status ->
+                            url.addQueryParameter("statuses[]", status)
+                        }
+                    }
+                }
+                is OrderBy -> {
+                    var orderby = ""
+                    if (filter.state!!.ascending) {
+                        orderby = "asc"
+                    } else {
+                        orderby = "desc"
+                    }
+                    var sort = arrayOf("uploaded_at", "title", "pages", "favorites", "popularity")[filter.state!!.index]
+                    url.addQueryParameter("sort", sort)
+                    url.addQueryParameter("order", orderby)
+                }
                 is DurationFilter -> url.addQueryParameter("duration", filter.toUriPart())
             }
         }
@@ -211,78 +247,115 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
     override fun getFilterList() = FilterList(
         NSFWFilter().apply { state = isNSFWEnabledInPref() },
         GenreFilter(getGenreList()),
+        StatusFilter(getStatusList()),
         DurationFilter(getDurationList()),
-        SortFilter(getSortList())
+        OrderBy()
     )
 
     private class NSFWFilter : Filter.CheckBox("Show NSFW", true)
-
-    private class GenreFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Genre", pairs)
-
-    private class DurationFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Duration", pairs)
-
-    private class SortFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("Sorted by", pairs)
+    private class Genre(name: String, val id: String = name) : Filter.TriState(name)
+    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("GENRES", genres)
+    private class Status(name: String, val id: String = name) : Filter.TriState(name)
+    private class StatusFilter(status: List<Status>) : Filter.Group<Status>("STATUS", status)
+    private class DurationFilter(pairs: Array<Pair<String, String>>) : UriPartFilter("DURATION", pairs)
 
     open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 
-    private fun getGenreList() = arrayOf(
-        Pair("All", "0"),
-        Pair("Action", "14"),
-        Pair("Adult", "27"),
-        Pair("Adventure", "6"),
-        Pair("Angst", "50"),
-        Pair("BL", "20"),
-        Pair("Comedy", "1"),
-        Pair("Completed", "53"),
-        Pair("Crime", "18"),
-        Pair("Cultivation", "37"),
-        Pair("Drama", "2"),
-        Pair("Ecchi", "46"),
-        Pair("Fantasy", "8"),
-        Pair("GL", "42"),
-        Pair("Gender Bender", "35"),
-        Pair("Gossip", "12"),
-        Pair("Harem", "7"),
-        Pair("Historical", "33"),
-        Pair("Horror", "19"),
-        Pair("Incest", "10"),
-        Pair("Isekai", "28"),
-        Pair("Josei", "48"),
-        Pair("M", "43"),
-        Pair("Manhua", "38"),
-        Pair("Manhwa", "40"),
-        Pair("Martial arts", "26"),
-        Pair("Mature", "30"),
-        Pair("Medical", "24"),
-        Pair("Modern", "51"),
-        Pair("Mystery", "15"),
-        Pair("NTR", "32"),
-        Pair("Philosophical", "44"),
-        Pair("Post Apocalyptic", "49"),
-        Pair("Psychological", "16"),
-        Pair("Romance", "3"),
-        Pair("Rpg", "41"),
-        Pair("School LIfe", "11"),
-        Pair("Sci Fi", "9"),
-        Pair("Seinen", "31"),
-        Pair("Shoujo", "36"),
-        Pair("Shounen", "29"),
-        Pair("Slice of Life", "4"),
-        Pair("Smut", "13"),
-        Pair("Sports", "5"),
-        Pair("Superhero", "45"),
-        Pair("Supernatural", "22"),
-        Pair("Suspense", "47"),
-        Pair("Thriller", "17"),
-        Pair("TimeTravel", "52"),
-        Pair("Tragedy", "23"),
-        Pair("Vanilla", "34"),
-        Pair("Webtoon", "39"),
-        Pair("Yaoi", "21"),
-        Pair("Yuri", "25")
+    private fun getGenreList() = listOf(
+        Genre("Action", "14"),
+        Genre("Adventure", "6"),
+        Genre("All Ages", "73"),
+        Genre("Angst", "50"),
+        Genre("BL", "20"),
+        Genre("Boxing", "58"),
+        Genre("College", "82"),
+        Genre("Comedy", "1"),
+        Genre("Comic", "70"),
+        Genre("Completed", "53"),
+        Genre("Cooking", "67"),
+        Genre("Crime", "18"),
+        Genre("Cultivation", "37"),
+        Genre("Demons", "65"),
+        Genre("Drama", "2"),
+        Genre("Ecchi", "46"),
+        Genre("Fantasy", "8"),
+        Genre("Gender Bender", "35"),
+        Genre("GL", "42"),
+        Genre("Goshiwon", "80"),
+        Genre("Gossip", "12"),
+        Genre("Harem", "7"),
+        Genre("Historical", "33"),
+        Genre("Horror", "19"),
+        Genre("Incest", "10"),
+        Genre("Isekai", "28"),
+        Genre("Josei", "48"),
+        Genre("Long Strip", "78"),
+        Genre("M", "43"),
+        Genre("Magic", "59"),
+        Genre("Magical", "69"),
+        Genre("Magical Girls", "77"),
+        Genre("Manga", "56"),
+        Genre("Manhua", "38"),
+        Genre("Manhwa", "40"),
+        Genre("Manhwa18", "81"),
+        Genre("Martial arts", "26"),
+        Genre("Mature", "30"),
+        Genre("Mecha", "54"),
+        Genre("Medical", "24"),
+        Genre("Moder", "64"),
+        Genre("Modern", "51"),
+        Genre("Monster/Tentacle", "57"),
+        Genre("Music", "75"),
+        Genre("Mystery", "15"),
+        Genre("NTR", "32"),
+        Genre("Office", "84"),
+        Genre("Office Life", "79"),
+        Genre("One shot", "61"),
+        Genre("Philosophical", "44"),
+        Genre("Post Apocalyptic", "49"),
+        Genre("Psychological", "16"),
+        Genre("Revenge", "74"),
+        Genre("Reverse harem", "72"),
+        Genre("Romance", "3"),
+        Genre("Rpg", "41"),
+        Genre("School LIfe", "11"),
+        Genre("Sci Fi", "9"),
+        Genre("Seinen", "31"),
+        Genre("Shoujo", "36"),
+        Genre("Shoujo Ai", "62"),
+        Genre("Shounen", "29"),
+        Genre("Shounen Ai", "63"),
+        Genre("Slice of Life", "4"),
+        Genre("Smut", "13"),
+        Genre("Sports", "5"),
+        Genre("Super power", "71"),
+        Genre("Superhero", "45"),
+        Genre("Supernatural", "22"),
+        Genre("Suspense", "47"),
+        Genre("Thriller", "17"),
+        Genre("Time Travel", "55"),
+        Genre("TimeTravel", "52"),
+        Genre("ToonPoint", "83"),
+        Genre("Tragedy", "23"),
+        Genre("Uncensored", "85"),
+        Genre("Vampire", "68"),
+        Genre("Vanilla", "34"),
+        Genre("Web Comic", "76"),
+        Genre("Webtoon", "39"),
+        Genre("Webtoons", "60"),
+        Genre("Yaoi", "21"),
+        Genre("Youkai", "66"),
+        Genre("Yuri", "25")
+    )
+
+    private fun getStatusList() = listOf(
+        Status("Ongoing", "ongoing"),
+        Status("Complete", "complete"),
+        Status("On Hold", "onhold"),
+        Status("Canceled", "canceled")
     )
 
     private fun getDurationList() = arrayOf(
@@ -293,9 +366,10 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
         Pair("Day", "day")
     )
 
-    private fun getSortList() = arrayOf(
-        Pair("Popularity", "popularity"),
-        Pair("Date", "uploaded_at")
+    private class OrderBy : Filter.Sort(
+        "Order by",
+        arrayOf("Date", "Title", "Pages", "Favorites", "Popularity"),
+        Selection(0, false)
     )
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {

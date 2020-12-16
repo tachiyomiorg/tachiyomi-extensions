@@ -6,9 +6,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class ManhuaID : ParsedHttpSource() {
 
@@ -70,6 +74,22 @@ class ManhuaID : ParsedHttpSource() {
     }
 
     override fun chapterListSelector() = "table.table tr td:first-of-type a"
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
+
+        // Add timestamp to latest chapter, taken from "Updated On". so source which not provide chapter timestamp will have atleast one
+        val date = document.select("table tr:contains(update) td").text()
+        val checkChapter = document.select(chapterListSelector()).firstOrNull()
+        if (date != "" && checkChapter != null) chapters[0].date_upload = parseDate(date)
+
+        return chapters
+    }
+
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
+    }
 
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
 

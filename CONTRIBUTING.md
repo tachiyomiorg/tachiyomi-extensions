@@ -96,11 +96,11 @@ The extension's version name is generated automatically by concatenating `libVer
 
 #### Extension API
 
-Extensions rely on [extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which provides some interfaces and stubs from the [app](https://github.com/inorichi/tachiyomi) for compilation purposes. The actual implementations can be found [here](https://github.com/inorichi/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source). Referencing the actual implementation will help with understanding extensions' call flow.
+Extensions rely on [extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which provides some interfaces and stubs from the [app](https://github.com/tachiyomiorg/tachiyomi) for compilation purposes. The actual implementations can be found [here](https://github.com/tachiyomiorg/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source). Referencing the actual implementation will help with understanding extensions' call flow.
 
 #### Duktape stub
 
-[`duktape-stub`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/duktape-stub) provides stubs for using Duktape functionality without pulling in the full library. Functionality is bundled into the main Tachiyomi app.
+[`duktape-stub`](https://github.com/tachiyomiorg/tachiyomi-extensions/tree/master/lib/duktape-stub) provides stubs for using Duktape functionality without pulling in the full library. Functionality is bundled into the main Tachiyomi app.
 
 ```gradle
 dependencies {
@@ -110,7 +110,7 @@ dependencies {
 
 #### Rate limiting library
 
-[`lib-ratelimit`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/ratelimit) is a library for adding rate limiting functionality as an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
+[`lib-ratelimit`](https://github.com/tachiyomiorg/tachiyomi-extensions/tree/master/lib/ratelimit) is a library for adding rate limiting functionality as an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
 
 ```gradle
 dependencies {
@@ -120,7 +120,7 @@ dependencies {
 
 #### DataImage library
 
-[`lib-dataimage`](https://github.com/inorichi/tachiyomi-extensions/tree/master/lib/dataimage) is a library for handling [base 64 encoded image data](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs) using an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
+[`lib-dataimage`](https://github.com/tachiyomiorg/tachiyomi-extensions/tree/master/lib/dataimage) is a library for handling [base 64 encoded image data](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs) using an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
 
 ```gradle
 dependencies {
@@ -130,7 +130,7 @@ dependencies {
 
 #### Additional dependencies
 
-You may find yourself needing additional functionality and wanting to add more dependencies to your `build.gradle` file. Since extensions are run within the main Tachiyomi app, you can make use of [its dependencies](https://github.com/inorichi/tachiyomi/blob/master/app/build.gradle).
+You may find yourself needing additional functionality and wanting to add more dependencies to your `build.gradle` file. Since extensions are run within the main Tachiyomi app, you can make use of [its dependencies](https://github.com/tachiyomiorg/tachiyomi/blob/master/app/build.gradle).
 
 For example, an extension that needs Gson could add the following:
 
@@ -144,7 +144,7 @@ dependencies {
 
 Notice that we're using `compileOnly` instead of `implementation`, since the app already contains it. You could use `implementation` instead for a new dependency, or you prefer not to rely on whatever the main app has at the expense of app size.
 
-Note that using `compileOnly` restricts you to versions that must be compatible with those used in [Tachiyomi v0.8.5+](https://github.com/inorichi/tachiyomi/blob/82141cec6e612885fef4fa70092e29e99d60adbb/app/build.gradle#L104) for proper backwards compatibility.
+Note that using `compileOnly` restricts you to versions that must be compatible with those used in [Tachiyomi v0.8.5+](https://github.com/tachiyomiorg/tachiyomi/blob/82141cec6e612885fef4fa70092e29e99d60adbb/app/build.gradle#L104) for proper backwards compatibility.
 
 ### Extension main class
 
@@ -207,8 +207,8 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 #### Chapter
 
 - After a chapter list for the manga is fetched and the app is going to cache the data, `prepareNewChapter` will be called.
-- `SChapter.date_upload` is in the [UNIX Epoch time](https://en.wikipedia.org/wiki/Unix_time) format.
-    - If you don't pass `SChapter.date_upload`, the user won't get notifications for new chapters. refer to [this issue](https://github.com/inorichi/tachiyomi/issues/2089) for more info.
+- `SChapter.date_upload` is the [UNIX Epoch time](https://en.wikipedia.org/wiki/Unix_time) **expressed in miliseconds**.
+    - If you don't pass `SChapter.date_upload`, the user won't get notifications for new chapters. refer to [this issue](https://github.com/tachiyomiorg/tachiyomi/issues/2089) for more info. `System.currentTimeMillis()` works as a substitute when real data is not available.
 
 #### Chapter Pages
 
