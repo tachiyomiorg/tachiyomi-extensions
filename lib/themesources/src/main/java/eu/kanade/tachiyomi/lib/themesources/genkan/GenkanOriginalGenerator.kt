@@ -12,7 +12,6 @@ class GenkanOriginalGenerator : ThemeSourceGenerator {
         ThemeSourceData("Reaper Scans", "https://reaperscans.com", "en"),
         ThemeSourceData("Hatigarm Scans", "https://hatigarmscanz.net", "en"),
         ThemeSourceData("SecretScans", "https://secretscans.co", "en"),
-
     )
 
     companion object {
