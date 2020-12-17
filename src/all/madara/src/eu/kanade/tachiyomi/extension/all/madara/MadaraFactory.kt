@@ -39,6 +39,7 @@ class MadaraFactory : SourceFactory {
         ArazNovel(),
         AsgardTeam(),
         AstralLibrary(),
+        Atikrost(),
         Azora(),
         Bakaman(),
         BestManga(),
@@ -168,11 +169,13 @@ class MadaraFactory : SourceFactory {
         PrimeManga(),
         QueensManga(),
         RaiderScans(),
+        RandomTranslations(),
         ReadManhua(),
         RenaScans(),
         RuyaManga(),
         S2Manga(),
-        Skymanga(),
+        SpookyScanlations(),
+        StageComics(),
         TheTopComic(),
         ThreeSixtyFiveManga(),
         ToonPoint(),
@@ -217,6 +220,24 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
     )
 }
+
+class StageComics : Madara("StageComics", "https://stagecomics.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt"))) {
+    override fun chapterFromElement(element: Element): SChapter {
+        val parsedChapter = super.chapterFromElement(element)
+
+        parsedChapter.date_upload = element.select("img").firstOrNull()?.attr("alt")
+            ?.let { parseChapterDate(it) }
+            ?: parseChapterDate(element.select("span.chapter-release-date i").firstOrNull()?.text())
+
+        return parsedChapter
+    }
+}
+
+class SpookyScanlations : Madara("Spooky Scanlations", "https://spookyscanlations.xyz", "es", SimpleDateFormat("MMMM dd, yyyy", Locale("es")))
+
+class RandomTranslations : Madara("Random Translations", "https://randomtranslations.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
+
+class Atikrost : Madara("Atikrost", "https://atikrost.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr")))
 
 class ManhuaFast : Madara("ManhuaFast", "https://manhuafast.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
@@ -1276,8 +1297,6 @@ class ManhuaPlus : Madara("Manhua Plus", "https://manhuaplus.com", "en") {
 class AkuManga : Madara("AkuManga", "https://akumanga.com", "ar")
 
 class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
-
-class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
 @Nsfw
 class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
