@@ -101,7 +101,6 @@ class TwoKinds : HttpSource() {
             for (i in 1..lastPage) {
                 chapters.add(
                     SChapter.create().apply() {
-//                        url = baseUrl + "/comic/${i}/"
                         url = "1-$i"
                         name = "Page $i"
                     }
@@ -111,7 +110,6 @@ class TwoKinds : HttpSource() {
             for (i in 1..lastPage step 20) {
                 chapters.add(
                     SChapter.create().apply() {
-//                        url = baseUrl + "/comic/${i}/"
                         url = "20-$i"
                         if (i + 20 > lastPage)
                             name = "Pages $i-$lastPage"
