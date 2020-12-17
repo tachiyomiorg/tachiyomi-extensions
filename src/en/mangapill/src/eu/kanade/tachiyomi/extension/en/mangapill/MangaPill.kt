@@ -25,10 +25,12 @@ class MangaPill : ParsedHttpSource() {
         return GET("$baseUrl/search?page=$page&title=&type=&status=1", headers)
     }
 
-    override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET("$baseUrl", headers)
+    }
 
     override fun popularMangaSelector() = ".grid.justify-between.gap-3.grid-cols-2 > div"
-    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesSelector() = ".w-full.flex.rounded.border.border-sm.border-color-border-primary.mb-2"
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -39,8 +41,16 @@ class MangaPill : ParsedHttpSource() {
         return manga
     }
 
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        manga.thumbnail_url = element.select("img").attr("data-src")
+        var url = element.select("a").first().attr("href")
+        manga.setUrlWithoutDomain(url.substringBeforeLast("/").replace("chapters", "manga").substringBeforeLast("-") + "/" + url.substringAfterLast("/").substringBefore("-chapter"))
+        manga.title = element.select(".mb-2 a").text().substringBefore("Chapter").trim()
+        return manga
+    }
+
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
-    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a.next.page-numbers"
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
