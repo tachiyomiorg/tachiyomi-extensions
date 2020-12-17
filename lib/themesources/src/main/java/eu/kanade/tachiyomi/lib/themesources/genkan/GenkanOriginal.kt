@@ -10,8 +10,9 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
-// For sites using the older Genkan CMS that didn't have a search function
-
+/**
+* For sites using the older Genkan CMS that didn't have a search function
+ */
 open class GenkanOriginal(
     override val name: String,
     override val baseUrl: String,

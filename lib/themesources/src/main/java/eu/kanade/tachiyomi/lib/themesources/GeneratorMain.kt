@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.lib.themesources
 import java.io.File
 
 /**
- * Finds and calls all ThemeSourceGenerators
+ * Finds and calls all `ThemeSourceGenerator`s
  */
 class GeneratorMain {
     companion object {
