@@ -47,8 +47,6 @@ class MangaPill : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        // val infoElement = document.select('.flex.flex-col > div:nth-child(1) > .text-color-text-secondary").first()
-        // val sepName = infoElement.select(".spe > span:nth-child(4)").last()
         val manga = SManga.create()
         manga.author = document.select(".flex.flex-col > div:nth-child(1) > .text-color-text-secondary").text()
         manga.artist = ""
