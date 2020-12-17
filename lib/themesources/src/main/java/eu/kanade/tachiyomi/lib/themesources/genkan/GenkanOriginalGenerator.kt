@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.lib.themesources.ThemeSourceGenerator.Companion.Singl
 class GenkanOriginalGenerator : ThemeSourceGenerator {
 
     override val themeName = "GenkanOriginal"
+    override val baseVersionCode: Int = 1
 
     override val sources = listOf(
         SingleLangThemeSourceData("Reaper Scans", "https://reaperscans.com", "en"),
@@ -16,7 +17,7 @@ class GenkanOriginalGenerator : ThemeSourceGenerator {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            GenkanOriginalGenerator().createOrUpdateAll()
+            GenkanOriginalGenerator().createAll()
         }
     }
 }

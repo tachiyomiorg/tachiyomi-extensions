@@ -8,8 +8,11 @@ class GenkanGenerator : ThemeSourceGenerator {
 
     override val themeName = "Genkan"
 
+    override val baseVersionCode: Int = 1
+
     override val sources = listOf(
-        MultiLangThemeSourceData("Leviatan Scans", "https://leviatanscans.com", listOf("en","es"), className="LeviatanScansFactory", pkgName="leviatanscans"),
+        MultiLangThemeSourceData("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
+            className = "LeviatanScansFactory", pkgName = "leviatanscans", overrideVersionCode = 1),
         SingleLangThemeSourceData("Hunlight Scans", "https://hunlight-scans.info", "en"),
         SingleLangThemeSourceData("ZeroScans", "https://zeroscans.com", "en"),
 //        SingleLangThemeSourceData("The Nonames Scans", "https://the-nonames.com", "en"),
@@ -21,7 +24,7 @@ class GenkanGenerator : ThemeSourceGenerator {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            GenkanGenerator().createOrUpdateAll()
+            GenkanGenerator().createAll()
         }
     }
 }
