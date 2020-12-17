@@ -15,10 +15,10 @@ class GenkanGenerator : ThemeSourceGenerator {
             className = "LeviatanScansFactory", pkgName = "leviatanscans", overrideVersionCode = 1),
         SingleLangThemeSourceData("Hunlight Scans", "https://hunlight-scans.info", "en"),
         SingleLangThemeSourceData("ZeroScans", "https://zeroscans.com", "en"),
-//        SingleLangThemeSourceData("The Nonames Scans", "https://the-nonames.com", "en"),
-//        SingleLangThemeSourceData("Edelgarde Scans", "https://edelgardescans.com", "en"),
-//        SingleLangThemeSourceData("Method Scans", "https://methodscans.com", "en"),
-//        SingleLangThemeSourceData("Sleeping Knight Scans", "https://skscans.com", "en")
+        SingleLangThemeSourceData("The Nonames Scans", "https://the-nonames.com", "en"),
+        SingleLangThemeSourceData("Edelgarde Scans", "https://edelgardescans.com", "en"),
+        SingleLangThemeSourceData("Method Scans", "https://methodscans.com", "en"),
+        SingleLangThemeSourceData("Sleeping Knight Scans", "https://skscans.com", "en")
     )
 
     companion object {
