@@ -71,20 +71,20 @@ interface ThemeSourceGenerator {
         }
 
         fun createSource(source: ThemeSourceData, themeName: String, baseVersionCode: Int, userDir: String) {
-            val sourceRootPath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}/"
+            val sourceRootPath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}"
             val gradleFile = File("$sourceRootPath/build.gradle")
             val classPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
             val overridesPath = "$userDir/lib/themesources/overrides"
-            val resOverridePath = "$overridesPath/res/${themeName.toLowerCase(Locale.ENGLISH)}/"
-            val srcOverridePath = "$overridesPath/src/${themeName.toLowerCase(Locale.ENGLISH)}/"
+            val resOverridePath = "$overridesPath/res/${themeName.toLowerCase(Locale.ENGLISH)}"
+            val srcOverridePath = "$overridesPath/src/${themeName.toLowerCase(Locale.ENGLISH)}"
 
 
             File(sourceRootPath).let { file ->
                 println("Working on $source")
 
+                file.mkdirs()
                 purgeDirectory(file)
 
-                file.mkdirs()
                 writeGradle(gradleFile, source, baseVersionCode)
                 classPath.mkdirs()
 
