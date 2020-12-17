@@ -64,7 +64,7 @@ interface ThemeSourceGenerator {
          * Clears directory recursively
          */
         private fun purgeDirectory(dir: File) {
-            for (file in dir.listFiles()) {
+            for (file in dir.listFiles()!!) {
                 if (file.isDirectory) purgeDirectory(file)
                 file.delete()
             }
