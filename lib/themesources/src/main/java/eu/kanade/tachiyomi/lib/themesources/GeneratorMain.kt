@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.lib.themesources
 
 import java.io.File
 
+/**
+ * Finds and calls all ThemeSourceGenerators
+ */
 class GeneratorMain {
     companion object {
         @JvmStatic
@@ -10,15 +13,17 @@ class GeneratorMain {
             val sourcesDirPath = "$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources"
             val sourcesDir = File(sourcesDirPath)
 
-            val directories = sourcesDir.list().filter {
+            val directories = sourcesDir.list()!!.filter {
                 File(sourcesDir, it).isDirectory
             }
 
             directories.forEach { themeSource ->
-                val generatorClasses = File("$sourcesDirPath/$themeSource").list().filter {
+                // find all XxxGenerator.kt files
+                val generatorClasses = File("$sourcesDirPath/$themeSource").list()!!.filter {
                     it.endsWith("Generator.kt")
                 }
 
+                // invoke main methods
                 generatorClasses.forEach {
                     val generatorClassPath = "eu/kanade/tachiyomi/lib/themesources/$themeSource/$it".replace("/", ".").substringBefore(".kt")
                     Class.forName(generatorClassPath).methods.forEach {
