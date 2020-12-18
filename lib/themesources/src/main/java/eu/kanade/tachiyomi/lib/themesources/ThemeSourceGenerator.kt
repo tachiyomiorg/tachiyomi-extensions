@@ -80,7 +80,7 @@ interface ThemeSourceGenerator {
             val classPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
             val overridesPath = "$userDir/lib/themesources/overrides"
             val resOverridePath = "$overridesPath/res/$themePkg"
-            val srcOverridePath = "$overridesPath/src/$themePkg}"
+            val srcOverridePath = "$overridesPath/src/$themePkg"
 
 
             File(sourceRootPath).let { file ->
