@@ -116,7 +116,7 @@ class MadaraFactory : SourceFactory {
         MangaScantrad(),
         MangaSco(),
         MangaSpark(),
-        Mangastein()
+        Mangastein(),
         MangaStarz(),
         MangaSY(),
         MangaTX(),
