@@ -6,7 +6,9 @@ import eu.kanade.tachiyomi.lib.themesources.ThemeSourceGenerator.Companion.Multi
 
 class GenkanGenerator : ThemeSourceGenerator {
 
-    override val themeName = "Genkan"
+    override val themePkg = "genkan"
+
+    override val themeClass = "Genkan"
 
     override val baseVersionCode: Int = 1
 

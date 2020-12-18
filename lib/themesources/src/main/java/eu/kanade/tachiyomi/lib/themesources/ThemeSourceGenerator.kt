@@ -11,11 +11,15 @@ import java.util.*
  */
 
 interface ThemeSourceGenerator {
-
     /**
      * The class that the sources inherit from.
      */
-    val themeName: String
+    val themeClass: String
+
+    /**
+     * The package that contains themeClass.
+     */
+    val themePkg: String
 
 
     /**
@@ -32,7 +36,7 @@ interface ThemeSourceGenerator {
         val userDir = System.getProperty("user.dir")!!
 
         sources.forEach { source ->
-            createSource(source, themeName, baseVersionCode, userDir)
+            createSource(source, themePkg, themeClass, baseVersionCode, userDir)
         }
     }
 
@@ -70,13 +74,13 @@ interface ThemeSourceGenerator {
             }
         }
 
-        fun createSource(source: ThemeSourceData, themeName: String, baseVersionCode: Int, userDir: String) {
+        fun createSource(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
             val sourceRootPath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}"
             val gradleFile = File("$sourceRootPath/build.gradle")
             val classPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
             val overridesPath = "$userDir/lib/themesources/overrides"
-            val resOverridePath = "$overridesPath/res/${themeName.toLowerCase(Locale.ENGLISH)}"
-            val srcOverridePath = "$overridesPath/src/${themeName.toLowerCase(Locale.ENGLISH)}"
+            val resOverridePath = "$overridesPath/res/$themePkg"
+            val srcOverridePath = "$overridesPath/src/$themePkg}"
 
 
             File(sourceRootPath).let { file ->
@@ -92,7 +96,7 @@ interface ThemeSourceGenerator {
                 if (srcOverride.exists())
                     srcOverride.copyRecursively(File("$classPath"))
                 else
-                    writeSourceClass(classPath, source, themeName)
+                    writeSourceClass(classPath, source, themePkg, themeClass)
 
 
                 // copy res files
@@ -107,13 +111,13 @@ interface ThemeSourceGenerator {
             }
         }
 
-        private fun writeSourceClass(classPath: File, source: ThemeSourceData, themeName: String) {
+        private fun writeSourceClass(classPath: File, source: ThemeSourceData, themePkg: String, themeClass: String) {
             val classFile = File("$classPath/${source.className}.kt")
 
             var classText =
                 "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
                     "\n" +
-                    "import eu.kanade.tachiyomi.lib.themesources.${themeName.toLowerCase(Locale.ENGLISH)}.$themeName\n"
+                    "import eu.kanade.tachiyomi.lib.themesources.$themePkg.$themeClass\n"
 
             if (source is MultiLangThemeSourceData) {
                 classText += "import eu.kanade.tachiyomi.source.Source\n" +
@@ -123,13 +127,13 @@ interface ThemeSourceGenerator {
             classText += "\n"
 
             if (source is SingleLangThemeSourceData) {
-                classText += "class ${source.className} : $themeName(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
+                classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
             } else {
                 classText +=
                     "class ${source.className} : SourceFactory { \n" +
                         "    override fun createSources(): List<Source> = listOf(\n"
                 for (lang in (source as MultiLangThemeSourceData).lang)
-                    classText += "        $themeName(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
+                    classText += "        $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
                 classText +=
                     "    )\n" +
                         "}"
