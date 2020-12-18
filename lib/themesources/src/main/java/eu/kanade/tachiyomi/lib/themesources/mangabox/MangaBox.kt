@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.mangabox
+package eu.kanade.tachiyomi.lib.themesources.mangabox
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.network.GET
