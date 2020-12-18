@@ -15,7 +15,7 @@ class MangaLink : ParsedHttpSource() {
 
     override val name = "MangaLink"
 
-    override val baseUrl = "https://mangalink.cc"
+    override val baseUrl = "https://mangalink.org"
 
     override val lang = "ar"
 

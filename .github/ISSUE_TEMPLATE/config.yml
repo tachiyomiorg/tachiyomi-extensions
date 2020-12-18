@@ -10,5 +10,5 @@ contact_links:
     url: https://tachiyomi.org/help/
     about: Common questions are answered here.
   - name: Tachiyomi app GitHub repository
-    url: https://github.com/inorichi/tachiyomi
+    url: https://github.com/tachiyomiorg/tachiyomi
     about: Issues about the app itself should be opened here instead.

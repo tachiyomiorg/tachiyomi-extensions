@@ -36,6 +36,7 @@ class WPMangaStreamFactory : SourceFactory {
         WestManga(),
         KomikGo(),
         KomikIndo(),
+        LiebeSchneeHiver(),
         SekteKomik(),
         MangaSwat(),
         MangaRaw(),
@@ -50,7 +51,6 @@ class WPMangaStreamFactory : SourceFactory {
         Boosei(),
         Mangakyo(),
         AsuraScans(),
-        BestManhua(),
         SilenceScan(),
         SheaManga(),
         FlameScans(),
@@ -58,9 +58,19 @@ class WPMangaStreamFactory : SourceFactory {
         Rawkuma(),
         KaisarKomik(),
         MasterKomik(),
-        KomikRu()
+        KomikRu(),
+        MangaShiro()
     )
 }
+
+class LiebeSchneeHiver : WPMangaStream(
+    "Liebe Schnee Hiver",
+    "https://www.liebeschneehiver.com",
+    "tr",
+    SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("tr"))
+)
+
+class MangaShiro : WPMangaStream("MangaShiro", "https://mangashiro.co", "id")
 
 class KomikRu : WPMangaStream("KomikRu", "https://komikru.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id")))
 
@@ -84,7 +94,6 @@ class SheaManga : WPMangaStream(
 class AsuraScans : WPMangaStream("AsuraScans", "https://asurascans.com", "en") {
     override val pageSelector = "div#readerarea img[lazy]"
 }
-class BestManhua : WPMangaStream("BestManhua", "https://bestmanhua.com", "en")
 
 class SekteKomik : WPMangaStream("Sekte Komik (WP Manga Stream)", "https://sektekomik.com", "id")
 

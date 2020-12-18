@@ -111,7 +111,7 @@ class Dilbert : ParsedHttpSource() {
     override fun imageUrlRequest(page: Page) = GET(page.url, headers)
 
     override fun imageUrlParse(document: Document) =
-        "https:" + document.first(".img-comic").attr("src")
+        document.first(".img-comic").attr("src")
 
     private val SManga.year: Int
         get() = url.substringAfterLast('?').toInt()

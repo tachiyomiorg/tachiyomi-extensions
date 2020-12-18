@@ -6,6 +6,12 @@ TOOLS="$(ls -d ${ANDROID_HOME}/build-tools/* | tail -1)"
 shopt -s globstar nullglob extglob
 APKS=( **/*".apk" )
 
+# Fail if too little extensions seem to have been built
+if [ "${#APKS[@]}" -le "1" ]; then
+    echo "Insufficient amount of APKs found. Please check the project configuration."
+    exit 1;
+fi;
+
 # Take base64 encoded key input and put it into a file
 STORE_PATH=$PWD/signingkey.jks
 rm -f $STORE_PATH && touch $STORE_PATH

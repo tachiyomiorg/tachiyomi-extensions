@@ -6,14 +6,12 @@ ext {
     extName = 'MANGA Plus by SHUEISHA'
     pkgNameSuffix = 'all.mangaplus'
     extClass = '.MangaPlusFactory'
-    extVersionCode = 14
+    extVersionCode = 15
     libVersion = '1.2'
 }
 
 dependencies {
-    final serialization_version = '1.0.0'
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version"
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.0.1'
 }
 
 apply from: "$rootDir/common.gradle"

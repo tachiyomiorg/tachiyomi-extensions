@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.zh.pufei
 
 // temp patch:
-// https://github.com/inorichi/tachiyomi/pull/2031
+// https://github.com/tachiyomiorg/tachiyomi/pull/2031
 
 import android.util.Base64
 import com.squareup.duktape.Duktape

@@ -95,7 +95,7 @@ class Bacakomik : ParsedHttpSource() {
         val descElement = document.select("div.desc > .entry-content.entry-content-single").first()
         val sepName = infoElement.select(".infox > .spe > span:nth-child(2)").last()
         val manga = SManga.create()
-        //need authorCleaner to take "pengarang:" string to remove it from author
+        // need authorCleaner to take "pengarang:" string to remove it from author
         val authorCleaner = document.select(".infox .spe b:contains(Pengarang)").text()
         manga.author = document.select(".infox .spe span:contains(Pengarang)").text().substringAfter(authorCleaner)
         manga.artist = manga.author

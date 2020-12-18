@@ -125,14 +125,14 @@ class Comicastle : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
             name = element.text()
-            setUrlWithoutDomain(element.attr("href"))
+            setUrlWithoutDomain(element.attr("href").replace("pbp", "swiper"))
         }
     }
 
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.img-list img").mapIndexed { i, img ->
+        return document.select(".swiper-wrapper .swiper-slide img").mapIndexed { i, img ->
             Page(i, "", img.attr("abs:src"))
         }
     }
