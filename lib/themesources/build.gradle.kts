@@ -18,10 +18,22 @@ repositories {
 }
 
 dependencies {
-    compileOnly(Deps.kotlin.stdlib)
-    compileOnly(Deps.okhttp)
-    compileOnly(Deps.jsoup)
+    compileOnly(project(":annotations"))
+    compileOnly(project(":defaultRes"))
+
+    // Lib 1.2, but using specific commit so we don't need to bump up the version
     compileOnly("com.github.tachiyomiorg:extensions-lib:a596412")
+
+    // These are provided by the app itself
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Deps.kotlin.version}")
+
+    compileOnly("com.github.inorichi.injekt:injekt-core:65b0440")
+    compileOnly("com.squareup.okhttp3:okhttp:3.10.0")
+    compileOnly("io.reactivex:rxjava:1.3.6")
+    compileOnly("org.jsoup:jsoup:1.10.2")
+    compileOnly("com.google.code.gson:gson:2.8.2")
+    compileOnly("com.github.salomonbrys.kotson:kotson:2.5.0")
+    compileOnly(project(":duktape-stub"))
 }
 
 
