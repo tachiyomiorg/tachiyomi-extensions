@@ -22,6 +22,7 @@ dependencies {
     compileOnly(Deps.okhttp)
     compileOnly(Deps.jsoup)
     compileOnly("com.github.tachiyomiorg:extensions-lib:a596412")
+    compileOnly(project(":duktape-stub"))
 }
 
 
