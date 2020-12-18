@@ -56,7 +56,7 @@ class wnacg : ParsedHttpSource() {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.select("a").first().attr("href"))
         manga.title = element.select("a").attr("title").trim()
-        manga.thumbnail_url = "https://" + element.select("img").attr("data-original").replace("//", "")
+        manga.thumbnail_url = "https://" + element.select("img").attr("src").replace("//", "")
         // maybe the local cache cause the old source (url) can not be update. but the image can be update on detailpage.
         // ps. new machine can be load img normal.
 
@@ -83,9 +83,7 @@ class wnacg : ParsedHttpSource() {
         manga.title = document.select("h2")?.text()?.trim() ?: "Unknown"
         manga.artist = document.select("div.uwuinfo p")?.first()?.text()?.trim() ?: "Unknown"
         manga.author = document.select("div.uwuinfo p")?.first()?.text()?.trim() ?: "Unknown"
-        // val glist = document.select("a.tagshow").map { it?.text() }
-        // manga.genre = glist.joinToString(", ")
-        manga.thumbnail_url = "https://" + document.select("div.uwthumb img").first().attr("data-original").replace("//", "")
+        manga.thumbnail_url = "https://" + document.select("div.uwthumb img").first().attr("src").replace("//", "")
         return manga
     }
 
