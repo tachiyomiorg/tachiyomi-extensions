@@ -116,6 +116,7 @@ class MadaraFactory : SourceFactory {
         MangaScantrad(),
         MangaSco(),
         MangaSpark(),
+        Mangastein()
         MangaStarz(),
         MangaSY(),
         MangaTX(),
@@ -987,6 +988,8 @@ class ManhuaUS : Madara("ManhuaUS", "https://manhuaus.com", "en") {
 class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
 
 class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.com", "en")
+
+class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
 
 class MangaRockTeam : Madara("Manga Rock Team", "https://mangarockteam.com", "en")
 
