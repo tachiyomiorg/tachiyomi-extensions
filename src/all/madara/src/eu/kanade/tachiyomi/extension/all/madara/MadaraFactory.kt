@@ -174,6 +174,7 @@ class MadaraFactory : SourceFactory {
         RenaScans(),
         RuyaManga(),
         S2Manga(),
+        Skymanga(),
         SpookyScanlations(),
         StageComics(),
         TheTopComic(),
@@ -1297,6 +1298,8 @@ class ManhuaPlus : Madara("Manhua Plus", "https://manhuaplus.com", "en") {
 class AkuManga : Madara("AkuManga", "https://akumanga.com", "ar")
 
 class AsgardTeam : Madara("Asgard Team", "https://www.asgard1team.com", "ar")
+
+class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
 @Nsfw
 class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
