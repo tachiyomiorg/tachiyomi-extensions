@@ -29,6 +29,7 @@ class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         ATMSubs(),
         AdonisFansub(),
+        AhStudios(),
         AkuManga(),
         AllPornComic(),
         Aloalivn(),
@@ -60,6 +61,7 @@ class MadaraFactory : SourceFactory {
         DoujinHentai(),
         DoujinYosh(),
         DropeScan(),
+        EarlyManga(),
         EinherjarScan(),
         FirstKissManga(),
         FirstKissManhua(),
@@ -83,6 +85,7 @@ class MadaraFactory : SourceFactory {
         KisekiManga(),
         KlanKomik(),
         KlikManga(),
+        KnightNoScanlation(),
         KomikGo(),
         LilyManga(),
         Manga18Fun(),
@@ -126,6 +129,7 @@ class MadaraFactory : SourceFactory {
         Mangalek(),
         Mangareceh(),
         Mangasushi(),
+        MangaWOW(),
         MangaYaku(),
         MangazukiClubJP(),
         MangazukiClubKO(),
@@ -133,6 +137,7 @@ class MadaraFactory : SourceFactory {
         MangazukiOnline(),
         ManhuaBox(),
         ManhuaFast(),
+        MangaGecesi(),
         Manhuaga(),
         ManhuaPlus(),
         ManhuaUS(),
@@ -213,13 +218,7 @@ class MadaraFactory : SourceFactory {
         YuriVerso(),
         MangaKitsu(),
         MangaTeca()
-        // Removed by request of site owner
-        // EarlyManga(),
-        // MangaGecesi(),
-        // MangaWOW(),
-        // MangaStein(),
-        // KnightNoScanlation(),
-        // AhStudios(),
+
     )
 }
 
@@ -1460,6 +1459,22 @@ class MangaTeca : Madara(
 
         return parsedChapter
     }
+
+    class EarlyManga : Madara("EarlyManga", "https://earlymanga.website", "en"){
+        override fun headersBuilder(): Headers.Builder {
+            return super.headersBuilder().add("Referer","$baseUrl/manga/")
+        }
+    }
+
+    class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
+        override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
+    }
+
+    class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
+
+    class AhStudios : Madara("AhStudios", "https://ahstudios.net", "es")
+
+    class KnightNoScanlation : Madara("Knight no Scanlation", "https://knightnoscanlation.com", "es")
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
