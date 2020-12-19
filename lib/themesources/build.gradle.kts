@@ -19,7 +19,6 @@ repositories {
 
 dependencies {
     compileOnly(project(":annotations"))
-    compileOnly(project(":defaultRes"))
 
     // Lib 1.2, but using specific commit so we don't need to bump up the version
     compileOnly("com.github.tachiyomiorg:extensions-lib:a596412")
