@@ -49,13 +49,13 @@ class MadaraFactory : SourceFactory {
 //        ChibiManga(),
 //        ComicKiba(),
 //        ComicsValley(),
-        CopyPasteScan(),
-        CutiePie(),
-        DarkyuRealm(),
-        DecadenceScans(),
-        DetectiveConanAr(),
-        DiamondFansub(),
-        DisasterScans(),
+//        CopyPasteScan(),
+//        CutiePie(),
+//        DarkyuRealm(),
+//        DecadenceScans(),
+//        DetectiveConanAr(),
+//        DiamondFansub(),
+//        DisasterScans(),
         DoujinHentai(),
         DoujinYosh(),
         DropeScan(),
@@ -262,9 +262,7 @@ class WebToonily : Madara("WebToonily", "https://webtoonily.com", "en")
 
 class Manga18Fun : Madara("Manga18 Fun", "https://manga18.fun", "en")
 
-class CutiePie : Madara("Cutie Pie", "https://cutiepie.ga", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
 
-class DiamondFansub : Madara("DiamondFansub", "https://diamondfansub.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("tr")))
 
 class MangaYaku : Madara("MangaYaku", "https://mangayaku.my.id", "id")
 
@@ -311,7 +309,6 @@ class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
     }
 }
 
-class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
 
 class Mangasushi : Madara("Mangasushi", "https://mangasushi.net", "en")
 
@@ -682,21 +679,7 @@ class ThreeSixtyFiveManga : Madara("365Manga", "https://365manga.com", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/page/$page/?m_orderby=latest", headers)
 }
 
-class DisasterScans : Madara("Disaster Scans", "https://disasterscans.com", "en") {
-    override val popularMangaUrlSelector = "div.post-title a:last-child"
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        val manga = super.mangaDetailsParse(document)
-
-        with(document) {
-            select("div.post-title h1").first()?.let {
-                manga.title = it.ownText()
-            }
-        }
-
-        return manga
-    }
-}
 
 class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleDateFormat("yyyy-MM-dd", Locale.US))
 
@@ -758,7 +741,6 @@ class ManhuaUS : Madara("ManhuaUS", "https://manhuaus.com", "en") {
 
 class MangaWT : Madara("MangaWT", "https://mangawt.com", "tr")
 
-class DecadenceScans : Madara("Decadence Scans", "https://reader.decadencescans.com", "en")
 
 class MangaRockTeam : Madara("Manga Rock Team", "https://mangarockteam.com", "en")
 
@@ -1008,7 +990,6 @@ class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
 
 class TwilightScans : Madara("Twilight Scans", "https://twilightscans.com", "en")
 
-class DetectiveConanAr : Madara("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar")
 
 // mostly novels
 class WoopRead : Madara("WoopRead", "https://woopread.com", "en")
@@ -1042,7 +1023,6 @@ class ArgosScan : Madara("Argos Scan", "https://argosscan.com", "pt-BR", SimpleD
 
 class OrigamiOrpheans : Madara("Origami Orpheans", "https://origami-orpheans.com.br", "pt-BR")
 
-class DarkyuRealm : Madara("Darkyu Realm", "https://darkyuerealm.site", "pt-BR")
 
 class MangaKiss : Madara("Manga Kiss", "https://mangakiss.org", "en")
 

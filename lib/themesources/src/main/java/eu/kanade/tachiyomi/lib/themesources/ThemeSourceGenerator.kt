@@ -42,7 +42,7 @@ interface ThemeSourceGenerator {
     companion object {
         private fun pkgNameSuffix(source: ThemeSourceData, separator: String): String {
             return if (source is SingleLangThemeSourceData)
-                listOf(source.lang, source.pkgName).joinToString(separator)
+                listOf(source.lang.substringBefore("-"), source.pkgName).joinToString(separator)
             else
                 listOf("all", source.pkgName).joinToString(separator)
         }
@@ -55,7 +55,7 @@ interface ThemeSourceGenerator {
                 "    extName = '${source.name}'\n" +
                 "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
                 "    extClass = '.${source.className}'\n" +
-                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode+ themesourcesLibraryVersion}\n" +
+                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + themesourcesLibraryVersion}\n" +
                 "    libVersion = '1.2'\n"
             if (source.isNsfw)
                 text += "    containsNsfw = true\n" else ""
@@ -117,15 +117,18 @@ interface ThemeSourceGenerator {
 
             var classText =
                 "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
-                    "\n" +
-                    "import eu.kanade.tachiyomi.lib.themesources.$themePkg.$themeClass\n"
+                    "\n"
+
+            if (source.isNsfw)
+                classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
+
+            classText += "import eu.kanade.tachiyomi.lib.themesources.$themePkg.$themeClass\n"
 
             if (source is MultiLangThemeSourceData) {
                 classText += "import eu.kanade.tachiyomi.source.Source\n" +
                     "import eu.kanade.tachiyomi.source.SourceFactory\n"
             }
-            if (source.isNsfw)
-                classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
+
 
             classText += "\n"
 
@@ -172,7 +175,7 @@ interface ThemeSourceGenerator {
             val lang: List<String>,
             override val isNsfw: Boolean = false,
             override val className: String = name.replace(" ", "") + "Factory",
-            override val pkgName: String = name.replace(" ", "").toLowerCase(Locale.ENGLISH),
+            override val pkgName: String = className.substringBefore("Factory").toLowerCase(Locale.ENGLISH),
             override val overrideVersionCode: Int = 0,
         ) : ThemeSourceData()
     }

@@ -35,6 +35,12 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLangThemeSourceData("ComicKiba", "https://comickiba.com", "en"),
         SingleLangThemeSourceData("Comics Valley", "https://comicsvalley.com", "hi", isNsfw = true),
         SingleLangThemeSourceData("CopyPasteScan", "https://copypastescan.xyz", "es"),
+        SingleLangThemeSourceData("Cutie Pie", "https://cutiepie.ga", "tr"),
+        SingleLangThemeSourceData("Darkyu Realm", "https://darkyuerealm.site", "pt-BR"),
+        SingleLangThemeSourceData("Decadence Scans", "https://reader.decadencescans.com", "en"),
+        SingleLangThemeSourceData("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar", className="DetectiveConanAr"),
+        SingleLangThemeSourceData("DiamondFansub", "https://diamondfansub.com", "tr"),
+        SingleLangThemeSourceData("Disaster Scans", "https://disasterscans.com", "en"),
     )
 
     companion object {
