@@ -251,7 +251,10 @@ class TsukiMangas : HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val result = response.asJson().array
 
-        return result.mapIndexed { i, page -> Page(i, baseUrl + "/", page.obj["IMG"].string) }
+        return result.mapIndexed { i, page ->
+            val cdnUrl = "https://cdn${page.obj["SERVIDOR"]}.tsukimangas.com"
+            Page(i, "$baseUrl/", cdnUrl + page.obj["IMG"].string)
+        }
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
