@@ -41,6 +41,14 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLangThemeSourceData("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar", className="DetectiveConanAr"),
         SingleLangThemeSourceData("DiamondFansub", "https://diamondfansub.com", "tr"),
         SingleLangThemeSourceData("Disaster Scans", "https://disasterscans.com", "en"),
+        SingleLangThemeSourceData("DoujinHentai", "https://doujinhentai.net", "es", isNsfw = true),
+        SingleLangThemeSourceData("DoujinYosh", "https://doujinyosh.work", "id"),
+        SingleLangThemeSourceData("Drope Scan", "https://dropescan.com", "pt-BR"),
+        SingleLangThemeSourceData("Einherjar Scan", "https://einherjarscans.space", "en"),
+        SingleLangThemeSourceData("1st Kiss", "https://1stkissmanga.com", "en", className = "FirstKissManga"),
+        SingleLangThemeSourceData("1st Kiss Manhua", "https://1stkissmanhua.com","en", className="FirstKissManhua"),
+        SingleLangThemeSourceData("FreeWebtoonCoins", "https://freewebtooncoins.com", "en"),
+        SingleLangThemeSourceData("Furio Scans", "https://furioscans.com", "pt-BR",),
     )
 
     companion object {
