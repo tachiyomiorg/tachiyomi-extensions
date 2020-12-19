@@ -5,7 +5,7 @@ ext {
     extName = 'Mangaworld'
     pkgNameSuffix = 'it.mangaworld'
     extClass = '.Mangaworld'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
     containsNsfw = true
 }
