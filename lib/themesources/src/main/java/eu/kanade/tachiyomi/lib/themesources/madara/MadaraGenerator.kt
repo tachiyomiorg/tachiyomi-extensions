@@ -48,7 +48,13 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLangThemeSourceData("1st Kiss", "https://1stkissmanga.com", "en", className = "FirstKissManga"),
         SingleLangThemeSourceData("1st Kiss Manhua", "https://1stkissmanhua.com","en", className="FirstKissManhua"),
         SingleLangThemeSourceData("FreeWebtoonCoins", "https://freewebtooncoins.com", "en"),
-        SingleLangThemeSourceData("Furio Scans", "https://furioscans.com", "pt-BR",),
+        SingleLangThemeSourceData("Furio Scans", "https://furioscans.com", "pt-BR"),
+        SingleLangThemeSourceData("موقع لترجمة المانجا", "https://golden-manga.com", "ar", className = "GoldenManga"),
+        SingleLangThemeSourceData("GuncelManga", "https://guncelmanga.com", "tr"),
+        SingleLangThemeSourceData("Hero Manhua", "https://heromanhua.com", "en"),
+        SingleLangThemeSourceData("Heroz Scanlation", "https://herozscans.com", "en"),
+        SingleLangThemeSourceData("Himera Fansub", "https://himera-fansub.com", "tr"),
+        SingleLangThemeSourceData("Hiperdex", "https://hiperdex.com", "en"),
     )
 
     companion object {

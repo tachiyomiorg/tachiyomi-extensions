@@ -1,5 +1,3 @@
-@file:Suppress("PackageDirectoryMismatch")
-
 package eu.kanade.tachiyomi.lib.themesources.madara
 
 
@@ -27,49 +25,49 @@ import java.util.concurrent.TimeUnit
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-//        ATMSubs(),
-//        AdonisFansub(),
-//        AkuManga(),
-//        AllPornComic(),
-//        Aloalivn(),
-//        AniMangaEs(),
-//        AoCTranslations(),
-//        ApollComics(),
-//        ArangScans(),
-//        ArazNovel(),
-//        AsgardTeam(),
-//        AstralLibrary(),
-//        Azora(),
-//        Bakaman(),
-//        BestManga(),
-//        BestManhua(),
-//        BoysLove(),
-//        CatOnHeadTranslations(),
-//        CatTranslator(),
-//        ChibiManga(),
-//        ComicKiba(),
-//        ComicsValley(),
-//        CopyPasteScan(),
-//        CutiePie(),
-//        DarkyuRealm(),
-//        DecadenceScans(),
-//        DetectiveConanAr(),
-//        DiamondFansub(),
-//        DisasterScans(),
-//        DoujinHentai(),
-//        DoujinYosh(),
-//        DropeScan(),
-//        EinherjarScan(),
-//        FirstKissManga(),
-//        FirstKissManhua(),
-//        FreeWebtoonCoins(),
-//        FurioScans(),
-        GoldenManga(),
-        GuncelManga(),
-        HeroManhua(),
-        HerozScanlation(),
-        HimeraFansub(),
-        Hiperdex(),
+//        ATMSubs(), // 1
+//        AdonisFansub(), // 2
+//        AkuManga(), // 3
+//        AllPornComic(), // 4
+//        Aloalivn(), // 5
+//        AniMangaEs(), // 6
+//        AoCTranslations(), // 7
+//        ApollComics(), // 8
+//        ArangScans(), // 9
+//        ArazNovel(), // 10
+//        AsgardTeam(), // 11
+//        AstralLibrary(), // 12
+//        Azora(), // 13
+//        Bakaman(), // 14
+//        BestManga(), // 15
+//        BestManhua(), // 16
+//        BoysLove(), // 17
+//        CatOnHeadTranslations(), // 18
+//        CatTranslator(), // 19
+//        ChibiManga(), // 20
+//        ComicKiba(), // 21
+//        ComicsValley(), // 22
+//        CopyPasteScan(), // 23
+//        CutiePie(), // 24
+//        DarkyuRealm(), // 25
+//        DecadenceScans(), // 26
+//        DetectiveConanAr(), // 27
+//        DiamondFansub(), // 28
+//        DisasterScans(), // 29
+//        DoujinHentai(), // 30
+//        DoujinYosh(), // 31
+//        DropeScan(), // 32
+//        EinherjarScan(), // 33
+//        FirstKissManga(), // 34
+//        FirstKissManhua(), // 35
+//        FreeWebtoonCoins(), // 36
+//        FurioScans(), // 37
+//        GoldenManga(), // 38
+//        GuncelManga(), // 39
+//        HeroManhua(), // 40
+//        HerozScanlation(), // 41
+//        HimeraFansub(), // 42
+//        Hiperdex(), // 43
         Hscans(),
         HunterFansub(),
         IchirinNoHanaYuri(),
@@ -266,7 +264,6 @@ class MangaYaku : Madara("MangaYaku", "https://mangayaku.my.id", "id")
 
 class RuyaManga : Madara("Rüya Manga", "https://www.ruyamanga.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
 
-class HimeraFansub : Madara("Himera Fansub", "https://himera-fansub.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
 
 class MangaBaz : Madara("MangaBaz", "https://mangabaz.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("tr")))
 
@@ -274,7 +271,6 @@ class Manhuaga : Madara("Manhuaga", "https://manhuaga.com", "en")
 
 class MangaCultivator : Madara("MangaCultivator", "https://mangacultivator.com", "en")
 
-class HerozScanlation : Madara("Heroz Scanlation", "https://herozscans.com", "en")
 
 
 class OffScan : Madara(
@@ -358,7 +354,6 @@ class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club", "ja")
 class MangazukiClubKO : Madara("Mangazuki.club", "https://mangazuki.club", "ko")
 
 
-
 class MangaSY : Madara("Manga SY", "https://www.mangasy.com", "en") {
     override fun imageRequest(page: Page): Request = super.imageRequest(page).newBuilder()
         .cacheControl(CacheControl.FORCE_NETWORK)
@@ -394,42 +389,7 @@ class Milftoon : Madara("Milftoon", "https://milftoon.xxx", "en") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=latest", headers)
 }
 
-class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
-    override fun getGenreList() = listOf(
-        Genre("Adult", "adult"),
-        Genre("Action", "action"),
-        Genre("Adventure", "adventure"),
-        Genre("Bully", "bully"),
-        Genre("Comedy", "comedy"),
-        Genre("Drama", "drama"),
-        Genre("Ecchi", "ecchi"),
-        Genre("Fantasy", "fantasy"),
-        Genre("Gender Bender", "gender-bender"),
-        Genre("Harem", "harem"),
-        Genre("Historical", "historical"),
-        Genre("Horror", "horror"),
-        Genre("Isekai", "isekai"),
-        Genre("Josei", "josei"),
-        Genre("Martial Arts", "martial-arts"),
-        Genre("Mature", "mature"),
-        Genre("Mystery", "mystery"),
-        Genre("Psychological", "psychological"),
-        Genre("Romance", "romance"),
-        Genre("School Life", "school-life"),
-        Genre("Sci-Fi", "sci-fi"),
-        Genre("Seinen", "seinen"),
-        Genre("Shoujo", "shoujo"),
-        Genre("Shounen", "shounen"),
-        Genre("Slice of Life", "slice-of-life"),
-        Genre("Smut", "smut"),
-        Genre("Sports", "sports"),
-        Genre("Supernatural", "supernatural"),
-        Genre("Thriller", "thriller"),
-        Genre("Tragedy", "tragedy"),
-        Genre("Yaoi", "yaoi"),
-        Genre("Yuri", "yuri")
-    )
-}
+
 
 
 class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
@@ -650,7 +610,6 @@ class ManhuasWorld : Madara("Manhuas World", "https://manhuasworld.com", "en")
 
 class ManhwaRaw : Madara("Manhwa Raw", "https://manhwaraw.com", "ko")
 
-class GuncelManga : Madara("GuncelManga", "https://guncelmanga.com", "tr")
 
 class WeScans : Madara("WeScans", "https://wescans.xyz", "en") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manhua/manga/?m_orderby=views", headers)
@@ -671,8 +630,6 @@ class MangaPhoenix : Madara("Manga Diyari", "https://mangadiyari.com", "tr") {
 }
 
 
-
-class HeroManhua : Madara("Hero Manhua", "https://heromanhua.com", "en")
 
 class MartialScans : Madara("Martial Scans", "https://martialscans.com", "en") {
     override fun popularMangaFromElement(element: Element): SManga {
