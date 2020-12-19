@@ -9,7 +9,6 @@ import java.util.*
  * Use a generator for initial setup of a theme source or when all of the inheritors need a version bump.
  * Source list (val sources) should be kept up to date.
  */
-
 interface ThemeSourceGenerator {
     /**
      * The class that the sources inherit from.
@@ -56,7 +55,7 @@ interface ThemeSourceGenerator {
                 "    extName = '${source.name}'\n" +
                 "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
                 "    extClass = '.${source.className}'\n" +
-                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode}\n" +
+                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode+ themesourcesLibraryVersion}\n" +
                 "    libVersion = '1.2'\n"
             if (source.isNsfw)
                 text += "    containsNsfw = true\n" else ""
@@ -178,6 +177,11 @@ interface ThemeSourceGenerator {
         ) : ThemeSourceData()
     }
 }
+
+/**
+ * This variable should be increased when the themesources library changes in a way that prompts global extension upgrade
+ */
+val themesourcesLibraryVersion = 0
 
 
 
