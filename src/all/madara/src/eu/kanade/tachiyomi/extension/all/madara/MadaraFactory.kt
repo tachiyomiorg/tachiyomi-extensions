@@ -128,11 +128,11 @@ class MadaraFactory : SourceFactory {
         MangaSco(),
         MangaSpark(),
         MangaStarz(),
-        Mangastein(),
+        MangaStein(),
         Mangasushi(),
         MangaSY(),
-        MangaTeca()
-            MangaTurf (),
+        MangaTeca(),
+        MangaTurf(),
         MangaTX(),
         MangaWOW(),
         MangaWT(),
@@ -217,7 +217,7 @@ class MadaraFactory : SourceFactory {
         ZinManga(),
         ZManga(),
 
-        //removed because scanlator site and they requested
+        // removed because scanlator site and they requested
         // AhStudios(),
     )
 }
