@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.madara
+package eu.kanade.tachiyomi.lib.themesources.madara
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST

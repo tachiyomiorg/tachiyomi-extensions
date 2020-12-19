@@ -14,13 +14,13 @@ include(":lib-themesources")
 project(":lib-themesources").projectDir = File("lib/themesources")
 
 // Loads all extensions
-File(rootDir, "src").eachDir { dir ->
-    dir.eachDir { subdir ->
-        val name = ":${dir.name}-${subdir.name}"
-        include(name)
-        project(name).projectDir = File("src/${dir.name}/${subdir.name}")
-    }
-}
+//File(rootDir, "src").eachDir { dir ->
+//    dir.eachDir { subdir ->
+//        val name = ":${dir.name}-${subdir.name}"
+//        include(name)
+//        project(name).projectDir = File("src/${dir.name}/${subdir.name}")
+//    }
+//}
 // Loads generated sources from lib-themesources
 File(rootDir, "generated-src").eachDir { dir ->
     dir.eachDir { subdir ->

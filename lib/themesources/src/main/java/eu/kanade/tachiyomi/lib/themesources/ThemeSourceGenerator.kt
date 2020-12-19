@@ -127,6 +127,7 @@ interface ThemeSourceGenerator {
             classText += "\n"
 
             if (source is SingleLangThemeSourceData) {
+                println(source.className)
                 classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
             } else {
                 classText +=
