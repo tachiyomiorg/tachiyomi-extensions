@@ -217,8 +217,8 @@ class MadaraFactory : SourceFactory {
         ZinManga(),
         ZManga(),
 
-     //removed because scanlator site and they requested
-    // AhStudios(),
+        //removed because scanlator site and they requested
+        // AhStudios(),
     )
 }
 
