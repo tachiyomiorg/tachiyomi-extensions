@@ -125,9 +125,13 @@ interface ThemeSourceGenerator {
                 classText += "import eu.kanade.tachiyomi.source.Source\n" +
                     "import eu.kanade.tachiyomi.source.SourceFactory\n"
             }
+            if (source.isNsfw)
+                classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
 
             classText += "\n"
 
+            if (source.isNsfw)
+                classText += "@Nsfw\n"
             if (source is SingleLangThemeSourceData) {
                 classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
             } else {
