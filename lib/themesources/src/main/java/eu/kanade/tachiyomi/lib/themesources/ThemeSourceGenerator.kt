@@ -179,7 +179,7 @@ interface ThemeSourceGenerator {
 }
 
 /**
- * This variable should be increased when themesources library changes in a way that effects generated extension behaviour
+ * This variable should be increased when the themesources library changes in a way that prompts global extension upgrade
  */
 val themesourcesLibraryVersion = 0
 
