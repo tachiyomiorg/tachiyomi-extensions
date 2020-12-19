@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         AdonisFansub(),
-        AhStudios(),
         AkuManga(),
         AlianzaMarcial(),
         AllPornComic(),
@@ -217,6 +216,9 @@ class MadaraFactory : SourceFactory {
         YuriVerso(),
         ZinManga(),
         ZManga(),
+
+     //removed because scanlator site and they requested
+    // AhStudios(),
     )
 }
 
@@ -1447,7 +1449,7 @@ class YuriVerso : Madara(
 
 class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
 
-class EarlyManga : Madara("EarlyManga", "https://earlymanga.website", "en") {
+class EarlyManga : Madara("EarlyManga", "https://earlymanga.xyz", "en") {
     override fun headersBuilder(): Headers.Builder {
         return super.headersBuilder().add("Referer", "$baseUrl/manga/")
     }
@@ -1458,8 +1460,6 @@ class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
 }
 
 class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
-
-class AhStudios : Madara("AhStudios", "https://ahstudios.net", "es")
 
 class KnightNoScanlation : Madara("Knight no Scanlation", "https://knightnoscanlation.com", "es")
 
