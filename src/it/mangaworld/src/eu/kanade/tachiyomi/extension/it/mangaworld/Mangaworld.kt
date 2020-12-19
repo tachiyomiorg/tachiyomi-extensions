@@ -7,9 +7,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.source.model.*
 import java.text.ParseException
 
+@Nsfw
 class Mangaworld: ParsedHttpSource() {
 
     override val name = "Mangaworld"
