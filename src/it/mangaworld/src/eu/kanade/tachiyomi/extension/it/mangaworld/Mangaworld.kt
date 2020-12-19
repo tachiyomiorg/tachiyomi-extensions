@@ -13,7 +13,7 @@ import java.text.ParseException
 class Mangaworld: ParsedHttpSource() {
 
     override val name = "Mangaworld"
-    override val baseUrl = "https://mangaworld.tv"
+    override val baseUrl = "https://mangaworld.cc"
     override val lang = "it"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
