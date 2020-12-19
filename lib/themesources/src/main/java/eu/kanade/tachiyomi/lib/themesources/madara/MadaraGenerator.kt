@@ -34,6 +34,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLangThemeSourceData("Chibi Manga", "https://www.cmreader.info", "en"),
         SingleLangThemeSourceData("ComicKiba", "https://comickiba.com", "en"),
         SingleLangThemeSourceData("Comics Valley", "https://comicsvalley.com", "hi", isNsfw = true),
+        SingleLangThemeSourceData("CopyPasteScan", "https://copypastescan.xyz", "es"),
     )
 
     companion object {
