@@ -252,7 +252,7 @@ class TsukiMangas : HttpSource() {
         val result = response.asJson().array
 
         return result.mapIndexed { i, page ->
-            val cdnUrl = "https://cdn${page.obj["SERVIDOR"]}.tsukimangas.com"
+            val cdnUrl = "https://cdn${page.obj["SERVIDOR"].string}.tsukimangas.com"
             Page(i, "$baseUrl/", cdnUrl + page.obj["IMG"].string)
         }
     }
