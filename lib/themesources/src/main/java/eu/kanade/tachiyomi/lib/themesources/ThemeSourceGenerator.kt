@@ -49,7 +49,7 @@ interface ThemeSourceGenerator {
         }
 
         private fun writeGradle(gradle: File, source: ThemeSourceData, baseVersionCode: Int) {
-            gradle.writeText("apply plugin: 'com.android.application'\n" +
+            var text = "apply plugin: 'com.android.application'\n" +
                 "apply plugin: 'kotlin-android'\n" +
                 "\n" +
                 "ext {\n" +
@@ -57,11 +57,13 @@ interface ThemeSourceGenerator {
                 "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
                 "    extClass = '.${source.className}'\n" +
                 "    extVersionCode = ${baseVersionCode + source.overrideVersionCode}\n" +
-                "    libVersion = '1.2'\n" +
-                if (source.isNsfw) "    containsNsfw = true\n" else "" +
-                    "}\n" +
-                    "\n" +
-                    "apply from: \"\$rootDir/common.gradle\"\n")
+                "    libVersion = '1.2'\n"
+            if (source.isNsfw)
+                text += "    containsNsfw = true\n" else ""
+            text += "}\n" +
+                "\n" +
+                "apply from: \"\$rootDir/common.gradle\"\n"
+            gradle.writeText(text)
         }
 
         /**
@@ -127,7 +129,6 @@ interface ThemeSourceGenerator {
             classText += "\n"
 
             if (source is SingleLangThemeSourceData) {
-                println(source.className)
                 classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
             } else {
                 classText +=

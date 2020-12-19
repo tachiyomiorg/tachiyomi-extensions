@@ -41,4 +41,3 @@ class AgentofChangeTranslations : Madara("Agent of Change Translations", "https:
         }
     }
 }
-

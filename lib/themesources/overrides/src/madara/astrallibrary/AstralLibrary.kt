@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import okhttp3.Request
 import okhttp3.Response
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class AstralLibrary : Madara("Astral Library", "https://www.astrallibrary.net", "en", SimpleDateFormat("d MMM", Locale.US)) {
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()

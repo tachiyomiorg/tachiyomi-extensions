@@ -25,6 +25,15 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLangThemeSourceData("ArazNovel", "https://www.araznovel.com", "tr"),
         SingleLangThemeSourceData("Asgard Team", "https://www.asgard1team.com", "ar"),
         SingleLangThemeSourceData("Astral Library", "https://www.astrallibrary.net", "en"),
+        SingleLangThemeSourceData("Bakaman", "https://bakaman.net", "th"),
+        SingleLangThemeSourceData("BestManga", "https://bestmanga.club", "ru"),
+        SingleLangThemeSourceData("BestManhua", "https://bestmanhua.com", "en"),
+        SingleLangThemeSourceData("BoysLove", "https://boyslove.me", "en"),
+        SingleLangThemeSourceData("CatOnHeadTranslations", "https://catonhead.com", "en"),
+        SingleLangThemeSourceData("CAT-translator", "https://cat-translator.com", "th", className = "CatTranslator", pkgName = "cattranslator"),
+        SingleLangThemeSourceData("Chibi Manga", "https://www.cmreader.info", "en"),
+        SingleLangThemeSourceData("ComicKiba", "https://comickiba.com", "en"),
+        SingleLangThemeSourceData("Comics Valley", "https://comicsvalley.com", "hi", isNsfw = true),
     )
 
     companion object {

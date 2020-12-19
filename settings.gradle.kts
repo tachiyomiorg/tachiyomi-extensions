@@ -21,6 +21,7 @@ project(":lib-themesources").projectDir = File("lib/themesources")
 //        project(name).projectDir = File("src/${dir.name}/${subdir.name}")
 //    }
 //}
+
 // Loads generated sources from lib-themesources
 File(rootDir, "generated-src").eachDir { dir ->
     dir.eachDir { subdir ->
