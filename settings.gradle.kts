@@ -1,5 +1,5 @@
 include(":annotations")
-include(":defaultRes")
+include(":core")
 
 include(":lib-ratelimit")
 project(":lib-ratelimit").projectDir = File("lib/ratelimit")
