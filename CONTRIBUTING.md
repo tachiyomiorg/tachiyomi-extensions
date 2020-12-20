@@ -226,7 +226,7 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 ### Advanced Extension features
 #### URL intent filter
 Extensions can define URL intent filters by defining it inside a custom `AndroidManifest.xml`,
- for more information checkout (Nhentai's AndroidManifest.xml)[https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml]
+ for more information checkout [Nhentai's AndroidManifest.xml](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml)
  and [it's NHUrlActivity](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt)
 
 
