@@ -52,7 +52,7 @@ jobs:
         with:
           build-root-directory: master
           wrapper-directory: master
-          arguments: :lib-themesources:generateDebugSources :lib-themesources:generateDebugAndroidTestSources :lib-themesources:createMockableJar :lib-themesources:compileDebugAndroidTestSources :lib-themesources:compileDebugUnitTestSources :lib-themesources:compileDebugSources
+          arguments: :lib-themesources:assembleDebug
           wrapper-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true
