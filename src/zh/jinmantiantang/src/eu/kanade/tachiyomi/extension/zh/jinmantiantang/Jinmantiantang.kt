@@ -153,7 +153,6 @@ class Jinmantiantang : ParsedHttpSource() {
         return GET(url.toString(), headers)
     }
 
-
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)

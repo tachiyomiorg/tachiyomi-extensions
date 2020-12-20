@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -20,7 +21,7 @@ abstract class WPMangaReader(
     override val name: String,
     override val baseUrl: String,
     override val lang: String,
-    val mangaUrlDirectory: String = "/manga-lists",
+    val mangaUrlDirectory: String = "/manga",
     private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
 ) : ParsedHttpSource() {
 
@@ -29,9 +30,9 @@ abstract class WPMangaReader(
     override val client: OkHttpClient = network.cloudflareClient
 
     // popular
-    override fun popularMangaSelector() = ".utao .uta .imgu"
+    override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx "
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/page/$page/?order=popular", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page/$page&order=popular", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         thumbnail_url = element.select("img").attr("src")
@@ -39,12 +40,12 @@ abstract class WPMangaReader(
         setUrlWithoutDomain(element.select("a").attr("href"))
     }
 
-    override fun popularMangaNextPageSelector() = "div.pagination .next"
+    override fun popularMangaNextPageSelector() = "div.pagination .next, div.hpage .r"
 
     // latest
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/page/$page/?order=update", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page/$page&order=update", headers)
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
@@ -59,7 +60,7 @@ abstract class WPMangaReader(
         val order = filters.findInstance<OrderByFilter>()?.toUriPart()
 
         return when {
-            order!!.isNotEmpty() -> GET("$baseUrl$mangaUrlDirectory/page/$page/?order=$order")
+            order!!.isNotEmpty() -> GET("$baseUrl$mangaUrlDirectory/?page/$page&order=$order")
             genre!!.isNotEmpty() -> GET("$baseUrl/genres/$genre/page/$page/?s=$query")
             else -> GET("$baseUrl/page/$page/?s=$query")
         }
@@ -71,11 +72,20 @@ abstract class WPMangaReader(
 
     // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select(".listinfo li:contains(Author), .listinfo li:contains(komikus)").firstOrNull()?.ownText()
-        genre = document.select("div.gnr a").joinToString { it.text() }
-        status = parseStatus(document.select("div.listinfo li:contains(Status)").text())
-        thumbnail_url = document.select(".infomanga > div[itemprop=image] img").attr("src")
-        description = document.select(".desc").joinToString("\n") { it.text() }
+        author = document.select(".listinfo li:contains(Author), .tsinfo .imptdt:nth-child(4) i, .infotable tr:contains(author) td:last-child")
+            .firstOrNull()?.ownText()
+
+        artist = document.select(".infotable tr:contains(artist) td:last-child, .tsinfo .imptdt:contains(artist) i")
+            .firstOrNull()?.ownText()
+
+        genre = document.select("div.gnr a, .mgen a, .seriestugenre a").joinToString { it.text() }
+        status = parseStatus(
+            document.select("div.listinfo li:contains(Status), .tsinfo .imptdt:contains(status), .infotable tr:contains(status) td")
+                .text()
+        )
+
+        thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("src")
+        description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
     }
 
     private fun parseStatus(status: String) = when {
@@ -85,18 +95,26 @@ abstract class WPMangaReader(
     }
 
     // chapters
-    override fun chapterListSelector() = "div.bxcl li .lch a"
+    override fun chapterListSelector() = "div.bxcl li, #chapterlist li .eph-num a"
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
 
         // Add timestamp to latest chapter, taken from "Updated On". so source which not provide chapter timestamp will have atleast one
-        val date = document.select(".listinfo li:contains(update) time").attr("datetime")
+        val date = document.select(".listinfo time[itemprop=dateModified]").attr("datetime")
         val checkChapter = document.select(chapterListSelector()).firstOrNull()
         if (date != "" && checkChapter != null) chapters[0].date_upload = parseDate(date)
 
         return chapters
+    }
+
+    private fun parseChapterDate(date: String): Long {
+        return try {
+            dateFormat.parse(date)?.time ?: 0
+        } catch (_: Exception) {
+            0L
+        }
     }
 
     private fun parseDate(date: String): Long {
@@ -104,20 +122,32 @@ abstract class WPMangaReader(
     }
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        name = element.text()
+        setUrlWithoutDomain(element.select("a").attr("href").substringAfter(baseUrl))
+        name = element.select(".lch a, .chapternum").text()
+        date_upload = element.select(".chapterdate").firstOrNull()?.text()?.let { parseChapterDate(it) } ?: 0
     }
 
     // pages
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
+    open val pageSelector = "div#readerarea img"
 
-        document.select("#readerarea img").mapIndexed { i, element ->
-            val image = element.attr("src")
-            if (image != "") {
-                pages.add(Page(i, "", image))
-            }
+    override fun pageListParse(document: Document): List<Page> {
+        var pages = mutableListOf<Page>()
+        document.select(pageSelector)
+            .filterNot { it.attr("src").isNullOrEmpty() }
+            .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
+
+        // Some sites like mangakita now load pages via javascript. like asurascan in wp mangastream
+        if (pages.isNotEmpty()) { return pages }
+
+        val docString = document.toString()
+        val imageListRegex = Regex("\\\"images.*?:.*?(\\[.*?\\])")
+
+        val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
+
+        for (i in 0 until imageList.length()) {
+            pages.add(Page(i, "", imageList.getString(i)))
         }
+
         return pages
     }
 
