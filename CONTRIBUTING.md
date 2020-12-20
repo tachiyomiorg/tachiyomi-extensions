@@ -190,8 +190,6 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
     - If search functionality is not available, return `Observable.just(MangasPage(emptyList(), false))`
 - `getFilterList` will be called to get all filters and filter types. **TODO: explain more about `Filter`**
 
-
-
 #### Manga Details
 
 - When user taps on a manga, `fetchMangaDetails` and `fetchChapterList` will be called and the results will be cached.
@@ -224,11 +222,11 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 - By implementing `ConfigurableSource` you can add settings to your source, which is backed by [`SharedPreferences`](https://developer.android.com/reference/android/content/SharedPreferences).
 
 ### Advanced Extension features
-#### URL intent filter
-Extensions can define URL intent filters by defining it inside a custom `AndroidManifest.xml`,
- for more information checkout [Nhentai's AndroidManifest.xml](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml)
- and [it's NHUrlActivity](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt)
 
+#### URL intent filter
+
+Extensions can define URL intent filters by defining it inside a custom `AndroidManifest.xml` file.
+For an example, refer to [the NHentai module's `AndroidManifest.xml` file](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml) and [its corresponding `NHUrlActivity` handler](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt).
 
 
 ## Running
