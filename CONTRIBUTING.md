@@ -223,6 +223,14 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 - If possible try to stick to the general workflow from `HttpSource`/`ParsedHttpSource`; breaking them may cause you more headache than necessary.
 - By implementing `ConfigurableSource` you can add settings to your source, which is backed by [`SharedPreferences`](https://developer.android.com/reference/android/content/SharedPreferences).
 
+### Advanced Extension features
+#### URL intent filter
+Extensions can define URL intent filters by defining it inside a custom `AndroidManifest.xml`,
+ for more information checkout (Nhentai's AndroidManifest.xml)[https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml]
+ and [it's NHUrlActivity](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt)
+
+
+
 ## Running
 
 To aid in local development, you can use the following run configuration to launch an extension:
@@ -241,12 +249,6 @@ And for a release build of Tachiyomi:
 -W -S -n eu.kanade.tachiyomi/eu.kanade.tachiyomi.ui.main.MainActivity -a eu.kanade.tachiyomi.SHOW_CATALOGUES
 ```
 
-### Advanced features
-#### URL intent filter
-Extensions can define URL intent filters by defining it inside a custom `AndroidManifest.xml`,
- for more information checkout (Nhentai's AndroidManifest.xml)[https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml]
- and [it's NHUrlActivity](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt)
-
 ## Debugging
 
 Directly debugging your extension (i.e stepping through the extension code) is not possible due to the way that extension code is loaded into the app. However, logs printed from extensions (via [`Logcat`](https://developer.android.com/studio/debug/am-logcat)) do work.
@@ -255,5 +257,3 @@ Directly debugging your extension (i.e stepping through the extension code) is n
 ## Building
 
 APKs can be created in Android Studio via `Build > Build Bundle(s) / APK(s) > Build APK(s)` or `Build > Generate Signed Bundle / APK`.
-
-
