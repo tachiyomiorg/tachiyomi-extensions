@@ -9,7 +9,6 @@ import java.util.*
  * Use a generator for initial setup of a theme source or when all of the inheritors need a version bump.
  * Source list (val sources) should be kept up to date.
  */
-
 interface ThemeSourceGenerator {
     /**
      * The class that the sources inherit from.
@@ -43,25 +42,27 @@ interface ThemeSourceGenerator {
     companion object {
         private fun pkgNameSuffix(source: ThemeSourceData, separator: String): String {
             return if (source is SingleLangThemeSourceData)
-                listOf(source.lang, source.pkgName).joinToString(separator)
+                listOf(source.lang.substringBefore("-"), source.pkgName).joinToString(separator)
             else
                 listOf("all", source.pkgName).joinToString(separator)
         }
 
         private fun writeGradle(gradle: File, source: ThemeSourceData, baseVersionCode: Int) {
-            gradle.writeText("apply plugin: 'com.android.application'\n" +
+            var text = "apply plugin: 'com.android.application'\n" +
                 "apply plugin: 'kotlin-android'\n" +
                 "\n" +
                 "ext {\n" +
                 "    extName = '${source.name}'\n" +
                 "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
                 "    extClass = '.${source.className}'\n" +
-                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode}\n" +
-                "    libVersion = '1.2'\n" +
-                if (source.isNsfw) "    containsNsfw = true\n" else "" +
-                    "}\n" +
-                    "\n" +
-                    "apply from: \"\$rootDir/common.gradle\"\n")
+                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + themesourcesLibraryVersion}\n" +
+                "    libVersion = '1.2'\n"
+            if (source.isNsfw)
+                text += "    containsNsfw = true\n" else ""
+            text += "}\n" +
+                "\n" +
+                "apply from: \"\$rootDir/common.gradle\"\n"
+            gradle.writeText(text)
         }
 
         /**
@@ -116,16 +117,23 @@ interface ThemeSourceGenerator {
 
             var classText =
                 "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
-                    "\n" +
-                    "import eu.kanade.tachiyomi.lib.themesources.$themePkg.$themeClass\n"
+                    "\n"
+
+            if (source.isNsfw)
+                classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
+
+            classText += "import eu.kanade.tachiyomi.lib.themesources.$themePkg.$themeClass\n"
 
             if (source is MultiLangThemeSourceData) {
                 classText += "import eu.kanade.tachiyomi.source.Source\n" +
                     "import eu.kanade.tachiyomi.source.SourceFactory\n"
             }
 
+
             classText += "\n"
 
+            if (source.isNsfw)
+                classText += "@Nsfw\n"
             if (source is SingleLangThemeSourceData) {
                 classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
             } else {
@@ -167,13 +175,13 @@ interface ThemeSourceGenerator {
             val lang: List<String>,
             override val isNsfw: Boolean = false,
             override val className: String = name.replace(" ", "") + "Factory",
-            override val pkgName: String = name.replace(" ", "").toLowerCase(Locale.ENGLISH),
+            override val pkgName: String = className.substringBefore("Factory").toLowerCase(Locale.ENGLISH),
             override val overrideVersionCode: Int = 0,
         ) : ThemeSourceData()
     }
 }
 
-
-
-
-
+/**
+ * This variable should be increased when the themesources library changes in a way that prompts global extension upgrade
+ */
+val themesourcesLibraryVersion = 0
