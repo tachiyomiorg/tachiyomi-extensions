@@ -26,6 +26,7 @@ class ManhuaID : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    // popular
     override fun popularMangaSelector() = "a:has(img.card-img)"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/popular/$page", headers)
@@ -38,6 +39,7 @@ class ManhuaID : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "[rel=nofollow]"
 
+    // latest
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest/$page", headers)
@@ -46,6 +48,7 @@ class ManhuaID : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
+    // search
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/search?q=$query", headers)
@@ -54,11 +57,10 @@ class ManhuaID : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector(): String? = null
 
-    override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-
+    // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         author = document.select("table").first().select("td")[3].text()
-        title = document.select("title").text()
+        title = document.select("h1").text()
         description = document.select(".text-justify").text()
         genre = document.select("span.badge.badge-success.mr-1.mb-1").joinToString { it.text() }
         status = document.select("td > span.badge.badge-success").text().let {
@@ -73,6 +75,7 @@ class ManhuaID : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    // chapters
     override fun chapterListSelector() = "table.table tr td:first-of-type a"
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -91,13 +94,12 @@ class ManhuaID : ParsedHttpSource() {
         return SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
     }
 
-    override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
-
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.attr("href"))
         name = element.text()
     }
 
+    // pages
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img.img-fluid.mb-0.mt-0").mapIndexed { i, element ->
             Page(i, "", element.attr("src"))
@@ -105,6 +107,4 @@ class ManhuaID : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
-
-    override fun getFilterList() = FilterList()
 }
