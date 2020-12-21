@@ -1,5 +1,5 @@
 include(":annotations")
-include(":defaultRes")
+include(":core")
 
 include(":lib-ratelimit")
 project(":lib-ratelimit").projectDir = File("lib/ratelimit")
@@ -10,19 +10,18 @@ project(":duktape-stub").projectDir = File("lib/duktape-stub")
 include(":lib-dataimage")
 project(":lib-dataimage").projectDir = File("lib/dataimage")
 
-include(":lib-themesources")
-project(":lib-themesources").projectDir = File("lib/themesources")
+include(":multisrc")
+project(":multisrc").projectDir = File("multisrc")
 
 // Loads all extensions
-//File(rootDir, "src").eachDir { dir ->
-//    dir.eachDir { subdir ->
-//        val name = ":${dir.name}-${subdir.name}"
-//        include(name)
-//        project(name).projectDir = File("src/${dir.name}/${subdir.name}")
-//    }
-//}
-
-// Loads generated sources from lib-themesources
+File(rootDir, "src").eachDir { dir ->
+    dir.eachDir { subdir ->
+        val name = ":${dir.name}-${subdir.name}"
+        include(name)
+        project(name).projectDir = File("src/${dir.name}/${subdir.name}")
+    }
+}
+    // Loads generated extensions from multisrc
 File(rootDir, "generated-src").eachDir { dir ->
     dir.eachDir { subdir ->
         val name = ":${dir.name}-${subdir.name}"
