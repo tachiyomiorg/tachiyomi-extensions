@@ -1,0 +1,492 @@
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:inspectClassesForKotlinIC UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :buildSrc:assemble UP-TO-DATE
+> Task :buildSrc:compileTestKotlin NO-SOURCE
+> Task :buildSrc:pluginUnderTestMetadata UP-TO-DATE
+> Task :buildSrc:compileTestJava NO-SOURCE
+> Task :buildSrc:compileTestGroovy NO-SOURCE
+> Task :buildSrc:processTestResources NO-SOURCE
+> Task :buildSrc:testClasses UP-TO-DATE
+> Task :buildSrc:test NO-SOURCE
+> Task :buildSrc:validatePlugins UP-TO-DATE
+> Task :buildSrc:check UP-TO-DATE
+> Task :buildSrc:build UP-TO-DATE
+configuration ':multisrc:_internal_aapt2_binary'
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/aapt2/4.1.1-6503028/eb7d8e65025222eff8e09cb86740914a28f1417/aapt2-4.1.1-6503028-linux.jar
+
+
+configuration ':multisrc:androidApis'
+/opt/Android-SDK/platforms/android-29/android.jar
+
+
+configuration ':multisrc:androidTestApiDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestDebugApiDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestDebugCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestDebugImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestDebugRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestReleaseApiDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestReleaseCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestReleaseImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestReleaseRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:androidTestUtil'
+
+
+configuration ':multisrc:apiDependenciesMetadata'
+
+
+configuration ':multisrc:archives'
+
+
+configuration ':multisrc:compile'
+
+
+configuration ':multisrc:compileOnlyDependenciesMetadata'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:coreLibraryDesugaring'
+
+
+configuration ':multisrc:debugAndroidTestAnnotationProcessorClasspath'
+
+
+configuration ':multisrc:debugAndroidTestApiDependenciesMetadata'
+
+
+configuration ':multisrc:debugAndroidTestCompile'
+
+
+configuration ':multisrc:debugAndroidTestCompileClasspath'
+configuration ':multisrc:debugAndroidTestCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:debugAndroidTestImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:debugAndroidTestRuntime'
+
+
+configuration ':multisrc:debugAndroidTestRuntimeClasspath'
+configuration ':multisrc:debugAndroidTestRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:debugAnnotationProcessorClasspath'
+
+
+configuration ':multisrc:debugApiDependenciesMetadata'
+
+
+configuration ':multisrc:debugCompile'
+
+
+configuration ':multisrc:debugCompileClasspath'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:debugCompileOnly'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:debugCompileOnlyDependenciesMetadata'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:debugImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:debugRuntime'
+
+
+configuration ':multisrc:debugRuntimeClasspath'
+
+
+configuration ':multisrc:debugRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:debugUnitTestAnnotationProcessorClasspath'
+
+
+configuration ':multisrc:debugUnitTestApiDependenciesMetadata'
+
+
+configuration ':multisrc:debugUnitTestCompile'
+
+
+configuration ':multisrc:debugUnitTestCompileClasspath'
+configuration ':multisrc:debugUnitTestCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:debugUnitTestImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:debugUnitTestRuntime'
+
+
+configuration ':multisrc:debugUnitTestRuntimeClasspath'
+configuration ':multisrc:debugUnitTestRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:default'
+
+
+configuration ':multisrc:implementationDependenciesMetadata'
+
+
+configuration ':multisrc:kotlinCompilerClasspath'
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/1.4.10/38c4b99d5d5362debdd9302a866730379aa2328a/kotlin-compiler-embeddable-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-reflect/1.4.10/e2b3c6695eee6085e606d96d685396dce23a3a06/kotlin-reflect-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-script-runtime/1.4.10/7c19d9c2001e016cd7664cebe9eea66fc04a7f4f/kotlin-script-runtime-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-daemon-embeddable/1.4.10/dbd67f42bed28043d17d7c860b06110a00a45970/kotlin-daemon-embeddable-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.intellij.deps/trove4j/1.0.20181211/216c2e14b070f334479d800987affe4054cd563f/trove4j-1.0.20181211.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:kotlinCompilerPluginClasspath'
+
+
+configuration ':multisrc:kotlinKlibCommonizerClasspath'
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-klib-commonizer-embeddable/1.4.10/bde52b8161bfb2ff308f4bb9204c2b9b71d85743/kotlin-klib-commonizer-embeddable-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/1.4.10/38c4b99d5d5362debdd9302a866730379aa2328a/kotlin-compiler-embeddable-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-reflect/1.4.10/e2b3c6695eee6085e606d96d685396dce23a3a06/kotlin-reflect-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-script-runtime/1.4.10/7c19d9c2001e016cd7664cebe9eea66fc04a7f4f/kotlin-script-runtime-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-daemon-embeddable/1.4.10/dbd67f42bed28043d17d7c860b06110a00a45970/kotlin-daemon-embeddable-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.intellij.deps/trove4j/1.0.20181211/216c2e14b070f334479d800987affe4054cd563f/trove4j-1.0.20181211.jar
+
+
+configuration ':multisrc:kotlinNativeCompilerPluginClasspath'
+
+
+configuration ':multisrc:lintChecks'
+
+
+configuration ':multisrc:lintClassPath'
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.lint/lint-gradle/27.1.1/bebdac6306acb56383907691f72c1109b8edfe54/lint-gradle-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/builder/4.1.1/fc418823730bd1f472dc3c7f70c1fdec30c4e06/builder-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.lint/lint/27.1.1/1b1de15c293f29501fff970570a58705d55a3f71/lint-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.lint/lint-checks/27.1.1/e632aa207b5a11ccbadba973a32622b1de1d974/lint-checks-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.lint/lint-api/27.1.1/fcf2fb29e26784ab95c8b6c4d9f326d559ed3f42/lint-api-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/manifest-merger/27.1.1/141784a169d25cf45bfcfbd9cd2549202e70c1dd/manifest-merger-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.lint/lint-gradle-api/27.1.1/22a44207f4a8e49fecd52946f11de660131ddeb2/lint-gradle-api-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.lint/lint-model/27.1.1/513f1022477b4c5198605bb1559bfd8d5919eb13/lint-model-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools/sdk-common/27.1.1/4f2de626b50906f1f6fa2752d349fa859a639447/sdk-common-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/builder-model/4.1.1/cbe89c1c2873a02ab94e83969fe8204b64bb25d5/builder-model-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.external.com-intellij/intellij-core/27.1.1/31320822539e30cc33c678906b81b387b2c7a252/intellij-core-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.external.com-intellij/kotlin-compiler/27.1.1/b7eaea9c1a08f92b058a55d81b87f392eef0b508/kotlin-compiler-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.external.org-jetbrains/uast/27.1.1/c8ad0b4b8df3d61dbc232ab86dd58dfcc3e7eae7/uast-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android/signflinger/4.1.1/cdd05907eeea0e73f34a6c3fa5d052b0a692af20/signflinger-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android/zipflinger/4.1.1/d180e411f311f3caa30881c252608c683f9ac4c5/zipflinger-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.codehaus.groovy/groovy-all/2.4.15/423a17aeb2f64bc6f76e8e44265a548bec80fd42/groovy-all-2.4.15.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-reflect/1.3.72/86613e1a669a701b0c660bfd2af4f82a7ae11fca/kotlin-reflect-1.3.72.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.analytics-library/tracker/27.1.1/7c2a97adef05042c5de2c120057b90b4cfb95e05/tracker-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.analytics-library/shared/27.1.1/57e542f916f21ae2488bc2b71bffc8087bed8d7e/shared-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/gradle-api/4.1.1/14e2dac1e40311268142e6832b1912ed4733393/gradle-api-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/builder-test-api/4.1.1/747e0ea385f096e90a6b28795cc91d8cbfd8f908/builder-test-api-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.ddms/ddmlib/27.1.1/b2dc5d74572d2a0bad36c2a092c794f0623840ff/ddmlib-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools/sdklib/27.1.1/d8d3e0ded33b8fc8b5a145a4f80ef1cb13c68286/sdklib-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.layoutlib/layoutlib-api/27.1.1/9cb6e370bc5ac1b2810224e4823fcf9122521787/layoutlib-api-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools/dvlib/27.1.1/8c8967f01005cb89d066f3713886c3627716ce16/dvlib-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools/repository/27.1.1/e52c5b4a820cdf3167393a49e47b685b3f6d5398/repository-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools/common/27.1.1/8b9452cc9d0558703681a72f3241f98d100d8ce5/common-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.3.72/916d54b9eb6442b615e6f1488978f551c0674720/kotlin-stdlib-jdk8-1.3.72.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/apkzlib/4.1.1/d56b2d9d6214425720f67a6231469cdebc82021a/apkzlib-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcpkix-jdk15on/1.56/4648af70268b6fdb24674fb1fd7c1fcc73db1231/bcpkix-jdk15on-1.56.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15on/1.56/a153c6f9744a3e9dd6feab5e210e1c9861362ec7/bcprov-jdk15on-1.56.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/aapt2-proto/4.1.0-alpha01-6193524/fadd481b02a88ce9b256c11533ef1270c0c847ec/aapt2-proto-4.1.0-alpha01-6193524.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.analytics-library/protos/27.1.1/d78dcbc7d7d31382389d56ba3924c2ab52b2e5d2/protos-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.10.0/410b61dd0088aab4caa05739558d43df248958c9/protobuf-java-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/javax.inject/javax.inject/1/6975da39a7040257bd51d21a231b76c915872d38/javax.inject-1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.trove4j/trove4j/20160824/33c3e174a9c8368d93761d3d12712db18e903959/trove4j-20160824.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools.build/apksig/4.1.1/70e9d8ac8c14dcd7a262aeb92e46147932f74ba8/apksig-4.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup/javawriter/2.5.0/81241ff7078ef14f42ea2a8995fa09c096256e6b/javawriter-2.5.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-commons/7.0/478006d07b7c561ae3a92ddc1829bca81ae0cdd1/asm-commons-7.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-util/7.0/18d4d07010c24405129a6dbb0e92057f8779fb9d/asm-util-7.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-analysis/7.0/4b310d20d6f1c6b7197a75f1b5d69f169bc8ac1f/asm-analysis-7.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-tree/7.0/29bc62dcb85573af6e62e5b2d735ef65966c4180/asm-tree-7.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm/7.0/d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912/asm-7.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/it.unimi.dsi/fastutil/7.2.0/5ad3a2bb04143f70aa0765fc29fc29571a7d6b34/fastutil-7.2.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/net.sf.jopt-simple/jopt-simple/4.9/ee9e9eaa0a35360dcfeac129ff4923215fd65904/jopt-simple-4.9.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.googlecode.json-simple/json-simple/1.1/5e303a03d04e6788dddfa3655272580ae0fc13bb/json-simple-1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.android.tools/annotations/27.1.1/a7842347dbfd19cf5da95a419b0f8859e0446141/annotations-27.1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.5/f645ed69d595b24d4cf8b3fbb64cc505bede8829/gson-2.8.5.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/net.sf.kxml/kxml2/2.3.0/ccbc77a5fd907ef863c29f3596c6f54ffa4e9442/kxml2-2.3.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.jimfs/jimfs/1.1/8fbd0579dc68aba6186935cc1bee21d2f3e7ec1c/jimfs-1.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/28.1-jre/b0e91dcb6a44ffb6221b5027e12a5cb34b841145/guava-28.1-jre.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.3.72/3adfc2f4ea4243e01204be8081fe63bde6b12815/kotlin-stdlib-jdk7-1.3.72.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.3.72/8032138f12c0180bc4e51fe139d4c52b46db6109/kotlin-stdlib-1.3.72.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.12/84caa68576e345eb5e7ae61a0e5a9229eb100d7b/commons-compress-1.12.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpmime/4.5.6/164343da11db817e81e24e0d9869527e069850c9/httpmime-4.5.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpclient/4.5.6/1afe5621985efe90a92d0fbc9be86271efbe796f/httpclient-4.5.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpcore/4.4.10/acc54d9b28bdffe4bbde89ed2e4a1e86b5285e2b/httpcore-4.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.1/1dcf1de382a0bf95a3d8b0849546c88bac1292c9/failureaccess-1.0.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/b421526c5f297295adef1c886e5246c39d4ac629/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.checkerframework/checker-qual/2.8.1/eb2e8ab75598548cc8acf9a1ca227e480e01881e/checker-qual-2.8.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_annotations/2.3.2/d1a0c5032570e0f64be6b4d9c90cdeb103129029/error_prone_annotations-2.3.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.j2objc/j2objc-annotations/1.3/ba035118bc8bac37d7eff77700720999acd9986d/j2objc-annotations-1.3.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.codehaus.mojo/animal-sniffer-annotations/1.18/f7aa683ea79dc6681ee9fb95756c999acbb62f5d/animal-sniffer-annotations-1.18.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.3.72/6ca8bee3d88957eaaaef077c41c908c9940492d8/kotlin-stdlib-common-1.3.72.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.sun.activation/javax.activation/1.2.0/bf744c1e2776ed1de3c55c8dac1057ec331ef744/javax.activation-1.2.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.glassfish.jaxb/jaxb-runtime/2.3.1/dd6dda9da676a54c5b36ca2806ff95ee017d8738/jaxb-runtime-2.3.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/javax.xml.bind/jaxb-api/2.3.1/8531ad5ac454cc2deb9d4d32c40c4d7451939b5d/jaxb-api-2.3.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.glassfish.jaxb/txw2/2.3.1/a09d2c48d3285f206fafbffe0e50619284e92126/txw2-2.3.1.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.sun.istack/istack-commons-runtime/3.0.7/c197c86ceec7318b1284bffb49b54226ca774003/istack-commons-runtime-3.0.7.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jvnet.staxex/stax-ex/1.8/8cc35f73da321c29973191f2cf143d29d26a1df7/stax-ex-1.8.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.sun.xml.fastinfoset/FastInfoset/1.2.15/bb7b7ec0379982b97c62cd17465cb6d9155f68e8/FastInfoset-1.2.15.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/javax.activation/javax.activation-api/1.2.0/85262acf3ca9816f9537ca47d5adeabaead7cb16/javax.activation-api-1.2.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/commons-logging/commons-logging/1.2/4bfc12adfe4842bf07b657f0369c4cb522955686/commons-logging-1.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/commons-codec/commons-codec/1.10/4b95f4897fa13f2cd904aee711aeafc0c5295cd8/commons-codec-1.10.jar
+
+
+configuration ':multisrc:lintPublish'
+
+
+configuration ':multisrc:releaseAnnotationProcessorClasspath'
+
+
+configuration ':multisrc:releaseApiDependenciesMetadata'
+
+
+configuration ':multisrc:releaseCompile'
+
+
+configuration ':multisrc:releaseCompileClasspath'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:releaseCompileOnly'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:releaseCompileOnlyDependenciesMetadata'
+/home/armor/programming/android/tachiyomi-extensions-fork/annotations/build/libs/annotations.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.salomonbrys.kotson/kotson/2.5.0/40daf22108aa4436d46257e14cc48447cca542c3/kotson-2.5.0.jar
+/home/armor/programming/android/tachiyomi-extensions-fork/lib/duktape-stub/build/libs/duktape-stub.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.tachiyomiorg/extensions-lib/a596412/eaa76a7d8891fc26a3839d591d067e9d71a4aa2/extensions-lib-a596412.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk8/1.4.10/998caa30623f73223194a8b657abd2baec4880ea/kotlin-stdlib-jdk8-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-core/65b0440/63b7078668b1d86c7675e65082c9f56c6f5edfa/injekt-core-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.10.0/7ef0f1d95bf4c0b3ba30bbae25e0e562b05cf75e/okhttp-3.10.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/io.reactivex/rxjava/1.3.6/f8596dcb885d65c86f96cf96fe12772c56d51d1d/rxjava-1.3.6.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jsoup/jsoup/1.10.2/33ee82e324f4b1e40167f3dc5e01234a1c5cab61/jsoup-1.10.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.2/3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf/gson-2.8.2.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-jdk7/1.4.10/30e46450b0bb3dbf43898d2f461be4a942784780/kotlin-stdlib-jdk7-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.4.10/ea29e063d2bbe695be13e9d044dcfb0c7add398e/kotlin-stdlib-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.github.inorichi.injekt/injekt-api/65b0440/ff489b6dd4c80b8ace3c703f1d443aea08749f23/injekt-api-65b0440.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.14.0/102d7be47241d781ef95f1581d414b0943053130/okio-1.14.0.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.4.10/6229be3465805c99db1142ad75e6c6ddeac0b04c/kotlin-stdlib-common-1.4.10.jar
+/home/armor/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar
+
+
+configuration ':multisrc:releaseImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:releaseRuntime'
+
+
+configuration ':multisrc:releaseRuntimeClasspath'
+
+
+configuration ':multisrc:releaseRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:releaseUnitTestAnnotationProcessorClasspath'
+
+
+configuration ':multisrc:releaseUnitTestApiDependenciesMetadata'
+
+
+configuration ':multisrc:releaseUnitTestCompile'
+
+
+configuration ':multisrc:releaseUnitTestCompileClasspath'
+configuration ':multisrc:releaseUnitTestCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:releaseUnitTestImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:releaseUnitTestRuntime'
+
+
+configuration ':multisrc:releaseUnitTestRuntimeClasspath'
+configuration ':multisrc:releaseUnitTestRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:runtimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:testApiDependenciesMetadata'
+
+
+configuration ':multisrc:testCompile'
+
+
+configuration ':multisrc:testCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:testDebugApiDependenciesMetadata'
+
+
+configuration ':multisrc:testDebugCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:testDebugImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:testDebugRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:testImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:testReleaseApiDependenciesMetadata'
+
+
+configuration ':multisrc:testReleaseCompileOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:testReleaseImplementationDependenciesMetadata'
+
+
+configuration ':multisrc:testReleaseRuntimeOnlyDependenciesMetadata'
+
+
+configuration ':multisrc:testRuntimeOnlyDependenciesMetadata'
+
+
+> Task :multisrc:runAllGenerators2
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 7.0.
+Use '--warning-mode all' to show the individual deprecation warnings.
+See https://docs.gradle.org/6.7.1/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD SUCCESSFUL in 6s
+1 actionable task: 1 executed
