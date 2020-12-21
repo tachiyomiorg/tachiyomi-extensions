@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.lib.themesources
 
 import java.io.File
-import java.util.*
+import java.util.Locale
 
 /**
  * This is meant to be used in place of a factory extension, specifically for what would be a multi-source extension.
@@ -65,6 +65,13 @@ interface ThemeSourceGenerator {
             gradle.writeText(text)
         }
 
+        private fun writeAndroidManifest(androidManifestFile: File) {
+            androidManifestFile.writeText(
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                    "<manifest package=\"eu.kanade.tachiyomi.extension\" />\n"
+            )
+        }
+
         /**
          * Clears directory recursively
          */
@@ -78,8 +85,9 @@ interface ThemeSourceGenerator {
         fun createSource(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
             val sourceRootPath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}"
             val gradleFile = File("$sourceRootPath/build.gradle")
-            val classPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
-            val overridesPath = "$userDir/lib/themesources/overrides"
+            val androidManifestFile = File("$sourceRootPath/AndroidManifest.xml")
+            val srcPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
+            val overridesPath = "$userDir/lib/themesources/overrides" // userDir = tachiyomi-extensions project root path
             val resOverridePath = "$overridesPath/res/$themePkg"
             val srcOverridePath = "$overridesPath/src/$themePkg"
 
@@ -91,13 +99,14 @@ interface ThemeSourceGenerator {
                 purgeDirectory(file)
 
                 writeGradle(gradleFile, source, baseVersionCode)
-                classPath.mkdirs()
+                writeAndroidManifest(androidManifestFile)
 
+                srcPath.mkdirs()
                 val srcOverride = File("$srcOverridePath/${source.pkgName}")
                 if (srcOverride.exists())
-                    srcOverride.copyRecursively(File("$classPath"))
+                    srcOverride.copyRecursively(File("$srcPath"))
                 else
-                    writeSourceClass(classPath, source, themePkg, themeClass)
+                    writeSourceClass(srcPath, source, themePkg, themeClass)
 
 
                 // copy res files
