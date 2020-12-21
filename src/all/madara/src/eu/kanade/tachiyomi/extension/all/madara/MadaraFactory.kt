@@ -27,7 +27,7 @@ class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
 //        AdonisFansub(), // 2
 //        AkuManga(), // 3
-        AlianzaMarcial(),
+//        AlianzaMarcial(), // 44
 //        AllPornComic(), // 4
 //        Aloalivn(), // 5
 //        AniMangaEs(), // 6
@@ -35,10 +35,10 @@ class MadaraFactory : SourceFactory {
 //        ApollComics(), // 8
 //        ArangScans(), // 9
 //        ArazNovel(), // 10
-        ArgosScan(),
+//        ArgosScan(), // 45
 //        AsgardTeam(), // 11
 //        AstralLibrary(), // 12
-        Atikrost(),
+//        Atikrost(), // 46
 //        ATMSubs(), // 1
 //        Azora(), // 13
 //        Bakaman(), // 14
@@ -60,9 +60,9 @@ class MadaraFactory : SourceFactory {
 //        DoujinHentai(), // 30
 //        DoujinYosh(), // 31
 //        DropeScan(), // 32
-        EarlyManga(),
+//        EarlyManga(), // 47
 //        EinherjarScan(), // 33
-        FdmScan(),
+//        FdmScan(), // 48
 //        FirstKissManga(), // 34
 //        FirstKissManhua(), // 35
 //        FreeWebtoonCoins(), // 36
@@ -71,7 +71,7 @@ class MadaraFactory : SourceFactory {
 //        GuncelManga(), // 39
 //        HeroManhua(), // 40
 //        HerozScanlation(), // 41
-        HikariScan(),
+//        HikariScan(), // 49
 //        HimeraFansub(), // 42
 //        Hiperdex(), // 43
         Hscans(),
@@ -239,7 +239,6 @@ class SpookyScanlations : Madara("Spooky Scanlations", "https://spookyscanlation
 
 class RandomTranslations : Madara("Random Translations", "https://randomtranslations.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
-class Atikrost : Madara("Atikrost", "https://atikrost.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr")))
 
 
 class ManhuaFast : Madara("ManhuaFast", "https://manhuafast.com", "en") {
@@ -791,13 +790,10 @@ class ShoujoHearts : Madara("ShoujoHearts", "http://shoujohearts.com", "en") {
     override fun searchPage(page: Int): String = "reader/page/$page/"
 }
 
-class AlianzaMarcial : Madara("AlianzaMarcial", "https://alianzamarcial.xyz", "es")
 
 class OlaoeManga : Madara("مانجا اولاو", "https://olaoe.giize.com", "ar")
 
-class FdmScan : Madara("FDM Scan", "https://fdmscan.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt", "BR")))
 
-class ArgosScan : Madara("Argos Scan", "https://argosscan.com", "pt-BR", SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR")))
 
 class OrigamiOrpheans : Madara("Origami Orpheans", "https://origami-orpheans.com.br", "pt-BR")
 
@@ -816,7 +812,6 @@ class Kombatch : Madara("Kombatch", "https://kombatch.com", "id", SimpleDateForm
 
 class ProjetoScanlator : Madara("Projeto Scanlator", "https://projetoscanlator.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")))
 
-class HikariScan : Madara("Hikari Scan", "https://hikariscan.com.br", "pt-BR", SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR")))
 
 class NazarickScans : Madara("Nazarick Scans", "https://nazarickscans.com", "en") {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/manga/page/$page/?m_orderby=trending", headers)
@@ -882,11 +877,7 @@ class YuriVerso : Madara(
 
 class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
 
-class EarlyManga : Madara("EarlyManga", "https://earlymanga.xyz", "en") {
-    override fun headersBuilder(): Headers.Builder {
-        return super.headersBuilder().add("Referer", "$baseUrl/manga/")
-    }
-}
+
 
 class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
     override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
