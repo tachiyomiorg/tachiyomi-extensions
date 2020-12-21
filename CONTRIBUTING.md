@@ -64,7 +64,7 @@ src/<lang>/<mysourcename>/
 ```
 
 #### AndroidManifest.xml
-A minimal [Android manifest file](https://developer.android.com/guide/topics/manifest/manifest-intro) is needed for Android to recognize a extension when it's compiled into a apk file. You can also introduce a intent filter inside this file. see [URL intent filter](#url-intent-filter) for more information.
+A minimal [Android manifest file](https://developer.android.com/guide/topics/manifest/manifest-intro) is needed for Android to recognize a extension when it's compiled into an APK file. You can also add intent filters inside this file (see [URL intent filter](#url-intent-filter) for more information).
 
 #### build.gradle
 Make sure that your new extension's `build.gradle` file follows the following structure:
