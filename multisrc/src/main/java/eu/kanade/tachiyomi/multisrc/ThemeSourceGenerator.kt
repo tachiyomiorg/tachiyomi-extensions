@@ -22,7 +22,7 @@ interface ThemeSourceGenerator {
 
 
     /**
-     * Base source version is added by source.overrideVersionCode to calculate extVersionCode for build.gradle
+     * Base theme version, starts with 1
      */
     val baseVersionCode: Int
 
@@ -55,7 +55,7 @@ interface ThemeSourceGenerator {
                 "    extName = '${source.name}'\n" +
                 "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
                 "    extClass = '.${source.className}'\n" +
-                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + themesourcesLibraryVersion}\n" +
+                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + multisrcLibraryVersion}\n" +
                 "    libVersion = '1.2'\n"
             if (source.isNsfw)
                 text += "    containsNsfw = true\n"
@@ -165,6 +165,10 @@ interface ThemeSourceGenerator {
             abstract val isNsfw: Boolean
             abstract val className: String
             abstract val pkgName: String
+
+            /**
+             * overrideVersionCode should default to 0, if a source changes their override code, overrideVersionCode should be increased
+             */
             abstract val overrideVersionCode: Int
         }
 
@@ -191,6 +195,6 @@ interface ThemeSourceGenerator {
 }
 
 /**
- * This variable should be increased when the themesources library changes in a way that prompts global extension upgrade
+ * This variable should be increased when the multisrc library changes in a way that prompts global extension upgrade
  */
-val themesourcesLibraryVersion = 0
+const val multisrcLibraryVersion = 0
