@@ -106,8 +106,7 @@ class Mangahasu : ParsedHttpSource() {
         manga.artist = infoElement.select(".info")[1].text()
         manga.genre = infoElement.select(".info")[3].text()
         manga.status = parseStatus(infoElement.select(".info")[4].text())
-
-        manga.description = document.select("div.content-info > div > p").first()?.text()
+        manga.description = document.select("div.content-info:has(h3:contains(summary)) div").first()?.text()
         manga.thumbnail_url = document.select("div.info-img img").attr("src")
         return manga
     }
