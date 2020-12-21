@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="eu.kanade.tachiyomi.extension">
+
     <application>
         <activity
-                android:name=".GuyaUrlActivity"
-                android:theme="@android:style/Theme.NoDisplay"
-                android:excludeFromRecents="true">
+            android:name=".en.guya.GuyaUrlActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
-                        android:scheme="https"
-                        android:host="guya.moe"
-                        android:pathPattern="/read/manga/..*" />
+                    android:host="guya.moe"
+                    android:pathPattern="/read/manga/..*"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>

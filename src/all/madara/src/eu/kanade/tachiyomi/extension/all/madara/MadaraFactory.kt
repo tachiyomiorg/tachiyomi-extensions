@@ -454,6 +454,8 @@ class NightComic : Madara("Night Comic", "https://www.nightcomic.com", "en") {
         .build()
 }
 
+class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
+
 @Nsfw
 class Toonily : Madara("Toonily", "https://toonily.com", "en") {
     override fun getGenreList(): List<Genre> = listOf(

@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="eu.kanade.tachiyomi.extension">
+
     <application>
         <activity
-            android:name=".HitomiActivity"
-            android:theme="@android:style/Theme.NoDisplay"
-            android:excludeFromRecents="true">
+            android:name=".all.hitomi.HitomiActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https"
-                      android:host="hitomi.la"
-                      android:pathPattern="/cg/..*"/>
+
+                <data
+                    android:host="hitomi.la"
+                    android:pathPattern="/cg/..*"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>
