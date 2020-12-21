@@ -22,7 +22,7 @@ interface ThemeSourceGenerator {
 
 
     /**
-     * Base theme version, starts with 1
+     * Base theme version, starts with 1 and should be increased when based theme class changes
      */
     val baseVersionCode: Int
 
@@ -167,7 +167,9 @@ interface ThemeSourceGenerator {
             abstract val pkgName: String
 
             /**
-             * overrideVersionCode should default to 0, if a source changes their override code, overrideVersionCode should be increased
+             * overrideVersionCode defaults to 0, if a source changes their override code or
+             * a previous existing source suddenly needs overrides, overrideVersionCode should be increased.
+             * When a new source is added with overrides, overrideVersionCode is still the default 0
              */
             abstract val overrideVersionCode: Int
         }
