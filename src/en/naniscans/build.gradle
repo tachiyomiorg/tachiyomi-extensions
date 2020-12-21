@@ -5,7 +5,7 @@ ext {
     extName = 'NANI? Scans'
     pkgNameSuffix = 'en.naniscans'
     extClass = '.NaniScans'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 

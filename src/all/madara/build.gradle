@@ -5,7 +5,7 @@ ext {
     extName = 'Madara (multiple sources)'
     pkgNameSuffix = "all.madara"
     extClass = '.MadaraFactory'
-    extVersionCode = 160
+    extVersionCode = 161
     libVersion = '1.2'
     containsNsfw = true
 }

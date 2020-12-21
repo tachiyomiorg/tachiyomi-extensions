@@ -189,6 +189,7 @@ class MadaraFactory : SourceFactory {
         RuyaManga(),
         S2Manga(),
         ShoujoHearts(),
+        Skymanga(),
         SpookyScanlations(),
         StageComics(),
         TheTopComic(),
@@ -793,6 +794,8 @@ class NightComic : Madara("Night Comic", "https://www.nightcomic.com", "en") {
         .add("X-MOD-SBB-CTYPE", "xhr")
         .build()
 }
+
+class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
 @Nsfw
 class Toonily : Madara("Toonily", "https://toonily.com", "en") {
