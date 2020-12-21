@@ -43,7 +43,7 @@ tasks.register("runAllGenerators") {
         classPath += "$projectRoot/multisrc/build/tmp/kotlin-classes/debug:"
         classPath += "$projectRoot/multisrc/build/generated/res/resValues/debug"
 
-        configurations.debugCompileOnly.asFileTree.forEach { classPath = "$classPath:$it" }
+        configurations.debugCompileOnly.get().asFileTree.forEach { classPath = "$classPath:$it" }
 
         val javaPath = System.getProperty("java.home") + "/bin/java"
 
