@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit
 
 class MadaraFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-//        ATMSubs(), // 1
 //        AdonisFansub(), // 2
 //        AkuManga(), // 3
+        AlianzaMarcial(),
 //        AllPornComic(), // 4
 //        Aloalivn(), // 5
 //        AniMangaEs(), // 6
@@ -35,8 +35,11 @@ class MadaraFactory : SourceFactory {
 //        ApollComics(), // 8
 //        ArangScans(), // 9
 //        ArazNovel(), // 10
+        ArgosScan(),
 //        AsgardTeam(), // 11
 //        AstralLibrary(), // 12
+        Atikrost(),
+//        ATMSubs(), // 1
 //        Azora(), // 13
 //        Bakaman(), // 14
 //        BestManga(), // 15
@@ -57,7 +60,9 @@ class MadaraFactory : SourceFactory {
 //        DoujinHentai(), // 30
 //        DoujinYosh(), // 31
 //        DropeScan(), // 32
+        EarlyManga(),
 //        EinherjarScan(), // 33
+        FdmScan(),
 //        FirstKissManga(), // 34
 //        FirstKissManhua(), // 35
 //        FreeWebtoonCoins(), // 36
@@ -66,6 +71,7 @@ class MadaraFactory : SourceFactory {
 //        GuncelManga(), // 39
 //        HeroManhua(), // 40
 //        HerozScanlation(), // 41
+        HikariScan(),
 //        HimeraFansub(), // 42
 //        Hiperdex(), // 43
         Hscans(),
@@ -73,13 +79,15 @@ class MadaraFactory : SourceFactory {
         IchirinNoHanaYuri(),
         ImmortalUpdates(),
         IsekaiScanCom(),
-        JustForFun(),
         JJutsuScans(),
-        KMangaIn(),
+        JustForFun(),
         KingzManga(),
         KisekiManga(),
         KlanKomik(),
         KlikManga(),
+        KMangaIn(),
+        KnightNoScanlation(),
+        Kombatch(),
         KomikGo(),
         LilyManga(),
         Manga18Fun(),
@@ -95,11 +103,14 @@ class MadaraFactory : SourceFactory {
         MangaClash(),
         MangaCultivator(),
         MangaDods(),
+        MangaGecesi(),
         MangaHentai(),
         MangaKiss(),
+        MangaKitsu(),
         MangaKomi(),
-        MangaLord(),
         MangaLandArabic(),
+        Mangalek(),
+        MangaLord(),
         ManganeloLink(),
         MangaNine(),
         MangaPhoenix(),
@@ -107,6 +118,7 @@ class MadaraFactory : SourceFactory {
         MangaRawr(),
         MangaRead(),
         MangaReadOrg(),
+        Mangareceh(),
         MangaRockTeam(),
         MangaRocky(),
         MangaRoma(),
@@ -114,15 +126,16 @@ class MadaraFactory : SourceFactory {
         MangaSco(),
         MangaSpark(),
         MangaStarz(),
-        MangaSY(),
-        MangaTX(),
-        MangaTurf(),
-        MangaWT(),
-        MangaYosh(),
-        Mangalek(),
-        Mangareceh(),
+        MangaStein(),
         Mangasushi(),
+        MangaSY(),
+        MangaTeca(),
+        MangaTurf(),
+        MangaTX(),
+        MangaWOW(),
+        MangaWT(),
         MangaYaku(),
+        MangaYosh(),
         MangazukiClubJP(),
         MangazukiClubKO(),
         MangazukiMe(),
@@ -131,10 +144,10 @@ class MadaraFactory : SourceFactory {
         ManhuaFast(),
         Manhuaga(),
         ManhuaPlus(),
-        ManhuaUS(),
+        Manhuasnet(),
         ManhuasWorld(),
         ManhuaSY(),
-        Manhuasnet(),
+        ManhuaUS(),
         ManhwaRaw(),
         ManhwaTop(),
         ManwahentaiMe(),
@@ -158,25 +171,31 @@ class MadaraFactory : SourceFactory {
         Ninjavi(),
         NTSVoidScans(),
         OffScan(),
+        OlaoeManga(),
         OnManga(),
         OrigamiOrpheans(),
         PMScans(),
         PojokManga(),
         PornComix(),
         PrimeManga(),
+        ProjetoScanlator(),
         QueensManga(),
         RaiderScans(),
+        RandomTranslations(),
         ReadManhua(),
         RenaScans(),
         RuyaManga(),
         S2Manga(),
+        ShoujoHearts(),
         Skymanga(),
+        SpookyScanlations(),
+        StageComics(),
         TheTopComic(),
         ThreeSixtyFiveManga(),
-        ToonPoint(),
-        Toonily(),
         ToonGod(),
+        Toonily(),
         ToonilyNet(),
+        ToonPoint(),
         TopManhua(),
         TritiniaScans(),
         TruyenTranhAudioCom(),
@@ -185,37 +204,43 @@ class MadaraFactory : SourceFactory {
         TurkceManga(),
         TwilightScans(),
         Wakascan(),
-        WebToonily(),
-        WeScans(),
         WebNovel(),
+        WebToonily(),
         WebtoonXYZ(),
+        WeScans(),
         WoopRead(),
         WuxiaWorld(),
         YaoiToshokan(),
         YokaiJump(),
-        ZManga(),
-        ZinManga(),
-        ShoujoHearts(),
-        AlianzaMarcial(),
-        OlaoeManga(),
-        FdmScan(),
-        ArgosScan(),
-        Kombatch(),
-        ProjetoScanlator(),
-        HikariScan(),
         YuriVerso(),
-        MangaKitsu(),
-        MangaTeca()
+        ZinManga(),
+        ZManga(),
 
-        // Removed by request of site owner
-        // EarlyManga(),
-        // MangaGecesi(),
-        // MangaWOW(),
-        // MangaStein(),
-        // KnightNoScanlation(),
+        // removed because scanlator site and they requested
         // AhStudios(),
     )
 }
+
+class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
+
+class StageComics : Madara("StageComics", "https://stagecomics.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt"))) {
+    override fun chapterFromElement(element: Element): SChapter {
+        val parsedChapter = super.chapterFromElement(element)
+
+        parsedChapter.date_upload = element.select("img").firstOrNull()?.attr("alt")
+            ?.let { parseChapterDate(it) }
+            ?: parseChapterDate(element.select("span.chapter-release-date i").firstOrNull()?.text())
+
+        return parsedChapter
+    }
+}
+
+class SpookyScanlations : Madara("Spooky Scanlations", "https://spookyscanlations.xyz", "es", SimpleDateFormat("MMMM dd, yyyy", Locale("es")))
+
+class RandomTranslations : Madara("Random Translations", "https://randomtranslations.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
+
+class Atikrost : Madara("Atikrost", "https://atikrost.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr")))
+
 
 class ManhuaFast : Madara("ManhuaFast", "https://manhuafast.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
@@ -734,7 +759,6 @@ class ManhuaPlus : Madara("Manhua Plus", "https://manhuaplus.com", "en") {
 }
 
 
-class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
 @Nsfw
 class ToonilyNet : Madara("Toonily.net", "https://toonily.net", "en")
@@ -853,6 +877,22 @@ class YuriVerso : Madara(
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 )
+
+class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
+
+class EarlyManga : Madara("EarlyManga", "https://earlymanga.xyz", "en") {
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", "$baseUrl/manga/")
+    }
+}
+
+class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
+    override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
+}
+
+class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
+
+class KnightNoScanlation : Madara("Knight no Scanlation", "https://knightnoscanlation.com", "es")
 
 class MangaTeca : Madara(
     "MangaTeca",

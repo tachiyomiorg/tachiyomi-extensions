@@ -13,7 +13,6 @@ class MadaraGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
-        SingleLangThemeSourceData("ATM-Subs", "https://atm-subs.fr", "fr", className = "ATMSubs", pkgName = "atmsubs"),
         SingleLangThemeSourceData("Adonis Fansub", "https://manga.adonisfansub.com", "tr"),
         SingleLangThemeSourceData("AkuManga", "https://akumanga.com", "ar"),
         SingleLangThemeSourceData("AllPornComic", "https://allporncomic.com", "en"),
