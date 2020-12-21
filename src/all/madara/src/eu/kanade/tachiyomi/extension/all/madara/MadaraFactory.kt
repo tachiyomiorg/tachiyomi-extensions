@@ -221,7 +221,6 @@ class MadaraFactory : SourceFactory {
     )
 }
 
-class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
 
 class StageComics : Madara("StageComics", "https://stagecomics.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt"))) {
     override fun chapterFromElement(element: Element): SChapter {
