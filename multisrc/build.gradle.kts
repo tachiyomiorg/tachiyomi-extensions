@@ -38,16 +38,16 @@ tasks.register("runAllGenerators") {
         var classPath = ""
         classPath += "$androidSDK/platforms/android-29/android.jar:"
         classPath += "$androidSDK/platforms/android-29/data/res:"
-        classPath += "$projectRoot/lib/themesources/build/intermediates/javac/debug/classes:"
-        classPath += "$projectRoot/lib/themesources/build/intermediates/compile_r_class_jar/debug/R.jar:"
-        classPath += "$projectRoot/lib/themesources/build/tmp/kotlin-classes/debug:"
-        classPath += "$projectRoot/lib/themesources/build/generated/res/resValues/debug"
+        classPath += "$projectRoot/multisrc/build/intermediates/javac/debug/classes:"
+        classPath += "$projectRoot/multisrc/build/intermediates/compile_r_class_jar/debug/R.jar:"
+        classPath += "$projectRoot/multisrc/build/tmp/kotlin-classes/debug:"
+        classPath += "$projectRoot/multisrc/build/generated/res/resValues/debug"
 
         configurations.debugCompileOnly.asFileTree.forEach { classPath = "$classPath:$it" }
 
         val javaPath = System.getProperty("java.home") + "/bin/java"
 
-        val mainClass = "eu.kanade.tachiyomi.lib.themesources.GeneratorMain"
+        val mainClass = "eu.kanade.tachiyomi.multisrc.GeneratorMain"
 
         Runtime.getRuntime().exec("$javaPath -classpath $classPath $mainClass")
     }

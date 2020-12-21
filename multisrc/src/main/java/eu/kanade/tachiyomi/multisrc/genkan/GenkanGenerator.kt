@@ -1,8 +1,8 @@
-package eu.kanade.tachiyomi.lib.themesources.genkan
+package eu.kanade.tachiyomi.multisrc.genkan
 
-import eu.kanade.tachiyomi.lib.themesources.ThemeSourceGenerator
-import eu.kanade.tachiyomi.lib.themesources.ThemeSourceGenerator.Companion.SingleLangThemeSourceData
-import eu.kanade.tachiyomi.lib.themesources.ThemeSourceGenerator.Companion.MultiLangThemeSourceData
+import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator
+import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.SingleLangThemeSourceData
+import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.MultiLangThemeSourceData
 
 class GenkanGenerator : ThemeSourceGenerator {
 

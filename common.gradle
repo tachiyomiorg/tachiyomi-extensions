@@ -61,7 +61,7 @@ dependencies {
     implementation project(":core")
 
     // multi-source library
-    implementation project(':lib-themesources')
+    implementation project(':multisrc')
 }
 apply from: "$rootDir/common-dependencies.gradle"
 

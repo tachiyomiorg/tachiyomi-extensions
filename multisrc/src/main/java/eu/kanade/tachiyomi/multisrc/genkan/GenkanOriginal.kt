@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.lib.themesources.genkan
+package eu.kanade.tachiyomi.multisrc.genkan
 
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.lib.themesources
+package eu.kanade.tachiyomi.multisrc
 
 import java.io.File
 import java.util.Locale
@@ -58,7 +58,7 @@ interface ThemeSourceGenerator {
                 "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + themesourcesLibraryVersion}\n" +
                 "    libVersion = '1.2'\n"
             if (source.isNsfw)
-                text += "    containsNsfw = true\n" else ""
+                text += "    containsNsfw = true\n"
             text += "}\n" +
                 "\n" +
                 "apply from: \"\$rootDir/common.gradle\"\n"
@@ -84,12 +84,12 @@ interface ThemeSourceGenerator {
 
         fun createSource(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
             val sourceRootPath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}"
-            val gradleFile = File("$sourceRootPath/build.gradle")
-            val androidManifestFile = File("$sourceRootPath/AndroidManifest.xml")
             val srcPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
-            val overridesPath = "$userDir/lib/themesources/overrides" // userDir = tachiyomi-extensions project root path
+            val overridesPath = "$userDir/multisrc/overrides" // userDir = tachiyomi-extensions project root path
             val resOverridePath = "$overridesPath/res/$themePkg"
             val srcOverridePath = "$overridesPath/src/$themePkg"
+            val gradleFile = File("$sourceRootPath/build.gradle")
+            val androidManifestFile = File("$sourceRootPath/AndroidManifest.xml")
 
 
             File(sourceRootPath).let { file ->
@@ -131,7 +131,7 @@ interface ThemeSourceGenerator {
             if (source.isNsfw)
                 classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
 
-            classText += "import eu.kanade.tachiyomi.lib.themesources.$themePkg.$themeClass\n"
+            classText += "import eu.kanade.tachiyomi.multisrc.$themePkg.$themeClass\n"
 
             if (source is MultiLangThemeSourceData) {
                 classText += "import eu.kanade.tachiyomi.source.Source\n" +

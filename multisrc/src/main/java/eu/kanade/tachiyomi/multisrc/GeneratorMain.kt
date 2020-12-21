@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.lib.themesources
+package eu.kanade.tachiyomi.multisrc
 
 import java.io.File
 
@@ -10,7 +10,7 @@ class GeneratorMain {
         @JvmStatic
         fun main(args: Array<String>) {
             val userDir = System.getProperty("user.dir")!!
-            val sourcesDirPath = "$userDir/lib/themesources/src/main/java/eu/kanade/tachiyomi/lib/themesources"
+            val sourcesDirPath = "$userDir/multisrc/src/main/java/eu/kanade/tachiyomi/multisrc"
             val sourcesDir = File(sourcesDirPath)
 
             val directories = sourcesDir.list()!!.filter {
@@ -25,7 +25,7 @@ class GeneratorMain {
 
                 // invoke main methods
                 generatorClasses.forEach {
-                    val generatorClassPath = "eu/kanade/tachiyomi/lib/themesources/$themeSource/$it".replace("/", ".").substringBefore(".kt")
+                    val generatorClassPath = "eu/kanade/tachiyomi/multisrc/$themeSource/$it".replace("/", ".").substringBefore(".kt")
                     Class.forName(generatorClassPath).methods.forEach {
                         if (it.name == "main")
                             it.invoke(null, emptyArray<String>())

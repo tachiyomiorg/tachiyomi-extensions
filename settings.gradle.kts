@@ -10,8 +10,8 @@ project(":duktape-stub").projectDir = File("lib/duktape-stub")
 include(":lib-dataimage")
 project(":lib-dataimage").projectDir = File("lib/dataimage")
 
-include(":lib-themesources")
-project(":lib-themesources").projectDir = File("lib/themesources")
+include(":multisrc")
+project(":multisrc").projectDir = File("multisrc")
 
 // Loads all extensions
 File(rootDir, "src").eachDir { dir ->
@@ -21,7 +21,7 @@ File(rootDir, "src").eachDir { dir ->
         project(name).projectDir = File("src/${dir.name}/${subdir.name}")
     }
 }
-// Loads generated sources from lib-themesources
+    // Loads generated extensions from multisrc
 File(rootDir, "generated-src").eachDir { dir ->
     dir.eachDir { subdir ->
         val name = ":${dir.name}-${subdir.name}"

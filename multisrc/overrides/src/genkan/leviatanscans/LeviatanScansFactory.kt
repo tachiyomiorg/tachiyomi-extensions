@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.all.leviatanscans
 
-import eu.kanade.tachiyomi.lib.themesources.genkan.Genkan
-import eu.kanade.tachiyomi.lib.themesources.genkan.GenkanOriginal
+import eu.kanade.tachiyomi.multisrc.genkan.Genkan
+import eu.kanade.tachiyomi.multisrc.genkan.GenkanOriginal
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 
