@@ -47,22 +47,26 @@ jobs:
           mkdir -p ~/.gradle
           cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
 
-      - name: Build theme sources library
+      - name: Build multi-source library
         uses: eskatos/gradle-command-action@v1
         with:
           build-root-directory: master
           wrapper-directory: master
+<<<<<<< HEAD
           arguments: :lib-themesources:assembleDebug
+=======
+          arguments: :multisrc:assembleDebug
+>>>>>>> libthemesources
           wrapper-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true
 
-      - name: Run theme sources generator
+      - name: Run multi-source generators
         uses: eskatos/gradle-command-action@v1
         with:
           build-root-directory: master
           wrapper-directory: master
-          arguments: :lib-themesources:runAllGenerators
+          arguments: :multisrc:runAllGenerators
           wrapper-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true

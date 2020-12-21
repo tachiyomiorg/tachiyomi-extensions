@@ -36,6 +36,7 @@ class WPMangaStreamFactory : SourceFactory {
         WestManga(),
         KomikGo(),
         KomikIndo(),
+        LiebeSchneeHiver(),
         SekteKomik(),
         MangaSwat(),
         MangaRaw(),
@@ -58,9 +59,19 @@ class WPMangaStreamFactory : SourceFactory {
         KaisarKomik(),
         MasterKomik(),
         KomikRu(),
-        MangaShiro()
+        MangaShiro(),
+        ChiOtaku()
     )
 }
+
+class ChiOtaku : WPMangaStream("ChiOtaku", "https://chiotaku.com", "id")
+
+class LiebeSchneeHiver : WPMangaStream(
+    "Liebe Schnee Hiver",
+    "https://www.liebeschneehiver.com",
+    "tr",
+    SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("tr"))
+)
 
 class MangaShiro : WPMangaStream("MangaShiro", "https://mangashiro.co", "id")
 

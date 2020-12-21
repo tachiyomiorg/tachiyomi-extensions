@@ -1,12 +1,15 @@
 package eu.kanade.tachiyomi.extension.id.komiku
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -16,7 +19,7 @@ import java.util.Locale
 class Komiku : ParsedHttpSource() {
     override val name = "Komiku"
 
-    override val baseUrl = "https://komiku.id/"
+    override val baseUrl = "https://komiku.id"
 
     override val lang = "id"
 
@@ -27,22 +30,32 @@ class Komiku : ParsedHttpSource() {
     // popular
     override fun popularMangaSelector() = "div.bge"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/other/hot/page/$page/?orderby=meta_value_num", headers)
+    override fun popularMangaRequest(page: Int): Request {
+        if (page == 1) {
+            return GET("$baseUrl/other/hot/?orderby=meta_value_num", headers)
+        } else {
+            return GET("$baseUrl/other/hot/page/$page/?orderby=meta_value_num", headers)
+        }
+    }
 
     private val coverRegex = Regex("""(/Manga-|/Manhua-|/Manhwa-)""")
     private val coverUploadRegex = Regex("""/uploads/\d\d\d\d/\d\d/""")
 
-    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a:has(h3)").attr("href"))
-        title = element.select("h3").text().trim()
+    override fun popularMangaFromElement(element: Element): SManga {
+        val manga = SManga.create()
+
+        manga.title = element.select("h3").text().trim()
+        manga.setUrlWithoutDomain(element.select("a:has(h3)").attr("href"))
 
         // scraped image doesn't make for a good cover; so try to transform it
         // make it take bad cover instead of null if it contains upload date as those URLs aren't very useful
         if (element.select("img").attr("data-src").contains(coverUploadRegex)) {
-            thumbnail_url = element.select("img").attr("data-src")
+            manga.thumbnail_url = element.select("img").attr("data-src")
         } else {
-            thumbnail_url = element.select("img").attr("data-src").substringBeforeLast("?").replace(coverRegex, "/Komik-")
+            manga.thumbnail_url = element.select("img").attr("data-src").substringBeforeLast("?").replace(coverRegex, "/Komik-")
         }
+
+        return manga
     }
 
     override fun popularMangaNextPageSelector() = ".pag-nav a.next"
@@ -50,7 +63,13 @@ class Komiku : ParsedHttpSource() {
     // latest
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/other/hot/page/$page/?orderby=modified", headers)
+    override fun latestUpdatesRequest(page: Int): Request {
+        if (page == 1) {
+            return GET("$baseUrl/pustaka/?orderby=modified", headers)
+        } else {
+            return GET("$baseUrl/pustaka/page/$page/?orderby=modified", headers)
+        }
+    }
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
@@ -59,11 +78,151 @@ class Komiku : ParsedHttpSource() {
     // search
     override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/cari/page/$page/?post_type=manga&s=$query", headers)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = HttpUrl.parse("$baseUrl/cari/page/$page/")?.newBuilder()!!.addQueryParameter("s", query)
+        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+            when (filter) {
+                is CategoryNames -> {
+                    val category = filter.values[filter.state]
+                    url.addQueryParameter("category_name", category.key)
+                }
+                is OrderBy -> {
+                    val order = filter.values[filter.state]
+                    url.addQueryParameter("orderby", order.key)
+                }
+                is GenreList1 -> {
+                    val genre = filter.values[filter.state]
+                    url.addQueryParameter("genre", genre.key)
+                }
+                is GenreList2 -> {
+                    val genre = filter.values[filter.state]
+                    url.addQueryParameter("genre2", genre.key)
+                }
+                is StatusList -> {
+                    val status = filter.values[filter.state]
+                    url.addQueryParameter("status", status.key)
+                }
+            }
+        }
+        return GET(url.toString(), headers)
+    }
 
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaNextPageSelector() = "a.next"
+
+    private class Category(title: String, val key: String) : Filter.TriState(title) {
+        override fun toString(): String {
+            return name
+        }
+    }
+
+    private class Genre(title: String, val key: String) : Filter.TriState(title) {
+        override fun toString(): String {
+            return name
+        }
+    }
+
+    private class Order(title: String, val key: String) : Filter.TriState(title) {
+        override fun toString(): String {
+            return name
+        }
+    }
+
+    private class Status(title: String, val key: String) : Filter.TriState(title) {
+        override fun toString(): String {
+            return name
+        }
+    }
+
+    private class CategoryNames(categories: Array<Category>) : Filter.Select<Category>("Category", categories, 0)
+    private class OrderBy(orders: Array<Order>) : Filter.Select<Order>("Order", orders, 0)
+    private class GenreList1(genres: Array<Genre>) : Filter.Select<Genre>("Genre 1", genres, 0)
+    private class GenreList2(genres: Array<Genre>) : Filter.Select<Genre>("Genre 2", genres, 0)
+    private class StatusList(statuses: Array<Status>) : Filter.Select<Status>("Status", statuses, 0)
+
+    override fun getFilterList() = FilterList(
+        CategoryNames(categoryNames),
+        OrderBy(orderBy),
+        GenreList1(genreList),
+        GenreList2(genreList),
+        StatusList(statusList)
+    )
+
+    private val categoryNames = arrayOf(
+        Category("All", ""),
+        Category("Manga", "manga"),
+        Category("Manhua", "manhua"),
+        Category("Manhwa", "manhwa")
+    )
+
+    private val orderBy = arrayOf(
+        Order("Ranking", "meta_value_num"),
+        Order("New Title", "date"),
+        Order("Updates", "modified"),
+        Order("Random", "rand")
+    )
+
+    private val genreList = arrayOf(
+        Genre("All", ""),
+        Genre("Action", "action"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Cooking", "cooking"),
+        Genre("Crime", "crime"),
+        Genre("Demons", "demons"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Magic", "magic"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Medical", "medical"),
+        Genre("Military", "military"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("One Shot", "one-shot"),
+        Genre("Overpower", "overpower"),
+        Genre("Parodi", "parodi"),
+        Genre("Police", "police"),
+        Genre("Psychological", "psychological"),
+        Genre("Reincarnation", "reincarnation"),
+        Genre("Romance", "romance"),
+        Genre("School", "school"),
+        Genre("School life", "school-life"),
+        Genre("Sci-fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("Shotacon", "shotacon"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Sport", "sport"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Urban", "urban"),
+        Genre("Vampire", "vampire"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Yuri", "yuri")
+    )
+
+    private val statusList = arrayOf(
+        Status("All", ""),
+        Status("Ongoing", "ongoing"),
+        Status("End", "end")
+    )
 
     // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
@@ -119,6 +278,4 @@ class Komiku : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
-
-    override fun getFilterList() = FilterList()
 }
