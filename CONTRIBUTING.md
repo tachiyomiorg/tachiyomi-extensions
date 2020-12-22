@@ -198,6 +198,8 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 
 - When user taps on a manga, `fetchMangaDetails` and `fetchChapterList` will be called and the results will be cached.
     - A `SManga` entry is identified by it's `url`.
+    - `SManga.genre` is a `String` containing list of all genres separated with `" ,"`.
+    - `SManga.status` is valued like a C/C++ enum, set it to one of `SManga.Companion` values.  
 - `fetchMangaDetails` is called to update a manga's details from when it was initialized earlier.
     - During a backup, only `url` and `title` are stored. To restore the rest of the manga data, the app calls `fetchMangaDetails`, so all fields should be (re)filled in if possible.
     - `SManga.initialized` tells the app if it should call `fetchMangaDetails`. If you are overriding `fetchMangaDetails`, make sure to pass it as `true`.
