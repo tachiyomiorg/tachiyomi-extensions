@@ -9,7 +9,8 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 /**
  * Source changes domain names every few days (e.g. newtoki31.net to newtoki32.net)

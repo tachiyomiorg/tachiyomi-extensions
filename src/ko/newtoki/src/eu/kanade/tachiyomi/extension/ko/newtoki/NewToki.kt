@@ -31,7 +31,7 @@ import uy.kohesive.injekt.api.get
 import java.net.URI
 import java.net.URISyntaxException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
 
 /**
  * NewToki Source
@@ -105,11 +105,13 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         // only exists on chapter with proper manga detail page.
         val fullListButton = document.select(".comic-navbar .toon-nav a").last()
 
-        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기") ?: false) { // Check this page is detail page
+        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기")
+                ?: false) { // Check this page is detail page
             val details = mangaDetailsParse(document)
             details.url = urlPath
             listOf(details)
-        } else if (fullListButton?.text()?.contains("전체목록") ?: false) { // Check this page is chapter page
+        } else if (fullListButton?.text()?.contains("전체목록")
+                ?: false) { // Check this page is chapter page
             val url = fullListButton.attr("abs:href")
             val details = mangaDetailsParse(client.newCall(GET(url)).execute())
             details.url = getUrlPath(url)
@@ -230,8 +232,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     private val htmlDataRegex = Regex("""html_data\+='([^']+)'""")
 
     override fun pageListParse(document: Document): List<Page> {
-        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("data script not found")
-        val loadScript = document.select("script:containsData(data_attribute)").firstOrNull()?.data() ?: throw Exception("load script not found")
+        val script = document.select("script:containsData(html_data)").firstOrNull()?.data()
+            ?: throw Exception("data script not found")
+        val loadScript = document.select("script:containsData(data_attribute)").firstOrNull()?.data()
+            ?: throw Exception("load script not found")
         val dataAttr = "abs:data-" + loadScript.substringAfter("data_attribute: '").substringBefore("',")
 
         return htmlDataRegex.findAll(script).map { it.groupValues[1] }
