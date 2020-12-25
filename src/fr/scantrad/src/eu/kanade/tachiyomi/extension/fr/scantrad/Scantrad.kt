@@ -23,7 +23,7 @@ class Scantrad : ParsedHttpSource() {
 
     override val name = "Scantrad"
 
-    override val baseUrl = "https://scantrad.fr"
+    override val baseUrl = "https://scantrad.net"
 
     override val lang = "fr"
 
