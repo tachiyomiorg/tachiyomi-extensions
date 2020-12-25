@@ -8,6 +8,7 @@ import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
 import eu.kanade.tachiyomi.extensions.BuildConfig
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -40,6 +41,9 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override val lang: String = "ko"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
+    protected val rateLimitedClient: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addNetworkInterceptor(RateLimitInterceptor(2, 5))
+        .build()
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
 
@@ -172,11 +176,28 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             if (name.contains("번외") || name.contains("특별편")) return -2f
             val regex = Regex("([0-9]+)(?:[-.]([0-9]+))?(?:화)")
             val (ch_primal, ch_second) = regex.find(name)!!.destructured
-            return (ch_primal + if (ch_second.isBlank()) "" else ".$ch_second").toFloatOrNull() ?: -1f
+            return (ch_primal + if (ch_second.isBlank()) "" else ".$ch_second").toFloatOrNull()
+                ?: -1f
         } catch (e: Exception) {
             e.printStackTrace()
             return -1f
         }
+    }
+
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return rateLimitedClient.newCall(mangaDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return rateLimitedClient.newCall(chapterListRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                chapterListParse(response)
+            }
     }
 
     @SuppressLint("SimpleDateFormat")

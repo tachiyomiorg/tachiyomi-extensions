@@ -9,8 +9,7 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 /**
  * Source changes domain names every few days (e.g. newtoki31.net to newtoki32.net)
@@ -24,12 +23,10 @@ private val domainNumber = 32 + ((Date().time - SimpleDateFormat("yyyy-MM-dd", L
 
 class NewTokiFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-        NewTokiManga,
+        ManaToki(domainNumber),
         NewTokiWebtoon()
     )
 }
-
-val NewTokiManga = ManaToki(domainNumber)
 
 class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "webtoon") {
     // / ! DO NOT CHANGE THIS !  Prevent to treating as a new site

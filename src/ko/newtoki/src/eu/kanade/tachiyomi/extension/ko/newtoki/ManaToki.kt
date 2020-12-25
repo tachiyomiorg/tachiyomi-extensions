@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.ko.newtoki
 
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -10,7 +9,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
@@ -25,9 +23,6 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
     // / ! DO NOT CHANGE THIS !  Only the site name changed from newtoki.
     override val id by lazy { generateSourceId("NewToki", lang, versionId) }
     override val supportsLatest by lazy { getExperimentLatest() }
-    private val rateLimitedClient: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(RateLimitInterceptor(2, 5))
-        .build()
 
     override fun latestUpdatesSelector() = ".media.post-list"
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/update?hid=update&page=$page")
