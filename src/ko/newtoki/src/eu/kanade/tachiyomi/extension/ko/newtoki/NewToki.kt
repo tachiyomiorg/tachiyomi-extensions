@@ -7,7 +7,7 @@ import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.extensions.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -30,7 +30,7 @@ import uy.kohesive.injekt.api.get
 import java.net.URI
 import java.net.URISyntaxException
 import java.text.SimpleDateFormat
-import java.util.Calendar
+import java.util.*
 
 /**
  * NewToki Source
@@ -218,7 +218,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             .flatMap { it.split(".") }
             .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
             .let { Jsoup.parse(it) }
-            .select("img[src=/img/loading-image.gif]")
+            .select("img[src=/img/loading-image.gif], .view-img > img[itemprop]")
             .mapIndexed { i, img -> Page(i, "", if (img.hasAttr(dataAttr)) img.attr(dataAttr) else img.attr("abs:content")) }
     }
 
@@ -275,9 +275,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val latestWithDetailPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, newValue as Boolean).commit()
+                    // Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         if (name == "ManaToki") {
             screen.addPreference(latestExperimentPref)
+            screen.addPreference(latestWithDetailPref)
         }
     }
 
@@ -319,9 +337,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val latestWithDetailPref = CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, newValue as Boolean).commit()
+                    // Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         if (name == "ManaToki") {
             screen.addPreference(latestExperimentPref)
+            screen.addPreference(latestWithDetailPref)
         }
     }
 
@@ -335,17 +371,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
     protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
+    protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
 
     companion object {
+        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
-        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
         // Setting: Experimental Latest Fetcher
         private const val EXPERIMENTAL_LATEST_PREF_TITLE = "Enable Latest (Experimental)"
         private const val EXPERIMENTAL_LATEST_PREF = "fetchLatestExperiment"
-        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates, Also requires LOTS OF requests (70 per page)"
+        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates and May DB corruption on certain Tachiyomi builds"
+
+        // Setting: Experimental Latest Fetcher With Full Details (Optional)
+        private const val EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE = "Fetch Latest with detail (Optional)"
+        private const val EXPERIMENTAL_LATEST_WITH_DETAIL_PREF = "fetchLatestWithDetail"
+        private const val EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY =
+            "Parse latest manga details with detail pages. This will reduce DB corruption on certain Tachiyomi builds.\n" +
+                "But makes chance of IP Ban, Also makes bunch of requests, For prevent IP ban, rate limit is set. so may slow,\n" +
+                "Still, It's experiment. Required to enable `Enable Latest (Experimental).`"
 
         const val PREFIX_ID_SEARCH = "id:"
     }
