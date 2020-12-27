@@ -567,7 +567,7 @@ class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleD
 
 class NeoxScanlator : Madara(
     "Neox Scanlator",
-    "https://neoxscans.net",
+    "https://neoxscans.com",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 ) {
