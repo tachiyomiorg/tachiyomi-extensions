@@ -183,7 +183,7 @@ class Gmanga : HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val body = buildSearchRequestBody(page)
+        val body = buildSearchRequestBody(page, query)
         return POST("$baseUrl/api/mangas/search", headers, body)
     }
 
