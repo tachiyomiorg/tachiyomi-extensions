@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'GMANGA'
+    pkgNameSuffix = 'ar.gmanga'
+    extClass = '.Gmanga'
+    extVersionCode = 1
+    libVersion = '1.2'
+    containsNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"
