@@ -105,8 +105,14 @@ class Gmanga : HttpSource() {
         val url = response.request().url().toString()
         val data = gson.fromJson<JsonObject>(response.asJsoup().select(".js-react-on-rails-component").html())
         val releaseData = data["readerDataAction"]["readerData"]["release"].asJsonObject
-        return releaseData["webp_pages"].asJsonArray.map { it.asString }.mapIndexed { index, pageUri ->
-            Page(index, "$url#page_$index", "https://media.$domain/uploads/releases/${releaseData["storage_key"].asString}/mq_webp/$pageUri")
+
+        val hasWebP = releaseData["webp_pages"].asJsonArray.size() > 0
+        return releaseData[if (hasWebP) "webp_pages" else "pages"].asJsonArray.map { it.asString }.mapIndexed { index, pageUri ->
+            Page(
+                index,
+                "$url#page_$index",
+                "https://media.$domain/uploads/releases/${releaseData["storage_key"].asString}/mq${if (hasWebP) "_webp" else ""}/$pageUri"
+            )
         }
     }
 
