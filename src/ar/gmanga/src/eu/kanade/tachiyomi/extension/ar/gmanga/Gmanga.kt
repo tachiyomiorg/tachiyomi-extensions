@@ -14,6 +14,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -29,6 +30,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.MediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -55,6 +57,12 @@ class Gmanga : ConfigurableSource, HttpSource() {
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", USER_AGENT)
