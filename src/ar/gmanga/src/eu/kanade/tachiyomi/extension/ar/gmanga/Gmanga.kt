@@ -1,6 +1,10 @@
 package eu.kanade.tachiyomi.extension.ar.gmanga
 
 import android.annotation.SuppressLint
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.addAll
 import com.github.salomonbrys.kotson.addProperty
 import com.github.salomonbrys.kotson.fromJson
@@ -12,6 +16,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.Filter.TriState.Companion.STATE_EXCLUDE
 import eu.kanade.tachiyomi.source.model.Filter.TriState.Companion.STATE_INCLUDE
@@ -22,16 +27,18 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
-import okhttp3.Headers
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.lang.Exception
 import java.text.ParseException
 import java.text.SimpleDateFormat
 
-class Gmanga : HttpSource() {
+class Gmanga : ConfigurableSource, HttpSource() {
 
     private val domain: String = "gmanga.me"
 
@@ -45,6 +52,10 @@ class Gmanga : HttpSource() {
 
     private val gson = Gson()
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", USER_AGENT)
     }
@@ -54,22 +65,32 @@ class Gmanga : HttpSource() {
         return GET("$baseUrl/api/mangas/$mangaId/releases", headers)
     }
 
+    @ExperimentalStdlibApi
     override fun chapterListParse(response: Response): List<SChapter> {
         val data = decryptResponse(response)
-        val allChapters = data["rows"][0]["rows"].asJsonArray.map { it.asJsonArray }
-        val chaptersByNumber = allChapters.groupBy { it.asJsonArray[6].asFloat }
 
-        return chaptersByNumber.map { (number: Float, versions: List<JsonArray>) ->
+        val chapters: List<JsonArray> = buildList {
+            val allChapters = data["rows"][0]["rows"].asJsonArray.map { it.asJsonArray }
+
+            when (preferences.getString(PREF_CHAPTER_LISTING)) {
+                PREF_CHAPTER_LISTING_SHOW_POPULAR -> addAll(
+                    allChapters.groupBy { it.asJsonArray[6].asFloat }
+                        .map { (_: Float, versions: List<JsonArray>) -> versions.maxByOrNull { it[4].asLong }!! }
+                )
+                else -> addAll(allChapters)
+            }
+        }
+
+        return chapters.map {
             SChapter.create().apply {
-                chapter_number = number
+                chapter_number = it[6].asFloat
 
-                val mostViewedScan = versions.maxByOrNull { it[4].asLong }!!
-                val chapterName = mostViewedScan[8].asString.let { if (it.trim() != "") " - $it" else "" }
+                val chapterName = it[8].asString.let { if (it.trim() != "") " - $it" else "" }
 
-                url = "/r/${mostViewedScan[0]}"
-                name = "${number.toInt()}$chapterName"
-                date_upload = mostViewedScan[3].asLong * 1000
-                scanlator = mostViewedScan[10].asString
+                url = "/r/${it[0]}"
+                name = "${chapter_number.let { if (it % 1 > 0) it else it.toInt() }}$chapterName"
+                date_upload = it[3].asLong * 1000
+                scanlator = it[10].asString
             }
         }
     }
@@ -255,7 +276,7 @@ class Gmanga : HttpSource() {
                             it.id == FILTER_ID_MIN_CHAPTER_COUNT
                         },
                         "min",
-                        "Invalid min chapter count",
+                        ERROR_INVALID_MIN_CHAPTER_COUNT,
                         ""
                     )
 
@@ -264,7 +285,7 @@ class Gmanga : HttpSource() {
                             it.id == FILTER_ID_MAX_CHAPTER_COUNT
                         },
                         "max",
-                        "Invalid max chapter count",
+                        ERROR_INVALID_MAX_CHAPTER_COUNT,
                         ""
                     )
                 }
@@ -278,7 +299,7 @@ class Gmanga : HttpSource() {
                             it.id == FILTER_ID_START_DATE
                         },
                         "start",
-                        "Invalid start date"
+                        ERROR_INVALID_START_DATE
                     )
 
                     addPropertyFromValidatingTextFilter(
@@ -286,7 +307,7 @@ class Gmanga : HttpSource() {
                             it.id == FILTER_ID_END_DATE
                         },
                         "end",
-                        "Invalid end date"
+                        ERROR_INVALID_END_DATE
                     )
                 }
             )
@@ -429,8 +450,57 @@ class Gmanga : HttpSource() {
     private class DateFilter(val id: String, name: String) : ValidatingTextFilter("($DATE_FILTER_PATTERN) $name)") {
         override fun isValid(): Boolean = DATE_FITLER_FORMAT.isValid(this.state)
     }
+
     private class IntFilter(val id: String, name: String) : ValidatingTextFilter(name) {
         override fun isValid(): Boolean = state.toIntOrNull() != null
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+
+        PREFERENCES.forEach {
+            val preference = ListPreference(screen.context).apply {
+                key = it.key
+                title = it.title
+                entries = it.entries()
+                entryValues = it.entryValues()
+                summary = "%s"
+            }
+
+            if (!preferences.contains(it.key))
+                preferences.edit().putString(it.key, it.default().key).apply()
+
+            screen.addPreference(preference)
+        }
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+
+        PREFERENCES.forEach {
+            val preference = androidx.preference.ListPreference(screen.context).apply {
+                key = it.key
+                title = it.title
+                entries = it.entries()
+                entryValues = it.entryValues()
+                summary = "%s"
+            }
+
+            if (!preferences.contains(it.key))
+                preferences.edit().putString(it.key, it.default().key).apply()
+
+            screen.addPreference(preference)
+        }
+    }
+
+    private fun SharedPreferences.getString(pref: StringPreference): String {
+        return getString(pref.key, pref.default().key)!!
+    }
+
+    private class StringPreferenceOption(val key: String, val title: String)
+
+    private class StringPreference(val key: String, val title: String, private val options: List<StringPreferenceOption>, private val defaultOptionIndex: Int = 0) {
+        fun entries(): Array<String> = options.map { it.title }.toTypedArray()
+        fun entryValues(): Array<String> = options.map { it.key }.toTypedArray()
+        fun default(): StringPreferenceOption = options[defaultOptionIndex]
     }
 
     companion object {
@@ -439,13 +509,18 @@ class Gmanga : HttpSource() {
         private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
         private const val DATE_FILTER_PATTERN = "yyyy/MM/dd"
 
+        // filter IDs
         private const val FILTER_ID_ONE_SHOT = "oneshot"
-
         private const val FILTER_ID_START_DATE = "start"
         private const val FILTER_ID_END_DATE = "end"
-
         private const val FILTER_ID_MIN_CHAPTER_COUNT = "min"
         private const val FILTER_ID_MAX_CHAPTER_COUNT = "max"
+
+        // error messages
+        private const val ERROR_INVALID_START_DATE = "Invalid start date"
+        private const val ERROR_INVALID_END_DATE = "Invalid end date"
+        private const val ERROR_INVALID_MIN_CHAPTER_COUNT = "Invalid min chapter count"
+        private const val ERROR_INVALID_MAX_CHAPTER_COUNT = "Invalid max chapter count"
 
         @SuppressLint("SimpleDateFormat")
         private val DATE_FITLER_FORMAT = SimpleDateFormat(DATE_FILTER_PATTERN).apply {
@@ -462,5 +537,22 @@ class Gmanga : HttpSource() {
         }
 
         private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
+
+        // preferences
+        private const val PREF_CHAPTER_LISTING_SHOW_ALL = "gmanga_gmanga_chapter_listing_show_all"
+        private const val PREF_CHAPTER_LISTING_SHOW_POPULAR = "gmanga_chapter_listing_most_viewed"
+
+        private val PREF_CHAPTER_LISTING = StringPreference(
+            "gmanga_chapter_listing",
+            "Chapter Listing",
+            listOf(
+                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_POPULAR, "Pick most viewed scan"),
+                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_ALL, "Show all scans")
+            )
+        )
+
+        private val PREFERENCES = listOf(
+            PREF_CHAPTER_LISTING
+        )
     }
 }
