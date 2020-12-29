@@ -26,6 +26,7 @@ import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import okhttp3.Headers
 import java.lang.Exception
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -43,6 +44,10 @@ class Gmanga : HttpSource() {
     override val supportsLatest: Boolean = true
 
     private val gson = Gson()
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", USER_AGENT)
+    }
 
     override fun chapterListRequest(manga: SManga): Request {
         val mangaId = manga.url.substringAfterLast("/")
@@ -429,6 +434,8 @@ class Gmanga : HttpSource() {
     }
 
     companion object {
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
+
         private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
         private const val DATE_FILTER_PATTERN = "yyyy/MM/dd"
 
