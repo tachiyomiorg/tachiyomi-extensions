@@ -525,10 +525,10 @@ class Gmanga : ConfigurableSource, HttpSource() {
         private const val FILTER_ID_MAX_CHAPTER_COUNT = "max"
 
         // error messages
-        private const val ERROR_INVALID_START_DATE = "Invalid start date"
-        private const val ERROR_INVALID_END_DATE = "Invalid end date"
-        private const val ERROR_INVALID_MIN_CHAPTER_COUNT = "Invalid min chapter count"
-        private const val ERROR_INVALID_MAX_CHAPTER_COUNT = "Invalid max chapter count"
+        private const val ERROR_INVALID_START_DATE = "تاريخ بداية غير صالح"
+        private const val ERROR_INVALID_END_DATE = " تاريخ نهاية غير صالح"
+        private const val ERROR_INVALID_MIN_CHAPTER_COUNT = "الحد الأدنى لعدد الفصول غير صالح"
+        private const val ERROR_INVALID_MAX_CHAPTER_COUNT = "الحد الأقصى لعدد الفصول غير صالح"
 
         @SuppressLint("SimpleDateFormat")
         private val DATE_FITLER_FORMAT = SimpleDateFormat(DATE_FILTER_PATTERN).apply {
@@ -552,10 +552,10 @@ class Gmanga : ConfigurableSource, HttpSource() {
 
         private val PREF_CHAPTER_LISTING = StringPreference(
             "gmanga_chapter_listing",
-            "Chapter Listing",
+            "كيفية عرض الفصل بقائمة الفصول",
             listOf(
-                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_POPULAR, "Pick most viewed scan"),
-                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_ALL, "Show all scans")
+                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_POPULAR, "اختيار النسخة الأكثر مشاهدة"),
+                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_ALL, "عرض جميع النسخ")
             )
         )
 
