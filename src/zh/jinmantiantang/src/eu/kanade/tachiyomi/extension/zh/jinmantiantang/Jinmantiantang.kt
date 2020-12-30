@@ -117,6 +117,8 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
     override fun popularMangaSelector(): String {
         val baseSelector = "div.col-xs-6.col-sm-6.col-md-4.col-lg-3.list-col div.well.well-sm"
         val removedGenres = preferences.getString("BLOCK_GENRES_LIST", "")!!.substringBefore("//").trim()
+        // Extra selector is jquery-like selector, it uses regex to match element.text().
+        // If string after 標籤 contains any word of removedGenres, the element would be ignored.
         return if (removedGenres != "")
             baseSelector + ":not(:matches((?i).*標籤: .*(${removedGenres.split(' ').joinToString("|")}).*))"
         else
@@ -181,6 +183,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         determineChapterInfo(document)
         title = document.select("div.panel-heading").select("div.pull-left").first().text()
+        // keep thumbnail_url same as the one in popularMangaFromElement()
         thumbnail_url = document.select("img.lazy_img.img-responsive").attr("src").split("?")[0].replace(".jpg", "_3x4.jpg")
         author = selectAuthor(document)
         artist = author
