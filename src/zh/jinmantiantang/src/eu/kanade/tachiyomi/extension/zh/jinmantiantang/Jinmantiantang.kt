@@ -116,11 +116,11 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
     override fun popularMangaNextPageSelector(): String = "a.prevnext"
     override fun popularMangaSelector(): String {
         val baseSelector = "div.col-xs-6.col-sm-6.col-md-4.col-lg-3.list-col div.well.well-sm"
-        val removedGenres = preferences.getString("BLOCK_LIST", "")!!.substringBefore("//").trim()
-        if (removedGenres != "")
-            return baseSelector + ":not(:matches((?i).*標籤: .*(${removedGenres.split(' ').joinToString("|")}).*))"
+        val removedGenres = preferences.getString("BLOCK_GENRES_LIST", "")!!.substringBefore("//").trim()
+        return if (removedGenres != "")
+            baseSelector + ":not(:matches((?i).*標籤: .*(${removedGenres.split(' ').joinToString("|")}).*))"
         else
-            return baseSelector
+            baseSelector
     }
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("span.video-title").text()
@@ -418,12 +418,12 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         EditTextPreference(screen.context).apply {
-            key = "BLOCK_LIST"
+            key = "BLOCK_GENRES_LIST"
             title = BLOCK_PREF_TITLE
             setDefaultValue(BLOCK_PREF_DEFAULT)
             dialogTitle = BLOCK_PREF_DIALOGTITLE
             setOnPreferenceChangeListener { _, newValue ->
-                preferences.edit().putString("BLOCK_LIST", newValue as String).commit()
+                preferences.edit().putString("BLOCK_GENRES_LIST", newValue as String).commit()
             }
         }.let {
             screen.addPreference(it)
@@ -432,12 +432,12 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
     override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
         LegacyEditTextPreference(screen.context).apply {
-            key = "BLOCK_LIST"
+            key = "BLOCK_GENRES_LIST"
             title = BLOCK_PREF_TITLE
             setDefaultValue(BLOCK_PREF_DEFAULT)
             dialogTitle = BLOCK_PREF_DIALOGTITLE
             setOnPreferenceChangeListener { _, newValue ->
-                preferences.edit().putString("BLOCK_LIST", newValue as String).commit()
+                preferences.edit().putString("BLOCK_GENRES_LIST", newValue as String).commit()
             }
         }.let {
             screen.addPreference(it)
