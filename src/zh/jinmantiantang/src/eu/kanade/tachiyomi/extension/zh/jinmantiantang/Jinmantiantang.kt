@@ -1,11 +1,16 @@
 package eu.kanade.tachiyomi.extension.zh.jinmantiantang
 
+import android.app.Application
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
+import androidx.preference.EditTextPreference
+import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -22,13 +27,17 @@ import okhttp3.ResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
+import android.support.v7.preference.EditTextPreference as LegacyEditTextPreference
+import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
 @Nsfw
-class Jinmantiantang : ParsedHttpSource() {
+class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
     override val baseUrl: String = "https://18comic5.biz"
     override val lang: String = "zh"
@@ -104,7 +113,14 @@ class Jinmantiantang : ParsedHttpSource() {
     }
 
     override fun popularMangaNextPageSelector(): String? = "a.prevnext"
-    override fun popularMangaSelector(): String = "div.col-xs-6.col-sm-6.col-md-4.col-lg-3.list-col div.well.well-sm"
+    override fun popularMangaSelector(): String {
+        val baseSelector = "div.col-xs-6.col-sm-6.col-md-4.col-lg-3.list-col div.well.well-sm"
+        val removedGenres = preferences.getString("BLOCK_LIST", "")!!.substringBefore("//").trim()
+        if (removedGenres != "")
+            return baseSelector + ":not(:matches((?i).*標籤: .*(${removedGenres.split(' ').joinToString("|")}).*))"
+        else
+            return baseSelector
+    }
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("span.video-title").text()
         setUrlWithoutDomain(element.select("a").first().attr("href"))
@@ -388,5 +404,42 @@ class Jinmantiantang : ParsedHttpSource() {
     ) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
+    }
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val BLOCK_PREF_TITLE = "屏蔽词列表"
+    private val BLOCK_PREF_DEFAULT = "// 例如 \"YAOI cos 扶他 毛絨絨 獵奇 韩漫 韓漫\", " +
+        "关键词之间用空格分离, 大小写不敏感, \"//\"后的字符会被忽略"
+    private val BLOCK_PREF_DIALOGTITLE = "关键词列表"
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        EditTextPreference(screen.context).apply {
+            key = "BLOCK_LIST"
+            title = BLOCK_PREF_TITLE
+            setDefaultValue(BLOCK_PREF_DEFAULT)
+            dialogTitle = BLOCK_PREF_DIALOGTITLE
+            setOnPreferenceChangeListener { _, newValue ->
+                preferences.edit().putString("BLOCK_LIST", newValue as String).commit()
+            }
+        }.let {
+            screen.addPreference(it)
+        }
+    }
+
+    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
+        LegacyEditTextPreference(screen.context).apply {
+            key = "BLOCK_LIST"
+            title = BLOCK_PREF_TITLE
+            setDefaultValue(BLOCK_PREF_DEFAULT)
+            dialogTitle = BLOCK_PREF_DIALOGTITLE
+            setOnPreferenceChangeListener { _, newValue ->
+                preferences.edit().putString("BLOCK_LIST", newValue as String).commit()
+            }
+        }.let {
+            screen.addPreference(it)
+        }
     }
 }
