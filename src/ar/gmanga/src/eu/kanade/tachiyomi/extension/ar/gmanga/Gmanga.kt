@@ -1,26 +1,18 @@
 package eu.kanade.tachiyomi.extension.ar.gmanga
 
-import android.annotation.SuppressLint
-import android.app.Application
-import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import com.github.salomonbrys.kotson.addAll
-import com.github.salomonbrys.kotson.addProperty
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.nullString
 import com.google.gson.Gson
 import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.extension.ar.gmanga.GmangaPreferences.Companion.PREF_CHAPTER_LISTING
+import eu.kanade.tachiyomi.extension.ar.gmanga.GmangaPreferences.Companion.PREF_CHAPTER_LISTING_SHOW_POPULAR
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.Filter.TriState.Companion.STATE_EXCLUDE
-import eu.kanade.tachiyomi.source.model.Filter.TriState.Companion.STATE_INCLUDE
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -34,11 +26,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import java.lang.Exception
-import java.text.ParseException
-import java.text.SimpleDateFormat
 
 class Gmanga : ConfigurableSource, HttpSource() {
 
@@ -54,9 +41,7 @@ class Gmanga : ConfigurableSource, HttpSource() {
 
     private val gson = Gson()
 
-    private val preferences: SharedPreferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
+    private val preferences = GmangaPreferences(id)
 
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
@@ -67,6 +52,10 @@ class Gmanga : ConfigurableSource, HttpSource() {
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", USER_AGENT)
     }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) = preferences.setupPreferenceScreen(screen)
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) = preferences.setupPreferenceScreen(screen)
 
     override fun chapterListRequest(manga: SManga): Request {
         val mangaId = manga.url.substringAfterLast("/")
@@ -176,391 +165,17 @@ class Gmanga : ConfigurableSource, HttpSource() {
         return gson.fromJson(decryptedData)
     }
 
-    private fun buildSearchRequestBody(page: Int, query: String = "", filters: FilterList): RequestBody {
-        val filterList = if (filters.isEmpty()) getFilterList() else filters
-        val mangaTypeFilter = filterList.findInstance<MangaTypeFilter>()!!
-        val oneShotFilter = filterList.findInstance<OneShotFilter>()!!
-        val storyStatusFilter = filterList.findInstance<StoryStatusFilter>()!!
-        val translationStatusFilter = filterList.findInstance<TranslationStatusFilter>()!!
-        val chapterCountFilter = filterList.findInstance<ChapterCountFilter>()!!
-        val dateRangeFilter = filterList.findInstance<DateRangeFilter>()!!
-        val categoryFilter = filterList.findInstance<CategoryFilter>()!!
-
-        val body = JsonObject().apply {
-
-            oneShotFilter.state.first().let {
-                when {
-                    it.isIncluded() -> addProperty("oneshot", true)
-                    it.isExcluded() -> addProperty("oneshot", false)
-                    else -> addProperty("oneshot", JsonNull.INSTANCE)
-                }
-            }
-
-            addProperty("title", query)
-            addProperty("page", page)
-            addProperty(
-                "manga_types",
-                JsonObject().apply {
-
-                    addProperty(
-                        "include",
-                        JsonArray().apply {
-                            addAll(mangaTypeFilter.state.filter { it.isIncluded() }.map { it.id })
-                        }
-                    )
-
-                    addProperty(
-                        "exclude",
-                        JsonArray().apply {
-                            addAll(mangaTypeFilter.state.filter { it.isExcluded() }.map { it.id })
-                        }
-                    )
-                }
-            )
-            addProperty(
-                "story_status",
-                JsonObject().apply {
-
-                    addProperty(
-                        "include",
-                        JsonArray().apply {
-                            addAll(storyStatusFilter.state.filter { it.isIncluded() }.map { it.id })
-                        }
-                    )
-
-                    addProperty(
-                        "exclude",
-                        JsonArray().apply {
-                            addAll(storyStatusFilter.state.filter { it.isExcluded() }.map { it.id })
-                        }
-                    )
-                }
-            )
-            addProperty(
-                "translation_status",
-                JsonObject().apply {
-
-                    addProperty(
-                        "include",
-                        JsonArray().apply {
-                            addAll(translationStatusFilter.state.filter { it.isIncluded() }.map { it.id })
-                        }
-                    )
-
-                    addProperty(
-                        "exclude",
-                        JsonArray().apply {
-                            addAll(translationStatusFilter.state.filter { it.isExcluded() }.map { it.id })
-                        }
-                    )
-                }
-            )
-            addProperty(
-                "categories",
-                JsonObject().apply {
-
-                    addProperty(
-                        "include",
-                        JsonArray().apply {
-                            add(JsonNull.INSTANCE) // always included, maybe to avoid shifting index in the backend
-                            addAll(categoryFilter.state.filter { it.isIncluded() }.map { it.id })
-                        }
-                    )
-
-                    addProperty(
-                        "exclude",
-                        JsonArray().apply {
-                            addAll(categoryFilter.state.filter { it.isExcluded() }.map { it.id })
-                        }
-                    )
-                }
-            )
-            addProperty(
-                "chapters",
-                JsonObject().apply {
-
-                    addPropertyFromValidatingTextFilter(
-                        chapterCountFilter.state.first {
-                            it.id == FILTER_ID_MIN_CHAPTER_COUNT
-                        },
-                        "min",
-                        ERROR_INVALID_MIN_CHAPTER_COUNT,
-                        ""
-                    )
-
-                    addPropertyFromValidatingTextFilter(
-                        chapterCountFilter.state.first {
-                            it.id == FILTER_ID_MAX_CHAPTER_COUNT
-                        },
-                        "max",
-                        ERROR_INVALID_MAX_CHAPTER_COUNT,
-                        ""
-                    )
-                }
-            )
-            addProperty(
-                "dates",
-                JsonObject().apply {
-
-                    addPropertyFromValidatingTextFilter(
-                        dateRangeFilter.state.first {
-                            it.id == FILTER_ID_START_DATE
-                        },
-                        "start",
-                        ERROR_INVALID_START_DATE
-                    )
-
-                    addPropertyFromValidatingTextFilter(
-                        dateRangeFilter.state.first {
-                            it.id == FILTER_ID_END_DATE
-                        },
-                        "end",
-                        ERROR_INVALID_END_DATE
-                    )
-                }
-            )
-        }
-
-        return RequestBody.create(MEDIA_TYPE, body.toString())
-    }
-
-    private fun JsonObject.addPropertyFromValidatingTextFilter(filter: ValidatingTextFilter, property: String, invalidErrorMessage: String, default: String? = null) {
-        filter.let {
-            when {
-                it.state == "" -> if (default == null) {
-                    addProperty(property, JsonNull.INSTANCE)
-                } else addProperty(property, default)
-                it.isValid() -> addProperty(property, it.state)
-                else -> throw Exception(invalidErrorMessage)
-            }
-        }
-    }
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val body = buildSearchRequestBody(page, query, filters)
-        return POST("$baseUrl/api/mangas/search", headers, body)
-    }
-
-    override fun getFilterList() = FilterList(
-        MangaTypeFilter(),
-        OneShotFilter(),
-        StoryStatusFilter(),
-        TranslationStatusFilter(),
-        ChapterCountFilter(),
-        DateRangeFilter(),
-        CategoryFilter()
-    )
-
-    private class MangaTypeFilter() : Filter.Group<TagFilter>(
-        "الأصل",
-        listOf(
-            TagFilter("1", "يابانية", STATE_INCLUDE),
-            TagFilter("2", "كورية", STATE_INCLUDE),
-            TagFilter("3", "صينية", STATE_INCLUDE),
-            TagFilter("4", "عربية", STATE_INCLUDE),
-            TagFilter("5", "كوميك", STATE_INCLUDE),
-            TagFilter("6", "هواة", STATE_INCLUDE),
-            TagFilter("7", "إندونيسية", STATE_INCLUDE),
-            TagFilter("8", "روسية", STATE_INCLUDE),
-        )
-    )
-
-    private class OneShotFilter() : Filter.Group<TagFilter>(
-        "ونشوت؟",
-        listOf(
-            TagFilter(FILTER_ID_ONE_SHOT, "نعم", STATE_EXCLUDE)
-        )
-    )
-
-    private class StoryStatusFilter() : Filter.Group<TagFilter>(
-        "حالة القصة",
-        listOf(
-            TagFilter("2", "مستمرة"),
-            TagFilter("3", "منتهية")
-        )
-    )
-
-    private class TranslationStatusFilter() : Filter.Group<TagFilter>(
-        "حالة الترجمة",
-        listOf(
-            TagFilter("0", "منتهية"),
-            TagFilter("1", "مستمرة"),
-            TagFilter("2", "متوقفة"),
-            TagFilter("3", "غير مترجمة", STATE_EXCLUDE),
-        )
-    )
-
-    private class ChapterCountFilter() : Filter.Group<IntFilter>(
-        "عدد الفصول",
-        listOf(
-            IntFilter(FILTER_ID_MIN_CHAPTER_COUNT, "على الأقل"),
-            IntFilter(FILTER_ID_MAX_CHAPTER_COUNT, "على الأكثر")
-        )
-    )
-
-    private class DateRangeFilter() : Filter.Group<DateFilter>(
-        "تاريخ النشر",
-        listOf(
-            DateFilter(FILTER_ID_START_DATE, "تاريخ النشر"),
-            DateFilter(FILTER_ID_END_DATE, "تاريخ الإنتهاء")
-        )
-    )
-
-    private class CategoryFilter() : Filter.Group<TagFilter>(
-        "التصنيفات",
-        listOf(
-            TagFilter("1", "إثارة"),
-            TagFilter("2", "أكشن"),
-            TagFilter("3", "الحياة المدرسية"),
-            TagFilter("4", "الحياة اليومية"),
-            TagFilter("5", "آليات"),
-            TagFilter("6", "تاريخي"),
-            TagFilter("7", "تراجيدي"),
-            TagFilter("8", "جوسيه"),
-            TagFilter("9", "حربي"),
-            TagFilter("10", "خيال"),
-            TagFilter("11", "خيال علمي"),
-            TagFilter("12", "دراما"),
-            TagFilter("13", "رعب"),
-            TagFilter("14", "رومانسي"),
-            TagFilter("15", "رياضة"),
-            TagFilter("16", "ساموراي"),
-            TagFilter("17", "سحر"),
-            TagFilter("18", "سينين"),
-            TagFilter("19", "شوجو"),
-            TagFilter("20", "شونين"),
-            TagFilter("21", "عنف"),
-            TagFilter("22", "غموض"),
-            TagFilter("23", "فنون قتال"),
-            TagFilter("24", "قوى خارقة"),
-            TagFilter("25", "كوميدي"),
-            TagFilter("26", "لعبة"),
-            TagFilter("27", "مسابقة"),
-            TagFilter("28", "مصاصي الدماء"),
-            TagFilter("29", "مغامرات"),
-            TagFilter("30", "موسيقى"),
-            TagFilter("31", "نفسي"),
-            TagFilter("32", "نينجا"),
-            TagFilter("33", "وحوش"),
-            TagFilter("34", "حريم"),
-            TagFilter("35", "راشد"),
-            TagFilter("38", "ويب-تون"),
-            TagFilter("39", "زمنكاني")
-        )
-    )
-
-    private class TagFilter(val id: String, name: String, state: Int = STATE_IGNORE) : Filter.TriState(name, state)
-
-    private abstract class ValidatingTextFilter(name: String) : Filter.Text(name) {
-        abstract fun isValid(): Boolean
-    }
-
-    private class DateFilter(val id: String, name: String) : ValidatingTextFilter("($DATE_FILTER_PATTERN) $name)") {
-        override fun isValid(): Boolean = DATE_FITLER_FORMAT.isValid(this.state)
-    }
-
-    private class IntFilter(val id: String, name: String) : ValidatingTextFilter(name) {
-        override fun isValid(): Boolean = state.toIntOrNull() != null
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-
-        PREFERENCES.forEach {
-            val preference = ListPreference(screen.context).apply {
-                key = it.key
-                title = it.title
-                entries = it.entries()
-                entryValues = it.entryValues()
-                summary = "%s"
-            }
-
-            if (!preferences.contains(it.key))
-                preferences.edit().putString(it.key, it.default().key).apply()
-
-            screen.addPreference(preference)
+        return GmangaFilters.buildSearchPayload(page, query, filters).let {
+            val body = RequestBody.create(MEDIA_TYPE, it.toString())
+            POST("$baseUrl/api/mangas/search", headers, body)
         }
     }
 
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-
-        PREFERENCES.forEach {
-            val preference = androidx.preference.ListPreference(screen.context).apply {
-                key = it.key
-                title = it.title
-                entries = it.entries()
-                entryValues = it.entryValues()
-                summary = "%s"
-            }
-
-            if (!preferences.contains(it.key))
-                preferences.edit().putString(it.key, it.default().key).apply()
-
-            screen.addPreference(preference)
-        }
-    }
-
-    private fun SharedPreferences.getString(pref: StringPreference): String {
-        return getString(pref.key, pref.default().key)!!
-    }
-
-    private class StringPreferenceOption(val key: String, val title: String)
-
-    private class StringPreference(val key: String, val title: String, private val options: List<StringPreferenceOption>, private val defaultOptionIndex: Int = 0) {
-        fun entries(): Array<String> = options.map { it.title }.toTypedArray()
-        fun entryValues(): Array<String> = options.map { it.key }.toTypedArray()
-        fun default(): StringPreferenceOption = options[defaultOptionIndex]
-    }
+    override fun getFilterList() = GmangaFilters.getFilterList()
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
-
         private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
-        private const val DATE_FILTER_PATTERN = "yyyy/MM/dd"
-
-        // filter IDs
-        private const val FILTER_ID_ONE_SHOT = "oneshot"
-        private const val FILTER_ID_START_DATE = "start"
-        private const val FILTER_ID_END_DATE = "end"
-        private const val FILTER_ID_MIN_CHAPTER_COUNT = "min"
-        private const val FILTER_ID_MAX_CHAPTER_COUNT = "max"
-
-        // error messages
-        private const val ERROR_INVALID_START_DATE = "تاريخ بداية غير صالح"
-        private const val ERROR_INVALID_END_DATE = " تاريخ نهاية غير صالح"
-        private const val ERROR_INVALID_MIN_CHAPTER_COUNT = "الحد الأدنى لعدد الفصول غير صالح"
-        private const val ERROR_INVALID_MAX_CHAPTER_COUNT = "الحد الأقصى لعدد الفصول غير صالح"
-
-        @SuppressLint("SimpleDateFormat")
-        private val DATE_FITLER_FORMAT = SimpleDateFormat(DATE_FILTER_PATTERN).apply {
-            isLenient = false
-        }
-
-        private fun SimpleDateFormat.isValid(date: String): Boolean {
-            return try {
-                this.parse(date)
-                true
-            } catch (e: ParseException) {
-                false
-            }
-        }
-
-        private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
-
-        // preferences
-        private const val PREF_CHAPTER_LISTING_SHOW_ALL = "gmanga_gmanga_chapter_listing_show_all"
-        private const val PREF_CHAPTER_LISTING_SHOW_POPULAR = "gmanga_chapter_listing_most_viewed"
-
-        private val PREF_CHAPTER_LISTING = StringPreference(
-            "gmanga_chapter_listing",
-            "كيفية عرض الفصل بقائمة الفصول",
-            listOf(
-                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_POPULAR, "اختيار النسخة الأكثر مشاهدة"),
-                StringPreferenceOption(PREF_CHAPTER_LISTING_SHOW_ALL, "عرض جميع النسخ")
-            )
-        )
-
-        private val PREFERENCES = listOf(
-            PREF_CHAPTER_LISTING
-        )
     }
 }
