@@ -33,6 +33,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.floor
 import android.support.v7.preference.EditTextPreference as LegacyEditTextPreference
 import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
@@ -47,7 +48,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
     // 220980
     // 算法 html页面 1800 行左右
     // 图片开始分割的ID编号
-    val scramble_id = 220980
+    private val scrambleId = 220980
 
     // 对只有一章的漫画进行判断条件
     private var chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
@@ -58,7 +59,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
             val url = chain.request().url().toString()
             val response = chain.proceed(chain.request())
             if (!url.contains("media/photos", ignoreCase = true)) return response // 对非漫画图片连接直接放行
-            if (url.substring(url.indexOf("photos/") + 7, url.lastIndexOf("/")).toInt() < scramble_id) return response // 对在漫画章节ID为220980之前的图片未进行图片分割,直接放行
+            if (url.substring(url.indexOf("photos/") + 7, url.lastIndexOf("/")).toInt() < scrambleId) return response // 对在漫画章节ID为220980之前的图片未进行图片分割,直接放行
 // 章节ID:220980(包含)之后的漫画(2020.10.27之后)图片进行了分割倒序处理
             val res = response.body()!!.byteStream().use {
                 decodeImage(it)
@@ -79,20 +80,20 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         // 水平分割10个小图
         val rows = 10
         // 未除尽像素
-        var remainder = (height % rows)
+        val remainder = (height % rows)
         // 创建新的图片对象
         val resultBitmap = Bitmap.createBitmap(input.width, input.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(resultBitmap)
         // 分割图片
         for (x in 0 until rows) {
             // 分割算法(详情见html源码页的方法"function scramble_image(img)")
-            var copyH = Math.floor(height / rows.toDouble()).toInt()
+            var copyH = floor(height / rows.toDouble()).toInt()
             var py = copyH * (x)
-            var y = height - (copyH * (x + 1)) - remainder
+            val y = height - (copyH * (x + 1)) - remainder
             if (x == 0) {
-                copyH = copyH + remainder
+                copyH += remainder
             } else {
-                py = py + remainder
+                py += remainder
             }
             // 要裁剪的区域
             val crop = Rect(0, y, width, y + copyH)
@@ -112,7 +113,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         return GET("$baseUrl/albums?o=mv&page=$page", headers)
     }
 
-    override fun popularMangaNextPageSelector(): String? = "a.prevnext"
+    override fun popularMangaNextPageSelector(): String = "a.prevnext"
     override fun popularMangaSelector(): String {
         val baseSelector = "div.col-xs-6.col-sm-6.col-md-4.col-lg-3.list-col div.well.well-sm"
         val removedGenres = preferences.getString("BLOCK_LIST", "")!!.substringBefore("//").trim()
@@ -133,7 +134,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         return GET("$baseUrl/albums?o=mr&page=$page", headers)
     }
 
-    override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector(): String = popularMangaNextPageSelector()
     override fun latestUpdatesSelector(): String = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
@@ -169,7 +170,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         return GET(url.toString(), headers)
     }
 
-    override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector(): String = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
