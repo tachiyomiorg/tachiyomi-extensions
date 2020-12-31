@@ -26,7 +26,7 @@ open class BatoTo(
 ) : ParsedHttpSource() {
 
     override val name: String = "Bato.to"
-    override val baseUrl: String  = "https://bato.to"
+    override val baseUrl: String = "https://bato.to"
 
 
     override val supportsLatest = true
@@ -66,90 +66,92 @@ open class BatoTo(
 
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var author: String? = null
-        val url = HttpUrl.parse("$baseUrl/browse")!!.newBuilder()
-        url.addQueryParameter("page", page.toString())
-        url.addQueryParameter("langs", siteLang)
-        filters.forEach { filter ->
-            when (filter) {
-                is AuthorFilter -> {
-                    author = filter.state
-                }
-                is StyleFilter -> {
-                    val styleToInclude = mutableListOf<String>()
-                    filter.state.forEach { content ->
-                        if (content.state) {
-                            styleToInclude.add(content.name)
+        return if (query.isNotBlank()) {
+            GET("$baseUrl/search?word=$query&page=$page")
+        } else {
+            var author: String? = null
+            val url = HttpUrl.parse("$baseUrl/browse")!!.newBuilder()
+            url.addQueryParameter("page", page.toString())
+            url.addQueryParameter("langs", siteLang)
+            filters.forEach { filter ->
+                when (filter) {
+                    is AuthorFilter -> {
+                        author = filter.state
+                    }
+                    is StyleFilter -> {
+                        val styleToInclude = mutableListOf<String>()
+                        filter.state.forEach { content ->
+                            if (content.state) {
+                                styleToInclude.add(content.name)
+                            }
+                        }
+                        if (styleToInclude.isNotEmpty()) {
+                            url.addQueryParameter(
+                                "styles",
+                                styleToInclude
+                                    .joinToString(",")
+                            )
                         }
                     }
-                    if (styleToInclude.isNotEmpty()) {
-                        url.addQueryParameter(
-                            "styles",
-                            styleToInclude
-                                .joinToString(",")
-                        )
-                    }
-                }
-                is DemographicFilter -> {
-                    val demographicToInclude = mutableListOf<String>()
-                    filter.state.forEach { content ->
-                        if (content.state) {
-                            demographicToInclude.add(content.name)
+                    is DemographicFilter -> {
+                        val demographicToInclude = mutableListOf<String>()
+                        filter.state.forEach { content ->
+                            if (content.state) {
+                                demographicToInclude.add(content.name)
+                            }
+                        }
+                        if (demographicToInclude.isNotEmpty()) {
+                            url.addQueryParameter(
+                                "demogs",
+                                demographicToInclude
+                                    .joinToString(",")
+                            )
                         }
                     }
-                    if (demographicToInclude.isNotEmpty()) {
-                        url.addQueryParameter(
-                            "demogs",
-                            demographicToInclude
-                                .joinToString(",")
-                        )
-                    }
-                }
-                is StatusFilter -> {
-                    val status = when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "1"
-                        Filter.TriState.STATE_EXCLUDE -> "0"
-                        else -> ""
-                    }
-                    if (status.isNotEmpty()) {
-                        url.addQueryParameter("status", status)
-                    }
-                }
-                is GenreFilter -> {
-                    val genreToInclude = mutableListOf<String>()
-                    filter.state.forEach { content ->
-                        if (content.state) {
-                            genreToInclude.add(content.name)
+                    is StatusFilter -> {
+                        val status = when (filter.state) {
+                            Filter.TriState.STATE_INCLUDE -> "1"
+                            Filter.TriState.STATE_EXCLUDE -> "0"
+                            else -> ""
+                        }
+                        if (status.isNotEmpty()) {
+                            url.addQueryParameter("status", status)
                         }
                     }
-                    if (genreToInclude.isNotEmpty()) {
-                        url.addQueryParameter(
-                            "genres",
-                            genreToInclude
-                                .joinToString(",")
-                        )
+                    is GenreFilter -> {
+                        val genreToInclude = mutableListOf<String>()
+                        filter.state.forEach { content ->
+                            if (content.state) {
+                                genreToInclude.add(content.name)
+                            }
+                        }
+                        if (genreToInclude.isNotEmpty()) {
+                            url.addQueryParameter(
+                                "genres",
+                                genreToInclude
+                                    .joinToString(",")
+                            )
+                        }
                     }
-                }
-                is StarFilter -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("stars", filter.toUriPart())
+                    is StarFilter -> {
+                        if (filter.state != 0) {
+                            url.addQueryParameter("stars", filter.toUriPart())
+                        }
                     }
-                }
-                is ChapterFilter -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("chapters", filter.toUriPart())
+                    is ChapterFilter -> {
+                        if (filter.state != 0) {
+                            url.addQueryParameter("chapters", filter.toUriPart())
+                        }
                     }
-                }
-                is SortBy -> {
-                    if (filter.state != 0) {
-                        url.addQueryParameter("sort", filter.toUriPart())
+                    is SortBy -> {
+                        if (filter.state != 0) {
+                            url.addQueryParameter("sort", filter.toUriPart())
+                        }
                     }
                 }
             }
+            GET(url.build().toString(), headers)
         }
-        return if (query.isNotBlank() || author!!.isNotBlank()) {
-            GET("$baseUrl/search?q=$query&a=$author")
-        } else GET(url.build().toString(), headers)
     }
 
     override fun searchMangaSelector() = latestUpdatesSelector()
@@ -157,15 +159,6 @@ open class BatoTo(
     override fun searchMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
     override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
-
-    private val searchMangaTitles = HashSet<String>()
-
-    override fun searchMangaParse(response: Response): MangasPage {
-        val mp = super.searchMangaParse(response)
-        val manga = mp.mangas.distinctBy { it.title.toLowerCase() }.filterNot { searchMangaTitles.contains(it.title.toLowerCase()) }
-        searchMangaTitles.addAll(manga.map { it.title.toLowerCase() })
-        return MangasPage(manga, mp.hasNextPage)
-    }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
         if (manga.url.startsWith("http")) {
