@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Emerald'
-    pkgNameSuffix = 'all.emerald'
-    extClass = '.EmeraldFactory'
-    extVersionCode = 7
+    extName = 'Bato.to'
+    pkgNameSuffix = 'all.batoto'
+    extClass = '.BatoToFactory'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 

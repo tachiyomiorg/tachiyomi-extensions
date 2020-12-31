@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.emerald
+package eu.kanade.tachiyomi.extension.all.batoto
 
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
@@ -20,12 +20,14 @@ import org.jsoup.nodes.Element
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
-open class Emerald(
-    override val name: String,
-    override val baseUrl: String,
+open class BatoTo(
     override val lang: String,
-    private val Mtlang: String
+    private val siteLang: String
 ) : ParsedHttpSource() {
+
+    override val name: String = "Bato.to"
+    override val baseUrl: String  = "https://bato.to"
+
 
     override val supportsLatest = true
 
@@ -35,7 +37,7 @@ open class Emerald(
         .build()
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/browse?langs=$Mtlang&sort=update&page=$page")
+        return GET("$baseUrl/browse?langs=$siteLang&sort=update&page=$page")
     }
 
     override fun latestUpdatesSelector() = "div#series-list div.col"
@@ -53,7 +55,7 @@ open class Emerald(
     override fun latestUpdatesNextPageSelector() = "div#mainer .pagination .page-item:not(.disabled) a.page-link:contains(»)"
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/browse?langs=$Mtlang&sort=views_w&page=$page")
+        return GET("$baseUrl/browse?langs=$siteLang&sort=views_w&page=$page")
     }
 
     override fun popularMangaSelector() = latestUpdatesSelector()
@@ -62,11 +64,12 @@ open class Emerald(
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         var author: String? = null
         val url = HttpUrl.parse("$baseUrl/browse")!!.newBuilder()
         url.addQueryParameter("page", page.toString())
-        url.addQueryParameter("langs", Mtlang)
+        url.addQueryParameter("langs", siteLang)
         filters.forEach { filter ->
             when (filter) {
                 is AuthorFilter -> {
