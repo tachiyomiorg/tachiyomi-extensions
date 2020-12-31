@@ -34,6 +34,7 @@ private val languages = listOf(
     Pair("ml", "ml"),
     Pair("mn", "mn"),
     Pair("ms", "ms"),
+    Pair("my", "my"),
     Pair("nl", "nl"),
     Pair("no", "no"),
     Pair("pl", "pl"),
