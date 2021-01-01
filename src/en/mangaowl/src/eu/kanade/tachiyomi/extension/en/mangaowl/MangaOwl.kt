@@ -55,7 +55,7 @@ class MangaOwl : ParsedHttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/lastest/$page", headers)
+        return GET("$baseUrl/new_release/$page", headers)
     }
 
     override fun latestUpdatesSelector() = popularMangaSelector()
