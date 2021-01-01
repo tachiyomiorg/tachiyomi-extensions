@@ -5,7 +5,7 @@ ext {
     extName = 'FMReader (multiple aggregators)'
     pkgNameSuffix = 'all.fmreader'
     extClass = '.FMReaderFactory'
-    extVersionCode = 22
+    extVersionCode = 23
     libVersion = '1.2'
     containsNsfw = true
 }

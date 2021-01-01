@@ -69,7 +69,7 @@ class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
         .build()
 }
 
-class RawLH : FMReader("RawLH", "https://loveheaven.net", "ja") {
+class RawLH : FMReader("RawLH", "https://lovehug.net", "ja") {
     override fun popularMangaNextPageSelector() = "div.col-md-8 button"
     override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
     // Referer needs to be chapter URL
