@@ -21,7 +21,7 @@ File(rootDir, "src").eachDir { dir ->
         project(name).projectDir = File("src/${dir.name}/${subdir.name}")
     }
 }
-    // Loads generated extensions from multisrc
+// Loads generated extensions from multisrc
 File(rootDir, "generated-src").eachDir { dir ->
     dir.eachDir { subdir ->
         val name = ":${dir.name}-${subdir.name}"
