@@ -41,7 +41,7 @@ interface ThemeSourceGenerator {
 
     companion object {
         private fun pkgNameSuffix(source: ThemeSourceData, separator: String): String {
-            return if (source is SingleLangThemeSourceData)
+            return if (source is ThemeSourceData.SingleLang)
                 listOf(source.lang.substringBefore("-"), source.pkgName).joinToString(separator)
             else
                 listOf("all", source.pkgName).joinToString(separator)
@@ -133,7 +133,7 @@ interface ThemeSourceGenerator {
 
             classText += "import eu.kanade.tachiyomi.multisrc.$themePkg.$themeClass\n"
 
-            if (source is MultiLangThemeSourceData) {
+            if (source is ThemeSourceData.MultiLang) {
                 classText += "import eu.kanade.tachiyomi.source.Source\n" +
                     "import eu.kanade.tachiyomi.source.SourceFactory\n"
             }
@@ -143,13 +143,13 @@ interface ThemeSourceGenerator {
 
             if (source.isNsfw)
                 classText += "@Nsfw\n"
-            if (source is SingleLangThemeSourceData) {
+            if (source is ThemeSourceData.SingleLang) {
                 classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
             } else {
                 classText +=
                     "class ${source.className} : SourceFactory { \n" +
                         "    override fun createSources(): List<Source> = listOf(\n"
-                for (lang in (source as MultiLangThemeSourceData).lang)
+                for (lang in (source as ThemeSourceData.MultiLang).lang)
                     classText += "        $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
                 classText +=
                     "    )\n" +
@@ -159,7 +159,7 @@ interface ThemeSourceGenerator {
             classFile.writeText(classText)
         }
 
-        abstract class ThemeSourceData {
+        sealed class ThemeSourceData {
             abstract val name: String
             abstract val baseUrl: String
             abstract val isNsfw: Boolean
@@ -172,27 +172,27 @@ interface ThemeSourceGenerator {
              * When a new source is added with overrides, overrideVersionCode is still the default 0
              */
             abstract val overrideVersionCode: Int
+
+            data class SingleLang(
+                override val name: String,
+                override val baseUrl: String,
+                val lang: String,
+                override val isNsfw: Boolean = false,
+                override val className: String = name.replace(" ", ""),
+                override val pkgName: String = className.toLowerCase(Locale.ENGLISH),
+                override val overrideVersionCode: Int = 0,
+            ) : ThemeSourceData()
+
+            data class MultiLang(
+                override val name: String,
+                override val baseUrl: String,
+                val lang: List<String>,
+                override val isNsfw: Boolean = false,
+                override val className: String = name.replace(" ", "") + "Factory",
+                override val pkgName: String = className.substringBefore("Factory").toLowerCase(Locale.ENGLISH),
+                override val overrideVersionCode: Int = 0,
+            ) : ThemeSourceData()
         }
-
-        data class SingleLangThemeSourceData(
-            override val name: String,
-            override val baseUrl: String,
-            val lang: String,
-            override val isNsfw: Boolean = false,
-            override val className: String = name.replace(" ", ""),
-            override val pkgName: String = className.toLowerCase(Locale.ENGLISH),
-            override val overrideVersionCode: Int = 0,
-        ) : ThemeSourceData()
-
-        data class MultiLangThemeSourceData(
-            override val name: String,
-            override val baseUrl: String,
-            val lang: List<String>,
-            override val isNsfw: Boolean = false,
-            override val className: String = name.replace(" ", "") + "Factory",
-            override val pkgName: String = className.substringBefore("Factory").toLowerCase(Locale.ENGLISH),
-            override val overrideVersionCode: Int = 0,
-        ) : ThemeSourceData()
     }
 }
 

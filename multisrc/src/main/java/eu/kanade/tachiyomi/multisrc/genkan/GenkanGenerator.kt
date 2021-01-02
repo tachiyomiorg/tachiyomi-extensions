@@ -1,8 +1,7 @@
 package eu.kanade.tachiyomi.multisrc.genkan
 
 import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator
-import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.SingleLangThemeSourceData
-import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.MultiLangThemeSourceData
+import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.ThemeSourceData
 
 class GenkanGenerator : ThemeSourceGenerator {
 
@@ -13,14 +12,14 @@ class GenkanGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
-        MultiLangThemeSourceData("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
+        ThemeSourceData.MultiLang("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
             className = "LeviatanScansFactory", pkgName = "leviatanscans", overrideVersionCode = 1),
-        SingleLangThemeSourceData("Hunlight Scans", "https://hunlight-scans.info", "en"),
-        SingleLangThemeSourceData("ZeroScans", "https://zeroscans.com", "en"),
-        SingleLangThemeSourceData("The Nonames Scans", "https://the-nonames.com", "en"),
-        SingleLangThemeSourceData("Edelgarde Scans", "https://edelgardescans.com", "en"),
-        SingleLangThemeSourceData("Method Scans", "https://methodscans.com", "en"),
-        SingleLangThemeSourceData("Sleeping Knight Scans", "https://skscans.com", "en")
+        ThemeSourceGenerator.Companion.ThemeSourceData.SingleLang("Hunlight Scans", "https://hunlight-scans.info", "en"),
+        ThemeSourceData.SingleLang("ZeroScans", "https://zeroscans.com", "en"),
+        ThemeSourceData.SingleLang("The Nonames Scans", "https://the-nonames.com", "en"),
+        ThemeSourceData.SingleLang("Edelgarde Scans", "https://edelgardescans.com", "en"),
+        ThemeSourceData.SingleLang("Method Scans", "https://methodscans.com", "en"),
+        ThemeSourceData.SingleLang("Sleeping Knight Scans", "https://skscans.com", "en")
     )
 
     companion object {
