@@ -57,7 +57,6 @@ repositories {
 }
 
 dependencies {
-    implementation project(":annotations")
     implementation project(":core")
 
     // multi-source library

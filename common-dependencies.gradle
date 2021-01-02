@@ -12,5 +12,7 @@ dependencies {
     compileOnly 'org.jsoup:jsoup:1.10.2'
     compileOnly 'com.google.code.gson:gson:2.8.2'
     compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+
+    implementation project(":annotations")
     compileOnly project(':duktape-stub')
 }

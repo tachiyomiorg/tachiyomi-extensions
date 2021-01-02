@@ -17,12 +17,7 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    compileOnly(project(":annotations"))
-
-    compileOnly("com.github.salomonbrys.kotson:kotson:2.5.0")
-    compileOnly(project(":duktape-stub"))
-}
+// dependencies
 apply("$rootDir/common-dependencies.gradle")
 
 
