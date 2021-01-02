@@ -64,6 +64,13 @@ apply from: "${'$'}rootDir/common.gradle"
             )
         }
 
+        private fun writeAndroidManifest(androidManifestFile: File) {
+            androidManifestFile.writeText(
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                    "<manifest package=\"eu.kanade.tachiyomi.extension\" />\n"
+            )
+        }
+
         /**
          * Clears directory recursively
          */
@@ -91,6 +98,7 @@ apply from: "${'$'}rootDir/common.gradle"
                 purgeDirectory(file)
 
                 writeGradle(gradleFile, source, baseVersionCode)
+                writeAndroidManifest(androidManifestFile)
 
                 srcPath.mkdirs()
                 val srcOverride = File("$srcOverridePath/${source.pkgName}")
