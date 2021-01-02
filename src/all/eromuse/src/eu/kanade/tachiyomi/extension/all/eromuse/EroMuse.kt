@@ -45,10 +45,12 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
     }
     protected lateinit var currentSortingMode: String
 
+    private val albums = getAlbumList()
+
     // might need to override for new sources
     private val nextPageSelector = ".pagination span.current + span a"
     protected open val albumSelector = "a.c-tile:has(img):not(:has(.members-only))"
-    protected open val topLevelPathSegments = listOf("album", "Various-Authors")
+    protected open val topLevelPathSegment = "comics/album"
     private val pageQueryRegex = Regex("""page=\d+""")
 
     private fun Document.nextPageOrNull(): String? {
@@ -82,12 +84,21 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
         }
     }
 
+    protected fun getAlbumType(url: String, default: Int = AUTHOR): Int {
+        return albums.filter { it.third != SEARCH_RESULTS_OR_BASE && url.contains(it.second, true) }
+            .getOrElse(0) { Triple(null, null, default) }.third
+    }
+
     protected fun parseManga(document: Document): MangasPage {
-        fun internalParse(document: Document): List<SManga> {
+        fun internalParse(internalDocument: Document): List<SManga> {
             val authorDocument = if (stackItem.pageType == VARIOUS_AUTHORS) {
+                internalDocument.select(albumSelector)?.let {
+                    elements ->
+                    elements.reversed().map { pageStack.addLast(StackItem(it.attr("abs:href"), AUTHOR)) }
+                }
                 client.newCall(stackRequest()).execute().asJsoup()
             } else {
-                document
+                internalDocument
             }
             authorDocument.addNextPageToStack()
             return authorDocument.select(albumSelector).map { mangaFromElement(it) }
@@ -96,7 +107,10 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
         if (stackItem.pageType in listOf(VARIOUS_AUTHORS, SEARCH_RESULTS_OR_BASE)) document.addNextPageToStack()
         val mangas = when (stackItem.pageType) {
             VARIOUS_AUTHORS -> {
-                document.select(albumSelector)?.let { elements -> elements.reversed().map { pageStack.addLast(StackItem(it.attr("abs:href"), AUTHOR)) } }
+                document.select(albumSelector)?.let {
+                    elements ->
+                    elements.reversed().map { pageStack.addLast(StackItem(it.attr("abs:href"), AUTHOR)) }
+                }
                 internalParse(document)
             }
             AUTHOR -> {
@@ -107,18 +121,38 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
                 document.select(albumSelector)
                     .map { element ->
                         val url = element.attr("abs:href")
-                        when (HttpUrl.parse(url)!!.pathSegments().takeLastWhile { it !in topLevelPathSegments }.count()) {
-                            // manga album
-                            2 -> {
-                                searchMangas.add(mangaFromElement(element))
+                        val depth = url.removePrefix("$baseUrl/$topLevelPathSegment/").split("/").count()
+
+                        when (getAlbumType(url)) {
+                            VARIOUS_AUTHORS -> {
+                                when (depth) {
+                                    1 -> { // eg. /comics/album/Fakku-Comics
+                                        pageStack.addLast(StackItem(url, VARIOUS_AUTHORS))
+                                        if (searchMangas.isEmpty()) searchMangas += internalParse(client.newCall(stackRequest()).execute().asJsoup()) else null
+                                    }
+                                    2 -> { // eg. /comics/album/Fakku-Comics/Bosshi
+                                        pageStack.addLast(StackItem(url, AUTHOR))
+                                        if (searchMangas.isEmpty()) searchMangas += internalParse(client.newCall(stackRequest()).execute().asJsoup()) else null
+                                    }
+                                    else -> {
+                                        // eg. 3 -> /comics/album/Fakku-Comics/Bosshi/After-Summer-After
+                                        // eg. 5 -> /comics/album/Various-Authors/Firollian/Reward/Reward-22/ElfAlfie
+                                        // eg. 6 -> /comics/album/Various-Authors/Firollian/Area69/Area69-no_1/SamusAran/001_Dialogue
+                                        searchMangas.add(mangaFromElement(element))
+                                    }
+                                }
                             }
-                            // author album
-                            1 -> {
-                                pageStack.addLast(StackItem(url, AUTHOR))
-                                if (searchMangas.isEmpty()) searchMangas += internalParse(client.newCall(stackRequest()).execute().asJsoup()) else null
+                            AUTHOR -> {
+                                if (depth == 1) { // eg. /comics/album/ShadBase-Comics
+                                    pageStack.addLast(StackItem(url, AUTHOR))
+                                    if (searchMangas.isEmpty()) searchMangas += internalParse(client.newCall(stackRequest()).execute().asJsoup()) else null
+                                } else {
+                                    // eg. 2 -> /comics/album/ShadBase-Comics/RickMorty
+                                    // eg. 3 -> /comics/album/Incase-Comics/Comic/Alfie
+                                    searchMangas.add(mangaFromElement(element))
+                                }
                             }
-                            // 0 doesn't need to be parsed; >= 3 probably doesn't need to be parsed but in some instances maybe we could do something
-                            else -> null
+                            else -> null // SEARCH_RESULTS_OR_BASE shouldn't be a case
                         }
                     }
                 searchMangas
@@ -202,8 +236,20 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
     override fun mangaDetailsParse(response: Response): SManga {
         return SManga.create().apply {
             with(response.asJsoup()) {
+                setUrlWithoutDomain(response.request().url().toString())
                 thumbnail_url = select("$albumSelector img").firstOrNull()?.imgAttr()
-                author = select("div.top-menu-breadcrumb li:nth-last-child(2)").text()
+                author = when (getAlbumType(url)) {
+                    AUTHOR -> {
+                        // eg. https://comics.8muses.com/comics/album/ShadBase-Comics/RickMorty
+                        // eg. https://comics.8muses.com/comics/album/Incase-Comics/Comic/Alfie
+                        select("div.top-menu-breadcrumb li:nth-child(2)").text()
+                    }
+                    VARIOUS_AUTHORS -> {
+                        // eg. https://comics.8muses.com/comics/album/Various-Authors/NLT-Media/A-Sunday-Schooling
+                        select("div.top-menu-breadcrumb li:nth-child(3)").text()
+                    }
+                    else -> null
+                }
             }
         }
     }
@@ -225,6 +271,7 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
                         }
                     )
                 }
+
             if (isFirstPage) {
                 // Self
                 document.select(pageThumbnailSelector).firstOrNull()?.let {
@@ -236,6 +283,7 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
                     )
                 }
             }
+
             document.nextPageOrNull()?.let { url -> parseChapters(client.newCall(GET(url, headers)).execute().asJsoup(), false, chapters) }
             return chapters
         }
@@ -246,12 +294,43 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
     // Pages
 
     protected open val pageThumbnailPathSegment = "/th/"
-    protected open val pageFullsizePathSegment = "/fl/"
+    protected open val pageFullSizePathSegment = "/fl/"
 
     override fun pageListParse(response: Response): List<Page> {
-        return response.asJsoup().select(pageThumbnailSelector).mapIndexed { i, img ->
-            Page(i, "", img.imgAttr().replace(pageThumbnailPathSegment, pageFullsizePathSegment))
+        fun parsePages(
+            document: Document,
+            nestedChapterDocuments: ArrayDeque<Document> = ArrayDeque(),
+            pages: ArrayList<Page> = ArrayList()
+        ): List<Page> {
+
+            // Nested chapters aka folders
+            document.select(linkedChapterSelector)
+                .mapNotNull {
+                    nestedChapterDocuments.add(
+                        client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup()
+                    )
+                }
+
+            var lastPage: Int = pages.size
+            pages.addAll(
+                document.select(pageThumbnailSelector).mapIndexed { i, img ->
+                    Page(lastPage + i, "", img.imgAttr().replace(pageThumbnailPathSegment, pageFullSizePathSegment))
+                }
+            )
+
+            document.nextPageOrNull()?.let {
+                url ->
+                pages.addAll(parsePages(client.newCall(GET(url, headers)).execute().asJsoup(), nestedChapterDocuments, pages))
+            }
+
+            while (!nestedChapterDocuments.isEmpty()) {
+                pages.addAll(parsePages(nestedChapterDocuments.removeFirst()))
+            }
+
+            return pages
         }
+
+        return parsePages(response.asJsoup())
     }
 
     override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
@@ -272,15 +351,16 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
         data class AlbumFilterData(val pathSegments: String, val pageType: Int)
     }
     protected open fun getAlbumList() = arrayOf(
-        Triple("Various Authors", "album/Various-Authors", VARIOUS_AUTHORS),
         Triple("All Authors", "", SEARCH_RESULTS_OR_BASE),
+        Triple("Various Authors", "album/Various-Authors", VARIOUS_AUTHORS),
+        Triple("Fakku Comics", "album/Fakku-Comics", VARIOUS_AUTHORS),
+        Triple("Hentai and Manga English", "album/Hentai-and-Manga-English", VARIOUS_AUTHORS),
+        Triple("Fake Celebrities Sex Pictures", "album/Fake-Celebrities-Sex-Pictures", AUTHOR),
         Triple("MilfToon Comics", "album/MilfToon-Comics", AUTHOR),
-        Triple("Fakku Comics", "album/Fakku-Comics", AUTHOR),
         Triple("BE Story Club Comics", "album/BE-Story-Club-Comics", AUTHOR),
         Triple("ShadBase Comics", "album/ShadBase-Comics", AUTHOR),
         Triple("ZZZ Comics", "album/ZZZ-Comics", AUTHOR),
         Triple("PalComix Comics", "album/PalComix-Comics", AUTHOR),
-        Triple("Hentai and Manga English", "album/Hentai-and-Manga-English", AUTHOR),
         Triple("MCC Comics", "album/MCC-Comics", AUTHOR),
         Triple("Expansionfan Comics", "album/Expansionfan-Comics", AUTHOR),
         Triple("JAB Comics", "album/JAB-Comics", AUTHOR),
@@ -297,7 +377,6 @@ open class EroMuse(override val name: String, override val baseUrl: String) : Ht
         Triple("Melkormancin.com Comics", "album/Melkormancin_com-Comics", AUTHOR),
         Triple("Seiren.com.br Comics", "album/Seiren_com_br-Comics", AUTHOR),
         Triple("Tracy Scops Comics", "album/Tracy-Scops-Comics", AUTHOR),
-        Triple("Fake Celebrities Sex Pictures", "album/Fake-Celebrities-Sex-Pictures", AUTHOR),
         Triple("Fred Perry Comics", "album/Fred-Perry-Comics", AUTHOR),
         Triple("Witchking00 Comics", "album/Witchking00-Comics", AUTHOR),
         Triple("8muses Comics", "album/8muses-Comics", AUTHOR),
