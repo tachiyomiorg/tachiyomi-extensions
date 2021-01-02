@@ -48,27 +48,19 @@ interface ThemeSourceGenerator {
         }
 
         private fun writeGradle(gradle: File, source: ThemeSourceData, baseVersionCode: Int) {
-            var text = "apply plugin: 'com.android.application'\n" +
-                "apply plugin: 'kotlin-android'\n" +
-                "\n" +
-                "ext {\n" +
-                "    extName = '${source.name}'\n" +
-                "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
-                "    extClass = '.${source.className}'\n" +
-                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + multisrcLibraryVersion}\n" +
-                "    libVersion = '1.2'\n"
-            if (source.isNsfw)
-                text += "    containsNsfw = true\n"
-            text += "}\n" +
-                "\n" +
-                "apply from: \"\$rootDir/common.gradle\"\n"
-            gradle.writeText(text)
-        }
+            gradle.writeText("""apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
-        private fun writeAndroidManifest(androidManifestFile: File) {
-            androidManifestFile.writeText(
-                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                    "<manifest package=\"eu.kanade.tachiyomi.extension\" />\n"
+ext {
+    extName = '${source.name}'
+    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'
+    extClass = '.${source.className}'
+    extVersionCode = ${baseVersionCode + source.overrideVersionCode + multisrcLibraryVersion}
+    libVersion = '1.2'
+${if (source.isNsfw) "    containsNsfw = true\n" else ""}}
+
+apply from: "${'$'}rootDir/common.gradle"
+"""
             )
         }
 
@@ -99,7 +91,6 @@ interface ThemeSourceGenerator {
                 purgeDirectory(file)
 
                 writeGradle(gradleFile, source, baseVersionCode)
-                writeAndroidManifest(androidManifestFile)
 
                 srcPath.mkdirs()
                 val srcOverride = File("$srcOverridePath/${source.pkgName}")
@@ -122,41 +113,33 @@ interface ThemeSourceGenerator {
         }
 
         private fun writeSourceClass(classPath: File, source: ThemeSourceData, themePkg: String, themeClass: String) {
-            val classFile = File("$classPath/${source.className}.kt")
+            fun factoryClassText(): String {
+                val sourceListString =
+                    (source as ThemeSourceData.MultiLang).lang.map {
+                        "        $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"$it\"),"
+                    }.joinToString("\n")
 
-            var classText =
-                "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
-                    "\n"
-
-            if (source.isNsfw)
-                classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
-
-            classText += "import eu.kanade.tachiyomi.multisrc.$themePkg.$themeClass\n"
-
-            if (source is ThemeSourceData.MultiLang) {
-                classText += "import eu.kanade.tachiyomi.source.Source\n" +
-                    "import eu.kanade.tachiyomi.source.SourceFactory\n"
+                return """class ${source.className} : SourceFactory {
+    override fun createSources(): List<Source> = listOf(
+$sourceListString
+    )
+}"""
             }
-
-
-            classText += "\n"
-
-            if (source.isNsfw)
-                classText += "@Nsfw\n"
-            if (source is ThemeSourceData.SingleLang) {
-                classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
-            } else {
-                classText +=
-                    "class ${source.className} : SourceFactory { \n" +
-                        "    override fun createSources(): List<Source> = listOf(\n"
-                for (lang in (source as ThemeSourceData.MultiLang).lang)
-                    classText += "        $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
-                classText +=
-                    "    )\n" +
-                        "}"
-            }
-
-            classFile.writeText(classText)
+            File("$classPath/${source.className}.kt").writeText(
+                """package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}
+${if (source.isNsfw) "\nimport eu.kanade.tachiyomi.annotations.Nsfw" else ""}
+import eu.kanade.tachiyomi.multisrc.$themePkg.$themeClass
+${if (source is ThemeSourceData.MultiLang)
+                    """import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.SourceFactory
+                    """
+                else ""}${if (source.isNsfw) "\n@Nsfw" else ""}
+${if (source is ThemeSourceData.SingleLang) {
+                    "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
+                } else
+                    factoryClassText()
+                }
+""")
         }
 
         sealed class ThemeSourceData {
@@ -195,6 +178,7 @@ interface ThemeSourceGenerator {
         }
     }
 }
+
 
 /**
  * This variable should be increased when the multisrc library changes in a way that prompts global extension upgrade
