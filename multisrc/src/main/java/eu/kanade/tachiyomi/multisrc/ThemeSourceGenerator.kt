@@ -158,9 +158,12 @@ ${if (source is ThemeSourceData.SingleLang) {
             abstract val pkgName: String
 
             /**
-             * overrideVersionCode defaults to 0, if a source changes their override code or
-             * a previous existing source suddenly needs overrides, overrideVersionCode should be increased.
+             * overrideVersionCode defaults to 0, if a source changes their source override code or
+             * a previous existing source suddenly needs source code overrides, overrideVersionCode
+             * should be increased.
              * When a new source is added with overrides, overrideVersionCode is still the default 0
+             *
+             * Note: source code overrides are located in "multisrc/overrides/src/<themeName>/<sourceName>"
              */
             abstract val overrideVersionCode: Int
 
