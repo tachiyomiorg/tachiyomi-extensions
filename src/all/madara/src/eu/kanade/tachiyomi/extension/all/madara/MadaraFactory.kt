@@ -88,7 +88,6 @@ class MadaraFactory : SourceFactory {
         KlanKomik(),
         KlikManga(),
         KMangaIn(),
-        KnightNoScanlation(),
         Kombatch(),
         KomikGo(),
         LilyManga(),
@@ -165,6 +164,7 @@ class MadaraFactory : SourceFactory {
         MixedManga(),
         MysticalMerries(),
         NazarickScans(),
+        NeatManga(),
         NekoBreaker(),
         NekoScan(),
         NeoxScanlator(),
@@ -206,6 +206,7 @@ class MadaraFactory : SourceFactory {
         TurkceManga(),
         TwilightScans(),
         Wakascan(),
+        WarQueenScan(),
         WebNovel(),
         WebToonily(),
         WebtoonXYZ(),
@@ -220,8 +221,13 @@ class MadaraFactory : SourceFactory {
 
         // removed because scanlator site and they requested
         // AhStudios(),
+        // KnightNoScanlation(),
     )
 }
+
+class NeatManga : Madara("NeatManga", "https://neatmanga.com", "en", SimpleDateFormat("dd MMM yyyy", Locale.US))
+
+class WarQueenScan : Madara("War Queen Scan", "https://wqscan.com", "pt-BR", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
 class StageComics : Madara("StageComics", "https://stagecomics.com", "pt-BR", SimpleDateFormat("MMMM dd, yyyy", Locale("pt"))) {
     override fun chapterFromElement(element: Element): SChapter {
@@ -1463,8 +1469,6 @@ class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
 }
 
 class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
-
-class KnightNoScanlation : Madara("Knight no Scanlation", "https://knightnoscanlation.com", "es")
 
 class MangaTeca : Madara(
     "MangaTeca",
