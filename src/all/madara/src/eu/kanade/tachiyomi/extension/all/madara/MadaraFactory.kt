@@ -85,7 +85,6 @@ class MadaraFactory : SourceFactory {
         JustForFun(),
         KingzManga(),
         KisekiManga(),
-        KlanKomik(),
         KlikManga(),
         KMangaIn(),
         KnightNoScanlation(),
@@ -1293,8 +1292,6 @@ class Mangareceh : Madara("Mangareceh", "https://mangareceh.id", "id")
 class ComicKiba : Madara("ComicKiba", "https://comickiba.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item img:nth-child(1), div.reading-content p > img, .read-container .reading-content img"
 }
-
-class KlanKomik : Madara("KlanKomik", "https://klankomik.com", "id", SimpleDateFormat("d MMM yyyy", Locale.US))
 
 class ToonPoint : Madara("ToonPoint", "https://toonpoint.com", "en") {
     override val userAgentRandomizer = ""

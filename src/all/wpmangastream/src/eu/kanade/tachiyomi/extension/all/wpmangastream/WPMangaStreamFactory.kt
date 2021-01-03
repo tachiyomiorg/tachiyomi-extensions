@@ -60,9 +60,12 @@ class WPMangaStreamFactory : SourceFactory {
         MasterKomik(),
         KomikRu(),
         MangaShiro(),
-        ChiOtaku()
+        ChiOtaku(),
+        KlanKomik()
     )
 }
+
+class KlanKomik : WPMangaStream("KlanKomik", "https://klankomik.com", "id")
 
 class ChiOtaku : WPMangaStream("ChiOtaku", "https://chiotaku.com", "id")
 
