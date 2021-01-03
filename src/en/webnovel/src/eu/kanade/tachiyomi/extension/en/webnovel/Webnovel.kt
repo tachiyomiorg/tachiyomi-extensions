@@ -87,7 +87,8 @@ class Webnovel : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.attr("href"))
-        name = element.attr("title")
+        name = if (element.select("svg").hasAttr("class")) { "\uD83D\uDD12 " } else { "" } +
+            element.attr("title")
         date_upload = parseChapterDate(element.select(".oh small").text())
     }
 
