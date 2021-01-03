@@ -98,7 +98,7 @@ class MangaShip : ParsedHttpSource() {
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.reading-content img").mapIndexed { i, img ->
+        return document.select("div.reading-content-manga img").mapIndexed { i, img ->
             Page(i, "", img.dataImageAsUrl("src"))
         }
     }
