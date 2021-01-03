@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
-  pull_request:
+    workflow_dispatch
 
 jobs:
   check_wrapper:
@@ -20,8 +18,6 @@ jobs:
 
   build:
     name: Build extension repo
-    needs: check_wrapper
-    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-latest
 
     steps:
@@ -58,7 +54,7 @@ jobs:
           configuration-cache-enabled: true
 
       - name: Sign APKs
-        if: github.event_name == 'push' && github.repository == 'tachiyomiorg/tachiyomi-extensions'
+
         run: |
           cd master
           ./.github/scripts/sign-apks.sh \
@@ -68,20 +64,17 @@ jobs:
             ${{ secrets.KEY_PASSWORD }}
 
       - name: Create repo artifacts
-        if: github.event_name == 'push' && github.repository == 'tachiyomiorg/tachiyomi-extensions'
         run: |
           cd master
           ./.github/scripts/create-repo.sh
 
       - name: Checkout repo branch
-        if: github.event_name == 'push' && github.repository == 'tachiyomiorg/tachiyomi-extensions'
         uses: actions/checkout@v2
         with:
           ref: repo
           path: repo
 
       - name: Deploy repo
-        if: github.event_name == 'push' && github.repository == 'tachiyomiorg/tachiyomi-extensions'
         run: |
           cd repo
           ../master/.github/scripts/commit-repo.sh
