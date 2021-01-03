@@ -1,8 +1,7 @@
 name: CI
 
 on:
-  push:
-    workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   check_wrapper:
