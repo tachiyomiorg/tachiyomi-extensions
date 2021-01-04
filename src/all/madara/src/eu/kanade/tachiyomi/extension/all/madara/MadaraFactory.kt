@@ -101,12 +101,12 @@ class MadaraFactory : SourceFactory {
         MangaBaz(),
         MangaBob(),
         MangaClash(),
+        MangaCrimson(),
         MangaCultivator(),
         MangaDods(),
         MangaGecesi(),
         MangaHentai(),
         MangaKiss(),
-        MangaKitsu(),
         MangaKomi(),
         MangaLandArabic(),
         Mangalek(),
@@ -273,7 +273,7 @@ class Aloalivn : Madara("Aloalivn", "https://aloalivn.com", "en") {
 
 class MangaSco : Madara("MangaSco", "https://mangasco.com", "en")
 
-class MangaKitsu : Madara("Manga Kitsu", "https://mangakitsu.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale("tr")))
+class MangaCrimson : Madara("Manga Crimson", "https://mangacrimson.com", "tr", SimpleDateFormat("dd MMMM yyyy", Locale("tr")))
 
 class PrimeManga : Madara("Prime Manga", "https://primemanga.com", "en")
 
