@@ -887,7 +887,6 @@ class GoldenManga : Madara("موقع لترجمة المانجا", "https://gold
 class Mangalek : Madara("مانجا ليك", "https://mangalek.com", "ar", SimpleDateFormat("MMMM dd, yyyy", Locale("ar")))
 
 class AstralLibrary : Madara("Astral Library", "https://www.astrallibrary.net", "en", SimpleDateFormat("d MMM", Locale.US)) {
-    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga-tag/manga/?m_orderby=views&page=$page", headers)
     }
