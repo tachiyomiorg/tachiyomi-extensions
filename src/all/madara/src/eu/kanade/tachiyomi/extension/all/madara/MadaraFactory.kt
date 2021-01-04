@@ -244,7 +244,10 @@ class SpookyScanlations : Madara("Spooky Scanlations", "https://spookyscanlation
 
 class RandomTranslations : Madara("Random Translations", "https://randomtranslations.com", "en", SimpleDateFormat("dd/MM/yyyy", Locale.US))
 
-class Atikrost : Madara("Atikrost", "https://atikrost.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr")))
+class Atikrost : Madara("Atikrost", "https://atikrost.com", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr"))) {
+    override val chapterUrlSelector = "a:not(:has(img))"
+    override val chapterDatesNewSelector = "img:not(.thumb)"
+}
 
 class ManhuaFast : Madara("ManhuaFast", "https://manhuafast.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
