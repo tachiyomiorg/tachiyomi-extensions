@@ -26,8 +26,9 @@ class Onemanhua : ParsedHttpSource() {
     override val name = "COCO漫画 (OH漫画)"
     override val baseUrl = "https://www.cocomanhua.com/"
 
-    private var decryptKey1 = "fw12558899ertyui"
-    private var decryptKey2 = "fw125gjdi9ertyui"
+    // Prepend with new decrypt keys (latest keys should appear at the start of the array)
+    private var decryptKey1Arr = arrayOf("fw122587mkertyui", "fw12558899ertyui")
+    private var decryptKey2Arr = arrayOf("fw125gjdi9ertyui")
 
     // Common
     private var commonSelector = "li.fed-list-item"
@@ -160,7 +161,7 @@ class Onemanhua : ParsedHttpSource() {
         // 1. get C_DATA from HTML
         val encodedData = getEncodedMangaData(document)
         // 2. decrypt C_DATA
-        val decryptedData = decodeAndDecrypt(encodedData, decryptKey1)
+        val decryptedData = decodeAndDecrypt("encodedData", encodedData, decryptKey1Arr)
 
         // 3. Extract values from C_DATA to formulate page urls
         val imgType = regexExtractStringValue(
@@ -215,7 +216,7 @@ class Onemanhua : ParsedHttpSource() {
             "enc_code2:\"(.+?)\"",
             "Unable to match for enc_code2"
         )
-        val decryptedRelativePath = decodeAndDecrypt(encodedRelativePath, decryptKey2)
+        val decryptedRelativePath = decodeAndDecrypt("encodedRelativePath", encodedRelativePath, decryptKey2Arr)
 
         // Decode and decrypt total pages
         val encodedTotalPages = regexExtractStringValue(
@@ -223,7 +224,7 @@ class Onemanhua : ParsedHttpSource() {
             "enc_code1:\"(.+?)\"",
             "Unable to match for enc_code1"
         )
-        val decryptedTotalPages = Integer.parseInt(decodeAndDecrypt(encodedTotalPages, decryptKey1))
+        val decryptedTotalPages = Integer.parseInt(decodeAndDecrypt("encodedTotalPages", encodedTotalPages, decryptKey1Arr))
 
         return mutableListOf<Page>().apply {
             for (i in startImg..decryptedTotalPages) {
@@ -250,9 +251,19 @@ class Onemanhua : ParsedHttpSource() {
         throw Error("Unable to match for C_DATA")
     }
 
-    private fun decodeAndDecrypt(value: String, key: String): String {
+    private fun decodeAndDecrypt(decodeName: String, value: String, keyArr: Array<String>): String {
         val decodedValue = String(Base64.decode(value, Base64.NO_WRAP))
-        return decryptAES(decodedValue, key)
+        for (key in keyArr) {
+            try {
+                return decryptAES(decodedValue, key)
+            } catch (ex: Exception) {
+                if (ex.toString() != "Decryption failed") {
+                    throw ex
+                }
+            }
+        }
+
+        throw Exception("Decryption failed ($decodeName exhausted keys)")
     }
 
     @SuppressLint("GetInstance")
