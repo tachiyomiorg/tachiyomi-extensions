@@ -402,6 +402,8 @@ abstract class Madara(
 
     open val chapterUrlSuffix = "?style=list"
 
+    open val chapterDatesNewSelector = "img"
+
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
@@ -414,7 +416,7 @@ abstract class Madara(
             }
 
             // Dates can be part of a "new" graphic or plain text
-            chapter.date_upload = select("img").firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
+            chapter.date_upload = select(chapterDatesNewSelector).firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
                 ?: parseChapterDate(select("span.chapter-release-date i").firstOrNull()?.text())
         }
 
