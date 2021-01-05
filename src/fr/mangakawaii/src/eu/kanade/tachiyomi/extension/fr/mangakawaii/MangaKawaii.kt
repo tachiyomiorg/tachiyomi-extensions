@@ -37,7 +37,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun searchMangaNextPageSelector() = "no selector"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterMangaList?page=$page&sortBy=views&asc=false", headersBuilder().add("X-Requested-With", "XMLHttpRequest").build())
+    override fun popularMangaRequest(page: Int) = GET(baseUrl, headers)
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -49,9 +49,9 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(element.select("a").attr("abs:href"))
-        manga.title = element.select("h3").text().trim()
-        manga.thumbnail_url = element.select("a").attr("abs:data-background-image")
+        manga.setUrlWithoutDomain(element.select("a").attr("href").substringBeforeLast("/"))
+        manga.title = element.select("div.hot-manga__item-caption").select("div.hot-manga__item-name").text().trim()
+        manga.thumbnail_url = element.select("a").attr("style").substringAfter("('").substringBeforeLast("'")
         return manga
     }
 
