@@ -114,7 +114,7 @@ open class Mangahub : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val chapInfo = document.select("reader").attr("data-reader-store").replace("&quot;", "\"").replace("\\/", "/")
+        val chapInfo = document.select("reader").attr("data-store").replace("&quot;", "\"").replace("\\/", "/")
         val chapter = jsonParser.parse(chapInfo).asJsonObject
         val scans = chapter["scans"].asJsonArray
 
