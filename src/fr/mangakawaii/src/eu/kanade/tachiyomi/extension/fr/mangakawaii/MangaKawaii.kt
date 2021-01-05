@@ -37,7 +37,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun searchMangaNextPageSelector() = "no selector"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/liste-manga/filterMangaList?page=$page&sortBy=views&asc=false", headersBuilder().add("X-Requested-With", "XMLHttpRequest").build())
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/filterMangaList?page=$page&sortBy=views&asc=false", headersBuilder().add("X-Requested-With", "XMLHttpRequest").build())
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -56,7 +56,7 @@ class MangaKawaii : ParsedHttpSource() {
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select(" a").text().trim()
+        title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
         thumbnail_url = element.select("img").attr("data-src")
     }
@@ -85,7 +85,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         manga.thumbnail_url = document.select("div.manga-view__header-image").select("img").attr("abs:src")
-        manga.description = document.select("div.info-desc__content").text()
+        manga.description = document.select("dd.text-justify.text-break").text()
         manga.author = document.select("a[href*=author]").text()
         manga.artist = document.select("a[href*=artist]").text()
         val glist = document.select("a[href*=category]").map { it.text() }
