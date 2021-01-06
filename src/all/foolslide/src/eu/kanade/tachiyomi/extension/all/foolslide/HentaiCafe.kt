@@ -63,7 +63,9 @@ class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga
     // Example: https://hentai.cafe/aiya-youngest-daughters-circumstances/
     override fun chapterListParse(response: Response) = listOf(
         SChapter.create().apply {
-            setUrlWithoutDomain(response.asJsoup().select("[title=Read]").attr("href"))
+            // Some URLs wrongly end with "<br />\n" and need to be removed
+            // Example: https://hentai.cafe/hc.fyi/12106
+            setUrlWithoutDomain(response.asJsoup().select("[title=Read]").attr("href").replace("<br />\\s*".toRegex(), ""))
             name = "Chapter"
             chapter_number = 1f
         }

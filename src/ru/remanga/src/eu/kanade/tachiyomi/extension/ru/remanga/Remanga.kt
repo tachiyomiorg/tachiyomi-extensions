@@ -70,7 +70,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     private var token: String = ""
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi")
+        add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
         add("Referer", baseUrl)
     }
 
@@ -333,7 +333,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun combineImage(pages: List<String>): String {
         val refererHeaders = Headers.Builder().apply {
-            add("User-Agent", "Tachiyomi")
+            add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
             add("Referer", "https://img.remanga.org")
         }.build()
         val s = client.newCall(GET(pages[0], refererHeaders)).execute().body()!!.bytes()
@@ -358,7 +358,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val refererHeaders = Headers.Builder().apply {
-            add("User-Agent", "Tachiyomi")
+            add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
             add("Referer", "https://img.remanga.org")
         }.build()
         return GET(page.imageUrl!!, refererHeaders)

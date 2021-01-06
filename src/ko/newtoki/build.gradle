@@ -2,11 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'NewToki / ManaToki(ManaMoa)'
+    extName = 'NewToki / ManaToki'
     pkgNameSuffix = 'ko.newtoki'
     extClass = '.NewTokiFactory'
-    extVersionCode = 18
+    extVersionCode = 19
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

@@ -402,6 +402,8 @@ abstract class Madara(
 
     open val chapterUrlSuffix = "?style=list"
 
+    open val chapterDatesNewSelector = "img"
+
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
@@ -414,7 +416,7 @@ abstract class Madara(
             }
 
             // Dates can be part of a "new" graphic or plain text
-            chapter.date_upload = select("img").firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
+            chapter.date_upload = select(chapterDatesNewSelector).firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
                 ?: parseChapterDate(select("span.chapter-release-date i").firstOrNull()?.text())
         }
 
@@ -484,9 +486,9 @@ abstract class Madara(
         val cal = Calendar.getInstance()
 
         return when {
-            WordSet("hari", "gün", "jour", "día", "dia", "day").anyWordIn(date) -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
-            WordSet("jam", "saat", "heure", "hora", "hour").anyWordIn(date) -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
-            WordSet("menit", "dakika", "min", "minute", "minuto").anyWordIn(date) -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
+            WordSet("يوم", "hari", "gün", "jour", "día", "dia", "day").anyWordIn(date) -> cal.apply { add(Calendar.DAY_OF_MONTH, -number) }.timeInMillis
+            WordSet("ساعات", "jam", "saat", "heure", "hora", "hour").anyWordIn(date) -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
+            WordSet("دقيقة", "menit", "dakika", "min", "minute", "minuto").anyWordIn(date) -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
             WordSet("detik", "segundo", "second").anyWordIn(date) -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
             else -> 0
         }

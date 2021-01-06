@@ -5,7 +5,7 @@ ext {
     extName = 'EroMuse (8muses and Erofus)'
     pkgNameSuffix = 'all.eromuse'
     extClass = '.EroMuseFactory'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
     containsNsfw = true
 }

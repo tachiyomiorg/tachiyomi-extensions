@@ -7,7 +7,8 @@ import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.extensions.BuildConfig
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -40,6 +41,9 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override val lang: String = "ko"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
+    protected val rateLimitedClient: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addNetworkInterceptor(RateLimitInterceptor(2, 5))
+        .build()
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
 
@@ -101,11 +105,13 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         // only exists on chapter with proper manga detail page.
         val fullListButton = document.select(".comic-navbar .toon-nav a").last()
 
-        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기") ?: false) { // Check this page is detail page
+        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기")
+                ?: false) { // Check this page is detail page
             val details = mangaDetailsParse(document)
             details.url = urlPath
             listOf(details)
-        } else if (fullListButton?.text()?.contains("전체목록") ?: false) { // Check this page is chapter page
+        } else if (fullListButton?.text()?.contains("전체목록")
+                ?: false) { // Check this page is chapter page
             val url = fullListButton.attr("abs:href")
             val details = mangaDetailsParse(client.newCall(GET(url)).execute())
             details.url = getUrlPath(url)
@@ -172,11 +178,28 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             if (name.contains("번외") || name.contains("특별편")) return -2f
             val regex = Regex("([0-9]+)(?:[-.]([0-9]+))?(?:화)")
             val (ch_primal, ch_second) = regex.find(name)!!.destructured
-            return (ch_primal + if (ch_second.isBlank()) "" else ".$ch_second").toFloatOrNull() ?: -1f
+            return (ch_primal + if (ch_second.isBlank()) "" else ".$ch_second").toFloatOrNull()
+                ?: -1f
         } catch (e: Exception) {
             e.printStackTrace()
             return -1f
         }
+    }
+
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return rateLimitedClient.newCall(mangaDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return rateLimitedClient.newCall(chapterListRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                chapterListParse(response)
+            }
     }
 
     @SuppressLint("SimpleDateFormat")
@@ -209,8 +232,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     private val htmlDataRegex = Regex("""html_data\+='([^']+)'""")
 
     override fun pageListParse(document: Document): List<Page> {
-        val script = document.select("script:containsData(html_data)").firstOrNull()?.data() ?: throw Exception("data script not found")
-        val loadScript = document.select("script:containsData(data_attribute)").firstOrNull()?.data() ?: throw Exception("load script not found")
+        val script = document.select("script:containsData(html_data)").firstOrNull()?.data()
+            ?: throw Exception("data script not found")
+        val loadScript = document.select("script:containsData(data_attribute)").firstOrNull()?.data()
+            ?: throw Exception("load script not found")
         val dataAttr = "abs:data-" + loadScript.substringAfter("data_attribute: '").substringBefore("',")
 
         return htmlDataRegex.findAll(script).map { it.groupValues[1] }
@@ -218,7 +243,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             .flatMap { it.split(".") }
             .joinToString("") { it.toIntOrNull(16)?.toChar()?.toString() ?: "" }
             .let { Jsoup.parse(it) }
-            .select("img[src=/img/loading-image.gif]")
+            .select("img[src=/img/loading-image.gif], .view-img > img[itemprop]")
             .mapIndexed { i, img -> Page(i, "", if (img.hasAttr(dataAttr)) img.attr(dataAttr) else img.attr("abs:content")) }
     }
 
@@ -275,9 +300,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val latestWithDetailPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, newValue as Boolean).commit()
+                    // Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         if (name == "ManaToki") {
             screen.addPreference(latestExperimentPref)
+            screen.addPreference(latestWithDetailPref)
         }
     }
 
@@ -319,9 +362,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val latestWithDetailPref = CheckBoxPreference(screen.context).apply {
+            key = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            title = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
+            summary = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, newValue as Boolean).commit()
+                    // Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         if (name == "ManaToki") {
             screen.addPreference(latestExperimentPref)
+            screen.addPreference(latestWithDetailPref)
         }
     }
 
@@ -335,17 +396,27 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
 
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
     protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
+    protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
 
     companion object {
+        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
+
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
         private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "For temporary uses. Update extension will erase this setting."
-        private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
 
         // Setting: Experimental Latest Fetcher
         private const val EXPERIMENTAL_LATEST_PREF_TITLE = "Enable Latest (Experimental)"
         private const val EXPERIMENTAL_LATEST_PREF = "fetchLatestExperiment"
-        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates, Also requires LOTS OF requests (70 per page)"
+        private const val EXPERIMENTAL_LATEST_PREF_SUMMARY = "Fetch Latest Manga using Latest Chapters. May has duplicates and May DB corruption on certain Tachiyomi builds"
+
+        // Setting: Experimental Latest Fetcher With Full Details (Optional)
+        private const val EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE = "Fetch Latest with detail (Optional)"
+        private const val EXPERIMENTAL_LATEST_WITH_DETAIL_PREF = "fetchLatestWithDetail"
+        private const val EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY =
+            "Parse latest manga details with detail pages. This will reduce DB corruption on certain Tachiyomi builds.\n" +
+                "But makes chance of IP Ban, Also makes bunch of requests, For prevent IP ban, rate limit is set. so may slow,\n" +
+                "Still, It's experiment. Required to enable `Enable Latest (Experimental).`"
 
         const val PREFIX_ID_SEARCH = "id:"
     }

@@ -12,7 +12,7 @@ android {
 
     sourceSets {
         main {
-            manifest.srcFile "$rootDir/src/AndroidManifest.xml"
+            manifest.srcFile "AndroidManifest.xml"
             java.srcDirs = ['src']
             res.srcDirs = ['res']
         }
@@ -58,7 +58,7 @@ repositories {
 
 dependencies {
     implementation project(":annotations")
-    implementation project(":defaultRes")
+    implementation project(":core")
 
     // Lib 1.2, but using specific commit so we don't need to bump up the version
     compileOnly "com.github.tachiyomiorg:extensions-lib:a596412"

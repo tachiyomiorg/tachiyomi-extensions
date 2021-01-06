@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -18,18 +19,26 @@ import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class Scantrad : ParsedHttpSource() {
 
     override val name = "Scantrad"
 
-    override val baseUrl = "https://scantrad.fr"
+    override val baseUrl = "https://scantrad.net"
 
     override val lang = "fr"
 
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    protected open val userAgentRandomizer = " ${Random.nextInt().absoluteValue}"
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36$userAgentRandomizer")
+    }
 
     // Popular
 
@@ -201,4 +210,5 @@ class Scantrad : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
+
 }

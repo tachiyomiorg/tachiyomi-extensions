@@ -122,7 +122,7 @@ class NaniScans : HttpSource() {
         return chaptersList
     }
 
-    override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/api/titles/${chapter.url.substring(0, 36)}/chapters/${chapter.url.substring(37, 73)}")
+    override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/api/chapters/${chapter.url.substring(37, 73)}")
 
     override fun pageListParse(response: Response): List<Page> {
         val jsonObject = JSONObject(response.body()!!.string())

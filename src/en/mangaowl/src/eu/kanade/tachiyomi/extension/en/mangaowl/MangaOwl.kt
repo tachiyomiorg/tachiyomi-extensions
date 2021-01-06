@@ -67,7 +67,7 @@ class MangaOwl : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/$page?search=$query", headers)
+        return GET("$baseUrl/search/$page?search=$query&search_field=110&sort=4&completed=2", headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()

@@ -37,6 +37,7 @@ The simplest extension structure looks like this:
 ```console
 $ tree src/<lang>/<mysourcename>/
 src/<lang>/<mysourcename>/
+├── AndroidManifest.xml
 ├── build.gradle
 ├── res
 │   ├── mipmap-hdpi
@@ -59,8 +60,11 @@ src/<lang>/<mysourcename>/
                         └── <mysourcename>
                             └── <MySourceName>.kt
 
-13 directories, 8 files
+13 directories, 9 files
 ```
+
+#### AndroidManifest.xml
+A minimal [Android manifest file](https://developer.android.com/guide/topics/manifest/manifest-intro) is needed for Android to recognize a extension when it's compiled into an APK file. You can also add intent filters inside this file (see [URL intent filter](#url-intent-filter) for more information).
 
 #### build.gradle
 Make sure that your new extension's `build.gradle` file follows the following structure:
@@ -190,15 +194,15 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
     - If search functionality is not available, return `Observable.just(MangasPage(emptyList(), false))`
 - `getFilterList` will be called to get all filters and filter types. **TODO: explain more about `Filter`**
 
-
-
 #### Manga Details
 
 - When user taps on a manga, `fetchMangaDetails` and `fetchChapterList` will be called and the results will be cached.
     - A `SManga` entry is identified by it's `url`.
 - `fetchMangaDetails` is called to update a manga's details from when it was initialized earlier.
-    - During a backup, only `url` and `title` are stored. To restore the rest of the manga data, the app calls `fetchMangaDetails`, so all fields should be (re)filled in if possible.
     - `SManga.initialized` tells the app if it should call `fetchMangaDetails`. If you are overriding `fetchMangaDetails`, make sure to pass it as `true`.
+    - `SManga.genre` is a string containing list of all genres separated with `", "`.
+    - `SManga.status` is an "enum" value. Refer to [the values in the `SManga` companion object](https://github.com/tachiyomiorg/extensions-lib/blob/9733fcf8d7708ce1ef24b6c242c47d67ac60b045/library/src/main/java/eu/kanade/tachiyomi/source/model/SManga.kt#L24-L27).
+    - During a backup, only `url` and `title` are stored. To restore the rest of the manga data, the app calls `fetchMangaDetails`, so all fields should be (re)filled in if possible.
     - If a `SManga` is cached `fetchMangaDetails` will be only called when the user does a manual update(Swipe-to-Refresh).
 - `fetchChapterList` is called to display the chapter list.
     - The list should be sorted descending by the source order.
@@ -222,6 +226,14 @@ a.k.a. the Latest source entry point in the app (invoked by tapping on the "Late
 - You probably will find `getUrlWithoutDomain` useful when parsing the target source URLs.
 - If possible try to stick to the general workflow from `HttpSource`/`ParsedHttpSource`; breaking them may cause you more headache than necessary.
 - By implementing `ConfigurableSource` you can add settings to your source, which is backed by [`SharedPreferences`](https://developer.android.com/reference/android/content/SharedPreferences).
+
+### Advanced Extension features
+
+#### URL intent filter
+
+Extensions can define URL intent filters by defining it inside a custom `AndroidManifest.xml` file.
+For an example, refer to [the NHentai module's `AndroidManifest.xml` file](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml) and [its corresponding `NHUrlActivity` handler](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt).
+
 
 ## Running
 
