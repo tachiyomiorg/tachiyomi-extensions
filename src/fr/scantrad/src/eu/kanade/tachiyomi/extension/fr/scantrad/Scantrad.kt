@@ -19,6 +19,8 @@ import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class Scantrad : ParsedHttpSource() {
 
@@ -32,8 +34,10 @@ class Scantrad : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    protected open val userAgentRandomizer = " ${Random.nextInt().absoluteValue}"
+
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", USER_AGENT)
+        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36$userAgentRandomizer")
     }
 
     // Popular
@@ -207,7 +211,4 @@ class Scantrad : ParsedHttpSource() {
 
     override fun getFilterList() = FilterList()
 
-    companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
-    }
 }
