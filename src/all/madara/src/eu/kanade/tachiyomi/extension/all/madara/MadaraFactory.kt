@@ -62,7 +62,6 @@ class MadaraFactory : SourceFactory {
         DoujinHentai(),
         DoujinYosh(),
         DropeScan(),
-        EarlyManga(),
         EinherjarScan(),
         FdmScan(),
         FirstKissManga(),
@@ -1456,12 +1455,6 @@ class YuriVerso : Madara(
 )
 
 class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
-
-class EarlyManga : Madara("EarlyManga", "https://earlymanga.xyz", "en") {
-    override fun headersBuilder(): Headers.Builder {
-        return super.headersBuilder().add("Referer", "$baseUrl/manga/")
-    }
-}
 
 class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
     override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
