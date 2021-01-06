@@ -166,7 +166,7 @@ class Gmanga : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GmangaFilters.buildSearchPayload(page, query, filters).let {
+        return GmangaFilters.buildSearchPayload(page, query, if (filters.isEmpty()) getFilterList() else filters).let {
             val body = RequestBody.create(MEDIA_TYPE, it.toString())
             POST("$baseUrl/api/mangas/search", headers, body)
         }
