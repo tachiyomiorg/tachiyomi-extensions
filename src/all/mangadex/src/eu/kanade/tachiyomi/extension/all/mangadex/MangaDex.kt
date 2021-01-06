@@ -5,15 +5,15 @@ import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import android.util.Log
-import com.github.salomonbrys.kotson.forEach
+import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.keys
 import com.github.salomonbrys.kotson.long
 import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -105,9 +105,10 @@ abstract class MangaDex(
         return buildCookies(cookies)
     }
 
-    private fun buildCookies(cookies: Map<String, String>) = cookies.entries.joinToString(separator = "; ", postfix = ";") {
-        "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
-    }
+    private fun buildCookies(cookies: Map<String, String>) =
+        cookies.entries.joinToString(separator = "; ", postfix = ";") {
+            "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+        }
 
     override fun popularMangaSelector() = "div.manga-entry"
 
@@ -133,7 +134,8 @@ abstract class MangaDex(
         return manga
     }
 
-    private fun modifyMangaUrl(url: String): String = url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
+    private fun modifyMangaUrl(url: String): String =
+        url.replace("/title/", "/manga/").substringBeforeLast("/") + "/"
 
     private fun formThumbUrl(mangaUrl: String): String {
         var ext = ".jpg"
@@ -156,11 +158,14 @@ abstract class MangaDex(
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+    override fun popularMangaNextPageSelector() =
+        ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
-    override fun latestUpdatesNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+    override fun latestUpdatesNextPageSelector() =
+        ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
-    override fun searchMangaNextPageSelector() = ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
+    override fun searchMangaNextPageSelector() =
+        ".pagination li:not(.disabled) span[title*=last page]:not(disabled)"
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         return clientBuilder().newCall(popularMangaRequest(page))
@@ -178,7 +183,11 @@ abstract class MangaDex(
             }
     }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+    override fun fetchSearchManga(
+        page: Int,
+        query: String,
+        filters: FilterList
+    ): Observable<MangasPage> {
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
             val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
             client.newCall(searchMangaByIdRequest(realQuery))
@@ -252,7 +261,8 @@ abstract class MangaDex(
                 }
                 is OriginalLanguage -> {
                     if (filter.state != 0) {
-                        val number: String = SOURCE_LANG_LIST.first { it.first == filter.values[filter.state] }.second
+                        val number: String =
+                            SOURCE_LANG_LIST.first { it.first == filter.values[filter.state] }.second
                         url.addQueryParameter("lang_id", number)
                     }
                 }
@@ -301,9 +311,15 @@ abstract class MangaDex(
                 is SortFilter -> {
                     if (filter.state != null) {
                         if (filter.state!!.ascending) {
-                            url.addQueryParameter("s", sortables[filter.state!!.index].second.toString())
+                            url.addQueryParameter(
+                                "s",
+                                sortables[filter.state!!.index].second.toString()
+                            )
                         } else {
-                            url.addQueryParameter("s", sortables[filter.state!!.index].third.toString())
+                            url.addQueryParameter(
+                                "s",
+                                sortables[filter.state!!.index].third.toString()
+                            )
                         }
                     }
                 }
@@ -331,15 +347,26 @@ abstract class MangaDex(
 
     override fun searchMangaParse(response: Response): MangasPage {
         return if (response.request().url().toString().contains("/groups/")) {
-            response.asJsoup().select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a").firstOrNull()?.attr("abs:href")
+            response.asJsoup()
+                .select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a")
+                .firstOrNull()?.attr("abs:href")
                 ?.let {
                     groupSearch = "$it/manga/0"
-                    super.searchMangaParse(client.newCall(GET(groupSearch!!, headersBuilder().build())).execute())
+                    super.searchMangaParse(
+                        client.newCall(
+                            GET(
+                                groupSearch!!,
+                                headersBuilder().build()
+                            )
+                        ).execute()
+                    )
                 }
                 ?: MangasPage(emptyList(), false)
         } else {
             val document = response.asJsoup()
-            if (document.select("#login_button").isNotEmpty()) throw Exception("Log in via WebView to enable search")
+            if (document.select("#login_button")
+                .isNotEmpty()
+            ) throw Exception("Log in via WebView to enable search")
 
             val mangas = document.select(searchMangaSelector()).map { element ->
                 searchMangaFromElement(element)
@@ -378,11 +405,15 @@ abstract class MangaDex(
     }
 
     private fun apiRequest(manga: SManga): Request {
-        return GET(baseUrl + API_MANGA + getMangaId(manga.url), headers, CacheControl.FORCE_NETWORK)
+        return GET(
+            API_URL + API_MANGA + getMangaId(manga.url) + API_MANGA_INCLUDE_CHAPTERS,
+            headers,
+            CacheControl.FORCE_NETWORK
+        )
     }
 
     private fun searchMangaByIdRequest(id: String): Request {
-        return GET(baseUrl + API_MANGA + id, headers, CacheControl.FORCE_NETWORK)
+        return GET(API_URL + API_MANGA + id, headers, CacheControl.FORCE_NETWORK)
     }
 
     private fun getMangaId(url: String): String {
@@ -398,29 +429,41 @@ abstract class MangaDex(
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = SManga.create()
         val jsonData = response.body()!!.string()
-        val json = JsonParser().parse(jsonData).asJsonObject
-        val mangaJson = json.getAsJsonObject("manga")
-        val chapterJson = json.getAsJsonObject("chapter")
-        manga.title = cleanString(mangaJson.get("title").string)
-        manga.thumbnail_url = cdnUrl + mangaJson.get("cover_url").string
-        manga.description = cleanString(mangadexDescription.clean(mangaJson.get("description").string))
-        manga.author = cleanString(mangaJson.get("author").string)
-        manga.artist = cleanString(mangaJson.get("artist").string)
-        val status = mangaJson.get("status").int
+        val json = JsonParser().parse(jsonData).asJsonObject["data"]
+        val mangaJson = json["manga"].asJsonObject
+        val chapterJson = json["chapters"].asJsonArray
+        manga.title = cleanString(mangaJson["title"].string)
+        manga.thumbnail_url = mangaJson["mainCover"].string
+        manga.description =
+            cleanString(mangadexDescription.clean(mangaJson["description"].string))
+        manga.author = cleanString(mangaJson["author"].array.map { it.string }.joinToString())
+        manga.artist = cleanString(mangaJson["artist"].array.map { it.string }.joinToString())
+        val status = mangaJson["publication"]["status"].int
         val finalChapterNumber = getFinalChapter(mangaJson)
-        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(chapterJson, finalChapterNumber)) {
+        if ((status == 2 || status == 3) && chapterJson != null && isMangaCompleted(
+                chapterJson,
+                finalChapterNumber
+            )
+        ) {
             manga.status = SManga.COMPLETED
-        } else if (status == 2 && chapterJson != null && isOneshot(chapterJson, finalChapterNumber)) {
+        } else if (status == 2 && chapterJson != null && isOneshot(
+                chapterJson,
+                finalChapterNumber
+            )
+        ) {
             manga.status = SManga.COMPLETED
         } else {
             manga.status = parseStatus(status)
         }
 
-        val genres = (if (mangaJson.get("hentai").int == 1) listOf("Hentai") else listOf()) +
-            mangaJson.get("genres").asJsonArray.mapNotNull { GENRES[it.toString()] } +
-            mangaJson.get("lang_name").string
+        val genres = if (mangaJson["isHentai"].bool) {
+            listOf("Hentai")
+        } else {
+            listOf()
+        } +
+            mangaJson["tags"].array.mapNotNull { GENRES[it.string] } +
+            mangaJson["publication"]["language"].string
         manga.genre = genres.joinToString(", ")
-
         return manga
     }
 
@@ -451,10 +494,12 @@ abstract class MangaDex(
             }
     }
 
-    private fun getFinalChapter(jsonObj: JsonObject): String = jsonObj.get("last_chapter").string.trim()
+    private fun getFinalChapter(jsonObj: JsonObject): String =
+        jsonObj.get("last_chapter").nullString?.trim() ?: ""
 
-    private fun isOneshot(chapterJson: JsonObject, lastChapter: String): Boolean {
-        val chapter = chapterJson.takeIf { it.size() > 0 }?.get(chapterJson.keys().elementAt(0))?.obj?.get("title")?.string
+    private fun isOneshot(chapterJson: JsonArray, lastChapter: String): Boolean {
+        val chapter =
+            chapterJson.takeIf { it.size() > 0 }?.elementAt(0)?.asJsonObject?.get("title")?.string
         return if (chapter != null) {
             chapter == "Oneshot" || chapter.isEmpty() && lastChapter == "0"
         } else {
@@ -462,32 +507,41 @@ abstract class MangaDex(
         }
     }
 
-    private fun isMangaCompleted(chapterJson: JsonObject, finalChapterNumber: String): Boolean {
-        val count = chapterJson.entrySet()
-            .filter { it.value.asJsonObject.get("lang_code").string == internalLang }
-            .filter { doesFinalChapterExist(finalChapterNumber, it.value) }.count()
+    private fun isMangaCompleted(chapterJson: JsonArray, finalChapterNumber: String): Boolean {
+        val count = chapterJson
+            .filter { it.asJsonObject.get("language").string == internalLang }
+            .filter { doesFinalChapterExist(finalChapterNumber, it) }.count()
         return count != 0
     }
 
-    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) = finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
+    private fun doesFinalChapterExist(finalChapterNumber: String, chapterJson: JsonElement) =
+        finalChapterNumber.isNotEmpty() && finalChapterNumber == chapterJson["chapter"].string.trim()
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        hasMangaPlus = false
         val now = Date().time
         val jsonData = response.body()!!.string()
-        val json = JsonParser().parse(jsonData).asJsonObject
-        val mangaJson = json.getAsJsonObject("manga")
-        val status = mangaJson.get("status").int
+        val json = JsonParser().parse(jsonData).asJsonObject["data"]
+        val mangaJson = json["manga"].asJsonObject
+
+        val status = mangaJson["publication"]["status"].int
 
         val finalChapterNumber = getFinalChapter(mangaJson)
-        val chapterJson = json.getAsJsonObject("chapter")
+
+        val chapterJson = json["chapters"].asJsonArray
         val chapters = mutableListOf<SChapter>()
 
         // Skip chapters that don't match the desired language, or are future releases
-        chapterJson?.forEach { key, jsonElement ->
+        val groups = json["groups"].array.map {
+            val group = it.asJsonObject
+            Pair(group["id"].int, group["name"].string)
+        }.toMap()
+
+        val hasMangaPlus = groups.containsKey(9097)
+
+        chapterJson?.forEach { jsonElement ->
             val chapterElement = jsonElement.asJsonObject
             if (shouldKeepChapter(chapterElement, now)) {
-                chapters.add(chapterFromJson(key, chapterElement, finalChapterNumber, status))
+                chapters.add(chapterFromJson(chapterElement, finalChapterNumber, status, groups))
             }
         }
         return chapters.also { if (it.isEmpty() && hasMangaPlus) throw Exception("This only has MangaPlus chapters, use the MangaPlus extension") }
@@ -501,54 +555,54 @@ abstract class MangaDex(
      */
     private fun shouldKeepChapter(chapterJson: JsonObject, now: Long): Boolean {
         return when {
-            chapterJson.get("lang_code").string != internalLang -> false
-            (chapterJson.get("timestamp").asLong * 1000) > now -> false
-            chapterJson.get("group_id").string == "9097" -> {
-                hasMangaPlus = true
-                false
-            }
+            chapterJson["language"].string != internalLang -> false
+            (chapterJson["timestamp"].asLong * 1000) > now -> false
+            chapterJson["groups"].array.map { it.string }.contains("9097") -> false
             else -> true
         }
     }
 
-    private fun chapterFromJson(chapterId: String, chapterJson: JsonObject, finalChapterNumber: String, status: Int): SChapter {
+    private fun chapterFromJson(
+        chapterJson: JsonObject,
+        finalChapterNumber: String,
+        status: Int,
+        groups: Map<Int, String>
+    ): SChapter {
         val chapter = SChapter.create()
-        chapter.url = API_CHAPTER + chapterId
+        chapter.url = API_CHAPTER + chapterJson["id"].string
         val chapterName = mutableListOf<String>()
         // Build chapter name
-        if (chapterJson.get("volume").string.isNotBlank()) {
+        if (chapterJson["volume"].string.isNotBlank()) {
             chapterName.add("Vol." + chapterJson.get("volume").string)
         }
-        if (chapterJson.get("chapter").string.isNotBlank()) {
+        if (chapterJson["chapter"].string.isNotBlank()) {
             chapterName.add("Ch." + chapterJson.get("chapter").string)
         }
-        if (chapterJson.get("title").string.isNotBlank()) {
+        if (chapterJson["title"].string.isNotBlank()) {
             if (chapterName.isNotEmpty()) {
                 chapterName.add("-")
             }
-            chapterName.add(chapterJson.get("title").string)
+            chapterName.add(chapterJson["title"].string)
         }
         // if volume, chapter and title is empty its a oneshot
         if (chapterName.isEmpty()) {
             chapterName.add("Oneshot")
         }
-        if ((status == 2 || status == 3) && doesFinalChapterExist(finalChapterNumber, chapterJson)) {
+        if ((status == 2 || status == 3) && doesFinalChapterExist(
+                finalChapterNumber,
+                chapterJson
+            )
+        ) {
             chapterName.add("[END]")
         }
 
         chapter.name = cleanString(chapterName.joinToString(" "))
         // Convert from unix time
         chapter.date_upload = chapterJson.get("timestamp").long * 1000
-        val scanlatorName = mutableListOf<String>()
-        if (!chapterJson.get("group_name").nullString.isNullOrBlank()) {
-            scanlatorName.add(chapterJson.get("group_name").string)
+        val scanlatorName = chapterJson["groups"].asJsonArray.map { it.int }.map {
+            groups[it]
         }
-        if (!chapterJson.get("group_name_2").nullString.isNullOrBlank()) {
-            scanlatorName.add(chapterJson.get("group_name_2").string)
-        }
-        if (!chapterJson.get("group_name_3").nullString.isNullOrBlank()) {
-            scanlatorName.add(chapterJson.get("group_name_3").string)
-        }
+
         chapter.scanlator = cleanString(scanlatorName.joinToString(" & "))
 
         return chapter
@@ -580,19 +634,23 @@ abstract class MangaDex(
 
         val server = getServer()
         val saver = getUseDataSaver()
-        return GET("$baseUrl${chapter.url}?server=$server&saver=$saver", headers, CacheControl.FORCE_NETWORK)
+        return GET(
+            "$API_URL${chapter.url}?server=$server&saver=$saver",
+            headers,
+            CacheControl.FORCE_NETWORK
+        )
     }
 
     override fun pageListParse(document: Document) = throw Exception("Not used")
 
     override fun pageListParse(response: Response): List<Page> {
         val jsonData = response.body()!!.string()
-        val json = JsonParser().parse(jsonData).asJsonObject
+        val json = JsonParser().parse(jsonData).asJsonObject["data"]
 
-        val hash = json.get("hash").string
-        val server = json.get("server").string
+        val hash = json["hash"].string
+        val server = json["server"].string
 
-        return json.getAsJsonArray("page_array").mapIndexed { idx, it ->
+        return json["pages"].asJsonArray.mapIndexed { idx, it ->
             val url = "$hash/${it.asString}"
             val mdAtHomeMetadataUrl = "$server,${response.request().url()},${Date().time}"
             Page(idx, mdAtHomeMetadataUrl, url)
@@ -614,14 +672,18 @@ abstract class MangaDex(
                 var tokenedServer = data[0]
                 if (Date().time - data[2].toLong() > tokenLifespan) {
                     val tokenRequestUrl = data[1]
-                    val cacheControl = if (Date().time - (tokenTracker[tokenRequestUrl] ?: 0) > tokenLifespan) {
-                        tokenTracker[tokenRequestUrl] = Date().time
-                        CacheControl.FORCE_NETWORK
-                    } else {
-                        CacheControl.FORCE_CACHE
-                    }
-                    val jsonData = client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute().body()!!.string()
-                    tokenedServer = JsonParser().parse(jsonData).asJsonObject.get("server").string
+                    val cacheControl =
+                        if (Date().time - (tokenTracker[tokenRequestUrl] ?: 0) > tokenLifespan) {
+                            tokenTracker[tokenRequestUrl] = Date().time
+                            CacheControl.FORCE_NETWORK
+                        } else {
+                            CacheControl.FORCE_CACHE
+                        }
+                    val jsonData =
+                        client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
+                            .body()!!.string()
+                    tokenedServer =
+                        JsonParser().parse(jsonData).asJsonObject["data"]["server"].string
                 }
                 tokenedServer + page.imageUrl
             }
@@ -773,16 +835,23 @@ abstract class MangaDex(
         return preferences.getString(SERVER_PREF, default).takeIf { it in SERVER_PREF_ENTRY_VALUES }
             ?: default
     }
+
     private fun getUseDataSaver(): Int = preferences.getInt(DATA_SAVER_PREF, 0)
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Tag(val id: String, name: String) : Filter.TriState(name)
-    private class Demographic(demographics: List<Tag>) : Filter.Group<Tag>("Demographic", demographics)
-    private class PublicationStatus(publications: List<Tag>) : Filter.Group<Tag>("Publication", publications)
+    private class Demographic(demographics: List<Tag>) :
+        Filter.Group<Tag>("Demographic", demographics)
+
+    private class PublicationStatus(publications: List<Tag>) :
+        Filter.Group<Tag>("Publication", publications)
+
     private class ContentList(contents: List<Tag>) : Filter.Group<Tag>("Content", contents)
     private class FormatList(formats: List<Tag>) : Filter.Group<Tag>("Format", formats)
     private class GenreList(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
-    private class R18 : Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
+    private class R18 :
+        Filter.Select<String>("R18+", arrayOf("Default", "Show all", "Show only", "Show none"))
+
     private class ScanGroup(name: String) : Filter.Text(name)
 
     private fun getDemographic() = listOf(
@@ -800,8 +869,11 @@ abstract class MangaDex(
     ).sortedWith(compareBy { it.name })
 
     private class ThemeList(themes: List<Tag>) : Filter.Group<Tag>("Themes", themes)
-    private class TagInclusionMode : Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
-    private class TagExclusionMode : Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
+    private class TagInclusionMode :
+        Filter.Select<String>("Tag inclusion mode", arrayOf("All (and)", "Any (or)"), 0)
+
+    private class TagExclusionMode :
+        Filter.Select<String>("Tag exclusion mode", arrayOf("All (and)", "Any (or)"), 1)
 
     // default selection (Rating Descending) matches popularMangaRequest url
     class SortFilter : Filter.Sort(
@@ -810,7 +882,8 @@ abstract class MangaDex(
         Selection(3, false)
     )
 
-    private class OriginalLanguage : Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it.first }.toTypedArray())
+    private class OriginalLanguage :
+        Filter.Select<String>("Original Language", SOURCE_LANG_LIST.map { it.first }.toTypedArray())
 
     override fun getFilterList() = FilterList(
         TextField("Author", "author"),
@@ -923,7 +996,9 @@ abstract class MangaDex(
         Tag("85", "Villainess")
     ).sortedWith(compareBy { it.name })
 
-    private val GENRES = (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }.toMap()
+    private val GENRES =
+        (getContentList() + getFormatList() + getGenreList() + getThemeList()).map { it.id to it.name }
+            .toMap()
 
     companion object {
         private val WHITESPACE_REGEX = "\\s".toRegex()
@@ -943,14 +1018,17 @@ abstract class MangaDex(
 
         private const val SERVER_PREF_Title = "Image server"
         private const val SERVER_PREF = "imageServer"
-        private val SERVER_PREF_ENTRIES = arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
+        private val SERVER_PREF_ENTRIES =
+            arrayOf("Automatic", "NA/EU 1", "NA/EU 2", "Rest of the world")
         private val SERVER_PREF_ENTRY_VALUES = arrayOf("0", "na", "na2", "row")
 
         private const val DATA_SAVER_PREF_Title = "Data saver"
         private const val DATA_SAVER_PREF = "dataSaver"
 
-        private const val API_MANGA = "/api/manga/"
-        private const val API_CHAPTER = "/api/chapter/"
+        private const val API_URL = "https://api.mangadex.org/"
+        private const val API_MANGA = "v2/manga/"
+        private const val API_MANGA_INCLUDE_CHAPTERS = "?include=chapters"
+        private const val API_CHAPTER = "v2/chapter/"
 
         const val PREFIX_ID_SEARCH = "id:"
 
@@ -978,8 +1056,6 @@ abstract class MangaDex(
             Pair("Thai", "32"),
             Pair("Filipino", "34")
         )
-
-        private var hasMangaPlus = false
     }
 }
 
@@ -992,7 +1068,11 @@ class CoverInterceptor : Interceptor {
         return chain.proceed(chain.request()).let { response ->
             if (response.code() == 404 && originalRequest.url().toString().contains(coverRegex)) {
                 response.close()
-                chain.proceed(originalRequest.newBuilder().url(originalRequest.url().toString().substringBeforeLast(".") + ".thumb.jpg").build())
+                chain.proceed(
+                    originalRequest.newBuilder().url(
+                        originalRequest.url().toString().substringBeforeLast(".") + ".thumb.jpg"
+                    ).build()
+                )
             } else {
                 response
             }
