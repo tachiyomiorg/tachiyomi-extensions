@@ -31,7 +31,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun popularMangaSelector() = "a.hot-manga__item "
     override fun latestUpdatesSelector() = ".section__list-group li div.section__list-group-left"
     override fun searchMangaSelector() = "h1 + ul a[href*=manga]"
-    override fun chapterListSelector() = "tr.chapter-item.volume-0, tr.chapter-item.volume-, tr.volume-0"
+    override fun chapterListSelector() = "tr[class*=volume-]"
 
     override fun popularMangaNextPageSelector() = "a[rel=next]"
     override fun latestUpdatesNextPageSelector(): String? = null
