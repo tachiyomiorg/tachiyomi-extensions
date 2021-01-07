@@ -413,7 +413,7 @@ abstract class MangaDex(
     }
 
     private fun searchMangaByIdRequest(id: String): Request {
-        return GET(API_URL + API_MANGA + id, headers, CacheControl.FORCE_NETWORK)
+        return GET(API_URL + API_MANGA + id + API_MANGA_INCLUDE_CHAPTERS, headers, CacheControl.FORCE_NETWORK)
     }
 
     private fun getMangaId(url: String): String {
