@@ -569,7 +569,7 @@ abstract class MangaDex(
         groups: Map<Int, String>
     ): SChapter {
         val chapter = SChapter.create()
-        chapter.url = API_CHAPTER + chapterJson["id"].string
+        chapter.url = OLD_API_CHAPTER + chapterJson["id"].string
         val chapterName = mutableListOf<String>()
         // Build chapter name
         if (chapterJson["volume"].string.isNotBlank()) {
@@ -634,8 +634,9 @@ abstract class MangaDex(
 
         val server = getServer()
         val saver = getUseDataSaver()
+        val newUrl = API_URL + chapter.url.replace(OLD_API_CHAPTER, NEW_API_CHAPTER)
         return GET(
-            "$API_URL${chapter.url}?server=$server&saver=$saver",
+            "$newUrl?server=$server&saver=$saver",
             headers,
             CacheControl.FORCE_NETWORK
         )
@@ -1028,7 +1029,8 @@ abstract class MangaDex(
         private const val API_URL = "https://api.mangadex.org"
         private const val API_MANGA = "/v2/manga/"
         private const val API_MANGA_INCLUDE_CHAPTERS = "?include=chapters"
-        private const val API_CHAPTER = "/v2/chapter/"
+        private const val OLD_API_CHAPTER = "/api/chapter/"
+        private const val NEW_API_CHAPTER = "/v2/chapter/"
 
         const val PREFIX_ID_SEARCH = "id:"
 
