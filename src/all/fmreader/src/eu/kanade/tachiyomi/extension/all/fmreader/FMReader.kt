@@ -220,7 +220,7 @@ abstract class FMReader(
     // gets the unit of time (day, week hour) from "1 day ago"
     open val dateWordIndex = 1
 
-    open fun parseChapterDate(date: String): Long {
+    private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[dateValueIndex].toInt()
         val dateWord = date.split(' ')[dateWordIndex].let {
             if (it.contains("(")) {
