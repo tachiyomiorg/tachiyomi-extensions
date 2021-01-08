@@ -181,7 +181,7 @@ abstract class FMReader(
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val mangaTitle = document.select(".manga-info h1").text()
+        val mangaTitle = document.select(".manga-info h1, .manga-info h3").text()
         return document.select(chapterListSelector()).map { chapterFromElement(it, mangaTitle) }.distinctBy { it.url }
     }
 
