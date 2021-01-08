@@ -48,6 +48,7 @@ abstract class FMReader(
             element == null -> null
             element.hasAttr("data-original") -> element.attr("abs:data-original")
             element.hasAttr("data-src") -> element.attr("abs:data-src")
+            element.hasAttr("data-bg") -> element.attr("abs:data-bg")
             else -> element.attr("abs:src")
         }
     }
@@ -121,21 +122,21 @@ abstract class FMReader(
 
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
 
-    override fun popularMangaSelector() = "div.media"
+    override fun popularMangaSelector() = "div.media, .thumb-item-flow"
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun searchMangaSelector() = popularMangaSelector()
 
-    open val headerSelector = "h3"
+    open val headerSelector = "h3 a, .series-title a"
 
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            element.select("$headerSelector a").let {
+            element.select("$headerSelector").let {
                 setUrlWithoutDomain(it.attr("abs:href"))
                 title = it.text()
             }
-            thumbnail_url = element.select("img").imgAttr()
+            thumbnail_url = element.select("img, .thumb-wrapper .img-in-ratio").imgAttr()
         }
     }
 
@@ -148,7 +149,7 @@ abstract class FMReader(
      * one is an element with text "page x of y", must be the first element if it's part of a collection
      * the other choice is the standard "next page" element (but most FMReader sources don't have this one)
      */
-    override fun popularMangaNextPageSelector() = "div.col-lg-9 button.btn-info"
+    override fun popularMangaNextPageSelector() = "div.col-lg-9 button.btn-info, .pagination a:contains(»):not(.disabled)"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -161,7 +162,7 @@ abstract class FMReader(
             author = infoElement.select("li a.btn-info").text()
             genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
             status = parseStatus(infoElement.select("li a.btn-success").first()?.text())
-            description = document.select("div.detail .content, div.row ~ div.row:has(h3:first-child) p").text().trim()
+            description = document.select("div.detail .content, div.row ~ div.row:has(h3:first-child) p, .summary-content p").text().trim()
             thumbnail_url = infoElement.select("img.thumbnail").imgAttr()
         }
     }
@@ -188,17 +189,26 @@ abstract class FMReader(
         return chapterFromElement(element, "")
     }
 
-    override fun chapterListSelector() = "div#list-chapters p, table.table tr"
+    override fun chapterListSelector() = "div#list-chapters p, table.table tr, .list-chapters a"
 
     open val chapterUrlSelector = "a"
 
-    open val chapterTimeSelector = "time"
+    open val chapterTimeSelector = "time, .chapter-time"
+
+    open val chapterNameAttrSelector = "title"
 
     open fun chapterFromElement(element: Element, mangaTitle: String = ""): SChapter {
         return SChapter.create().apply {
-            element.select(chapterUrlSelector).first().let {
-                setUrlWithoutDomain(it.attr("abs:href"))
-                name = it.text().substringAfter("$mangaTitle ")
+            if (chapterUrlSelector != "") {
+                element.select(chapterUrlSelector).first().let {
+                    setUrlWithoutDomain(it.attr("abs:href"))
+                    name = it.text().substringAfter("$mangaTitle ")
+                }
+            } else {
+                element.let {
+                    setUrlWithoutDomain(it.attr("abs:href"))
+                    name = element.attr(chapterNameAttrSelector).substringAfter("$mangaTitle ")
+                }
             }
             date_upload = element.select(chapterTimeSelector).let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
         }
@@ -268,7 +278,10 @@ abstract class FMReader(
 
     protected fun base64PageListParse(document: Document): List<Page> {
         fun Element.decoded(): String {
-            val attr = if (this.hasAttr("data-original")) "data-original" else "data-src"
+            val attr =
+                if (this.hasAttr("data-original")) "data-original"
+                else if (this.hasAttr("data-src")) "data-src"
+                else "src"
             return if (!this.attr(attr).contains(".")) {
                 Base64.decode(this.attr(attr), Base64.DEFAULT).toString(Charset.defaultCharset())
             } else {
