@@ -45,7 +45,7 @@ class FMReaderFactory : SourceFactory {
 
 class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en")
 
-class KissLove : FMReader("KissLove", "https://kisslove.net", "ja") {
+class KissLove : FMReader("KissLove", "https://kissaway.net", "ja") {
     override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
 }
 
