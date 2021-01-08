@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.fmreader
 
-import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -19,7 +18,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.nio.charset.Charset
 
 class FMReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
@@ -72,53 +70,8 @@ class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
 }
 
 class RawLH : FMReader("RawLH", "https://lovehug.net", "ja") {
-    override fun popularMangaSelector() = "#history .thumb-item-flow"
-    override fun popularMangaFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            element.select(".series-title a").let {
-                setUrlWithoutDomain(it.attr("abs:href"))
-                title = it.text()
-            }
-            thumbnail_url = element.select(".thumb-wrapper .img-in-ratio").imgAttr()
-        }
-    }
-    override fun popularMangaNextPageSelector() = ".pagination a:contains(»):not(.disabled)"
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.row").first()
-
-        return SManga.create().apply {
-            author = infoElement.select("li a.btn-info").text()
-            genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
-            status = parseStatus(infoElement.select("li a.btn-success").first()?.text())
-            description = document.select(".summary-content p").text().trim()
-            thumbnail_url = infoElement.select(".thumbnail").imgAttr()
-        }
-    }
-    override fun chapterListSelector() = ".list-chapters a"
-    override fun chapterFromElement(element: Element, mangaTitle: String): SChapter {
-        return SChapter.create().apply {
-            element.let {
-                setUrlWithoutDomain(it.attr("abs:href"))
-                name = element.attr("title")
-            }
-            date_upload = element.select(".chapter-time").let { if (it.hasText()) parseChapterDate(it.text()) else 0 }
-        }
-    }
-    override fun pageListParse(document: Document): List<Page> = base64PageListParse2(document)
-    protected fun base64PageListParse2(document: Document): List<Page> {
-        fun Element.decoded(): String {
-            val attr = "src"
-            return if (!this.attr(attr).contains(".")) {
-                Base64.decode(this.attr(attr), Base64.DEFAULT).toString(Charset.defaultCharset())
-            } else {
-                this.attr("abs:$attr")
-            }
-        }
-
-        return document.select("img.chapter-img").mapIndexed { i, img ->
-            Page(i, document.location(), img.decoded())
-        }
-    }
+    override val chapterUrlSelector = ""
+    override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
     // Referer needs to be chapter URL
     override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
 }
@@ -282,7 +235,7 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=lastUpdate&sorting-type=DESC&Sayfa=$page", headers)
     override fun popularMangaNextPageSelector() = "ul.pagination li.active + li:not(.disabled)"
 
-    override val headerSelector = "h4"
+    override val headerSelector = "h4 a"
 
     // search wasn't working on source's website
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
