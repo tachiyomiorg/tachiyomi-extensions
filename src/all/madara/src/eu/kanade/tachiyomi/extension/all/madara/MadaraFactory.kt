@@ -89,6 +89,7 @@ class MadaraFactory : SourceFactory {
         Kombatch(),
         KomikGo(),
         LilyManga(),
+        LovableSubs(),
         Manga18Fun(),
         Manga347(),
         Manga3asq(),
@@ -112,6 +113,7 @@ class MadaraFactory : SourceFactory {
         MangaLord(),
         ManganeloLink(),
         MangaNine(),
+        MangaOnlineCo(),
         MangaPhoenix(),
         MangaRave(),
         MangaRawr(),
@@ -188,6 +190,7 @@ class MadaraFactory : SourceFactory {
         S2Manga(),
         ShoujoHearts(),
         Skymanga(),
+        SoloScanlation(),
         SpookyScanlations(),
         StageComics(),
         TheTopComic(),
@@ -221,6 +224,14 @@ class MadaraFactory : SourceFactory {
         // AhStudios(),
         // KnightNoScanlation(),
     )
+}
+
+class SoloScanlation : Madara("SoloScanlation", "https://soloscanlation.site", "en", SimpleDateFormat("MMMM dd, yyyy", Locale.US))
+
+class LovableSubs : Madara("LovableSubs", "https://lovablesubs.com", "tr", SimpleDateFormat("dd MMM yyyy", Locale("tr")))
+
+class MangaOnlineCo : Madara("Manga-Online.co", "https://www.manga-online.co", "th", SimpleDateFormat("MMM dd, yyyy", Locale("th"))) {
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 }
 
 class NeatManga : Madara("NeatManga", "https://neatmanga.com", "en", SimpleDateFormat("dd MMM yyyy", Locale.US))
