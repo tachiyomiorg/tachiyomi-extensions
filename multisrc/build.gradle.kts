@@ -24,16 +24,26 @@ apply("$rootDir/common-dependencies.gradle")
 
 tasks.register("runAllGenerators") {
     doLast {
-        var classPath = ""
-        classPath += configurations.androidApis.get().asFileTree.first().absolutePath + ":" // android.jar path
-        classPath += "$projectDir/build/intermediates/aar_main_jar/debug/classes.jar:" // jar made from this module
-
-        configurations.debugCompileOnly.get().asFileTree.forEach { classPath = "$classPath:$it" } // every dependency we have
-
+        val isWindows = System.getProperty("os.name").toString().toLowerCase().contains("win")
+        val classPath = (configurations.debugCompileOnly.get().asFileTree.toList() +
+                listOf(
+                        configurations.androidApis.get().asFileTree.first().absolutePath, // android.jar path
+                        "$projectDir/build/intermediates/aar_main_jar/debug/classes.jar" // jar made from this module
+                ))
+                .joinToString(if (isWindows) ";" else ":")
         val javaPath = System.getProperty("java.home") + "/bin/java" // path of java
 
-        val mainClass = "eu.kanade.tachiyomi.multisrc.GeneratorMain" // Main class we want to execute
+        val mainClass = "eu.kanade.tachiyomi.multisrc.GeneratorMainKt" // Main class we want to execute
 
-        Runtime.getRuntime().exec("$javaPath -classpath $classPath $mainClass") // put it all together
+        val javaCommand = if (isWindows) {
+            "\"$javaPath\" -classpath $classPath $mainClass".replace("/", "\\")
+        } else {
+            "$javaPath -classpath $classPath $mainClass"
+        }
+        val javaProcess = Runtime.getRuntime().exec(javaCommand)
+        val exitCode = javaProcess.waitFor()
+        if (exitCode != 0){
+            throw Exception("Running java failed with exit code: $exitCode")
+        }
     }
 }
