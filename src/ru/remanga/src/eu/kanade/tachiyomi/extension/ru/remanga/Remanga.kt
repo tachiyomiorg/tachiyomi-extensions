@@ -134,7 +134,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun LibraryDto.toSManga(): SManga =
         SManga.create().apply {
-            title = en_name
+            title = "$en_name ($rus_name)"
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
         }
@@ -210,7 +210,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun MangaDetDto.toSManga(): SManga {
         val o = this
         return SManga.create().apply {
-            title = en_name
+            title = "$en_name ($rus_name)"
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
             this.description = Jsoup.parse(o.description).text()
