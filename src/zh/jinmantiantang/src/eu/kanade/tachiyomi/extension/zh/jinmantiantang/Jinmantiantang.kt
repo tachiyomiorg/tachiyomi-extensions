@@ -40,7 +40,7 @@ import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 @Nsfw
 class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
-    override val baseUrl: String = "https://18comic.bet"
+    override val baseUrl: String = "https://18comic5.biz"
     override val lang: String = "zh"
     override val name: String = "禁漫天堂"
     override val supportsLatest: Boolean = true
