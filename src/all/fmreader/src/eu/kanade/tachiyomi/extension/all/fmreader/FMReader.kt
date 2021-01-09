@@ -189,7 +189,7 @@ abstract class FMReader(
         return chapterFromElement(element, "")
     }
 
-    override fun chapterListSelector() = "div#list-chapters p, table.table tr, .list-chapters a"
+    override fun chapterListSelector() = "div#list-chapters p, table.table tr, .list-chapters > a"
 
     open val chapterUrlSelector = "a"
 
