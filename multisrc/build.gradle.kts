@@ -8,7 +8,7 @@ android {
     buildToolsVersion(Config.buildTools)
 
     defaultConfig {
-        minSdkVersion(Config.minSdk)
+        minSdkVersion(29)
         targetSdkVersion(Config.targetSdk)
     }
 }
