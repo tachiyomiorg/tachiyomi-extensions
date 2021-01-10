@@ -104,7 +104,6 @@ class MadaraFactory : SourceFactory {
         MangaCrimson(),
         MangaCultivator(),
         MangaDods(),
-        MangaGecesi(),
         MangaHentai(),
         MangaKiss(),
         MangaKomi(),
@@ -133,7 +132,6 @@ class MadaraFactory : SourceFactory {
         MangaTeca(),
         MangaTurf(),
         MangaTX(),
-        MangaWOW(),
         MangaWT(),
         MangaYaku(),
         MangaYosh(),
@@ -1466,12 +1464,6 @@ class YuriVerso : Madara(
 )
 
 class MangaStein : Madara("MangaStein", "https://mangastein.com", "tr")
-
-class MangaGecesi : Madara("Manga Gecesi", "https://mangagecesi.com", "tr") {
-    override val chapterUrlSelector = "li.wp-manga-chapter div.chapter-thumbnail + a"
-}
-
-class MangaWOW : Madara("MangaWOW", "https://mangawow.com", "tr")
 
 class MangaTeca : Madara(
     "MangaTeca",
