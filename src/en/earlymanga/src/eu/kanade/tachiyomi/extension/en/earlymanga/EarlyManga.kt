@@ -76,6 +76,7 @@ class EarlyManga : ParsedHttpSource() {
         artist = document.select(".artist-link a").text()
         status = parseStatus(document.select(".pub_stutus").text())
         description = document.select(".desc").text()
+        genre = document.select(".manga-info-card a.badge-secondary").joinToString { it.text() }
     }
 
     private fun parseStatus(status: String?) = when {
