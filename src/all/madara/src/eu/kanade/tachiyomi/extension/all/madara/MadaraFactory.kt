@@ -204,6 +204,7 @@ class MadaraFactory : SourceFactory {
         TsubakiNoScan(),
         TurkceManga(),
         TwilightScans(),
+        Voidscans(),
         Wakascan(),
         WarQueenScan(),
         WebNovel(),
@@ -1491,3 +1492,5 @@ class MangaTeca : Madara(
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
     }
 }
+
+class Voidscans : Madara("Void Scans", "https://voidscans.com", "en")
