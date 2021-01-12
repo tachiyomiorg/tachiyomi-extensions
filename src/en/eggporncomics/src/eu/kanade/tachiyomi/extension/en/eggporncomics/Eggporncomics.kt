@@ -35,9 +35,9 @@ class Eggporncomics : ParsedHttpSource() {
 
     // Popular
 
-    // couldn't find a page with popular comics, defaulting to the "anime" category
+    // couldn't find a page with popular comics, defaulting to the popular "anime-comics" category
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/category/1/anime?page=$page", headers)
+        return GET("$baseUrl/category/1/anime-comics?page=$page", headers)
     }
 
     override fun popularMangaSelector() = "div.preview:has(div.name)"
