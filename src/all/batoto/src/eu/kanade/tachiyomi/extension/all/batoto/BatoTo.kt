@@ -363,13 +363,14 @@ open class BatoTo(
         "Sorts By",
         arrayOf(
             Pair("<select>", ""),
-            Pair("Totally", "views_t"),
+            Pair("Totally", "views_a"),
             Pair("365 days", "views_y"),
             Pair("30 days", "views_m"),
             Pair("7 days", "views_w"),
             Pair("24 hours", "views_d"),
             Pair("60 minutes", "views_h"),
-            Pair("A-Z", "title"),
+            Pair("A-Z", "title.az"),
+            Pair("Z-A", "title"),
             Pair("Update time", "update"),
             Pair("Add time", "create")
         )
