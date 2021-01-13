@@ -68,6 +68,7 @@ class MadaraFactory : SourceFactory {
         FirstKissManhua(),
         FreeWebtoonCoins(),
         FurioScans(),
+        GeceninLordu(),
         GoldenManga(),
         GuncelManga(),
         HeroManhua(),
@@ -1494,5 +1495,9 @@ class MangaTeca : Madara(
 }
 
 class Voidscans : Madara("Void Scans", "https://voidscans.com", "en") {
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/?s=$query&post_type=wp-manga")
+}
+
+class GeceninLordu : Madara("Gecenin Lordu", "https://geceninlordu.com/", "tr", SimpleDateFormat("dd MMM yyyy", Locale("tr"))) {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/?s=$query&post_type=wp-manga")
 }
