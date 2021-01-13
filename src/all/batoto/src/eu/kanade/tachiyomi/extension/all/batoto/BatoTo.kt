@@ -87,18 +87,8 @@ open class BatoTo(
                         }
                     }
                     is StatusFilter -> {
-                        val statusToInclude = mutableListOf<String>()
-                        filter.state.forEach { content ->
-                            if (content.state) {
-                                genreToInclude.add(content.name)
-                            }
-                        }
-                        if (statusToInclude.isNotEmpty()) {
-                            url.addQueryParameter(
-                                "release",
-                                statusToInclude
-                                    .joinToString(",")
-                            )
+                        if (filter.state != 0) {
+                            url.addQueryParameter("release", filter.toUriPart())
                         }
                     }
                     is GenreFilter -> {
@@ -307,7 +297,6 @@ open class BatoTo(
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
-    private class StatusFilter(genres: List<Tag>) : Filter.Group<Tag>("Status", genres)
     private class OriginFilter(genres: List<Tag>) : Filter.Group<Tag>("Origin", genres)
     private class GenreFilter(genres: List<Tag>) : Filter.Group<Tag>("Genres", genres)
 
@@ -344,23 +333,27 @@ open class BatoTo(
             Pair("Add time", "create")
         )
     )
+    
+    private class StatusFilter : UriPartFilter(
+        "Status",
+        arrayOf(
+            Pair("<select>", ""),
+            Pair("Pending", "pending"),
+            Pair("Ongoing", "ongoing"),
+            Pair("Completed", "completed"),
+            Pair("Hiatus", "hiatus"),
+            Pair("Cancelled", "cancelled")
+        )
+    )
 
     override fun getFilterList() = FilterList(
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
         ChapterFilter(),
         SortBy(),
-        StatusFilter(getStatusList()),
+        StatusFilter(),
         OriginFilter(getOriginList()),
         GenreFilter(getGenreList())
-    )
-
-    private fun getStatusList() = listOf(
-        Tag("Pending"),
-        Tag("Ongoing"),
-        Tag("Completed"),
-        Tag("Hiatus"),
-        Tag("Cancelled")
     )
 
     private fun getOriginList() = listOf(
