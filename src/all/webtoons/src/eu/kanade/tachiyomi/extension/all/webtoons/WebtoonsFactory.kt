@@ -13,6 +13,7 @@ class WebtoonsFactory : SourceFactory {
         WebtoonsIndonesian(),
         WebtoonsThai(),
         WebtoonsFr(),
+        WebtoonsEs(),
         DongmanManhua(),
 
         // Fan translations
@@ -46,7 +47,8 @@ class WebtoonsFactory : SourceFactory {
         WebtoonsTranslate("sv", "SWE"),
         WebtoonsTranslate("bn", "BEN"),
         WebtoonsTranslate("fa", "PER"),
-        WebtoonsTranslate("uk", "UKR")
+        WebtoonsTranslate("uk", "UKR"),
+        WebtoonsTranslate("es", "SPA")
     )
 }
 
@@ -74,3 +76,6 @@ class WebtoonsThai : WebtoonsDefault("th", dateFormat = SimpleDateFormat("d MMM 
 class WebtoonsChineseTraditional : WebtoonsDefault("zh", "zh-hant", "zh_TW", SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE))
 
 class WebtoonsFr : WebtoonsDefault("fr", dateFormat = SimpleDateFormat("d MMM yyyy", Locale.FRENCH))
+
+
+class WebtoonsEs : WebtoonsDefault("es", dateFormat = SimpleDateFormat("d MMM yyyy", Locale("es")))
