@@ -321,16 +321,24 @@ open class BatoTo(
         "Sorts By",
         arrayOf(
             Pair("<select>", ""),
-            Pair("Totally", "views_a"),
-            Pair("365 days", "views_y"),
-            Pair("30 days", "views_m"),
-            Pair("7 days", "views_w"),
-            Pair("24 hours", "views_d"),
-            Pair("60 minutes", "views_h"),
             Pair("A-Z", "title.az"),
             Pair("Z-A", "title"),
-            Pair("Update time", "update"),
-            Pair("Add time", "create")
+            Pair("Last Updated", "update"),
+            Pair("Oldest Updated", "updated.az")
+            Pair("Newest Added", "create"),
+            Pair("Oldest Added", "create.az"),
+            Pair("Most Views Totally", "views_a"),
+            Pair("Most Views 365 days", "views_y"),
+            Pair("Most Views 30 days", "views_m"),
+            Pair("Most Views 7 days", "views_w"),
+            Pair("Most Views 24 hours", "views_d"),
+            Pair("Most Views 60 minutes", "views_h"),
+            Pair("Least Views Totally", "views_a.az"),
+            Pair("Least Views 365 days", "views_y.az"),
+            Pair("Least Views 30 days", "views_m.az"),
+            Pair("Least Views 7 days", "views_w.az"),
+            Pair("Least Views 24 hours", "views_d.az"),
+            Pair("Least Views 60 minutes", "views_h.az")
         )
     )
     
