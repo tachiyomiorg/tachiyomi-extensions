@@ -46,6 +46,7 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
 
 private class MangaSum : WPComics("MangaSum", "https://mangasum.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/genres?keyword=$query&page=$page", headers)
+    override fun searchMangaSelector() = "div.items div.item div.image a:not([title*=' - Raw'])"
 }
 
 private class XoxoComics : WPComics("XOXO Comics", "https://xoxocomics.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
