@@ -476,7 +476,10 @@ open class BatoTo(
         Tag("Wuxia"),
         Tag("Xianxia"),
         Tag("Xuanhuan"),
-        Tag("Zombies")
+        Tag("Zombies"),
+        Tag("c"),
+        Tag("youkai"),
+        Tag("uncategirized")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
