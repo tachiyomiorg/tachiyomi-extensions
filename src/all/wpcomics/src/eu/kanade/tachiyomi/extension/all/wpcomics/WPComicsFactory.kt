@@ -20,6 +20,7 @@ class WPComicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         ManhuaES(),
         MangaSum(),
+        MangaSumRAW(),
         XoxoComics(),
         NhatTruyen(),
         NetTruyen(),
@@ -42,6 +43,16 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
     }
 
     override val pageListSelector = "div.chapter-detail ul img, div.chapter-detail div:not(.container) > img, div.chapter-detail p > img"
+}
+
+private class MangaSumRAW : WPComics("MangaSum RAW", "https://mangasum.com", "ja", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/raw" + if (page > 1) "?page=$page" else "", headers)
+    }
+    override fun popularMangaSelector() = "div.items div.item"
+    override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/genres?keyword=$query&page=$page", headers)
+    override fun searchMangaSelector() = "div.items div.item div.image a[title*=' - Raw']"
 }
 
 private class MangaSum : WPComics("MangaSum", "https://mangasum.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
