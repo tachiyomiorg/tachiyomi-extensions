@@ -134,7 +134,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun LibraryDto.toSManga(): SManga =
         SManga.create().apply {
-            title = rus_name
+            title = en_name + "\n" + rus_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
         }
@@ -210,7 +210,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun MangaDetDto.toSManga(): SManga {
         val o = this
         return SManga.create().apply {
-            title = rus_name
+            title = en_name + "\n" + rus_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
             this.description = Jsoup.parse(o.description).text()
@@ -238,7 +238,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
-        branches[series.content.rus_name] = series.content.branches
+        branches[series.content.en_name + "\n" + series.content.rus_name] = series.content.branches
         return series.content.toSManga()
     }
 
@@ -247,7 +247,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         // manga requiring login return "content" as a JsonArray instead of the JsonObject we expect
         return if (gson.fromJson<JsonObject>(responseString)["content"].isJsonObject) {
             val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(responseString)
-            branches[series.content.rus_name] = series.content.branches
+            branches[series.content.en_name + "\n" + series.content.rus_name] = series.content.branches
             series.content.branches
         } else {
             emptyList()
