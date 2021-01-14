@@ -189,6 +189,7 @@ class Kumanga : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val document = response.asJsoup()
+        //atob(atob(test).split("").reverse().join("").substr(10).slice(0x0, -0xa))
         val imagesJsonListStr = document.select("script:containsData(var pUrl=)").firstOrNull()?.data()
             ?.substringAfter("var pUrl=")
             ?.substringBefore(";")
