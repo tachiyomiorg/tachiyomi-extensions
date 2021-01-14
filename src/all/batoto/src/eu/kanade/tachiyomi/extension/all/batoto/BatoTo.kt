@@ -487,7 +487,7 @@ open class BatoTo(
         Tag("Zombies"),
         Tag("award_winning"),
         Tag("youkai"),
-        Tag("uncategirized")
+        Tag("uncategorized")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
