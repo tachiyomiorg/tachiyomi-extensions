@@ -5,7 +5,7 @@ ext {
     extName = 'zBulu'
     pkgNameSuffix = 'all.zbulu'
     extClass = '.ZbuluFactory'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 
