@@ -61,7 +61,6 @@ class Kumanga : HttpSource() {
         .build()
 
     private var kumangaToken = ""
-    private val tokenRegex = Regex(""""([^"\s]{100,})"""")
 
     private fun encodeAndReverse(dtValue: String): String {
         return Base64.encodeToString(dtValue.toByteArray(), Base64.DEFAULT).reversed().trim()
