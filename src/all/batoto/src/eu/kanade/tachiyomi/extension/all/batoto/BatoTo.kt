@@ -485,7 +485,7 @@ open class BatoTo(
         Tag("Xianxia"),
         Tag("Xuanhuan"),
         Tag("Zombies"),
-        Tag("c"),
+        Tag("award_winning"),
         Tag("youkai"),
         Tag("uncategirized")
     )
