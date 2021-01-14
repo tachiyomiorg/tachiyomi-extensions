@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.kumanga
 
+import android.util.Base64
+import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -22,7 +24,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -63,12 +64,31 @@ class Kumanga : HttpSource() {
     private var kumangaToken = ""
     private val tokenRegex = Regex(""""([^"\s]{100,})"""")
 
-    private fun getKumangaToken() {
-        kumangaToken = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
+    private fun getKumangaTokenKey(dtValue: String): String {
+        // dt attribute contain the value
+        // in the javascript code (which is obfuscated) they use this formula reverse(btoa(reverse(btoa(DT_VALUE)))).replace(/=/g, 'k').toLowerCase()
+        return Base64.encodeToString(Base64.encodeToString(dtValue.toByteArray(), Base64.NO_WRAP).reversed().toByteArray(), Base64.DEFAULT).reversed().toString()
+    }
+
+    private fun encode(dtValue: String): String {
+        return Base64.encodeToString(dtValue.toByteArray(), Base64.DEFAULT).reversed().trim()
+    }
+
+    private fun getKumangaToken(): String {
+        val body = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
+        var dt = body.select("#searchinput").attr("dt").toString()
+        var kumangaTokenKey = encode(encode(dt)).replace("=", "k").toLowerCase()
+        Log.e("Kumanga", "dt = $dt | kumangaTokenKey = " + encode(encode(dt)).replace("=", "k").toLowerCase())
+        kumangaToken = body.select("div.input-group [type=hidden]").attr(kumangaTokenKey)
+        return kumangaToken
+        /*body.select("div.input-group [type=hidden]")
+            ?.let { it.attr(kumangaTokenKey).toString() }
+            ?: throw IOException("No fue posible obtener la lista de mangas")*/
+            /*
             .select("div.input-group [type=hidden]")
             .firstOrNull()
             ?.let { tokenRegex.find(it.outerHtml())?.groupValues?.get(1) }
-            ?: throw IOException("No fue posible obtener la lista de mangas")
+            ?: throw IOException("No fue posible obtener la lista de mangas")*/
     }
 
     private fun getMangaCover(mangaId: String) = "https://static.kumanga.com/manga_covers/$mangaId.jpg?w=201"
