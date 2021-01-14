@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.es.kumanga
 
 import android.util.Base64
-import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -64,31 +63,20 @@ class Kumanga : HttpSource() {
     private var kumangaToken = ""
     private val tokenRegex = Regex(""""([^"\s]{100,})"""")
 
-    private fun getKumangaTokenKey(dtValue: String): String {
-        // dt attribute contain the value
-        // in the javascript code (which is obfuscated) they use this formula reverse(btoa(reverse(btoa(DT_VALUE)))).replace(/=/g, 'k').toLowerCase()
-        return Base64.encodeToString(Base64.encodeToString(dtValue.toByteArray(), Base64.NO_WRAP).reversed().toByteArray(), Base64.DEFAULT).reversed().toString()
+    private fun encodeAndReverse(dtValue: String): String {
+        return Base64.encodeToString(dtValue.toByteArray(), Base64.DEFAULT).reversed().trim()
     }
 
-    private fun encode(dtValue: String): String {
-        return Base64.encodeToString(dtValue.toByteArray(), Base64.DEFAULT).reversed().trim()
+    private fun decodeBase64(encodedString: String): String {
+        return Base64.decode(encodedString, Base64.DEFAULT).toString(charset("UTF-8"))
     }
 
     private fun getKumangaToken(): String {
         val body = client.newCall(GET("$baseUrl/mangalist?&page=1", headers)).execute().asJsoup()
         var dt = body.select("#searchinput").attr("dt").toString()
-        var kumangaTokenKey = encode(encode(dt)).replace("=", "k").toLowerCase()
-        Log.e("Kumanga", "dt = $dt | kumangaTokenKey = " + encode(encode(dt)).replace("=", "k").toLowerCase())
+        var kumangaTokenKey = encodeAndReverse(encodeAndReverse(dt)).replace("=", "k").toLowerCase()
         kumangaToken = body.select("div.input-group [type=hidden]").attr(kumangaTokenKey)
         return kumangaToken
-        /*body.select("div.input-group [type=hidden]")
-            ?.let { it.attr(kumangaTokenKey).toString() }
-            ?: throw IOException("No fue posible obtener la lista de mangas")*/
-            /*
-            .select("div.input-group [type=hidden]")
-            .firstOrNull()
-            ?.let { tokenRegex.find(it.outerHtml())?.groupValues?.get(1) }
-            ?: throw IOException("No fue posible obtener la lista de mangas")*/
     }
 
     private fun getMangaCover(mangaId: String) = "https://static.kumanga.com/manga_covers/$mangaId.jpg?w=201"
@@ -189,11 +177,11 @@ class Kumanga : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
         val document = response.asJsoup()
-        //atob(atob(test).split("").reverse().join("").substr(10).slice(0x0, -0xa))
-        val imagesJsonListStr = document.select("script:containsData(var pUrl=)").firstOrNull()?.data()
+        var imagesJsonListStr = document.select("script:containsData(var pUrl=)").firstOrNull()?.data()
             ?.substringAfter("var pUrl=")
             ?.substringBefore(";")
             ?: throw Exception("imagesJsonListStr null")
+        imagesJsonListStr = decodeBase64(decodeBase64(imagesJsonListStr).reversed().dropLast(10).drop(10))
         val imagesJsonList = parseJson(imagesJsonListStr).array
 
         imagesJsonList.forEach {
