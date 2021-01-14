@@ -77,4 +77,4 @@ class WebtoonsChineseTraditional : WebtoonsDefault("zh", "zh-hant", "zh_TW", Sim
 
 class WebtoonsFr : WebtoonsDefault("fr", dateFormat = SimpleDateFormat("d MMM yyyy", Locale.FRENCH))
 
-class WebtoonsEs : WebtoonsDefault("es", dateFormat = SimpleDateFormat("d MMM yyyy", Locale("es")))
+class WebtoonsEs : WebtoonsDefault("es", dateFormat = SimpleDateFormat("d-MMM-yyyy", Locale("es")))
