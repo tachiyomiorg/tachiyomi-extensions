@@ -238,7 +238,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
-        branches[series.content.en_name + "\n" + series.content.rus_name] = series.content.branches
+        branches[series.content.en_name] = series.content.branches
         return series.content.toSManga()
     }
 
@@ -247,7 +247,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         // manga requiring login return "content" as a JsonArray instead of the JsonObject we expect
         return if (gson.fromJson<JsonObject>(responseString)["content"].isJsonObject) {
             val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(responseString)
-            branches[series.content.en_name + "\n" + series.content.rus_name] = series.content.branches
+            branches[series.content.en_name] = series.content.branches
             series.content.branches
         } else {
             emptyList()
