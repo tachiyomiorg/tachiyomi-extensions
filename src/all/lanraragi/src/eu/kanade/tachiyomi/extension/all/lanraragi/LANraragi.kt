@@ -10,9 +10,11 @@ import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchivePage
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchiveSearchResult
+import eu.kanade.tachiyomi.extension.all.lanraragi.model.Category
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -20,8 +22,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import rx.Single
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -100,7 +106,27 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = getApiUriBuilder("/api/search")
-        uri.appendQueryParameter("start", ((page - 1) * lastResultCount).toString())
+        var startPageOffset = 0
+
+        filters.forEach { filter ->
+            when (filter) {
+                is StartingPage -> {
+                    startPageOffset = filter.state.toIntOrNull() ?: 1
+
+                    // Exception for API wrapping around and user input of 0
+                    if (startPageOffset > 0) {
+                        startPageOffset -= 1
+                    }
+                }
+                is NewArchivesOnly -> if (filter.state) uri.appendQueryParameter("newonly", "true")
+                is UntaggedArchivesOnly -> if (filter.state) uri.appendQueryParameter("untaggedonly", "true")
+                is DescendingOrder -> if (filter.state) uri.appendQueryParameter("order", "desc")
+                is SortByNamespace -> if (filter.state.isNotEmpty()) uri.appendQueryParameter("sortby", filter.state.trim())
+                is CategoryGroup -> uri.appendQueryParameter("category", filter.state.first { it.state }.id)
+            }
+        }
+
+        uri.appendQueryParameter("start", ((page - 1 + startPageOffset) * lastResultCount).toString())
 
         if (query.isNotEmpty()) {
             uri.appendQueryParameter("filter", query)
@@ -136,6 +162,30 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             add("Authorization", "Bearer $apiKey64")
         }
     }
+
+    private class DescendingOrder : Filter.CheckBox("Descending Order", false)
+    private class NewArchivesOnly : Filter.CheckBox("New Archives Only", false)
+    private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
+    private class StartingPage(lastResultCount: String) : Filter.Text("Starting Page (per: $lastResultCount)", "")
+    private class SortByNamespace : Filter.Text("Sort by (namespace)", "")
+    private class CategoryList(val id: String, name: String) : Filter.CheckBox(name, false)
+    private class CategoryGroup(categories: List<CategoryList>) : Filter.Group<CategoryList>("Category", categories)
+
+    override fun getFilterList() = FilterList(
+        CategoryGroup(
+            categories
+                .sortedWith(compareByDescending<Category> { it.pinned }.thenBy { it.name })
+                .map { CategoryList(it.id, it.name) }
+        ),
+        Filter.Separator(),
+        DescendingOrder(),
+        NewArchivesOnly(),
+        UntaggedArchivesOnly(),
+        StartingPage(lastResultCount.toString()),
+        SortByNamespace()
+    )
+
+    private var categories = emptyList<Category>()
 
     // Preferences
     private val preferences: SharedPreferences by lazy {
@@ -269,5 +319,26 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
 
         return "N/A"
+    }
+
+    // Headers (currently auth) are done in headersBuilder
+    override val client: OkHttpClient = network.client.newBuilder().build()
+
+    init {
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/categories", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { response ->
+                    categories = try {
+                        gson.fromJson(response.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                },
+                {}
+            )
     }
 }
