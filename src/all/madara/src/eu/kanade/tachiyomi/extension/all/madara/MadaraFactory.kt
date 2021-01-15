@@ -222,6 +222,7 @@ class MadaraFactory : SourceFactory {
         GrazeScans(),
         UyuyanBalik(),
         MangaWeebs(),
+        MMScans(),
 
         // removed because scanlator site and they requested
         // AhStudios(),
@@ -1510,3 +1511,5 @@ class GrazeScans : Madara("Graze Scans", "https://grazescans.com/", "en")
 class UyuyanBalik : Madara("Uyuyan Balik", "https://uyuyanbalik.com/", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.US))
 
 class MangaWeebs : Madara("Manga Weebs", "https://mangaweebs.in", "en")
+
+class MMScans : Madara("MMScans", "https://mm-scans.com/", "en")
