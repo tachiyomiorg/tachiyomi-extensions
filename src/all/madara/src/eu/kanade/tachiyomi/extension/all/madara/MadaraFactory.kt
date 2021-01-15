@@ -219,6 +219,8 @@ class MadaraFactory : SourceFactory {
         YuriVerso(),
         ZinManga(),
         ZManga(),
+        GrazeScans(),
+        UyuyanBalik(),
 
         // removed because scanlator site and they requested
         // AhStudios(),
@@ -1501,3 +1503,7 @@ class Voidscans : Madara("Void Scans", "https://voidscans.com", "en") {
 class GeceninLordu : Madara("Gecenin Lordu", "https://geceninlordu.com/", "tr", SimpleDateFormat("dd MMM yyyy", Locale("tr"))) {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/?s=$query&post_type=wp-manga")
 }
+
+class GrazeScans : Madara("Graze Scans", "https://grazescans.com/", "en")
+
+class UyuyanBalik : Madara("Uyuyan Balik", "https://uyuyanbalik.com/", "tr", SimpleDateFormat("dd MMMM yyyy", Locale.US))
