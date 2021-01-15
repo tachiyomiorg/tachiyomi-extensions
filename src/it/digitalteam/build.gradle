@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'DigitalTeam'
+    pkgNameSuffix = 'it.digitalteam'
+    extClass = '.DigitalTeam'
+    extVersionCode = 1
+    libVersion = '1.2'
+    containsNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"
