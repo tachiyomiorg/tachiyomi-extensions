@@ -49,7 +49,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         get() = preferences.getString("apiKey", "")!!
 
     private val latestNamespacePref: String
-        get() = preferences.getString("latestNamespacePref", "")!!
+        get() = preferences.getString("latestNamespacePref", DEFAULT_SORT_BY_NS)!!
 
     private val gson: Gson = Gson()
 
@@ -120,7 +120,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         if (prefNewOnly) filters.add(NewArchivesOnly(true))
 
         if (latestNamespacePref.isNotBlank()) {
-            filters.add(SortByNamespace("date_added"))
+            filters.add(SortByNamespace(latestNamespacePref))
             filters.add(DescendingOrder(true))
         }
 
@@ -261,7 +261,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val latestNewOnlyPref = CheckBoxPreference(screen.context).apply {
             key = "latestNewOnly"
             title = "Latest - New Only"
-            summary = "Only show items marked \"new\" for Latest."
+            summary = ""
+            setDefaultValue(true)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val checkValue = newValue as Boolean
@@ -273,15 +274,16 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             key = "latestNamespacePref"
             title = "Latest - Sort by Namespace"
             text = latestNamespacePref
-            summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+            summary = "Sort by the given namespace for Latest, such as date_added."
             dialogTitle = "Latest - Sort by Namespace"
+            setDefaultValue(DEFAULT_SORT_BY_NS)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val latestNamespacePref = newValue as String
 
                 this.apply {
                     text = latestNamespacePref
-                    summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+                    summary = "Sort by the given namespace for Latest, such as date_added."
                 }
 
                 preferences.edit().putString("latestNamespacePref", newValue).commit()
@@ -339,7 +341,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val latestNewOnlyPref = androidx.preference.CheckBoxPreference(screen.context).apply {
             key = "latestNewOnly"
             title = "Latest - New Only"
-            summary = "Only show items marked \"new\" for Latest."
+            summary = ""
+            setDefaultValue(true)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val checkValue = newValue as Boolean
@@ -351,15 +354,16 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             key = "latestNamespacePref"
             title = "Latest - Sort by Namespace"
             text = latestNamespacePref
-            summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+            summary = "Sort by the given namespace for Latest, such as date_added."
             dialogTitle = "Latest - Sort by Namespace"
+            setDefaultValue(DEFAULT_SORT_BY_NS)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val latestNamespacePref = newValue as String
 
                 this.apply {
                     text = latestNamespacePref
-                    summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+                    summary = "Sort by the given namespace for Latest, such as date_added."
                 }
 
                 preferences.edit().putString("latestNamespacePref", newValue).commit()
@@ -464,5 +468,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                 },
                 {}
             )
+    }
+
+    companion object {
+        private const val DEFAULT_SORT_BY_NS = "date_added"
     }
 }
