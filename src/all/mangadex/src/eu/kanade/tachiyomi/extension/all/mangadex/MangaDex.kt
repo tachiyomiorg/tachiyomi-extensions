@@ -495,7 +495,7 @@ abstract class MangaDex(
     }
 
     private fun getFinalChapter(jsonObj: JsonObject): String =
-        jsonObj.get("last_chapter").nullString?.trim() ?: ""
+        jsonObj.get("lastChapter").nullString?.trim() ?: ""
 
     private fun isOneshot(chapterJson: JsonArray, lastChapter: String): Boolean {
         val chapter =
