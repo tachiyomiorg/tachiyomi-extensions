@@ -119,7 +119,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
         if (prefNewOnly) filters.add(NewArchivesOnly(true))
 
-        if (latestNamespacePref != "") {
+        if (latestNamespacePref.isNotBlank()) {
             filters.add(SortByNamespace("date_added"))
             filters.add(DescendingOrder(true))
         }
