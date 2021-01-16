@@ -83,9 +83,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                 chapter_number = 1F
                 name = "Chapter"
 
-                val date = getDateAdded(archive.tags).toLongOrNull()
-                if (date != null)
-                    date_upload = date
+                getDateAdded(archive.tags).toLongOrNull()?.let {
+                    date_upload = it
+                }
             }
         )
     }
