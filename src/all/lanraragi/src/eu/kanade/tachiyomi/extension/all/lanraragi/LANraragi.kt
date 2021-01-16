@@ -261,7 +261,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val latestNewOnlyPref = CheckBoxPreference(screen.context).apply {
             key = "latestNewOnly"
             title = "Latest - New Only"
-            summary = ""
             setDefaultValue(true)
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -283,7 +282,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
                 this.apply {
                     text = latestNamespacePref
-                    summary = "Sort by the given namespace for Latest, such as date_added."
                 }
 
                 preferences.edit().putString("latestNamespacePref", newValue).commit()
@@ -341,7 +339,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val latestNewOnlyPref = androidx.preference.CheckBoxPreference(screen.context).apply {
             key = "latestNewOnly"
             title = "Latest - New Only"
-            summary = ""
             setDefaultValue(true)
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -363,7 +360,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
                 this.apply {
                     text = latestNamespacePref
-                    summary = "Sort by the given namespace for Latest, such as date_added."
                 }
 
                 preferences.edit().putString("latestNamespacePref", newValue).commit()
