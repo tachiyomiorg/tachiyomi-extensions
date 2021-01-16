@@ -151,11 +151,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                 is UntaggedArchivesOnly -> if (filter.state) uri.appendQueryParameter("untaggedonly", "true")
                 is DescendingOrder -> if (filter.state) uri.appendQueryParameter("order", "desc")
                 is SortByNamespace -> if (filter.state.isNotEmpty()) uri.appendQueryParameter("sortby", filter.state.trim())
-                is CategoryGroup -> {
-                    val category = filter.state.firstOrNull { it.state }
-
-                    if (category != null) uri.appendQueryParameter("category", category.id)
-                }
+                is CategorySelect -> if (filter.state > 0) uri.appendQueryParameter("category", filter.toUriPart())
             }
         }
 
@@ -201,15 +197,10 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
     private class StartingPage(lastResultCount: String) : Filter.Text("Starting Page (per: $lastResultCount)", "")
     private class SortByNamespace(defaultText: String = "") : Filter.Text("Sort by (namespace)", defaultText)
-    private class CategoryList(val id: String, name: String) : Filter.CheckBox(name, false)
-    private class CategoryGroup(categories: List<CategoryList>) : Filter.Group<CategoryList>("Category", categories)
+    private class CategorySelect(categories: Array<Pair<String?, String>>) : UriPartFilter("Category", categories)
 
     override fun getFilterList() = FilterList(
-        CategoryGroup(
-            categories
-                .sortedWith(compareByDescending<Category> { it.pinned }.thenBy { it.name })
-                .map { CategoryList(it.id, it.name) }
-        ),
+        CategorySelect(getCategoryPairs(categories)),
         Filter.Separator(),
         DescendingOrder(),
         NewArchivesOnly(),
@@ -382,6 +373,29 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     // Helper
+    protected open class UriPartFilter(displayName: String, val vals: Array<Pair<String?, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
+        fun toUriPart() = vals[state].first
+    }
+
+    private fun getCategoryPairs(categories: List<Category>): Array<Pair<String?, String>> {
+        // Empty pair to disable. Sort by pinned status then name for convenience.
+        // Web client sort is pinned > last_used but reflects between page changes.
+
+        val pin = "\uD83D\uDCCC "
+
+        return listOf(Pair("", ""))
+            .plus(
+                categories
+                    .sortedWith(compareByDescending<Category> { it.pinned }.thenBy { it.name })
+                    .map {
+                        val pinned = if (it.pinned == "1") pin else ""
+                        Pair(it.id, "$pinned${it.name}")
+                    }
+            )
+            .toTypedArray()
+    }
+
     private fun getApiUriBuilder(path: String): Uri.Builder {
         val uri = Uri.parse("$baseUrl$path").buildUpon()
 
