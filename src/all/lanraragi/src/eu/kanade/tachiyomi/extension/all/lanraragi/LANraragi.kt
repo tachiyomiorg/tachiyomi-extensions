@@ -8,6 +8,7 @@ import android.support.v7.preference.PreferenceScreen
 import android.util.Base64
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
+import eu.kanade.tachiyomi.extension.all.lanraragi.model.Archive
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchivePage
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchiveSearchResult
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.Category
@@ -55,10 +56,19 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
     }
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val id = getId(response)
+    override fun chapterListRequest(manga: SManga): Request {
+        // Upgrade the LRR reader URL to the API metadata endpoint
+        // without breaking WebView (i.e. for management).
 
-        val uri = getApiUriBuilder("/api/archives/$id/extract")
+        val id = manga.url.split('=').last()
+        val uri = getApiUriBuilder("/api/archives/$id/metadata").build()
+
+        return GET(uri.toString(), headers)
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val archive = gson.fromJson<Archive>(response.body()!!.string())
+        val uri = getApiUriBuilder("/api/archives/${archive.arcid}/extract")
 
         return listOf(
             SChapter.create().apply {
@@ -67,6 +77,10 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                 url = uriBuild.toString()
                 chapter_number = 1F
                 name = "Chapter"
+
+                val date = getDateAdded(archive.tags).toLongOrNull()
+                if (date != null)
+                    date_upload = date
             }
         )
     }
@@ -319,6 +333,19 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
 
         return "N/A"
+    }
+
+    private fun getDateAdded(tags: String): String {
+        tags.split(',').forEach {
+            if (it.contains(':')) {
+                val temp = it.trim().split(':')
+
+                // Pad Date Added LRR plugin to milliseconds
+                if (temp[0].equals("date_added", true)) return temp[1].padEnd(13, '0')
+            }
+        }
+
+        return ""
     }
 
     // Headers (currently auth) are done in headersBuilder
