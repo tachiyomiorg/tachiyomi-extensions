@@ -195,7 +195,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     private class DescendingOrder(overrideState: Boolean = false) : Filter.CheckBox("Descending Order", overrideState)
     private class NewArchivesOnly(overrideState: Boolean = false) : Filter.CheckBox("New Archives Only", overrideState)
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
-    private class StartingPage(lastResultCount: String) : Filter.Text("Starting Page (per: $lastResultCount)", "")
+    private class StartingPage() : Filter.Text("Starting Page", "")
     private class SortByNamespace(defaultText: String = "") : Filter.Text("Sort by (namespace)", defaultText)
     private class CategorySelect(categories: Array<Pair<String?, String>>) : UriPartFilter("Category", categories)
 
@@ -205,7 +205,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         DescendingOrder(),
         NewArchivesOnly(),
         UntaggedArchivesOnly(),
-        StartingPage(lastResultCount.toString()),
+        StartingPage(),
         SortByNamespace()
     )
 
