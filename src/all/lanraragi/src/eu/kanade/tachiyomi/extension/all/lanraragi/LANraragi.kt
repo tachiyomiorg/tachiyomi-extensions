@@ -136,7 +136,11 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                 is UntaggedArchivesOnly -> if (filter.state) uri.appendQueryParameter("untaggedonly", "true")
                 is DescendingOrder -> if (filter.state) uri.appendQueryParameter("order", "desc")
                 is SortByNamespace -> if (filter.state.isNotEmpty()) uri.appendQueryParameter("sortby", filter.state.trim())
-                is CategoryGroup -> uri.appendQueryParameter("category", filter.state.first { it.state }.id)
+                is CategoryGroup -> {
+                    val category = filter.state.firstOrNull { it.state }
+
+                    if (category != null) uri.appendQueryParameter("category", category.id)
+                }
             }
         }
 
