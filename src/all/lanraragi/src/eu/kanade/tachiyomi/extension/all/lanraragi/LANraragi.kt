@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.all.lanraragi
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
+import android.support.v7.preference.CheckBoxPreference
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.util.Base64
@@ -22,6 +23,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -45,6 +47,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     private val apiKey: String
         get() = preferences.getString("apiKey", "")!!
+
+    private val latestNamespacePref: String
+        get() = preferences.getString("latestNamespacePref", "")!!
 
     private val gson: Gson = Gson()
 
@@ -109,7 +114,17 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return searchMangaRequest(page, "", FilterList())
+        val filters = mutableListOf<Filter<*>>()
+        val prefNewOnly = preferences.getBoolean("latestNewOnly", false)
+
+        if (prefNewOnly) filters.add(NewArchivesOnly(true))
+
+        if (latestNamespacePref != "") {
+            filters.add(SortByNamespace("date_added"))
+            filters.add(DescendingOrder(true))
+        }
+
+        return searchMangaRequest(page, "", FilterList(filters))
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -150,7 +165,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             uri.appendQueryParameter("filter", query)
         }
 
-        return GET(uri.toString(), headers)
+        return GET(uri.toString(), headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -181,11 +196,11 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
     }
 
-    private class DescendingOrder : Filter.CheckBox("Descending Order", false)
-    private class NewArchivesOnly : Filter.CheckBox("New Archives Only", false)
+    private class DescendingOrder(overrideState: Boolean = false) : Filter.CheckBox("Descending Order", overrideState)
+    private class NewArchivesOnly(overrideState: Boolean = false) : Filter.CheckBox("New Archives Only", overrideState)
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
     private class StartingPage(lastResultCount: String) : Filter.Text("Starting Page (per: $lastResultCount)", "")
-    private class SortByNamespace : Filter.Text("Sort by (namespace)", "")
+    private class SortByNamespace(defaultText: String = "") : Filter.Text("Sort by (namespace)", defaultText)
     private class CategoryList(val id: String, name: String) : Filter.CheckBox(name, false)
     private class CategoryGroup(categories: List<CategoryList>) : Filter.Group<CategoryList>("Category", categories)
 
@@ -237,7 +252,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             key = "API Key"
             title = "API Key"
             text = apiKey
-            summary = apiKey
+            summary = "Required if No-Fun Mode is enabled."
             dialogTitle = "API Key"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -245,15 +260,47 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
                 this.apply {
                     text = apiKey
-                    summary = apiKey
+                    summary = "Required if No-Fun Mode is enabled."
                 }
 
                 preferences.edit().putString("apiKey", newValue).commit()
             }
         }
 
+        val latestNewOnlyPref = CheckBoxPreference(screen.context).apply {
+            key = "latestNewOnly"
+            title = "Latest - New Only"
+            summary = "Only show items marked \"new\" for Latest."
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean("latestNewOnly", checkValue).commit()
+            }
+        }
+
+        val latestNamespacePref = EditTextPreference(screen.context).apply {
+            key = "latestNamespacePref"
+            title = "Latest - Sort by Namespace"
+            text = latestNamespacePref
+            summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+            dialogTitle = "Latest - Sort by Namespace"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val latestNamespacePref = newValue as String
+
+                this.apply {
+                    text = latestNamespacePref
+                    summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+                }
+
+                preferences.edit().putString("latestNamespacePref", newValue).commit()
+            }
+        }
+
         screen.addPreference(hostnamePref)
         screen.addPreference(apiKeyPref)
+        screen.addPreference(latestNewOnlyPref)
+        screen.addPreference(latestNamespacePref)
     }
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -283,7 +330,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             key = "API Key"
             title = "API Key"
             text = apiKey
-            summary = apiKey
+            summary = "Required if No-Fun Mode is enabled."
             dialogTitle = "API Key"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -291,15 +338,47 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
                 this.apply {
                     text = apiKey
-                    summary = apiKey
+                    summary = "Required if No-Fun Mode is enabled."
                 }
 
                 preferences.edit().putString("apiKey", newValue).commit()
             }
         }
 
+        val latestNewOnlyPref = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = "latestNewOnly"
+            title = "Latest - New Only"
+            summary = "Only show items marked \"new\" for Latest."
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean("latestNewOnly", checkValue).commit()
+            }
+        }
+
+        val latestNamespacePref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = "latestNamespacePref"
+            title = "Latest - Sort by Namespace"
+            text = latestNamespacePref
+            summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+            dialogTitle = "Latest - Sort by Namespace"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val latestNamespacePref = newValue as String
+
+                this.apply {
+                    text = latestNamespacePref
+                    summary = "If specified, sort by this namespace for Latest. For example date_added.\nCurrent: $latestNamespacePref"
+                }
+
+                preferences.edit().putString("latestNamespacePref", newValue).commit()
+            }
+        }
+
         screen.addPreference(hostnamePref)
         screen.addPreference(apiKeyPref)
+        screen.addPreference(latestNewOnlyPref)
+        screen.addPreference(latestNamespacePref)
     }
 
     // Helper
@@ -344,8 +423,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             if (it.contains(':')) {
                 val temp = it.trim().split(':')
 
-                // Pad Date Added LRR plugin to milliseconds
-                if (temp[0].equals("date_added", true)) return temp[1].padEnd(13, '0')
+                // Pad Date Added LRR plugin (or user specified namespace) to milliseconds
+                if (temp[0].equals(latestNamespacePref, true)) return temp[1].padEnd(13, '0')
             }
         }
 
