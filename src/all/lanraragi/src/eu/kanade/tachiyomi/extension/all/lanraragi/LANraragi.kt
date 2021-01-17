@@ -132,6 +132,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     private var lastResultCount: Int = 100
+    private var lastRecordsFiltered: Int = 0
+    private var maxResultCount: Int = 0
+    private var totalRecords: Int = 0
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = getApiUriBuilder("/api/search")
@@ -155,7 +158,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             }
         }
 
-        uri.appendQueryParameter("start", ((page - 1 + startPageOffset) * lastResultCount).toString())
+        uri.appendQueryParameter("start", ((page - 1 + startPageOffset) * maxResultCount).toString())
 
         if (query.isNotEmpty()) {
             uri.appendQueryParameter("filter", query)
@@ -169,6 +172,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val currentStart = getStart(response)
 
         lastResultCount = jsonResult.data.size
+        maxResultCount = if (lastResultCount >= maxResultCount) lastResultCount else maxResultCount
+        lastRecordsFiltered = jsonResult.recordsFiltered
+        totalRecords = jsonResult.recordsTotal
 
         return MangasPage(
             jsonResult.data.map {
@@ -195,7 +201,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     private class DescendingOrder(overrideState: Boolean = false) : Filter.CheckBox("Descending Order", overrideState)
     private class NewArchivesOnly(overrideState: Boolean = false) : Filter.CheckBox("New Archives Only", overrideState)
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
-    private class StartingPage() : Filter.Text("Starting Page", "")
+    private class StartingPage(stats: String) : Filter.Text("Starting Page$stats", "")
     private class SortByNamespace(defaultText: String = "") : Filter.Text("Sort by (namespace)", defaultText)
     private class CategorySelect(categories: Array<Pair<String?, String>>) : UriPartFilter("Category", categories)
 
@@ -205,7 +211,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         DescendingOrder(),
         NewArchivesOnly(),
         UntaggedArchivesOnly(),
-        StartingPage(),
+        StartingPage(startingPageStats()),
         SortByNamespace()
     )
 
@@ -394,6 +400,10 @@ open class LANraragi : ConfigurableSource, HttpSource() {
                     }
             )
             .toTypedArray()
+    }
+
+    private fun startingPageStats(): String {
+        return if (maxResultCount > 0 && totalRecords > 0) " ($maxResultCount / $lastRecordsFiltered items)" else ""
     }
 
     private fun getApiUriBuilder(path: String): Uri.Builder {
