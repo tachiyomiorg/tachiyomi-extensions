@@ -191,6 +191,7 @@ class MadaraFactory : SourceFactory {
         RuyaManga(),
         S2Manga(),
         ShoujoHearts(),
+        Siyahmelek(),
         Skymanga(),
         SoloScanlation(),
         SpookyScanlations(),
@@ -1513,3 +1514,6 @@ class UyuyanBalik : Madara("Uyuyan Balik", "https://uyuyanbalik.com/", "tr", Sim
 class MangaWeebs : Madara("Manga Weebs", "https://mangaweebs.in", "en")
 
 class MMScans : Madara("MMScans", "https://mm-scans.com/", "en")
+
+@Nsfw
+class Siyahmelek : Madara("Siyahmelek", "https://siyahmelek.com", "tr", SimpleDateFormat("dd MMM yyyy", Locale("tr")))
