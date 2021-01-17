@@ -40,7 +40,6 @@ class WPMangaStreamFactory : SourceFactory {
         SekteKomik(),
         MangaSwat(),
         MangaRaw(),
-        SekteDoujin(),
         NonStopScans(),
         KomikTap(),
         Matakomik(),
@@ -683,8 +682,6 @@ class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
     override fun imageUrlParse(document: Document): String = document.select("a.img-block img").attr("abs:src")
     override fun getFilterList(): FilterList = FilterList()
 }
-
-class SekteDoujin : WPMangaStream("Sekte Doujin", "https://sektedoujin.com", "id")
 
 class NonStopScans : WPMangaStream("Non-Stop Scans", "https://www.nonstopscans.com", "en")
 
