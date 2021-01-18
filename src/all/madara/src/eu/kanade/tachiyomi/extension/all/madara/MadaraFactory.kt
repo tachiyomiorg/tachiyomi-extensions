@@ -164,6 +164,7 @@ class MadaraFactory : SourceFactory {
         MiracleScans(),
         MixedManga(),
         MMScans(),
+        MundoWuxia(),
         MysticalMerries(),
         NazarickScans(),
         NeatManga(),
@@ -219,6 +220,7 @@ class MadaraFactory : SourceFactory {
         WebtoonXYZ(),
         WeScans(),
         WoopRead(),
+        WorldRomanceTranslation(),
         WuxiaWorld(),
         YaoiToshokan(),
         YokaiJump(),
@@ -1521,3 +1523,7 @@ class Siyahmelek : Madara("Siyahmelek", "https://siyahmelek.com", "tr", SimpleDa
 
 @Nsfw
 class SekteDoujin : Madara("Sekte Doujin", "https://sektedoujin.xyz", "id")
+
+class MundoWuxia : Madara("Mundo Wuxia", "https://mundowuxia.com", "es", SimpleDateFormat("MMMM dd, yyyy", Locale("es")))
+
+class WorldRomanceTranslation : Madara("World Romance Translation", "https://wrt.my.id/", "id", SimpleDateFormat("dd MMMM yyyy", Locale("id")))
