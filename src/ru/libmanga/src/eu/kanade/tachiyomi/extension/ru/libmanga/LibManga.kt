@@ -221,7 +221,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             .asJsoup()
             .toString()
             .substringAfter("window.__DATA__ = ")
-            .substringBefore(";")
+            .substringBefore("window._SITE_COLOR_")
+            .substringBeforeLast(";")
 
         val data = jsonParser.parse(dataStr).obj
         val chaptersList = data["chapters"]["list"].nullArray
