@@ -430,26 +430,29 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return getTopResponse(response).request().url().queryParameter("start")!!.toInt()
     }
 
-    private fun getArtist(tags: String): String {
-        tags.split(',').forEach {
+    private fun getNSTag(tags: String?, tag: String): List<String>? {
+        tags?.split(',')?.forEach {
             if (it.contains(':')) {
-                val temp = it.trim().split(':')
-
-                if (temp[0].equals("artist", true)) return temp[1]
+                val temp = it.trim().split(":", limit = 2)
+                if (temp[0].equals(tag, true)) return temp
             }
+        }
+
+        return null
+    }
+
+    private fun getArtist(tags: String?): String {
+        getNSTag(tags, "artist")?.let {
+            return it[1]
         }
 
         return "N/A"
     }
 
-    private fun getDateAdded(tags: String): String {
-        tags.split(',').forEach {
-            if (it.contains(':')) {
-                val temp = it.trim().split(':')
-
-                // Pad Date Added LRR plugin (or user specified namespace) to milliseconds
-                if (temp[0].equals(latestNamespacePref, true)) return temp[1].padEnd(13, '0')
-            }
+    private fun getDateAdded(tags: String?): String {
+        getNSTag(tags, "date_added")?.let {
+            // Pad Date Added NS to milliseconds
+            return it[1].padEnd(13, '0')
         }
 
         return ""
