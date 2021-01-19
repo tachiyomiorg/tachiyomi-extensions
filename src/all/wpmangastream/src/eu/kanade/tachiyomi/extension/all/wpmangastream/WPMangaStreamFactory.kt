@@ -198,144 +198,79 @@ class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikca
         GenreListFilter(getGenreList())
     )
 }
+
 class WestManga : WPMangaStream("West Manga (WP Manga Stream)", "https://westmanga.info", "id") {
-    override fun popularMangaRequest(page: Int): Request {
-        val url = if (page == 1) "$baseUrl/manga-list/?popular" else "$baseUrl/manga-list/page/$page/?popular"
-        return GET(url, headers)
-    }
-
-    override fun latestUpdatesRequest(page: Int): Request {
-        val url = if (page == 1) "$baseUrl/manga-list/?latest" else "$baseUrl/manga-list/page/$page/?latest"
-        return GET(url, headers)
-    }
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var builtUrl = if (page == 1) "$baseUrl/manga/" else "$baseUrl/manga/page/$page/"
-        if (query != "") {
-            builtUrl = if (page == 1) "$baseUrl/?s=$query&post_type=manga" else "$baseUrl/page/2/?s=$query&post_type=manga"
-        } else if (filters.size > 0) {
-            filters.forEach { filter ->
-                when (filter) {
-                    is SortByFilter -> {
-                        builtUrl = if (page == 1) "$baseUrl/manga-list/?" + filter.toUriPart() else "$baseUrl/manga-list/page/$page/?" + filter.toUriPart()
-                    }
-                    is GenreListFilter -> {
-                        builtUrl = if (page == 1) "$baseUrl/genre/" + filter.toUriPart() else "$baseUrl/genre/" + filter.toUriPart() + "/page/$page/"
-                    }
-                }
-            }
-        }
-        val url = HttpUrl.parse(builtUrl)!!.newBuilder()
-        return GET(url.build().toString(), headers)
-    }
-
-    override fun popularMangaSelector() = "div.result-search"
-
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.fletch > .img_search > img").attr("src")
-        element.select(".kanan_search > .search_title > .titlex > a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
-        }
-        return manga
-    }
-
-    override fun popularMangaNextPageSelector() = ".paginado>ul>li.dd + li.a"
-
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("table.attr").first()
-        val descElement = document.select("div.sin").first()
-        val sepName = infoElement.select("tr:nth-child(5)>td").first()
-        val manga = SManga.create()
-        manga.author = sepName.text()
-        manga.artist = sepName.text()
-        val genres = mutableListOf<String>()
-        infoElement.select("tr:nth-child(6)>td > a").forEach { element ->
-            val genre = element.text()
-            genres.add(genre)
-        }
-        manga.genre = genres.joinToString(", ")
-        manga.status = parseStatus(infoElement.select("tr:nth-child(4)>td").text())
-        manga.description = descElement.select("p").text()
-        manga.thumbnail_url = document.select(".topinfo > img").attr("src")
-        return manga
-    }
-
-    private class SortByFilter : UriPartFilter(
-        "Sort By",
-        arrayOf(
-            Pair("Default", ""),
-            Pair("A-Z", "A-Z"),
-            Pair("Latest Added", "latest"),
-            Pair("Popular", "popular")
-        )
-    )
-
-    private class GenreListFilter : UriPartFilter(
-        "Genre",
-        arrayOf(
-            Pair("Default", ""),
-            Pair("4-Koma", "4-koma"),
-            Pair("Action", "action"),
-            Pair("Adventure", "adventure"),
-            Pair("Comedy", "comedy"),
-            Pair("Cooking", "cooking"),
-            Pair("Demons", "demons"),
-            Pair("Drama", "drama"),
-            Pair("Ecchi", "ecchi"),
-            Pair("Fantasy", "fantasy"),
-            Pair("FantasyAction", "fantasyaction"),
-            Pair("Game", "game"),
-            Pair("Gender Bender", "gender-bender"),
-            Pair("Gore", "gore"),
-            Pair("Harem", "harem"),
-            Pair("Historical", "historical"),
-            Pair("Horro", "horro"),
-            Pair("Horror", "horror"),
-            Pair("Isekai", "isekai"),
-            Pair("Isekai Action", "isekai-action"),
-            Pair("Josei", "josei"),
-            Pair("Magic", "magic"),
-            Pair("Manga", "manga"),
-            Pair("Manhua", "manhua"),
-            Pair("Martial arts", "martial-arts"),
-            Pair("Mature", "mature"),
-            Pair("Mecha", "mecha"),
-            Pair("Medical", "medical"),
-            Pair("Music", "music"),
-            Pair("Mystery", "mystery"),
-            Pair("Oneshot", "oneshot"),
-            Pair("Project", "project"),
-            Pair("Psychological", "psychological"),
-            Pair("Romance", "romance"),
-            Pair("School", "school"),
-            Pair("School life", "school-life"),
-            Pair("Sci fi", "sci-fi"),
-            Pair("Seinen", "seinen"),
-            Pair("Shoujo", "shoujo"),
-            Pair("Shoujo Ai", "shoujo-ai"),
-            Pair("Shounen", "shounen"),
-            Pair("Slice of Life", "slice-of-life"),
-            Pair("Sports", "sports"),
-            Pair("Super Power", "super-power"),
-            Pair("Supernatural", "supernatural"),
-            Pair("Suspense", "suspense"),
-            Pair("Thriller", "thriller"),
-            Pair("Tragedy", "tragedy"),
-            Pair("Vampire", "vampire"),
-            Pair("Webtoons", "webtoons"),
-            Pair("Yuri", "yuri")
-        )
-    )
-
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: sort and genre can't be combined and ignored when using text search!"),
-        Filter.Separator(),
-        SortByFilter(),
-        GenreListFilter()
+    override fun getGenreList(): List<Genre> = listOf(
+        Genre("4 Koma", "344"),
+        Genre("Action", "13"),
+        Genre("Adventure", "4"),
+        Genre("Anthology", "1494"),
+        Genre("Comedy", "5"),
+        Genre("Cooking", "54"),
+        Genre("Crime", "856"),
+        Genre("Crossdressing", "1306"),
+        Genre("Demon", "64"),
+        Genre("Drama", "6"),
+        Genre("Ecchi", "14"),
+        Genre("Fantasy", "7"),
+        Genre("Game", "36"),
+        Genre("Gender Bender", "149"),
+        Genre("Genderswap", "157"),
+        Genre("Gore", "56"),
+        Genre("Gyaru", "812"),
+        Genre("Harem", "17"),
+        Genre("Historical", "44"),
+        Genre("Horror", "211"),
+        Genre("Isekai", "20"),
+        Genre("Isekai Action", "742"),
+        Genre("Josei", "164"),
+        Genre("Magic", "65"),
+        Genre("Manga", "268"),
+        Genre("Manhua", "32"),
+        Genre("Martial Art", "754"),
+        Genre("Martial Arts", "8"),
+        Genre("Mature", "46"),
+        Genre("Mecha", "22"),
+        Genre("Medical", "704"),
+        Genre("Medy", "1439"),
+        Genre("Monsters", "91"),
+        Genre("Music", "457"),
+        Genre("Mystery", "30"),
+        Genre("Office Workers", "1501"),
+        Genre("Oneshot", "405"),
+        Genre("Project", "313"),
+        Genre("Psychological", "23"),
+        Genre("Reincarnation", "57"),
+        Genre("Reinkarnasi", "1170"),
+        Genre("Romance", "15"),
+        Genre("School", "102"),
+        Genre("School Life", "9"),
+        Genre("Sci-fi", "33"),
+        Genre("Seinen", "18"),
+        Genre("Shotacon", "1070"),
+        Genre("Shoujo", "110"),
+        Genre("Shoujo Ai", "113"),
+        Genre("Shounen", "10"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Si-fi", "776"),
+        Genre("Slice of Lif", "773"),
+        Genre("Slice of Life", "11"),
+        Genre("Smut", "586"),
+        Genre("Sports", "103"),
+        Genre("Super Power", "274"),
+        Genre("Supernatural", "34"),
+        Genre("Suspense", "181"),
+        Genre("Thriller", "170"),
+        Genre("Tragedy", "92"),
+        Genre("Urban", "1050"),
+        Genre("Vampire", "160"),
+        Genre("Video Games", "1093"),
+        Genre("Webtoons", "486"),
+        Genre("Yaoi", "yaoi"),
+        Genre("Zombies", "377")
     )
 }
+
 class KomikGo : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com", "id") {
 
     override fun popularMangaRequest(page: Int): Request {
