@@ -31,7 +31,16 @@ class WPComicsFactory : SourceFactory {
 
 private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", SimpleDateFormat("HH:mm - dd/MM/yyyy Z", Locale.US), "+0700") {
     override val popularPath = "category-comics/manga"
-
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/$popularPath" + if (page > 1) "/page/$page" else "", headers)
+    }
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET(baseUrl + if (page > 1) "/page/$page" else "", headers)
+    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return GET("$baseUrl/page/$page/?s=$query&post_type=comics")
+    }
+    override fun popularMangaNextPageSelector() = ".pagination li:last-child:not(.active)"
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             element.select("div.overlay a:has(h2)").let {
@@ -41,7 +50,6 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
             thumbnail_url = element.select("img").firstOrNull()?.attr("abs:src")
         }
     }
-
     override val pageListSelector = "div.chapter-detail ul img, div.chapter-detail div:not(.container) > img, div.chapter-detail p > img"
 }
 
