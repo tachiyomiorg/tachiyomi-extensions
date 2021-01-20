@@ -110,7 +110,7 @@ class Gmanga : ConfigurableSource, HttpSource() {
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/mangas/latest", headers)
+        return GET("$baseUrl/releases", headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
