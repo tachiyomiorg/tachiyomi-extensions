@@ -283,12 +283,17 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
             val path = if (jsonElement["haswebp"].string == "0" || !hitomiAlwaysWebp()) "images" else "webp"
             val hashPath1 = hash.takeLast(1)
             val hashPath2 = hash.takeLast(3).take(2)
-            Page(i, "", "https://${subdomainFromGalleryId(hashPath2)}a.hitomi.la/$path/$hashPath1/$hashPath2/$hash.$ext")
+
+            // https://ltn.hitomi.la/reader.js
+            // function make_image_element()
+            val secondSubdomain = if (jsonElement["haswebp"].string == "0" && jsonElement["hasavif"].string == "0") "b" else "a"
+
+            Page(i, "", "https://${firstSubdomainFromGalleryId(hashPath2)}$secondSubdomain.hitomi.la/$path/$hashPath1/$hashPath2/$hash.$ext")
         }
     }
 
     // https://ltn.hitomi.la/common.js
-    private fun subdomainFromGalleryId(pathSegment: String): Char {
+    private fun firstSubdomainFromGalleryId(pathSegment: String): Char {
         var numberOfFrontends = 3
         var g = pathSegment.toInt(16)
         if (g < 0x30) numberOfFrontends = 2
