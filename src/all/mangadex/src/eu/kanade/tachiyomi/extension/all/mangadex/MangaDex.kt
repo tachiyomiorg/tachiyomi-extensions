@@ -71,7 +71,7 @@ abstract class MangaDex(
         MangadexDescription(internalLang)
     }
 
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
