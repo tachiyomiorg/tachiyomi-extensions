@@ -24,10 +24,10 @@ class Dmzj : HttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "动漫之家"
-    override val baseUrl = "http://v3api.dmzj.com"
+    override val baseUrl = "https://v3api.dmzj1.com"
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
-        "http:$url"
+        "https:$url"
     else url
 
     private fun myGet(url: String) = GET(url)
@@ -85,17 +85,17 @@ class Dmzj : HttpSource() {
         return MangasPage(ret, arr.length() != 0)
     }
 
-    override fun popularMangaRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/0/${page - 1}.json")
+    override fun popularMangaRequest(page: Int) = myGet("$baseUrl/classify/0/0/${page - 1}.json")
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
 
-    override fun latestUpdatesRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/1/${page - 1}.json")
+    override fun latestUpdatesRequest(page: Int) = myGet("$baseUrl/classify/0/1/${page - 1}.json")
 
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query != "") {
-            val uri = Uri.parse("http://s.acg.dmzj.com/comicsum/search.php").buildUpon()
+            val uri = Uri.parse("http://s.acg.dmzj1.com/comicsum/search.php").buildUpon()
             uri.appendQueryParameter("s", query)
             return myGet(uri.toString())
         } else {
@@ -110,7 +110,7 @@ class Dmzj : HttpSource() {
 
             val order = filters.filterIsInstance<SortFilter>().joinToString("") { (it as UriPartFilter).toUriPart() }
 
-            return myGet("http://v2.api.dmzj.com/classify/$params/$order/${page - 1}.json")
+            return myGet("$baseUrl/classify/$params/$order/${page - 1}.json")
         }
     }
 
@@ -167,7 +167,7 @@ class Dmzj : HttpSource() {
                     SChapter.create().apply {
                         name = "$prefix: ${chapter.getString("chapter_title")}"
                         date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                        url = "https://api.m.dmzj.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
+                        url = "https://api.m.dmzj1.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
                     }
                 )
             }
@@ -186,6 +186,7 @@ class Dmzj : HttpSource() {
             // example url: http://v3api.dmzj.com/chapter/44253/101852.json
             val url = response.request().url().toString()
                 .replace("api.m", "v3api")
+                .replace("dmzj", "dmzj1")
                 .replace("comic/", "")
                 .replace(".html", ".json")
             val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
@@ -310,7 +311,7 @@ class Dmzj : HttpSource() {
 
     // Headers
     override fun headersBuilder() =
-        super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
+        super.headersBuilder().add("Referer", "https://www.dmzj1.com/")!!
 
     private open class UriPartFilter(
         displayName: String,
