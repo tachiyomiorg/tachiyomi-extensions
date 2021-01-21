@@ -123,7 +123,7 @@ abstract class WPComics(
         }
     }
 
-    private fun String?.toStatus(): Int {
+    open fun String?.toStatus(): Int {
         val ongoingWords = listOf("Ongoing", "Updating", "Đang tiến hành")
         val completedWords = listOf("Complete", "Hoàn thành")
         return when {
@@ -191,7 +191,7 @@ abstract class WPComics(
     // Pages
 
     // sources sometimes have an image element with an empty attr that isn't really an image
-    private fun imageOrNull(element: Element): String? {
+    open fun imageOrNull(element: Element): String? {
         fun Element.hasValidAttr(attr: String): Boolean {
             val regex = Regex("""https?://.*""", RegexOption.IGNORE_CASE)
             return when {

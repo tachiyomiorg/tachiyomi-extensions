@@ -50,6 +50,28 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
             thumbnail_url = element.select("img").firstOrNull()?.attr("abs:src")
         }
     }
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            document.select("article#item-detail").let { info ->
+                author = info.select("li.author p.col-xs-8").text()
+                status = info.select("li.status p.col-xs-8").text().toStatus()
+                genre = info.select(".tags-genre a").joinToString { it.text() }
+                thumbnail_url = imageOrNull(info.select("div.col-image img").first())
+
+                val h3 = info.select(".detail-content h3").text()
+                val strong = info.select(".detail-content strong").text()
+                val showMoreFake = info.select(".detail-content .content-readmore").text()
+                val showMore = info.select(".detail-content .morelink").text()
+                val rawDesc = info.select("div.detail-content").text()
+                
+                if (showMoreFake == null || showMoreFake == "") {
+                    description = rawDesc.substringAfter(h3).substringAfter(strong).substringBefore(showMore)
+                } else {
+                    description = rawDesc.substringAfter(h3).substringAfter(strong).substringBefore(showMoreFake)
+                }
+            }
+        }
+    }
     override val pageListSelector = "div.chapter-detail ul img, div.chapter-detail div:not(.container) > img, div.chapter-detail p > img"
 }
 
