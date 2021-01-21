@@ -21,7 +21,7 @@ class Qiximh : HttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "七夕漫画"
-    override val baseUrl = "http://qiximh.com"
+    override val baseUrl = "http://qiximh1.com"
     // This is hard limit by API
     val maxPage = 5
 
