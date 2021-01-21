@@ -5,7 +5,7 @@ ext {
     extName = 'GMANGA'
     pkgNameSuffix = 'ar.gmanga'
     extClass = '.Gmanga'
-    extVersionCode = 21
+    extVersionCode = 3
     libVersion = '1.2'
     containsNsfw = false
 }
