@@ -50,6 +50,7 @@ class MadaraFactory : SourceFactory {
         CatOnHeadTranslations(),
         CatTranslator(),
         ChibiManga(),
+        CloverManga(),
         ComicKiba(),
         ComicsValley(),
         CopyPasteScan(),
@@ -212,6 +213,7 @@ class MadaraFactory : SourceFactory {
         TurkceManga(),
         TwilightScans(),
         UyuyanBalik(),
+        VanguardBun(),
         Voidscans(),
         Wakascan(),
         WarQueenScan(),
@@ -1528,3 +1530,7 @@ class SekteDoujin : Madara("Sekte Doujin", "https://sektedoujin.xyz", "id")
 class MundoWuxia : Madara("Mundo Wuxia", "https://mundowuxia.com", "es", SimpleDateFormat("MMMM dd, yyyy", Locale("es")))
 
 class WorldRomanceTranslation : Madara("World Romance Translation", "https://wrt.my.id/", "id", SimpleDateFormat("dd MMMM yyyy", Locale("id")))
+
+class CloverManga : Madara("Clover Manga", "https://clover-manga.com/", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr")))
+
+class VanguardBun : Madara("Vanguard Bun", "https://vanguardbun.com/", "en")
