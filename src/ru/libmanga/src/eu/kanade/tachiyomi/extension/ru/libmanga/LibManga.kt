@@ -193,26 +193,17 @@ class LibManga : ConfigurableSource, HttpSource() {
         val data = jsonParser.parse(dataStr).obj
         val chaptersList = data["chapters"]["list"].nullArray
         val slug = data["manga"]["slug"].string
-        val teams = data["chapters"]["branches"].array
-        val teamId = if (teams.size() > 0) teams[0]["id"].int else null
 
-        val chapters = if (teamId == null) {
-            chaptersList?.map { chapterFromElement(it, slug) }
-        } else {
-            chaptersList?.filter { it["branch_id"].int == teamId }?.map { chapterFromElement(it, slug, teamId) }
-        }
-
-        return chapters ?: emptyList()
+        return chaptersList?.map { chapterFromElement(it, slug) } ?: emptyList()
     }
 
-    private fun chapterFromElement(chapterItem: JsonElement, slug: String, teamIdParam: Int? = null): SChapter {
+    private fun chapterFromElement(chapterItem: JsonElement, slug: String): SChapter {
         val chapter = SChapter.create()
 
         val volume = chapterItem["chapter_volume"].int
         val number = chapterItem["chapter_number"].string
-        val teamId = if (teamIdParam != null) "?bid=$teamIdParam" else ""
 
-        val url = "$baseUrl/$slug/v$volume/c$number$teamId"
+        val url = "$baseUrl/$slug/v$volume/c$number"
 
         chapter.setUrlWithoutDomain(url)
 
