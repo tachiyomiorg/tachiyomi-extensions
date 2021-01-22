@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -36,6 +36,8 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
+import android.support.v7.preference.ListPreference as LegacyListPreference
+import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
 class LibManga : ConfigurableSource, HttpSource() {
 
@@ -60,42 +62,6 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private val jsonParser = JsonParser()
-
-    private var server: String? = preferences.getString(SERVER_PREF, null)
-
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val serverPref = androidx.preference.ListPreference(screen.context).apply {
-            key = SERVER_PREF
-            title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
-            entryValues = arrayOf("secondary", "fourth", "compress")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                server = newValue.toString()
-                true
-            }
-        }
-
-        screen.addPreference(serverPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val serverPref = ListPreference(screen.context).apply {
-            key = SERVER_PREF
-            title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
-            entryValues = arrayOf("secondary", "fourth", "compress")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                server = newValue.toString()
-                true
-            }
-        }
-
-        screen.addPreference(serverPref)
-    }
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
@@ -501,8 +467,44 @@ class LibManga : ConfigurableSource, HttpSource() {
     )
 
     companion object {
-        private const val SERVER_PREF_Title = "Сервер изображений"
-        private const val SERVER_PREF = "MangaLibImageServer"
         const val PREFIX_SLUG_SEARCH = "slug:"
+        private const val SERVER_PREF = "MangaLibImageServer"
+        private const val SERVER_PREF_Title = "Сервер изображений"
+    }
+
+    private var server: String? = preferences.getString(SERVER_PREF, null)
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val serverPref = ListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
+            entryValues = arrayOf("secondary", "fourth", "compress")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                server = newValue.toString()
+                true
+            }
+        }
+
+        screen.addPreference(serverPref)
+    }
+
+    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
+        val serverPref = LegacyListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
+            entryValues = arrayOf("secondary", "fourth", "compress")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                server = newValue.toString()
+                true
+            }
+        }
+
+        screen.addPreference(serverPref)
     }
 }
