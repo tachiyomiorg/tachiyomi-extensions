@@ -71,8 +71,6 @@ abstract class MangaDex(
         MangadexDescription(internalLang)
     }
 
-    private val coverRegex = Regex("""/images/.*\.jpg""")
-
     private val rateLimitInterceptor = MdRateLimitInterceptor()
 
     override val client: OkHttpClient = network.client.newBuilder()
