@@ -181,20 +181,19 @@ class Dmzj : HttpSource() {
         // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
         val arr = try {
             val obj = JSONObject(response.body()!!.string())
-            obj.getJSONObject("chapter").getJSONArray("page_url")
+            obj.getJSONObject("chapter").getJSONArray("page_url") // api.m.dmzj1.com already return HD image url
         } catch (_: Exception) {
             // example url: http://v3api.dmzj.com/chapter/44253/101852.json
             val url = response.request().url().toString()
                 .replace("api.m", "v3api")
-                .replace("dmzj", "dmzj1")
                 .replace("comic/", "")
                 .replace(".html", ".json")
             val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
-            obj.getJSONArray("page_url")
+            obj.getJSONArray("page_url_hd") // page_url in v3api.dmzj1.com will return compressed image, page_url_hd will return HD image url as api.m.dmzj1.com does.
         }
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
-            ret.add(Page(i, "", arr.getString(i)))
+            ret.add(Page(i, "", arr.getString(i).replace("http:", "https:")))
         }
         return ret
     }
