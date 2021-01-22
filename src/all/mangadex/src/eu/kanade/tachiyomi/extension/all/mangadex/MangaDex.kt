@@ -71,7 +71,9 @@ abstract class MangaDex(
         MangadexDescription(internalLang)
     }
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1)
+    private val coverRegex = Regex("""/images/.*\.jpg""")
+
+    private val rateLimitInterceptor = MdRateLimitInterceptor()
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -1080,6 +1082,17 @@ class CoverInterceptor : Interceptor {
             }
         }
     }
+}
+
+class MdRateLimitInterceptor : Interceptor {
+    private val coverRegex = Regex("""/images/.*\.jpg""")
+    private val baseInterceptor = RateLimitInterceptor(1)
+
+    override fun intercept(chain: Interceptor.Chain): Response =
+        if (chain.request().url().toString().contains(coverRegex))
+            chain.proceed(chain.request())
+        else
+            baseInterceptor.intercept(chain)
 }
 
 class MdAtHomeReportInterceptor(
