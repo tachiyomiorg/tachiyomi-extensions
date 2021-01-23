@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.ru.desu
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -13,6 +14,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import rx.Observable
 import java.util.ArrayList
 
 class Desu : HttpSource() {
@@ -108,6 +110,26 @@ class Desu : HttpSource() {
         return mangaPageFromJSON(obj.toString(), count > page * limit)
     }
 
+    private fun titleDetailsRequest(manga: SManga): Request {
+        val titleId = manga.url.substringAfterLast("/")
+
+        val newHeaders = headersBuilder().build()
+
+        return GET("$baseUrl/$titleId", newHeaders)
+    }
+
+    // Workaround to allow "Open in browser" use the real URL.
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(titleDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET(baseUrl.substringBefore("/api") + manga.url, headers)
+    }
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val obj = JSONObject(response.body()!!.string()).getJSONObject("response")
         mangaFromJSON(obj, true)

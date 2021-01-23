@@ -221,10 +221,18 @@ class Remanga : ConfigurableSource, HttpSource() {
             status = parseStatus(o.status.id)
         }
     }
+    private fun titleDetailsRequest(manga: SManga): Request {
+        val titleId = manga.url
 
+        val newHeaders = headersBuilder().build()
+
+        return GET("$baseUrl/$titleId", newHeaders)
+    }
+
+    // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         var warnLogin = false
-        return client.newCall(mangaDetailsRequest(manga))
+        return client.newCall(titleDetailsRequest(manga))
             .asObservable().doOnNext { response ->
                 if (!response.isSuccessful) {
                     response.close()
@@ -238,7 +246,9 @@ class Remanga : ConfigurableSource, HttpSource() {
                     }
             }
     }
-
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET(baseUrl + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
+    }
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
         branches[series.content.en_name] = series.content.branches
