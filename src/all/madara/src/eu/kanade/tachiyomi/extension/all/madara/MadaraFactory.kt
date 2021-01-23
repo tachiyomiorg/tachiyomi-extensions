@@ -353,21 +353,7 @@ class MangaClash : Madara(
     dateFormat = SimpleDateFormat("MM/dd/yy", Locale.US)
 )
 
-class TritiniaScans : Madara("TritiniaScans", "https://tritiniaman.ga", "en") {
-    // site is a bit broken
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/manga/index_m_orderby=views.html", headers)
-    override fun popularMangaNextPageSelector(): String? = null
-    override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/manga/index_m_orderby=latest.html", headers)
-    override fun latestUpdatesNextPageSelector(): String? = null
-    private val imageRegex = Regex(""""(http[^"]*)"""")
-    override fun pageListParse(document: Document): List<Page> {
-        val script = document.select("#chapter_preloaded_images").firstOrNull()?.data()
-            ?: throw Exception("chapter_preloaded_images not found")
-        return imageRegex.findAll(script).asIterable().mapIndexed { i, mr ->
-            Page(i, "", mr.groupValues[1].replace("\\", ""))
-        }
-    }
-}
+class TritiniaScans : Madara("TritiniaScans", "https://tritinia.com", "en")
 
 class CopyPasteScan : Madara("CopyPasteScan", "https://copypastescan.xyz", "es")
 
