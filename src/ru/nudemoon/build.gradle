@@ -5,7 +5,7 @@ ext {
     extName = 'Nude-Moon'
     pkgNameSuffix = 'ru.nudemoon'
     extClass = '.Nudemoon'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
     containsNsfw = true
 }
