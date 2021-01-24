@@ -294,8 +294,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     @SuppressLint("DefaultLocale")
     private fun chapterName(book: BookDto): String {
-        val chapterId: Any = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
-        var chapterName = "${book.tome}. Глава $chapterId"
+        var chapterName = "${book.tome}. Глава ${book.chapter}"
         if (book.name.isNotBlank()) {
             chapterName += " ${book.name.capitalize()}"
         }
@@ -306,7 +305,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
         return chapters.content.filter { !it.is_paid or it.is_bought }.map { chapter ->
             SChapter.create().apply {
-                chapter_number = chapter.chapter
+                chapter_number = 1F
                 name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
