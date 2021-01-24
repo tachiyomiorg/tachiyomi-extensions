@@ -1,7 +1,15 @@
 package eu.kanade.tachiyomi.extension.zh.dmzj
 
+import android.app.Application
+import android.content.SharedPreferences
 import android.net.Uri
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
+import eu.kanade.tachiyomi.lib.ratelimit.MultipleHostRateLimitInterceptor
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitSetting
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -9,10 +17,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.net.URLEncoder
 import java.util.ArrayList
 
@@ -20,24 +33,41 @@ import java.util.ArrayList
  * Dmzj source
  */
 
-class Dmzj : HttpSource() {
+class Dmzj : ConfigurableSource, HttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "动漫之家"
-    override val baseUrl = "https://v3api.dmzj1.com"
+    override val baseUrl = "https://m.dmzj1.com"
+    private val apiUrl = "https://v3api.dmzj1.com"
+    private val imageCDNUrl = "https://images.dmzj1.com"
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
         "https:$url"
     else url
 
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val rateLimitInterceptor = MultipleHostRateLimitInterceptor(
+        arrayOf(
+            RateLimitSetting(HttpUrl.parse(apiUrl)!!.host(), preferences.getString(API_RATELIMIT_PREF, "2")!!.toInt()),
+            RateLimitSetting(HttpUrl.parse(imageCDNUrl)!!.host(), preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt())
+        )
+    )
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
+
     private fun myGet(url: String) = GET(url)
         .newBuilder()
         .header(
             "User-Agent",
-            "Mozilla/5.0 (X11; Linux x86_64) " +
+            "Mozilla/5.0 (Linux; Android 10) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/56.0.2924.87 " +
-                "Safari/537.36 " +
+                "Chrome/88.0.4324.93 " +
+                "Mobile Safari/537.36 " +
                 "Tachiyomi/1.0"
         )
         .build()!!
@@ -85,11 +115,11 @@ class Dmzj : HttpSource() {
         return MangasPage(ret, arr.length() != 0)
     }
 
-    override fun popularMangaRequest(page: Int) = myGet("$baseUrl/classify/0/0/${page - 1}.json")
+    override fun popularMangaRequest(page: Int) = myGet("$apiUrl/classify/0/0/${page - 1}.json")
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
 
-    override fun latestUpdatesRequest(page: Int) = myGet("$baseUrl/classify/0/1/${page - 1}.json")
+    override fun latestUpdatesRequest(page: Int) = myGet("$apiUrl/classify/0/1/${page - 1}.json")
 
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
@@ -110,7 +140,7 @@ class Dmzj : HttpSource() {
 
             val order = filters.filterIsInstance<SortFilter>().joinToString("") { (it as UriPartFilter).toUriPart() }
 
-            return myGet("$baseUrl/classify/$params/$order/${page - 1}.json")
+            return myGet("$apiUrl/classify/$params/$order/${page - 1}.json")
         }
     }
 
@@ -122,6 +152,25 @@ class Dmzj : HttpSource() {
         } else {
             mangaFromJSON(body)
         }
+    }
+
+    // Bypass mangaDetailsRequest, fetch v3api url directly
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(GET(apiUrl + manga.url, headers))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    private val re1 = Regex("""\d+""") // Get comic ID from manga.url
+    // Workaround to allow "Open in browser" use human readable webpage url.
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET("$baseUrl/info/${re1.find(manga.url)!!.value}.html")
+    }
+
+    override fun chapterListRequest(manga: SManga): Request {
+        return GET(apiUrl + manga.url, headers)
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
@@ -319,5 +368,102 @@ class Dmzj : HttpSource() {
     ) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val apiRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
+            key = API_RATELIMIT_PREF
+            title = API_RATELIMIT_PREF_TITLE
+            summary = API_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(API_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        val imgCDNRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
+            key = IMAGE_CDN_RATELIMIT_PREF
+            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
+            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(apiRateLimitPreference)
+        screen.addPreference(imgCDNRateLimitPreference)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val apiRateLimitPreference = ListPreference(screen.context).apply {
+            key = API_RATELIMIT_PREF
+            title = API_RATELIMIT_PREF_TITLE
+            summary = API_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(API_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        val imgCDNRateLimitPreference = ListPreference(screen.context).apply {
+            key = IMAGE_CDN_RATELIMIT_PREF
+            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
+            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+        screen.addPreference(apiRateLimitPreference)
+        screen.addPreference(imgCDNRateLimitPreference)
+    }
+
+    companion object {
+        private const val API_RATELIMIT_PREF = "apiRatelimitPreference"
+        private const val API_RATELIMIT_PREF_TITLE = "主站每秒连接数限制" // "Ratelimit permits per second for main website"
+        private const val API_RATELIMIT_PREF_SUMMARY = "此值影响向动漫之家网站发起连接请求的数量。调低此值可能减少发生HTTP 429（连接请求过多）错误的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount to dmzj's url. Lower this value may reduce the chance to get HTTP 429 error, but loading speed will be slower too. Tachiyomi restart required. Current value: %s"
+
+        private const val IMAGE_CDN_RATELIMIT_PREF = "imgCDNRatelimitPreference"
+        private const val IMAGE_CDN_RATELIMIT_PREF_TITLE = "图片CDN每秒连接数限制" // "Ratelimit permits per second for image CDN"
+        private const val IMAGE_CDN_RATELIMIT_PREF_SUMMARY = "此值影响加载图片时发起连接请求的数量。调低此值可能减小图片加载错误的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount for loading image. Lower this value may reduce the chance to get error when loading image, but loading speed will be slower too. Tachiyomi restart required. Current value: %s"
+
+        private val ENTRIES_ARRAY = (1..10).map { i -> i.toString() }.toTypedArray()
     }
 }
