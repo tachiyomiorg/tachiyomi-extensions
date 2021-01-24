@@ -70,7 +70,7 @@ data class PublisherDto(
 data class BookDto(
     val id: Long,
     val tome: Int,
-    val chapter: Float,
+    val chapter: String,
     val name: String,
     val upload_date: String,
     val is_paid: Boolean,
