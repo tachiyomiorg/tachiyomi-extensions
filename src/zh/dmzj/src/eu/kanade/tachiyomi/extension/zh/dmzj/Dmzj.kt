@@ -5,8 +5,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import eu.kanade.tachiyomi.lib.ratelimit.MultipleHostRateLimitInterceptor
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitSetting
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -49,15 +48,18 @@ class Dmzj : ConfigurableSource, HttpSource() {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    private val rateLimitInterceptor = MultipleHostRateLimitInterceptor(
-        arrayOf(
-            RateLimitSetting(HttpUrl.parse(apiUrl)!!.host(), preferences.getString(API_RATELIMIT_PREF, "2")!!.toInt()),
-            RateLimitSetting(HttpUrl.parse(imageCDNUrl)!!.host(), preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt())
-        )
+    private val apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
+        HttpUrl.parse(apiUrl)!!,
+        preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
+    )
+    private val imageCDNRateLimitInterceptor = SpecificHostRateLimitInterceptor(
+        HttpUrl.parse(imageCDNUrl)!!,
+        preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt()
     )
 
     override val client: OkHttpClient = network.client.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor)
+        .addNetworkInterceptor(apiRateLimitInterceptor)
+        .addNetworkInterceptor(imageCDNRateLimitInterceptor)
         .build()
 
     private fun myGet(url: String) = GET(url)
