@@ -195,6 +195,17 @@ class KomikCast : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikca
 }
 
 class WestManga : WPMangaStream("West Manga (WP Manga Stream)", "https://westmanga.info", "id") {
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            document.select(".seriestucontent").firstOrNull()?.let { infoElement ->
+                genre = infoElement.select(".seriestugenre a").joinToString { it.text() }
+                status = parseStatus(infoElement.select(".infotable tr:contains(Status) td:last-child").firstOrNull()?.ownText())
+                author = infoElement.select(".infotable tr:contains(Author) td:last-child").firstOrNull()?.ownText()
+                description = infoElement.select(".entry-content-single[itemprop=\"description\"]").joinToString("\n") { it.text() }
+                thumbnail_url = infoElement.select("div.thumb img").imgAttr()
+            }
+        }
+    }
     override fun getGenreList(): List<Genre> = listOf(
         Genre("4 Koma", "344"),
         Genre("Action", "13"),

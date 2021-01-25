@@ -165,9 +165,9 @@ abstract class WPMangaStream(
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             document.select("div.bigcontent, div.animefull, div.main-info").firstOrNull()?.let { infoElement ->
-                genre = infoElement.select("span:contains(Genres:) a, .mgen a").joinToString { it.text() }
+                genre = infoElement.select("span:contains(Genre) a, .mgen a").joinToString { it.text() }
                 status = parseStatus(infoElement.select("span:contains(Status:), .imptdt:contains(Status) i").firstOrNull()?.ownText())
-                author = infoElement.select("span:contains(Author:), .fmed b:contains(Author)+span, .imptdt:contains(Author) i").firstOrNull()?.ownText()
+                author = infoElement.select("span:contains(Author:), span:contains(Pengarang:), .fmed b:contains(Author)+span, .imptdt:contains(Author) i").firstOrNull()?.ownText()
                 artist = infoElement.select(".fmed b:contains(Artist)+span, .imptdt:contains(Artist) i").firstOrNull()?.ownText()
                 description = infoElement.select("div.desc p, div.entry-content p").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
