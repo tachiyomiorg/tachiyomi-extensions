@@ -216,7 +216,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 else -> SManga.UNKNOWN
             }
             genre = (metadata.genres + metadata.tags).joinToString(", ")
-            description = metadata.summary
+            description = metadata.summary.ifBlank { booksMetadata.summary }
         }
 
     private fun parseDate(date: String?): Long =
