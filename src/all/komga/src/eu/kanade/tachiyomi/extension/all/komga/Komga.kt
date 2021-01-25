@@ -217,6 +217,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             }
             genre = (metadata.genres + metadata.tags).joinToString(", ")
             description = metadata.summary.ifBlank { booksMetadata.summary }
+            booksMetadata.authors.groupBy { it.role }.let {
+                author = it["writer"]?.map { it.name }?.distinct()?.joinToString()
+                artist = it["penciller"]?.map { it.name }?.distinct()?.joinToString()
+            }
         }
 
     private fun parseDate(date: String?): Long =
