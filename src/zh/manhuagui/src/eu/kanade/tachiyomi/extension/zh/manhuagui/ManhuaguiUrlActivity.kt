@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import kotlin.system.exitProcess
 
 /**
@@ -28,10 +29,10 @@ class ManhuaguiUrlActivity : Activity() {
             try {
                 startActivity(mainIntent)
             } catch (e: ActivityNotFoundException) {
-                error(e.toString())
+                Log.e("ManhuaguiUrlActivity", e.toString())
             }
         } else {
-            error("ManhuaguiUrlActivity: Could not parse uri from intent $intent")
+            Log.e("ManhuaguiUrlActivity", "could not parse uri from intent $intent")
         }
 
         finish()
