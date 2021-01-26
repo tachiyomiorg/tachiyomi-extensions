@@ -186,7 +186,7 @@ class HNIScantradEN : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "en"
     }
 }
 
-class PhoenixScans : FoolSlide("The Phoenix Scans", "https://www.phantomreader.com", "it", "/reader")
+class PhoenixScans : FoolSlide("The Phoenix Scans", "https://www.phoenixscans.com", "it", "/reader")
 
 class GTO : FoolSlide("GTO The Great Site", "https://www.gtothegreatsite.net", "it", "/reader")
 
