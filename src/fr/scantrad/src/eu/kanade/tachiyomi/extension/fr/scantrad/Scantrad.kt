@@ -34,7 +34,7 @@ class Scantrad : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    protected open val userAgentRandomizer = "${Random.nextInt().absoluteValue}"
+    protected open val userAgentRandomizer = "${Random.nextInt(9).absoluteValue}"
     protected open val uAR = userAgentRandomizer
 
     override fun headersBuilder() = Headers.Builder().apply {
