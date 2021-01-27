@@ -62,6 +62,7 @@ class MadaraFactory : SourceFactory {
         DisasterScans(),
         DoujinHentai(),
         DoujinYosh(),
+        DreamManga(),
         DropeScan(),
         EinherjarScan(),
         FdmScan(),
@@ -72,6 +73,7 @@ class MadaraFactory : SourceFactory {
         GeceninLordu(),
         GoldenManga(),
         GrazeScans(),
+        GourmetScans(),
         GuncelManga(),
         HeroManhua(),
         HerozScanlation(),
@@ -83,6 +85,7 @@ class MadaraFactory : SourceFactory {
         IchirinNoHanaYuri(),
         ImmortalUpdates(),
         IsekaiScanCom(),
+        ItsYourRightManhua(),
         JJutsuScans(),
         JustForFun(),
         KingzManga(),
@@ -102,7 +105,9 @@ class MadaraFactory : SourceFactory {
         MangaArabOnline(),
         MangaArabTeam(),
         MangaBaz(),
+        MangaBin(),
         MangaBob(),
+        MangaChill(),
         MangaClash(),
         MangaCrimson(),
         MangaCultivator(),
@@ -1520,3 +1525,13 @@ class WorldRomanceTranslation : Madara("World Romance Translation", "https://wrt
 class CloverManga : Madara("Clover Manga", "https://clover-manga.com/", "tr", SimpleDateFormat("MMMM dd, yyyy", Locale("tr")))
 
 class VanguardBun : Madara("Vanguard Bun", "https://vanguardbun.com/", "en")
+
+class MangaBin : Madara("Manga Bin", "https://mangabin.com/", "en")
+
+class MangaChill : Madara("Manga Chill", "https://mangachill.com/", "en")
+
+class DreamManga : Madara("Dream Manga", "https://dreammanga.com/", "en")
+
+class GourmetScans : Madara("Gourmet Scans", "https://gourmetscans.net/", "en")
+
+class ItsYourRightManhua : Madara("Its Your Right Manhua", "https://itsyourightmanhua.com/", "en")
