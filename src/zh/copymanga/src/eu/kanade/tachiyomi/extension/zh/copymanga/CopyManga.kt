@@ -23,12 +23,13 @@ import org.json.JSONObject
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.collections.ArrayList
 
 class CopyManga : ConfigurableSource, HttpSource() {
 
@@ -346,9 +347,13 @@ class CopyManga : ConfigurableSource, HttpSource() {
         return bytes
     }
 
-    private fun stringToUnixTimestamp(string: String, pattern: String = "yyyy-MM-dd", timeZone: String = "CTT"): Long {
-        val date = LocalDate.parse(string, DateTimeFormatter.ofPattern(pattern))
-        return date.atStartOfDay(ZoneId.of(timeZone)).toInstant().epochSecond
+    private fun stringToUnixTimestamp(string: String, pattern: String = "yyyy-MM-dd", locale: Locale = Locale.CHINA): Long {
+        return try {
+            val time = SimpleDateFormat(pattern, locale).parse(string)?.time
+            if (time != null) time / 1000 else Date().time / 1000
+        } catch (ex: Exception) {
+            Date().time / 1000
+        }
     }
 
     // thanks to unpacker toolsite, http://matthewfl.com/unPacker.html
