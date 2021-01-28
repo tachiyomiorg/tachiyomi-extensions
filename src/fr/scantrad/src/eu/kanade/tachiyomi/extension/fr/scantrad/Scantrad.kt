@@ -42,11 +42,16 @@ class Scantrad : ParsedHttpSource() {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
-    protected open val userAgentRandomizer = "${Random.nextInt(9).absoluteValue}"
-    protected open val uAR = userAgentRandomizer
+    protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
+    protected open val userAgentRandomizer2 = "${Random.nextInt(99).absoluteValue}"
+    protected open val userAgentRandomizer3 = "${Random.nextInt(999).absoluteValue}"
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/8$uAR.0.4$uAR$uAR$uAR.1$uAR$uAR Safari/537.36")
+        add(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/8$userAgentRandomizer1.0.4$userAgentRandomizer3.1$userAgentRandomizer2 Safari/537.36"
+        )
     }
 
     // Popular
