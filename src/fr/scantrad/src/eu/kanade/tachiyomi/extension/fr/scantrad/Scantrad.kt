@@ -43,8 +43,8 @@ class Scantrad : ParsedHttpSource() {
         .build()
 
     protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
-    protected open val userAgentRandomizer2 = "${Random.nextInt(99).absoluteValue}"
-    protected open val userAgentRandomizer3 = "${Random.nextInt(999).absoluteValue}"
+    protected open val userAgentRandomizer2 = "${Random.nextInt(10,99).absoluteValue}"
+    protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add(
