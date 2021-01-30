@@ -59,8 +59,42 @@ class WPMangaStreamFactory : SourceFactory {
         KomikRu(),
         MangaShiro(),
         ChiOtaku(),
-        KlanKomik()
+        KlanKomik(),
+        MangaIndonesia()
     )
+}
+
+class MangaIndonesia : WPMangaStream("MangaIndonesia", "https://mangaindonesia.net", "id") {
+    override fun popularMangaRequest(page: Int): Request {
+//        return GET("$baseUrl/popular" + if (page > 1) "/${(page - 1) * 30}" else "", headers)
+//        return GET("$baseUrl/$popularPath" + if (page > 1) "?page=$page" else "", headers)
+        return GET("$baseUrl/update/" + if (page > 1) "?page=$page" else "", headers)
+    }
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET(baseUrl, headers)
+    }
+    override fun latestUpdatesSelector() = ".listupd:not(.project) .uta .imgu"
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        val manga = SManga.create()
+        manga.thumbnail_url = element.select("a img").imgAttr()
+        element.select("a").first().let {
+            manga.setUrlWithoutDomain(it.attr("href"))
+            manga.title = it.attr("title")
+        }
+        return manga
+    }
+    override fun latestUpdatesNextPageSelector(): String? = null
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return GET("$baseUrl/page/$page/$query", headers)
+    }
+    override fun chapterListSelector() = "div.bxcl ul li:has(span)"
+    override fun chapterFromElement(element: Element): SChapter {
+        val chapter = SChapter.create()
+        chapter.setUrlWithoutDomain(element.select("a").attr("href"))
+        chapter.name = element.select("a").text()
+        chapter.date_upload = element.select("span.dt").firstOrNull()?.text()?.let { parseChapterDate(it) } ?: 0
+        return chapter
+    }
 }
 
 class KlanKomik : WPMangaStream("KlanKomik", "https://klankomik.com", "id")
@@ -86,7 +120,7 @@ class Rawkuma : WPMangaStream("Rawkuma", "https://rawkuma.com/", "ja")
 
 class GURUKomik : WPMangaStream("GURU Komik", "https://gurukomik.com", "id", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id")))
 
-class FlameScans : WPMangaStream("Flame Scans", "https://www.flame-scans.com", "en")
+class FlameScans : WPMangaStream("Flame Scans", "http://flamescans.org", "en")
 
 class SheaManga : WPMangaStream(
     "Shea Manga",
