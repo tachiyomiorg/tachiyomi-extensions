@@ -5,7 +5,7 @@ ext {
     extName = 'VIZ Shonen Jump'
     pkgNameSuffix = 'en.vizshonenjump'
     extClass = '.VizShonenJump'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
