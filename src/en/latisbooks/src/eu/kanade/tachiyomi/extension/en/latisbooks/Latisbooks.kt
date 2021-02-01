@@ -13,6 +13,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.util.Calendar
 
 class Latisbooks : HttpSource() {
 
@@ -80,10 +81,16 @@ class Latisbooks : HttpSource() {
     // Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        val cal: Calendar = Calendar.getInstance()
+
         return response.asJsoup().select("ul.archive-item-list li a").map {
+            val date: List<String> = it.attr("abs:href").split("/")
+            cal.set(date[4].toInt(), date[5].toInt() - 1, date[6].toInt())
+
             SChapter.create().apply {
                 name = it.text()
                 url = it.attr("abs:href")
+                date_upload = cal.timeInMillis
             }
         }
     }
