@@ -7,6 +7,7 @@ ext {
     extClass = '.Latisbooks'
     extVersionCode = 2
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"
