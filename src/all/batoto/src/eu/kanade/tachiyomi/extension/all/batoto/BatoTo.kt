@@ -92,18 +92,14 @@ open class BatoTo(
                         }
                     }
                     is GenreFilter -> {
-                        val genreToInclude = mutableListOf<String>()
-                        filter.state.forEach { content ->
-                            if (content.isIncluded()) {
-                                genreToInclude.add(content.name)
-                            }
-                        }
-                        val genreToExclude = mutableListOf<String>()
-                        filter.state.forEach { content ->
-                            if (content.isExcluded()) {
-                                genreToExclude.add(content.name)
-                            }
-                        }
+                        val genreToInclude = filter.state
+                            .filter { it.isIncluded() }
+                            .map { it.name }
+
+                        val genreToExclude = filter.state
+                            .filter { it.isExcluded() }
+                            .map { it.name }
+
                         if (genreToInclude.isNotEmpty() || genreToExclude.isNotEmpty()) {
                             url.addQueryParameter(
                                 "genres",
