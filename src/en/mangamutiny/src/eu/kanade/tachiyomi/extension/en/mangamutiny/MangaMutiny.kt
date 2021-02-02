@@ -148,7 +148,7 @@ class MangaMutiny : HttpSource() {
                 thumbnail_url = rootNode.getNullable("thumbnail")?.asString
                 title = rootNode.get("title").asString
                 url = rootNode.get("slug").asString
-                artist = rootNode.get("artists").asString
+                artist = rootNode.getNullable("artists")?.asString
                 author = rootNode.get("authors").asString
 
                 genre = rootNode.get("tags").asJsonArray
