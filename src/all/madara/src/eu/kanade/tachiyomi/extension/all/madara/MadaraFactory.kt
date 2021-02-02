@@ -243,6 +243,7 @@ class MadaraFactory : SourceFactory {
     )
 }
 
+@Nsfw
 class RawMangas : Madara("Raw Mangas", "https://rawmangas.net", "ja", SimpleDateFormat("MMMM dd, yyyy", Locale.US))
 
 class SiXiangScans : Madara("SiXiang Scans", "http://www.sixiangscans.com", "en", SimpleDateFormat("MMMM dd, yyyy", Locale.US))
