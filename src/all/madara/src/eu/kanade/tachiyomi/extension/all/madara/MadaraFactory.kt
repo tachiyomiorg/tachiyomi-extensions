@@ -193,12 +193,14 @@ class MadaraFactory : SourceFactory {
         QueensManga(),
         RaiderScans(),
         RandomTranslations(),
+        RawMangas(),
         ReadManhua(),
         RenaScans(),
         RuyaManga(),
         S2Manga(),
         SekteDoujin(),
         ShoujoHearts(),
+        SiXiangScans(),
         Siyahmelek(),
         Skymanga(),
         SoloScanlation(),
@@ -240,6 +242,10 @@ class MadaraFactory : SourceFactory {
         // KnightNoScanlation(),
     )
 }
+
+class RawMangas : Madara("Raw Mangas", "https://rawmangas.net", "ja", SimpleDateFormat("MMMM dd, yyyy", Locale.US))
+
+class SiXiangScans : Madara("SiXiang Scans", "http://www.sixiangscans.com", "en", SimpleDateFormat("MMMM dd, yyyy", Locale.US))
 
 class SoloScanlation : Madara("SoloScanlation", "https://soloscanlation.site", "en", SimpleDateFormat("MMMM dd, yyyy", Locale.US))
 
