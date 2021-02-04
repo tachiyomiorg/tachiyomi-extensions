@@ -285,9 +285,7 @@ class ManhuaFast : Madara("ManhuaFast", "https://manhuafast.com", "en") {
     override val pageListParseSelector = "li.blocks-gallery-item"
 }
 
-class BestManhua : Madara("BestManhua", "https://bestmanhua.com", "en") {
-    override val pageListParseSelector = "li.blocks-gallery-item"
-}
+class BestManhua : Madara("BestManhua", "https://bestmanhua.com", "en")
 
 class ManhuaSY : Madara("Manhua SY", "https://www.manhuasy.com", "en")
 
