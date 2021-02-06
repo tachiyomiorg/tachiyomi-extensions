@@ -23,7 +23,7 @@ class NineMangaFactory : SourceFactory {
     )
 }
 
-class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en") {
+class NineMangaEn : NineManga("NineMangaEn", "https://en.ninemanga.com", "en") {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         element.select("a.bookname").let {
             url = it.attr("abs:href").replace("www", "en").substringAfter(baseUrl)
@@ -33,7 +33,7 @@ class NineMangaEn : NineManga("NineMangaEn", "http://en.ninemanga.com", "en") {
     }
 }
 
-class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
+class NineMangaEs : NineManga("NineMangaEs", "https://es.ninemanga.com", "es") {
     // ES, FR, RU don't return results for searches with an apostrophe
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
@@ -47,7 +47,7 @@ class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
 
     override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
-    // http://es.ninemanga.com/search/?type=high
+    // https://es.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
         Genre("4-Koma", "201"),
         Genre("AcciÓN", "213"),
@@ -182,7 +182,7 @@ class NineMangaEs : NineManga("NineMangaEs", "http://es.ninemanga.com", "es") {
     )
 }
 
-class NineMangaBr : NineManga("NineMangaBr", "http://br.ninemanga.com", "pt") {
+class NineMangaBr : NineManga("NineMangaBr", "https://br.ninemanga.com", "pt") {
     override fun parseStatus(status: String) = when {
         status.contains("Em tradução") -> SManga.ONGOING
         status.contains("Completo") -> SManga.COMPLETED
@@ -191,7 +191,7 @@ class NineMangaBr : NineManga("NineMangaBr", "http://br.ninemanga.com", "pt") {
 
     override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
-    // http://br.ninemanga.com/search/?type=high
+    // https://br.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
         Genre("4koma", "107"),
         Genre("Adulto (18+)", "123"),
@@ -260,7 +260,7 @@ class NineMangaBr : NineManga("NineMangaBr", "http://br.ninemanga.com", "pt") {
     )
 }
 
-class NineMangaRu : NineManga("NineMangaRu", "http://ru.ninemanga.com", "ru") {
+class NineMangaRu : NineManga("NineMangaRu", "https://ru.ninemanga.com", "ru") {
     // ES, FR, RU don't return results for searches with an apostrophe
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
@@ -274,7 +274,7 @@ class NineMangaRu : NineManga("NineMangaRu", "http://ru.ninemanga.com", "ru") {
 
     override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
-    // http://ru.ninemanga.com/search/?type=high
+    // https://ru.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
         Genre("Бдсм", "95"),
         Genre("арт", "90"),
@@ -324,7 +324,7 @@ class NineMangaRu : NineManga("NineMangaRu", "http://ru.ninemanga.com", "ru") {
     )
 }
 
-class NineMangaDe : NineManga("NineMangaDe", "http://de.ninemanga.com", "de") {
+class NineMangaDe : NineManga("NineMangaDe", "https://de.ninemanga.com", "de") {
     override fun parseStatus(status: String) = when {
         status.contains("Laufende") -> SManga.ONGOING
         status.contains("Abgeschlossen") -> SManga.COMPLETED
@@ -333,7 +333,7 @@ class NineMangaDe : NineManga("NineMangaDe", "http://de.ninemanga.com", "de") {
 
     override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
-    // http://de.ninemanga.com/search/?type=high
+    // https://de.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
         Genre("4-Koma", "104"),
         Genre("Abenteuer", "63"),
@@ -381,7 +381,7 @@ class NineMangaDe : NineManga("NineMangaDe", "http://de.ninemanga.com", "de") {
     )
 }
 
-class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
+class NineMangaIt : NineManga("NineMangaIt", "https://it.ninemanga.com", "it") {
     override fun parseStatus(status: String) = when {
         status.contains("In corso") -> SManga.ONGOING
         status.contains("Completato") -> SManga.COMPLETED
@@ -390,7 +390,7 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
 
     override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
-    // http://it.ninemanga.com/search/?type=high
+    // https://it.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
         Genre("Action", "98"),
         Genre("Adventure", "108"),
@@ -447,7 +447,7 @@ class NineMangaIt : NineManga("NineMangaIt", "http://it.ninemanga.com", "it") {
     )
 }
 
-class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
+class NineMangaFr : NineManga("NineMangaFr", "https://fr.ninemanga.com", "fr") {
     // ES, FR, RU don't return results for searches with an apostrophe
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return super.searchMangaRequest(page, query.substringBefore("\'"), filters)
@@ -461,7 +461,7 @@ class NineMangaFr : NineManga("NineMangaFr", "http://fr.ninemanga.com", "fr") {
 
     override fun parseChapterDate(date: String) = parseChapterDateByLang(date)
 
-    // http://fr.ninemanga.com/search/?type=high
+    // https://fr.ninemanga.com/search/?type=high
     override fun getGenreList() = listOf(
         Genre("AcadéMie", "175"),
         Genre("Action", "5"),

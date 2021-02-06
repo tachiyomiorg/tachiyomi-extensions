@@ -71,7 +71,7 @@ class NovelleLeggere : ParsedHttpSource() {
 
     // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div.post-content p>img").forEachIndexed { index, element ->
+        document.select("div.post-content p>img, div.post-content figure>img").forEachIndexed { index, element ->
             add(Page(index, "", element.attr("abs:src").substringBefore("?")))
         }
     }

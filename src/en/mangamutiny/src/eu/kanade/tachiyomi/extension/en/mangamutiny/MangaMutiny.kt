@@ -5,6 +5,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -15,6 +16,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
+import rx.Observable
 import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -52,6 +54,10 @@ class MangaMutiny : HttpSource() {
     private val apiChapterUrlPath = "v1/public/chapter"
 
     private val fetchAmount = 21
+
+    companion object {
+        const val PREFIX_ID_SEARCH = "slug:"
+    }
 
     // Popular manga
     override fun popularMangaRequest(page: Int): Request = mangaRequest(page)
@@ -115,7 +121,7 @@ class MangaMutiny : HttpSource() {
 
     // latest
     override fun latestUpdatesRequest(page: Int): Request =
-        mangaRequest(page, FilterList(SortFilter().apply { this.state = 1 }))
+        mangaRequest(page, filters = FilterList(SortFilter().apply { this.state = 1 }))
 
     override fun latestUpdatesParse(response: Response): MangasPage = mangaParse(response)
 
@@ -148,7 +154,7 @@ class MangaMutiny : HttpSource() {
                 thumbnail_url = rootNode.getNullable("thumbnail")?.asString
                 title = rootNode.get("title").asString
                 url = rootNode.get("slug").asString
-                artist = rootNode.get("artists").asString
+                artist = rootNode.getNullable("artists")?.asString
                 author = rootNode.get("authors").asString
 
                 genre = rootNode.get("tags").asJsonArray
@@ -195,7 +201,7 @@ class MangaMutiny : HttpSource() {
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        mangaRequest(page, filters, query)
+        mangaRequest(page, query, filters)
 
     override fun searchMangaParse(response: Response): MangasPage = mangaParse(response)
 
@@ -229,7 +235,31 @@ class MangaMutiny : HttpSource() {
         return MangasPage(mangasPage, mangasPage.size == fetchAmount)
     }
 
-    private fun mangaRequest(page: Int, filters: FilterList? = null, query: String? = null): Request {
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+
+            val tempManga = SManga.create().apply {
+                url = realQuery
+            }
+
+            client.newCall(mangaDetailsRequestCommon(tempManga, true))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
+
+    private fun mangaRequest(page: Int, query: String? = null, filters: FilterList? = null): Request {
         val uri = Uri.parse(baseUrl).buildUpon()
         uri.appendEncodedPath(apiMangaUrlPath)
         if (query?.isNotBlank() == true) {

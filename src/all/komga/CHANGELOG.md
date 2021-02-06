@@ -1,3 +1,12 @@
+## 1.2.19
+
+Minimum Komga version required: `0.68.0`
+
+### Features
+
+* display Series authors
+* display Series summary from books if no summary exists for Series
+
 ## 1.2.18
 
 Minimum Komga version required: `0.63.2`

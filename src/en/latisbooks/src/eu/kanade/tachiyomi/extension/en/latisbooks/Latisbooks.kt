@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.latisbooks
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -9,11 +10,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import java.util.Calendar
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
 
+@Nsfw
 class Latisbooks : HttpSource() {
 
     override val name = "Latis Books"
@@ -80,10 +83,16 @@ class Latisbooks : HttpSource() {
     // Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> {
+        val cal: Calendar = Calendar.getInstance()
+
         return response.asJsoup().select("ul.archive-item-list li a").map {
+            val date: List<String> = it.attr("abs:href").split("/")
+            cal.set(date[4].toInt(), date[5].toInt() - 1, date[6].toInt())
+
             SChapter.create().apply {
                 name = it.text()
                 url = it.attr("abs:href")
+                date_upload = cal.timeInMillis
             }
         }
     }

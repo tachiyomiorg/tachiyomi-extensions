@@ -166,10 +166,39 @@ class Hentai2Read : ParsedHttpSource() {
         manga.author = infoElement.select("li:contains(Author) > a")?.text()
         manga.artist = infoElement.select("li:contains(Artist) > a")?.text()
         manga.genre = infoElement.select("li:contains(Category) > a, li:contains(Content) > a").joinToString(", ") { it.text() }
-        manga.description = infoElement.select("li:contains(Storyline) > p")?.text()
+        manga.description = buildDescription(infoElement)
         manga.status = infoElement.select("li:contains(Status) > a")?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("a#js-linkNext > img")?.attr("src")
         return manga
+    }
+
+    private fun buildDescription(infoElement: Element): String {
+
+        val topDescriptions = listOf(
+            Pair(
+                "Alternative Title",
+                infoElement.select("li").first().text().let {
+                    if (it.trim() == "-") emptyList()
+                    else it.split(", ")
+                }
+            ),
+            Pair(
+                "Storyline",
+                listOf(infoElement.select("li:contains(Storyline) > p")?.text())
+            )
+        )
+
+        val descriptions = listOf(
+            "Parody",
+            "Page",
+            "Character",
+            "Language"
+        ).map { it to infoElement.select("li:contains($it) a").map { v -> v.text() } }
+            .let { topDescriptions + it } // start with topDescriptions
+            .filter { !it.second.isNullOrEmpty() && it.second[0] != "-" }
+            .map { "${it.first}:\n${it.second.joinToString()}" }
+
+        return descriptions.joinToString("\n\n")
     }
 
     private fun parseStatus(status: String) = when {
@@ -181,18 +210,18 @@ class Hentai2Read : ParsedHttpSource() {
     override fun chapterListSelector() = "ul.nav-chapters > li > div.media > a"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(element.attr("href"))
-        chapter.name = element.ownText().trim()
-        chapter.date_upload = element.select("div > small").text()?.let {
-            val matcher = chapterDatePattern.matcher(it)
-            if (matcher.find()) {
-                parseChapterDate(matcher.group(1)!!)
-            } else {
-                0L
-            }
-        } ?: 0L
-        return chapter
+        return SChapter.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            name = element.ownText().trim()
+            date_upload = element.select("div > small").text()?.let {
+                val matcher = chapterDatePattern.matcher(it)
+                if (matcher.find()) {
+                    parseChapterDate(matcher.group(1)!!)
+                } else {
+                    0L
+                }
+            } ?: 0L
+        }
     }
 
     private fun parseChapterDate(date: String): Long {

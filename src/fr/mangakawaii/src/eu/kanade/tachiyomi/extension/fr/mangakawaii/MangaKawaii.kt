@@ -31,13 +31,13 @@ class MangaKawaii : ParsedHttpSource() {
     override fun popularMangaSelector() = "a.hot-manga__item "
     override fun latestUpdatesSelector() = ".section__list-group li div.section__list-group-left"
     override fun searchMangaSelector() = "h1 + ul a[href*=manga]"
-    override fun chapterListSelector() = "tr.chapter-item.volume-0, tr.chapter-item.volume-, tr.volume-0"
+    override fun chapterListSelector() = "tr[class*=volume-]"
 
     override fun popularMangaNextPageSelector() = "a[rel=next]"
     override fun latestUpdatesNextPageSelector(): String? = null
     override fun searchMangaNextPageSelector() = "no selector"
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/liste-manga/filterMangaList?page=$page&sortBy=views&asc=false", headersBuilder().add("X-Requested-With", "XMLHttpRequest").build())
+    override fun popularMangaRequest(page: Int) = GET(baseUrl, headers)
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -49,14 +49,14 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(element.select("a").attr("abs:href"))
-        manga.title = element.select("h3").text().trim()
-        manga.thumbnail_url = element.select("a").attr("abs:data-background-image")
+        manga.setUrlWithoutDomain(element.select("a").attr("href").substringBeforeLast("/"))
+        manga.title = element.select("div.hot-manga__item-caption").select("div.hot-manga__item-name").text().trim()
+        manga.thumbnail_url = element.select("a").attr("style").substringAfter("('").substringBeforeLast("'")
         return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select(" a").text().trim()
+        title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
         thumbnail_url = element.select("img").attr("data-src")
     }
@@ -85,7 +85,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         manga.thumbnail_url = document.select("div.manga-view__header-image").select("img").attr("abs:src")
-        manga.description = document.select("div.info-desc__content").text()
+        manga.description = document.select("dd.text-justify.text-break").text()
         manga.author = document.select("a[href*=author]").text()
         manga.artist = document.select("a[href*=artist]").text()
         val glist = document.select("a[href*=category]").map { it.text() }
@@ -100,7 +100,7 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        var div = body.select("div#all")
+        var div = body.select("div.text-center div.d-none:has(img[data-src*=/serv-manga/])")
         var elements = div.select("img")
 
         val pages = mutableListOf<Page>()

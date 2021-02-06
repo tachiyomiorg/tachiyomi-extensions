@@ -13,6 +13,7 @@ class WebtoonsFactory : SourceFactory {
         WebtoonsIndonesian(),
         WebtoonsThai(),
         WebtoonsFr(),
+        WebtoonsEs(),
         DongmanManhua(),
 
         // Fan translations
@@ -46,7 +47,8 @@ class WebtoonsFactory : SourceFactory {
         WebtoonsTranslate("sv", "SWE"),
         WebtoonsTranslate("bn", "BEN"),
         WebtoonsTranslate("fa", "PER"),
-        WebtoonsTranslate("uk", "UKR")
+        WebtoonsTranslate("uk", "UKR"),
+        WebtoonsTranslate("es", "SPA")
     )
 }
 
@@ -74,3 +76,18 @@ class WebtoonsThai : WebtoonsDefault("th", dateFormat = SimpleDateFormat("d MMM 
 class WebtoonsChineseTraditional : WebtoonsDefault("zh", "zh-hant", "zh_TW", SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE))
 
 class WebtoonsFr : WebtoonsDefault("fr", dateFormat = SimpleDateFormat("d MMM yyyy", Locale.FRENCH))
+
+class WebtoonsEs : WebtoonsDefault("es") {
+    // Android seems to be unable to parse es dates like Indonesian; we'll use a short hard-coded table
+    // instead.
+    private val dateMap: Array<String> = arrayOf(
+        "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+    )
+
+    override fun chapterParseDate(date: String): Long {
+        val expr = Regex("""(\d+)-([a-z]{3})-(\d{4})""").find(date) ?: return 0
+        val (_, day, monthString, year) = expr.groupValues
+        val monthIndex = dateMap.indexOf(monthString)
+        return GregorianCalendar(year.toInt(), monthIndex, day.toInt()).time.time
+    }
+}

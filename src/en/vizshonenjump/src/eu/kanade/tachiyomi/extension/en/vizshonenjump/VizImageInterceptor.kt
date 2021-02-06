@@ -12,7 +12,6 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 import java.io.InputStream
 
 class VizImageInterceptor : Interceptor {
@@ -40,6 +39,7 @@ class VizImageInterceptor : Interceptor {
         val byteInputStreamForMetadata = ByteArrayInputStream(byteOutputStream.toByteArray())
 
         val imageData = getImageData(byteInputStreamForMetadata)
+            ?: return byteOutputStream.toByteArray()
 
         val input = BitmapFactory.decodeStream(byteInputStreamForImage)
         val width = input.width
@@ -127,7 +127,7 @@ class VizImageInterceptor : Interceptor {
         drawBitmap(from, srcRect, dstRect, null)
     }
 
-    private fun getImageData(inputStream: InputStream): ImageData {
+    private fun getImageData(inputStream: InputStream): ImageData? {
         val metadata = ImageMetadataReader.readMetadata(inputStream)
 
         val sizeDir = metadata.directories.firstOrNull {
@@ -141,7 +141,7 @@ class VizImageInterceptor : Interceptor {
             it.containsTag(ExifSubIFDDirectory.TAG_IMAGE_UNIQUE_ID)
         }
         val metaUniqueId = keyDir?.getString(ExifSubIFDDirectory.TAG_IMAGE_UNIQUE_ID)
-            ?: throw IOException(KEY_NOT_FOUND)
+            ?: return null
 
         return ImageData(metaWidth, metaHeight, metaUniqueId)
     }
@@ -166,7 +166,5 @@ class VizImageInterceptor : Interceptor {
 
         private const val COMMON_WIDTH = 800
         private const val COMMON_HEIGHT = 1200
-
-        private const val KEY_NOT_FOUND = "Decryption key not found in image metadata."
     }
 }

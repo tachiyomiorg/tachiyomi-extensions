@@ -101,8 +101,11 @@ class Gmanga : ConfigurableSource, HttpSource() {
                 SManga.create().apply {
                     url = "/mangas/${it["id"].asString}"
                     title = it["title"].asString
-                    val thumbnail = "medium_${it["cover"].asString.substringBeforeLast(".")}.webp"
-                    thumbnail_url = "https://media.$domain/uploads/manga/cover/${it["id"].asString}/$thumbnail"
+
+                    thumbnail_url = it["cover"].nullString?.let { coverFileName ->
+                        val thumbnail = "medium_${coverFileName.substringBeforeLast(".")}.webp"
+                        "https://media.$domain/uploads/manga/cover/${it["id"].asString}/$thumbnail"
+                    }
                 }
             },
             false
@@ -166,7 +169,7 @@ class Gmanga : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GmangaFilters.buildSearchPayload(page, query, filters).let {
+        return GmangaFilters.buildSearchPayload(page, query, if (filters.isEmpty()) getFilterList() else filters).let {
             val body = RequestBody.create(MEDIA_TYPE, it.toString())
             POST("$baseUrl/api/mangas/search", headers, body)
         }

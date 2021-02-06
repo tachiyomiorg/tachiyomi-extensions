@@ -32,7 +32,6 @@ class FoolSlideFactory : SourceFactory {
         IskultripScans(),
         AnataNoMotokare(),
         DeathTollScans(),
-        DokiFansubs(),
         YuriIsm(),
         AjiaNoScantrad(),
         OneTimeScans(),
@@ -60,7 +59,6 @@ class FoolSlideFactory : SourceFactory {
         TortugaCeviri(),
         Rama(),
         Mabushimajo(),
-        EdensZero(),
         MenudoFansub()
     )
 }
@@ -94,8 +92,6 @@ class IskultripScans : FoolSlide("Iskultrip Scans", "https://maryfaye.net", "en"
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.xyz", "en", "/reader")
 
 class DeathTollScans : FoolSlide("Death Toll Scans", "https://reader.deathtollscans.net", "en")
-
-class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en", "/reader")
 
 class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide")
 
@@ -187,7 +183,7 @@ class HNIScantradEN : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "en"
     }
 }
 
-class PhoenixScans : FoolSlide("The Phoenix Scans", "https://www.phantomreader.com", "it", "/reader")
+class PhoenixScans : FoolSlide("The Phoenix Scans", "https://www.phoenixscans.com", "it", "/reader")
 
 class GTO : FoolSlide("GTO The Great Site", "https://www.gtothegreatsite.net", "it", "/reader")
 
@@ -272,5 +268,3 @@ class TortugaCeviri : FoolSlide("Tortuga Ceviri", "http://tortuga-ceviri.com", "
 class Rama : FoolSlide("Rama", "https://www.ramareader.it", "it", "/read")
 
 class Mabushimajo : FoolSlide("Mabushimajo", "http://mabushimajo.com", "tr", "/onlineokuma")
-
-class EdensZero : FoolSlide("Edens Zero and Hero's", "https://readedenszero.com", "en", "/reader")

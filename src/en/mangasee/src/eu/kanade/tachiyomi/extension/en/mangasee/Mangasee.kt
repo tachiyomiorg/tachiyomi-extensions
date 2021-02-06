@@ -216,7 +216,8 @@ class Mangasee : HttpSource() {
         var index = ""
         val t = e.substring(0, 1).toInt()
         if (1 != t) { index = "-index-$t" }
-        val n = e.substring(1, e.length - 1)
+        val dgt = if (e.toInt() < 100100) { 4 } else if (e.toInt() < 101000) { 3 } else if (e.toInt() < 110000) { 2 } else { 1 }
+        val n = e.substring(dgt, e.length - 1)
         var suffix = ""
         val path = e.substring(e.length - 1).toInt()
         if (0 != path) { suffix = ".$path" }

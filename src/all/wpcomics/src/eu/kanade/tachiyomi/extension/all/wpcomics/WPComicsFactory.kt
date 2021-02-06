@@ -20,6 +20,7 @@ class WPComicsFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         ManhuaES(),
         MangaSum(),
+        MangaSumRAW(),
         XoxoComics(),
         NhatTruyen(),
         NetTruyen(),
@@ -30,7 +31,16 @@ class WPComicsFactory : SourceFactory {
 
 private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", SimpleDateFormat("HH:mm - dd/MM/yyyy Z", Locale.US), "+0700") {
     override val popularPath = "category-comics/manga"
-
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/$popularPath" + if (page > 1) "/page/$page" else "", headers)
+    }
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET(baseUrl + if (page > 1) "/page/$page" else "", headers)
+    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return GET("$baseUrl/page/$page/?s=$query&post_type=comics")
+    }
+    override fun popularMangaNextPageSelector() = ".pagination li:last-child:not(.active)"
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             element.select("div.overlay a:has(h2)").let {
@@ -40,12 +50,44 @@ private class ManhuaES : WPComics("Manhua ES", "https://manhuaes.com", "en", Sim
             thumbnail_url = element.select("img").firstOrNull()?.attr("abs:src")
         }
     }
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            document.select("article#item-detail").let { info ->
+                author = info.select("li.author p.col-xs-8").text()
+                status = info.select("li.status p.col-xs-8").text().toStatus()
+                genre = info.select(".tags-genre a").joinToString { it.text() }
+                thumbnail_url = imageOrNull(info.select("div.col-image img").first())
 
-    override val pageListSelector = "div.chapter-detail ul img, div.chapter-detail div:not(.container) > img"
+                val h3 = info.select(".detail-content h3").text()
+                val strong = info.select(".detail-content strong").text()
+                val showMoreFake = info.select(".detail-content .content-readmore").text()
+                val showMore = info.select(".detail-content .morelink").text()
+                val rawDesc = info.select("div.detail-content").text()
+                
+                if (showMoreFake == null || showMoreFake == "") {
+                    description = rawDesc.substringAfter(h3).substringAfter(strong).substringBefore(showMore)
+                } else {
+                    description = rawDesc.substringAfter(h3).substringAfter(strong).substringBefore(showMoreFake)
+                }
+            }
+        }
+    }
+    override val pageListSelector = "div.chapter-detail ul img, div.chapter-detail div:not(.container) > img, div.chapter-detail p > img"
+}
+
+private class MangaSumRAW : WPComics("MangaSum RAW", "https://mangasum.com", "ja", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/raw" + if (page > 1) "?page=$page" else "", headers)
+    }
+    override fun popularMangaSelector() = "div.items div.item"
+    override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/genres?keyword=$query&page=$page", headers)
+    override fun searchMangaSelector() = "div.items div.item div.image a[title*=' - Raw']"
 }
 
 private class MangaSum : WPComics("MangaSum", "https://mangasum.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/genres?keyword=$query&page=$page", headers)
+    override fun searchMangaSelector() = "div.items div.item div.image a:not([title*=' - Raw'])"
 }
 
 private class XoxoComics : WPComics("XOXO Comics", "https://xoxocomics.com", "en", SimpleDateFormat("MM/dd/yy", Locale.US), null) {

@@ -136,7 +136,7 @@ abstract class WPMangaReader(
             .filterNot { it.attr("src").isNullOrEmpty() }
             .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
 
-        // Some sites like mangakita now load pages via javascript. like asurascan in wp mangastream
+        // Some sites like mangakita now load pages via javascript
         if (pages.isNotEmpty()) { return pages }
 
         val docString = document.toString()

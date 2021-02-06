@@ -9,9 +9,12 @@ class WPMangaReaderFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         KomikMama(),
         MangaKita(),
-        Ngomik()
+        Ngomik(),
+        TurkToon(),
     )
 }
+
+class TurkToon : WPMangaReader("TurkToon", "https://turktoon.com", "tr", "/manga", SimpleDateFormat("MMM d, yyyy", Locale("tr")))
 
 class KomikMama : WPMangaReader("KomikMama", "https://komikmama.net", "id", "/manga", SimpleDateFormat("MMMM dd, yyyy", Locale.forLanguageTag("id")))
 

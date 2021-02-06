@@ -5,8 +5,9 @@ ext {
     extName = 'Latis Books'
     pkgNameSuffix = 'en.latisbooks'
     extClass = '.Latisbooks'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

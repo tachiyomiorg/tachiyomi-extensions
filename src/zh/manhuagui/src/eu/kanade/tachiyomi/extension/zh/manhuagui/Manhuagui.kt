@@ -7,10 +7,12 @@ import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -56,26 +58,29 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
 
-    private val imageServer = arrayOf("https://i.hamreus.com")
+    private val imageServer = arrayOf("https://i.hamreus.com", "https://cf.hamreus.com")
+    private val mobileWebsiteUrl = "https://m.manhuagui.com"
     private val gson = Gson()
     private val baseHttpUrl: HttpUrl = HttpUrl.parse(baseUrl)!!
 
     // Add rate limit to fix manga thumbnail load failure
-    private val rateLimitInterceptor = ManhuaguiRateLimitInterceptor(
-        baseHttpUrl.host()!!,
-        preferences.getString(MAINSITE_RATELIMIT_PREF, "2")!!.toInt(),
-        preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt()
-    )
+    private val mainSiteRateLimitInterceptor = SpecificHostRateLimitInterceptor(baseHttpUrl, preferences.getString(MAINSITE_RATELIMIT_PREF, "2")!!.toInt())
+    private val imageCDNRateLimitInterceptor1 = SpecificHostRateLimitInterceptor(HttpUrl.parse(imageServer[0])!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt())
+    private val imageCDNRateLimitInterceptor2 = SpecificHostRateLimitInterceptor(HttpUrl.parse(imageServer[1])!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt())
 
     override val client: OkHttpClient =
         if (getShowR18())
             network.client.newBuilder()
-                .addNetworkInterceptor(rateLimitInterceptor)
+                .addNetworkInterceptor(mainSiteRateLimitInterceptor)
+                .addNetworkInterceptor(imageCDNRateLimitInterceptor1)
+                .addNetworkInterceptor(imageCDNRateLimitInterceptor2)
                 .addNetworkInterceptor(AddCookieHeaderInterceptor(baseHttpUrl.host()!!))
                 .build()
         else
             network.client.newBuilder()
-                .addNetworkInterceptor(rateLimitInterceptor)
+                .addNetworkInterceptor(mainSiteRateLimitInterceptor)
+                .addNetworkInterceptor(imageCDNRateLimitInterceptor1)
+                .addNetworkInterceptor(imageCDNRateLimitInterceptor2)
                 .build()
 
     // Add R18 verification cookie
@@ -97,14 +102,49 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/list/view_p$page.html", headers)
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/list/update_p$page.html", headers)
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        GET("$baseUrl/s/${query}_p$page.html", headers)
 
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (query != "") {
+            // Normal search
+            return GET("$baseUrl/s/${query}_p$page.html", headers)
+        } else {
+            // Filters search
+            val params = filters.map {
+                if (it !is SortFilter && it is UriPartFilter) {
+                    it.toUriPart()
+                } else ""
+            }.filter { it != "" }.joinToString("_")
+
+            val sortOrder = filters.filterIsInstance<SortFilter>()
+                .joinToString("") {
+                    (it as UriPartFilter).toUriPart()
+                }
+
+            // Example: https://www.manhuagui.com/list/japan_maoxian_qingnian_2020_b/update_p1.html
+            //                                        /$params                      /$sortOrder $page
+            var url = "$baseUrl/list"
+            if (params != "") {
+                url += "/$params"
+            }
+            if (sortOrder == "") {
+                url += "/index_p$page.html"
+            } else {
+                url += "/${sortOrder}_p$page.html"
+            }
+            return GET(url, headers)
+        }
+    }
+
+    // Return mobile webpage url to "Open in browser" and "Share manga".
     override fun mangaDetailsRequest(manga: SManga): Request {
-        var bid = Regex("""\d+/?$""").find(manga.url)?.value
-        if (bid != null) {
-            bid = bid.removeSuffix("/")
+        return GET(mobileWebsiteUrl + manga.url)
+    }
 
+    // Bypass mangaDetailsRequest
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        val call = client.newCall(GET(baseUrl + manga.url, headers))
+        val bid = Regex("""\d+""").find(manga.url)?.value
+        if (bid != null) {
             // Send a get request to https://www.manhuagui.com/tools/vote.ashx?act=get&bid=$bid
             // and a post request to https://www.manhuagui.com/tools/submit_ajax.ashx?action=user_check_login
             // to simulate what web page javascript do and get "country" cookie.
@@ -144,8 +184,11 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
                 }
             }
         }
-
-        return GET(baseUrl + manga.url, headers)
+        return call
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
     }
 
     // For ManhuaguiUrlActivity
@@ -165,6 +208,28 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
                 .map { response -> searchMangaByIdParse(response, id) }
         } else {
             super.fetchSearchManga(page, query, filters)
+        }
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        if (response.request().url().encodedPath().startsWith("/s/")) {
+            // Normal search
+            val mangas = document.select(searchMangaSelector()).map { element ->
+                searchMangaFromElement(element)
+            }
+            val hasNextPage = searchMangaNextPageSelector().let { selector ->
+                document.select(selector).first()
+            } != null
+
+            return MangasPage(mangas, hasNextPage)
+        } else {
+            // Filters search
+            val mangas = document.select(popularMangaSelector()).map { element ->
+                popularMangaFromElement(element)
+            }
+            val hasNextPage = document.select(popularMangaNextPageSelector()).first() != null
+            return MangasPage(mangas, hasNextPage)
         }
     }
 
@@ -211,7 +276,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         return manga
     }
 
-    override fun chapterFromElement(element: Element) = throw Exception("Not used")
+    override fun chapterFromElement(element: Element) = throw UnsupportedOperationException("Not used.")
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val chapters = mutableListOf<SChapter>()
@@ -274,7 +339,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         manga.title = document.select("div.book-title > h1:nth-child(1)").text().trim()
         manga.description = document.select("div#intro-all").text().trim()
         manga.thumbnail_url = document.select("p.hcover > img").attr("abs:src")
-        manga.author = document.select("span:contains(漫画作者) > a , span:contains(漫畫作者) > a").text().trim()
+        manga.author = document.select("span:contains(漫画作者) > a , span:contains(漫畫作者) > a").text().trim().replace(" ", ", ")
         manga.genre = document.select("span:contains(漫画剧情) > a , span:contains(漫畫劇情) > a").text().trim().replace(" ", ", ")
         manga.status = when (document.select("div.book-detail > ul.detail-list > li.status > span > span").first().text()) {
             "连载中" -> SManga.ONGOING
@@ -296,6 +361,14 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     // http://www.oicqzone.com/tool/eval/ , https://www.w3xue.com/tools/jseval/ ,
     // https://www.w3cschool.cn/tools/index?name=evalencode can try to decode javascript eval encoded content,
     // jsDecodeFunc's LZString.decompressFromBase64() can decode LZString.
+
+    // These "\" can't be remove: "\}", more info in pull request 3926.
+    @Suppress("RegExpRedundantEscape")
+    private val re = Regex("""window\[".*?"\](\(.*\)\s*\{[\s\S]+\}\s*\(.*\))""")
+
+    @Suppress("RegExpRedundantEscape")
+    private val re2 = Regex("""\{.*\}""")
+
     override fun pageListParse(document: Document): List<Page> {
         // R18 warning element (#erroraudit_show) is remove by web page javascript, so here the warning element
         // will always exist if this manga is R18 limited whether R18 verification cookies has been sent or not.
@@ -304,15 +377,11 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             error("R18作品显示开关未开启或未生效") // "R18 setting didn't enabled or became effective"
 
         val html = document.html()
-        // These "\" can't be remove: \} more info in pull request 3926.
-        val re = Regex("""window\[".*?"\](\(.*\)\s*\{[\s\S]+\}\s*\(.*\))""")
         val imgCode = re.find(html)?.groups?.get(1)?.value
         val imgDecode = Duktape.create().use {
             it.evaluate(jsDecodeFunc + imgCode) as String
         }
 
-        // \}
-        val re2 = Regex("""\{.*\}""")
         val imgJsonStr = re2.find(imgDecode)?.groups?.get(0)?.value
         val imageJson: Comic = gson.fromJson(imgJsonStr, Comic::class.java)
 
@@ -322,16 +391,15 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    override fun imageUrlParse(document: Document) = ""
+    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used.")
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val mainSiteRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
             key = MAINSITE_RATELIMIT_PREF
-            title = "主站每秒连接数限制" // "Ratelimit permits per second for main website"
-            entries = arrayOf("1", "2", "3", "4", "5")
-            entryValues = arrayOf("1", "2", "3", "4", "5")
-            // "This value affects network request amount for updating library. Lower this value may reduce the chance to get IP Ban, but loading speed will be slower too. Tachiyomi restart required."
-            summary = "此值影响更新书架时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。"
+            title = MAINSITE_RATELIMIT_PREF_TITLE
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+            summary = MAINSITE_RATELIMIT_PREF_SUMMARY
 
             setDefaultValue("2")
             setOnPreferenceChangeListener { _, newValue ->
@@ -347,11 +415,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
         val imgCDNRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
             key = IMAGE_CDN_RATELIMIT_PREF
-            title = "图片CDN每秒连接数限制" // "Ratelimit permits per second for image CDN"
-            entries = arrayOf("1", "2", "3", "4", "5")
-            entryValues = arrayOf("1", "2", "3", "4", "5")
-            // "This value affects network request amount for loading image. Lower this value may reduce the chance to get IP Ban, but loading speed will be slower too. Tachiyomi restart required."
-            summary = "此值影响加载图片时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。"
+            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
 
             setDefaultValue("4")
             setOnPreferenceChangeListener { _, newValue ->
@@ -368,10 +435,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         // Simplified/Traditional Chinese version website switch
         val zhHantPreference = androidx.preference.CheckBoxPreference(screen.context).apply {
             key = SHOW_ZH_HANT_WEBSITE_PREF
-            // "Use traditional chinese version website"
-            title = "使用繁体版网站"
-            // "You need to restart Tachiyomi"
-            summary = "需要重启软件以生效。"
+            title = SHOW_ZH_HANT_WEBSITE_PREF_TITLE
+            summary = SHOW_ZH_HANT_WEBSITE_PREF_SUMMARY
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -386,11 +451,9 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
         // R18+ switch
         val r18Preference = androidx.preference.CheckBoxPreference(screen.context).apply {
-            key = SHOW_R18_PREF_Title
-            // "R18 Setting"
-            title = "R18作品显示设置"
-            // "Please make sure your IP is not in Manhuagui's ban list, e.g., China mainland IP. Tachiyomi restart required. If you want to close this switch after enabled it, you need to clear cookies in Tachiyomi advanced setting too.
-            summary = "请确认您的IP不在漫画柜的屏蔽列表内，例如中国大陆IP。需要重启软件以生效。\n启动后如需关闭，需一并到Tachiyomi高级设置内清除Cookies后才能生效。"
+            key = SHOW_R18_PREF
+            title = SHOW_R18_PREF_TITLE
+            summary = SHOW_R18_PREF_SUMMARY
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -412,10 +475,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val mainSiteRateLimitPreference = ListPreference(screen.context).apply {
             key = MAINSITE_RATELIMIT_PREF
-            title = "主站每秒连接数限制"
-            entries = arrayOf("1", "2", "3", "4", "5")
-            entryValues = arrayOf("1", "2", "3", "4", "5")
-            summary = "此值影响更新章节时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。"
+            title = MAINSITE_RATELIMIT_PREF_TITLE
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+            summary = MAINSITE_RATELIMIT_PREF_SUMMARY
 
             setDefaultValue("2")
             setOnPreferenceChangeListener { _, newValue ->
@@ -431,10 +494,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
         val imgCDNRateLimitPreference = ListPreference(screen.context).apply {
             key = IMAGE_CDN_RATELIMIT_PREF
-            title = "图片CDN每秒连接数限制"
-            entries = arrayOf("1", "2", "3", "4", "5")
-            entryValues = arrayOf("1", "2", "3", "4", "5")
-            summary = "此值影响加载图片时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。"
+            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
 
             setDefaultValue("4")
             setOnPreferenceChangeListener { _, newValue ->
@@ -450,8 +513,8 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
         val zhHantPreference = CheckBoxPreference(screen.context).apply {
             key = SHOW_ZH_HANT_WEBSITE_PREF
-            title = "使用繁体版网站"
-            summary = "需要重启软件以生效。"
+            title = SHOW_ZH_HANT_WEBSITE_PREF_TITLE
+            summary = SHOW_ZH_HANT_WEBSITE_PREF_SUMMARY
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -465,9 +528,9 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         }
 
         val r18Preference = CheckBoxPreference(screen.context).apply {
-            key = SHOW_R18_PREF_Title
-            title = "R18作品显示设置"
-            summary = "请确认您的IP不在漫画柜的屏蔽列表内，例如中国大陆IP。需要重启软件以生效。\n启动后如需关闭，需一并到Tachiyomi高级设置内清除Cookies后才能生效。"
+            key = SHOW_R18_PREF
+            title = SHOW_R18_PREF_TITLE
+            summary = SHOW_R18_PREF_SUMMARY
 
             setOnPreferenceChangeListener { _, newValue ->
                 try {
@@ -488,12 +551,187 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
 
     private fun getShowR18(): Boolean = preferences.getBoolean(SHOW_R18_PREF, false)
 
+    private open class UriPartFilter(
+        displayName: String,
+        val pair: Array<Pair<String, String>>,
+        defaultState: Int = 0
+    ) : Filter.Select<String>(displayName, pair.map { it.first }.toTypedArray(), defaultState) {
+        open fun toUriPart() = pair[state].second
+    }
+
+    override fun getFilterList() = FilterList(
+        SortFilter(),
+        LocaleFilter(),
+        GenreFilter(),
+        ReaderFilter(),
+        PublishDateFilter(),
+        FirstLetterFilter(),
+        StatusFilter()
+    )
+
+    private class SortFilter : UriPartFilter(
+        "排序方式",
+        arrayOf(
+            Pair("人气最旺", "view"), // Same to popularMangaRequest()
+            Pair("最新发布", ""), // Publish date
+            Pair("最新更新", "update"),
+            Pair("评分最高", "rate")
+        )
+    )
+
+    private class LocaleFilter : UriPartFilter(
+        "按地区",
+        arrayOf(
+            Pair("全部", ""), // all
+            Pair("日本", "japan"),
+            Pair("港台", "hongkong"),
+            Pair("其它", "other"),
+            Pair("欧美", "europe"),
+            Pair("内地", "china"),
+            Pair("韩国", "korea")
+        )
+    )
+
+    private class GenreFilter : UriPartFilter(
+        "按剧情",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("热血", "rexue"),
+            Pair("冒险", "maoxian"),
+            Pair("魔幻", "mohuan"),
+            Pair("神鬼", "shengui"),
+            Pair("搞笑", "gaoxiao"),
+            Pair("萌系", "mengxi"),
+            Pair("爱情", "aiqing"),
+            Pair("科幻", "kehuan"),
+            Pair("魔法", "mofa"),
+            Pair("格斗", "gedou"),
+            Pair("武侠", "wuxia"),
+            Pair("机战", "jizhan"),
+            Pair("战争", "zhanzheng"),
+            Pair("竞技", "jingji"),
+            Pair("体育", "tiyu"),
+            Pair("校园", "xiaoyuan"),
+            Pair("生活", "shenghuo"),
+            Pair("励志", "lizhi"),
+            Pair("历史", "lishi"),
+            Pair("伪娘", "weiniang"),
+            Pair("宅男", "zhainan"),
+            Pair("腐女", "funv"),
+            Pair("耽美", "danmei"),
+            Pair("百合", "baihe"),
+            Pair("后宫", "hougong"),
+            Pair("治愈", "zhiyu"),
+            Pair("美食", "meishi"),
+            Pair("推理", "tuili"),
+            Pair("悬疑", "xuanyi"),
+            Pair("恐怖", "kongbu"),
+            Pair("四格", "sige"),
+            Pair("职场", "zhichang"),
+            Pair("侦探", "zhentan"),
+            Pair("社会", "shehui"),
+            Pair("音乐", "yinyue"),
+            Pair("舞蹈", "wudao"),
+            Pair("杂志", "zazhi"),
+            Pair("黑道", "heidao")
+        )
+    )
+
+    private class ReaderFilter : UriPartFilter(
+        "按受众",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("少女", "shaonv"),
+            Pair("少年", "shaonian"),
+            Pair("青年", "qingnian"),
+            Pair("儿童", "ertong"),
+            Pair("通用", "tongyong"),
+        )
+    )
+
+    private class PublishDateFilter : UriPartFilter(
+        "按年份",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("2020年", "2020"),
+            Pair("2019年", "2019"),
+            Pair("2018年", "2018"),
+            Pair("2017年", "2017"),
+            Pair("2016年", "2016"),
+            Pair("2015年", "2015"),
+            Pair("2014年", "2014"),
+            Pair("2013年", "2013"),
+            Pair("2012年", "2012"),
+            Pair("2011年", "2011"),
+            Pair("2010年", "2010"),
+            Pair("00年代", "200x"),
+            Pair("90年代", "199x"),
+            Pair("80年代", "198x"),
+            Pair("更早", "197x"),
+        )
+    )
+
+    private class FirstLetterFilter : UriPartFilter(
+        "按字母",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("A", "a"),
+            Pair("B", "b"),
+            Pair("C", "c"),
+            Pair("D", "d"),
+            Pair("E", "e"),
+            Pair("F", "f"),
+            Pair("G", "g"),
+            Pair("H", "h"),
+            Pair("I", "i"),
+            Pair("J", "j"),
+            Pair("K", "k"),
+            Pair("L", "l"),
+            Pair("M", "m"),
+            Pair("N", "n"),
+            Pair("O", "o"),
+            Pair("P", "p"),
+            Pair("Q", "q"),
+            Pair("R", "r"),
+            Pair("S", "s"),
+            Pair("T", "t"),
+            Pair("U", "u"),
+            Pair("V", "v"),
+            Pair("W", "w"),
+            Pair("X", "x"),
+            Pair("Y", "y"),
+            Pair("Z", "z"),
+            Pair("0-9", "0-9")
+        )
+    )
+
+    private class StatusFilter : UriPartFilter(
+        "按进度",
+        arrayOf(
+            Pair("全部", ""),
+            Pair("连载", "lianzai"),
+            Pair("完结", "wanjie"),
+        )
+    )
+
     companion object {
-        private const val SHOW_R18_PREF_Title = "R18Setting"
         private const val SHOW_R18_PREF = "showR18Default"
+        private const val SHOW_R18_PREF_TITLE = "显示R18作品" // "Show R18 contents"
+        private const val SHOW_R18_PREF_SUMMARY = "请确认您的IP不在漫画柜的屏蔽列表内，例如中国大陆IP。需要重启软件以生效。\n开启后如需关闭，需要到Tachiyomi高级设置内清除Cookies后才能生效。" // "Please make sure your IP is not in Manhuagui's ban list, e.g., China mainland IP. Tachiyomi restart required. If you want to close this switch after enabled it, you need to clear cookies in Tachiyomi advanced setting too.
+
         private const val SHOW_ZH_HANT_WEBSITE_PREF = "showZhHantWebsite"
+        private const val SHOW_ZH_HANT_WEBSITE_PREF_TITLE = "使用繁体版网站" // "Use traditional chinese version website"
+        private const val SHOW_ZH_HANT_WEBSITE_PREF_SUMMARY = "需要重启软件以生效。" // "You need to restart Tachiyomi"
+
         private const val MAINSITE_RATELIMIT_PREF = "mainSiteRatelimitPreference"
+        private const val MAINSITE_RATELIMIT_PREF_TITLE = "主站每秒连接数限制" // "Ratelimit permits per second for main website"
+        private const val MAINSITE_RATELIMIT_PREF_SUMMARY = "此值影响更新书架时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount for updating library. Lower this value may reduce the chance to get IP Ban, but loading speed will be slower too. Tachiyomi restart required."
+
         private const val IMAGE_CDN_RATELIMIT_PREF = "imgCDNRatelimitPreference"
+        private const val IMAGE_CDN_RATELIMIT_PREF_TITLE = "图片CDN每秒连接数限制" // "Ratelimit permits per second for image CDN"
+        private const val IMAGE_CDN_RATELIMIT_PREF_SUMMARY = "此值影响加载图片时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount for loading image. Lower this value may reduce the chance to get IP Ban, but loading speed will be slower too. Tachiyomi restart required."
+
+        private val ENTRIES_ARRAY = (1..10).map { i -> i.toString() }.toTypedArray()
         const val PREFIX_ID_SEARCH = "id:"
     }
 }

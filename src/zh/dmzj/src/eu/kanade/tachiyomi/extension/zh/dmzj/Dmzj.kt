@@ -1,7 +1,14 @@
 package eu.kanade.tachiyomi.extension.zh.dmzj
 
+import android.app.Application
+import android.content.SharedPreferences
 import android.net.Uri
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -9,10 +16,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.net.URLEncoder
 import java.util.ArrayList
 
@@ -20,27 +34,54 @@ import java.util.ArrayList
  * Dmzj source
  */
 
-class Dmzj : HttpSource() {
+class Dmzj : ConfigurableSource, HttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "动漫之家"
-    override val baseUrl = "http://v3api.dmzj.com"
+    override val baseUrl = "https://m.dmzj1.com"
+    private val v3apiUrl = "https://v3api.dmzj1.com"
+    private val apiUrl = "https://api.dmzj.com"
+    private val oldPageListApiUrl = "https://m.dmzj.com/chapinfo"
+    private val imageCDNUrl = "https://images.dmzj1.com"
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
-        "http:$url"
+        "https:$url"
     else url
 
-    private fun myGet(url: String) = GET(url)
-        .newBuilder()
-        .header(
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val v3apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
+        HttpUrl.parse(v3apiUrl)!!,
+        preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
+    )
+    private val apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
+        HttpUrl.parse(apiUrl)!!,
+        preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
+    )
+    private val imageCDNRateLimitInterceptor = SpecificHostRateLimitInterceptor(
+        HttpUrl.parse(imageCDNUrl)!!,
+        preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt()
+    )
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addNetworkInterceptor(apiRateLimitInterceptor)
+        .addNetworkInterceptor(v3apiRateLimitInterceptor)
+        .addNetworkInterceptor(imageCDNRateLimitInterceptor)
+        .build()
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        set("Referer", "https://www.dmzj1.com/")
+        set(
             "User-Agent",
-            "Mozilla/5.0 (X11; Linux x86_64) " +
+            "Mozilla/5.0 (Linux; Android 10) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/56.0.2924.87 " +
-                "Safari/537.36 " +
+                "Chrome/88.0.4324.93 " +
+                "Mobile Safari/537.36 " +
                 "Tachiyomi/1.0"
         )
-        .build()!!
+    }
 
     // for simple searches (query only, no filters)
     private fun simpleSearchJsonParse(json: String): MangasPage {
@@ -85,19 +126,53 @@ class Dmzj : HttpSource() {
         return MangasPage(ret, arr.length() != 0)
     }
 
-    override fun popularMangaRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/0/${page - 1}.json")
+    override fun popularMangaRequest(page: Int) = GET("$v3apiUrl/classify/0/0/${page - 1}.json")
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
 
-    override fun latestUpdatesRequest(page: Int) = myGet("http://v2.api.dmzj.com/classify/0/1/${page - 1}.json")
+    override fun latestUpdatesRequest(page: Int) = GET("$v3apiUrl/classify/0/1/${page - 1}.json")
 
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
+    private fun searchMangaById(id: String): MangasPage {
+        val comicNumberID = if (checkComicIdIsNumericalRegex.matches(id)) {
+            id
+        } else {
+            val document = client.newCall(GET("$baseUrl/info/$id.html", headers)).execute().asJsoup()
+            extractComicIdFromWebpageRegex.find(document.select("#Subscribe").attr("onclick"))!!.groups[1]!!.value // onclick="addSubscribe('{comicNumberID}')"
+        }
+
+        val sManga = try {
+            val r = client.newCall(GET("$v3apiUrl/comic/comic_$comicNumberID.json", headers)).execute()
+            mangaDetailsParse(r)
+        } catch (_: Exception) {
+            val r = client.newCall(GET("$apiUrl/dynamic/comicinfo/$comicNumberID.json", headers)).execute()
+            mangaDetailsParse(r)
+        }
+        sManga.url = "$baseUrl/info/$comicNumberID.html"
+
+        return MangasPage(listOf(sManga), false)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            // ID may be numbers or Chinese pinyin
+            val id = query.removePrefix(PREFIX_ID_SEARCH).removeSuffix(".html")
+            Observable.just(searchMangaById(id))
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query != "") {
-            val uri = Uri.parse("http://s.acg.dmzj.com/comicsum/search.php").buildUpon()
+            val uri = Uri.parse("http://s.acg.dmzj1.com/comicsum/search.php").buildUpon()
             uri.appendQueryParameter("s", query)
-            return myGet(uri.toString())
+            return GET(uri.toString())
         } else {
             var params = filters.map {
                 if (it !is SortFilter && it is UriPartFilter) {
@@ -110,7 +185,7 @@ class Dmzj : HttpSource() {
 
             val order = filters.filterIsInstance<SortFilter>().joinToString("") { (it as UriPartFilter).toUriPart() }
 
-            return myGet("http://v2.api.dmzj.com/classify/$params/$order/${page - 1}.json")
+            return GET("$v3apiUrl/classify/$params/$order/${page - 1}.json")
         }
     }
 
@@ -124,50 +199,123 @@ class Dmzj : HttpSource() {
         }
     }
 
+    // Bypass mangaDetailsRequest, fetch api url directly
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        val cid = extractComicIdFromMangaUrlRegex.find(manga.url)!!.groups[1]!!.value
+        return try {
+            // Not using client.newCall().asObservableSuccess() to ensure we can catch exception here.
+            val response = client.newCall(GET("$v3apiUrl/comic/comic_$cid.json", headers)).execute()
+            val sManga = mangaDetailsParse(response).apply { initialized = true }
+            Observable.just(sManga)
+        } catch (e: Exception) {
+            val response = client.newCall(GET("$apiUrl/dynamic/comicinfo/$cid.json", headers)).execute()
+            val sManga = mangaDetailsParse(response).apply { initialized = true }
+            Observable.just(sManga)
+        } catch (e: Exception) {
+            Observable.error(e)
+        }
+    }
+
+    // Workaround to allow "Open in browser" use human readable webpage url.
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        val cid = extractComicIdFromMangaUrlRegex.find(manga.url)!!.groups[1]!!.value
+        return GET("$baseUrl/info/$cid.html")
+    }
+
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
         val obj = JSONObject(response.body()!!.string())
 
-        title = obj.getString("title")
-        thumbnail_url = obj.getString("cover")
+        if (response.request().url().toString().startsWith(v3apiUrl)) {
+            title = obj.getString("title")
+            thumbnail_url = obj.getString("cover")
+            var arr = obj.getJSONArray("authors")
+            val tmparr = ArrayList<String>(arr.length())
+            for (i in 0 until arr.length()) {
+                tmparr.add(arr.getJSONObject(i).getString("tag_name"))
+            }
+            author = tmparr.joinToString(", ")
 
-        var arr = obj.getJSONArray("authors")
-        val tmparr = ArrayList<String>(arr.length())
-        for (i in 0 until arr.length()) {
-            tmparr.add(arr.getJSONObject(i).getString("tag_name"))
-        }
-        author = tmparr.joinToString(", ")
+            arr = obj.getJSONArray("types")
+            tmparr.clear()
+            for (i in 0 until arr.length()) {
+                tmparr.add(arr.getJSONObject(i).getString("tag_name"))
+            }
+            genre = tmparr.joinToString(", ")
+            status = when (obj.getJSONArray("status").getJSONObject(0).getInt("tag_id")) {
+                2310 -> SManga.COMPLETED
+                2309 -> SManga.ONGOING
+                else -> SManga.UNKNOWN
+            }
 
-        arr = obj.getJSONArray("types")
-        tmparr.clear()
-        for (i in 0 until arr.length()) {
-            tmparr.add(arr.getJSONObject(i).getString("tag_name"))
+            description = obj.getString("description")
+        } else {
+            val data = obj.getJSONObject("data").getJSONObject("info")
+            title = data.getString("title")
+            thumbnail_url = data.getString("cover")
+            author = data.getString("authors")
+            genre = data.getString("types").replace("/", ", ")
+            status = when (data.getString("status")) {
+                "连载中" -> SManga.ONGOING
+                "已完结" -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
+            description = data.getString("description")
         }
-        genre = tmparr.joinToString(", ")
-        status = when (obj.getJSONArray("status").getJSONObject(0).getInt("tag_id")) {
-            2310 -> SManga.COMPLETED
-            2309 -> SManga.ONGOING
-            else -> SManga.UNKNOWN
-        }
+    }
 
-        description = obj.getString("description")
+    override fun chapterListRequest(manga: SManga): Request = throw UnsupportedOperationException("Not used.")
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        val cid = extractComicIdFromMangaUrlRegex.find(manga.url)!!.groups[1]!!.value
+        return if (manga.status != SManga.LICENSED) {
+            try {
+                val response = client.newCall(GET("$v3apiUrl/comic/comic_$cid.json", headers)).execute()
+                val sChapter = chapterListParse(response)
+                Observable.just(sChapter)
+            } catch (e: Exception) {
+                val response = client.newCall(GET("$apiUrl/dynamic/comicinfo/$cid.json", headers)).execute()
+                val sChapter = chapterListParse(response)
+                Observable.just(sChapter)
+            } catch (e: Exception) {
+                Observable.error(e)
+            }
+        } else {
+            Observable.error(Exception("Licensed - No chapters to show"))
+        }
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val obj = JSONObject(response.body()!!.string())
         val ret = ArrayList<SChapter>()
-        val cid = obj.getString("id")
-        val arr = obj.getJSONArray("chapters")
-        for (i in 0 until arr.length()) {
-            val obj2 = arr.getJSONObject(i)
-            val arr2 = obj2.getJSONArray("data")
-            val prefix = obj2.getString("title")
-            for (j in 0 until arr2.length()) {
-                val chapter = arr2.getJSONObject(j)
+
+        if (response.request().url().toString().startsWith(v3apiUrl)) {
+            val cid = obj.getString("id")
+            val chaptersList = obj.getJSONArray("chapters")
+            for (i in 0 until chaptersList.length()) {
+                val chapterObj = chaptersList.getJSONObject(i)
+                val chapterData = chapterObj.getJSONArray("data")
+                val prefix = chapterObj.getString("title")
+                for (j in 0 until chapterData.length()) {
+                    val chapter = chapterData.getJSONObject(j)
+                    ret.add(
+                        SChapter.create().apply {
+                            name = "$prefix: ${chapter.getString("chapter_title")}"
+                            date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
+                            url = "https://api.m.dmzj1.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
+                        }
+                    )
+                }
+            }
+        } else {
+            // Fallback to old api
+            val chaptersList = obj.getJSONObject("data").getJSONArray("list")
+            for (i in 0 until chaptersList.length()) {
+                val chapter = chaptersList.getJSONObject(i)
                 ret.add(
                     SChapter.create().apply {
-                        name = "$prefix: ${chapter.getString("chapter_title")}"
-                        date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                        url = "https://api.m.dmzj.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
+                        name = chapter.getString("chapter_name")
+                        date_upload = chapter.getString("updatetime").toLong() * 1000
+                        url = "$oldPageListApiUrl/${chapter.getString("comic_id")}/${chapter.getString("id")}.html"
                     }
                 )
             }
@@ -178,22 +326,37 @@ class Dmzj : HttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers) // Bypass base url
 
     override fun pageListParse(response: Response): List<Page> {
-        // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
-        val arr = try {
-            val obj = JSONObject(response.body()!!.string())
-            obj.getJSONObject("chapter").getJSONArray("page_url")
-        } catch (_: Exception) {
-            // example url: http://v3api.dmzj.com/chapter/44253/101852.json
-            val url = response.request().url().toString()
-                .replace("api.m", "v3api")
-                .replace("comic/", "")
-                .replace(".html", ".json")
-            val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
-            obj.getJSONArray("page_url")
+        val arr = if (response.request().url().toString().startsWith(oldPageListApiUrl)) {
+            JSONObject(response.body()!!.string()).getJSONArray("page_url")
+        } else {
+            // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
+            try {
+                val obj = JSONObject(response.body()!!.string())
+                obj.getJSONObject("chapter").getJSONArray("page_url") // api.m.dmzj1.com already return HD image url
+            } catch (_: Exception) {
+                // example url: http://v3api.dmzj.com/chapter/44253/101852.json
+                val url = response.request().url().toString()
+                    .replace("api.m", "v3api")
+                    .replace("comic/", "")
+                    .replace(".html", ".json")
+                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
+                obj.getJSONArray("page_url_hd") // page_url in v3api.dmzj1.com will return compressed image, page_url_hd will return HD image url as api.m.dmzj1.com does.
+            } catch (_: Exception) {
+                // Fallback to old api
+                // example url: https://m.dmzj.com/chapinfo/44253/101852.html
+                val url = response.request().url().toString()
+                    .replaceFirst("api.", "")
+                    .replaceFirst(".dmzj1.", ".dmzj.")
+                    .replaceFirst("comic/chapter", "chapinfo")
+                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
+                obj.getJSONArray("page_url")
+            }
         }
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
-            ret.add(Page(i, "", arr.getString(i)))
+            ret.add(
+                Page(i, "", arr.getString(i).replace("http:", "https:").replace("dmzj.com", "dmzj1.com"))
+            )
         }
         return ret
     }
@@ -308,10 +471,6 @@ class Dmzj : HttpSource() {
         )
     )
 
-    // Headers
-    override fun headersBuilder() =
-        super.headersBuilder().add("Referer", "http://www.dmzj.com/")!!
-
     private open class UriPartFilter(
         displayName: String,
         val vals: Array<Pair<String, String>>,
@@ -319,5 +478,107 @@ class Dmzj : HttpSource() {
     ) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray(), defaultValue) {
         open fun toUriPart() = vals[state].second
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val apiRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
+            key = API_RATELIMIT_PREF
+            title = API_RATELIMIT_PREF_TITLE
+            summary = API_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(API_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        val imgCDNRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
+            key = IMAGE_CDN_RATELIMIT_PREF
+            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
+            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(apiRateLimitPreference)
+        screen.addPreference(imgCDNRateLimitPreference)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val apiRateLimitPreference = ListPreference(screen.context).apply {
+            key = API_RATELIMIT_PREF
+            title = API_RATELIMIT_PREF_TITLE
+            summary = API_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(API_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        val imgCDNRateLimitPreference = ListPreference(screen.context).apply {
+            key = IMAGE_CDN_RATELIMIT_PREF
+            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
+            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
+            entries = ENTRIES_ARRAY
+            entryValues = ENTRIES_ARRAY
+
+            setDefaultValue("5")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+        screen.addPreference(apiRateLimitPreference)
+        screen.addPreference(imgCDNRateLimitPreference)
+    }
+
+    companion object {
+        private const val API_RATELIMIT_PREF = "apiRatelimitPreference"
+        private const val API_RATELIMIT_PREF_TITLE = "主站每秒连接数限制" // "Ratelimit permits per second for main website"
+        private const val API_RATELIMIT_PREF_SUMMARY = "此值影响向动漫之家网站发起连接请求的数量。调低此值可能减少发生HTTP 429（连接请求过多）错误的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount to dmzj's url. Lower this value may reduce the chance to get HTTP 429 error, but loading speed will be slower too. Tachiyomi restart required. Current value: %s"
+
+        private const val IMAGE_CDN_RATELIMIT_PREF = "imgCDNRatelimitPreference"
+        private const val IMAGE_CDN_RATELIMIT_PREF_TITLE = "图片CDN每秒连接数限制" // "Ratelimit permits per second for image CDN"
+        private const val IMAGE_CDN_RATELIMIT_PREF_SUMMARY = "此值影响加载图片时发起连接请求的数量。调低此值可能减小图片加载错误的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount for loading image. Lower this value may reduce the chance to get error when loading image, but loading speed will be slower too. Tachiyomi restart required. Current value: %s"
+
+        private val extractComicIdFromWebpageRegex = Regex("""addSubscribe\((\d+)\)""")
+        private val checkComicIdIsNumericalRegex = Regex("""^\d+$""")
+        private val extractComicIdFromMangaUrlRegex = Regex("""(\d+)\.(json|html)""") // Get comic ID from manga.url
+
+        private val ENTRIES_ARRAY = (1..10).map { i -> i.toString() }.toTypedArray()
+        const val PREFIX_ID_SEARCH = "id:"
     }
 }

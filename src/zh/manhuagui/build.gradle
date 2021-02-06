@@ -5,13 +5,14 @@ ext {
     extName = 'ManHuaGui'
     pkgNameSuffix = 'zh.manhuagui'
     extClass = '.Manhuagui'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
 }
 
 dependencies {
     compileOnly "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     compileOnly "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

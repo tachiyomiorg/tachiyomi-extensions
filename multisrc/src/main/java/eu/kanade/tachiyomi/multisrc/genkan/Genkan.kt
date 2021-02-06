@@ -143,6 +143,7 @@ open class Genkan(
 
         val calendar = Calendar.getInstance()
         when (trimmedDate[1]) {
+            "year" -> calendar.apply { add(Calendar.YEAR, -trimmedDate[0].toInt()) }
             "month" -> calendar.apply { add(Calendar.MONTH, -trimmedDate[0].toInt()) }
             "week" -> calendar.apply { add(Calendar.WEEK_OF_MONTH, -trimmedDate[0].toInt()) }
             "day" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }

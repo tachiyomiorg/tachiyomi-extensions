@@ -5,7 +5,7 @@ ext {
     extName = 'FoolSlide (multiple sources)'
     pkgNameSuffix = 'all.foolslide'
     extClass = '.FoolSlideFactory'
-    extVersionCode = 56
+    extVersionCode = 59
     libVersion = '1.2'
     containsNsfw = true
 }

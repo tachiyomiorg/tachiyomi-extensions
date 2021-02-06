@@ -79,7 +79,7 @@ class Komiku : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/cari/page/$page/")?.newBuilder()!!.addQueryParameter("s", query)
+        val url = HttpUrl.parse("$baseUrl/pustaka/page/$page/")?.newBuilder()!!.addQueryParameter("s", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is CategoryNames -> {

@@ -57,6 +57,8 @@ import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class Remanga : ConfigurableSource, HttpSource() {
     override val name = "Remanga"
@@ -69,10 +71,11 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private var token: String = ""
 
-    override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
-        add("Referer", baseUrl)
-    }
+    protected open val userAgentRandomizer = " ${Random.nextInt().absoluteValue}"
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/78.0$userAgentRandomizer")
+        .add("Referer", "https://www.google.com")
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -134,6 +137,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun LibraryDto.toSManga(): SManga =
         SManga.create().apply {
+            // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
@@ -210,18 +214,27 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun MangaDetDto.toSManga(): SManga {
         val o = this
         return SManga.create().apply {
+            // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = Jsoup.parse(o.description).text()
+            this.description = "Русское название: " + rus_name + "\n" + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name }
             status = parseStatus(o.status.id)
         }
     }
+    private fun titleDetailsRequest(manga: SManga): Request {
+        val titleId = manga.url
 
+        val newHeaders = headersBuilder().build()
+
+        return GET("$baseUrl/$titleId", newHeaders)
+    }
+
+    // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         var warnLogin = false
-        return client.newCall(mangaDetailsRequest(manga))
+        return client.newCall(titleDetailsRequest(manga))
             .asObservable().doOnNext { response ->
                 if (!response.isSuccessful) {
                     response.close()
@@ -235,7 +248,9 @@ class Remanga : ConfigurableSource, HttpSource() {
                     }
             }
     }
-
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET(baseUrl + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
+    }
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
         branches[series.content.en_name] = series.content.branches
@@ -281,8 +296,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     @SuppressLint("DefaultLocale")
     private fun chapterName(book: BookDto): String {
-        val chapterId: Any = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
-        var chapterName = "${book.tome}. Глава $chapterId"
+        var chapterName = "${book.tome}. Глава ${book.chapter}"
         if (book.name.isNotBlank()) {
             chapterName += " ${book.name.capitalize()}"
         }
@@ -293,7 +307,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
         return chapters.content.filter { !it.is_paid or it.is_bought }.map { chapter ->
             SChapter.create().apply {
-                chapter_number = chapter.chapter
+                chapter_number = chapter.chapter.split(".").take(2).joinToString(".").toFloat()
                 name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
@@ -332,10 +346,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     override fun imageUrlParse(response: Response): String = throw NotImplementedError("Unused")
 
     private fun combineImage(pages: List<String>): String {
-        val refererHeaders = Headers.Builder().apply {
-            add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
-            add("Referer", "https://img.remanga.org")
-        }.build()
+        val refererHeaders = headersBuilder().build()
         val s = client.newCall(GET(pages[0], refererHeaders)).execute().body()!!.bytes()
         val b = BitmapFactory.decodeByteArray(s, 0, s.size)
 
@@ -357,10 +368,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     override fun imageRequest(page: Page): Request {
-        val refererHeaders = Headers.Builder().apply {
-            add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
-            add("Referer", "https://img.remanga.org")
-        }.build()
+        val refererHeaders = headersBuilder().build()
         return GET(page.imageUrl!!, refererHeaders)
     }
 

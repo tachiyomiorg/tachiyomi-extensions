@@ -27,7 +27,7 @@ class AllHentai : ParsedHttpSource() {
 
     override val name = "AllHentai"
 
-    override val baseUrl = "http://allhentai.ru"
+    override val baseUrl = "https://allhentai.ru"
 
     override val lang = "ru"
 
@@ -205,6 +205,9 @@ class AllHentai : ParsedHttpSource() {
             } else {
                 if (urlParts[1].endsWith("/manga/")) {
                     urlParts[0] + urlParts[2]
+                } else if (urlParts[1].isEmpty()) {
+                    val imageUrl = urlParts[2].split('?')
+                    "https:" + urlParts[0] + imageUrl[0]
                 } else {
                     urlParts[1] + urlParts[0] + urlParts[2]
                 }

@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @Nsfw
 class Doujins : HttpSource() {
@@ -50,7 +51,9 @@ class Doujins : HttpSource() {
                 name = "Chapter"
                 setUrlWithoutDomain(response.request().url().toString())
 
-                val date = response.asJsoup().select(".folder-message").last().text().substringBefore(" • ")
+                val dateAndPageCountString = response.asJsoup().select(".text-md-right.text-sm-left > .folder-message").text()
+
+                val date = dateAndPageCountString.substringBefore(" • ")
                 for (dateFormat in MANGA_DETAILS_DATE_FORMAT) {
                     if (date_upload == 0L)
                         date_upload = dateFormat.parseOrNull(date)?.time ?: 0L
@@ -80,7 +83,7 @@ class Doujins : HttpSource() {
     }
 
     private fun getLatestPageUrl(page: Int): String {
-        val endDate = Calendar.getInstance().apply {
+        val endDate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
             add(Calendar.DATE, 1)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -103,8 +106,9 @@ class Doujins : HttpSource() {
         val document = response.asJsoup()
         return SManga.create().apply {
             title = document.select(".folder-title a").last().text()
-            artist = document.select(".gallery-artist a").joinToString(", ") { it.text() }
+            artist = document.select(".gallery-artist a").joinToString { it.text() }
             author = artist
+            genre = document.select(".tag-area").first().select("a").joinToString { it.text() }
         }
     }
 
@@ -145,7 +149,7 @@ class Doujins : HttpSource() {
 
         val pagination = document.select(".pagination").first()
         return MangasPage(
-            document.select("a.gallery-visited-from-favorites").map {
+            document.select("div:not(.premium-folder) > .thumbnail-doujin a.gallery-visited-from-favorites").map {
                 SManga.create().apply {
                     setUrlWithoutDomain(it.attr("href"))
                     title = it.select("div.title .text").text()

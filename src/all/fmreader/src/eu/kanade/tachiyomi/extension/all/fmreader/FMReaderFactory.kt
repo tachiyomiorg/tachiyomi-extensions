@@ -43,7 +43,7 @@ class FMReaderFactory : SourceFactory {
 
 class LHTranslation : FMReader("LHTranslation", "https://lhtranslation.net", "en")
 
-class KissLove : FMReader("KissLove", "https://kisslove.net", "ja") {
+class KissLove : FMReader("KissLove", "https://kissaway.net", "ja") {
     override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
 }
 
@@ -70,7 +70,7 @@ class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
 }
 
 class RawLH : FMReader("RawLH", "https://lovehug.net", "ja") {
-    override fun popularMangaNextPageSelector() = "div.col-md-8 button"
+    override val chapterUrlSelector = ""
     override fun pageListParse(document: Document): List<Page> = base64PageListParse(document)
     // Referer needs to be chapter URL
     override fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headersBuilder().set("Referer", page.url).build())
@@ -235,7 +235,7 @@ class EpikManga : FMReader("Epik Manga", "https://www.epikmanga.com", "tr") {
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/seri-listesi?sorting=lastUpdate&sorting-type=DESC&Sayfa=$page", headers)
     override fun popularMangaNextPageSelector() = "ul.pagination li.active + li:not(.disabled)"
 
-    override val headerSelector = "h4"
+    override val headerSelector = "h4 a"
 
     // search wasn't working on source's website
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {

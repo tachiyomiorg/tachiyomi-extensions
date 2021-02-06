@@ -20,9 +20,12 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
+import com.google.gson.Gson
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -213,6 +216,8 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
+    private val gson = Gson()
+
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isEmpty()) {
@@ -232,11 +237,32 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
             val searchHeaders = headers.newBuilder()
                 .add("X-Requested-With", "XMLHttpRequest")
                 .build()
-            return POST("$baseUrl/live-search/", searchHeaders, formBody)
+
+            try {
+                return client.newCall(POST("$baseUrl/live-search/", searchHeaders, formBody)).execute().use { response ->
+                    if (!response.isSuccessful) throw Exception("Unexpected code $response")
+
+                    val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+
+                    if (jsonObject.asJsonArray.size() === 0) {
+                        Log.d("japscan", "Search not returning anything, using duckduckgo")
+
+                        throw Exception("No data")
+                    }
+
+                    return response.request()
+                }
+            } finally {
+                // Fallback to duckduckgo if the search does not return any result
+                val uri = Uri.parse("https://duckduckgo.com/lite/").buildUpon()
+                    .appendQueryParameter("q", "$query site:$baseUrl/manga/")
+                    .appendQueryParameter("kd", "-1")
+                return GET(uri.toString(), headers)
+            }
         }
     }
 
-    override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active)"
+    override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active),.next_form .navbutton"
     override fun searchMangaSelector(): String = "div.card div.p-2, a.result-link"
     override fun searchMangaParse(response: Response): MangasPage {
         if ("live-search" in response.request().url().toString()) {
@@ -264,11 +290,20 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("abs:src")
-        element.select("p a").let {
-            title = it.text()
-            url = it.attr("href")
+    override fun searchMangaFromElement(element: Element): SManga {
+        if (element.attr("class") == "result-link") {
+            return SManga.create().apply {
+                title = element.text().substringAfter(" ").substringBefore(" | JapScan")
+                setUrlWithoutDomain(element.attr("abs:href"))
+            }
+        } else {
+            return SManga.create().apply {
+                thumbnail_url = element.select("img").attr("abs:src")
+                element.select("p a").let {
+                    title = it.text()
+                    url = it.attr("href")
+                }
+            }
         }
     }
 

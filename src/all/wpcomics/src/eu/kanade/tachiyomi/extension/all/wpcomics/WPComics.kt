@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,6 +28,10 @@ abstract class WPComics(
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0")
+        .add("Referer", baseUrl)
 
     private fun List<String>.doesInclude(thisWord: String): Boolean = this.any { it.contains(thisWord, ignoreCase = true) }
 
@@ -118,7 +123,7 @@ abstract class WPComics(
         }
     }
 
-    private fun String?.toStatus(): Int {
+    open fun String?.toStatus(): Int {
         val ongoingWords = listOf("Ongoing", "Updating", "Đang tiến hành")
         val completedWords = listOf("Complete", "Hoàn thành")
         return when {
@@ -186,7 +191,7 @@ abstract class WPComics(
     // Pages
 
     // sources sometimes have an image element with an empty attr that isn't really an image
-    private fun imageOrNull(element: Element): String? {
+    open fun imageOrNull(element: Element): String? {
         fun Element.hasValidAttr(attr: String): Boolean {
             val regex = Regex("""https?://.*""", RegexOption.IGNORE_CASE)
             return when {

@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'IMHentai'
+    pkgNameSuffix = 'all.imhentai'
+    extClass = '.IMHentaiFactory'
+    extVersionCode = 1
+    libVersion = '1.2'
+    containsNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"

@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -36,6 +36,8 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
+import android.support.v7.preference.ListPreference as LegacyListPreference
+import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
 class LibManga : ConfigurableSource, HttpSource() {
 
@@ -60,54 +62,6 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private val jsonParser = JsonParser()
-
-    private var server: String? = preferences.getString(SERVER_PREF, null)
-
-    private val defaultServer = "https://img2.emanga.ru"
-
-    private val servers = mapOf(
-        "secondary" to "https://img2.emanga.ru",
-        "fourth" to "https://img4.imgslib.ru",
-        "compress" to "https://img3.yaoilib.org",
-    )
-
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val serverPref = androidx.preference.ListPreference(screen.context).apply {
-            key = SERVER_PREF
-            title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
-            entryValues = arrayOf("secondary", "fourth", "compress")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                server = newValue.toString()
-                true
-            }
-        }
-
-        screen.addPreference(serverPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val serverPref = ListPreference(screen.context).apply {
-            key = SERVER_PREF
-            title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
-            entryValues = arrayOf("secondary", "fourth", "compress")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                server = newValue.toString()
-                true
-            }
-        }
-
-        screen.addPreference(serverPref)
-    }
-
-    private fun imageServerUrl(): String {
-        return this.servers.getOrDefault(this.server, this.defaultServer)
-    }
 
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
@@ -199,23 +153,23 @@ class LibManga : ConfigurableSource, HttpSource() {
             return manga
         }
 
-        val body = document.select("div.section__body").first()
-        val rawCategory = body.select(".info-list__row:has(strong:contains(Тип)) > span").text()
+        val body = document.select("div.media-info-list").first()
+        val rawCategory = body.select("div.media-info-list__title:contains(Тип) + div").text()
+
         val category = when {
             rawCategory == "Комикс западный" -> "комикс"
             rawCategory.isNotBlank() -> rawCategory.toLowerCase()
             else -> "манга"
         }
 
-        val genres = body.select(".info-list__row:has(strong:contains(Жанры)) > a").map { it.text() }
-        manga.title = document.select(".manga-title small").text().substringBefore("/").trim()
-        manga.thumbnail_url = body.select(".manga__cover").attr("src")
-        manga.author = body.select(".info-list__row:nth-child(2) > a").text()
-        manga.artist = body.select(".info-list__row:nth-child(3) > a").text()
+        val genres = document.select(".media-tags > a").map { it.text() }
+
+        manga.title = document.select(".media-name__alt").text()
+        manga.thumbnail_url = document.select(".media-sidebar__cover > img").attr("src")
+        manga.author = body.select("div.media-info-list__title:contains(Автор) + div").text()
+        manga.artist = body.select("div.media-info-list__title:contains(Художник) + div").text()
         manga.status = when (
-            body.select(".info-list__row:has(strong:contains(перевод))")
-                .first()
-                .select("span")
+            body.select("div.media-info-list__title:contains(Статус перевода) + div")
                 .text()
                 .toLowerCase()
         ) {
@@ -224,40 +178,41 @@ class LibManga : ConfigurableSource, HttpSource() {
             else -> SManga.UNKNOWN
         }
         manga.genre = genres.plusElement(category).joinToString { it.trim() }
-        manga.description = body.select(".info-desc__content").text()
+        manga.description = document.select(".media-description__text").text()
         return manga
     }
 
-    private val chapterListSelector = "div.chapter-item"
-
     override fun chapterListParse(response: Response): List<SChapter> {
-        val elements = response.asJsoup().select(chapterListSelector)
-        val chapters = elements?.map { chapterFromElement(it) }
-        return chapters ?: emptyList()
+        val dataStr = response
+            .asJsoup()
+            .toString()
+            .substringAfter("window.__DATA__ = ")
+            .substringBefore("window._SITE_COLOR_")
+            .substringBeforeLast(";")
+
+        val data = jsonParser.parse(dataStr).obj
+        val chaptersList = data["chapters"]["list"].nullArray
+        val slug = data["manga"]["slug"].string
+
+        return chaptersList?.map { chapterFromElement(it, slug) } ?: emptyList()
     }
 
-    private fun chapterFromElement(element: Element): SChapter {
-
+    private fun chapterFromElement(chapterItem: JsonElement, slug: String): SChapter {
         val chapter = SChapter.create()
 
-        val chapterLink = element.select("div.chapter-item__name > a").first()
-        if (chapterLink != null) {
-            chapter.setUrlWithoutDomain(chapterLink.attr("href"))
-        } else {
-            // Found multiple translate. Get first one for now
-            val volume = element.attr("data-volume")
-            val number = element.attr("data-number")
-            val teams = jsonParser.parse(element.attr("data-teams"))
-            val team = teams[0]["slug"].nullString
-            val baseUrl = "${element.baseUri()}/v$volume/c$number"
-            val url = if (team != null) "$baseUrl/$team" else baseUrl
+        val volume = chapterItem["chapter_volume"].int
+        val number = chapterItem["chapter_number"].string
 
-            chapter.setUrlWithoutDomain(url)
-        }
+        val url = "$baseUrl/$slug/v$volume/c$number"
 
-        chapter.name = element.select("div.chapter-item__name").first().text()
-        chapter.date_upload = SimpleDateFormat("dd.MM.yyyy", Locale.US)
-            .parse(element.select("div.chapter-item__date").text())?.time ?: 0L
+        chapter.setUrlWithoutDomain(url)
+
+        val nameChapter = chapterItem["chapter_name"].nullString
+        val fullNameChapter = "Том $volume. Глава $number"
+
+        chapter.name = if (nameChapter.isNullOrBlank()) fullNameChapter else "$fullNameChapter - $nameChapter"
+        chapter.date_upload = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            .parse(chapterItem["chapter_created_at"].string.substringBefore(" "))?.time ?: 0L
         return chapter
     }
 
@@ -503,8 +458,44 @@ class LibManga : ConfigurableSource, HttpSource() {
     )
 
     companion object {
-        private const val SERVER_PREF_Title = "Сервер изображений"
-        private const val SERVER_PREF = "MangaLibImageServer"
         const val PREFIX_SLUG_SEARCH = "slug:"
+        private const val SERVER_PREF = "MangaLibImageServer"
+        private const val SERVER_PREF_Title = "Сервер изображений"
+    }
+
+    private var server: String? = preferences.getString(SERVER_PREF, null)
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val serverPref = ListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
+            entryValues = arrayOf("secondary", "fourth", "compress")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                server = newValue.toString()
+                true
+            }
+        }
+
+        screen.addPreference(serverPref)
+    }
+
+    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
+        val serverPref = LegacyListPreference(screen.context).apply {
+            key = SERVER_PREF
+            title = SERVER_PREF_Title
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
+            entryValues = arrayOf("secondary", "fourth", "compress")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                server = newValue.toString()
+                true
+            }
+        }
+
+        screen.addPreference(serverPref)
     }
 }
