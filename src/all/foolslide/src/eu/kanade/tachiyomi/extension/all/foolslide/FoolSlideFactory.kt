@@ -32,7 +32,6 @@ class FoolSlideFactory : SourceFactory {
         IskultripScans(),
         AnataNoMotokare(),
         DeathTollScans(),
-        DokiFansubs(),
         YuriIsm(),
         AjiaNoScantrad(),
         OneTimeScans(),
@@ -93,8 +92,6 @@ class IskultripScans : FoolSlide("Iskultrip Scans", "https://maryfaye.net", "en"
 class AnataNoMotokare : FoolSlide("Anata no Motokare", "https://motokare.xyz", "en", "/reader")
 
 class DeathTollScans : FoolSlide("Death Toll Scans", "https://reader.deathtollscans.net", "en")
-
-class DokiFansubs : FoolSlide("Doki Fansubs", "https://kobato.hologfx.com", "en", "/reader")
 
 class YuriIsm : FoolSlide("Yuri-ism", "https://www.yuri-ism.net", "en", "/slide")
 
