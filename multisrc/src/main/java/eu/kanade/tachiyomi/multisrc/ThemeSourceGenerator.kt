@@ -161,7 +161,7 @@ ${if (source is ThemeSourceData.SingleLang) {
              * overrideVersionCode defaults to 0, if a source changes their source override code or
              * a previous existing source suddenly needs source code overrides, overrideVersionCode
              * should be increased.
-             * When a new source is added with overrides, overrideVersionCode should still the default 0
+             * When a new source is added with overrides, overrideVersionCode should still be set to 0
              *
              * Note: source code overrides are located in "multisrc/overrides/src/<themeName>/<sourceName>"
              */
