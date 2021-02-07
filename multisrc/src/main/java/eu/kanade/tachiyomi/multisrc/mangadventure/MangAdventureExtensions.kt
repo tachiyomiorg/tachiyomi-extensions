@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.mangadventure
+package eu.kanade.tachiyomi.multisrc.mangadventure
 
 import android.net.Uri
 import eu.kanade.tachiyomi.source.model.SChapter

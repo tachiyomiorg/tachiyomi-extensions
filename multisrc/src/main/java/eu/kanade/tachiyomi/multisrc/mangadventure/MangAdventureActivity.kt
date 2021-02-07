@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.mangadventure
+package eu.kanade.tachiyomi.multisrc.mangadventure
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -26,13 +26,11 @@ class MangAdventureActivity : Activity() {
             } catch (ex: ActivityNotFoundException) {
                 Log.e("MangAdventureActivity", ex.message, ex)
             }
-        } ?: logInvalidIntent(intent)
+        } ?: Log.e(
+            "MangAdventureActivity",
+            "Failed to parse URI from intent: $intent"
+        )
         finish()
         exitProcess(0)
     }
-
-    private fun logInvalidIntent(intent: Intent) = Log.e(
-        "MangAdventureActivity",
-        "Failed to parse URI from intent: $intent"
-    )
 }

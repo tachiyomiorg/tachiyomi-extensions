@@ -1,8 +1,8 @@
-package eu.kanade.tachiyomi.extension.all.mangadventure
+package eu.kanade.tachiyomi.multisrc.mangadventure
 
 import android.net.Uri
 import android.os.Build.VERSION
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.extensions.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -29,7 +29,7 @@ import java.util.Locale
 abstract class MangAdventure(
     override val name: String,
     override val baseUrl: String,
-    val categories: Array<String> = DEFAULT_CATEGORIES
+    val categories: List<String> = DEFAULT_CATEGORIES
 ) : HttpSource() {
 
     override val versionId = 1
@@ -182,7 +182,7 @@ abstract class MangAdventure(
         private val STATUSES = arrayOf("Any", "Completed", "Ongoing")
 
         /** Manga categories from MangAdventure `categories.xml` fixture. */
-        internal val DEFAULT_CATEGORIES = arrayOf(
+        internal val DEFAULT_CATEGORIES = listOf(
             "4-Koma",
             "Action",
             "Adventure",
@@ -233,7 +233,7 @@ abstract class MangAdventure(
          * @param date The date to convert.
          * @return The timestamp of the date.
          */
-        fun httpDateToTimestamp(date: String) =
+        internal fun httpDateToTimestamp(date: String) =
             SimpleDateFormat(HTTP_DATE, Locale.US).parse(date)?.time ?: 0L
     }
 
@@ -244,7 +244,7 @@ abstract class MangAdventure(
      */
     inner class Status : Filter.Select<String>("Status", STATUSES) {
         /** Returns the [state] as a string. */
-        fun string() = values[state].toLowerCase(Locale(lang))
+        fun string() = values[state].toLowerCase(Locale.ENGLISH)
     }
 
     /**
@@ -268,8 +268,7 @@ abstract class MangAdventure(
      * @constructor Creates a [Filter.Group] object with categories.
      */
     inner class CategoryList : Filter.Group<Category>(
-        "Categories",
-        categories.map(::Category)
+        "Categories", categories.map(::Category)
     )
 
     /**
