@@ -225,6 +225,83 @@ Extensions can define URL intent filters by defining it inside a custom `Android
 For an example, refer to [the NHentai module's `AndroidManifest.xml` file](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/AndroidManifest.xml) and [its corresponding `NHUrlActivity` handler](https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/nhentai/src/eu/kanade/tachiyomi/extension/all/nhentai/NHUrlActivity.kt).
 
 
+## Multi-source themes
+The `multisrc` directory houses sources and extension code for cases when multiple source sites use the same generator(CMS) tool for bootsraping their website and they are similar enough to prompt code reuse through inheritance/composition.
+
+### converting exsiting Factory extensions
+The quickest way to get started is to copy an existing theme's folder structure and renaming it as needed. We also recommend reading through a few existing themesources' code before you start.
+
+### The directory structure
+```console
+$ tree multisrc
+multisrc
+├── build.gradle.kts
+├── overrides
+│   ├── res
+│   │   └── <theme>
+│   │       ├── default
+│   │       │   ├── mipmap-hdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-mdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-xhdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-xxhdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-xxxhdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   └── web_hi_res_512.png
+│   │       ├── <sourceone>
+│   │       │   ├── mipmap-hdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-mdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-xhdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-xxhdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   ├── mipmap-xxxhdpi
+│   │       │   │   └── ic_launcher.png
+│   │       │   └── web_hi_res_512.png
+│   │       └── <sourcetwo>
+│   │           ├── mipmap-hdpi
+│   │           │   └── ic_launcher.png
+│   │           ├── mipmap-mdpi
+│   │           │   └── ic_launcher.png
+│   │           ├── mipmap-xhdpi
+│   │           │   └── ic_launcher.png
+│   │           ├── mipmap-xxhdpi
+│   │           │   └── ic_launcher.png
+│   │           ├── mipmap-xxxhdpi
+│   │           │   └── ic_launcher.png
+│   │           └── web_hi_res_512.png
+│   └── src
+│       └── <theme>
+│           ├── <soureone>
+│           │   └── <SourceOne>.kt
+│           └── <sourcetwo>
+│               └── <SourceTwo>.kt
+└── src
+    └── main
+        ├── AndroidManifest.xml
+        └── java
+            └── eu
+                └── kanade
+                    └── tachiyomi
+                        └── multisrc
+                            ├── <theme>
+                            │   ├── <Theme>Generator.kt
+                            │   ├── <Theme>.kt
+                            ├── GeneratorMain.kt
+                            └── ThemeSourceGenerator.kt
+```
+
+- `multisrc/src/main/java/eu/kanade/tachiyomi/multisrc/<theme>/<Theme>.kt` defines the the theme's default implementation.
+- `multisrc/src/main/java/eu/kanade/tachiyomi/multisrc/<theme>/<Theme>Generator.kt` defines the the theme's default generator class, this replaces your previous `<Theme>Factory.kt` class.
+- `multisrc/overrides/res/<theme>/default` is the previous theme's `res` directory.
+- `multisrc/overrides/res/<theme>/<sourcename>` defines the generated `res` directory for the source called `sourcename`.
+- `multisrc/overrides/src/<theme>/<sourcename>` contains the specific source overrides for the source called `sourcename`. The class file shoule be named `SourceName.kt` as well.
+
 ## Running
 
 To aid in local development, you can use the following run configuration to launch an extension:
