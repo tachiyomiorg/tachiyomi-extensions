@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.multisrc.comicake
 
 import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator
-import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.SingleLangThemeSourceData
+import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator.Companion.ThemeSourceData.SingleLang
 
 class ComiCakeGenerator : ThemeSourceGenerator {
 
@@ -12,9 +12,9 @@ class ComiCakeGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
-        SingleLangThemeSourceData("LetItGo Scans", "https://reader.letitgo.scans.today", "en"),
-        SingleLangThemeSourceData("ProjectTime Scans", "https://read.ptscans.com", "en"),
-        SingleLangThemeSourceData("WhimSubs", "https://whimsubs.xyz", "en")
+        SingleLang("LetItGo Scans", "https://reader.letitgo.scans.today", "en"),
+        SingleLang("ProjectTime Scans", "https://read.ptscans.com", "en"),
+        SingleLang("WhimSubs", "https://whimsubs.xyz", "en")
     )
 
     companion object {
