@@ -13,7 +13,6 @@ class ComiCakeGenerator : ThemeSourceGenerator {
 
     override val sources = listOf(
         SingleLang("LetItGo Scans", "https://reader.letitgo.scans.today", "en"),
-        SingleLang("ProjectTime Scans", "https://read.ptscans.com", "en"),
         SingleLang("WhimSubs", "https://whimsubs.xyz", "en")
     )
 
