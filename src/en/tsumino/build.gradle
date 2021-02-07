@@ -5,7 +5,7 @@ ext {
     extName = 'Tsumino'
     pkgNameSuffix = 'en.tsumino'
     extClass = '.Tsumino'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
     containsNsfw = true
 }

@@ -155,6 +155,7 @@ class Tsumino : ParsedHttpSource() {
         manga.status = SManga.COMPLETED
         manga.thumbnail_url = infoElement.select("img").attr("src")
         manga.description = getDesc(document)
+        manga.genre = document.select("#Tag a").joinToString { it.text() }
 
         return manga
     }
