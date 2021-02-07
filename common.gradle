@@ -12,7 +12,7 @@ android {
 
     sourceSets {
         main {
-            manifest.srcFile "$rootDir/src/AndroidManifest.xml"
+            manifest.srcFile "AndroidManifest.xml"
             java.srcDirs = ['src']
             res.srcDirs = ['res']
         }
@@ -57,11 +57,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(":annotations")
     implementation project(":core")
-
-    // multi-source library
-    implementation project(':multisrc')
 }
 apply from: "$rootDir/common-dependencies.gradle"
 

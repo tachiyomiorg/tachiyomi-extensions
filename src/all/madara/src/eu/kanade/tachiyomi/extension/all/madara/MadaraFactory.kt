@@ -189,6 +189,7 @@ class MadaraFactory : SourceFactory {
         RuyaManga(),
         S2Manga(),
         ShoujoHearts(),
+        Skymanga(),
         SpookyScanlations(),
         StageComics(),
         TheTopComic(),
@@ -794,6 +795,8 @@ class NightComic : Madara("Night Comic", "https://www.nightcomic.com", "en") {
         .build()
 }
 
+class Skymanga : Madara("Skymanga", "https://skymanga.co", "en")
+
 @Nsfw
 class Toonily : Madara("Toonily", "https://toonily.com", "en") {
     override fun getGenreList(): List<Genre> = listOf(
@@ -933,7 +936,7 @@ class MangaDods : Madara("MangaDods", "https://www.mangadods.com", "en", SimpleD
 
 class NeoxScanlator : Madara(
     "Neox Scanlator",
-    "https://neoxscans.net",
+    "https://neoxscans.com",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 ) {

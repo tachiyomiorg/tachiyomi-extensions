@@ -25,7 +25,7 @@ class EroMuseFactory : SourceFactory {
 class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
 
     override val albumSelector = "a.a-click"
-    override val topLevelPathSegments = listOf("various-authors", "comics")
+    override val topLevelPathSegment = "comics"
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> = fetchManga("$baseUrl/comics/various-authors?sort=viewed&page=1", page, "viewed")
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> = fetchManga("$baseUrl/comics/various-authors?sort=recent&page=1", page, "recent")
@@ -57,8 +57,21 @@ class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
     override fun mangaDetailsParse(response: Response): SManga {
         return SManga.create().apply {
             with(response.asJsoup()) {
+                setUrlWithoutDomain(response.request().url().toString())
                 thumbnail_url = select("$albumSelector img").firstOrNull()?.imgAttr()
-                author = select("div.navigation-breadcrumb li:nth-last-child(3)").text()
+                author = when (getAlbumType(url)) {
+                    AUTHOR -> {
+                        // eg. https://www.erofus.com/comics/witchking00-comics/adventure-time
+                        // eg. https://www.erofus.com/comics/mcc-comics/bearing-gifts/bearing-gifts-issue-1
+                        select("div.navigation-breadcrumb li:nth-child(3)").text()
+                    }
+                    VARIOUS_AUTHORS -> {
+                        // eg. https://www.erofus.com/comics/various-authors/artdude41/bat-vore
+                        select("div.navigation-breadcrumb li:nth-child(5)").text()
+                    }
+                    else -> null
+                }
+
                 genre = select("div.album-tag-container a").joinToString { it.text() }
             }
         }
@@ -68,14 +81,13 @@ class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
     override val pageThumbnailSelector = "a.a-click:has(img)[href*=/pic/] img"
 
     override val pageThumbnailPathSegment = "/thumb/"
-    override val pageFullsizePathSegment = "/medium/"
+    override val pageFullSizePathSegment = "/medium/"
 
     override fun getAlbumList() = arrayOf(
-        Triple("Various Authors", "/comics/various-authors", VARIOUS_AUTHORS),
         Triple("All Authors", "", SEARCH_RESULTS_OR_BASE),
-        Triple("Various Authors", "/comics/various-authors", AUTHOR),
+        Triple("Various Authors", "/comics/various-authors", VARIOUS_AUTHORS),
+        Triple("Hentai and Manga English", "/comics/hentai-and-manga-english", VARIOUS_AUTHORS),
         Triple("TabooLicious.xxx Comics", "/comics/taboolicious_xxx-comics", AUTHOR),
-        Triple("Hentai and Manga English", "/comics/hentai-and-manga-english", AUTHOR),
         Triple("IllustratedInterracial.com Comics", "/comics/illustratedinterracial_com-comics", AUTHOR),
         Triple("ZZZ Comics", "/comics/zzz-comics", AUTHOR),
         Triple("JohnPersons.com Comics", "/comics/johnpersons_com-comics", AUTHOR),

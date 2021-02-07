@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.multisrc
 
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.Locale
 
 /**
@@ -22,7 +24,7 @@ interface ThemeSourceGenerator {
 
 
     /**
-     * Base source version is added by source.overrideVersionCode to calculate extVersionCode for build.gradle
+     * Base theme version, starts with 1 and should be increased when based theme class changes
      */
     val baseVersionCode: Int
 
@@ -35,34 +37,37 @@ interface ThemeSourceGenerator {
         val userDir = System.getProperty("user.dir")!!
 
         sources.forEach { source ->
-            createSource(source, themePkg, themeClass, baseVersionCode, userDir)
+            createGradleProject(source, themePkg, themeClass, baseVersionCode, userDir)
         }
     }
 
     companion object {
         private fun pkgNameSuffix(source: ThemeSourceData, separator: String): String {
-            return if (source is SingleLangThemeSourceData)
+            return if (source is ThemeSourceData.SingleLang)
                 listOf(source.lang.substringBefore("-"), source.pkgName).joinToString(separator)
             else
                 listOf("all", source.pkgName).joinToString(separator)
         }
 
+        private fun themeSuffix(themePkg: String, separator: String): String {
+            return listOf("eu", "kanade", "tachiyomi", "multisrc", themePkg).joinToString(separator)
+        }
+
         private fun writeGradle(gradle: File, source: ThemeSourceData, baseVersionCode: Int) {
-            var text = "apply plugin: 'com.android.application'\n" +
-                "apply plugin: 'kotlin-android'\n" +
-                "\n" +
-                "ext {\n" +
-                "    extName = '${source.name}'\n" +
-                "    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'\n" +
-                "    extClass = '.${source.className}'\n" +
-                "    extVersionCode = ${baseVersionCode + source.overrideVersionCode + themesourcesLibraryVersion}\n" +
-                "    libVersion = '1.2'\n"
-            if (source.isNsfw)
-                text += "    containsNsfw = true\n"
-            text += "}\n" +
-                "\n" +
-                "apply from: \"\$rootDir/common.gradle\"\n"
-            gradle.writeText(text)
+            gradle.writeText("""apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = '${source.name}'
+    pkgNameSuffix = '${pkgNameSuffix(source, ".")}'
+    extClass = '.${source.className}'
+    extVersionCode = ${baseVersionCode + source.overrideVersionCode + multisrcLibraryVersion}
+    libVersion = '1.2'
+${if (source.isNsfw) "    containsNsfw = true\n" else ""}}
+
+apply from: "${'$'}rootDir/common.gradle"
+"""
+            )
         }
 
         private fun writeAndroidManifest(androidManifestFile: File) {
@@ -82,115 +87,139 @@ interface ThemeSourceGenerator {
             }
         }
 
-        fun createSource(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
-            val sourceRootPath = userDir + "/generated-src/${pkgNameSuffix(source, "/")}"
-            val srcPath = File("$sourceRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}")
+        fun createGradleProject(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
+            val projectRootPath = "$userDir/generated-src/${pkgNameSuffix(source, "/")}"
+            val projectSrcPath = "$projectRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}"
             val overridesPath = "$userDir/multisrc/overrides" // userDir = tachiyomi-extensions project root path
-            val resOverridePath = "$overridesPath/res/$themePkg"
-            val srcOverridePath = "$overridesPath/src/$themePkg"
-            val gradleFile = File("$sourceRootPath/build.gradle")
-            val androidManifestFile = File("$sourceRootPath/AndroidManifest.xml")
+            val resOverridesPath = "$overridesPath/res/$themePkg"
+            val srcOverridesPath = "$overridesPath/src/$themePkg"
+            val projectGradleFile = File("$projectRootPath/build.gradle")
+            val projectAndroidManifestFile = File("$projectRootPath/AndroidManifest.xml")
 
 
-            File(sourceRootPath).let { file ->
+            File(projectRootPath).let { projectRootFile ->
                 println("Working on $source")
 
-                file.mkdirs()
-                purgeDirectory(file)
+                projectRootFile.mkdirs()
+                // remove everything from past runs
+                purgeDirectory(projectRootFile)
 
-                writeGradle(gradleFile, source, baseVersionCode)
-                writeAndroidManifest(androidManifestFile)
+                writeGradle(projectGradleFile, source, baseVersionCode)
+                writeAndroidManifest(projectAndroidManifestFile)
 
-                srcPath.mkdirs()
-                val srcOverride = File("$srcOverridePath/${source.pkgName}")
-                if (srcOverride.exists())
-                    srcOverride.copyRecursively(File("$srcPath"))
-                else
-                    writeSourceClass(srcPath, source, themePkg, themeClass)
+                writeSourceFiles(projectSrcPath, srcOverridesPath, source, themePkg, themeClass)
+                copyThemeClasses(userDir, themePkg, projectRootPath)
 
-
-                // copy res files
-                // check if res override exists if not copy default res
-                val resOverride = File("$resOverridePath/${source.pkgName}")
-                if (resOverride.exists())
-                    resOverride.copyRecursively(File("$sourceRootPath/res"))
-                else
-                    File("$resOverridePath/default").let { res ->
-                        if (res.exists()) res.copyRecursively(File("$sourceRootPath/res"))
-                    }
+                copyResFiles(resOverridesPath, source, projectRootPath)
             }
+        }
+
+        private fun copyThemeClasses(userDir: String, themePkg: String, projectRootPath: String) {
+            val themeSrcPath = "$userDir/multisrc/src/main/java/${themeSuffix(themePkg, "/")}"
+            val themeSrcFile = File(themeSrcPath)
+            val themeDestPath = "$projectRootPath/src/${themeSuffix(themePkg, "/")}"
+            val themeDestFile = File(themeDestPath)
+
+            themeDestFile.mkdirs()
+
+            themeSrcFile.list()!!
+                .filter { it.endsWith(".kt") && !it.endsWith("Generator.kt") }
+                .forEach { Files.copy(File("$themeSrcPath/$it").toPath(), File("$themeDestPath/$it").toPath(), StandardCopyOption.REPLACE_EXISTING) }
+        }
+
+        private fun copyResFiles(resOverridesPath: String, source: ThemeSourceData, projectRootPath: String): Any {
+            // check if res override exists if not copy default res
+            val resOverride = File("$resOverridesPath/${source.pkgName}")
+            return if (resOverride.exists())
+                resOverride.copyRecursively(File("$projectRootPath/res"))
+            else
+                File("$resOverridesPath/default").let { res ->
+                    if (res.exists()) res.copyRecursively(File("$projectRootPath/res"))
+                }
+        }
+
+        private fun writeSourceFiles(projectSrcPath: String, srcOverridePath: String, source: ThemeSourceData, themePkg: String, themeClass: String) {
+            val projectSrcFile = File(projectSrcPath)
+            projectSrcFile.mkdirs()
+            val srcOverride = File("$srcOverridePath/${source.pkgName}")
+            if (srcOverride.exists())
+                srcOverride.copyRecursively(projectSrcFile)
+            else
+                writeSourceClass(projectSrcFile, source, themePkg, themeClass)
         }
 
         private fun writeSourceClass(classPath: File, source: ThemeSourceData, themePkg: String, themeClass: String) {
-            val classFile = File("$classPath/${source.className}.kt")
+            fun factoryClassText(): String {
+                val sourceListString =
+                    (source as ThemeSourceData.MultiLang).lang.map {
+                        "        $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"$it\"),"
+                    }.joinToString("\n")
 
-            var classText =
-                "package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}\n" +
-                    "\n"
-
-            if (source.isNsfw)
-                classText += "import eu.kanade.tachiyomi.annotations.Nsfw\n"
-
-            classText += "import eu.kanade.tachiyomi.multisrc.$themePkg.$themeClass\n"
-
-            if (source is MultiLangThemeSourceData) {
-                classText += "import eu.kanade.tachiyomi.source.Source\n" +
-                    "import eu.kanade.tachiyomi.source.SourceFactory\n"
+                return """class ${source.className} : SourceFactory {
+    override fun createSources(): List<Source> = listOf(
+$sourceListString
+    )
+}"""
             }
-
-
-            classText += "\n"
-
-            if (source.isNsfw)
-                classText += "@Nsfw\n"
-            if (source is SingleLangThemeSourceData) {
-                classText += "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
-            } else {
-                classText +=
-                    "class ${source.className} : SourceFactory { \n" +
-                        "    override fun createSources(): List<Source> = listOf(\n"
-                for (lang in (source as MultiLangThemeSourceData).lang)
-                    classText += "        $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"$lang\"),\n"
-                classText +=
-                    "    )\n" +
-                        "}"
-            }
-
-            classFile.writeText(classText)
+            File("$classPath/${source.className}.kt").writeText(
+                """package eu.kanade.tachiyomi.extension.${pkgNameSuffix(source, ".")}
+${if (source.isNsfw) "\nimport eu.kanade.tachiyomi.annotations.Nsfw" else ""}
+import eu.kanade.tachiyomi.multisrc.$themePkg.$themeClass
+${if (source is ThemeSourceData.MultiLang)
+                    """import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.SourceFactory
+                    """
+                else ""}${if (source.isNsfw) "\n@Nsfw" else ""}
+${if (source is ThemeSourceData.SingleLang) {
+                    "class ${source.className} : $themeClass(\"${source.name}\", \"${source.baseUrl}\", \"${source.lang}\")\n"
+                } else
+                    factoryClassText()
+                }
+""")
         }
 
-        abstract class ThemeSourceData {
+        sealed class ThemeSourceData {
             abstract val name: String
             abstract val baseUrl: String
             abstract val isNsfw: Boolean
             abstract val className: String
             abstract val pkgName: String
+
+            /**
+             * overrideVersionCode defaults to 0, if a source changes their source override code or
+             * a previous existing source suddenly needs source code overrides, overrideVersionCode
+             * should be increased.
+             * When a new source is added with overrides, overrideVersionCode should still be set to 0
+             *
+             * Note: source code overrides are located in "multisrc/overrides/src/<themeName>/<sourceName>"
+             */
             abstract val overrideVersionCode: Int
+
+            data class SingleLang(
+                override val name: String,
+                override val baseUrl: String,
+                val lang: String,
+                override val isNsfw: Boolean = false,
+                override val className: String = name.replace(" ", ""),
+                override val pkgName: String = className.toLowerCase(Locale.ENGLISH),
+                override val overrideVersionCode: Int = 0,
+            ) : ThemeSourceData()
+
+            data class MultiLang(
+                override val name: String,
+                override val baseUrl: String,
+                val lang: List<String>,
+                override val isNsfw: Boolean = false,
+                override val className: String = name.replace(" ", "") + "Factory",
+                override val pkgName: String = className.substringBefore("Factory").toLowerCase(Locale.ENGLISH),
+                override val overrideVersionCode: Int = 0,
+            ) : ThemeSourceData()
         }
-
-        data class SingleLangThemeSourceData(
-            override val name: String,
-            override val baseUrl: String,
-            val lang: String,
-            override val isNsfw: Boolean = false,
-            override val className: String = name.replace(" ", ""),
-            override val pkgName: String = className.toLowerCase(Locale.ENGLISH),
-            override val overrideVersionCode: Int = 0,
-        ) : ThemeSourceData()
-
-        data class MultiLangThemeSourceData(
-            override val name: String,
-            override val baseUrl: String,
-            val lang: List<String>,
-            override val isNsfw: Boolean = false,
-            override val className: String = name.replace(" ", "") + "Factory",
-            override val pkgName: String = className.substringBefore("Factory").toLowerCase(Locale.ENGLISH),
-            override val overrideVersionCode: Int = 0,
-        ) : ThemeSourceData()
     }
 }
 
+
 /**
- * This variable should be increased when the themesources library changes in a way that prompts global extension upgrade
+ * This variable should be increased when the multisrc library changes in a way that prompts global extension upgrade
  */
-val themesourcesLibraryVersion = 0
+const val multisrcLibraryVersion = 0
