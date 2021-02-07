@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.comicake
+package eu.kanade.tachiyomi.multisrc.comicake
 
 import android.os.Build
 import eu.kanade.tachiyomi.extensions.BuildConfig
