@@ -100,7 +100,7 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        var div = body.select("div.text-center div.d-none:has(img[data-src*=/serv-manga/])")
+        var div = body.select("div.text-center div:has(img[data-src*=/serv-manga/])")
         var elements = div.select("img")
 
         val pages = mutableListOf<Page>()
