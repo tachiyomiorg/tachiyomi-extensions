@@ -63,6 +63,8 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Hikari Scan", "https://hikariscan.com.br", "pt-BR"),
         SingleLang("Himera Fansub", "https://himera-fansub.com", "tr"),
         SingleLang("Hiperdex", "https://hiperdex.com", "en"),
+
+        SingleLang("Mangazuki.online", "http://mangazukinew.online", "en", className = "MangazukiOnline"),
     )
 
     companion object {

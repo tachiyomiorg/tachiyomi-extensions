@@ -142,7 +142,7 @@ class MadaraFactory : SourceFactory {
         MangazukiClubJP(),
         MangazukiClubKO(),
         MangazukiMe(),
-        MangazukiOnline(),
+//        MangazukiOnline(),
         ManhuaBox(),
         ManhuaFast(),
         Manhuaga(),
@@ -376,10 +376,6 @@ class YokaiJump : Madara(
 class ZManga : Madara("ZManga", "https://zmanga.org", "es")
 
 class MangazukiMe : Madara("Mangazuki.me", "https://mangazuki.me", "en")
-
-class MangazukiOnline : Madara("Mangazuki.online", "https://www.mangazuki.online", "en") {
-    override val client: OkHttpClient = super.client.newBuilder().followRedirects(true).build()
-}
 
 class MangazukiClubJP : Madara("Mangazuki.club", "https://mangazuki.club", "ja")
 
