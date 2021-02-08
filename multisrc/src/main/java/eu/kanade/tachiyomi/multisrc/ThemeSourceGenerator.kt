@@ -135,9 +135,9 @@ interface ThemeSourceGenerator {
         private fun writeSourceClasses(projectSrcPath: String, srcOverridePath: String, source: ThemeSourceData, themePkg: String, themeClass: String) {
             val projectSrcFile = File(projectSrcPath)
             projectSrcFile.mkdirs()
-            val srcOverride = File("$srcOverridePath/${source.pkgName}")
-            if (srcOverride.exists())
-                srcOverride.copyRecursively(projectSrcFile)
+            val srcOverrideFile = File(srcOverridePath)
+            if (srcOverrideFile.exists())
+                srcOverrideFile.copyRecursively(projectSrcFile)
             else
                 writeSourceClass(projectSrcFile, source, themePkg, themeClass)
         }
