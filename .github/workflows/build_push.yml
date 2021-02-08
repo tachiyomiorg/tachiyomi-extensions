@@ -46,22 +46,12 @@ jobs:
           mkdir -p ~/.gradle
           cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
 
-      - name: Build multi-source library
+      - name: Generate sources from the multi-source library
         uses: eskatos/gradle-command-action@v1
         with:
           build-root-directory: master
           wrapper-directory: master
-          arguments: :multisrc:assembleDebug
-          wrapper-cache-enabled: true
-          dependencies-cache-enabled: true
-          configuration-cache-enabled: true
-
-      - name: Run multi-source generators
-        uses: eskatos/gradle-command-action@v1
-        with:
-          build-root-directory: master
-          wrapper-directory: master
-          arguments: :multisrc:runAllGenerators
+          arguments: :multisrc:multisrcGenerators
           wrapper-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true

@@ -39,7 +39,6 @@ class TsuminoUtils {
             val pages = document.select("#Pages").text()
             val parodies = document.select("#Parody a")
             val characters = document.select("#Character a")
-            val tags = document.select("#Tag a")
 
             stringBuilder.append("Pages: $pages")
 
@@ -63,18 +62,6 @@ class TsuminoUtils {
                     stringBuilder.append(it.text())
 
                     if (it != characters.last())
-                        stringBuilder.append(", ")
-                }
-            }
-
-            if (tags.size > 0) {
-                stringBuilder.append("\n\n")
-                stringBuilder.append("Tags: ")
-
-                tags.forEach {
-                    stringBuilder.append(it.text())
-
-                    if (it != tags.last())
                         stringBuilder.append(", ")
                 }
             }

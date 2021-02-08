@@ -68,20 +68,26 @@ interface ThemeSourceGenerator {
             """.trimIndent())
         }
 
-        private fun writeAndroidManifest(androidManifestFile: File) {
-            androidManifestFile.writeText("""
+        private fun writeAndroidManifest(androidManifestFile: File, manifestOverridesPath: String) {
+            val androidManifestOverride = File(manifestOverridesPath)
+            if (androidManifestOverride.exists())
+                androidManifestOverride.copyTo(androidManifestFile)
+            else
+                androidManifestFile.writeText("""
                 <?xml version="1.0" encoding="utf-8"?>
                 <!-- THIS FILE IS AUTO-GENERATED; DO NOT EDIT -->
                 <manifest package="eu.kanade.tachiyomi.extension" />
-            """.trimIndent())
+                """.trimIndent())
         }
 
         private fun createGradleProject(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
             val projectRootPath = "$userDir/generated-src/${pkgNameSuffix(source, "/")}"
             val projectSrcPath = "$projectRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}"
-            val overridesPath = "$userDir/multisrc/overrides" // userDir = tachiyomi-extensions project root path
-            val resOverridesPath = "$overridesPath/res/$themePkg"
-            val srcOverridesPath = "$overridesPath/src/$themePkg"
+            val overridesPath = "$userDir/multisrc/overrides/$themePkg/${source.pkgName}" // userDir = tachiyomi-extensions project root path
+            val defaultResPath = "$userDir/multisrc/overrides/$themePkg/default_res"
+            val resOverridesPath = "$overridesPath/res"
+            val srcOverridesPath = "$overridesPath/src"
+            val manifestOverridesPath = "$overridesPath/AndroidManifest.xml"
             val projectGradleFile = File("$projectRootPath/build.gradle")
             val projectAndroidManifestFile = File("$projectRootPath/AndroidManifest.xml")
 
@@ -93,12 +99,12 @@ interface ThemeSourceGenerator {
                 cleanDirectory(projectRootFile)
 
                 writeGradle(projectGradleFile, source, baseVersionCode)
-                writeAndroidManifest(projectAndroidManifestFile)
+                writeAndroidManifest(projectAndroidManifestFile, manifestOverridesPath)
 
-                writeSourceFiles(projectSrcPath, srcOverridesPath, source, themePkg, themeClass)
+                writeSourceClasses(projectSrcPath, srcOverridesPath, source, themePkg, themeClass)
                 copyThemeClasses(userDir, themePkg, projectRootPath)
 
-                copyResFiles(resOverridesPath, source, projectRootPath)
+                copyResFiles(overridesPath, defaultResPath, source, projectRootPath)
             }
         }
 
@@ -115,18 +121,18 @@ interface ThemeSourceGenerator {
                 .forEach { Files.copy(File("$themeSrcPath/$it").toPath(), File("$themeDestPath/$it").toPath(), StandardCopyOption.REPLACE_EXISTING) }
         }
 
-        private fun copyResFiles(resOverridesPath: String, source: ThemeSourceData, projectRootPath: String): Any {
+        private fun copyResFiles(overridesPath: String, defaultResPath: String, source: ThemeSourceData, projectRootPath: String): Any {
             // check if res override exists if not copy default res
-            val resOverride = File("$resOverridesPath/${source.pkgName}")
+            val resOverride = File("$overridesPath/res")
             return if (resOverride.exists())
                 resOverride.copyRecursively(File("$projectRootPath/res"))
             else
-                File("$resOverridesPath/default").let { res ->
-                    if (res.exists()) res.copyRecursively(File("$projectRootPath/res"))
+                File(defaultResPath).let { defaultResFile ->
+                    if (defaultResFile.exists()) defaultResFile.copyRecursively(File("$projectRootPath/res"))
                 }
         }
 
-        private fun writeSourceFiles(projectSrcPath: String, srcOverridePath: String, source: ThemeSourceData, themePkg: String, themeClass: String) {
+        private fun writeSourceClasses(projectSrcPath: String, srcOverridePath: String, source: ThemeSourceData, themePkg: String, themeClass: String) {
             val projectSrcFile = File(projectSrcPath)
             projectSrcFile.mkdirs()
             val srcOverride = File("$srcOverridePath/${source.pkgName}")
