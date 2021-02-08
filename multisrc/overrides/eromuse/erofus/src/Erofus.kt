@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.erofus
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.multisrc.eromuse.EroMuse
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -11,6 +12,7 @@ import okhttp3.Response
 import rx.Observable
 
 @ExperimentalStdlibApi
+@Nsfw
 class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
 
     override val albumSelector = "a.a-click"
