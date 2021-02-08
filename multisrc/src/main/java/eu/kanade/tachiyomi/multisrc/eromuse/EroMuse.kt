@@ -21,7 +21,7 @@ import rx.Observable
 @ExperimentalStdlibApi
 open class EroMuse(override val name: String, override val baseUrl: String) : HttpSource() {
 
-    override val lang: String = "en"
+    override val lang = "en"
 
     override val supportsLatest = true
 
