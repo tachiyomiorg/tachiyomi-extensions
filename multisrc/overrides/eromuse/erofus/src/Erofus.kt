@@ -1,9 +1,7 @@
-package eu.kanade.tachiyomi.extension.all.eromuse
+package eu.kanade.tachiyomi.extension.en.erofus
 
-import eu.kanade.tachiyomi.annotations.Nsfw
+import eu.kanade.tachiyomi.multisrc.eromuse.EroMuse
 import eu.kanade.tachiyomi.network.asObservableSuccess
-import eu.kanade.tachiyomi.source.Source
-import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SManga
@@ -11,15 +9,6 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.Response
 import rx.Observable
-
-@ExperimentalStdlibApi
-@Nsfw
-class EroMuseFactory : SourceFactory {
-    override fun createSources(): List<Source> = listOf(
-        EroMuse("8Muses", "https://comics.8muses.com"),
-        Erofus()
-    )
-}
 
 @ExperimentalStdlibApi
 class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
