@@ -21,7 +21,7 @@ repositories {
 apply("$rootDir/common-dependencies.gradle")
 
 tasks {
-    val runAllGenerators by registering {
+    val multisrcGenerators by registering {
         doLast {
             val isWindows = System.getProperty("os.name").toString().toLowerCase().contains("win")
             val classPath = (configurations.debugCompileOnly.get().asFileTree.toList() +
@@ -46,5 +46,6 @@ tasks {
                 throw Exception("Java process failed with exit code: $exitCode")
             }
         }
+        dependsOn("assembleDebug")
     }
 }

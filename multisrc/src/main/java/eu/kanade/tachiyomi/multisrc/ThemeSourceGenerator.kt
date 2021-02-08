@@ -68,12 +68,16 @@ interface ThemeSourceGenerator {
             """.trimIndent())
         }
 
-        private fun writeAndroidManifest(androidManifestFile: File) {
-            androidManifestFile.writeText("""
+        private fun writeAndroidManifest(androidManifestFile: File, manifestOverridesPath: String, source: ThemeSourceData, projectRootPath: String) {
+            val androidManifestOverride = File("$manifestOverridesPath/${source.pkgName}")
+            if (androidManifestOverride.exists())
+                androidManifestOverride.copyRecursively(File(projectRootPath))
+            else
+                androidManifestFile.writeText("""
                 <?xml version="1.0" encoding="utf-8"?>
                 <!-- THIS FILE IS AUTO-GENERATED; DO NOT EDIT -->
                 <manifest package="eu.kanade.tachiyomi.extension" />
-            """.trimIndent())
+                """.trimIndent())
         }
 
         private fun createGradleProject(source: ThemeSourceData, themePkg: String, themeClass: String, baseVersionCode: Int, userDir: String) {
@@ -82,6 +86,7 @@ interface ThemeSourceGenerator {
             val overridesPath = "$userDir/multisrc/overrides" // userDir = tachiyomi-extensions project root path
             val resOverridesPath = "$overridesPath/res/$themePkg"
             val srcOverridesPath = "$overridesPath/src/$themePkg"
+            val manifestOverridesPath = "$overridesPath/manifest/$themePkg"
             val projectGradleFile = File("$projectRootPath/build.gradle")
             val projectAndroidManifestFile = File("$projectRootPath/AndroidManifest.xml")
 
@@ -93,7 +98,7 @@ interface ThemeSourceGenerator {
                 cleanDirectory(projectRootFile)
 
                 writeGradle(projectGradleFile, source, baseVersionCode)
-                writeAndroidManifest(projectAndroidManifestFile)
+                writeAndroidManifest(projectAndroidManifestFile, manifestOverridesPath, source, projectRootPath)
 
                 writeSourceFiles(projectSrcPath, srcOverridesPath, source, themePkg, themeClass)
                 copyThemeClasses(userDir, themePkg, projectRootPath)
