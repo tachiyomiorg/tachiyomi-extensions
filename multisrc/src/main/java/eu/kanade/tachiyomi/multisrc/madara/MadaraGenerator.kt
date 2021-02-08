@@ -30,7 +30,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Azora", "https://www.azoramanga.com", "ar"),
         SingleLang("Bakaman", "https://bakaman.net", "th"),
         SingleLang("BestManga", "https://bestmanga.club", "ru"),
-        SingleLang("BestManhua", "https://bestmanhua.com", "en"),
+        SingleLang("BestManhua", "https://bestmanhua.com", "en", overrideVersionCode = 1),
         SingleLang("BoysLove", "https://boyslove.me", "en"),
         SingleLang("CatOnHeadTranslations", "https://catonhead.com", "en"),
         SingleLang("CAT-translator", "https://cat-translator.com", "th", className = "CatTranslator", pkgName = "cattranslator"),
