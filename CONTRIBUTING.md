@@ -102,6 +102,16 @@ The extension's version name is generated automatically by concatenating `libVer
 
 Extensions rely on [extensions-lib](https://github.com/tachiyomiorg/extensions-lib), which provides some interfaces and stubs from the [app](https://github.com/tachiyomiorg/tachiyomi) for compilation purposes. The actual implementations can be found [here](https://github.com/tachiyomiorg/tachiyomi/tree/dev/app/src/main/java/eu/kanade/tachiyomi/source). Referencing the actual implementation will help with understanding extensions' call flow.
 
+#### Duktape stub
+
+[`duktape-stub`](https://github.com/tachiyomiorg/tachiyomi-extensions/tree/master/lib/duktape-stub) provides stubs for using Duktape functionality without pulling in the full library. Functionality is bundled into the main Tachiyomi app.
+
+```gradle
+dependencies {
+    compileOnly project(':duktape-stub')
+}
+```
+
 #### Rate limiting library
 
 [`lib-ratelimit`](https://github.com/tachiyomiorg/tachiyomi-extensions/tree/master/lib/ratelimit) is a library for adding rate limiting functionality as an [OkHttp interceptor](https://square.github.io/okhttp/interceptors/).
