@@ -12,8 +12,8 @@ class EroMuseGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
-        SingleLang("8Muses", "https://comics.8muses.com", "en", isNsfw = true, className = "EightMuses"),
-        SingleLang("Erofus", "https://www.erofus.com", "en", isNsfw = true)
+        SingleLang("8Muses", "https://comics.8muses.com", "en", isNsfw = true, overrideVersionCode = 1, className = "EightMuses"),
+        SingleLang("Erofus", "https://www.erofus.com", "en", isNsfw = true, overrideVersionCode = 1)
     )
 
     companion object {
