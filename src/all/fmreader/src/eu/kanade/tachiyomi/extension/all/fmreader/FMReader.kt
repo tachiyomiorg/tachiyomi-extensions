@@ -281,6 +281,7 @@ abstract class FMReader(
             val attr =
                 if (this.hasAttr("data-original")) "data-original"
                 else if (this.hasAttr("data-src")) "data-src"
+                else if (this.hasAttr("data-srcset")) "data-srcset"
                 else "src"
             return if (!this.attr(attr).contains(".")) {
                 Base64.decode(this.attr(attr), Base64.DEFAULT).toString(Charset.defaultCharset())
