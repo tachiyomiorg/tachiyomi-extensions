@@ -49,7 +49,7 @@ jobs:
       - name: Generate sources from the multi-source library
         uses: eskatos/gradle-command-action@v1
         with:
-          arguments: :multisrc:multisrcGenerators
+          arguments: multisrcGenerators
           wrapper-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true
