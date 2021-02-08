@@ -60,9 +60,12 @@ class WPMangaStreamFactory : SourceFactory {
         MangaShiro(),
         ChiOtaku(),
         KlanKomik(),
-        MangaIndonesia()
+        MangaIndonesia(),
+        ResetScans()
     )
 }
+
+class ResetScans : WPMangaStream("Reset Scans", "https://reset-scans.com", "en")
 
 class MangaIndonesia : WPMangaStream("MangaIndonesia", "https://mangaindonesia.net", "id") {
     override fun popularMangaRequest(page: Int): Request {
