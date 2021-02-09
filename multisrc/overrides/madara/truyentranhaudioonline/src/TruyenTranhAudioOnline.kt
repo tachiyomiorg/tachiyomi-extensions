@@ -5,7 +5,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import okhttp3.Headers
 import org.jsoup.nodes.Document
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class TruyenTranhAudioOnline : Madara("TruyenTranhAudio.online", "https://truyentranhaudio.online", "vi", SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())) {
     override val formHeaders: Headers = headersBuilder()

@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class YaoiToshokan : Madara("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR", SimpleDateFormat("dd MMM yyyy", Locale("pt", "BR"))) {
     // Page has custom link to scan website.
