@@ -1,4 +1,4 @@
-package madara.mangazukionline.src
+package eu.kanade.tachiyomi.extension.en.mangazukionline
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import okhttp3.OkHttpClient
