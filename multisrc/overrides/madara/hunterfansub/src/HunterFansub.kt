@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.hunterfansub
+package eu.kanade.tachiyomi.extension.es.hunterfansub
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import eu.kanade.tachiyomi.network.GET

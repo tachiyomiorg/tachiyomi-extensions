@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.klikmanga
+package eu.kanade.tachiyomi.extension.id.klikmanga
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import java.text.SimpleDateFormat

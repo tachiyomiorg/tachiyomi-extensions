@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.justforfun
+package eu.kanade.tachiyomi.extension.ru.justforfun
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import java.text.SimpleDateFormat
