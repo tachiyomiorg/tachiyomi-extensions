@@ -101,7 +101,7 @@ class UnionMangas : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.startsWith(PREFIX_SLUG_SEARCH)) {
             val slug = query.removePrefix(PREFIX_SLUG_SEARCH)
-            return GET("$baseUrl/perfil-manga/$slug", headers)
+            return GET("$baseUrl/pagina-manga/$slug", headers)
         }
 
         val newHeaders = headersBuilder()
@@ -118,10 +118,10 @@ class UnionMangas : ParsedHttpSource() {
     override fun searchMangaParse(response: Response): MangasPage {
         val requestUrl = response.request().url().toString()
 
-        if (requestUrl.contains("perfil-manga")) {
-            val slug = requestUrl.substringAfter("perfil-manga/")
+        if (requestUrl.contains("pagina-manga")) {
+            val slug = requestUrl.substringAfter("pagina-manga/")
             val manga = mangaDetailsParse(response)
-                .apply { url = "/perfil-manga/$slug" }
+                .apply { url = "/pagina-manga/$slug" }
             return MangasPage(listOf(manga), false)
         }
 
@@ -136,7 +136,13 @@ class UnionMangas : ParsedHttpSource() {
     private fun searchMangaFromObject(obj: JsonObject): SManga = SManga.create().apply {
         title = obj["titulo"].string.withoutLanguage()
         thumbnail_url = obj["imagem"].string
-        setUrlWithoutDomain("$baseUrl/perfil-manga/${obj["url"].string}")
+        setUrlWithoutDomain("$baseUrl/pagina-manga/${obj["url"].string}")
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        // Map the mangas that are already in library with the old URL to the new one.
+        val newUrl = manga.url.replace("perfil-manga", "pagina-manga")
+        return GET(baseUrl + newUrl, headers)
     }
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
@@ -216,7 +222,7 @@ class UnionMangas : ParsedHttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
