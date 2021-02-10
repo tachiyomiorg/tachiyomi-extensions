@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -25,7 +26,9 @@ class HentaiVN : ParsedHttpSource() {
     override val lang = "vi"
     override val name = "HentaiVN"
     override val supportsLatest = true
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.client.newBuilder()
+        .cookieJar(CookieJar.NO_COOKIES)
+        .build()
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH)
@@ -58,7 +61,7 @@ class HentaiVN : ParsedHttpSource() {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text().trim()
         }
-        manga.thumbnail_url = element.select("img.img-list").attr("abs:src")
+        manga.thumbnail_url = element.select(".box-cover a img").attr("data-src")
         return manga
     }
 
@@ -76,7 +79,7 @@ class HentaiVN : ParsedHttpSource() {
         manga.author = infoElement.select("p:contains(Tác giả:) a").text()
         manga.description = infoElement.select(":root > p:contains(Nội dung:) + p").text()
         manga.genre = infoElement.select("p:contains(Thể loại:) a").joinToString { it.text() }
-        manga.thumbnail_url = document.select(".main > .page-right > .right-info > .page-ava > img").attr("abs:src")
+        manga.thumbnail_url = document.select(".main > .page-right > .right-info > .page-ava > img").attr("src")
         manga.status = parseStatus(infoElement.select("p:contains(Tình Trạng:) a").firstOrNull()?.text())
         return manga
     }
