@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.wpmangareader
+package eu.kanade.tachiyomi.multisrc.wpmangareader
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
