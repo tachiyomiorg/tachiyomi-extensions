@@ -98,6 +98,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaCultivator", "https://mangacultivator.com", "en"),
             SingleLang("MangaDods", "https://www.mangadods.com", "en"),
             SingleLang("MangaEffect", "https://mangaeffect.com", "en"),
+            SingleLang("MangaGreat", "https://mangagreat.com", "en"),
             SingleLang("Manga Hentai", "https://mangahentai.me", "en", isNsfw = true),
             SingleLang("Manga Kiss", "https://mangakiss.org", "en"),
             SingleLang("MangaKomi", "https://mangakomi.com", "en"),
