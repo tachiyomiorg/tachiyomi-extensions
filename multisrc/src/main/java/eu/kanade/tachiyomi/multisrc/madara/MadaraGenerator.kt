@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.multisrc.madara
 
 import eu.kanade.tachiyomi.multisrc.ThemeSourceData.SingleLang
+import eu.kanade.tachiyomi.multisrc.ThemeSourceData.MultiLang
 import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator
 
 class MadaraGenerator : ThemeSourceGenerator {
@@ -131,7 +132,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaWT", "https://mangawt.com", "tr"),
             SingleLang("MangaYaku", "https://mangayaku.my.id", "id"),
             SingleLang("MangaYosh", "https://mangayosh.xyz", "id"),
-            SingleLang("Mangazuki.club", "https://mangazuki.club", "ja", className = "MangazukiClubJP"),
+            MultiLang("Mangazuki.club", "https://mangazuki.club", listOf("ja", "ko"),
             SingleLang("Mangazuki.club", "https://mangazuki.club", "ko", className = "MangazukiClubKO"),
             SingleLang("Mangazuki.me", "https://mangazuki.me", "en", className = "MangazukiMe"),
             SingleLang("Mangazuki.online", "http://mangazukinew.online", "en", className = "MangazukiOnline"),
