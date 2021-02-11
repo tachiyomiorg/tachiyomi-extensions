@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.mangasproject
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
@@ -11,6 +12,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 
+@Nsfw
 class MangasProjectFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         LeitorNet(),
