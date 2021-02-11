@@ -100,7 +100,7 @@ open class RainOfSnow() : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select(".zoomdesc-cont img").forEachIndexed { index, element ->
+        document.select("[style=display: block;] img").forEachIndexed { index, element ->
             add(Page(index, "", element.attr("abs:src")))
         }
     }
