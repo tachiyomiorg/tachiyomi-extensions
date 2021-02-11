@@ -52,10 +52,12 @@ cat index.json
 
 echo
 echo "executing inspector"
+echo
 
 curl "https://raw.githubusercontent.com/AriaMoradi/tachiyomi-extensions-inspector/repo/Inspector-latest.jar" -o "Inspector-latest.jar"
 
-ls -lah
-
 java -jar Inspector-latest.jar ../apk inspector.txt
+
+cat inspector.txt
+
 rm Inspector-latest.jar
