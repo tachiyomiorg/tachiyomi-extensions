@@ -49,3 +49,13 @@ jq -c '.' < index.json > index.min.json
 gzip -c index.json > index.json.gz
 
 cat index.json
+
+echo
+echo "executing inspector"
+
+curl "https://raw.githubusercontent.com/AriaMoradi/tachiyomi-extensions-inspector/repo/Inspector-latest.jar" -o "Inspector-latest.jar"
+
+ls -lah
+
+java -jar Inspector-latest.jar ../apk inspector.txt
+rm Inspector-latest.jar
