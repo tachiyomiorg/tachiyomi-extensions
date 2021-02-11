@@ -5,7 +5,7 @@ ext {
     extName = 'MangaYabu!'
     pkgNameSuffix = 'pt.mangayabu'
     extClass = '.MangaYabu'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 

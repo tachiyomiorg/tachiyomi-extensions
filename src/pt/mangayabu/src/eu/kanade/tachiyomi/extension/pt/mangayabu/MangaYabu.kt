@@ -130,7 +130,7 @@ class MangaYabu : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.manga-pages img.img-responsive.img-manga")
+        return document.select("div.manga-pages img")
             .mapIndexed { i, element ->
                 Page(i, document.location(), element.attr("abs:src"))
             }
@@ -176,7 +176,7 @@ class MangaYabu : ParsedHttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
 
         private val FLAG_REGEX = "\\((Pt[-/]br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
 
