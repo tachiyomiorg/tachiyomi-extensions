@@ -66,7 +66,7 @@ open class RainOfSnow() : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.title = document.select("h3").text()
+        manga.title = document.select(".text-center h3").text()
         manga.author = document.select("li:contains(author) .n2").text()
         manga.artist = document.select("li:contains(author) .n2").text()
         manga.status = 0
