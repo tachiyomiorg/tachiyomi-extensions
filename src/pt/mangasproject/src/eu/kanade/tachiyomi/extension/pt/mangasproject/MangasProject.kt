@@ -5,6 +5,7 @@ import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -39,6 +40,7 @@ abstract class MangasProject(
 
     // Sometimes the site is slow.
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(RateLimitInterceptor(30, 1, TimeUnit.MINUTES))
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
@@ -244,7 +246,9 @@ abstract class MangasProject(
 
     override fun pageListRequest(chapter: SChapter): Request {
         val newHeaders = headersBuilder()
-            .set("Referer", baseUrl + chapter.url)
+            .add("Accept", ACCEPT)
+            .add("Accept-Language", ACCEPT_LANGUAGE)
+            .set("Referer", "$baseUrl/home")
             .build()
 
         return GET(baseUrl + chapter.url, newHeaders)
@@ -265,7 +269,7 @@ abstract class MangasProject(
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
         val readerToken = getReaderToken(document) ?: throw Exception(TOKEN_NOT_FOUND)
-        val chapterUrl = response.request().url().toString()
+        val chapterUrl = getChapterUrl(response)
 
         val apiRequest = pageListApiRequest(chapterUrl, readerToken)
         val apiResponse = client.newCall(apiRequest).execute().asJsonObject()
@@ -275,10 +279,15 @@ abstract class MangasProject(
             .mapIndexed { i, obj -> Page(i, chapterUrl, obj.string) }
     }
 
+    protected open fun getChapterUrl(response: Response): String {
+        return response.request().url().toString()
+    }
+
     protected open fun getReaderToken(document: Document): String? {
         return document.select("script[src*=\"reader.\"]").firstOrNull()
             ?.attr("abs:src")
-            ?.let { HttpUrl.parse(it)!!.queryParameter("token") }
+            ?.let { HttpUrl.parse(it) }
+            ?.queryParameter("token")
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
@@ -304,9 +313,12 @@ abstract class MangasProject(
     }
 
     companion object {
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 
