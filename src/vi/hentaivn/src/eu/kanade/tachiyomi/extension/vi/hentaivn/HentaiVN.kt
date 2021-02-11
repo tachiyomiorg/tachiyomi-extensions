@@ -131,7 +131,7 @@ class HentaiVN : ParsedHttpSource() {
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
         if (document.select("p").toString().contains("Bạn chỉ có thể sử dụng chức năng này khi đã đăng ký thành viên"))
-            throw Exception("Log in via WebView to enable search")
+            throw Exception("Đăng nhập qua WebView để kích hoạt tìm kiếm")
 
         val mangas = document.select(searchMangaSelector()).map { element ->
             searchMangaFromElement(element)
