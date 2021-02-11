@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Rain Of Snow'
+    pkgNameSuffix = 'en.rainofsnow'
+    extClass = '.RainOfSnow'
+    extVersionCode = 1
+    libVersion = '1.2'
+    containsNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"
