@@ -197,7 +197,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("TheTopComic", "https://thetopcomic.com", "en"),
             SingleLang("365Manga", "https://365manga.com", "en", className = "ThreeSixtyFiveManga"),
             SingleLang("ToonGod", "https://www.toongod.com", "en"),
-            SingleLang("Toonily", "https://toonily.com", "en", isNsfw = true),
+            SingleLang("Toonily", "https://toonily.com", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Toonily.net", "https://toonily.net", "en", isNsfw = true, className = "ToonilyNet"),
             SingleLang("ToonPoint", "https://toonpoint.com", "en"),
             SingleLang("Top Manhua", "https://topmanhua.com", "en"),
