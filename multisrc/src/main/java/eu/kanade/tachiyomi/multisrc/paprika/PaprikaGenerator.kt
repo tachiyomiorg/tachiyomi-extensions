@@ -21,6 +21,7 @@ class PaprikaGenerator : ThemeSourceGenerator {
 //            SingleLang("MangaTensei", "http://www.mangatensei.com", "en"),
             SingleLang("MangaNelos.com", "http://manganelos.com", "en", className = "MangaNelosCom"),
             SingleLang("MangaDogs.fun", "http://mangadogs.fun", "en", className = "MangaDogsFun"),
+            SingleLang("MangaHere.today", "http://mangahere.today", "en", className = "MangaHereToday"),
     )
 
     companion object {
