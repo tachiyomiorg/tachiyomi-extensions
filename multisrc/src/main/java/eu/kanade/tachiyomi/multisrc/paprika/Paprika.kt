@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.paprika
+package eu.kanade.tachiyomi.multisrc.paprika
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
