@@ -24,6 +24,7 @@ class FMReaderGenerator : ThemeSourceGenerator {
             SingleLang("LHTranslation", "https://lhtranslation.net", "en"),
             SingleLang("Manga-TR", "https://manga-tr.com", "tr", className = "MangaTR"),
             SingleLang("ManhuaScan", "https://manhuascan.com", "en"),
+            SingleLang("Manhwa18", "https://manhwa18.com", "en"),
             MultiLang("Manhwa18.net", "https://manhwa18.net", listOf("en", "ko"), className = "Manhwa18NetFactory"),
             SingleLang("ManhwaSmut", "https://manhwasmut.com", "en"),
             SingleLang("RawLH", "https://lovehug.net", "ja"),
