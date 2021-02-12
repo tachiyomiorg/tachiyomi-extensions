@@ -205,7 +205,7 @@ class TsukiMangas : HttpSource() {
             .flatMap { chapterListItemParse(it.obj, mangaUrl) }
             .toMutableList()
 
-        while (page < lastPage) {
+        while (page <= lastPage) {
             val newRequest = chapterListRequestPaginated(mangaUrl, page++)
             result = client.newCall(newRequest).execute().asJson().obj
 
