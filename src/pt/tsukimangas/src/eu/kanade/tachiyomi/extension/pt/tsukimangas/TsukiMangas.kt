@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.pt.tsukimangas
 
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
@@ -224,7 +225,7 @@ class TsukiMangas : HttpSource() {
         return obj["versions"].array.map { version ->
             SChapter.create().apply {
                 name = "Cap. " + obj["number"].string +
-                    (if (obj["title"].string.isNotEmpty()) " - " + obj["title"].string else "")
+                    (if (!obj["title"].nullString.isNullOrEmpty()) " - " + obj["title"].string else "")
                 chapter_number = obj["number"].string.toFloatOrNull() ?: -1f
                 scanlator = version.obj["scans"].array
                     .sortedBy { it.obj["scan"].obj["name"].string }
