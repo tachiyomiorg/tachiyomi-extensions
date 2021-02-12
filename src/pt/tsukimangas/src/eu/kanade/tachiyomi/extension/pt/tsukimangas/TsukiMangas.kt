@@ -342,7 +342,7 @@ class TsukiMangas : HttpSource() {
     )
 
     private fun getSerieTypes(): List<String> = listOf(
-        "Selecione",
+        "Todos",
         "Mangá",
         "Manhwa",
         "Manhua",
