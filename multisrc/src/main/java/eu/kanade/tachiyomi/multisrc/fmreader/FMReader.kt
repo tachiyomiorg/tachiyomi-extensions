@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.all.fmreader
+package eu.kanade.tachiyomi.multisrc.fmreader
 
 import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
