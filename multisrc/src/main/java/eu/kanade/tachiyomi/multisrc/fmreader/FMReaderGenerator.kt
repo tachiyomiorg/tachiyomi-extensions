@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.multisrc.fmreader
 
+import eu.kanade.tachiyomi.multisrc.ThemeSourceData.MultiLang
 import eu.kanade.tachiyomi.multisrc.ThemeSourceData.SingleLang
 import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator
 
@@ -23,8 +24,7 @@ class FMReaderGenerator : ThemeSourceGenerator {
             SingleLang("LHTranslation", "https://lhtranslation.net", "en"),
             SingleLang("Manga-TR", "https://manga-tr.com", "tr", className = "MangaTR"),
             SingleLang("ManhuaScan", "https://manhuascan.com", "en"),
-            SingleLang("Manhwa18", "https://manhwa18.com", "en"),
-            SingleLang("Manhwa18.net Raw", "https://manhwa18.net", "ko", className = "Manhwa18NetRaw"),
+            MultiLang("Manhwa18.net", "https://manhwa18.net", listOf("en", "ko"), className = "Manhwa18NetFactory"),
             SingleLang("Manhwa18.net", "https://manhwa18.net", "en", className = "Manhwa18Net"),
             SingleLang("ManhwaSmut", "https://manhwasmut.com", "en"),
             SingleLang("RawLH", "https://lovehug.net", "ja"),
