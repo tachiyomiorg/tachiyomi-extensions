@@ -1,7 +1,9 @@
-package eu.kanade.tachiyomi.extension.en.manhwa18net
+package eu.kanade.tachiyomi.extension.all.manhwa18net
 
 import eu.kanade.tachiyomi.multisrc.fmreader.FMReader
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.Request
 
