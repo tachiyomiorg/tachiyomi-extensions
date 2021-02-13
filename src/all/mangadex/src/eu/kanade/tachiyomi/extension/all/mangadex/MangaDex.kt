@@ -1026,7 +1026,7 @@ abstract class MangaDex(
         private const val DATA_SAVER_PREF_Title = "Data saver"
         private const val DATA_SAVER_PREF = "dataSaver"
 
-        private const val API_URL = "https://api.mangadex.org"
+        private const val API_URL = "https://mangadex.org/api"
         private const val API_MANGA = "/v2/manga/"
         private const val API_MANGA_INCLUDE_CHAPTERS = "?include=chapters"
         private const val OLD_API_CHAPTER = "/api/chapter/"
