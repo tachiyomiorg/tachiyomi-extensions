@@ -21,7 +21,7 @@ class FMReaderGenerator : ThemeSourceGenerator {
             SingleLang("HanaScan (RawQQ)", "https://hanascan.com", "ja", className = "HanaScanRawQQ"),
             SingleLang("HeroScan", "https://heroscan.com", "en"),
             SingleLang("KissLove", "https://kissaway.net", "ja"),
-            SingleLang("LHTranslation", "https://lhtranslation.net", "en"),
+            SingleLang("LHTranslation", "https://lhtranslation.net", "en", overrideVersionCode = 1),
             SingleLang("Manga-TR", "https://manga-tr.com", "tr", className = "MangaTR"),
             SingleLang("ManhuaScan", "https://manhuascan.com", "en"),
             SingleLang("Manhwa18", "https://manhwa18.com", "en"),
