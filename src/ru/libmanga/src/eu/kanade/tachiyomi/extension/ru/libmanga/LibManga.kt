@@ -297,10 +297,14 @@ class LibManga : ConfigurableSource, HttpSource() {
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is CategoryList -> filter.state.forEach { category ->
-                    url.addQueryParameter("types[]", category.id)
+                    if (category.state) {
+                        url.addQueryParameter("types[]", category.id)
+                    }
                 }
                 is StatusList -> filter.state.forEach { status ->
-                    url.addQueryParameter("status[]", status.id)
+                    if (status.state) {
+                        url.addQueryParameter("status[]", status.id)
+                    }
                 }
                 is GenreList -> filter.state.forEach { genre ->
                     if (genre.state != Filter.TriState.STATE_IGNORE) {
@@ -395,7 +399,6 @@ class LibManga : ConfigurableSource, HttpSource() {
         CheckFilter("OEL-манга", "4"),
         CheckFilter("Манхва", "5"),
         CheckFilter("Маньхуа", "6"),
-        CheckFilter("Сингл", "7"),
         CheckFilter("Руманга", "8"),
         CheckFilter("Комикс западный", "9")
     )
