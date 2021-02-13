@@ -146,7 +146,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manhwa Raw", "https://manhwaraw.com", "ko"),
             SingleLang("Manhwatop", "https://manhwatop.com", "en"),
             SingleLang("Manwahentai.me", "https://manhwahentai.me", "en", className = "ManwahentaiMe", isNsfw = true),
-            SingleLang("Manwha Club", "https://manhwa.club", "en"),
+            SingleLang("Manhwa.club", "https://manhwa.club", "en", className="ManwhaClub", overrideVersionCode = 1), // wrong class name for backward compatibility
             SingleLang("ManyToon", "https://manytoon.com", "en"),
             SingleLang("ManyToonClub", "https://manytoon.club", "ko"),
             SingleLang("ManyToon.me", "https://manytoon.me", "en", className = "ManyToonMe"),
