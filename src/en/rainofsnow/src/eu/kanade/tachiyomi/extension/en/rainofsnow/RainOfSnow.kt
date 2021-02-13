@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.concurrent.TimeUnit
@@ -81,6 +82,10 @@ open class RainOfSnow() : ParsedHttpSource() {
             return GET(manga.url, headers)
         }
         return super.chapterListRequest(manga)
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        return super.chapterListParse(response).reversed()
     }
 
     override fun chapterListSelector() = ".chapter1 li"
