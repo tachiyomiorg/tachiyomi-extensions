@@ -316,6 +316,11 @@ class LibManga : ConfigurableSource, HttpSource() {
                         url.addQueryParameter("caution[]", age.id)
                     }
                 }
+                is TagList -> filter.state.forEach { tag ->
+                    if (tag.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(if (tag.isIncluded()) "tags[include][]" else "tags[exclude][]", tag.id)
+                    }
+                }
             }
         }
         return POST(url.toString(), catalogHeaders())
@@ -362,12 +367,14 @@ class LibManga : ConfigurableSource, HttpSource() {
     private class CategoryList(categories: List<CheckFilter>) : Filter.Group<CheckFilter>("Тип", categories)
     private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус перевода", statuses)
     private class GenreList(genres: List<SearchFilter>) : Filter.Group<SearchFilter>("Жанры", genres)
+    private class TagList(tags: List<SearchFilter>) : Filter.Group<SearchFilter>("Теги", tags)
     private class AgeList(ages: List<CheckFilter>) : Filter.Group<CheckFilter>("Возрастное ограничение", ages)
 
     override fun getFilterList() = FilterList(
         OrderBy(),
         CategoryList(getCategoryList()),
         GenreList(getGenreList()),
+        TagList(getTagList()),
         StatusList(getStatusList()),
         AgeList(getAgeList())
     )
@@ -458,6 +465,106 @@ class LibManga : ConfigurableSource, HttpSource() {
         SearchFilter("этти", "72"),
         SearchFilter("юри", "73"),
         SearchFilter("яой", "74")
+    )
+    private fun getTagList() = listOf(
+        SearchFilter("Азартные игры", "304"),
+        SearchFilter("Алхимия", "225"),
+        SearchFilter("Ангелы", "226"),
+        SearchFilter("Антигерой", "175"),
+        SearchFilter("Антиутопия", "227"),
+        SearchFilter("Апокалипсис", "228"),
+        SearchFilter("Армия", "229"),
+        SearchFilter("Артефакты", "230"),
+        SearchFilter("Боги", "215"),
+        SearchFilter("Бои на мечах", "231"),
+        SearchFilter("Борьба за власть", "231"),
+        SearchFilter("Брат и сестра", "233"),
+        SearchFilter("Будущее", "234"),
+        SearchFilter("Ведьма", "338"),
+        SearchFilter("Вестерн", "235"),
+        SearchFilter("Видеоигры", "185"),
+        SearchFilter("Виртуальная реальность", "195"),
+        SearchFilter("Владыка демонов", "236"),
+        SearchFilter("Военные", "179"),
+        SearchFilter("Война", "237"),
+        SearchFilter("Волшебники / маги", "281"),
+        SearchFilter("Волшебные существа", "239"),
+        SearchFilter("Воспоминания из другого мира", "240"),
+        SearchFilter("Выживание", "193"),
+        SearchFilter("ГГ женщина", "243"),
+        SearchFilter("ГГ имба", "291"),
+        SearchFilter("ГГ мужчина", "244"),
+        SearchFilter("Геймеры", "241"),
+        SearchFilter("Гильдии", "242"),
+        SearchFilter("Глупый ГГ", "297"),
+        SearchFilter("Гоблины", "245"),
+        SearchFilter("Горничные", "169"),
+        SearchFilter("Гяру", "178"),
+        SearchFilter("Демоны", "151"),
+        SearchFilter("Драконы", "246"),
+        SearchFilter("Дружба", "247"),
+        SearchFilter("Жестокий мир", "249"),
+        SearchFilter("Животные компаньоны", "250"),
+        SearchFilter("Завоевание мира", "251"),
+        SearchFilter("Зверолюди", "162"),
+        SearchFilter("Злые духи", "252"),
+        SearchFilter("Зомби", "149"),
+        SearchFilter("Игровые элементы", "253"),
+        SearchFilter("Империи", "254"),
+        SearchFilter("Квесты", "255"),
+        SearchFilter("Космос", "256"),
+        SearchFilter("Кулинария", "152"),
+        SearchFilter("Культивация", "160"),
+        SearchFilter("Легендарное оружие", "257"),
+        SearchFilter("Лоли", "187"),
+        SearchFilter("Магическая академия", "258"),
+        SearchFilter("Магия", "168"),
+        SearchFilter("Мафия", "172"),
+        SearchFilter("Медицина", "153"),
+        SearchFilter("Месть", "259"),
+        SearchFilter("Монстр Девушки", "188"),
+        SearchFilter("Монстры", "189"),
+        SearchFilter("Музыка", "190"),
+        SearchFilter("Навыки / способности", "260"),
+        SearchFilter("Насилие / жестокость", "262"),
+        SearchFilter("Наёмники", "261"),
+        SearchFilter("Нежить", "263"),
+        SearchFilter("Ниндая", "180"),
+        SearchFilter("Обратный Гарем", "191"),
+        SearchFilter("Огнестрельное оружие", "264"),
+        SearchFilter("Офисные Работники", "181"),
+        SearchFilter("Пародия", "265"),
+        SearchFilter("Пираты", "340"),
+        SearchFilter("Подземелья", "266"),
+        SearchFilter("Политика", "267"),
+        SearchFilter("Полиция", "182"),
+        SearchFilter("Преступники / Криминал", "186"),
+        SearchFilter("Призраки / Духи", "177"),
+        SearchFilter("Путешествие во времени", "194"),
+        SearchFilter("Разумные расы", "268"),
+        SearchFilter("Ранги силы", "248"),
+        SearchFilter("Реинкарнация", "148"),
+        SearchFilter("Роботы", "269"),
+        SearchFilter("Рыцари", "270"),
+        SearchFilter("Самураи", "183"),
+        SearchFilter("Система", "271"),
+        SearchFilter("Скрытие личности", "273"),
+        SearchFilter("Спасение мира", "274"),
+        SearchFilter("Спортивное тело", "334"),
+        SearchFilter("Средневековье", "173"),
+        SearchFilter("Стимпанк", "272"),
+        SearchFilter("Супергерои", "275"),
+        SearchFilter("Традиционные игры", "184"),
+        SearchFilter("Умный ГГ", "302"),
+        SearchFilter("Учитель / ученик", "276"),
+        SearchFilter("Философия", "277"),
+        SearchFilter("Хикикомори", "166"),
+        SearchFilter("Холодное оружие", "278"),
+        SearchFilter("Шантаж", "279"),
+        SearchFilter("Эльфы", "216"),
+        SearchFilter("Якудза", "164"),
+        SearchFilter("Япония", "280")
+
     )
 
     private fun getAgeList() = listOf(
