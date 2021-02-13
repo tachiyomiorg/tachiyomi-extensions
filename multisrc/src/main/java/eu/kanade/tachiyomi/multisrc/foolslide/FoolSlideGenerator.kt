@@ -22,9 +22,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
             SingleLang("Evil Flowers", "https://reader.evilflowers.com", "en"),
             SingleLang("Русификация", "https://rusmanga.ru", "ru", className = "Russification"),
             SingleLang("PowerManga", "https://reader.powermanga.org", "it", className = "PowerMangaIT"),
-
             MultiLang("FoolSlide Customizable", "",  listOf("other")),
-
             SingleLang("Menudo-Fansub", "http://www.menudo-fansub.com", "es"),
             SingleLang("Sense-Scans", "http://sensescans.com", "en"),
             SingleLang("Kirei Cake", "https://reader.kireicake.com", "en"),
@@ -49,7 +47,6 @@ class FoolSlideGenerator : ThemeSourceGenerator {
             SingleLang("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr"),
             SingleLang("Rama", "https://www.ramareader.it", "it"),
             SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
-
             SingleLang("Hentai Cafe", "https://hentai.cafe", "en", isNsfw = true),
     )
 
