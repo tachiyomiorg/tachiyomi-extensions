@@ -297,14 +297,10 @@ class LibManga : ConfigurableSource, HttpSource() {
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is CategoryList -> filter.state.forEach { category ->
-                    if (category.state != Filter.TriState.STATE_IGNORE) {
-                        url.addQueryParameter("types[]", category.id)
-                    }
+                    url.addQueryParameter("types[]", category.id)
                 }
                 is StatusList -> filter.state.forEach { status ->
-                    if (status.state != Filter.TriState.STATE_IGNORE) {
-                        url.addQueryParameter("status[]", status.id)
-                    }
+                    url.addQueryParameter("status[]", status.id)
                 }
                 is GenreList -> filter.state.forEach { genre ->
                     if (genre.state != Filter.TriState.STATE_IGNORE) {
@@ -313,7 +309,12 @@ class LibManga : ConfigurableSource, HttpSource() {
                 }
                 is OrderBy -> {
                     url.addQueryParameter("dir", if (filter.state!!.ascending) "asc" else "desc")
-                    url.addQueryParameter("sort", arrayOf("rate", "name", "views", "created_at", "chap_count")[filter.state!!.index])
+                    url.addQueryParameter("sort", arrayOf("rate", "name", "views", "created_at", "last_chapter_at", "chap_count")[filter.state!!.index])
+                }
+                is AgeList -> filter.state.forEach { age ->
+                    if (age.state) {
+                        url.addQueryParameter("caution[]", age.id)
+                    }
                 }
             }
         }
@@ -356,21 +357,24 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
+    private class CheckFilter(name: String, val id: String) : Filter.CheckBox(name)
 
-    private class CategoryList(categories: List<SearchFilter>) : Filter.Group<SearchFilter>("Категории", categories)
-    private class StatusList(statuses: List<SearchFilter>) : Filter.Group<SearchFilter>("Статус", statuses)
+    private class CategoryList(categories: List<CheckFilter>) : Filter.Group<CheckFilter>("Тип", categories)
+    private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус перевода", statuses)
     private class GenreList(genres: List<SearchFilter>) : Filter.Group<SearchFilter>("Жанры", genres)
+    private class AgeList(ages: List<CheckFilter>) : Filter.Group<CheckFilter>("Возрастное ограничение", ages)
 
     override fun getFilterList() = FilterList(
+        OrderBy(),
         CategoryList(getCategoryList()),
-        StatusList(getStatusList()),
         GenreList(getGenreList()),
-        OrderBy()
+        StatusList(getStatusList()),
+        AgeList(getAgeList())
     )
 
     private class OrderBy : Filter.Sort(
         "Сортировка",
-        arrayOf("Рейтинг", "Имя", "Просмотры", "Дата", "Кол-во глав"),
+        arrayOf("Рейтинг", "Имя", "Просмотры", "Дате добавления", "Дате обновления", "Кол-во глав"),
         Selection(0, false)
     )
 
@@ -380,13 +384,13 @@ class LibManga : ConfigurableSource, HttpSource() {
     * on /manga-list
     */
     private fun getCategoryList() = listOf(
-        SearchFilter("Манга", "1"),
-        SearchFilter("OEL-манга", "4"),
-        SearchFilter("Манхва", "5"),
-        SearchFilter("Маньхуа", "6"),
-        SearchFilter("Сингл", "7"),
-        SearchFilter("Руманга", "8"),
-        SearchFilter("Комикс западный", "9")
+        CheckFilter("Манга", "1"),
+        CheckFilter("OEL-манга", "4"),
+        CheckFilter("Манхва", "5"),
+        CheckFilter("Маньхуа", "6"),
+        CheckFilter("Сингл", "7"),
+        CheckFilter("Руманга", "8"),
+        CheckFilter("Комикс западный", "9")
     )
 
     /*
@@ -395,9 +399,10 @@ class LibManga : ConfigurableSource, HttpSource() {
     * on /manga-list
     */
     private fun getStatusList() = listOf(
-        SearchFilter("Продолжается", "1"),
-        SearchFilter("Завершен", "2"),
-        SearchFilter("Заморожен", "3")
+        CheckFilter("Продолжается", "1"),
+        CheckFilter("Завершен", "2"),
+        CheckFilter("Заморожен", "3"),
+        CheckFilter("Заброшен", "4")
     )
 
     /*
@@ -455,6 +460,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         SearchFilter("яой", "74")
     )
 
+    private fun getAgeList() = listOf(
+        CheckFilter("Отсутствует", "0"),
+        CheckFilter("16+", "1"),
+        CheckFilter("18+", "2")
+    )
     companion object {
         const val PREFIX_SLUG_SEARCH = "slug:"
         private const val SERVER_PREF = "MangaLibImageServer"
