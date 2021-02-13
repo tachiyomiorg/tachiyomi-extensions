@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.tr.manhwasmut
+package eu.kanade.tachiyomi.extension.en.manhwasmut
 
 import eu.kanade.tachiyomi.multisrc.fmreader.FMReader
 import eu.kanade.tachiyomi.network.GET
