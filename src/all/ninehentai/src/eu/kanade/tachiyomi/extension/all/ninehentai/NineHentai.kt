@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
+import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -161,6 +162,15 @@ class NineHentai : HttpSource() {
             totalPages = json["total_page"].int
         }
         val pages = mutableListOf<Page>()
+
+        client.newCall(
+            GET(
+                "$imageUrl/preview/${totalPages}t.jpg",
+                headersBuilder().build()
+            )
+        ).execute().code().let { code ->
+            if (code == 404) totalPages--
+        }
 
         for (i in 1..totalPages) {
             pages.add(Page(pages.size, "", "$imageUrl/$i.jpg"))
