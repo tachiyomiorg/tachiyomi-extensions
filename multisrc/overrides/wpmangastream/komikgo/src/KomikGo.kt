@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.id.komikgowpms
+package eu.kanade.tachiyomi.extension.id.komikgo
 
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.network.GET
@@ -12,7 +12,9 @@ import org.jsoup.nodes.Element
 import eu.kanade.tachiyomi.source.model.Filter
 import okhttp3.HttpUrl
 
-class KomikGoWPMS : WPMangaStream("Komik GO (WP Manga Stream)", "https://komikgo.com", "id") {
+class KomikGo : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
+    // Formerly "Komik GO (WP Manga Stream)"
+    override val id = 1070674823324721554
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/page/$page?s&post_type=wp-manga&m_orderby=views", headers)

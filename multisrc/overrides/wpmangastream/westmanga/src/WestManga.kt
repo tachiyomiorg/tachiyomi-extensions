@@ -1,11 +1,14 @@
-package eu.kanade.tachiyomi.extension.id.westmangawpms
+package eu.kanade.tachiyomi.extension.id.westmanga
 
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.source.model.SManga
 import org.jsoup.nodes.Document
 
 
-class WestMangaWPMS : WPMangaStream("West Manga (WP Manga Stream)", "https://westmanga.info", "id") {
+class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
+    // Formerly "West Manga (WP Manga Stream)"
+    override val id = 8883916630998758688
+
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             document.select(".seriestucontent").firstOrNull()?.let { infoElement ->

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.id.komikcastwpms
+package eu.kanade.tachiyomi.extension.id.komikcast
 
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.network.GET
@@ -11,7 +11,10 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-class KomikCastWPMS : WPMangaStream("Komik Cast (WP Manga Stream)", "https://komikcast.com", "id") {
+class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
+    // Formerly "Komik Cast (WP Manga Stream)"
+    override val id = 972717448578983812
+
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/daftar-komik/page/$page/?order=popular", headers)
     }
