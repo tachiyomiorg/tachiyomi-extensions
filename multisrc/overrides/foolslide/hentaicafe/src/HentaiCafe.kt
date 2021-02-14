@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.hentaicafe
 
 import eu.kanade.tachiyomi.multisrc.foolslide.FoolSlide
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -16,6 +17,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import rx.Observable
 import java.net.URLEncoder
 
+@Nsfw
 class HentaiCafe : FoolSlide("Hentai Cafe", "https://hentai.cafe", "en", "/manga") {
     // We have custom latest updates logic so do not dedupe latest updates
     override val dedupeLatestUpdates = false
