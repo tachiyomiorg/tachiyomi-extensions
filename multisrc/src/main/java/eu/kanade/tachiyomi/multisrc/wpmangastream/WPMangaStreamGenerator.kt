@@ -46,6 +46,8 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Matakomik", "https://matakomik.com", "id"),
             SingleLang("Manga Pro Z", "https://mangaproz.com", "ar"),
             SingleLang("Silence Scan", "https://silencescan.net", "pt-BR"),
+            SingleLang("Kuma Scans (Kuma Translation)", "https://kumascans.com", "en", className = "KumaScans"),
+            SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
     )
 
     companion object {
