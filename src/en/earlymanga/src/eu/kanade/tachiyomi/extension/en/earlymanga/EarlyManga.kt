@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -26,6 +27,10 @@ class EarlyManga : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.151 Safari/537.36")
+        .add("Referer", baseUrl)
 
     // popular
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/hot-manga?page=$page", headers)
@@ -124,7 +129,7 @@ class EarlyManga : ParsedHttpSource() {
 
     // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(".chapter_images-container > img").mapIndexed { i, element ->
+        return document.select(".chapter-images-container-inside > img").mapIndexed { i, element ->
             Page(i, "", element.attr("abs:src"))
         }
     }
