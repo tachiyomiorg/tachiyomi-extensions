@@ -5,7 +5,7 @@ ext {
     extName = 'Toomics'
     pkgNameSuffix = 'all.toomics'
     extClass = '.ToomicsFactory'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
 }
 
