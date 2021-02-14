@@ -26,6 +26,7 @@ import rx.Single
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Locale
 import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
 import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 
@@ -162,7 +163,7 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
             client.newCall(GET("$baseUrl/cg/$id", headers)).asObservableSuccess()
                 .map { MangasPage(listOf(mangaDetailsParse(it).apply { url = "/cg/$id" }), false) }
         } else {
-            val splitQuery = query.split(" ")
+            val splitQuery = query.toLowerCase(Locale.ENGLISH).split(" ")
 
             val positive = splitQuery.filter { !it.startsWith('-') }.toMutableList()
             if (nozomiLang != "all") positive += "language:$nozomiLang"
