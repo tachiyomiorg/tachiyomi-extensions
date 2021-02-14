@@ -1,7 +1,9 @@
 package eu.kanade.tachiyomi.extension.en.toonily
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
+import eu.kanade.tachiyomi.annotations.Nsfw
 
+@Nsfw
 class Toonily : Madara("Toonily", "https://toonily.com", "en") {
     override fun getGenreList(): List<Genre> = listOf(
         Genre("Action", "action-webtoon"),
