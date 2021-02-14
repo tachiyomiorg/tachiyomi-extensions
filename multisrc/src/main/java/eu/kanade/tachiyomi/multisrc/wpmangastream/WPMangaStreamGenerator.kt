@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.multisrc.wpmangastream
 
 import eu.kanade.tachiyomi.multisrc.ThemeSourceData.SingleLang
-import eu.kanade.tachiyomi.multisrc.ThemeSourceData.MultiLang
 import eu.kanade.tachiyomi.multisrc.ThemeSourceGenerator
 
 class WPMangaStreamGenerator : ThemeSourceGenerator {
