@@ -118,6 +118,7 @@ abstract class ToomicsGlobal(
             .map { it.reversed() }
     }
 
+    // coin-type1 - free chapter, coin-type6 - already read chapter
     override fun chapterListSelector(): String = "li.normal_ep:has(.coin-type1, .coin-type6)"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
