@@ -47,7 +47,6 @@ class Scantrad : ParsedHttpSource() {
     protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
 
     override fun headersBuilder() = Headers.Builder().apply {
-        add("Referer", baseUrl)
         add(
             "User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
