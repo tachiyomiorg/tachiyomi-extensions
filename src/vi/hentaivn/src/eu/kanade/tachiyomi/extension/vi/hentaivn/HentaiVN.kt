@@ -33,7 +33,7 @@ class HentaiVN : ParsedHttpSource() {
     private val searchUrl = "$baseUrl/forum/search-plus.php"
     private val searchClient = network.cloudflareClient
 
-    override val client: OkHttpClient = network.client.newBuilder()
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .cookieJar(CookieJar.NO_COOKIES)
         .addInterceptor { chain ->
             val originalRequest = chain.request()
