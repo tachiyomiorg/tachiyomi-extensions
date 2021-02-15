@@ -7,8 +7,19 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Request
 import org.jsoup.nodes.Element
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 class MangaIndonesia : WPMangaStream("MangaIndonesia", "https://mangaindonesia.net", "id") {
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
+
     override fun popularMangaRequest(page: Int): Request {
 //        return GET("$baseUrl/popular" + if (page > 1) "/${(page - 1) * 30}" else "", headers)
 //        return GET("$baseUrl/$popularPath" + if (page > 1) "?page=$page" else "", headers)

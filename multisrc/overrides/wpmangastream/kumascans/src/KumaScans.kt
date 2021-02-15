@@ -1,14 +1,11 @@
-package eu.kanade.tachiyomi.extension.id.komikindowpms
+package eu.kanade.tachiyomi.extension.en.kumascans
 
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
-class KomikIndo : WPMangaStream("Komik Indo", "https://www.komikindo.web.id", "id") {
-    // Formerly "Komik Indo (WP Manga Stream)"
-    override val id = 1481562643469779882
-
+class KumaScans : WPMangaStream("Kuma Scans (Kuma Translation)", "https://kumascans.com", "en") {
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -16,5 +13,4 @@ class KomikIndo : WPMangaStream("Komik Indo", "https://www.komikindo.web.id", "i
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
-
 }

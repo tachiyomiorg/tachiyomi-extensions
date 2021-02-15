@@ -3,11 +3,22 @@ package eu.kanade.tachiyomi.extension.id.westmanga
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.source.model.SManga
 import org.jsoup.nodes.Document
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 
 class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
     // Formerly "West Manga (WP Manga Stream)"
     override val id = 8883916630998758688
+
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {

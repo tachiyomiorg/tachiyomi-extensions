@@ -12,6 +12,9 @@ import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 class SilenceScan : WPMangaStream(
     "Silence Scan",
@@ -19,6 +22,13 @@ class SilenceScan : WPMangaStream(
     "pt-BR",
     SimpleDateFormat("MMMM dd, yyyy", Locale("pt", "BR"))
 ) {
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoEl = document.select("div.bigcontent, div.animefull").first()

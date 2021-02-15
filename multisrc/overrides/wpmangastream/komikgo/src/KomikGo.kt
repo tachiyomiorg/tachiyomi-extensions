@@ -11,10 +11,21 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import eu.kanade.tachiyomi.source.model.Filter
 import okhttp3.HttpUrl
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 class KomikGo : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
     // Formerly "Komik GO (WP Manga Stream)"
     override val id = 1070674823324721554
+
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/page/$page?s&post_type=wp-manga&m_orderby=views", headers)
