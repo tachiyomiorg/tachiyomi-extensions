@@ -5,7 +5,7 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 
-class KomikIndo : WPMangaStream("Komik Indo", "https://www.komikindo.web.id", "id") {
+class KomikIndoWPMS : WPMangaStream("Komik Indo", "https://www.komikindo.web.id", "id") {
     // Formerly "Komik Indo (WP Manga Stream)"
     override val id = 1481562643469779882
 
