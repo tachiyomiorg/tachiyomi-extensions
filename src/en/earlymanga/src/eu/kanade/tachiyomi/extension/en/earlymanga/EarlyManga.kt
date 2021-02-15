@@ -119,7 +119,7 @@ class EarlyManga : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select(".col-lg-5 a").attr("href"))
-        val access = element.select(".col-lg-5 a div").text()
+        val access = element.select(".col-lg-5 a .d-none").text()
         name = element.select(".col-lg-5 a").text().substringAfter(access)
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
@@ -130,7 +130,7 @@ class EarlyManga : ParsedHttpSource() {
 
     // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(".chapter-images-container-inside .interior img").mapIndexed { i, element ->
+        return document.select(".chapter-images-container-inside img").mapIndexed { i, element ->
             Page(i, "", element.attr("abs:src"))
         }
     }
