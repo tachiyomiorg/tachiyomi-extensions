@@ -28,7 +28,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Komik Station", "https://komikstation.com", "id"),
             SingleLang("Komik Indo", "https://www.komikindo.web.id", "id", className = "KomikIndoWPMS"),
             SingleLang("Non-Stop Scans", "https://www.nonstopscans.com", "en", className = "NonStopScans"),
-            SingleLang("Komikindo.co", "https://komikindo.co", "id", className = "KomikindoCo"),
+            SingleLang("KomikIndo.co", "https://komikindo.co", "id", className = "KomikindoCo"),
             SingleLang("Readkomik", "https://readkomik.com", "en", className = "ReadKomik"),
             SingleLang("MangaIndonesia", "https://mangaindonesia.net", "id"),
             SingleLang("Liebe Schnee Hiver", "https://www.liebeschneehiver.com", "tr"),

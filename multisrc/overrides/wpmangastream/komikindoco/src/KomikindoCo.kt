@@ -5,7 +5,10 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-class KomikindoCo : WPMangaStream("Komikindo.co", "https://komikindo.co", "id") {
+class KomikindoCo : WPMangaStream("KomikIndo.co", "https://komikindo.co", "id") {
+    // Formerly "Komikindo.co"
+    override val id = 734619124437406170
+
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()

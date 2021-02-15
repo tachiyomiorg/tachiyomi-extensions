@@ -10,7 +10,7 @@ import okhttp3.OkHttpClient
 class Kiryuu : WPMangaStream("Kiryuu", "https://kiryuu.co", "id") {
     // Formerly "Kiryuu (WP Manga Stream)"
     override val id = 3639673976007021338
-    
+
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
