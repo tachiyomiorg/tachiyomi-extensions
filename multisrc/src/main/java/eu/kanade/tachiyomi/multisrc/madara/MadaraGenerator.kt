@@ -137,7 +137,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Mangazuki.online", "http://mangazukinew.online", "en", className = "MangazukiOnline"),
             SingleLang("ManhuaBox", "https://manhuabox.net", "en"),
             SingleLang("ManhuaFast", "https://manhuafast.com", "en"),
-            SingleLang("Manhuaga", "https://manhuaga.com", "en"),
+            SingleLang("Manhuaga", "https://manhuaga.com", "en", overrideVersionCode = 1),
             SingleLang("Manhua Plus", "https://manhuaplus.com", "en", overrideVersionCode = 1),
             SingleLang("Manhuas.net", "https://manhuas.net", "en", className = "Manhuasnet"),
             SingleLang("Manhuas World", "https://manhuasworld.com", "en"),
