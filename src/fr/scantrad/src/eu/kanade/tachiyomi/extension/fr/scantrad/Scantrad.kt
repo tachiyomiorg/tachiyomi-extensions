@@ -44,6 +44,7 @@ class Scantrad : ParsedHttpSource() {
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", generateRandomUserAgent(Random.nextInt(10, 30).absoluteValue))
+        .add("Accept-Language", "fr")
 
     // Popular
 
