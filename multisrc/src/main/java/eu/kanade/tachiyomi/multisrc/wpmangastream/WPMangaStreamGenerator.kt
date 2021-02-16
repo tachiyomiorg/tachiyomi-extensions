@@ -41,7 +41,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("West Manga", "https://westmanga.info", "id"),
             SingleLang("Komik GO", "https://komikgo.com", "id"),
             SingleLang("MangaSwat", "https://mangaswat.com", "ar"),
-            SingleLang("Manga Raw", "https://mangaraw.org", "ja"),
+            SingleLang("Manga Raw.org", "https://mangaraw.org", "ja", className = "MangaRawOrg", overrideVersionCode = 1),
             SingleLang("Matakomik", "https://matakomik.com", "id"),
             SingleLang("Manga Pro Z", "https://mangaproz.com", "ar"),
             SingleLang("Silence Scan", "https://silencescan.net", "pt-BR"),

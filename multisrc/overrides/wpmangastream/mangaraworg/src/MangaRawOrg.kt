@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.ja.mangaraw
+package eu.kanade.tachiyomi.extension.ja.mangaraworg
 
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.network.GET
@@ -17,7 +17,10 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 
-class MangaRaw : WPMangaStream("Manga Raw", "https://mangaraw.org", "ja") {
+class MangaRawOrg : WPMangaStream("Manga Raw.org", "https://mangaraw.org", "ja") {
+    // Formerly "Manga Raw" from WPMangaStream
+    override val id = 6223520752496636410
+
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
