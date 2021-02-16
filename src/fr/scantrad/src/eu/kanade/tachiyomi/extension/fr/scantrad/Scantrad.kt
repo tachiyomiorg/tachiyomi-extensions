@@ -42,17 +42,8 @@ class Scantrad : ParsedHttpSource() {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
-    protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
-    protected open val userAgentRandomizer2 = "${Random.nextInt(10,99).absoluteValue}"
-    protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
-
-    override fun headersBuilder() = Headers.Builder().apply {
-        add(
-            "User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/8$userAgentRandomizer1.0.4$userAgentRandomizer3.1$userAgentRandomizer2 Safari/537.36"
-        )
-    }
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", generateRandomUserAgent(Random.nextInt(10, 30).absoluteValue))
 
     // Popular
 
@@ -224,4 +215,13 @@ class Scantrad : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
+
+    // Misc
+
+    private fun generateRandomUserAgent(length: Int): String {
+        val allowedChars: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+        return (1..length)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
 }
