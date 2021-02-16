@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.earlymanga
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -15,6 +16,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class EarlyManga : ParsedHttpSource() {
 
@@ -26,7 +28,13 @@ class EarlyManga : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    private val rateLimitInterceptor = RateLimitInterceptor(1) // 1 request per second
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.151 Safari/537.36")
@@ -119,8 +127,9 @@ class EarlyManga : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select(".col-lg-5 a").attr("href"))
-        val access = element.select(".col-lg-5 a .d-none").text()
-        name = element.select(".col-lg-5 a").text().substringAfter(access)
+        val access = element.select(".col-lg-5 a .d-none, .col-lg-5 a div, .col-lg-5 a span, .col-lg-5 a .dis-none, .col-lg-5 a *").text()
+        name = element.select(".col-lg-5 a").text().substringAfter(access).substringAfter("You need to access the site through the browser to read ").substringAfter("Chapter")
+        if (!name.contains("chapter", true)) { name = "Chapter" + name }
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
 
@@ -130,7 +139,10 @@ class EarlyManga : ParsedHttpSource() {
 
     // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(".chapter-images-container-inside img").mapIndexed { i, element ->
+        return document.select(
+            ".chapter-images-container-inside img, .chapter-images-container-interior img, " +
+                ".chapter_images-container img, .JP-manga img, .grad img, img[src*=/manga/]"
+        ).mapIndexed { i, element ->
             Page(i, "", element.attr("abs:src"))
         }
     }
