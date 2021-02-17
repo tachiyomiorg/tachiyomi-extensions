@@ -126,8 +126,8 @@ class EarlyManga : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]) a[href*=chapter]:not([style*=display:])").attr("href"))
-        name = element.select(".col>.row>.col-lg-5:not([style*=display:]) a[href*=chapter]:not([style*=display:])").attr("href").substringAfter("chapter")
+        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not(.d-none) a[href*=chapter]:not([style*=display:])").attr("href"))
+        name = element.select(".col>.row>.col-lg-5:not([style*=display:]):not(.d-none) a[href*=chapter]:not([style*=display:])").attr("href").substringAfter("chapter")
         name = "Chapter" + name
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
@@ -138,7 +138,8 @@ class EarlyManga : ParsedHttpSource() {
 
     // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("img[src*=manga],img[src*=chapter],div>div>img[src]"
+        return document.select(
+            "img[src*=manga],img[src*=chapter],div>div>img[src]"
         ).mapIndexed { i, element ->
             Page(i, "", element.attr("abs:src"))
         }
