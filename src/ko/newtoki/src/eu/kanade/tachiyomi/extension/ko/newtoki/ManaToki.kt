@@ -16,7 +16,7 @@ import rx.Observable
 import java.util.concurrent.TimeUnit
 
 /*
- * ManaToki Is too big to support in a Factory File., So split into separate file.
+ * ManaToki is too big to support in a Factory File., So split into separate file.
  */
 
 class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domainNumber.net", "comic") {
@@ -104,10 +104,7 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/comic" + (if (page > 1) "/p$page" else ""))!!.newBuilder()
 
-        if (!query.isBlank()) {
-            url.addQueryParameter("stx", query)
-            return GET(url.toString())
-        }
+        val genres = mutableListOf<String>()
 
         filters.forEach { filter ->
             when (filter) {
@@ -124,33 +121,56 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
                 }
 
                 is SearchGenreTypeList -> {
-                    if (filter.state > 0) {
-                        url.addQueryParameter("tag", filter.values[filter.state])
+                    filter.state.forEach {
+                        if (it.state) {
+                            genres.add(it.id)
+                        }
                     }
+                }
+
+                is SearchSortTypeList -> {
+                    if (filter.state > 0) {
+                        url.addQueryParameter("sst", listOf("wr_datetime", "wr_hit", "wr_good")[filter.state])
+                    }
+                }
+
+                is SearchOrderTypeList -> {
+                    url.addQueryParameter("sod", listOf("desc", "asc")[filter.state])
                 }
             }
         }
 
+        if (query.isNotBlank()) {
+            url.addQueryParameter("stx", query)
+
+            // Remove some filter QueryParams that not working with query
+            url.setQueryParameter("publish", null)
+            url.setQueryParameter("jaum", null)
+
+            return GET(url.toString())
+        }
+
+        url.addQueryParameter("tag", genres.joinToString(","))
         return GET(url.toString())
     }
 
-    // [...document.querySelectorAll("form.form td")[2].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchCheckBox(name: String, val id: String = name) : Filter.CheckBox(name)
+
+    // [...document.querySelectorAll("form.form td")[3].querySelectorAll("span.btn")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
     private class SearchPublishTypeList : Filter.Select<String>(
         "Publish",
         arrayOf(
             "전체",
-            "미분류",
             "주간",
             "격주",
             "월간",
-            "격월/비정기",
             "단편",
             "단행본",
             "완결"
         )
     )
 
-    // [...document.querySelectorAll("form.form td")[3].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    // [...document.querySelectorAll("form.form td")[4].querySelectorAll("span.btn")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
     private class SearchJaumTypeList : Filter.Select<String>(
         "Jaum",
         arrayOf(
@@ -174,9 +194,9 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
         )
     )
 
-    // [...document.querySelectorAll("form.form td")[4].querySelectorAll("a")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
-    private class SearchGenreTypeList : Filter.Select<String>(
-        "Genre",
+    // [...document.querySelectorAll("form.form td")[6].querySelectorAll("span.btn")].map((el, i) => `"${el.innerText.trim()}"`).join(',\n')
+    private class SearchGenreTypeList : Filter.Group<SearchCheckBox>(
+        "Genres",
         arrayOf(
             "전체",
             "17",
@@ -185,40 +205,53 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
             "TS",
             "개그",
             "게임",
-            "공포",
             "도박",
             "드라마",
             "라노벨",
             "러브코미디",
-            "로맨스",
             "먹방",
-            "미스터리",
             "백합",
             "붕탁",
-            "성인",
             "순정",
             "스릴러",
             "스포츠",
             "시대",
             "애니화",
             "액션",
-            "역사",
             "음악",
             "이세계",
             "일상",
-            "일상+치유",
             "전생",
             "추리",
             "판타지",
             "학원",
             "호러"
+        ).map { SearchCheckBox(it) }
+    )
+
+    private class SearchSortTypeList : Filter.Select<String>(
+        "Sort",
+        arrayOf(
+            "기본",
+            "인기순",
+            "추천순"
+        )
+    )
+
+    private class SearchOrderTypeList : Filter.Select<String>(
+        "Order",
+        arrayOf(
+            "Descending",
+            "Ascending"
         )
     )
 
     override fun getFilterList() = FilterList(
-        Filter.Header("Filter can't use with query"),
+        Filter.Header("Some filters can't use with query"),
         SearchPublishTypeList(),
         SearchJaumTypeList(),
+        SearchSortTypeList(),
+        SearchOrderTypeList(),
         SearchGenreTypeList()
     )
 }

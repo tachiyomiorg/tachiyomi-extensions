@@ -42,7 +42,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
     protected val rateLimitedClient: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(RateLimitInterceptor(2, 5))
+        .addNetworkInterceptor(RateLimitInterceptor(1))
         .build()
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
