@@ -70,7 +70,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Hunter Fansub", "https://hunterfansub.com", "es"),
             SingleLang("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR"),
             SingleLang("Immortal Updates", "https://immortalupdates.com", "en"),
-            SingleLang("IsekaiScan.com", "https://isekaiscan.com", "en", className = "IsekaiScanCom"),
+            SingleLang("IsekaiScan.com", "https://isekaiscan.com", "en", className = "IsekaiScanCom", overrideVersionCode = 1),
             SingleLang("Its Your Right Manhua", "https://itsyourightmanhua.com/", "en"),
             SingleLang("JJutsuScans", "https://jjutsuscans.com", "en"),
             SingleLang("Just For Fun", "https://just-for-fun.ru", "ru"),
@@ -146,7 +146,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manhwa Raw", "https://manhwaraw.com", "ko"),
             SingleLang("Manhwatop", "https://manhwatop.com", "en"),
             SingleLang("Manwahentai.me", "https://manhwahentai.me", "en", className = "ManwahentaiMe", isNsfw = true),
-            SingleLang("Manhwa.club", "https://manhwa.club", "en", className="ManwhaClub", overrideVersionCode = 1), // wrong class name for backward compatibility
+            SingleLang("Manhwa.club", "https://manhwa.club", "en", className="ManwhaClub", overrideVersionCode = 2), // wrong class name for backward compatibility
             SingleLang("ManyToon", "https://manytoon.com", "en"),
             SingleLang("ManyToonClub", "https://manytoon.club", "ko"),
             SingleLang("ManyToon.me", "https://manytoon.me", "en", className = "ManyToonMe"),
