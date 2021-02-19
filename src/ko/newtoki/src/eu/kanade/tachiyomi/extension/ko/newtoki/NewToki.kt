@@ -57,31 +57,14 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         return manga
     }
 
-    override fun popularMangaNextPageSelector() = "ul.pagination > li:not(.disabled)"
+    override fun popularMangaNextPageSelector() = "ul.pagination > li:last-child:not(.disabled)"
 
     // Do not add page parameter if page is 1 to prevent tracking.
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/$boardName" + if (page > 1) "/p$page" else "")
 
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-
-        val mangas = document.select(popularMangaSelector()).map { element ->
-            popularMangaFromElement(element)
-        }
-
-        val hasNextPage = try {
-            !document.select(popularMangaNextPageSelector()).last().hasClass("active")
-        } catch (_: Exception) {
-            false
-        }
-
-        return MangasPage(mangas, hasNextPage)
-    }
-
     override fun searchMangaSelector() = popularMangaSelector()
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
-    override fun searchMangaNextPageSelector() = popularMangaSelector()
-    override fun searchMangaParse(response: Response) = popularMangaParse(response)
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = GET("$baseUrl/$boardName" + (if (page > 1) "/p$page" else "") + "?stx=$query")
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
@@ -253,7 +236,6 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
     override fun latestUpdatesRequest(page: Int) = popularMangaRequest(page)
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
-    override fun latestUpdatesParse(response: Response) = popularMangaParse(response)
 
     // We are able to get the image URL directly from the page list
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("This method should not be called!")
