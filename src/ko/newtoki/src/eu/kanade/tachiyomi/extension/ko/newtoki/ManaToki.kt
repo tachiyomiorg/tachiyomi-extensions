@@ -129,7 +129,7 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
                 }
 
                 is SearchSortTypeList -> {
-                    url.addQueryParameter("sst", listOf("wr_datetime", "wr_hit", "wr_good")[filter.state])
+                    url.addQueryParameter("sst", listOf("wr_datetime", "wr_hit", "wr_good", "as_update")[filter.state])
                 }
 
                 is SearchOrderTypeList -> {
@@ -232,7 +232,8 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
         arrayOf(
             "기본",
             "인기순",
-            "추천순"
+            "추천순",
+            "업데이트순"
         )
     )
 
