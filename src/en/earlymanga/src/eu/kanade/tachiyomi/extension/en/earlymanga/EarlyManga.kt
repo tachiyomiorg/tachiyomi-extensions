@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.earlymanga
 
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -16,7 +15,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 class EarlyManga : ParsedHttpSource() {
 
@@ -28,13 +26,7 @@ class EarlyManga : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1) // 1 request per second
-
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .addNetworkInterceptor(rateLimitInterceptor)
-        .build()
+    override val client: OkHttpClient = network.cloudflareClient
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.151 Safari/537.36")
@@ -88,7 +80,7 @@ class EarlyManga : ParsedHttpSource() {
         author = document.select(".author-link a").text()
         artist = document.select(".artist-link a").text()
         status = parseStatus(document.select(".pub_stutus").text())
-        description = document.select(".desc").text()
+        description = document.select(".desc").text().substringAfterLast("____")
         genre = document.select(".manga-info-card a.badge-secondary").joinToString { it.text() }
     }
 
@@ -126,8 +118,8 @@ class EarlyManga : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not([class*=none]) a[href*=chapter]:not([style*=display:])").attr("href"))
-        name = element.select(".col>.row>.col-lg-5:not([style*=display:]):not([class*=none]) a[href*=chapter]:not([style*=display:])").attr("href").substringAfter("chapter")
+        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:has(a[href*=EarlyManga])) a[href*=chapter]:not([style*=display:])").attr("href"))
+        name = element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:has(a[href*=EarlyManga])) a[href*=chapter]:not([style*=display:])").attr("href").substringAfter("chapter")
         name = "Chapter" + name
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
