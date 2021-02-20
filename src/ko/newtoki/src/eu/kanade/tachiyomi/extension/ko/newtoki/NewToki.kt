@@ -305,7 +305,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             key = RATE_LIMIT_PERIOD_PREF_TITLE
             title = RATE_LIMIT_PERIOD_PREF_TITLE
             summary = RATE_LIMIT_PERIOD_PREF_SUMMARY
-            this.setDefaultValue(defaultRateLimitPeriod)
+            this.setDefaultValue(defaultRateLimitPeriod.toString())
             dialogTitle = RATE_LIMIT_PERIOD_PREF_TITLE
             dialogMessage = "Min 1 to Max 9, Invalid value will treat as $defaultRateLimitPeriod. Only Integer.\nDefault: $defaultRateLimitPeriod"
 
@@ -395,7 +395,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             key = RATE_LIMIT_PERIOD_PREF_TITLE
             title = RATE_LIMIT_PERIOD_PREF_TITLE
             summary = RATE_LIMIT_PERIOD_PREF_SUMMARY
-            this.setDefaultValue(defaultRateLimitPeriod)
+            this.setDefaultValue(defaultRateLimitPeriod.toString())
             dialogTitle = RATE_LIMIT_PERIOD_PREF_TITLE
             dialogMessage = "Min 1 to Max 9, Invalid value will treat as $defaultRateLimitPeriod. Only Integer.\nDefault: $defaultRateLimitPeriod"
 
@@ -469,9 +469,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         private const val RATE_LIMIT_PERIOD_PREF_TITLE = "Rate Limit Request Period Seconds"
         private const val RATE_LIMIT_PERIOD_PREF = "rateLimitPeriod"
         private const val RATE_LIMIT_PERIOD_PREF_SUMMARY =
-            "As Source is using Temporary IP ban system to who makes bunch of request, Requests are rate limited\n" +
+            "As Source is using Temporary IP ban system to who makes bunch of request, Some of requests are rate limited\n" +
                 "If you want to reduce limit, Use this option.\n" +
-                "Invalid value will treat as default $defaultRateLimitPeriod seconds. (Valid: Integer 1 ~ 9)`"
+                "Invalid value will treat as default $defaultRateLimitPeriod seconds.\n" +
+                "(Valid: Min 1 to Max 9)"
         private const val RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE = "Invalid value detected. Treating as $defaultRateLimitPeriod..."
 
         const val PREFIX_ID_SEARCH = "id:"
