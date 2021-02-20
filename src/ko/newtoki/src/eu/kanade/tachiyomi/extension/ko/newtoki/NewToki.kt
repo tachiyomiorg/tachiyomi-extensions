@@ -439,7 +439,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
     protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
     protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
-    private fun getRateLimitPeriod(): Long = try { // Check again as preference is bit buggy.
+    private fun getRateLimitPeriod(): Long = try { // Check again as preference is bit weirdly buggy.
         val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, 2L)
         if (v in 1..9) v else 2
     } catch (e: Exception) {
