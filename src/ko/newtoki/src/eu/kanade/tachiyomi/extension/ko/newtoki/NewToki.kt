@@ -41,9 +41,11 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override val lang: String = "ko"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
-    protected val rateLimitedClient: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(RateLimitInterceptor(1, getRateLimitPeriod()))
-        .build()
+    protected val rateLimitedClient: OkHttpClient by lazy {
+        network.cloudflareClient.newBuilder()
+            .addNetworkInterceptor(RateLimitInterceptor(1, getRateLimitPeriod()))
+            .build()
+    }
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
 
@@ -70,7 +72,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
             val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
             val urlPath = "/$boardName/$realQuery"
-            client.newCall(GET("$baseUrl$urlPath"))
+            rateLimitedClient.newCall(GET("$baseUrl$urlPath"))
                 .asObservableSuccess()
                 .map { response ->
                     // the id is matches any of 'post' from their CMS board.
@@ -96,7 +98,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
             fullListButton?.text()?.contains("전체목록") == true -> { // Check this page is chapter page
                 val url = fullListButton.attr("abs:href")
-                val details = mangaDetailsParse(client.newCall(GET(url)).execute())
+                val details = mangaDetailsParse(rateLimitedClient.newCall(GET(url)).execute())
                 details.url = getUrlPath(url)
                 listOf(details)
             }
@@ -316,7 +318,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
                     var value = p ?: defaultRateLimitPeriod
                     if (p == null || value !in 1..9) {
                         Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
-                        value = 2
+                        value = defaultRateLimitPeriod
                     }
                     val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
                     Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
@@ -406,7 +408,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
                     var value = p ?: defaultRateLimitPeriod
                     if (p == null || value !in 1..9) {
                         Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
-                        value = 2
+                        value = defaultRateLimitPeriod
                     }
                     val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
                     Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
@@ -438,7 +440,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
     protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
     private fun getRateLimitPeriod(): Long = try { // Check again as preference is bit buggy.
-        val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, 2)
+        val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, 2L)
         if (v in 1..9) v else 2
     } catch (e: Exception) {
         2
