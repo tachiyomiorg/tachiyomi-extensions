@@ -42,7 +42,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
     protected val rateLimitedClient: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addNetworkInterceptor(RateLimitInterceptor(1))
+        .addNetworkInterceptor(RateLimitInterceptor(1, getRateLimitPeriod()))
         .build()
 
     override fun popularMangaSelector() = "div#webtoon-list > ul > li"
@@ -88,20 +88,20 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         // only exists on chapter with proper manga detail page.
         val fullListButton = document.select(".comic-navbar .toon-nav a").last()
 
-        val list: List<SManga> = if (firstChapterButton?.text()?.contains("첫회보기")
-            ?: false
-        ) { // Check this page is detail page
-            val details = mangaDetailsParse(document)
-            details.url = urlPath
-            listOf(details)
-        } else if (fullListButton?.text()?.contains("전체목록")
-            ?: false
-        ) { // Check this page is chapter page
-            val url = fullListButton.attr("abs:href")
-            val details = mangaDetailsParse(client.newCall(GET(url)).execute())
-            details.url = getUrlPath(url)
-            listOf(details)
-        } else emptyList()
+        val list: List<SManga> = when {
+            firstChapterButton?.text()?.contains("첫회보기") == true -> { // Check this page is detail page
+                val details = mangaDetailsParse(document)
+                details.url = urlPath
+                listOf(details)
+            }
+            fullListButton?.text()?.contains("전체목록") == true -> { // Check this page is chapter page
+                val url = fullListButton.attr("abs:href")
+                val details = mangaDetailsParse(client.newCall(GET(url)).execute())
+                details.url = getUrlPath(url)
+                listOf(details)
+            }
+            else -> emptyList()
+        }
 
         return MangasPage(list, false)
     }
@@ -301,11 +301,38 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val rateLimitPeriodPref = androidx.preference.EditTextPreference(screen.context).apply {
+            key = RATE_LIMIT_PERIOD_PREF_TITLE
+            title = RATE_LIMIT_PERIOD_PREF_TITLE
+            summary = RATE_LIMIT_PERIOD_PREF_SUMMARY
+            this.setDefaultValue(defaultRateLimitPeriod)
+            dialogTitle = RATE_LIMIT_PERIOD_PREF_TITLE
+            dialogMessage = "Min 1 to Max 9, Invalid value will treat as $defaultRateLimitPeriod. Only Integer.\nDefault: $defaultRateLimitPeriod"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    // Make sure to validate the value.
+                    val p = (newValue as String).toLongOrNull(10)
+                    val value = p ?: defaultRateLimitPeriod
+                    if (p == null || (value < 1 || value > 10)) {
+                        Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
+                    }
+                    val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         if (name == "ManaToki") {
             screen.addPreference(latestExperimentPref)
             screen.addPreference(latestWithDetailPref)
         }
+        screen.addPreference(rateLimitPeriodPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -363,11 +390,38 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             }
         }
 
+        val rateLimitPeriodPref = EditTextPreference(screen.context).apply {
+            key = RATE_LIMIT_PERIOD_PREF_TITLE
+            title = RATE_LIMIT_PERIOD_PREF_TITLE
+            summary = RATE_LIMIT_PERIOD_PREF_SUMMARY
+            this.setDefaultValue(defaultRateLimitPeriod)
+            dialogTitle = RATE_LIMIT_PERIOD_PREF_TITLE
+            dialogMessage = "Min 1 to Max 9, Invalid value will treat as $defaultRateLimitPeriod. Only Integer.\nDefault: $defaultRateLimitPeriod"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    // Make sure to validate the value.
+                    val p = (newValue as String).toLongOrNull(10)
+                    val value = p ?: defaultRateLimitPeriod
+                    if (p == null || (value < 1 || value > 10)) {
+                        Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
+                    }
+                    val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
+                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(baseUrlPref)
         if (name == "ManaToki") {
             screen.addPreference(latestExperimentPref)
             screen.addPreference(latestWithDetailPref)
         }
+        screen.addPreference(rateLimitPeriodPref)
     }
 
     protected fun getUrlPath(orig: String): String {
@@ -381,6 +435,12 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     private fun getPrefBaseUrl(): String = preferences.getString(BASE_URL_PREF, defaultBaseUrl)!!
     protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
     protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
+    private fun getRateLimitPeriod(): Long = try { // Check again as preference is bit buggy.
+        val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, 2)
+        if (v < 1 || v > 10) v else 2
+    } catch (e: Exception) {
+        2
+    }
 
     companion object {
         private const val RESTART_TACHIYOMI = "Restart Tachiyomi to apply new setting."
@@ -401,6 +461,16 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             "Parse latest manga details with detail pages. This will reduce DB corruption on certain Tachiyomi builds.\n" +
                 "But makes chance of IP Ban, Also makes bunch of requests, For prevent IP ban, rate limit is set. so may slow,\n" +
                 "Still, It's experiment. Required to enable `Enable Latest (Experimental).`"
+
+        // Settings: Rate Limit Period
+        private const val defaultRateLimitPeriod: Long = 2
+        private const val RATE_LIMIT_PERIOD_PREF_TITLE = "Rate Limit Request Period Seconds"
+        private const val RATE_LIMIT_PERIOD_PREF = "rateLimitPeriod"
+        private const val RATE_LIMIT_PERIOD_PREF_SUMMARY =
+            "As Source is using Temporary IP ban system to who makes bunch of request, Requests are rate limited\n" +
+                "If you want to reduce limit, Use this option.\n" +
+                "Invalid value will treat as default $defaultRateLimitPeriod seconds. (Valid: Integer 1 ~ 9)`"
+        private const val RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE = "Invalid value detected. Treating as $defaultRateLimitPeriod..."
 
         const val PREFIX_ID_SEARCH = "id:"
     }

@@ -230,7 +230,7 @@ class ManaToki(domainNumber: Long) : NewToki("ManaToki", "https://manatoki$domai
     private class SearchSortTypeList : Filter.Select<String>(
         "Sort",
         arrayOf(
-            "기본",
+            "기본(날짜순)",
             "인기순",
             "추천순",
             "업데이트순"

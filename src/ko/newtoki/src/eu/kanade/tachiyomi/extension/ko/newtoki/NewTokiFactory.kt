@@ -146,7 +146,7 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
     private class SearchSortTypeList : Filter.Select<String>(
         "Sort",
         arrayOf(
-            "기본",
+            "기본(업데이트순)",
             "인기순",
             "추천순",
         )
