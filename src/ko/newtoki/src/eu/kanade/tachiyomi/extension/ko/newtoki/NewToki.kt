@@ -313,9 +313,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
                 try {
                     // Make sure to validate the value.
                     val p = (newValue as String).toLongOrNull(10)
-                    val value = p ?: defaultRateLimitPeriod
-                    if (p == null || (value < 1 || value > 10)) {
+                    var value = p ?: defaultRateLimitPeriod
+                    if (p == null || value !in 1..9) {
                         Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
+                        value = 2
                     }
                     val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
                     Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
@@ -402,9 +403,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
                 try {
                     // Make sure to validate the value.
                     val p = (newValue as String).toLongOrNull(10)
-                    val value = p ?: defaultRateLimitPeriod
-                    if (p == null || (value < 1 || value > 10)) {
+                    var value = p ?: defaultRateLimitPeriod
+                    if (p == null || value !in 1..9) {
                         Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
+                        value = 2
                     }
                     val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
                     Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
@@ -437,7 +439,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
     private fun getRateLimitPeriod(): Long = try { // Check again as preference is bit buggy.
         val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, 2)
-        if (v < 1 || v > 10) v else 2
+        if (v in 1..9) v else 2
     } catch (e: Exception) {
         2
     }
