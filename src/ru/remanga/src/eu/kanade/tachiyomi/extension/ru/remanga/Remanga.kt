@@ -135,7 +135,9 @@ class Remanga : ConfigurableSource, HttpSource() {
             // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
-            thumbnail_url = "$baseUrl/${img.high}"
+            thumbnail_url = if (img.high.isNotEmpty()) {
+                "$baseUrl/${img.high}"
+            } else "$baseUrl/${img.mid}"
         }
 
     private val simpleDateFormat by lazy { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US) }
@@ -244,7 +246,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             }
     }
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET(baseUrl + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
+        return GET(baseUrl.replace("api.", "") + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
     }
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
