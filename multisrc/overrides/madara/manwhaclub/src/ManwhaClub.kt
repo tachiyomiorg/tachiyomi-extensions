@@ -28,7 +28,7 @@ class ManwhaClub : Madara("Manhwa.club", "https://manhwa.club", "en") {
         Genre("Psychological", "psychological"),
         Genre("Revenge", "revenge"),
         Genre("Romance", "romance"),
-        Genre("School LIfe", "school-life"),
+        Genre("School Life", "school-life"),
         Genre("Sci Fi", "sci-fi"),
         Genre("Seinen", "seinen"),
         Genre("Shoujo", "shoujo"),
