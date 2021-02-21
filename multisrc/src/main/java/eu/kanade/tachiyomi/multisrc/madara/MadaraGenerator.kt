@@ -94,7 +94,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaBob", "https://mangabob.com", "en"),
             SingleLang("Manga Chill", "https://mangachill.com/", "en"),
             SingleLang("Manga Clash", "https://mangaclash.com", "en"),
-            SingleLang("Manga Crimson", "https://mangacrimson.com", "tr"),
             SingleLang("MangaCultivator", "https://mangacultivator.com", "en"),
             SingleLang("MangaDods", "https://www.mangadods.com", "en"),
             SingleLang("MangaEffect", "https://mangaeffect.com", "en"),
