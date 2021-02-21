@@ -15,6 +15,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class EarlyManga : ParsedHttpSource() {
 
@@ -28,8 +30,16 @@ class EarlyManga : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
+    protected open val userAgentRandomizer2 = "${Random.nextInt(10,99).absoluteValue}"
+    protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.151 Safari/537.36")
+        .add(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/8$userAgentRandomizer1.0.4$userAgentRandomizer3.1$userAgentRandomizer2 Safari/537.36"
+        )
         .add("Referer", baseUrl)
 
     // popular
@@ -80,7 +90,7 @@ class EarlyManga : ParsedHttpSource() {
         author = document.select(".author-link a").text()
         artist = document.select(".artist-link a").text()
         status = parseStatus(document.select(".pub_stutus").text())
-        description = document.select(".desc").text().substringAfterLast("____")
+        description = document.select(".desc:not([class*=none])").text()
         genre = document.select(".manga-info-card a.badge-secondary").joinToString { it.text() }
     }
 
@@ -118,9 +128,8 @@ class EarlyManga : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:has(a[href*=EarlyManga])) a[href*=chapter]:not([style*=display:])").attr("href"))
-        name = element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:has(a[href*=EarlyManga])) a[href*=chapter]:not([style*=display:])").attr("href").substringAfter("chapter")
-        name = "Chapter" + name
+        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):has(a[href*=chapter-]) a[href*=chapter]:not([style*=display:])").attr("href"))
+        name = "Chapter" + url.substringAfter("chapter")
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
 
