@@ -440,10 +440,10 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
     protected fun getExperimentLatest(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_PREF, false)
     protected fun getLatestWithDetail(): Boolean = preferences.getBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, false)
     private fun getRateLimitPeriod(): Long = try { // Check again as preference is bit weirdly buggy.
-        val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, 2L)
-        if (v in 1..9) v else 2
+        val v = preferences.getLong(RATE_LIMIT_PERIOD_PREF, defaultRateLimitPeriod)
+        if (v in 1..9) v else defaultRateLimitPeriod
     } catch (e: Exception) {
-        2
+        defaultRateLimitPeriod
     }
 
     companion object {
@@ -467,7 +467,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
                 "Still, It's experiment. Required to enable `Enable Latest (Experimental).`"
 
         // Settings: Rate Limit Period
-        private const val defaultRateLimitPeriod: Long = 2
+        private const val defaultRateLimitPeriod: Long = 2L
         private const val RATE_LIMIT_PERIOD_PREF_TITLE = "Rate Limit Request Period Seconds"
         private const val RATE_LIMIT_PERIOD_PREF = "rateLimitPeriod"
         private const val RATE_LIMIT_PERIOD_PREF_SUMMARY =
