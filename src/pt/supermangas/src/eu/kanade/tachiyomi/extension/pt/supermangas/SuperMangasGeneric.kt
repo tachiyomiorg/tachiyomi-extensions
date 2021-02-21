@@ -147,7 +147,7 @@ abstract class SuperMangasGeneric(
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesFromElement(element: Element) = genericMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element) = genericMangaFromElement(element, "data-src")
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
@@ -370,7 +370,7 @@ abstract class SuperMangasGeneric(
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 

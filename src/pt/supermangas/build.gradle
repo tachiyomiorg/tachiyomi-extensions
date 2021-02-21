@@ -5,7 +5,7 @@ ext {
     extName = 'Super Mangás'
     pkgNameSuffix = 'pt.supermangas'
     extClass = '.SuperMangasFactory'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
     containsNsfw = true
 }

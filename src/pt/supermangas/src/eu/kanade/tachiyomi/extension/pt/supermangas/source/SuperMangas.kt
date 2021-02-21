@@ -6,12 +6,19 @@ import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.FormBody
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 
 class SuperMangas : SuperMangasGeneric(
     "Super Mangás",
     "https://supermangas.site"
 ) {
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(::tempCoverImageFixIntercept)
+        .build()
+
     override val contentList = listOf(
         Triple("100", "", "Todos"),
         Triple("6", "", "Mangá"),
@@ -33,8 +40,26 @@ class SuperMangas : SuperMangasGeneric(
         super.chapterListPaginatedBody(idCategory, page, totalPage)
             .add("order_audio", "pt-br")
 
+    private fun tempCoverImageFixIntercept(chain: Interceptor.Chain): Response {
+        val requestUrl = chain.request().url().toString()
+
+        if (requestUrl.contains(IMG_CDN_URL) && requestUrl.contains("?src=")) {
+            val newUrl = requestUrl
+                .replace("?src=", "")
+                .replaceFirst("&", "?")
+
+            val newRequest = chain.request().newBuilder()
+                .url(newUrl)
+                .build()
+
+            return chain.proceed(newRequest)
+        }
+
+        return chain.proceed(chain.request())
+    }
+
     override fun getFilterList() = FilterList(
-        Filter.Header("Filtros abaixo são ignorados na busca!"),
+        Filter.Header("Os filtros abaixo são ignorados na busca!"),
         ContentFilter(contentList),
         LetterFilter(),
         StatusFilter(),
@@ -108,4 +133,8 @@ class SuperMangas : SuperMangasGeneric(
         Tag("70", "War"),
         Tag("15", "Yuri")
     )
+
+    companion object {
+        private const val IMG_CDN_URL = "https://img.supermangas.site"
+    }
 }
