@@ -40,7 +40,7 @@ abstract class MangasProject(
 
     // Sometimes the site is slow.
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(30, 1, TimeUnit.MINUTES))
+        .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
