@@ -151,7 +151,7 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         val rawName = linkElement.ownText().trim()
 
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(linkElement.attr("href"))
+        chapter.url = getUrlWithoutDomainWithFallback(linkElement.attr("href"))
         chapter.chapter_number = parseChapterNumber(rawName)
         chapter.name = rawName
         chapter.date_upload = parseChapterDate(element.select(".wr-date").last().text().trim())
@@ -433,6 +433,24 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
             URI(orig).path
         } catch (e: URISyntaxException) {
             orig
+        }
+    }
+
+    // This is just replicate of original method but with fallback.
+    protected fun getUrlWithoutDomainWithFallback(orig: String): String {
+        return try {
+            val uri = URI(orig)
+            var out = uri.path
+            if (uri.query != null) {
+                out += "?" + uri.query
+            }
+            if (uri.fragment != null) {
+                out += "#" + uri.fragment
+            }
+            out
+        } catch (e: URISyntaxException) {
+            // fallback method. may not work.
+            orig.substringAfter(baseUrl)
         }
     }
 
