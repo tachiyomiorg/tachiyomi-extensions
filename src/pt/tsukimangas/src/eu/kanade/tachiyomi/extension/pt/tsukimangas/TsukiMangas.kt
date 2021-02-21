@@ -39,10 +39,8 @@ class TsukiMangas : HttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(100, 1, TimeUnit.MINUTES)
-
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(rateLimitInterceptor)
+        .addInterceptor(RateLimitInterceptor(3, 1, TimeUnit.SECONDS))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -183,39 +181,22 @@ class TsukiMangas : HttpSource() {
         }
     }
 
-    override fun chapterListRequest(manga: SManga): Request = chapterListRequestPaginated(manga.url, 1)
-
-    private fun chapterListRequestPaginated(mangaUrl: String, page: Int): Request {
-        val mangaId = mangaUrl.substringAfter("obra/").substringBefore("/")
+    override fun chapterListRequest(manga: SManga): Request {
+        val mangaId = manga.url.substringAfter("obra/").substringBefore("/")
 
         val newHeaders = headersBuilder()
-            .set("Referer", baseUrl + mangaUrl)
+            .set("Referer", baseUrl + manga.url)
             .build()
 
-        return GET("$baseUrl/api/v2/chapters?manga_id=$mangaId&order=desc&page=$page", newHeaders)
+        return GET("$baseUrl/api/v2/chapters/$mangaId/all", newHeaders)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        var result = response.asJson().obj
-
         val mangaUrl = response.request().header("Referer")!!.substringAfter(baseUrl)
-        var page = 2
-        val lastPage = result["lastPage"].int
 
-        val chapters = result["data"].array
+        return response.asJson().array
             .flatMap { chapterListItemParse(it.obj, mangaUrl) }
-            .toMutableList()
-
-        while (page <= lastPage) {
-            val newRequest = chapterListRequestPaginated(mangaUrl, page++)
-            result = client.newCall(newRequest).execute().asJson().obj
-
-            chapters += result["data"].array
-                .flatMap { chapterListItemParse(it.obj, mangaUrl) }
-                .toMutableList()
-        }
-
-        return chapters
+            .reversed()
     }
 
     private fun chapterListItemParse(obj: JsonObject, mangaUrl: String): List<SChapter> {
