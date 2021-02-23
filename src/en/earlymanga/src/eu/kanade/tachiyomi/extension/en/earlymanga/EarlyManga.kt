@@ -90,7 +90,7 @@ class EarlyManga : ParsedHttpSource() {
         author = document.select(".author-link a").text()
         artist = document.select(".artist-link a").text()
         status = parseStatus(document.select(".pub_stutus").text())
-        description = document.select(".desc:not([class*=none])").text()
+        description = document.select(".desc:not([class*=none])").text().replace("_", "")
         genre = document.select(".manga-info-card a.badge-secondary").joinToString { it.text() }
     }
 
@@ -128,8 +128,8 @@ class EarlyManga : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):has(a[href*=chapter-]) a[href*=chapter]:not([style*=display:])").attr("href"))
-        name = "Chapter" + url.substringAfter("chapter")
+        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:nth-child(2)) a[href*=chapter]:not([style*=display:])").attr("href"))
+        name = "Chapter " + url.substringAfter("chapter-")
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
 
