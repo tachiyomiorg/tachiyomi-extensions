@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'MangaHost'
+    extName = 'Mangá Host'
     pkgNameSuffix = 'pt.mangahost'
     extClass = '.MangaHost'
-    extVersionCode = 17
+    extVersionCode = 18
     libVersion = '1.2'
 }
 

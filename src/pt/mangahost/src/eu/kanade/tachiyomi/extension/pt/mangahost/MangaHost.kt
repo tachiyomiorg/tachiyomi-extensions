@@ -30,14 +30,14 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahostz.com"
+    override val baseUrl = "https://mangahosted.com"
 
     override val lang = "pt-BR"
 
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(3, 1, TimeUnit.SECONDS))
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -152,6 +152,11 @@ class MangaHost : ParsedHttpSource() {
         chapter_number = element.select("div.pop-title span.btn-caps").text()
             .toFloatOrNull() ?: 1f
         setUrlWithoutDomain(element.select("div.tags a").attr("href"))
+
+        if (scanlator!!.split("/").count() >= 5) {
+            val scanlators = scanlator!!.split("/")
+            scanlator = scanlators[0] + " e mais " + (scanlators.count() - 1)
+        }
     }
 
     /**
@@ -182,7 +187,8 @@ class MangaHost : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
-            .set("Referer", page.url)
+            .set("Accept", ACCEPT_IMAGE)
+            .set("Referer", baseUrl)
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
@@ -220,9 +226,10 @@ class MangaHost : ParsedHttpSource() {
     companion object {
         private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
             "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
