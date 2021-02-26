@@ -12,7 +12,8 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * Sen Manga source
@@ -42,12 +43,12 @@ class SenManga : ParsedHttpSource() {
         it.proceed(request)
     }.build()!!
 
-    override fun popularMangaSelector() = "li.series"
+    override fun popularMangaSelector() = "div.item"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        element.select("p.title a").let {
+        element.select("a").let {
             setUrlWithoutDomain(it.attr("href"))
-            title = it.text()
+            title = it.select("div.series-title").text()
         }
         thumbnail_url = element.select("img").attr("abs:src")
     }
@@ -88,17 +89,17 @@ class SenManga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        title = document.select("div.panel h1.title").text()
+        title = document.select("h1.series").text()
 
-        thumbnail_url = document.select("img[itemprop=image]").first().attr("src")
+        thumbnail_url = document.select("div.cover img").first().attr("src")
 
-        val seriesElement = document.select("ul.series-info")
+        description = document.select("div.summary").first().text()
 
-        description = seriesElement.select("span").text()
-        author = seriesElement.select("li:eq(4)").text().substringAfter(": ")
-        artist = seriesElement.select("li:eq(5)").text().substringAfter(": ")
-        status = seriesElement.select("li:eq(7)").first()?.text().orEmpty().let { parseStatus(it.substringAfter("Status:")) }
-        genre = seriesElement.select("li:eq(2) a").joinToString { it.text() }
+        val seriesElement = document.select("div.series-desc .info ")
+
+        genre = seriesElement.select(".item:eq(0)").text().substringAfter(": ")
+        status = seriesElement.select(".item:eq(1)").first()?.text().orEmpty().let { parseStatus(it.substringAfter("Status:")) }
+        author = seriesElement.select(".item:eq(3)").text().substringAfter(": ")
     }
 
     private fun parseStatus(status: String) = when {
@@ -111,7 +112,7 @@ class SenManga : ParsedHttpSource() {
         return GET("$baseUrl/directory/last_update?page=$page", headers)
     }
 
-    override fun chapterListSelector() = "div.group div.element"
+    override fun chapterListSelector() = "ul.chapter-list li"
 
     @SuppressLint("DefaultLocale")
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
@@ -119,42 +120,15 @@ class SenManga : ParsedHttpSource() {
 
         setUrlWithoutDomain(linkElement.attr("href"))
 
-        name = linkElement.text()
+        name = linkElement.first().text()
 
         chapter_number = element.child(0).text().trim().toFloatOrNull() ?: -1f
 
-        date_upload = parseRelativeDate(element.children().last().text().trim().toLowerCase())
+        date_upload = parseDate(element.select("time").attr("datetime"))
     }
 
-    /**
-     * Parses dates in this form:
-     * `11 days ago`
-     */
-    private fun parseRelativeDate(date: String): Long {
-        val trimmedDate = date.split(" ")
-
-        if (trimmedDate[2] != "ago") return 0
-
-        val number = trimmedDate[0].toIntOrNull() ?: return 0
-        val unit = trimmedDate[1].removeSuffix("s") // Remove 's' suffix
-
-        val now = Calendar.getInstance()
-
-        // Map English unit to Java unit
-        val javaUnit = when (unit) {
-            "year" -> Calendar.YEAR
-            "month" -> Calendar.MONTH
-            "week" -> Calendar.WEEK_OF_MONTH
-            "day" -> Calendar.DAY_OF_MONTH
-            "hour" -> Calendar.HOUR
-            "minute" -> Calendar.MINUTE
-            "second" -> Calendar.SECOND
-            else -> return 0
-        }
-
-        now.add(javaUnit, -number)
-
-        return now.timeInMillis
+    private fun parseDate(date: String): Long {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(date)?.time ?: 0
     }
 
     override fun pageListParse(document: Document): List<Page> {
