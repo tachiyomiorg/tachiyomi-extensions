@@ -15,13 +15,15 @@ import rx.Observable
 
 class TwoKinds : HttpSource() {
 
-    override val name = "Keenspot: TwoKinds"
+    override val name = "Keenspot TwoKinds"
 
     override val baseUrl = "https://twokinds.keenspot.com"
 
     override val lang = "en"
 
     override val supportsLatest: Boolean = false
+
+    override val id: Long = 3133607736276627986
 
     // the one and only manga entry
     fun mangaSinglePages(): SManga {
