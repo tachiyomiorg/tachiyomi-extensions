@@ -58,7 +58,7 @@ class MangaFast : ParsedHttpSource() {
         status = parseStatus(document.select(".inftable").text())
         genre = document.select("a[itemprop=genre]").joinToString { it.text() }
         description = document.select("[itemprop=description]").first().text().trim()
-        thumbnail_url = document.select("div.cvr > img").first().attr("src")
+        thumbnail_url = document.select("div.cvr > img").first().attr("src").substringBeforeLast("?resize")
     }
 
     private fun parseStatus(status: String) = when {
