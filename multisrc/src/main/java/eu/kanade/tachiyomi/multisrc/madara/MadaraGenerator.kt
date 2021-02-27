@@ -189,6 +189,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true),
             SingleLang("Shield Manga", "https://shieldmanga.club", "en", overrideVersionCode = 1),
             SingleLang("ShoujoHearts", "http://shoujohearts.com", "en"),
+            SingleLang("SISI GELAP", "https://sisigelap.club/", "id"),
             SingleLang("SiXiang Scans", "http://www.sixiangscans.com", "en"),
             SingleLang("Siyahmelek", "https://siyahmelek.com", "tr", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Skymanga", "https://skymanga.co", "en"),
