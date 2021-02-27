@@ -49,6 +49,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
             SingleLang("xCaliBR Scans", "http://xcalibrscans.com", "en"),
             SingleLang("NoxSubs", "https://noxsubs.com", "tr"),
+            SingleLang("World Romance Translation", "https://wrt.my.id/", "id"),
     )
 
     companion object {

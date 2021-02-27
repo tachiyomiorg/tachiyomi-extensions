@@ -218,7 +218,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("WebtoonXYZ", "https://www.webtoon.xyz", "en"),
             SingleLang("WeScans", "https://wescans.xyz", "en"),
             SingleLang("WoopRead", "https://woopread.com", "en"),
-            SingleLang("World Romance Translation", "https://wrt.my.id/", "id"),
             SingleLang("WuxiaWorld", "https://wuxiaworld.site", "en"),
             SingleLang("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Yokai Jump", "https://yokaijump.fr", "fr"),
