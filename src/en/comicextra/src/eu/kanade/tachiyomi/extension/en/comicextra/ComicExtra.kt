@@ -71,7 +71,7 @@ class ComicExtra : ParsedHttpSource() {
 
     private fun fetchThumbnailURL(url: String) = client.newCall(GET(url, headers)).execute().asJsoup().select("div.movie-l-img > img").attr("src")
 
-    private fun fetchChaptersFromNav(url: String) = client.newCall(GET(url, headers)).execute().asJsoup().select(chapterListSelector())
+    private fun fetchPagesFromNav(url: String) = client.newCall(GET(url, headers)).execute().asJsoup()
 
     override fun popularMangaNextPageSelector() = "div.general-nav > a:contains(Next)"
 
@@ -114,15 +114,20 @@ class ComicExtra : ParsedHttpSource() {
             return chapters
         }
 
-        val links = nav.getElementsByTag("a")
+        val pg2url = nav.select("a:contains(next)").attr("href")
 
-        links.forEach {
-            if (it.text() != "Next") {
-                fetchChaptersFromNav(it.attr("href")).forEach { page ->
-                    chapters.add(chapterFromElement(page))
-                }
+        // recursively build the chapter list
+
+        fun parseChapters(nextURL: String) {
+            val newpage = fetchPagesFromNav(nextURL)
+            newpage.select(chapterListSelector()).forEach {
+                chapters.add(chapterFromElement(it))
             }
+            val newURL = newpage.select(".general-nav a:contains(next)")?.attr("href")
+            if (!newURL.isNullOrBlank()) parseChapters(newURL)
         }
+
+        parseChapters(pg2url)
 
         return chapters
     }
