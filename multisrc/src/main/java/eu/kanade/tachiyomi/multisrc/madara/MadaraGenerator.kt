@@ -48,7 +48,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Disaster Scans", "https://disasterscans.com", "en"),
             SingleLang("DoujinHentai", "https://doujinhentai.net", "es", isNsfw = true),
             SingleLang("DoujinYosh", "https://doujinyosh.work", "id"),
-            SingleLang("Dream Manga", "https://dreammanga.com/", "en"),
+            SingleLang("Dream Manga", "https://en.ruyamanga.com", "en", overrideVersionCode = 1),
             SingleLang("Drope Scan", "https://dropescan.com", "pt-BR"),
             SingleLang("Einherjar Scan", "https://einherjarscans.space", "en"),
             SingleLang("FDM Scan", "https://fdmscan.com", "pt-BR"),
