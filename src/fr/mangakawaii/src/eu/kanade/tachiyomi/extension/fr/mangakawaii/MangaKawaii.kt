@@ -36,14 +36,14 @@ class MangaKawaii : ParsedHttpSource() {
         return Headers.Builder().add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0")
     }
 
-    override fun popularMangaSelector() = "a.hot-manga__item "
+    override fun popularMangaSelector() = "a.hot-manga__item"
     override fun latestUpdatesSelector() = ".section__list-group li div.section__list-group-left"
     override fun searchMangaSelector() = "h1 + ul a[href*=manga]"
     override fun chapterListSelector() = "tr[class*=volume-]:has(td)"
 
-    override fun popularMangaNextPageSelector() = "a[rel=next]"
+    override fun popularMangaNextPageSelector(): String? = null
     override fun latestUpdatesNextPageSelector(): String? = null
-    override fun searchMangaNextPageSelector() = "no selector"
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun popularMangaRequest(page: Int) = GET(baseUrl, headers)
 
@@ -57,7 +57,7 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(element.select("a").attr("href").substringBeforeLast("/"))
+        manga.url = element.select("a").attr("href")
         manga.title = element.select("div.hot-manga__item-caption").select("div.hot-manga__item-name").text().trim()
         manga.thumbnail_url = element.select("a").attr("style").substringAfter("('").substringBeforeLast("'")
         return manga
@@ -109,7 +109,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
         var div = body.select("div.text-center")
-        var elements = div.select("img[src][data-src]")
+        var elements = div.select("img[id][src][data-src]")
 
         val pages = mutableListOf<Page>()
         for (i in 0 until elements.count()) {
