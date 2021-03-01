@@ -73,7 +73,7 @@ class DbMultiverseHE_HE : DbMultiverse("he", "he_HE")
 class DbMultiverseBG_BG : DbMultiverse("bg", "bg_BG")
 class DbMultiverseSV_SE : DbMultiverse("sv", "sv_SE")
 class DbMultiverseGR_GR : DbMultiverse("el", "gr_GR")
-class DbMultiverseES_CO : DbMultiverse("es-419", "es_CO") // Spanish Latino?
+class DbMultiverseES_CO : DbMultiverse("es-419", "es_CO")
 class DbMultiverseAR_JO : DbMultiverse("ar", "ar_JO")
 class DbMultiverseTL_PI : DbMultiverse("fil", "tl_PI")
 class DbMultiverseLA_LA : DbMultiverse("la", "la_LA")
