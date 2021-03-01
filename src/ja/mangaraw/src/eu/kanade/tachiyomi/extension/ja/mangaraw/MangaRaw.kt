@@ -6,6 +6,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -19,9 +21,13 @@ abstract class MangaRaw(
 
     override val supportsLatest = true
 
-    override val client = network.cloudflareClient.newBuilder()
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .protocols(listOf(Protocol.HTTP_1_1))
         .build()
+
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", baseUrl)
+    }
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/seachlist/page/$page/?cat=-1", headers)
 
