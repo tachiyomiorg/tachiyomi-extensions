@@ -146,6 +146,10 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga {
         val document = response.asJsoup()
+
+        if (document.select("body[data-page=home]").isNotEmpty())
+            throw Exception("Can't open manga. Try log in via WebView")
+
         val manga = SManga.create()
 
         if (document.html().contains("Манга удалена по просьбе правообладателей")) {
