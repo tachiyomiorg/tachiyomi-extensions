@@ -9,6 +9,7 @@ import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.extension.all.komga.dto.AuthorDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
@@ -126,6 +127,17 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                     if (publisherToInclude.isNotEmpty()) {
                         url.addQueryParameter("publisher", publisherToInclude.joinToString(","))
+                    }
+                }
+                is AuthorGroup -> {
+                    val authorToInclude = mutableListOf<AuthorDto>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            authorToInclude.add(content.author)
+                        }
+                    }
+                    authorToInclude.forEach {
+                        url.addQueryParameter("author", "${it.name},${it.role}")
                     }
                 }
                 is Filter.Sort -> {
@@ -265,6 +277,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private class TagGroup(tags: List<TagFilter>) : Filter.Group<TagFilter>("Tags", tags)
     private class PublisherFilter(publisher: String) : Filter.CheckBox(publisher, false)
     private class PublisherGroup(publishers: List<PublisherFilter>) : Filter.Group<PublisherFilter>("Publishers", publishers)
+    private class AuthorFilter(val author: AuthorDto) : Filter.CheckBox(author.name, false)
+    private class AuthorGroup(role: String, authors: List<AuthorFilter>) : Filter.Group<AuthorFilter>(role, authors)
 
     override fun getFilterList(): FilterList =
         FilterList(
@@ -275,6 +289,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             GenreGroup(genres.map { GenreFilter(it) }),
             TagGroup(tags.map { TagFilter(it) }),
             PublisherGroup(publishers.map { PublisherFilter(it) }),
+            *authors.map { (role, authors) -> AuthorGroup(role, authors.map { AuthorFilter(it) }) }.toTypedArray(),
             SeriesSort()
         )
 
@@ -283,6 +298,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private var genres = emptySet<String>()
     private var tags = emptySet<String>()
     private var publishers = emptySet<String>()
+    private var authors = emptyMap<String, List<AuthorDto>>() // roles to list of authors
 
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
@@ -454,6 +470,23 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         gson.fromJson(response.body()?.charStream()!!)
                     } catch (e: Exception) {
                         emptySet()
+                    }
+                },
+                {}
+            )
+
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/v1/authors", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { response ->
+                    authors = try {
+                        val list: List<AuthorDto> = gson.fromJson(response.body()?.charStream()!!)
+                        list.groupBy({ it.role }, { it })
+                    } catch (e: Exception) {
+                        emptyMap()
                     }
                 },
                 {}

@@ -1,3 +1,11 @@
+## 1.2.20
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* filter by authors, grouped by role
+
 ## 1.2.19
 
 Minimum Komga version required: `0.68.0`
