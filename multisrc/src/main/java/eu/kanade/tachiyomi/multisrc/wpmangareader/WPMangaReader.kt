@@ -32,7 +32,7 @@ abstract class WPMangaReader(
     // popular
     override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx "
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page/$page&order=popular", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page=$page&order=popular", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         thumbnail_url = element.select("img").attr("src")
@@ -45,7 +45,7 @@ abstract class WPMangaReader(
     // latest
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page/$page&order=update", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page=$page&order=update", headers)
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
@@ -60,7 +60,7 @@ abstract class WPMangaReader(
         val order = filters.findInstance<OrderByFilter>()?.toUriPart()
 
         return when {
-            order!!.isNotEmpty() -> GET("$baseUrl$mangaUrlDirectory/?page/$page&order=$order")
+            order!!.isNotEmpty() -> GET("$baseUrl$mangaUrlDirectory/?page=$page&order=$order")
             genre!!.isNotEmpty() -> GET("$baseUrl/genres/$genre/page/$page/?s=$query")
             else -> GET("$baseUrl/page/$page/?s=$query")
         }
