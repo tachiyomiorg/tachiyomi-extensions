@@ -1,11 +1,11 @@
 package eu.kanade.tachiyomi.extension.id.kiryuu
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.source.model.Page
-import org.jsoup.nodes.Document
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
+import org.jsoup.nodes.Document
+import java.util.concurrent.TimeUnit
 
 class Kiryuu : WPMangaStream("Kiryuu", "https://kiryuu.co", "id") {
     // Formerly "Kiryuu (WP Manga Stream)"
@@ -18,6 +18,8 @@ class Kiryuu : WPMangaStream("Kiryuu", "https://kiryuu.co", "id") {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override fun chapterListSelector() = "div.bxcl ul li"
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#readerarea img").map { it.attr("abs:src") }
