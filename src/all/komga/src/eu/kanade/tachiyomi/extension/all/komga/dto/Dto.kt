@@ -104,3 +104,12 @@ data class CollectionDto(
     val lastModifiedDate: String,
     val filtered: Boolean
 )
+
+data class ReadListDto(
+    val id: String,
+    val name: String,
+    val bookIds: List<String>,
+    val createdDate: String,
+    val lastModifiedDate: String,
+    val filtered: Boolean
+)

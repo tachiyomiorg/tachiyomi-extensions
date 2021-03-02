@@ -1,3 +1,12 @@
+## 1.2.21
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* browse read lists (from the filter menu)
+* filter by collection, respecting the collection's ordering
+
 ## 1.2.20
 
 Minimum Komga version required: `0.75.0`
