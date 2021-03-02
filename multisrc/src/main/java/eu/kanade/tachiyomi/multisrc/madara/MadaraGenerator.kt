@@ -109,6 +109,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manganelo.link", "https://manganelo.link", "en", className = "ManganeloLink"),
             SingleLang("Manga Nine", "https://manganine.com", "en"),
             SingleLang("Manga-Online.co", "https://www.manga-online.co", "th", className = "MangaOnlineCo"),
+			SingleLang("Mangas Origines", "https://mangas-origines.fr", "fr" , true),
             SingleLang("Manga Diyari", "https://mangadiyari.com", "tr"),
             SingleLang("MangaRave", "http://www.mangarave.com", "en"),
             SingleLang("MangaRawr", "https://mangarawr.com", "en"),
