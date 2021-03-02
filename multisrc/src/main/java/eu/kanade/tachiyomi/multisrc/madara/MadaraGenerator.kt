@@ -128,7 +128,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaTeca", "https://www.mangateca.com", "pt-BR"),
             SingleLang("Manga Turf", "https://mangaturf.com", "en"),
             SingleLang("MangaTX", "https://mangatx.com", "en"),
-            SingleLang("MangaUS", "https://mangaus.xyz", "en"),
+            SingleLang("MangaUS", "https://mangaus.xyz", "en", overrideVersionCode = 1),
             SingleLang("Manga Weebs", "https://mangaweebs.in", "en"),
             SingleLang("MangaWT", "https://mangawt.com", "tr"),
             SingleLang("MangaYaku", "https://mangayaku.my.id", "id"),
