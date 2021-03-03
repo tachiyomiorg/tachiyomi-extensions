@@ -151,9 +151,9 @@ class Mango : ConfigurableSource, HttpSource() {
                 url = "/page/${obj["title_id"].asString}/${obj["id"].asString}/${obj["pages"].asString}/"
                 date_upload = 1000L * obj["mtime"].asLong
                 // chapter_number = name.replace(Regex("[^0-9]"), "").toFloat()
-                chapter_number = obj["mtime"].asLong.toFloat()
+                // chapter_number = obj["mtime"].asLong.toFloat()
             }
-        }.sortedByDescending { it.chapter_number }
+        }.sortedByDescending { it.date_upload }
     }
 
     // Stub
