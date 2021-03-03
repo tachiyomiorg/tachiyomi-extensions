@@ -10,8 +10,10 @@ import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -20,16 +22,19 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.Credentials
+import info.debatty.java.stringsimilarity.JaroWinkler
+import info.debatty.java.stringsimilarity.Levenshtein
+import okhttp3.FormBody
 import okhttp3.Headers
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import info.debatty.java.stringsimilarity.JaroWinkler
-import info.debatty.java.stringsimilarity.Levenshtein
+import java.io.IOException
 
 class Mango : ConfigurableSource, HttpSource() {
 
@@ -38,7 +43,12 @@ class Mango : ConfigurableSource, HttpSource() {
 
     // Our popular manga are just our library of manga
     override fun popularMangaParse(response: Response): MangasPage {
-        val result = gson.fromJson<JsonObject>(response.body()!!.string())
+        val result = try {
+            gson.fromJson<JsonObject>(response.body()!!.string())
+        } catch (e: JsonSyntaxException) {
+            apiCookies = ""
+            throw Exception("Login Likely Failed. Try Refreshing.")
+        }
         val mangas = result["titles"].asJsonArray
         return MangasPage(
             mangas.asJsonArray.map {
@@ -111,7 +121,12 @@ class Mango : ConfigurableSource, HttpSource() {
 
     // This will just return the same thing as the main library endpoint
     override fun mangaDetailsParse(response: Response): SManga {
-        val result = gson.fromJson<JsonObject>(response.body()!!.string())
+        val result = try {
+            gson.fromJson<JsonObject>(response.body()!!.string())
+        } catch (e: JsonSyntaxException) {
+            apiCookies = ""
+            throw Exception("Login Likely Failed. Try Refreshing.")
+        }
         return SManga.create().apply {
             url = "/book/" + result["id"].asString
             title = result["display_name"].asString
@@ -124,13 +139,19 @@ class Mango : ConfigurableSource, HttpSource() {
 
     // The chapter url will contain how many pages the chapter contains for our page list endpoint
     override fun chapterListParse(response: Response): List<SChapter> {
-        val result = gson.fromJson<JsonObject>(response.body()!!.string())
+        val result = try {
+            gson.fromJson<JsonObject>(response.body()!!.string())
+        } catch (e: JsonSyntaxException) {
+            apiCookies = ""
+            throw Exception("Login Likely Failed. Try Refreshing.")
+        }
         return result["entries"].asJsonArray.map { obj ->
             SChapter.create().apply {
                 name = obj["display_name"].asString
                 url = "/page/${obj["title_id"].asString}/${obj["id"].asString}/${obj["pages"].asString}/"
                 date_upload = 1000L * obj["mtime"].asLong
-                chapter_number = name.replace(Regex("[^0-9]"), "").toFloat()
+                // chapter_number = name.replace(Regex("[^0-9]"), "").toFloat()
+                chapter_number = obj["mtime"].asLong.toFloat()
             }
         }.sortedByDescending { it.chapter_number }
     }
@@ -171,6 +192,7 @@ class Mango : ConfigurableSource, HttpSource() {
     private val username by lazy { getPrefUsername() }
     private val password by lazy { getPrefPassword() }
     private val gson by lazy { Gson() }
+    private var apiCookies: String = ""
 
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
@@ -182,16 +204,48 @@ class Mango : ConfigurableSource, HttpSource() {
 
     override val client: OkHttpClient =
         network.client.newBuilder()
-            .authenticator { _, response ->
-                if (response.request().header("Authorization") != null) {
-                    null // Give up, we've already failed to authenticate.
-                } else {
-                    response.request().newBuilder()
-                        .addHeader("Authorization", Credentials.basic(username, password))
-                        .build()
-                }
-            }
+            .addInterceptor { authIntercept(it) }
             .build()
+
+    private fun authIntercept(chain: Interceptor.Chain): Response {
+
+        // Check that we have our username and password to login with
+        val request = chain.request()
+        if (username.isEmpty() || password.isEmpty()) {
+            throw IOException("Missing username or password")
+        }
+
+        // Do the login if we have not gotten the cookies yet
+        if (apiCookies.isEmpty() || !apiCookies.contains("mango-sessid-9000", true)) {
+            doLogin(chain)
+        }
+
+        // Append the new cookie from the api
+        val authRequest = request.newBuilder()
+            .addHeader("Cookie", apiCookies)
+            .build()
+
+        return chain.proceed(authRequest)
+    }
+
+    private fun doLogin(chain: Interceptor.Chain) {
+        // Try to login
+        val formHeaders: Headers = headersBuilder()
+            .add("ContentType", "application/x-www-form-urlencoded")
+            .build()
+        val formBody: RequestBody = FormBody.Builder()
+            .addEncoded("username", username)
+            .addEncoded("password", password)
+            .build()
+        val loginRequest = POST("$baseUrl/login", formHeaders, formBody)
+        val response = chain.proceed(loginRequest)
+        if (response.code() != 200 || response.header("Set-Cookie") == null) {
+            throw Exception("Login Failed. Check Address and Credentials")
+        }
+        // Save the cookies from the response
+        apiCookies = response.header("Set-Cookie")!!
+        response.close()
+    }
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         screen.addPreference(screen.editTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
@@ -216,6 +270,7 @@ class Mango : ConfigurableSource, HttpSource() {
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
                     Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
+                    apiCookies = ""
                     res
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -242,6 +297,7 @@ class Mango : ConfigurableSource, HttpSource() {
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
                     Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
+                    apiCookies = ""
                     res
                 } catch (e: Exception) {
                     e.printStackTrace()
