@@ -220,8 +220,10 @@ class MangaLife : HttpSource() {
         return "-chapter-$n$index$suffix.html"
     }
 
-    private fun chapterImage(e: String): String {
-        val a = e.substring(1, e.length - 1)
+    private val chapterImageRegex = Regex("""^0+""")
+
+    private fun chapterImage(e: String, cleanString: Boolean = false): String {
+        val a = e.substring(1, e.length - 1).let { if (cleanString) it.replace(chapterImageRegex, "") else it }
         val b = e.substring(e.length - 1).toInt()
         return if (b == 0) {
             a
@@ -237,7 +239,7 @@ class MangaLife : HttpSource() {
         return gson.fromJson<JsonArray>(vmChapters).map { json ->
             val indexChapter = json["Chapter"].string
             SChapter.create().apply {
-                name = json["ChapterName"].nullString.let { if (it.isNullOrEmpty()) "${json["Type"].string} ${chapterImage(indexChapter)}" else it }
+                name = json["ChapterName"].nullString.let { if (it.isNullOrEmpty()) "${json["Type"].string} ${chapterImage(indexChapter, true)}" else it }
                 url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
                     json["Date"].nullString?.let { dateFormat.parse("$it +0600")?.time } ?: 0
