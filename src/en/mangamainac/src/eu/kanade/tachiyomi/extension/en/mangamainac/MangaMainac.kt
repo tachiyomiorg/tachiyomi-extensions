@@ -7,7 +7,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -25,12 +27,12 @@ class MangaMainac : ParsedHttpSource() {
             Pair("Solo Leveling", "https://sololeveling.net"),
             Pair("Jojolion", "https://readjojolion.com"),
             Pair("Hajime no Ippo", "https://readhajimenoippo.com"),
-            Pair("Berserk", "http://berserkmanga.net"),
+            Pair("Berserk", "https://berserkmanga.net"),
             Pair("The Quintessential Quintuplets", "https://5-toubunnohanayome.net"),
             Pair("Kaguya Wants to be Confessed To", "https://kaguyasama.net"),
             Pair("Domestic Girlfriend", "https://domesticgirlfriend.net"),
             Pair("Black Clover", "https://w5.blackclovermanga.com"),
-            Pair("One Piece", "https://1piecemanga.net"),
+            Pair("One Piece", "https://onepiecechapters.com/"),
             Pair("The Promised Neverland", "https://neverlandmanga.net"),
             Pair("Shingeki no Kyojin", "https://readshingekinokyojin.com"),
             Pair("Nanatsu no Taizai", "https://w1.readnanatsutaizai.net")
@@ -108,6 +110,24 @@ class MangaMainac : ParsedHttpSource() {
         name = element.select("a").text()
         url = element.select("a").attr("abs:href")
         date_upload = parseRelativeDate(element.select("#time").text().substringBefore(" ago"))
+    }
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val chapterList = document.select(chapterListSelector()).map { chapterFromElement(it) }
+
+        return if (hasCountdown(chapterList[0]))
+            chapterList.subList(1, chapterList.size)
+        else
+            chapterList
+    }
+    private fun hasCountdown(chapter: SChapter): Boolean {
+        val document = client.newCall(
+            GET(chapter.url, headersBuilder().build())
+        ).execute().asJsoup()
+
+        return document
+            .select("iframe[src^=https://free.timeanddate.com/countdown/]")
+            .isNotEmpty()
     }
 
     // Subtract relative date (e.g. posted 3 days ago)
