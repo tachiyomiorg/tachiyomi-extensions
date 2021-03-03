@@ -182,7 +182,7 @@ abstract class WPMangaStream(
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "div.bxcl ul li, div.cl ul li, li:has(div.chbox):has(div.eph-num)"
+    override fun chapterListSelector() = "div.bxcl ul li, div.cl ul li, ul li:has(div.chbox):has(div.eph-num)"
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()

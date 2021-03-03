@@ -19,8 +19,6 @@ class Kiryuu : WPMangaStream("Kiryuu", "https://kiryuu.co", "id") {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
-    override fun chapterListSelector() = "div.bxcl ul li"
-
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div#readerarea img").map { it.attr("abs:src") }
             .filterNot { it.substringAfterLast("/").contains(Regex("""(filerun|photothumb\.db)""")) }

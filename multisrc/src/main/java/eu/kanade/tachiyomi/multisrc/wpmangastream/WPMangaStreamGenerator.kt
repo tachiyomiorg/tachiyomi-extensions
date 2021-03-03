@@ -9,7 +9,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
 
     override val themeClass = "WPMangaStream"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
             SingleLang("Reset Scans", "https://reset-scans.com", "en"),
@@ -35,7 +35,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("KomikRu", "https://komikru.com", "id"),
             SingleLang("GURU Komik", "https://gurukomik.com", "id"),
             SingleLang("Shea Manga", "https://sheamanga.my.id", "id"),
-            SingleLang("Kiryuu", "https://kiryuu.co", "id", overrideVersionCode = 1),
+            SingleLang("Kiryuu", "https://kiryuu.co", "id"),
             SingleLang("Komik AV", "https://komikav.com", "id"),
             SingleLang("Komik Cast", "https://komikcast.com", "id"),
             SingleLang("West Manga", "https://westmanga.info", "id"),
