@@ -306,7 +306,7 @@ class Mango : ConfigurableSource, HttpSource() {
     // We strip the last slash since we will append it above
     private fun getPrefBaseUrl(): String {
         var path = preferences.getString(ADDRESS_TITLE, ADDRESS_DEFAULT)!!
-        if (path.last() == '/') {
+        if (path.isNotEmpty() && path.last() == '/') {
             path = path.substring(0, path.length - 1)
         }
         return path
