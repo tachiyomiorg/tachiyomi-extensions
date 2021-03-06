@@ -87,7 +87,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("مانجا العاشق", "https://3asq.org", "ar", className = "Manga3asq"),
             SingleLang("Manga3S", "https://manga3s.com", "en"),
             SingleLang("Manga68", "https://manga68.com", "en"),
-            SingleLang("Manga Action", "https://manga-action.com", "ar"),
+            SingleLang("Manga Action", "https://manga-action.com", "ar", overrideVersionCode = 1),
             SingleLang("Manga Arab Online مانجا عرب اون لاين", "https://mangaarabonline.com", "ar", className = "MangaArabOnline"),
             SingleLang("مانجا عرب تيم Manga Arab Team", "https://mangaarabteam.com", "ar", className = "MangaArabTeam"),
             SingleLang("MangaBaz", "https://mangabaz.com", "tr"),
