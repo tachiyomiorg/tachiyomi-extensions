@@ -91,8 +91,6 @@ class Mango : ConfigurableSource, HttpSource() {
         }
 
         // Text distance algorithms
-        // Code is originally from here:
-        // https://github.com/CarlosEsco/Neko/blob/987d1485203a1ec1b5037dcf9b4bdea24f2cf8a3/app/src/main/java/eu/kanade/tachiyomi/source/online/MergeSource.kt
         val textDistance = Levenshtein()
         val textDistance2 = JaroWinkler()
 
@@ -150,8 +148,6 @@ class Mango : ConfigurableSource, HttpSource() {
                 name = obj["display_name"].asString
                 url = "/page/${obj["title_id"].asString}/${obj["id"].asString}/${obj["pages"].asString}/"
                 date_upload = 1000L * obj["mtime"].asLong
-                // chapter_number = name.replace(Regex("[^0-9]"), "").toFloat()
-                // chapter_number = obj["mtime"].asLong.toFloat()
             }
         }.sortedByDescending { it.date_upload }
     }
