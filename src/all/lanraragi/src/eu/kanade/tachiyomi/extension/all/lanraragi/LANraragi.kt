@@ -117,6 +117,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val filters = mutableListOf<Filter<*>>()
         val prefNewOnly = preferences.getBoolean("latestNewOnly", false)
 
+        filters.add(LatestView())
+
         if (prefNewOnly) filters.add(NewArchivesOnly(true))
 
         if (latestNamespacePref.isNotBlank()) {
@@ -142,6 +144,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
+                is LatestView -> if (filter.state) uri.appendQueryParameter("latest", "latest")
                 is StartingPage -> {
                     startPageOffset = filter.state.toIntOrNull() ?: 1
 
@@ -170,25 +173,50 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     override fun searchMangaParse(response: Response): MangasPage {
         val jsonResult = gson.fromJson<ArchiveSearchResult>(response.body()!!.string())
         val currentStart = getStart(response)
+        val archives = arrayListOf<SManga>()
 
         lastResultCount = jsonResult.data.size
         maxResultCount = if (lastResultCount >= maxResultCount) lastResultCount else maxResultCount
         lastRecordsFiltered = jsonResult.recordsFiltered
         totalRecords = jsonResult.recordsTotal
 
-        return MangasPage(
-            jsonResult.data.map {
+        if (canShowRandom(response)) {
+            archives.add(
                 SManga.create().apply {
-                    url = "/reader?id=${it.arcid}"
-                    title = it.title
-                    thumbnail_url = getThumbnailUri(it.arcid)
-                    genre = it.tags
-                    artist = getArtist(it.tags)
-                    author = artist
+                    url = "/random"
+                    title = "Random"
+                    description = "Refresh for a random archive."
+                    // Get the server's "noThumb" thumbnail by default
+                    thumbnail_url = getThumbnailUri("tachiyomi")
                 }
-            },
-            currentStart + jsonResult.data.size < jsonResult.recordsFiltered
-        )
+            )
+        }
+
+        jsonResult.data.map {
+            archives.add(archiveToSManga(it))
+        }
+
+        return MangasPage(archives, currentStart + jsonResult.data.size < jsonResult.recordsFiltered)
+    }
+
+    private fun canShowRandom(response: Response): Boolean {
+        // Server has archives, no meaningful filtering, not paginating, and not Latest
+        return (
+            totalRecords > 0 &&
+                lastRecordsFiltered == totalRecords &&
+                getStart(response) == 0 &&
+                response.request().url().queryParameter("latest") == null
+            )
+    }
+
+    private fun archiveToSManga(archive: Archive) = SManga.create().apply {
+        url = "/reader?id=${archive.arcid}"
+        title = archive.title
+        description = archive.title
+        thumbnail_url = getThumbnailUri(archive.arcid)
+        genre = archive.tags
+        artist = getArtist(archive.tags)
+        author = artist
     }
 
     override fun headersBuilder() = Headers.Builder().apply {
@@ -198,6 +226,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
     }
 
+    private class LatestView() : Filter.CheckBox("", true)
     private class DescendingOrder(overrideState: Boolean = false) : Filter.CheckBox("Descending Order", overrideState)
     private class NewArchivesOnly(overrideState: Boolean = false) : Filter.CheckBox("New Archives Only", overrideState)
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
