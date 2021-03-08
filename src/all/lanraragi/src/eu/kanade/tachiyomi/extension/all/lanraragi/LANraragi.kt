@@ -532,6 +532,15 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     private val clientNoFollow: OkHttpClient = client.newBuilder().followRedirects(false).build()
 
     init {
+        // Save users a Random refresh in the extension and from Library
+        Single.fromCallable { getRandomIDResponse() }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { randomArchiveID = getRandomID(it) },
+                {}
+            )
+
         Single.fromCallable {
             client.newCall(GET("$baseUrl/api/categories", headers)).execute()
         }
