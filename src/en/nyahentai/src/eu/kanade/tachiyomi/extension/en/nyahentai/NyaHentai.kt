@@ -18,10 +18,15 @@ import org.jsoup.nodes.Element
 
 @Nsfw
 class NyaHentai : ParsedHttpSource() {
+    companion object {
+        const val TAG = "NyaHentai"
+    }
 
     override val name = "NyaHentai (en)"
 
-    override val baseUrl = "https://nyahentai.com/language/english/"
+    override val baseUrl = "https://nyahentai.com"
+
+    val languageUrl = "$baseUrl/language/english"
 
     override val lang = "en"
 
@@ -33,9 +38,9 @@ class NyaHentai : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request {
         return if (page == 1) {
-            GET(baseUrl, headers)
+            GET(languageUrl, headers)
         } else {
-            GET("$baseUrl/browse/page/$page", headers)
+            GET("$languageUrl/page/$page", headers)
         }
     }
 
@@ -43,30 +48,32 @@ class NyaHentai : ParsedHttpSource() {
         val manga = SManga.create()
 
         manga.setUrlWithoutDomain(element.attr("href"))
-        manga.title = element.select("div.title").text()
-        manga.thumbnail_url = element.select("img.card-img-top").attr("abs:data-src")
+        manga.title = element.select("div.caption").text()
+        manga.thumbnail_url = element.select("img.lazyload").attr("abs:data-src")
 
         return manga
     }
 
     override fun latestUpdatesNextPageSelector() = "section.pagination a[rel=next]"
 
+    private fun parseTAG(tag: String): String = tag.replace("\\((.*)\\)".toRegex(), "").trim()
+
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("div#bigcontainer.container")
         val manga = SManga.create()
         val genres = mutableListOf<String>()
 
-        document.select("div:contains(Tags) a").forEach { element ->
-            val genre = element.text()
+        infoElement.select("div.tag-container:contains(Tags) a").forEach { element ->
+            val genre = parseTAG(element.text())
             genres.add(genre)
         }
 
         manga.title = infoElement.select("h1").text()
         manga.author = ""
-        manga.artist = infoElement.select("div:contains(Artists) a").text()
+        manga.artist = parseTAG(infoElement.select("div.tag-container:contains(Artists) a").text())
         manga.status = SManga.COMPLETED
         manga.genre = genres.joinToString(", ")
-        manga.thumbnail_url = document.select("div.cover a img").attr("abs:src")
+        manga.thumbnail_url = infoElement.select("div#cover a img.lazyload").attr("abs:data-src")
 
         manga.description = getDesc(document)
 
@@ -76,7 +83,8 @@ class NyaHentai : ParsedHttpSource() {
     private fun getDesc(document: Document): String {
         val infoElement = document.select("div#bigcontainer.container")
 
-        val pages = infoElement.select("div:contains(pages)")?.text()?.replace(" pages", "")
+        val pages =
+            infoElement.select("div#info > div:contains(pages)")?.text()?.replace(" pages", "")
 
         val multiDescriptions = listOf(
             "Parodies",
@@ -84,7 +92,10 @@ class NyaHentai : ParsedHttpSource() {
             "Groups",
             "Languages",
             "Categories"
-        ).map { it to infoElement.select("div:contains($it) a").map { v -> v.text() } }
+        ).map {
+            it to infoElement.select("div.tag-container:contains($it) a")
+                .map { v -> parseTAG(v.text()) }
+        }
             .filter { !it.second.isNullOrEmpty() }
             .map { "${it.first}: ${it.second.joinToString()}" }
 
@@ -105,13 +116,12 @@ class NyaHentai : ParsedHttpSource() {
         )
     }
 
-    override fun pageListRequest(chapter: SChapter): Request = GET(
-        "$baseUrl${chapter.url}list/1/"
-    )
+    override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl${chapter.url}list/1/")
 
     override fun chapterListSelector(): String = throw UnsupportedOperationException("Not used")
 
-    override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
+    override fun chapterFromElement(element: Element): SChapter =
+        throw UnsupportedOperationException("Not used")
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
@@ -125,18 +135,20 @@ class NyaHentai : ParsedHttpSource() {
         val id = match?.groups?.get(2)?.value
         val ext = match?.groups?.get(4)?.value
 
-        val total: Int = (document.select(".num-pages").text()).toInt()
+        val total: Int = (document.select("#pagination-page-top .num-pages").text()).toInt()
 
         for (i in 1..total) {
-            pages.add(Page(i, "", "$base/galleries/$id/$i.jpg"))
+            pages.add(Page(i, "", "$base/galleries/$id/$i.$ext"))
         }
 
         return pages
     }
 
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String =
+        throw UnsupportedOperationException("Not used")
 
-    override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/popular/page/$page", headers)
+    override fun popularMangaRequest(page: Int): Request =
+        GET("$languageUrl/popular/page/$page", headers)
 
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
