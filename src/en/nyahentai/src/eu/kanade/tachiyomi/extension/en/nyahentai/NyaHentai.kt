@@ -160,7 +160,8 @@ class NyaHentai : ParsedHttpSource() {
 
     // TODO: Additional filter options, specifically the type[] parameter
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = "$baseUrl/search/q_$query/page/$page"
+        // todo: remove "english" from the search query in the future
+        var url = "$baseUrl/search/q_$query english/page/$page"
 
         if (query.isBlank()) {
             filters.forEach { filter ->
