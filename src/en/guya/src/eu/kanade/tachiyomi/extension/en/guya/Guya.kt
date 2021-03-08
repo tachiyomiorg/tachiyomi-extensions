@@ -70,16 +70,30 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     // Overridden to use our overload
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return clientBuilder().newCall(GET("$baseUrl/api/get_all_series/", headers))
-            .asObservableSuccess()
-            .map { response ->
-                mangaDetailsParse(response, manga)
+        return when {
+            manga.url.startsWith(PROXY_PREFIX) -> {
+                clientBuilder().newCall(proxyChapterListRequest(manga))
+                    .asObservableSuccess()
+                    .map { response ->
+                        proxyMangaDetailsParse(response, manga)
+                    }
             }
+            else -> {
+                clientBuilder().newCall(chapterListRequest(manga))
+                    .asObservableSuccess()
+                    .map { response ->
+                        mangaDetailsParse(response, manga)
+                    }
+            }
+        }
     }
 
     // Called when the series is loaded, or when opening in browser
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET("$baseUrl/reader/series/${manga.url}/", headers)
+        return when {
+            manga.url.startsWith(PROXY_PREFIX) -> proxySeriesRequest(manga.url, false)
+            else -> GET("$baseUrl/reader/series/${manga.url}/", headers)
+        }
     }
 
     // Stub
@@ -89,7 +103,26 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     private fun mangaDetailsParse(response: Response, manga: SManga): SManga {
         val res = response.body()!!.string()
-        return parseMangaFromJson(JSONObject(res).getJSONObject(manga.title), manga.title)
+        return parseMangaFromJson(JSONObject(res), "", manga.title)
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return when {
+            manga.url.startsWith(PROXY_PREFIX) -> {
+                clientBuilder().newCall(proxyChapterListRequest(manga))
+                    .asObservableSuccess()
+                    .map { response ->
+                        proxyChapterListParse(response, manga)
+                    }
+            }
+            else -> {
+                clientBuilder().newCall(chapterListRequest(manga))
+                    .asObservableSuccess()
+                    .map { response ->
+                        chapterListParse(response, manga)
+                    }
+            }
+        }
     }
 
     // Gets the chapter list based on the series being viewed
@@ -97,19 +130,34 @@ open class Guya : ConfigurableSource, HttpSource() {
         return GET("$baseUrl/api/series/${manga.url}/", headers)
     }
 
-    // Called after the request
     override fun chapterListParse(response: Response): List<SChapter> {
+        throw Exception("Unused")
+    }
+
+    // Called after the request
+    private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
         val res = response.body()!!.string()
-        return parseChapterList(res)
+        return parseChapterList(res, manga)
     }
 
     // Overridden fetch so that we use our overloaded method instead
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        return clientBuilder().newCall(pageListRequest(chapter))
-            .asObservableSuccess()
-            .map { response ->
-                pageListParse(response, chapter)
+        return when {
+            chapter.url.startsWith(PROXY_PREFIX) -> {
+                clientBuilder().newCall(proxyPageListRequest(chapter))
+                    .asObservableSuccess()
+                    .map { response ->
+                        proxyPageListParse(response, chapter)
+                    }
             }
+            else -> {
+                clientBuilder().newCall(pageListRequest(chapter))
+                    .asObservableSuccess()
+                    .map { response ->
+                        pageListParse(response, chapter)
+                    }
+            }
+        }
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -145,19 +193,29 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return if (query.startsWith(SLUG_PREFIX)) {
-            val slug = query.removePrefix(SLUG_PREFIX)
-            client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParseWithSlug(response, slug)
-                }
-        } else {
-            client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response, query)
-                }
+        return when {
+            query.startsWith(SLUG_PREFIX) -> {
+                val slug = query.removePrefix(SLUG_PREFIX)
+                client.newCall(searchMangaRequest(page, query, filters))
+                    .asObservableSuccess()
+                    .map { response ->
+                        searchMangaParseWithSlug(response, slug)
+                    }
+            }
+            query.startsWith(PROXY_PREFIX) && query.contains("/") -> {
+                client.newCall(proxySearchMangaRequest(page, query, filters))
+                    .asObservableSuccess()
+                    .map { response ->
+                        proxySearchMangaParse(response, query)
+                    }
+            }
+            else -> {
+                client.newCall(searchMangaRequest(page, query, filters))
+                    .asObservableSuccess()
+                    .map { response ->
+                        searchMangaParse(response, query)
+                    }
+            }
         }
     }
 
@@ -255,25 +313,142 @@ open class Guya : ConfigurableSource, HttpSource() {
         screen.addPreference(preference)
     }
 
+    // ---------------- Proxy methods ------------------
+
+    private fun proxySeriesRequest(query: String, api: Boolean = true): Request {
+        val res = query.removePrefix(PROXY_PREFIX)
+        val options = res.split("/")
+        val proxyType = options[0]
+        val slug = options[1]
+        return if (api) {
+            GET("$baseUrl/proxy/api/$proxyType/series/$slug/", headers)
+        } else {
+            GET("$baseUrl/proxy/$proxyType/$slug/", headers)
+        }
+    }
+
+    private fun proxyMangaDetailsParse(response: Response, manga: SManga): SManga {
+        return mangaDetailsParse(response, manga)
+    }
+
+    private fun proxyChapterListRequest(manga: SManga): Request {
+        return proxySeriesRequest(manga.url)
+    }
+
+    private fun proxyChapterListParse(response: Response, manga: SManga): List<SChapter> {
+        return chapterListParse(response, manga)
+    }
+
+    private fun proxyPageListRequest(chapter: SChapter): Request {
+        val proxyUrl = chapter.url.removePrefix(PROXY_PREFIX)
+        return when {
+            proxyUrl.startsWith(NESTED_PROXY_API_PREFIX) -> {
+                GET("$baseUrl$proxyUrl", headers)
+            }
+            else -> proxySeriesRequest(chapter.url)
+        }
+    }
+
+    private fun proxyPageListParse(response: Response, chapter: SChapter): List<Page> {
+        val res = response.body()!!.string()
+        val pages = if (chapter.url.removePrefix(PROXY_PREFIX).startsWith(NESTED_PROXY_API_PREFIX)) {
+            JSONArray(res)
+        } else {
+            val json = JSONObject(res)
+            val metadata = chapter.url.split("/").takeLast(2)
+            val chapterNum = metadata[0]
+            val groupNum = metadata[1]
+            json.getJSONObject("chapters")
+                .getJSONObject(chapterNum)
+                .getJSONObject("groups")
+                .getJSONArray(groupNum)
+        }
+        val pageArray = ArrayList<Page>()
+        for (i in 0 until pages.length()) {
+            val page = if (pages.optJSONObject(i) != null) {
+                pages.getJSONObject(i).getString("src")
+            } else {
+                pages[i]
+            }
+            pageArray.add(Page(i + 1, "", page.toString()))
+        }
+        return pageArray
+    }
+
+    private fun proxySearchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        return proxySeriesRequest(query)
+    }
+
+    private fun proxySearchMangaParse(response: Response, query: String): MangasPage {
+        return MangasPage(
+            arrayListOf(parseMangaFromJson(JSONObject(response.body()!!.string()), query)),
+            false
+        )
+    }
+
     // ------------- Helpers and whatnot ---------------
 
-    private fun parseChapterList(payload: String): List<SChapter> {
+    private fun parseChapterList(payload: String, manga: SManga): List<SChapter> {
         val sortKey = "preferred_sort"
         val response = JSONObject(payload)
         val chapters = response.getJSONObject("chapters")
+        val mapping = response.getJSONObject("groups")
 
         val chapterList = ArrayList<SChapter>()
 
         val iter = chapters.keys()
 
         while (iter.hasNext()) {
-            val chapter = iter.next()
-            val chapterObj = chapters.getJSONObject(chapter)
-            var preferredSort = response.getJSONArray(sortKey)
-            if (chapterObj.has(sortKey)) {
-                preferredSort = chapterObj.getJSONArray(sortKey)
+            val chapterNum = iter.next()
+            val chapterObj = chapters.getJSONObject(chapterNum)
+            when {
+                chapterObj.has(sortKey) -> {
+                    chapterList.add(
+                        parseChapterFromJson(
+                            chapterObj,
+                            chapterNum,
+                            chapterObj.getJSONArray(sortKey),
+                            response.getString("slug")
+                        )
+                    )
+                }
+                response.has(sortKey) -> {
+                    chapterList.add(
+                        parseChapterFromJson(
+                            chapterObj,
+                            chapterNum,
+                            response.getJSONArray(sortKey),
+                            response.getString("slug")
+                        )
+                    )
+                }
+                else -> {
+                    val groups = chapterObj.getJSONObject("groups")
+                    val groupsIter = groups.keys()
+
+                    while (groupsIter.hasNext()) {
+                        val chapter = SChapter.create()
+                        val groupNum = groupsIter.next()
+
+                        chapter.scanlator = mapping.getString(groupNum)
+                        if (chapterObj.has("release_date")) {
+                            chapter.date_upload =
+                                chapterObj.getJSONObject("release_date").getLong(groupNum) * 1000
+                        }
+                        chapter.name = chapterNum + " - " + chapterObj.getString("title")
+                        chapter.chapter_number = chapterNum.toFloat()
+                        chapter.url =
+                            if (groups.optJSONArray(groupNum) != null) {
+                                val mangaUrl = manga.url
+                                "$mangaUrl/$chapterNum/$groupNum"
+                            } else {
+                                val url = groups.getString(groupNum)
+                                "$PROXY_PREFIX$url"
+                            }
+                        chapterList.add(chapter)
+                    }
+                }
             }
-            chapterList.add(parseChapterFromJson(chapterObj, chapter, preferredSort, response.getString("slug")))
         }
 
         return chapterList.reversed()
@@ -288,7 +463,7 @@ open class Guya : ConfigurableSource, HttpSource() {
         while (iter.hasNext()) {
             val series = iter.next()
             val json = payload.getJSONObject(series)
-            val manga = parseMangaFromJson(json, series)
+            val manga = parseMangaFromJson(json, "", series)
             mangas.add(manga)
         }
 
@@ -296,14 +471,16 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     // Takes a json of the manga to parse
-    private fun parseMangaFromJson(json: JSONObject, title: String): SManga {
+    private fun parseMangaFromJson(json: JSONObject, slug: String, title: String = ""): SManga {
         val manga = SManga.create()
-        manga.title = title
-        manga.artist = json.getString("artist")
-        manga.author = json.getString("author")
-        manga.description = json.getString("description")
-        manga.url = json.getString("slug")
-        manga.thumbnail_url = "$baseUrl/" + json.getString("cover")
+        manga.title = if (title.isNotEmpty()) title else json.getString("title")
+        manga.artist = json.optString("artist", "Unknown")
+        manga.author = json.optString("author", "Unknown")
+        manga.description = json.optString("description", "None")
+        manga.url = if (slug.startsWith(PROXY_PREFIX)) slug else json.getString("slug")
+
+        val cover = json.optString("cover", "")
+        manga.thumbnail_url = if (cover.startsWith("http")) cover else "$baseUrl/$cover"
         return manga
     }
 
@@ -441,5 +618,7 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     companion object {
         const val SLUG_PREFIX = "slug:"
+        const val PROXY_PREFIX = "proxy:"
+        const val NESTED_PROXY_API_PREFIX = "/proxy/api/"
     }
 }

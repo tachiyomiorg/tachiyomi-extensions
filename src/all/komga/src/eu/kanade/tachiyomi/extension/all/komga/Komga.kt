@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
+import android.util.Log
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -302,19 +303,28 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         override fun toString() = name
     }
 
-    override fun getFilterList(): FilterList =
-        FilterList(
-            UnreadOnly(),
-            TypeSelect(),
-            CollectionSelect(listOf(CollectionFilterEntry("None")) + collections.map { CollectionFilterEntry(it.name, it.id) }),
-            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
-            StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
-            GenreGroup(genres.map { GenreFilter(it) }),
-            TagGroup(tags.map { TagFilter(it) }),
-            PublisherGroup(publishers.map { PublisherFilter(it) }),
-            *authors.map { (role, authors) -> AuthorGroup(role, authors.map { AuthorFilter(it) }) }.toTypedArray(),
-            SeriesSort()
-        )
+    override fun getFilterList(): FilterList {
+        val filters = try {
+            mutableListOf<Filter<*>>(
+                UnreadOnly(),
+                TypeSelect(),
+                CollectionSelect(listOf(CollectionFilterEntry("None")) + collections.map { CollectionFilterEntry(it.name, it.id) }),
+                LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
+                StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
+                GenreGroup(genres.map { GenreFilter(it) }),
+                TagGroup(tags.map { TagFilter(it) }),
+                PublisherGroup(publishers.map { PublisherFilter(it) })
+            ).also {
+                it.addAll(authors.map { (role, authors) -> AuthorGroup(role, authors.map { AuthorFilter(it) }) })
+                it.add(SeriesSort())
+            }
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "error while creating filter list", e)
+            emptyList()
+        }
+
+        return FilterList(filters)
+    }
 
     private var libraries = emptyList<LibraryDto>()
     private var collections = emptyList<CollectionDto>()
@@ -431,7 +441,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         emptyList()
                     }
                 },
-                {}
+                { tr ->
+                    Log.e(LOG_TAG, "error while loading libraries for filters", tr)
+                }
             )
 
         Single.fromCallable {
@@ -447,7 +459,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         emptyList()
                     }
                 },
-                {}
+                { tr ->
+                    Log.e(LOG_TAG, "error while loading collections for filters", tr)
+                }
             )
 
         Single.fromCallable {
@@ -463,7 +477,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         emptySet()
                     }
                 },
-                {}
+                { tr ->
+                    Log.e(LOG_TAG, "error while loading genres for filters", tr)
+                }
             )
 
         Single.fromCallable {
@@ -479,7 +495,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         emptySet()
                     }
                 },
-                {}
+                { tr ->
+                    Log.e(LOG_TAG, "error while loading tags for filters", tr)
+                }
             )
 
         Single.fromCallable {
@@ -495,7 +513,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         emptySet()
                     }
                 },
-                {}
+                { tr ->
+                    Log.e(LOG_TAG, "error while loading publishers for filters", tr)
+                }
             )
 
         Single.fromCallable {
@@ -512,7 +532,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         emptyMap()
                     }
                 },
-                {}
+                { tr ->
+                    Log.e(LOG_TAG, "error while loading authors for filters", tr)
+                }
             )
     }
 
@@ -528,5 +550,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
         private const val TYPE_SERIES = "Series"
         private const val TYPE_READLISTS = "Read lists"
+
+        private const val LOG_TAG = "extension.all.komga"
     }
 }
