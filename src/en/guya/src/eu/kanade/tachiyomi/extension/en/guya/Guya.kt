@@ -7,6 +7,7 @@ import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -15,20 +16,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.Headers
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.IOException
 import java.util.HashMap
-import java.util.concurrent.TimeUnit
 
 open class Guya : ConfigurableSource, HttpSource() {
 
@@ -72,14 +69,14 @@ open class Guya : ConfigurableSource, HttpSource() {
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return when {
             manga.url.startsWith(PROXY_PREFIX) -> {
-                clientBuilder().newCall(proxyChapterListRequest(manga))
+                client.newCall(proxyChapterListRequest(manga))
                     .asObservableSuccess()
                     .map { response ->
                         proxyMangaDetailsParse(response, manga)
                     }
             }
             else -> {
-                clientBuilder().newCall(chapterListRequest(manga))
+                client.newCall(chapterListRequest(manga))
                     .asObservableSuccess()
                     .map { response ->
                         mangaDetailsParse(response, manga)
@@ -109,14 +106,14 @@ open class Guya : ConfigurableSource, HttpSource() {
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return when {
             manga.url.startsWith(PROXY_PREFIX) -> {
-                clientBuilder().newCall(proxyChapterListRequest(manga))
+                client.newCall(proxyChapterListRequest(manga))
                     .asObservableSuccess()
                     .map { response ->
                         proxyChapterListParse(response, manga)
                     }
             }
             else -> {
-                clientBuilder().newCall(chapterListRequest(manga))
+                client.newCall(chapterListRequest(manga))
                     .asObservableSuccess()
                     .map { response ->
                         chapterListParse(response, manga)
@@ -144,14 +141,14 @@ open class Guya : ConfigurableSource, HttpSource() {
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
         return when {
             chapter.url.startsWith(PROXY_PREFIX) -> {
-                clientBuilder().newCall(proxyPageListRequest(chapter))
+                client.newCall(proxyPageListRequest(chapter))
                     .asObservableSuccess()
                     .map { response ->
                         proxyPageListParse(response, chapter)
                     }
             }
             else -> {
-                clientBuilder().newCall(pageListRequest(chapter))
+                client.newCall(pageListRequest(chapter))
                     .asObservableSuccess()
                     .map { response ->
                         pageListParse(response, chapter)
@@ -539,17 +536,13 @@ open class Guya : ConfigurableSource, HttpSource() {
         return "$baseUrl/media/manga/$slug/chapters/$folder/$groupId/$filename"
     }
 
-    private fun clientBuilder(): OkHttpClient = network.cloudflareClient.newBuilder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()!!
-
     inner class ScanlatorStore {
         private val scanlatorMap = HashMap<String, String>()
-        private var polling = false
+        private val TOTAL_RETRIES = 10
+        private var retryCount = 0
 
         init {
-            update()
+            update(false)
         }
 
         fun getKeyFromValue(value: String): String {
@@ -575,29 +568,39 @@ open class Guya : ConfigurableSource, HttpSource() {
             return scanlatorMap.keys
         }
 
-        private fun update() {
-            if (scanlatorMap.isEmpty() && !polling) {
-                polling = true
-                clientBuilder().newCall(GET(scanlatorCacheUrl, headers)).enqueue(
-                    object : Callback {
-                        override fun onResponse(call: Call, response: Response) {
-                            try {
-                                val json = JSONObject(response.body()!!.string())
-                                val iter = json.keys()
-                                while (iter.hasNext()) {
-                                    val scanId = iter.next()
-                                    scanlatorMap[scanId] = json.getString(scanId)
-                                }
-                            } catch (e: Exception) {
-                                // ScanlatorStore will fall back to using keys until update() succeeds
-                            }
-                            polling = false
-                        }
-                        override fun onFailure(call: Call, e: IOException) {
-                            polling = false
-                        }
+        private fun onResponse(response: Response) {
+            if (!response.isSuccessful) {
+                retryCount++
+            } else {
+                val json = JSONObject(response.body()!!.string())
+                val iter = json.keys()
+                while (iter.hasNext()) {
+                    val scanId = iter.next()
+                    scanlatorMap[scanId] = json.getString(scanId)
+                }
+            }
+        }
+
+        private fun onError(error: Throwable) {
+            // Do nothing for now
+        }
+
+        private fun update(blocking: Boolean = true) {
+            if (scanlatorMap.isEmpty() && retryCount < TOTAL_RETRIES) {
+                try {
+                    val call = client.newCall(GET(scanlatorCacheUrl, headers))
+                        .asObservable()
+
+                    if (blocking) {
+                        call.toBlocking()
+                            .subscribe({ res -> onResponse(res) }, { err -> onError(err) })
+                    } else {
+                        call.subscribeOn(Schedulers.io())
+                            .subscribe({ res -> onResponse(res) }, { err -> onError(err) })
                     }
-                )
+                } catch (e: Exception) {
+                    // Prevent the extension from failing to load
+                }
             }
         }
     }
