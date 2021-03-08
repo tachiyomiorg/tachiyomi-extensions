@@ -1,3 +1,11 @@
+## 1.2.22
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* add error logs and better catch exceptions
+
 ## 1.2.21
 
 Minimum Komga version required: `0.75.0`
