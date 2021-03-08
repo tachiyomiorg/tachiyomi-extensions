@@ -94,6 +94,16 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val archive = gson.fromJson<Archive>(response.body()!!.string())
         val uri = getApiUriBuilder("/api/archives/${archive.arcid}/extract")
 
+        // Replicate old behavior and unset "isnew" for the archive.
+        if (archive.isnew == "true") {
+            val clearNew = Request.Builder()
+                .url("$baseUrl/api/archives/${archive.arcid}/isnew")
+                .delete()
+                .build()
+
+            client.newCall(clearNew).execute()
+        }
+
         return listOf(
             SChapter.create().apply {
                 val uriBuild = uri.build()
