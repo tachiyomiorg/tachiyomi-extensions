@@ -57,7 +57,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("1st Kiss Manhua", "https://1stkissmanhua.com", "en", className = "FirstKissManhua"),
             SingleLang("FreeWebtoonCoins", "https://freewebtooncoins.com", "en"),
             SingleLang("Furio Scans", "https://furioscans.com", "pt-BR"),
-            SingleLang("Gecenin Lordu", "https://geceninlordu.com/", "tr"),
             SingleLang("موقع لترجمة المانجا", "https://golden-manga.com", "ar", className = "GoldenManga"),
             SingleLang("Graze Scans", "https://grazescans.com/", "en"),
             SingleLang("Gourmet Scans", "https://gourmetscans.net/", "en"),

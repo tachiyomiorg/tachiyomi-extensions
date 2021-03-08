@@ -18,7 +18,9 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("Ngomik", "https://ngomik.net", "id"),
             SingleLang("Sekaikomik", "https://www.sekaikomik.com", "id", true),
             SingleLang("TurkToon", "https://turktoon.com", "tr"),
-    )
+            SingleLang("Gecenin Lordu", "https://geceninlordu.com/", "tr", overrideVersionCode = 1),
+
+        )
 
     companion object {
         @JvmStatic
