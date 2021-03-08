@@ -57,6 +57,9 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     private var randomArchiveID: String = ""
 
+    // AZ detection to avoid random ID desync
+    private var tachiAZ: Int = 0
+
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         val id = if (manga.url == "/random") randomArchiveID else getReaderId(manga.url)
         val uri = getApiUriBuilder("/api/archives/$id/metadata").build()
@@ -80,11 +83,19 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     override fun mangaDetailsParse(response: Response): SManga {
         val archive = gson.fromJson<Archive>(response.body()!!.string())
 
+        // chapterListRequest didn't happen since only AZ's info tab was updated
+        if (tachiAZ == 0) tachiAZ = 1
+
         return archiveToSManga(archive)
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        val id = if (manga.url == "/random") randomArchiveID else getReaderId(manga.url)
+        // In every other situation this beats mangaDetailsParse and can't be AZ
+        if (tachiAZ == 0) tachiAZ = 2
+
+        val id = if (manga.url == "/random") {
+            if (tachiAZ == 1) getThumbnailId(manga.thumbnail_url!!) else randomArchiveID
+        } else getReaderId(manga.url)
         val uri = getApiUriBuilder("/api/archives/$id/metadata").build()
 
         return GET(uri.toString(), headers)
