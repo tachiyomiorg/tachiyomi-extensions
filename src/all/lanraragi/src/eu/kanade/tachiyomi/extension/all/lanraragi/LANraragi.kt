@@ -15,6 +15,7 @@ import eu.kanade.tachiyomi.extension.all.lanraragi.model.ArchiveSearchResult
 import eu.kanade.tachiyomi.extension.all.lanraragi.model.Category
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -28,6 +29,7 @@ import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import rx.Observable
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -53,19 +55,36 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     private val gson: Gson = Gson()
 
-    override fun mangaDetailsParse(response: Response): SManga {
-        val id = getId(response)
+    private var randomArchiveID: String = ""
 
-        return SManga.create().apply {
-            thumbnail_url = getThumbnailUri(id)
-        }
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        val id = if (manga.url == "/random") randomArchiveID else getReaderId(manga.url)
+        val uri = getApiUriBuilder("/api/archives/$id/metadata").build()
+
+        if (manga.url == "/random") randomArchiveID = getRandomID(getRandomIDResponse())
+
+        return client.newCall(GET(uri.toString(), headers))
+            .asObservable().doOnNext {
+                if (!it.isSuccessful && it.code() == 404) error("Log in with WebView then try again.")
+            }
+            .map { mangaDetailsParse(it).apply { initialized = true } }
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        // Catch-all that includes /random's ID via thumbnail
+        val id = getThumbnailId(manga.thumbnail_url!!)
+
+        return GET("$baseUrl/reader?id=$id", headers)
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        val archive = gson.fromJson<Archive>(response.body()!!.string())
+
+        return archiveToSManga(archive)
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        // Upgrade the LRR reader URL to the API metadata endpoint
-        // without breaking WebView (i.e. for management).
-
-        val id = manga.url.split('=').last()
+        val id = if (manga.url == "/random") randomArchiveID else getReaderId(manga.url)
         val uri = getApiUriBuilder("/api/archives/$id/metadata").build()
 
         return GET(uri.toString(), headers)
@@ -408,6 +427,18 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     // Helper
+    private fun getRandomID(response: Response): String {
+        return response.let {
+            it.headers("Location").first()
+        }.split("=").last()
+    }
+
+    private fun getRandomIDResponse(): Response {
+        // Separate function for init and Library
+        // /random 301's to the ID so the request is over as quickly as it starts
+        return clientNoFollow.newCall(GET("$baseUrl/random", headers)).execute()
+    }
+
     protected open class UriPartFilter(displayName: String, val vals: Array<Pair<String?, String>>) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
         fun toUriPart() = vals[state].first
@@ -459,6 +490,14 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return getTopResponse(response).request().url().queryParameter("start")!!.toInt()
     }
 
+    private fun getReaderId(url: String): String {
+        return Regex("""\/reader\?id=(\w{40})""").find(url)?.groupValues?.get(1) ?: ""
+    }
+
+    private fun getThumbnailId(url: String): String {
+        return Regex("""\/(\w{40})\/thumbnail""").find(url)?.groupValues?.get(1) ?: ""
+    }
+
     private fun getNSTag(tags: String?, tag: String): List<String>? {
         tags?.split(',')?.forEach {
             if (it.contains(':')) {
@@ -489,6 +528,8 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     // Headers (currently auth) are done in headersBuilder
     override val client: OkHttpClient = network.client.newBuilder().build()
+    // Specifically for /random to grab IDs without triggering a server-side extract
+    private val clientNoFollow: OkHttpClient = client.newBuilder().followRedirects(false).build()
 
     init {
         Single.fromCallable {
