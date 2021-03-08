@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'NyaHentai'
+    pkgNameSuffix = 'en.nyahentai'
+    extClass = '.NyaHentai'
+    extVersionCode = 1
+    libVersion = '1.0'
+    containsNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"
