@@ -5,8 +5,8 @@ ext {
     extName = 'NyaHentai'
     pkgNameSuffix = 'en.nyahentai'
     extClass = '.NyaHentai'
-    extVersionCode = 1
-    libVersion = '1.0'
+    extVersionCode = 2
+    libVersion = '1.2'
     containsNsfw = true
 }
 
