@@ -29,7 +29,7 @@ class IMHentai(override val lang: String, private val imhLang: String) : ParsedH
         add("X-Requested-With", "XMLHttpRequest")
     }.build()
 
-    override val baseUrl: String = "https://imhentai.com"
+    override val baseUrl: String = "https://imhentai.xxx"
     override val name: String = "IMHentai"
     override val supportsLatest = true
 
@@ -262,6 +262,6 @@ class IMHentai(override val lang: String, private val imhLang: String) : ParsedH
         const val LANGUAGE_GERMAN = "German"
         const val LANGUAGE_RUSSIAN = "Russian"
 
-        private const val PAEG_LOAD_URL: String = "https://imhentai.com/inc/thumbs_loader.php"
+        private const val PAEG_LOAD_URL: String = "https://imhentai.xxx/inc/thumbs_loader.php"
     }
 }
