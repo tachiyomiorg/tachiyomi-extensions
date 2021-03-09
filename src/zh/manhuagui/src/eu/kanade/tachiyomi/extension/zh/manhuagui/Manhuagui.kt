@@ -50,16 +50,23 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     }
 
     override val name = "漫画柜"
+
+    private val baseHost = if (preferences.getBoolean(USE_MIRROR_URL_PREF, false)) {
+        "mhgui.com"
+    } else {
+        "manhuagui.com"
+    }
+
     override val baseUrl =
         if (preferences.getBoolean(SHOW_ZH_HANT_WEBSITE_PREF, false))
-            "https://tw.manhuagui.com"
+            "https://tw.$baseHost"
         else
-            "https://www.manhuagui.com"
+            "https://www.$baseHost"
     override val lang = "zh"
     override val supportsLatest = true
 
     private val imageServer = arrayOf("https://i.hamreus.com", "https://cf.hamreus.com")
-    private val mobileWebsiteUrl = "https://m.manhuagui.com"
+    private val mobileWebsiteUrl = "https://m.$baseHost"
     private val gson = Gson()
     private val baseHttpUrl: HttpUrl = HttpUrl.parse(baseUrl)!!
 
@@ -466,10 +473,28 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
+        val mirrorURLPreference = androidx.preference.CheckBoxPreference(screen.context).apply {
+            key = USE_MIRROR_URL_PREF
+            title = USE_MIRROR_URL_PREF_TITLE
+            summary = USE_MIRROR_URL_PREF_SUMMARY
+
+            setDefaultValue(false)
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val newSetting = preferences.edit().putBoolean(USE_MIRROR_URL_PREF, newValue as Boolean).commit()
+                    newSetting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(mainSiteRateLimitPreference)
         screen.addPreference(imgCDNRateLimitPreference)
         screen.addPreference(zhHantPreference)
         screen.addPreference(r18Preference)
+        screen.addPreference(mirrorURLPreference)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -543,10 +568,28 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             }
         }
 
+        val mirrorURLPreference = CheckBoxPreference(screen.context).apply {
+            key = USE_MIRROR_URL_PREF
+            title = USE_MIRROR_URL_PREF_TITLE
+            summary = USE_MIRROR_URL_PREF_SUMMARY
+
+            setDefaultValue(false)
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val newSetting = preferences.edit().putBoolean(USE_MIRROR_URL_PREF, newValue as Boolean).commit()
+                    newSetting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         screen.addPreference(mainSiteRateLimitPreference)
         screen.addPreference(imgCDNRateLimitPreference)
         screen.addPreference(zhHantPreference)
         screen.addPreference(r18Preference)
+        screen.addPreference(mirrorURLPreference)
     }
 
     private fun getShowR18(): Boolean = preferences.getBoolean(SHOW_R18_PREF, false)
@@ -722,6 +765,10 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         private const val SHOW_ZH_HANT_WEBSITE_PREF = "showZhHantWebsite"
         private const val SHOW_ZH_HANT_WEBSITE_PREF_TITLE = "使用繁体版网站" // "Use traditional chinese version website"
         private const val SHOW_ZH_HANT_WEBSITE_PREF_SUMMARY = "需要重启软件以生效。" // "You need to restart Tachiyomi"
+
+        private const val USE_MIRROR_URL_PREF = "useMirrorWebsitePreference"
+        private const val USE_MIRROR_URL_PREF_TITLE = "使用镜像网址"
+        private const val USE_MIRROR_URL_PREF_SUMMARY = "使用镜像网址: mhgui.com，部分漫画可能无法观看。" // "Use mirror url. Some manga may be hidden."
 
         private const val MAINSITE_RATELIMIT_PREF = "mainSiteRatelimitPreference"
         private const val MAINSITE_RATELIMIT_PREF_TITLE = "主站每秒连接数限制" // "Ratelimit permits per second for main website"
