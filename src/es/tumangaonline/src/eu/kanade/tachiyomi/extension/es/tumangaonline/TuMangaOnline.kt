@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -35,13 +35,15 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
 
     override val baseUrl = "https://lectortmo.com"
 
+    val baseurl = HttpUrl.parse(baseUrl)!!
+
     override val lang = "es"
 
     override val supportsLatest = true
 
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1)
+    private val rateLimitInterceptor = SpecificHostRateLimitInterceptor(baseurl, 10, 60) // real ratelimit values
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
