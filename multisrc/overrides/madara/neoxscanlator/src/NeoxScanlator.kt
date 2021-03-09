@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class NeoxScanlator : Madara(
     "Neox Scanlator",
-    "https://neoxscans.com",
+    "https://neoxscans.net",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 ) {
