@@ -168,7 +168,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("NeatManga", "https://neatmanga.com", "en"),
             SingleLang("NekoBreaker", "https://nekobreaker.com", "pt-BR"),
             SingleLang("NekoScan", "https://nekoscan.com", "en"),
-            SingleLang("Neox Scanlator", "https://neoxscans.com", "pt-BR"),
+            SingleLang("Neox Scanlator", "https://neoxscans.net", "pt-BR", overrideVersionCode = 1),
             SingleLang("Night Comic", "https://www.nightcomic.com", "en"),
             SingleLang("Niji Translations", "https://niji-translations.com", "ar"),
             SingleLang("Ninjavi", "https://ninjavi.com", "ar"),
