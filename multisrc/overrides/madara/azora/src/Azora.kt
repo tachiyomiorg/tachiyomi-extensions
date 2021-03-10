@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import okhttp3.Request
 import org.jsoup.nodes.Element
 
-class Azora : Madara("Azora", "https://www.azoramanga.com", "ar") {
+class Azora : Madara("Azora", "https://azoramanga.com", "ar") {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/page/$page/?m_orderby=views", headers)
     override fun chapterListSelector() = "li.wp-manga-chapter:not(.premium-block)" // Filter fake chapters
     override fun chapterFromElement(element: Element): SChapter {
