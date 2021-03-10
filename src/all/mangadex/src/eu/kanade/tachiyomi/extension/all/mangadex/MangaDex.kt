@@ -1084,7 +1084,7 @@ class CoverInterceptor : Interceptor {
 
 class MdRateLimitInterceptor : Interceptor {
     private val coverRegex = Regex("""/images/.*\.jpg""")
-    private val baseInterceptor = RateLimitInterceptor(1)
+    private val baseInterceptor = RateLimitInterceptor(2)
 
     override fun intercept(chain: Interceptor.Chain): Response =
         if (chain.request().url().toString().contains(coverRegex))
