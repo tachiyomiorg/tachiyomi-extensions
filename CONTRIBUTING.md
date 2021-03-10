@@ -306,14 +306,15 @@ multisrc
 
 ### Development workflow
 There are three steps in running and testing a theme source:
-1- Generate the sources
+
+1. Generate the sources
     - **Method 1:** run `./gradlew multisrc:generateExtensions` from a terminal window to generate all sources.
     - **Method 2:** Directly run `Generator.GeneratorMain.main` by pressing the play button in front of the method shown inside Android Studio to generate all sources.
     - **Method 3:** Directly run `<themepkg>.<ThemeName>Generator.main` by pressing the play button in front of the method shown inside Android Studio to generated sources from the said theme.
-2- Sync gradle to import the new generated sources inside `generated-src`
+2. Sync gradle to import the new generated sources inside `generated-src`
     - **Method 1:** Android Studio might prompt to sync the gradle. Click on `Sync Now`.
     - **Method 1:** Manually re-sync by opening `File` -> `Sync Project with Gradle Files` or by pressing `Alt+f` then `g`.
-3- Build and test the generated Extention like normal `src` sources.
+3. Build and test the generated Extention like normal `src` sources.
     - It's recommended to make changes here to skip step 1 and 2, and when you are done, and copying the changes back to `multisrc`. 
 
 ### Scaffolding sources
@@ -341,7 +342,7 @@ os.makedirs(f"{package}/res")
 
 with open(f"{package}/src/{source}.kt", "w") as f:
     f.write(f"package eu.kanade.tachiyomi.extension.{lang}.{package}\n\n")
-``` 
+```
 
 ### Additional Notes
 - Generated sources extension version code is calculated as `baseVersionCode + overrideVersionCode + multisrcLibraryVersion`.
