@@ -47,7 +47,6 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr"),
         SingleLang("Rama", "https://www.ramareader.it", "it"),
         SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
-        SingleLang("Hentai Cafe", "https://hentai.cafe", "en", isNsfw = true),
     )
 
     companion object {
