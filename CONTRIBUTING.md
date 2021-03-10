@@ -335,7 +335,7 @@ with open(f"{package}/src/{source}.kt", "w") as f:
 - Generated sources extension version code is calculated as `baseVersionCode + overrideVersionCode + multisrcLibraryVersion`.
     - Currently `multisrcLibraryVersion` is `0`
     - When a new source is added, it doesn't need to set `overrideVersionCode` as it's default is `0`.
-    - For each time a source changes in a way that should the version increase, `overrideVersionCode` should be increased by one
+    - For each time a source changes in a way that should the version increase, `overrideVersionCode` should be increased by one.
     - When a theme's default implementation changes, `baseVersionCode` should be increased, the initial value should be `1`.
     - For example for a new theme with a new source, extention version code will be `0 + 0 + 1 = 1`.
 
