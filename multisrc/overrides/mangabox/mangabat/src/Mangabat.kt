@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.en.mangabat
 import eu.kanade.tachiyomi.multisrc.mangabox.MangaBox
 import eu.kanade.tachiyomi.network.GET
 import okhttp3.Request
-import java.text.SimpleDateFormatS
+import java.text.SimpleDateFormat
 import java.util.Locale
 
 class Mangabat : MangaBox("Mangabat", "https://m.mangabat.com/m", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
