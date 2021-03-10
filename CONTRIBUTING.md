@@ -304,7 +304,7 @@ multisrc
 - `multisrc/overrides/<themepkg>/<sourcepkg>/additional.gradle.kts` defines additional gradle code, this will be copied at the end of the generated gradle file below the theme's `additional.gradle.kts`.
 - `multisrc/overrides/<themepkg>/<sourcepkg>/AndroidManifest.xml` is copied as an override to the default `AndroidManifest.xml` generation if it exists.
 
-## Scaffolding sources
+### Scaffolding sources
 You can use this python script to generate scaffolds for source overrides. Put it inside `multisrc/overrides/<themepkg>/` as `scaffold.py`.
 ```python
 import os, sys
@@ -329,6 +329,9 @@ os.makedirs(f"{package}/src")
 with open(f"{package}/src/{source}.kt", "w") as f:
     f.write(f"package eu.kanade.tachiyomi.extension.{lang}.{package}\n\n")
 ``` 
+
+### Additional Notes
+- Generated sources extension version code is calculated as `baseVersionCode + overrideVersionCode + multisrcLibraryVersion`, each time a source changes in a way that should the version increase, `overrideVersionCode` should be increased by one, when a theme's default implementation changes, `baseVersionCode` should be increased.
 
 ## Running
 
