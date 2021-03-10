@@ -315,7 +315,7 @@ There are three steps in running and testing a theme source:
     - **Method 1:** Android Studio might prompt to sync the gradle. Click on `Sync Now`.
     - **Method 1:** Manually re-sync by opening `File` -> `Sync Project with Gradle Files` or by pressing `Alt+f` then `g`.
 3. Build and test the generated Extention like normal `src` sources.
-    - It's recommended to make changes here to skip step 1 and 2, and when you are done, and copying the changes back to `multisrc`. 
+    - It's recommended to make changes here to skip going through step 1 and 2 multiple times, and when you are done, copying the changes back to `multisrc`. 
 
 ### Scaffolding sources
 You can use this python script to generate scaffolds for source overrides. Put it inside `multisrc/overrides/<themepkg>/` as `scaffold.py`.
