@@ -325,6 +325,7 @@ lang = sys.argv[2]
 print(f"working on {source} with lang {lang}")
 
 os.makedirs(f"{package}/src")
+os.makedirs(f"{package}/res")
 
 with open(f"{package}/src/{source}.kt", "w") as f:
     f.write(f"package eu.kanade.tachiyomi.extension.{lang}.{package}\n\n")
