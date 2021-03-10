@@ -22,7 +22,7 @@ class HBrowse : ParsedHttpSource() {
 
     override val name = "HBrowse"
 
-    override val baseUrl = "http://www.hbrowse.com"
+    override val baseUrl = "https://www.hbrowse.com"
 
     override val lang = "en"
 

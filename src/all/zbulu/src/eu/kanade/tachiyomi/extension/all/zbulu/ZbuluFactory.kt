@@ -15,8 +15,8 @@ class ZbuluFactory : SourceFactory {
 }
 
 class HolyManga : Zbulu("HolyManga", "https://w15.holymanga.net")
-class HeavenManga : Zbulu("HeavenManga", "http://heaventoon.com")
-class KooManga : Zbulu("Koo Manga", "http://ww1.koomanga.com")
+class HeavenManga : Zbulu("HeavenManga", "https://heaventoon.com")
+class KooManga : Zbulu("Koo Manga", "https://ww1.koomanga.com")
 class BuluManga : Zbulu("Bulu Manga", "https://ww5.bulumanga.net") {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("div.chapter-content img").mapIndexed { i, img ->
