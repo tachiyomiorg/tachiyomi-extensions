@@ -14,14 +14,10 @@ import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.os.Build
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
-import android.util.Base64
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -53,7 +49,6 @@ import org.jsoup.Jsoup
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -140,7 +135,9 @@ class Remanga : ConfigurableSource, HttpSource() {
             // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
-            thumbnail_url = "$baseUrl/${img.high}"
+            thumbnail_url = if (img.high.isNotEmpty()) {
+                "$baseUrl/${img.high}"
+            } else "$baseUrl/${img.mid}"
         }
 
     private val simpleDateFormat by lazy { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US) }
@@ -249,7 +246,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             }
     }
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET(baseUrl + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
+        return GET(baseUrl.replace("api.", "") + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
     }
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
@@ -329,43 +326,21 @@ class Remanga : ConfigurableSource, HttpSource() {
             }
         } catch (e: JsonSyntaxException) {
             val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
-            page.content.pages.mapIndexed { i, element ->
-                Page(i, element.joinToString { it.link })
+            val result = mutableListOf<Page>()
+            page.content.pages.forEach {
+                it.forEach {
+                    result.add(Page(result.size, "", it.link))
+                }
             }
+            return result
         }
     }
 
-    override fun fetchImageUrl(page: Page): Observable<String> {
-        val urls = page.url.split(", ")
-        val res = this.combineImage(urls)
-        return Observable.just("https://127.0.0.1/?imagebase64,$res")
-    }
+    override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
 
     override fun imageUrlRequest(page: Page): Request = throw NotImplementedError("Unused")
 
     override fun imageUrlParse(response: Response): String = throw NotImplementedError("Unused")
-
-    private fun combineImage(pages: List<String>): String {
-        val refererHeaders = headersBuilder().build()
-        val s = client.newCall(GET(pages[0], refererHeaders)).execute().body()!!.bytes()
-        val b = BitmapFactory.decodeByteArray(s, 0, s.size)
-
-        val cs = Bitmap.createBitmap(b.width, b.height * pages.size, Bitmap.Config.ARGB_8888)
-        val comboImage = Canvas(cs)
-        var totalHeight = b.height
-        comboImage.drawBitmap(b, 0f, 0f, null)
-        for (i in 1 until pages.size) {
-            val bytes = client.newCall(GET(pages[i], refererHeaders)).execute().body()!!.bytes()
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            comboImage.drawBitmap(bitmap, 0f, (b.height * i).toFloat(), null)
-            totalHeight += bitmap.getHeight()
-        }
-        cs.reconfigure(cs.getWidth(), totalHeight, cs.getConfig())
-
-        val output = ByteArrayOutputStream()
-        cs.compress(Bitmap.CompressFormat.JPEG, 100, output)
-        return Base64.encodeToString(output.toByteArray(), Base64.DEFAULT)
-    }
 
     override fun imageRequest(page: Page): Request {
         val refererHeaders = headersBuilder().build()

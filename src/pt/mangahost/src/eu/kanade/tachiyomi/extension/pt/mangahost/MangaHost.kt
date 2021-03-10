@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.mangahost
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -20,6 +21,7 @@ import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaHost : ParsedHttpSource() {
 
@@ -34,11 +36,15 @@ class MangaHost : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
         .add("Referer", baseUrl)
+        .add("User-Agent", USER_AGENT)
 
     private fun genericMangaFromElement(element: Element): SManga =
         SManga.create().apply {
@@ -146,6 +152,11 @@ class MangaHost : ParsedHttpSource() {
         chapter_number = element.select("div.pop-title span.btn-caps").text()
             .toFloatOrNull() ?: 1f
         setUrlWithoutDomain(element.select("div.tags a").attr("href"))
+
+        if (scanlator!!.split("/").count() >= 5) {
+            val scanlators = scanlator!!.split("/")
+            scanlator = scanlators[0] + " e mais " + (scanlators.count() - 1)
+        }
     }
 
     /**
@@ -176,7 +187,8 @@ class MangaHost : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
-            .set("Referer", page.url)
+            .set("Accept", ACCEPT_IMAGE)
+            .set("Referer", baseUrl)
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
@@ -212,8 +224,12 @@ class MangaHost : ParsedHttpSource() {
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     companion object {
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()

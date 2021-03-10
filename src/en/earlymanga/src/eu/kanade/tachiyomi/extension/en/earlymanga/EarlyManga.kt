@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -14,6 +15,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class EarlyManga : ParsedHttpSource() {
 
@@ -26,6 +29,18 @@ class EarlyManga : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
+    protected open val userAgentRandomizer2 = "${Random.nextInt(10,99).absoluteValue}"
+    protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/8$userAgentRandomizer1.0.4$userAgentRandomizer3.1$userAgentRandomizer2 Safari/537.36"
+        )
+        .add("Referer", baseUrl)
 
     // popular
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/hot-manga?page=$page", headers)
@@ -75,7 +90,7 @@ class EarlyManga : ParsedHttpSource() {
         author = document.select(".author-link a").text()
         artist = document.select(".artist-link a").text()
         status = parseStatus(document.select(".pub_stutus").text())
-        description = document.select(".desc").text()
+        description = document.select(".desc:not([class*=none])").text().replace("_", "")
         genre = document.select(".manga-info-card a.badge-secondary").joinToString { it.text() }
     }
 
@@ -113,8 +128,8 @@ class EarlyManga : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select(".col-lg-5 a").attr("href"))
-        name = element.select(".col-lg-5 a").text()
+        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:nth-child(2)) a[href*=chapter]:not([style*=display:])").attr("href"))
+        name = "Chapter " + url.substringAfter("chapter-")
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
 
@@ -124,7 +139,9 @@ class EarlyManga : ParsedHttpSource() {
 
     // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(".chapter_images-container > img").mapIndexed { i, element ->
+        return document.select(
+            "img[src*=manga],img[src*=chapter],div>div>img[src]"
+        ).mapIndexed { i, element ->
             Page(i, "", element.attr("abs:src"))
         }
     }

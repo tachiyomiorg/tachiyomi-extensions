@@ -10,7 +10,7 @@ labels: "meta"
 I acknowledge that:
 
 - I have updated:
-  - To the latest version of the app (stable is v0.10.8)
+  - To the latest version of the app (stable is v0.10.9)
   - All extensions
 - I have tried the troubleshooting guide: https://tachiyomi.org/help/guides/troubleshooting-problems/
 - If this is an issue with the app itself, that I should be opening an issue in https://github.com/tachiyomiorg/tachiyomi

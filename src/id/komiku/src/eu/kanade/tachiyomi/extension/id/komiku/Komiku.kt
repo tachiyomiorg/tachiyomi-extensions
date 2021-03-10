@@ -244,7 +244,7 @@ class Komiku : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
-        name = element.select("a").attr("title")
+        name = element.select("a").text()
 
         val timeStamp = element.select("td.tanggalseries")
         if (timeStamp.text().contains("lalu")) {

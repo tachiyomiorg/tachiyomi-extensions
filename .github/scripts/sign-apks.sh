@@ -24,17 +24,28 @@ export KEY_PASSWORD=$4
 DEST=$PWD/apk
 rm -rf $DEST && mkdir -p $DEST
 
+MAX_PARALLEL=4
+
 # Sign all of the APKs
 for APK in ${APKS[@]}; do
-    BASENAME=$(basename $APK)
-    APKNAME="${BASENAME%%+(-release*)}.apk"
-    APKDEST="$DEST/$APKNAME"
+    (
+        BASENAME=$(basename $APK)
+        APKNAME="${BASENAME%%+(-release*)}.apk"
+        APKDEST="$DEST/$APKNAME"
 
-    ${TOOLS}/zipalign -c -v -p 4 $APK
+        ${TOOLS}/zipalign -c -v -p 4 $APK
 
-    cp $APK $APKDEST
-    ${TOOLS}/apksigner sign --ks $STORE_PATH --ks-key-alias $STORE_ALIAS --ks-pass env:KEY_STORE_PASSWORD --key-pass env:KEY_PASSWORD $APKDEST
+        cp $APK $APKDEST
+        ${TOOLS}/apksigner sign --ks $STORE_PATH --ks-key-alias $STORE_ALIAS --ks-pass env:KEY_STORE_PASSWORD --key-pass env:KEY_PASSWORD $APKDEST
+    ) &
+
+    # Allow to execute up to $MAX_PARALLEL jobs in parallel
+    if [[ $(jobs -r -p | wc -l) -ge $MAX_PARALLEL ]]; then
+        wait -n
+    fi
 done
+
+wait
 
 rm $STORE_PATH
 unset KEY_STORE_PASSWORD

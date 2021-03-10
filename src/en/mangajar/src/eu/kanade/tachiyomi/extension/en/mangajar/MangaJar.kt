@@ -143,7 +143,7 @@ class MangaJar : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img[data-page]").mapIndexed { i, element ->
-            Page(i, "", element.attr("src"))
+            Page(i, "", element.attr("data-alternative"))
         }
     }
 

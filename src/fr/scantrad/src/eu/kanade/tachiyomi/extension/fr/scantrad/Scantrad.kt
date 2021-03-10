@@ -21,8 +21,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.math.absoluteValue
-import kotlin.random.Random
 
 class Scantrad : ParsedHttpSource() {
 
@@ -42,18 +40,9 @@ class Scantrad : ParsedHttpSource() {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
-    protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
-    protected open val userAgentRandomizer2 = "${Random.nextInt(10,99).absoluteValue}"
-    protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
-
-    override fun headersBuilder() = Headers.Builder().apply {
-        add("Referer", baseUrl)
-        add(
-            "User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/8$userAgentRandomizer1.0.4$userAgentRandomizer3.1$userAgentRandomizer2 Safari/537.36"
-        )
-    }
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36")
+        .add("Accept-Language", "fr")
 
     // Popular
 

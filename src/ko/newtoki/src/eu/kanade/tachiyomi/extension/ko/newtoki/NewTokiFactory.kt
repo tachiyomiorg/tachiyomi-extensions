@@ -42,10 +42,18 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
                         url.addQueryParameter("toon", filter.values[filter.state])
                     }
                 }
+
+                is SearchSortTypeList -> {
+                    url.addQueryParameter("sst", listOf("as_update", "wr_hit", "wr_good")[filter.state])
+                }
+
+                is SearchOrderTypeList -> {
+                    url.addQueryParameter("sod", listOf("desc", "asc")[filter.state])
+                }
             }
         }
 
-        // Imcompatible with Other Search Parametor
+        // Incompatible with Other Search Parameter
         if (!query.isBlank()) {
             url.addQueryParameter("stx", query)
         } else {
@@ -135,8 +143,27 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
         )
     )
 
+    private class SearchSortTypeList : Filter.Select<String>(
+        "Sort",
+        arrayOf(
+            "기본(업데이트순)",
+            "인기순",
+            "추천순",
+        )
+    )
+
+    private class SearchOrderTypeList : Filter.Select<String>(
+        "Order",
+        arrayOf(
+            "Descending",
+            "Ascending"
+        )
+    )
+
     override fun getFilterList() = FilterList(
         SearchTargetTypeList(),
+        SearchSortTypeList(),
+        SearchOrderTypeList(),
         Filter.Separator(),
         Filter.Header("Under 3 Filters can't use with query"),
         SearchYoilTypeList(),

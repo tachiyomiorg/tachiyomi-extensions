@@ -43,24 +43,23 @@ abstract class ToomicsGlobal(
         .add("User-Agent", USER_AGENT)
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/$siteLang/webtoon/free_all", headers)
+        return GET("$baseUrl/$siteLang/webtoon/favorite", headers)
     }
 
     // ToomicsGlobal does not have a popular list, so use recommended instead.
     override fun popularMangaSelector(): String = "li > div.visual"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        element.select("a").let {
-            title = it.text()
-            setUrlWithoutDomain(it.attr("href"))
-        }
-        thumbnail_url = element.select("img").attr("abs:data-original")
+        title = element.select("h4[class$=title]").first().ownText()
+        // sometimes href contains "/ab/on" at the end and redirects to a chapter instead of manga
+        setUrlWithoutDomain(element.select("a").attr("href").removeSuffix("/ab/on"))
+        thumbnail_url = element.select("img").attr("src")
     }
 
     override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/$siteLang/webtoon/free", headers)
+        return GET("$baseUrl/$siteLang/webtoon/new_comics", headers)
     }
 
     override fun latestUpdatesSelector(): String = popularMangaSelector()
@@ -119,13 +118,14 @@ abstract class ToomicsGlobal(
             .map { it.reversed() }
     }
 
-    override fun chapterListSelector(): String = "li.normal_ep:has(.coin-type1)"
+    // coin-type1 - free chapter, coin-type6 - already read chapter
+    override fun chapterListSelector(): String = "li.normal_ep:has(.coin-type1, .coin-type6)"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val num = element.select("div.cell-num").text()
         val numText = if (num.isNotEmpty()) "$num - " else ""
 
-        name = numText + element.select("div.cell-title")?.first()?.ownText()
+        name = numText + element.select("div.cell-title strong")?.first()?.ownText()
         chapter_number = num.toFloatOrNull() ?: -1f
         date_upload = parseChapterDate(element.select("div.cell-time time").text()!!)
         scanlator = "Toomics"
@@ -135,10 +135,13 @@ abstract class ToomicsGlobal(
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        if (document.select("div.section_age_verif").isNotEmpty())
+            throw Exception("Verify age via WebView")
+
         val url = document.select("head meta[property='og:url']").attr("content")
 
         return document.select("div[id^=load_image_] img")
-            .mapIndexed { i, el -> Page(i, url, el.attr("abs:data-original")) }
+            .mapIndexed { i, el -> Page(i, url, el.attr("data-src")) }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

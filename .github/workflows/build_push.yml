@@ -9,7 +9,6 @@ jobs:
   check_wrapper:
     name: Validate Gradle Wrapper
     runs-on: ubuntu-latest
-
     steps:
       - name: Clone repo
         uses: actions/checkout@v2
@@ -22,10 +21,9 @@ jobs:
     needs: check_wrapper
     if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-latest
-
     steps:
       - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.5.0
+        uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
 
@@ -48,16 +46,20 @@ jobs:
 
       - name: Generate sources from the multi-source library
         uses: eskatos/gradle-command-action@v1
+        env:
+          CI_PUSH: "true"
         with:
           build-root-directory: master
           wrapper-directory: master
-          arguments: :multisrc:multisrcGenerators
+          arguments: :multisrc:generateExtensions
           wrapper-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true
 
       - name: Build extensions
         uses: eskatos/gradle-command-action@v1
+        env:
+          CI_PUSH: "true"
         with:
           build-root-directory: master
           wrapper-directory: master

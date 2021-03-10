@@ -6,8 +6,10 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
@@ -110,6 +112,29 @@ class TCBScans : ParsedHttpSource() {
             return dates.timeInMillis
         }
         return 0L
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val chapterList = document.select(chapterListSelector()).map { chapterFromElement(it) }
+
+        return if (hasCountdown(chapterList[0]))
+            chapterList.subList(1, chapterList.size)
+        else
+            chapterList
+    }
+
+    private fun hasCountdown(chapter: SChapter): Boolean {
+        val document = client.newCall(
+            GET(
+                baseUrl + chapter.url,
+                headersBuilder().build()
+            )
+        ).execute().asJsoup()
+
+        return document
+            .select("iframe[src^=https://free.timeanddate.com/countdown/]")
+            .isNotEmpty()
     }
 
     // pages

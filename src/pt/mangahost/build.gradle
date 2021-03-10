@@ -2,11 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'MangaHost'
+    extName = 'Mangá Host'
     pkgNameSuffix = 'pt.mangahost'
     extClass = '.MangaHost'
-    extVersionCode = 16
+    extVersionCode = 18
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

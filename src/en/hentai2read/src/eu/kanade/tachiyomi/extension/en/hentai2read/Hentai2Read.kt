@@ -169,6 +169,7 @@ class Hentai2Read : ParsedHttpSource() {
         manga.description = buildDescription(infoElement)
         manga.status = infoElement.select("li:contains(Status) > a")?.text().orEmpty().let { parseStatus(it) }
         manga.thumbnail_url = document.select("a#js-linkNext > img")?.attr("src")
+        manga.title = document.select("h3.block-title > a").first().ownText().trim()
         return manga
     }
 

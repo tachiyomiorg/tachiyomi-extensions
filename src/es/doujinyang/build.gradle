@@ -5,7 +5,7 @@ ext {
     extName = 'Doujin-Yang'
     pkgNameSuffix = 'es.doujinyang'
     extClass = '.DoujinYang'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
     containsNsfw = true
 }

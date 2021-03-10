@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
 import android.net.Uri
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -16,6 +17,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaKawaii : ParsedHttpSource() {
 
@@ -23,19 +25,25 @@ class MangaKawaii : ParsedHttpSource() {
     override val baseUrl = "https://www.mangakawaii.com"
     override val lang = "fr"
     override val supportsLatest = true
-    override val client: OkHttpClient = network.cloudflareClient
+    private val rateLimitInterceptor = RateLimitInterceptor(1) // 1 request per second
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
     override fun headersBuilder(): Headers.Builder {
         return Headers.Builder().add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0")
     }
 
-    override fun popularMangaSelector() = "a.hot-manga__item "
+    override fun popularMangaSelector() = "a.hot-manga__item"
     override fun latestUpdatesSelector() = ".section__list-group li div.section__list-group-left"
     override fun searchMangaSelector() = "h1 + ul a[href*=manga]"
-    override fun chapterListSelector() = "tr[class*=volume-]"
+    override fun chapterListSelector() = "tr[class*=volume-]:has(td)"
 
-    override fun popularMangaNextPageSelector() = "a[rel=next]"
+    override fun popularMangaNextPageSelector(): String? = null
     override fun latestUpdatesNextPageSelector(): String? = null
-    override fun searchMangaNextPageSelector() = "no selector"
+    override fun searchMangaNextPageSelector(): String? = null
 
     override fun popularMangaRequest(page: Int) = GET(baseUrl, headers)
 
@@ -49,7 +57,7 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.setUrlWithoutDomain(element.select("a").attr("href").substringBeforeLast("/"))
+        manga.url = element.select("a").attr("href")
         manga.title = element.select("div.hot-manga__item-caption").select("div.hot-manga__item-name").text().trim()
         manga.thumbnail_url = element.select("a").attr("style").substringAfter("('").substringBeforeLast("'")
         return manga
@@ -74,7 +82,7 @@ class MangaKawaii : ParsedHttpSource() {
         chapter.name = element.select("td.table__chapter").select("span").text().trim()
         chapter.chapter_number = element.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull()
             ?: -1F
-        chapter.date_upload = parseDate(element.select("td.table__date").text())
+        chapter.date_upload = element.select("td.table__date").firstOrNull()?.text()?.let { parseDate(it) } ?: 0
         return chapter
     }
 
@@ -100,8 +108,8 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        var div = body.select("div.text-center div:has(img[data-src*=/serv-manga/][alt*=page])")
-        var elements = div.select("img")
+        var div = body.select("div.text-center")
+        var elements = div.select("img[id][src][data-src]")
 
         val pages = mutableListOf<Page>()
         for (i in 0 until elements.count()) {

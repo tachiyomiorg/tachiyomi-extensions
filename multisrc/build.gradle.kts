@@ -21,7 +21,7 @@ repositories {
 apply("$rootDir/common-dependencies.gradle")
 
 tasks {
-    val multisrcGenerators by registering {
+    val generateExtensions by registering {
         doLast {
             val isWindows = System.getProperty("os.name").toString().toLowerCase().contains("win")
             val classPath = (configurations.debugCompileOnly.get().asFileTree.toList() +
@@ -32,8 +32,7 @@ tasks {
                 .joinToString(if (isWindows) ";" else ":")
             val javaPath = "${System.getProperty("java.home")}/bin/java"
 
-            val mainClass =
-                "eu.kanade.tachiyomi.multisrc.GeneratorMainKt" // Main class we want to execute
+            val mainClass = "generator.GeneratorMainKt" // Main class we want to execute
 
             val javaCommand = if (isWindows) {
                 "\"$javaPath\" -classpath $classPath $mainClass".replace("/", "\\")

@@ -23,7 +23,6 @@ import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URL
 
 fun asJsoup(response: Response, html: String? = null): Document {
     return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request().url().toString())
@@ -53,7 +52,6 @@ class Pufei : ParsedHttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     val imageServer = "http://res.img.youzipi.net/"
-    val thumbnailBaseUrl = "http://i.youzipi.net/"
 
     override val client: OkHttpClient
         get() = network.client.newBuilder()
@@ -87,6 +85,7 @@ class Pufei : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.select("h3").text().trim()
+            manga.thumbnail_url = it.select("div.thumb img").attr("data-src")
         }
         return manga
     }
@@ -100,14 +99,12 @@ class Pufei : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.book-detail")
+        val infoElement = document.select("div.book-detail div.cont-list")
 
         val manga = SManga.create()
         manga.description = infoElement.select("div#bookIntro > p").text().trim()
         manga.thumbnail_url = infoElement.select("div.thumb > img").first()?.attr("src")
-        val relativeThumnailURL = URL(infoElement.select("div.thumb > img").first()?.attr("src")).path
-        manga.thumbnail_url = "$thumbnailBaseUrl$relativeThumnailURL"
-//        manga.author = infoElement.select("dd").first()?.text()
+        manga.author = infoElement.select(":nth-child(4) dd").first()?.text()
         return manga
     }
 
@@ -157,8 +154,9 @@ class Pufei : ParsedHttpSource() {
         val imgArrStr = Duktape.create().use {
             it.evaluate("$imgCode.join('|')") as String
         }
+        val hasHost = imgArrStr.startsWith("http")
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            Page(i, "", imageServer + imgStr)
+            Page(i, "", if (hasHost) imgStr else imageServer + imgStr)
         }
     }
 

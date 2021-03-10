@@ -28,7 +28,7 @@ class MangaFast : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("h4").text().trim()
-        thumbnail_url = element.select("img").attr("abs:data-src").substringBeforeLast("resize")
+        thumbnail_url = element.select("img").attr("src").substringBeforeLast("?resize")
     }
 
     override fun popularMangaNextPageSelector(): String? = null
@@ -40,7 +40,7 @@ class MangaFast : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
         title = element.select("h3").text().trim()
-        thumbnail_url = element.select("img").attr("abs:data-src").substringBeforeLast("resize")
+        thumbnail_url = element.select("img").attr("src").substringBeforeLast("?resize")
     }
 
     override fun latestUpdatesNextPageSelector() = "a.next"
@@ -58,6 +58,7 @@ class MangaFast : ParsedHttpSource() {
         status = parseStatus(document.select(".inftable").text())
         genre = document.select("a[itemprop=genre]").joinToString { it.text() }
         description = document.select("[itemprop=description]").first().text().trim()
+        thumbnail_url = document.select("div.cvr > img").first().attr("src").substringBeforeLast("?resize")
     }
 
     private fun parseStatus(status: String) = when {
