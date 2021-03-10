@@ -9,7 +9,7 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class Mangairo : MangaBox("Mangairo", "https://m.mangairo.com", "en", SimpleDateFormat("MMM-dd-yy", Locale.ENGLISH)) {
+class Mangairo : MangaBox("Mangairo", "https://h.mangairo.com/", "en", SimpleDateFormat("MMM-dd-yy", Locale.ENGLISH)) {
     override val popularUrlPath = "manga-list/type-topview/ctg-all/state-all/page-"
     override fun popularMangaSelector() = "div.story-item"
     override val latestUrlPath = "manga-list/type-latest/ctg-all/state-all/page-"
