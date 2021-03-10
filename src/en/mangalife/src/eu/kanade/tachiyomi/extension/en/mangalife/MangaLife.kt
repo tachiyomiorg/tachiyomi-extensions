@@ -217,7 +217,7 @@ class MangaLife : HttpSource() {
         var suffix = ""
         val path = e.substring(e.length - 1).toInt()
         if (0 != path) { suffix = ".$path" }
-        return "-chapter-$n$index$suffix.html"
+        return "-chapter-$n$suffix$index.html"
     }
 
     private val chapterImageRegex = Regex("""^0+""")
