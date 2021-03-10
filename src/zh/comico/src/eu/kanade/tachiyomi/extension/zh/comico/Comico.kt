@@ -27,7 +27,7 @@ abstract class Comico(
     override val supportsLatest: Boolean
 ) : ParsedHttpSource() {
 
-    override val baseUrl = "http://www.comico.com.tw"
+    override val baseUrl = "https://www.comico.com.tw"
 
     override val lang = "zh"
 

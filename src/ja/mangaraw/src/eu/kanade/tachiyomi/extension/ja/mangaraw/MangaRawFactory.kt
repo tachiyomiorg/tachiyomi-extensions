@@ -10,5 +10,5 @@ class MangaRawFactory : SourceFactory {
     )
 }
 
-class Manga1000 : MangaRaw("Manga1000", "http://manga1000.com")
-class Manga1001 : MangaRaw("Manga1001", "http://manga1001.com")
+class Manga1000 : MangaRaw("Manga1000", "https://manga1000.com")
+class Manga1001 : MangaRaw("Manga1001", "https://manga1001.com")

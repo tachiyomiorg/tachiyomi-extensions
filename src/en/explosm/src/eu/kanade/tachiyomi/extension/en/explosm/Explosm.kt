@@ -21,7 +21,7 @@ class Explosm : HttpSource() {
 
     override val name = "Cyanide & Happiness"
 
-    override val baseUrl = "http://explosm.net"
+    override val baseUrl = "https://explosm.net"
 
     override val lang = "en"
 
