@@ -29,7 +29,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Atikrost", "https://atikrost.com", "tr"),
             SingleLang("ATM-Subs", "https://atm-subs.fr", "fr", className = "ATMSubs"),
             SingleLang("AYATOON", "https://ayatoon.com", "tr"),
-            SingleLang("Azora", "https://www.azoramanga.com", "ar"),
+            SingleLang("Azora", "https://azoramanga.com", "ar", overrideVersionCode = 1),
             SingleLang("Bakaman", "https://bakaman.net", "th"),
             SingleLang("BestManga", "https://bestmanga.club", "ru"),
             SingleLang("BestManhua", "https://bestmanhua.com", "en", overrideVersionCode = 1),
