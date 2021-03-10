@@ -277,7 +277,7 @@ multisrc
 │           │   │   └── ic_launcher.png
 │           │   └── web_hi_res_512.png
 │           └── src
-│               └── <SourceClass>.kt
+│               └── <SourceName>.kt
 └── src
     └── main
         ├── AndroidManifest.xml
@@ -287,8 +287,8 @@ multisrc
             │       └── tachiyomi
             │           └── multisrc
             │               └── <themepkg>
-            │                   ├── <Theme>Generator.kt
-            │                   └── <Theme>.kt
+            │                   ├── <ThemeName>Generator.kt
+            │                   └── <ThemeName>.kt
             └── generator
                 ├── GeneratorMain.kt
                 └── ThemeSourceGenerator.kt
