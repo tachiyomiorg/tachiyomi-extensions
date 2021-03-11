@@ -20,7 +20,6 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Kaisar Komik", "https://kaisarkomik.com", "id"),
             SingleLang("Rawkuma", "https://rawkuma.com/", "ja"),
             SingleLang("Flame Scans", "http://flamescans.org", "en"),
-            SingleLang("KomikTap", "https://komiktap.in/", "id"),
             SingleLang("MangaP", "https://mangap.me", "ar"),
             SingleLang("Boosei", "https://boosei.com", "id"),
             SingleLang("Mangakyo", "https://www.mangakyo.me", "id"),
