@@ -7,6 +7,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -40,7 +41,10 @@ class MangaLife : HttpSource() {
 
     override val supportsLatest = true
 
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addNetworkInterceptor(rateLimitInterceptor)
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
@@ -259,7 +263,7 @@ class MangaLife : HttpSource() {
 
         val pageTotal = curChapter["Page"].string.toInt()
 
-        val host = "https://" + script.substringAfter("vm.CurrPathName = \"").substringBefore("\"")
+        val host = "https://" + script.substringAfter("vm.CurPathNames = \"").substringBefore("\"")
         val titleURI = script.substringAfter("vm.IndexName = \"").substringBefore("\"")
         val seasonURI = curChapter["Directory"].string
             .let { if (it.isEmpty()) "" else "$it/" }
