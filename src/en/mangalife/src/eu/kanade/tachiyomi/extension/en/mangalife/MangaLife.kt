@@ -41,7 +41,7 @@ class MangaLife : HttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(2)
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
