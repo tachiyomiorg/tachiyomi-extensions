@@ -54,6 +54,7 @@ class Mangasee : HttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Referer", baseUrl)
         .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/77.0")
 
     private val gson = GsonBuilder().setLenient().create()
