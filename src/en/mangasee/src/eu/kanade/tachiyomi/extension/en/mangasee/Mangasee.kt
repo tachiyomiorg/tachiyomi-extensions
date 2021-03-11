@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.mangasee
 
-import android.util.Log
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.nullString
@@ -265,8 +264,6 @@ class Mangasee : HttpSource() {
         val pageTotal = curChapter["Page"].string.toInt()
 
         val host = "https://" + script.substringAfter("vm.CurrPathName = \"").substringBefore("\"")
-        Log.e("host", host)
-
         val titleURI = script.substringAfter("vm.IndexName = \"").substringBefore("\"")
         val seasonURI = curChapter["Directory"].string
             .let { if (it.isEmpty()) "" else "$it/" }
