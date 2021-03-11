@@ -41,7 +41,7 @@ class MangaLife : HttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1, 2)
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -264,7 +264,13 @@ class MangaLife : HttpSource() {
 
         val pageTotal = curChapter["Page"].string.toInt()
 
-        val host = "https://" + script.substringAfter("vm.justgiveupalready = \"").substringBefore("\"")
+        val host = "https://" +
+            script
+                .substringAfter("vm.CurPathName = \"", "")
+                .substringBefore("\"")
+                .also { if (it.isEmpty())
+                    throw Exception("$name is overloaded and blocking Tachiyomi right now. Wait for unblock.")
+                }
         val titleURI = script.substringAfter("vm.IndexName = \"").substringBefore("\"")
         val seasonURI = curChapter["Directory"].string
             .let { if (it.isEmpty()) "" else "$it/" }
