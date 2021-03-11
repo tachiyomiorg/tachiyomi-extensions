@@ -268,13 +268,7 @@ class Mangasee : HttpSource() {
 
         val pageTotal = curChapter["Page"].string.toInt()
 
-        val host = "https://" +
-            script
-                .substringAfter("vm.CurPathName = \"", "")
-                .substringBefore("\"")
-                .also { if (it.isEmpty())
-                    throw Exception("$name is overloaded and blocking Tachiyomi right now. Wait for unblock.")
-                }
+        val host = "https://" + """vm\.[A-z]+ *= *"([^",.() ]+\.[^",.() ]+\.[^",.() ]+)"""".toRegex().find(script)!!.destructured.toList()[0]
         val titleURI = script.substringAfter("vm.IndexName = \"").substringBefore("\"")
         val seasonURI = curChapter["Directory"].string
             .let { if (it.isEmpty()) "" else "$it/" }
