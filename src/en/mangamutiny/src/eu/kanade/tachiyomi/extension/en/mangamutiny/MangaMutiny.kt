@@ -75,7 +75,7 @@ class MangaMutiny : HttpSource() {
         mangaDetailsRequestCommon(manga, false)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterList = ArrayList<SChapter>()
+        val chapterList = mutableListOf<SChapter>()
         val responseBody = response.body()
 
         if (responseBody != null) {
@@ -89,18 +89,27 @@ class MangaMutiny : HttpSource() {
                         name = chapterTitleBuilder(singleChapterJsonObject)
                         url = singleChapterJsonObject.get("slug").asString
                         date_upload = parseDate(singleChapterJsonObject.get("releasedAt").asString)
+
+                        chapterNumberBuilder(singleChapterJsonObject)?.let { chapterNumber ->
+                            chapter_number = chapterNumber
+                        }
                     }
                 )
             }
         }
 
+        // chapterList.sortByDescending { it.chapter_number }
+
         return chapterList
     }
+
+    private fun chapterNumberBuilder(rootNode: JsonObject): Float? =
+        rootNode.getNullable("chapter")?.asFloat
 
     private fun chapterTitleBuilder(rootNode: JsonObject): String {
         val volume = rootNode.getNullable("volume")?.asInt
 
-        val chapter = rootNode.getNullable("chapter")?.asInt
+        val chapter = rootNode.getNullable("chapter")?.asFloat
 
         val textTitle = rootNode.getNullable("title")?.asString
 
