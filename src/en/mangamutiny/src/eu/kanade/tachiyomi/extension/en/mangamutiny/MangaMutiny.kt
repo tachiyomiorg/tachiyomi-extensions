@@ -96,9 +96,9 @@ class MangaMutiny : HttpSource() {
                     }
                 )
             }
-        }
 
-        // chapterList.sortByDescending { it.chapter_number }
+            responseBody.close()
+        }
 
         return chapterList
     }
@@ -181,6 +181,8 @@ class MangaMutiny : HttpSource() {
                 genre = rootNode.get("tags").asJsonArray
                     .joinToString { singleGenre -> singleGenre.asString }
             }
+
+            responseBody.close()
         }
 
         return manga
@@ -215,6 +217,8 @@ class MangaMutiny : HttpSource() {
             for (i in 0 until images.size()) {
                 pageList.add(Page(i, "", chapterUrl + images[i].asString))
             }
+
+            responseBody.close()
         }
 
         return pageList
