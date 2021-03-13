@@ -20,7 +20,8 @@ class GenkanGenerator : ThemeSourceGenerator {
         SingleLang("The Nonames Scans", "https://the-nonames.com", "en"),
         SingleLang("Edelgarde Scans", "https://edelgardescans.com", "en"),
         SingleLang("Method Scans", "https://methodscans.com", "en"),
-        SingleLang("Sleeping Knight Scans", "https://skscans.com", "en")
+        SingleLang("Sleeping Knight Scans", "https://skscans.com", "en"),
+        SingleLang("LynxScans", "https://lynxscans.com", "en", overrideVersionCode = 1),
     )
 
     companion object {
