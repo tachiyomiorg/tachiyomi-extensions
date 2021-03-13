@@ -700,6 +700,8 @@ abstract class MangaDex(
 
     private fun parseStatus(status: Int) = when (status) {
         1 -> SManga.ONGOING
+        2 -> SManga.COMPLETED
+        // TODO: Missing SManga values for Mangadex's API status values 3 (Cancelled) and 4 (Hiatus)
         else -> SManga.UNKNOWN
     }
 
