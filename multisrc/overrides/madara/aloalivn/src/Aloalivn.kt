@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.extension.en.aloalivn
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 
 class Aloalivn : Madara("Aloalivn", "https://aloalivn.com", "en") {
-    override val pageListParseSelector = "li.blocks-gallery-item"
+    override val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
         Genre("Adult", "adult"),

@@ -17,7 +17,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("AkuManga", "https://akumanga.com", "ar"),
             SingleLang("AlianzaMarcial", "https://alianzamarcial.xyz", "es"),
             SingleLang("AllPornComic", "https://allporncomic.com", "en", isNsfw = true),
-            SingleLang("Aloalivn", "https://aloalivn.com", "en", overrideVersionCode = 1),
+            SingleLang("Aloalivn", "https://aloalivn.com", "en", overrideVersionCode = 2),
             SingleLang("AniMangaEs", "https://animangaes.com", "en", overrideVersionCode = 1),
             SingleLang("Agent of Change Translations", "https://aoc.moe", "en"),
             SingleLang("ApollComics", "https://apollcomics.xyz", "es"),
