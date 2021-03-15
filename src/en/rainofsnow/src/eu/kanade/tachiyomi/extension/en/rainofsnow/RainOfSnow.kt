@@ -30,7 +30,7 @@ open class RainOfSnow() : ParsedHttpSource() {
         .build()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/comic/")
+        return GET("$baseUrl/comics-library/page/$page")
     }
 
     override fun popularMangaSelector() = "ul.boxhover1 li"
