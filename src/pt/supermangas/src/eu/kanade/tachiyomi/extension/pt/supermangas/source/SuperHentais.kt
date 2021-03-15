@@ -18,7 +18,7 @@ import org.jsoup.Jsoup
 @Nsfw
 class SuperHentais : SuperMangasGeneric(
     "Super Hentais",
-    "https://superhentais.com",
+    "https://www.superhentais.com",
     "hentai-manga"
 ) {
     // Hardcode the id because the language wasn't specific.

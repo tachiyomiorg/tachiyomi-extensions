@@ -8,6 +8,7 @@ import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -21,12 +22,15 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 
 typealias Content = Triple<String, String, String>
 
@@ -40,14 +44,16 @@ abstract class SuperMangasGeneric(
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(::paginatorIntercept)
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
-        .add("Origin", baseUrl)
-        .add("Referer", baseUrl)
         .add("Accept", ACCEPT_COMMON)
         .add("Accept-Language", ACCEPT_LANGUAGE)
+        .add("Origin", baseUrl)
+        .add("Referer", baseUrl)
+        .add("User-Agent", USER_AGENT)
 
     protected open val defaultFilter = mutableMapOf(
         "filter_display_view" to "lista",
@@ -77,6 +83,7 @@ abstract class SuperMangasGeneric(
         filterGenreDel: List<String> = emptyList(),
         page: Int = 1
     ): Request {
+
         val filters = jsonObject(
             "filter_data" to filterData.toUrlQueryParams(),
             "filter_genre_add" to jsonArray(filterGenreAdd),
@@ -95,7 +102,7 @@ abstract class SuperMangasGeneric(
             .add("X-Requested-With", "XMLHttpRequest")
             .add("Content-Type", form.contentType().toString())
             .add("Content-Length", form.contentLength().toString())
-            .add("Host", "www." + baseUrl.substringAfter("//"))
+            .set("Accept", ACCEPT_JSON)
             .set("Referer", "$baseUrl/$typeUrl")
             .build()
 
@@ -106,6 +113,24 @@ abstract class SuperMangasGeneric(
         title = element.select("img").first().attr("alt")
         thumbnail_url = element.select("img").first().attr(imageAttr).changeSize()
         setUrlWithoutDomain(element.attr("href"))
+    }
+
+    private fun paginatorTokenRequest(): Request = GET("$baseUrl/$listPath", headers)
+
+    private fun paginatorTokenParse(document: Document): String {
+        val script = document.select("script:containsData(ajaxSetup)").firstOrNull()
+            ?: return ""
+
+        val scriptContent = script.data()
+            .substringAfter("eval")
+            .substringBefore("function checkSize")
+            .substringBefore("eval")
+            .substringBeforeLast(")")
+            .replace("return p}", "return p})")
+
+        val unpacked = Duktape.create().evaluate(scriptContent) as String
+
+        return unpacked.substringAfter("TOKEN_CSRF=\"").substringBefore("\";")
     }
 
     override fun popularMangaRequest(page: Int): Request = genericPaginatedRequest(listPath, page = page)
@@ -122,9 +147,12 @@ abstract class SuperMangasGeneric(
             popularMangaFromElement(element)
         }
 
-        val requestBody = response.request().body() as FormBody
+        val requestBody = response.request().body().bodyToString()
         val totalPage = result["total_page"].string.toInt()
-        val page = requestBody.value("page").toInt()
+        val page = requestBody
+            .substringAfter("page=")
+            .substringBefore("&")
+            .toInt()
         val hasNextPage = page < totalPage
 
         return MangasPage(mangas, hasNextPage)
@@ -311,6 +339,33 @@ abstract class SuperMangasGeneric(
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private fun paginatorIntercept(chain: Interceptor.Chain): Response {
+        if (!chain.request().url().toString().contains("paginator.inc")) {
+            return chain.proceed(chain.request())
+        }
+
+        val csrfTokenRequest = paginatorTokenRequest()
+        val csrfTokenResponse = chain.proceed(csrfTokenRequest)
+        val csrfTokenDocument = csrfTokenResponse.asJsoup()
+        val csrfToken = paginatorTokenParse(csrfTokenDocument)
+
+        val totalPage = csrfTokenDocument.select("select.pageSelect option").last()
+            .attr("value")
+
+        val body = chain.request().body()!!
+
+        val newBody = "token=" + URLEncoder.encode(csrfToken, "utf-8") +
+            "&total_page=" + totalPage + "&" + body.bodyToString()
+
+        val requestBody = RequestBody.create(body.contentType(), newBody)
+        val newRequest = chain.request().newBuilder()
+            .header("Content-Length", newBody.length.toString())
+            .post(requestBody)
+            .build()
+
+        return chain.proceed(newRequest)
+    }
+
     protected class Tag(val id: String, name: String) : Filter.TriState(name)
 
     protected class ContentFilter(contents: List<Content>) : Filter.Select<String>(
@@ -352,17 +407,25 @@ abstract class SuperMangasGeneric(
         else -> SManga.UNKNOWN
     }
 
-    protected fun Response.asJsonObject(): JsonObject =
-        JSON_PARSER.parse(body()!!.string().substringAfter("</b>")).obj
+    protected fun Response.asJsonObject(): JsonObject {
+        val body = body()!!.string().substringAfter("</b>")
+
+        if (body.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return JSON_PARSER.parse(body).obj
+    }
+
+    private fun RequestBody?.bodyToString(): String {
+        if (this == null) return ""
+        val buffer = okio.Buffer()
+        writeTo(buffer)
+        return buffer.readUtf8()
+    }
 
     private fun Map<String, String>.toUrlQueryParams(): String =
         map { (k, v) -> "$k=$v" }.joinToString("&")
-
-    private fun FormBody.value(name: String): String {
-        return (0 until size())
-            .first { name(it) == name }
-            .let { value(it) }
-    }
 
     companion object {
         private const val ACCEPT_COMMON = "text/html,application/xhtml+xml,application/xml;q=0.9," +
@@ -370,7 +433,8 @@ abstract class SuperMangasGeneric(
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. Tente novamente mais tarde ou migre para outra fonte."
 
         private val JSON_PARSER by lazy { JsonParser() }
 

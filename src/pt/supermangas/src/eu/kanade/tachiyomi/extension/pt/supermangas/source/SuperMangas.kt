@@ -13,9 +13,9 @@ import okhttp3.Response
 
 class SuperMangas : SuperMangasGeneric(
     "Super Mangás",
-    "https://supermangas.site"
+    "https://www.supermangas.site"
 ) {
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+    override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(::tempCoverImageFixIntercept)
         .build()
 
