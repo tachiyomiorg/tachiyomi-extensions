@@ -12,6 +12,9 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 open class RainOfSnow() : ParsedHttpSource() {
@@ -94,7 +97,17 @@ open class RainOfSnow() : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.url = element.select("a").attr("abs:href")
         chapter.name = element.select("a").text()
+        chapter.date_upload = element.select("small").firstOrNull()?.text()
+            ?.let { parseChapterDate(it) } ?: 0
         return chapter
+    }
+
+    private fun parseChapterDate(date: String): Long {
+        var parsedDate = 0L
+        try {
+            parsedDate = SimpleDateFormat("MMM dd, yyyy", Locale.US).parse(date)?.time ?: 0L
+        } catch (e: ParseException) { /*nothing to do, parsedDate is initialized with 0L*/ }
+        return parsedDate
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
