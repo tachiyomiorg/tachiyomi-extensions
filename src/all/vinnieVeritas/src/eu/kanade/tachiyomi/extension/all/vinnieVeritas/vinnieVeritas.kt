@@ -63,9 +63,7 @@ CCC es el nombre de la segunda ciudad mas grande que hay, no son siglas ni la ab
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return listOf(
-            Page(0, "", document.select(".webcomic-image img").attr("src"))
-        )
+        return document.select(".webcomic-image img").mapIndexed { i, image -> Page(i, "", image.attr("src")) }
     }
 
     companion object {
