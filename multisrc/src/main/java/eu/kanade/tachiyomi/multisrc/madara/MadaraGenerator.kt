@@ -59,7 +59,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Furio Scans", "https://furioscans.com", "pt-BR"),
             SingleLang("موقع لترجمة المانجا", "https://golden-manga.com", "ar", className = "GoldenManga"),
             SingleLang("Graze Scans", "https://grazescans.com/", "en"),
-            SingleLang("Gourmet Scans", "https://gourmetscans.net/", "en"),
             SingleLang("GuncelManga", "https://guncelmanga.com", "tr"),
             SingleLang("Hero Manhua", "https://heromanhua.com", "en"),
             SingleLang("Heroz Scanlation", "https://herozscans.com", "en"),
