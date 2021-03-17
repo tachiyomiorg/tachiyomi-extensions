@@ -44,7 +44,7 @@ class Mangasee : HttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1)
+    private val rateLimitInterceptor = RateLimitInterceptor(1, 2)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
