@@ -103,6 +103,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaKomi", "https://mangakomi.com", "en"),
             SingleLang("Manga Land Arabic", "https://mangalandarabic.com", "ar"),
             SingleLang("مانجا ليك", "https://mangalek.com", "ar", className = "Mangalek"),
+            SingleLang("MangaLionz", "https://mangalionz.com", "ar"),
             SingleLang("Manga Lord", "https://mangalord.com", "en"),
             SingleLang("Manganelo.link", "https://manganelo.link", "en", className = "ManganeloLink"),
             SingleLang("Manga Nine", "https://manganine.com", "en"),
