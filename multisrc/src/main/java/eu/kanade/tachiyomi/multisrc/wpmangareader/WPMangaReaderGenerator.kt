@@ -19,6 +19,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("Sekaikomik", "https://www.sekaikomik.com", "id", true),
             SingleLang("TurkToon", "https://turktoon.com", "tr"),
             SingleLang("Gecenin Lordu", "https://geceninlordu.com/", "tr", overrideVersionCode = 1),
+            SingleLang("Flame Scans", "http://flamescans.org", "en", overrideVersionCode = 1),
         )
 
     companion object {
