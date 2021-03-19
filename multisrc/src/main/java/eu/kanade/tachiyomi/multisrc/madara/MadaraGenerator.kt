@@ -234,6 +234,9 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Yuri Verso", "https://yuri.live", "pt-BR"),
             SingleLang("Zin Translator", "https://zinmanga.com", "en"),
             SingleLang("ZManga", "https://zmanga.org", "es"),
+            SingleLang("Sleeping Knight Scans", "https://skscans.com", "en"),
+            MultiLang("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
+                className = "LeviatanScansFactory"),
     )
 
     companion object {
