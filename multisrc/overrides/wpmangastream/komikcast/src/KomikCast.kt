@@ -5,11 +5,10 @@ import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.Headers
 import okhttp3.HttpUrl
-import eu.kanade.tachiyomi.source.model.Page
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -100,6 +99,17 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                 thumbnail_url = infoElement.select("div.komik_info-content-thumbnail img").imgAttr()
             }
         }
+    }
+
+    override fun chapterListSelector() = "div.komik_info-chapters li"
+
+    override fun chapterFromElement(element: Element): SChapter {
+        val urlElement = element.select("a").first()
+        val chapter = SChapter.create()
+        chapter.setUrlWithoutDomain(urlElement.attr("href"))
+        chapter.name = urlElement.text()
+        chapter.date_upload = element.select(".chapter-link-time").firstOrNull()?.text()?.let { parseChapterDate(it) } ?: 0
+        return chapter
     }
 
     override fun pageListParse(document: Document): List<Page> {
