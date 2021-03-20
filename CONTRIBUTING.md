@@ -152,11 +152,11 @@ Note that using `compileOnly` restricts you to versions that must be compatible 
 
 ### Extension main class
 
-The class which is refrenced and defined by `extClass` in `build.gradle`. This class should implement either `SourceFactory` or one of the `Source` implementations: `HttpSource` or `ParsedHttpSource`.
+The class which is refrenced and defined by `extClass` in `build.gradle`. This class should implement either `SourceFactory` or extend one of the `Source` implementations: `HttpSource` or `ParsedHttpSource`.
 
 | Class | Description |
 | ----- | ----------- |
-|`SourceFactory`| Used to expose multiple `Source`s. Use it when there's minor differences between your target sources or they are essentially mirrors to the same website. |
+|`SourceFactory`| Used to expose multiple `Source`s. Used in case of a source that supports multiple languages or mirrors of the same website. For similar websites use [theme sources](#multi-source-themes). |
 | `HttpSource`| For online source, where requests are made using HTTP. |
 | `ParsedHttpSource`| Similar to `HttpSource`, but has methods useful for scraping pages. |
 
