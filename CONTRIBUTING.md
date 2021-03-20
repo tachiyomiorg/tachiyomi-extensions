@@ -156,7 +156,7 @@ The class which is refrenced and defined by `extClass` in `build.gradle`. This c
 
 | Class | Description |
 | ----- | ----------- |
-|`SourceFactory`| Used to expose multiple `Source`s. Used in case of a source that supports multiple languages or mirrors of the same website. For similar websites use [theme sources](#multi-source-themes). |
+|`SourceFactory`| Used to expose multiple `Source`s. Use this in case of a source that supports multiple languages or mirrors of the same website. For similar websites use [theme sources](#multi-source-themes). |
 | `HttpSource`| For online source, where requests are made using HTTP. |
 | `ParsedHttpSource`| Similar to `HttpSource`, but has methods useful for scraping pages. |
 
