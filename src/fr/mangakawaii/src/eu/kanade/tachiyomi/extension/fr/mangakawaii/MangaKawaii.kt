@@ -18,6 +18,8 @@ import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class MangaKawaii : ParsedHttpSource() {
 
@@ -32,9 +34,17 @@ class MangaKawaii : ParsedHttpSource() {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
-    override fun headersBuilder(): Headers.Builder {
-        return Headers.Builder().add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0")
-    }
+
+    protected open val userAgentRandomizer1 = "${Random.nextInt(9).absoluteValue}"
+    protected open val userAgentRandomizer2 = "${Random.nextInt(10,99).absoluteValue}"
+    protected open val userAgentRandomizer3 = "${Random.nextInt(100,999).absoluteValue}"
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/8$userAgentRandomizer1.0.4$userAgentRandomizer3.1$userAgentRandomizer2 Safari/537.36"
+        )
 
     override fun popularMangaSelector() = "a.hot-manga__item"
     override fun latestUpdatesSelector() = ".section__list-group li div.section__list-group-left"
@@ -108,12 +118,11 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        var div = body.select("div.text-center")
-        var elements = div.select("img[id][src][data-src]")
+        var elements = body.select("div#all img[loading*=lazy]")
 
         val pages = mutableListOf<Page>()
         for (i in 0 until elements.count()) {
-            pages.add(Page(i, "", elements[i].attr("data-src").trim()))
+            pages.add(Page(i, "", elements[i].attr("src").trim()))
         }
         return pages
     }
