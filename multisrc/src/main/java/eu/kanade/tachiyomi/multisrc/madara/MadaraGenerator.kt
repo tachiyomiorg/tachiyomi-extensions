@@ -155,7 +155,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("ManyToonClub", "https://manytoon.club", "ko"),
             SingleLang("ManyToon.me", "https://manytoon.me", "en", className = "ManyToonMe"),
             SingleLang("Mark Scans", "https://markscans.online", "pt-BR"),
-            SingleLang("Martial Scans", "https://martialscans.com", "en"),
             SingleLang("MG Komik", "https://mgkomik.my.id", "id"),
             SingleLang("Milftoon", "https://milftoon.xxx", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Miracle Scans", "https://miraclescans.com", "en"),
