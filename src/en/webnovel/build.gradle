@@ -5,7 +5,7 @@ ext {
     extName = 'Webnovel.com'
     pkgNameSuffix = 'en.webnovel'
     extClass = '.Webnovel'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 
