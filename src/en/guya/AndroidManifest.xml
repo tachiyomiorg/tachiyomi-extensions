@@ -17,6 +17,11 @@
                     android:host="guya.moe"
                     android:pathPattern="/read/manga/..*"
                     android:scheme="https" />
+
+                <data
+                    android:host="guya.moe"
+                    android:pathPattern="/proxy/..*"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>

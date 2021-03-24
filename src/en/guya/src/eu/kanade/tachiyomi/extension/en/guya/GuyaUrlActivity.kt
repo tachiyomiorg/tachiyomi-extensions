@@ -19,12 +19,24 @@ class GuyaUrlActivity : Activity() {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
         if (pathSegments != null && pathSegments.size >= 3) {
-            val slug = pathSegments[2]
+            Log.d("GuyaUrlActivity", pathSegments[0])
+
+            val query = when (pathSegments[0]) {
+                "proxy" -> {
+                    val source = pathSegments[1]
+                    val id = pathSegments[2]
+                    "${Guya.PROXY_PREFIX}$source/$id"
+                }
+                else -> {
+                    val slug = pathSegments[2]
+                    "${Guya.SLUG_PREFIX}$slug"
+                }
+            }
 
             // Gotta do it like this since slug title != actual title
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", "${Guya.SLUG_PREFIX}$slug")
+                putExtra("query", query)
                 putExtra("filter", packageName)
             }
 
