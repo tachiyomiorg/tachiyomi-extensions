@@ -17,23 +17,21 @@ class GuyaUrlActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val host = intent?.data?.host
         val pathSegments = intent?.data?.pathSegments
-        if (pathSegments != null && pathSegments.size >= 3) {
-            Log.d("GuyaUrlActivity", pathSegments[0])
 
-            val query = when (pathSegments[0]) {
-                "proxy" -> {
-                    val source = pathSegments[1]
-                    val id = pathSegments[2]
-                    "${Guya.PROXY_PREFIX}$source/$id"
-                }
-                else -> {
-                    val slug = pathSegments[2]
-                    "${Guya.SLUG_PREFIX}$slug"
-                }
+        if (host != null && pathSegments != null) {
+            val query = when (host) {
+                "m.imgur.com", "imgur.com" -> fromImgur(pathSegments)
+                else -> fromGuya(pathSegments)
             }
 
-            // Gotta do it like this since slug title != actual title
+            if (query == null) {
+                Log.e("GuyaUrlActivity", "Unable to parse URI from intent $intent")
+                finish()
+                exitProcess(1)
+            }
+
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
                 putExtra("query", query)
@@ -45,11 +43,35 @@ class GuyaUrlActivity : Activity() {
             } catch (e: ActivityNotFoundException) {
                 Log.e("GuyaUrlActivity", e.toString())
             }
-        } else {
-            Log.e("GuyaUrlActivity", "Unable to parse URI from intent $intent")
         }
 
         finish()
         exitProcess(0)
+    }
+
+    private fun fromImgur(pathSegments: List<String>): String? {
+        if (pathSegments.size >= 2) {
+            val id = pathSegments[1]
+
+            return "${Guya.PROXY_PREFIX}imgur/$id"
+        }
+        return null
+    }
+
+    private fun fromGuya(pathSegments: MutableList<String>): String? {
+        if (pathSegments.size >= 3) {
+            return when (pathSegments[0]) {
+                "proxy" -> {
+                    val source = pathSegments[1]
+                    val id = pathSegments[2]
+                    "${Guya.PROXY_PREFIX}$source/$id"
+                }
+                else -> {
+                    val slug = pathSegments[2]
+                    "${Guya.SLUG_PREFIX}$slug"
+                }
+            }
+        }
+        return null
     }
 }

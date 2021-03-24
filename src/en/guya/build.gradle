@@ -5,7 +5,7 @@ ext {
     extName = 'Guya'
     pkgNameSuffix = "en.guya"
     extClass = '.Guya'
-    extVersionCode = 16
+    extVersionCode = 17
     libVersion = '1.2'
 }
 
