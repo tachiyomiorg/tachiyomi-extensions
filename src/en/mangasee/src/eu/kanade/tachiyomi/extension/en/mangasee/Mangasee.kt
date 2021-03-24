@@ -147,8 +147,12 @@ class Mangasee : HttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = popularMangaRequest(1)
 
     private fun searchMangaParse(response: Response, query: String, filters: FilterList): MangasPage {
+        val trimmedQuery = query.trim()
         directory = gson.fromJson<JsonArray>(directoryFromResponse(response))
-            .filter { it["s"].string.contains(query, ignoreCase = true) }
+            .filter {
+                it["s"].string.contains(trimmedQuery, ignoreCase = true) or
+                    it["al"].asJsonArray.any { altName -> altName.string.contains(trimmedQuery, ignoreCase = true) }
+            }
 
         val genres = mutableListOf<String>()
         val genresNo = mutableListOf<String>()
@@ -272,8 +276,9 @@ class Mangasee : HttpSource() {
             script
                 .substringAfter("vm.CurPathName = \"", "")
                 .substringBefore("\"")
-                .also { if (it.isEmpty())
-                    throw Exception("$name is overloaded and blocking Tachiyomi right now. Wait for unblock.")
+                .also {
+                    if (it.isEmpty())
+                        throw Exception("$name is overloaded and blocking Tachiyomi right now. Wait for unblock.")
                 }
         val titleURI = script.substringAfter("vm.IndexName = \"").substringBefore("\"")
         val seasonURI = curChapter["Directory"].string
