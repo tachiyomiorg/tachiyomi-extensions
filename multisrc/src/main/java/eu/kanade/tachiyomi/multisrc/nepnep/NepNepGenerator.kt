@@ -1,13 +1,13 @@
-package eu.kanade.tachiyomi.multisrc.mangaseelife
+package eu.kanade.tachiyomi.multisrc.nepnep
 
 import generator.ThemeSourceData.SingleLang
 import generator.ThemeSourceGenerator
 
-class MangaSeeLifeGenerator : ThemeSourceGenerator {
+class NepNepGenerator : ThemeSourceGenerator {
 
-    override val themePkg = "mangaseelife"
+    override val themePkg = "nepnep"
 
-    override val themeClass = "MangaSeeLife"
+    override val themeClass = "NepNep"
 
     override val baseVersionCode: Int = 1
 
@@ -19,7 +19,7 @@ class MangaSeeLifeGenerator : ThemeSourceGenerator {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            MangaSeeLifeGenerator().createAll()
+            NepNepGenerator().createAll()
         }
     }
 }

@@ -1,13 +1,11 @@
-package eu.kanade.tachiyomi.extension.en.mangasee
+package eu.kanade.tachiyomi.extension.en.mangalife
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
-import eu.kanade.tachiyomi.multisrc.mangaseelife.MangaSeeLife
+import eu.kanade.tachiyomi.multisrc.nepnep.NepNep
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-class MangaSee : MangaSeeLife("MangaSee", "https://mangasee123.com", "en") {
-
-    override val id: Long = 9
+class MangaLife : NepNep("MangaLife", "https://manga4life.com", "en") {
 
     private val rateLimitInterceptor = RateLimitInterceptor(1, 2)
 

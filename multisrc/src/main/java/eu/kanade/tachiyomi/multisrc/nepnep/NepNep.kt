@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.multisrc.mangaseelife
+package eu.kanade.tachiyomi.multisrc.nepnep
 
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -28,7 +28,7 @@ import java.util.Locale
  * Source responds to requests with their full database as a JsonArray, then sorts/filters it client-side
  * We'll take the database on first requests, then do what we want with it
  */
-abstract class MangaSeeLife(
+abstract class NepNep(
     override val name: String,
     override val baseUrl: String,
     override val lang: String
