@@ -10,6 +10,8 @@ class BatoToFactory : SourceFactory {
 }
 
 private val languages = listOf(
+    //commented langueges do currently not exist on Bato.to but haven in the past
+    Pair("all",""),
     Pair("ar", "ar"),
     Pair("bg", "bg"),
     Pair("cs", "cs"),
@@ -17,6 +19,7 @@ private val languages = listOf(
     Pair("de", "de"),
     Pair("el", "el"),
     Pair("en", "en"),
+    Pair("en_us", "en_us"),
     Pair("es", "es"),
     Pair("es-419", "es_419"),
     Pair("eu", "eu"),
@@ -25,14 +28,14 @@ private val languages = listOf(
     Pair("fil", "fil"),
     Pair("fr", "fr"),
     Pair("he", "he"),
-    Pair("hi", "hi"),
+    //Pair("hi", "hi"),
     Pair("hr", "hr"),
     Pair("hu", "hu"),
     Pair("id", "id"),
     Pair("it", "it"),
     Pair("ja", "ja"),
     Pair("ko", "ko"),
-    Pair("ku", "ku"),
+    //Pair("ku", "ku"),
     Pair("ml", "ml"),
     Pair("mn", "mn"),
     Pair("ms", "ms"),
@@ -49,7 +52,7 @@ private val languages = listOf(
     Pair("tr", "tr"),
     Pair("uk", "uk"),
     Pair("vi", "vi"),
-    Pair("xh", "xh"),
+    //Pair("xh", "xh"),
     Pair("zh", "zh"),
     Pair("zh-rHK", "zh_hk"),
     Pair("zh-rTW", "zh_tw"),
