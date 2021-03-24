@@ -5,4 +5,4 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 
-class Sekaikomik : WPMangaReader("Sekaikomik", "https://www.sekaikomik.com", "id", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale("id")))
+class Sekaikomik : WPMangaReader("Sekaikomik", "https://www.sekaikomik.net", "id", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale("id")))

@@ -16,7 +16,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("KomikMama", "https://komikmama.net", "id"),
             SingleLang("MangaKita", "https://mangakita.net", "id"),
             SingleLang("Ngomik", "https://ngomik.net", "id"),
-            SingleLang("Sekaikomik", "https://www.sekaikomik.com", "id", true),
+            SingleLang("Sekaikomik", "https://www.sekaikomik.net", "id", true, overrideVersionCode = 1),
             SingleLang("TurkToon", "https://turktoon.com", "tr"),
             SingleLang("Gecenin Lordu", "https://geceninlordu.com/", "tr", overrideVersionCode = 1),
             SingleLang("Flame Scans", "http://flamescans.org", "en", overrideVersionCode = 1),
