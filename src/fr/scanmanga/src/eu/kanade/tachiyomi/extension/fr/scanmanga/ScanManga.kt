@@ -1,10 +1,28 @@
 package eu.kanade.tachiyomi.extension.fr.scanmanga
 
+import com.github.salomonbrys.kotson.fromJson
+import com.github.salomonbrys.kotson.get
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import org.jsoup.parser.Parser
+import rx.Observable
+import kotlin.random.Random
 
 class ScanManga : ParsedHttpSource() {
-
-    override val id: Long = 11
 
     override val name = "Scan-Manga"
 
@@ -14,5 +32,160 @@ class ScanManga : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addNetworkInterceptor { chain ->
+            val originalCookies = chain.request().header("Cookie") ?: ""
+            val newReq = chain
+                .request()
+                .newBuilder()
+                .header("Cookie", "$originalCookies; _ga=GA1.2.${shuffle("123456789")}.${System.currentTimeMillis() / 1000}")
+                .build()
+            chain.proceed(newReq)
+        }.build()!!
 
+    private val gson = Gson()
+
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
+        .add("Accept-Language", "fr-FR")
+
+    // Popular
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/Tout-le-TOP.html", headers)
+    }
+
+    override fun popularMangaSelector() = "div.image_manga a[href]"
+
+    override fun popularMangaFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            title = element.select("img").attr("title")
+            setUrlWithoutDomain(element.attr("href"))
+            thumbnail_url = element.select("img").attr("data-original")
+        }
+    }
+
+    override fun popularMangaNextPageSelector(): String? = null
+
+    // Latest
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET(baseUrl, headers)
+    }
+
+    override fun latestUpdatesSelector() = "#content_news .listing"
+
+    override fun latestUpdatesFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            title = element.select("a.nom_manga").text()
+            setUrlWithoutDomain(element.select("a.nom_manga").attr("href"))
+            /*thumbnail_url = element.select(".logo_manga img").let {
+                if (it.hasAttr("data-original"))
+                    it.attr("data-original") else it.attr("src")
+            }*/ // Better not use it, width is too large, which results in terrible image
+        }
+    }
+
+    override fun latestUpdatesNextPageSelector(): String? = null
+
+    // Search
+    override fun searchMangaFromElement(element: Element) = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
+
+    fun shuffle(s: String?): String? {
+        val result = StringBuffer(s!!)
+        var n = result.length
+        while (n > 1) {
+            val randomPoint: Int = Random.nextInt(n)
+            val randomChar = result[randomPoint]
+            result.setCharAt(n - 1, randomChar)
+            n--
+        }
+        return result.toString()
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val searchHeaders = headersBuilder().apply {
+            add("Referer", "$baseUrl/scanlation/liste_series.html?q=$query")
+            add("x-requested-with", "XMLHttpRequest")
+        }.build()
+        return GET("$baseUrl/scanlation/scan.data.json", searchHeaders)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return client.newCall(searchMangaRequest(page, query, filters))
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
+    }
+
+    private fun searchMangaParse(response: Response, query: String): MangasPage {
+        return MangasPage(parseMangaFromJson(response).mangas.filter { it.title.contains(query, ignoreCase = true) }, false)
+    }
+
+    private fun parseMangaFromJson(response: Response): MangasPage {
+        val jsonString = response.body()!!.string()
+        if (jsonString.equals("")) {
+            return MangasPage(listOf<SManga>(), false)
+        }
+
+        val jsonObject = gson.fromJson<JsonObject>(jsonString)
+
+        val mangas = jsonObject.keySet()
+            .map { key ->
+                // "95","%24100-is-Too-Cheap","0","3","One Shot","","2 avril 2010","","335","178","4010",""
+                SManga.create().apply {
+                    url = "/" + Integer.parseInt(jsonObject.get(key)?.get(0).toString().replace("\"", "")) + "/" + jsonObject.get(key)?.get(1).toString().replace("\"", "") + ".html"
+                    title = Parser.unescapeEntities(key, false)
+                }
+            }
+
+        return MangasPage(mangas, false)
+    }
+
+    override fun searchMangaSelector() = throw UnsupportedOperationException("Not used")
+
+    // Details
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            title = document.select("h2[itemprop=\"name\"]").text()
+            author = document.select("li[itemprop=\"author\"]").text()
+            description = document.select("p[itemprop=\"description\"]").text()
+            thumbnail_url = document.select(".contenu_fiche_technique .image_manga img").attr("src")
+        }
+    }
+
+    // Chapters
+    override fun chapterListSelector() = "div.texte_volume_manga ul li.chapitre div.chapitre_nom a"
+
+    override fun chapterFromElement(element: Element): SChapter {
+        return SChapter.create().apply {
+            name = element.text()
+            setUrlWithoutDomain(element.attr("href"))
+        }
+    }
+
+    // Pages
+    override fun pageListParse(document: Document): List<Page> {
+        val docString = document.toString()
+
+        var lelUrl = Regex("""['"](http.*?scanmanga.eu.*)['"]""").find(docString)?.groupValues?.get(1)
+        if (lelUrl == null) {
+            lelUrl = Regex("""['"](http.*?le[il].scan-manga.com.*)['"]""").find(docString)?.groupValues?.get(1)
+        }
+
+        return Regex("""["'](.*?zoneID.*?pageID.*?siteID.*?)["']""").findAll(docString).toList().mapIndexed { i, pageParam ->
+            Page(i, document.location(), lelUrl + pageParam.groupValues[1])
+        }
+    }
+
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
+
+    override fun imageRequest(page: Page): Request {
+        val imgHeaders = headersBuilder().apply {
+            add("Referer", page.url)
+        }.build()
+        return GET(page.imageUrl!!, imgHeaders)
+    }
 }
