@@ -48,6 +48,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("xCaliBR Scans", "http://xcalibrscans.com", "en"),
             SingleLang("NoxSubs", "https://noxsubs.com", "tr"),
             SingleLang("World Romance Translation", "https://wrt.my.id/", "id", overrideVersionCode = 1),
+            SingleLang("The Apollo Team", "https://theapollo.team", "en"),
     )
 
     companion object {
