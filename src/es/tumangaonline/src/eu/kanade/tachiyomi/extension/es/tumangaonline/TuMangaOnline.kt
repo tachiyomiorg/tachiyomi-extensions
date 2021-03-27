@@ -78,10 +78,15 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             thumbnail_url = it.select("style").toString().substringAfter("('").substringBeforeLast("')")
         }
     }
+
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&filter_by=title$getSFWUrlPart&_page=1&page=$page", headers)
+
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+
     override fun latestUpdatesSelector() = popularMangaSelector()
+
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/library")!!.newBuilder()
         url.addQueryParameter("title", query)
@@ -292,7 +297,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             Pair("Publicándose", "publishing"),
             Pair("Finalizado", "ended"),
             Pair("Cancelado", "cancelled"),
-            Pair("Pausado", "on_hold"),
+            Pair("Pausado", "on_hold")
         )
     )
 
@@ -302,7 +307,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             Pair("Ver todo", ""),
             Pair("Activo", "publishing"),
             Pair("Finalizado", "ended"),
-            Pair("Abandonado", "cancelled"),
+            Pair("Abandonado", "cancelled")
         )
     )
 

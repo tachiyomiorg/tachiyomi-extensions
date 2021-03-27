@@ -5,8 +5,12 @@ ext {
     extName = 'LectorManga'
     pkgNameSuffix = 'es.lectormanga'
     extClass = '.LectorManga'
-    extVersionCode = 14
+    extVersionCode = 15
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"
