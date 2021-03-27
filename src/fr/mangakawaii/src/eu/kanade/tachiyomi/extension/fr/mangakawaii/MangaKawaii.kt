@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.fr.mangakawaii
 
 import android.net.Uri
+import android.util.Base64
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -118,7 +119,15 @@ class MangaKawaii : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val body = response.asJsoup()
-        var elements = body.select("div#all img:not([src*=gif])")
+
+        val selectorEncoded1 = "Wkdim"  +"gsai" +  "mgWQyV2lkMm" + "xrS2img"  + "ppZDFoY" + "kd4ZElHaW"   +
+            "RsdimgFp6cHVi" + "M1FvVzNOeVl5" + "bimgzlpZG" +  "lkWjJsbVhT"  + "a3imgNJQzVq" +   "YjI1MFlpZFd" +
+            "saWR1WlhJdFi"+  "mgpteDFhV1FnTGi" + "mg5KdmlkZHlC" + "a2FYWimgTZiaW" +  "imgRtOTBL"   + "QzV0ZUMxaim"  +
+            "gGRYUnZpZEtT"+   "QTZibTki" +"mgwS0imgRwdm" + "JteGlkimgNU" + "xXTm9hV3himgr"  + "aWRLU0JwYldjNm" + "JtOTBpZEti"+
+            "mgGdHpp"  + "ZGNtTXFQimg" +  "V2RwWml" +  "kbDBw"
+        val selectorEncoded2 = String(Base64.decode(selectorEncoded1.replace("img", ""), Base64.DEFAULT))
+        val selectorDecoded = String(Base64.decode(selectorEncoded2.replace("id", ""), Base64.DEFAULT))
+        var elements = body.select(selectorDecoded)
 
         val pages = mutableListOf<Page>()
         for (i in 0 until elements.count()) {
