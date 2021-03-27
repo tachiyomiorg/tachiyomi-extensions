@@ -634,7 +634,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         private val SFW_MODE_PREF_EXCLUDE_GENDERS = listOf("6", "17", "18", "19")
 
         private const val PAGE_METHOD_PREF = "pageMethodPref"
-        private const val PAGE_METHOD_PREF_TITLE = "Método de descarga de imágenes"
+        private const val PAGE_METHOD_PREF_TITLE = "Método para descargar imágenes"
         private const val PAGE_METHOD_PREF_SUMMARY = "Previene ser banneado por el servidor cuando se usa la configuración \"Cascada\" ya que esta reduce la cantidad de solicitudes.\nPuedes usar \"Páginado\" cuando las imágenes no carguen usando \"Cascada\".\nConfiguración actual: %s"
         private const val PAGE_METHOD_PREF_DEFAULT_VALUE = "cascade"
 

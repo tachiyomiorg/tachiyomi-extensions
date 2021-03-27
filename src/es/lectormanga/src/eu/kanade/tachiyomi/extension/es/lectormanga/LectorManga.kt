@@ -61,7 +61,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         .addNetworkInterceptor(webRateLimitInterceptor)
         .addNetworkInterceptor(imageCDNRateLimitInterceptor)
         .build()
-    
+
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&type=&filter_by=title&page=$page", headers)
 
     override fun popularMangaNextPageSelector() = ".pagination .page-item:not(.disabled) a[rel='next']"
@@ -590,7 +590,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         private const val SCANLATOR_PREF_DEFAULT_VALUE = true
 
         private const val PAGE_METHOD_PREF = "pageMethodPref"
-        private const val PAGE_METHOD_PREF_TITLE = "Método de descarga de imágenes"
+        private const val PAGE_METHOD_PREF_TITLE = "Método para descargar imágenes"
         private const val PAGE_METHOD_PREF_SUMMARY = "Previene ser banneado por el servidor cuando se usa la configuración \"Cascada\" ya que esta reduce la cantidad de solicitudes.\nPuedes usar \"Páginado\" cuando las imágenes no carguen usando \"Cascada\".\nConfiguración actual: %s"
         private const val PAGE_METHOD_PREF_DEFAULT_VALUE = "cascade"
 
