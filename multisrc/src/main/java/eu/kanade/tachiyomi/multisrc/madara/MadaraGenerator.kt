@@ -81,6 +81,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Lily Manga", "https://lilymanga.com", "en"),
             SingleLang("LovableSubs", "https://lovablesubs.com", "tr"),
             SingleLang("Manga18 Fun", "https://manga18.fun", "en"),
+            SingleLang("Manga18 Fx", "https://manga18fx.com", "en"),
             SingleLang("Manga347", "https://manga347.com", "en", overrideVersionCode = 2),
             SingleLang("مانجا العاشق", "https://3asq.org", "ar", className = "Manga3asq"),
             SingleLang("Manga3S", "https://manga3s.com", "en"),
