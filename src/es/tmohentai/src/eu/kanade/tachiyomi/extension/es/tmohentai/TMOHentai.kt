@@ -1,8 +1,13 @@
 package eu.kanade.tachiyomi.extension.es.tmohentai
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -15,9 +20,11 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 @Nsfw
-class TMOHentai : ParsedHttpSource() {
+class TMOHentai : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "TMOHentai"
 
@@ -26,6 +33,10 @@ class TMOHentai : ParsedHttpSource() {
     override val lang = "es"
 
     override val supportsLatest = true
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/section/all?view=list&page=$page&order=popularity&order-dir=desc&search[searchText]=&search[searchBy]=name&type=all", headers)
 
@@ -71,19 +82,47 @@ class TMOHentai : ParsedHttpSource() {
 
         name = element.select("h3.truncate").text()
         scanlator = parsedInformation.substringAfter("By").substringBefore("Language").trim()
-        setUrlWithoutDomain(element.select("a.pull-right.btn.btn-primary").attr("href"))
+
+        var currentUrl = element.select("a.pull-right.btn.btn-primary").attr("href")
+
+        if (currentUrl.contains("/1")) {
+            currentUrl = currentUrl.substringBeforeLast("/")
+        }
+
+        setUrlWithoutDomain(currentUrl)
         // date_upload = no date in the web
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url.substringBefore("/paginated") + "/cascade", headers) // "/cascade" to get all images
+    // "/cascade" to get all images
+    override fun pageListRequest(chapter: SChapter): Request {
+        val currentUrl = chapter.url
+        val newUrl = if (getPageMethodPref() == "cascade" && currentUrl.contains("paginated")) {
+            currentUrl.substringBefore("paginated") + "cascade"
+        } else if (getPageMethodPref() == "paginated" && currentUrl.contains("cascade")) {
+            currentUrl.substringBefore("cascade") + "paginated"
+        } else currentUrl
+
+        return GET("$baseUrl$newUrl", headers)
+    }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div#content-images > div.row > div.col-xs-12.text-center > img.content-image")?.forEach {
-            add(Page(size, "", baseUrl + it.attr("data-original")))
+        if (getPageMethodPref() == "cascade") {
+            document.select("div#content-images img.content-image")?.forEach {
+                add(Page(size, "", it.attr("data-original")))
+            }
+        } else {
+            val pageList = document.select("select#select-page").first().select("option").map { it.attr("value").toInt() }
+            val url = document.baseUri()
+
+            pageList.forEach {
+                add(Page(it, "$url/$it"))
+            }
         }
     }
 
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document) = document.select("div#content-images img.content-image").attr("data-original")
+
+    override fun imageRequest(page: Page) = GET("$baseUrl${page.imageUrl!!}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = HttpUrl.parse("$baseUrl/section/all?view=list")!!.newBuilder()
@@ -193,9 +232,13 @@ class TMOHentai : ParsedHttpSource() {
         Selection(2, false)
     )
 
-    // Array.from(document.querySelectorAll('#advancedSearch .list-group .list-group-item'))
-    // .map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
-    // https://tmohentai.com/section/hentai
+    /**
+     * Last check: 17/02/2021
+     * https://tmohentai.com/section/hentai
+     *
+     * Array.from(document.querySelectorAll('#advancedSearch .list-group .list-group-item'))
+     * .map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
+     */
     private fun getGenreList() = listOf(
         Genre("Romance", "1"),
         Genre("Fantasy", "2"),
@@ -245,7 +288,62 @@ class TMOHentai : ParsedHttpSource() {
         Genre("Yandere", "46")
     )
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val pageMethodPref = androidx.preference.ListPreference(screen.context).apply {
+            key = PAGE_METHOD_PREF
+            title = PAGE_METHOD_PREF_TITLE
+            entries = arrayOf("Cascada", "Páginado")
+            entryValues = arrayOf("cascade", "paginated")
+            summary = PAGE_METHOD_PREF_SUMMARY
+            setDefaultValue(PAGE_METHOD_PREF_DEFAULT_VALUE)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(PAGE_METHOD_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(pageMethodPref)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val pageMethodPref = ListPreference(screen.context).apply {
+            key = PAGE_METHOD_PREF
+            title = PAGE_METHOD_PREF_TITLE
+            entries = arrayOf("Cascada", "Páginado")
+            entryValues = arrayOf(PAGE_METHOD_PREF_CASCADE, PAGE_METHOD_PREF_PAGINATED)
+            summary = PAGE_METHOD_PREF_SUMMARY
+            setDefaultValue(PAGE_METHOD_PREF_DEFAULT_VALUE)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(PAGE_METHOD_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(pageMethodPref)
+    }
+
+    private fun getPageMethodPref() = preferences.getString(PAGE_METHOD_PREF, PAGE_METHOD_PREF_DEFAULT_VALUE)
+
     companion object {
+        private const val PAGE_METHOD_PREF = "pageMethodPref"
+        private const val PAGE_METHOD_PREF_TITLE = "Método de descarga de imágenes"
+        private const val PAGE_METHOD_PREF_SUMMARY = "Puede corregir errores al cargar las imágenes.\nConfiguración actual: %s"
+        private const val PAGE_METHOD_PREF_CASCADE = "cascade"
+        private const val PAGE_METHOD_PREF_PAGINATED = "paginated"
+        private const val PAGE_METHOD_PREF_DEFAULT_VALUE = PAGE_METHOD_PREF_CASCADE
+
         const val PREFIX_CONTENTS = "contents"
         const val PREFIX_ID_SEARCH = "id:"
 
