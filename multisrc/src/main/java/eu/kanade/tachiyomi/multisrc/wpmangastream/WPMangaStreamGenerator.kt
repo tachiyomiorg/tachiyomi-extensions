@@ -45,7 +45,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Silence Scan", "https://silencescan.net", "pt-BR"),
             SingleLang("Kuma Scans (Kuma Translation)", "https://kumascans.com", "en", className = "KumaScans"),
             SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
-            SingleLang("xCaliBR Scans", "http://xcalibrscans.com", "en"),
+            SingleLang("xCaliBR Scans", "https://xcalibrscans.com", "en", overrideVersionCode = 1),
             SingleLang("NoxSubs", "https://noxsubs.com", "tr"),
             SingleLang("World Romance Translation", "https://wrt.my.id/", "id", overrideVersionCode = 1),
             SingleLang("The Apollo Team", "https://theapollo.team", "en"),
