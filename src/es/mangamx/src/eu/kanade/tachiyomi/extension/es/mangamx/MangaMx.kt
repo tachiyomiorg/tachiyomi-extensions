@@ -46,7 +46,7 @@ open class MangaMx : ParsedHttpSource() {
     override fun popularMangaSelector() = "#article-div a"
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
-        thumbnail_url = element.select("img").attr("src")
+        thumbnail_url = element.select("img").attr("data-src")
         title = element.select("div:eq(1)").text().trim()
     }
 
@@ -71,7 +71,7 @@ open class MangaMx : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
     override fun latestUpdatesSelector() = "div._1bJU3"
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("src")
+        thumbnail_url = element.select("img").attr("data-src")
         element.select("div a").apply {
             title = this.text().trim()
             setUrlWithoutDomain(this.attr("href"))
