@@ -106,7 +106,7 @@ class ScanManga : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val searchHeaders = headersBuilder().apply {
-            add("Referer", "$baseUrl/scanlation/liste_series.html?q=$query")
+            add("Referer", "$baseUrl/scanlation/liste_series.html")
             add("x-requested-with", "XMLHttpRequest")
         }.build()
         return GET("$baseUrl/scanlation/scan.data.json", searchHeaders)
