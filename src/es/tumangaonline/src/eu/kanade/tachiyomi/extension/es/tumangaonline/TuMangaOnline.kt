@@ -140,8 +140,8 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
                 is GenreList -> {
                     filter.state.forEach { genre ->
                         when (genre.state) {
-                            Filter.TriState.STATE_INCLUDE -> url.addQueryParameter("exclude_genders[]", genre.id)
-                            Filter.TriState.STATE_EXCLUDE -> url.addQueryParameter("genders[]", genre.id)
+                            Filter.TriState.STATE_INCLUDE -> url.addQueryParameter("genders[]", genre.id)
+                            Filter.TriState.STATE_EXCLUDE -> url.addQueryParameter("exclude_genders[]", genre.id)
                         }
                     }
                 }
