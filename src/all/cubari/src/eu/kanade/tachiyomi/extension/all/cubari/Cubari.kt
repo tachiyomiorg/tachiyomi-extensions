@@ -17,12 +17,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
 
-open class Cubari : HttpSource() {
+open class Cubari(override val lang: String) : HttpSource() {
 
     final override val name = "Cubari"
     final override val baseUrl = "https://cubari.moe"
     final override val supportsLatest = true
-    final override val lang = "all"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add(
@@ -218,7 +217,7 @@ open class Cubari : HttpSource() {
                         searchMangaParse(response, trimmedQuery)
                     }
             }
-            else -> Observable.just(MangasPage(ArrayList(), false))
+            else -> throw Exception(SEARCH_FALLBACK_MSG)
         }
     }
 
@@ -230,7 +229,7 @@ open class Cubari : HttpSource() {
 
             return GET("$baseUrl/read/api/$source/series/$slug/", headers)
         } catch (e: Exception) {
-            throw Exception("Unable to parse. Is your query in the format of ${Cubari.PROXY_PREFIX}<source>/<slug>?")
+            throw Exception(SEARCH_FALLBACK_MSG)
         }
     }
 
@@ -344,6 +343,8 @@ open class Cubari : HttpSource() {
         const val AUTHOR_FALLBACK = "Unknown"
         const val ARTIST_FALLBACK = "Unknown"
         const val DESCRIPTION_FALLBACK = "No description."
+
+        const val SEARCH_FALLBACK_MSG = "Unable to parse. Is your query in the format of $PROXY_PREFIX<source>/<slug>?"
 
         enum class SortType {
             PINNED,

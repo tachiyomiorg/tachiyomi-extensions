@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android'
 ext {
     extName = 'Cubari'
     pkgNameSuffix = "all.cubari"
-    extClass = '.Cubari'
-    extVersionCode = 1
+    extClass = '.CubariFactory'
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
