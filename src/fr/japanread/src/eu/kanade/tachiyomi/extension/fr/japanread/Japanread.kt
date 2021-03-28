@@ -43,7 +43,7 @@ class Japanread : ParsedHttpSource() {
 
     // Latest
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET(baseUrl, headers)
+        return GET("$baseUrl/?page=$page", headers)
     }
 
     override fun latestUpdatesSelector() = "section.main-content > .container > .row > .col-lg-9 tbody > tr > td[rowspan]"
@@ -60,7 +60,7 @@ class Japanread : ParsedHttpSource() {
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search?q=$query")
+        return GET("$baseUrl/search?q=$query&page=$page")
     }
 
     override fun searchMangaSelector() = "#manga-container > div > div"
