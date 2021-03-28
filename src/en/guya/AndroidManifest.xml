@@ -17,20 +17,6 @@
                     android:host="guya.moe"
                     android:pathPattern="/read/manga/..*"
                     android:scheme="https" />
-
-                <data
-                    android:host="guya.moe"
-                    android:pathPattern="/proxy/..*"
-                    android:scheme="https" />
-
-                <data
-                    android:host="*imgur.com"
-                    android:pathPattern="/a/..*"
-                    android:scheme="https" />
-                <data
-                    android:host="*imgur.com"
-                    android:pathPattern="/gallery/..*"
-                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>

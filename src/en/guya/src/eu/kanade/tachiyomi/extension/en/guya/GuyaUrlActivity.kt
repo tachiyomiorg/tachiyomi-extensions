@@ -21,10 +21,7 @@ class GuyaUrlActivity : Activity() {
         val pathSegments = intent?.data?.pathSegments
 
         if (host != null && pathSegments != null) {
-            val query = when (host) {
-                "m.imgur.com", "imgur.com" -> fromImgur(pathSegments)
-                else -> fromGuya(pathSegments)
-            }
+            val query = fromGuya(pathSegments)
 
             if (query == null) {
                 Log.e("GuyaUrlActivity", "Unable to parse URI from intent $intent")
@@ -49,29 +46,12 @@ class GuyaUrlActivity : Activity() {
         exitProcess(0)
     }
 
-    private fun fromImgur(pathSegments: List<String>): String? {
-        if (pathSegments.size >= 2) {
-            val id = pathSegments[1]
-
-            return "${Guya.PROXY_PREFIX}imgur/$id"
-        }
-        return null
-    }
-
     private fun fromGuya(pathSegments: MutableList<String>): String? {
-        if (pathSegments.size >= 3) {
-            return when (pathSegments[0]) {
-                "proxy" -> {
-                    val source = pathSegments[1]
-                    val id = pathSegments[2]
-                    "${Guya.PROXY_PREFIX}$source/$id"
-                }
-                else -> {
-                    val slug = pathSegments[2]
-                    "${Guya.SLUG_PREFIX}$slug"
-                }
-            }
+        return if (pathSegments.size >= 3) {
+            val slug = pathSegments[2]
+            "${Guya.SLUG_PREFIX}$slug"
+        } else {
+            null
         }
-        return null
     }
 }
