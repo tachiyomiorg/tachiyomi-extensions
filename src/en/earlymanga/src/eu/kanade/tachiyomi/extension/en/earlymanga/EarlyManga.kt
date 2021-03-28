@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.earlymanga
 
+import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -58,13 +59,13 @@ class EarlyManga : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = "li.paging:not(.disabled)"
 
     // latest
-    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/?page=$page", headers)
 
     override fun latestUpdatesSelector() = ".container > .main-content .content-homepage-item"
 
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector(): String? = null
+    override fun latestUpdatesNextPageSelector() = ".load-data-btn"
 
     // search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -128,7 +129,13 @@ class EarlyManga : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select(".col>.row>.col-lg-5:not([style*=display:]):not(:nth-child(2)) a[href*=chapter]:not([style*=display:])").attr("href"))
+        val selectorEncoded1 = "TG1OdmJDro" + "wQWdJQ2NvbEFro" + "wnSUNBZ0lDQWdJQ0FrownSUNj" + "b2xBZ0lDQWdJQ0rowFnSUNBZ0xuSnZkeWN" +
+            "vbEFnSUNBZ0rowlDQWdJRDRjb2xnSUNBZ0xt" + "TnZiQzFzWnkwMUlDQWrowdJRDRnSU" + "NBZ1lUcHViM1FvT21acGNu" + "TjBMV05rowvYVd4a0tTd2dJY29s" +
+            "Q0FnSUM1amIyd2dJQ0Fn" + "SUNBdWNtOTNJQ0FnSWNvbENB" + "Z0lDQWdMbU52row" + "YkMxc1p5MDFJQ0FnY2" +
+            "9sSUNBZ0lDQWdJR0ZiYUhKbFppb" + "zlZMmhoY0hSbGNpMWRXY2ro" + "w9sMmh5WldZcVBWd3ZZMmhoY0hSbGN" + "sMDZhR0Z6S2NvbEdScG" + "Rpaz0="
+        val selectorEncoded2 = String(Base64.decode(selectorEncoded1.replace("row", ""), Base64.DEFAULT))
+        val selectorDecoded = String(Base64.decode(selectorEncoded2.replace("col", ""), Base64.DEFAULT))
+        setUrlWithoutDomain(element.select(selectorDecoded).attr("href"))
         name = "Chapter " + url.substringAfter("chapter-")
         date_upload = parseChapterDate(element.select(".ml-1").attr("title"))
     }
