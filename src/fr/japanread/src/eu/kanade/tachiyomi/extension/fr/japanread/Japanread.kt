@@ -12,6 +12,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
 
 class Japanread : ParsedHttpSource() {
 
@@ -34,7 +35,7 @@ class Japanread : ParsedHttpSource() {
         return SManga.create().apply {
             title = element.select("p a").text()
             setUrlWithoutDomain(element.select("p a").attr("href"))
-            thumbnail_url = element.select("img").attr("src").replace("manga_small", "manga_large").replace("manga_medium", "manga_large")
+            thumbnail_url = element.select("img").attr("src").replace("manga_small", "manga_large")
         }
     }
 
@@ -45,13 +46,17 @@ class Japanread : ParsedHttpSource() {
         return GET(baseUrl, headers)
     }
 
-    override fun latestUpdatesSelector() = "#nav-tabContent #nav-profile li"
+    override fun latestUpdatesSelector() = "section.main-content > .container > .row > .col-lg-9 tbody > tr > td[rowspan]"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
-        return popularMangaFromElement(element)
+        return SManga.create().apply {
+            title = element.nextElementSibling().nextElementSibling().select("a").text()
+            setUrlWithoutDomain(element.select("a").attr("href"))
+            thumbnail_url = element.select("img").attr("src").replace("manga_medium", "manga_large")
+        }
     }
 
-    override fun latestUpdatesNextPageSelector() = "#nav-tabContent #nav-profile li"
+    override fun latestUpdatesNextPageSelector() = "a[rel=\"next\"]"
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -74,20 +79,50 @@ class Japanread : ParsedHttpSource() {
     // Details
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
-            title = document.select("h2[itemprop=\"name\"]").text()
-            author = document.select("li[itemprop=\"author\"]").text()
-            description = document.select("p[itemprop=\"description\"]").text()
-            thumbnail_url = document.select(".contenu_fiche_technique .image_manga img").attr("src")
+            title = document.select("h1.card-header").text()
+            artist = document.select("div.col-lg-3:contains(Artiste) + div").text()
+            author = document.select("div.col-lg-3:contains(Auteur) + div").text()
+            description = document.select("div.col-lg-3:contains(Description) + div").text()
+            genre = document.select("div.col-lg-3:contains(Type - Catégories) + div .badge").joinToString { it.text() }
+            status = document.select("div.col-lg-3:contains(Statut) + div").text().let {
+                when {
+                    it.contains("En cours") -> SManga.ONGOING
+                    it.contains("Terminé") -> SManga.COMPLETED
+                    else -> SManga.UNKNOWN
+                }
+            }
+            thumbnail_url = document.select("img[alt=\"couverture manga\"]").attr("src")
         }
     }
 
     // Chapters
-    override fun chapterListSelector() = "#chapters .chapter-container div.row"
+    override fun chapterListSelector() = "#chapters div[data-row=\"chapter\"]"
+
+    // Subtract relative date
+    private fun parseRelativeDate(date: String): Long {
+        val trimmedDate = date.substringAfter("Il y a").trim().split(" ")
+
+        val calendar = Calendar.getInstance()
+        when (trimmedDate[1]) {
+            "ans" -> calendar.apply { add(Calendar.YEAR, -trimmedDate[0].toInt()) }
+            "an" -> calendar.apply { add(Calendar.YEAR, -trimmedDate[0].toInt()) }
+            "mois" -> calendar.apply { add(Calendar.MONTH, -trimmedDate[0].toInt()) }
+            "sem." -> calendar.apply { add(Calendar.WEEK_OF_MONTH, -trimmedDate[0].toInt()) }
+            "j" -> calendar.apply { add(Calendar.DAY_OF_MONTH, -trimmedDate[0].toInt()) }
+            "h" -> calendar.apply { add(Calendar.HOUR_OF_DAY, -trimmedDate[0].toInt()) }
+            "min" -> calendar.apply { add(Calendar.MINUTE, -trimmedDate[0].toInt()) }
+            "s" -> calendar.apply { add(Calendar.SECOND, 0) }
+        }
+
+        return calendar.timeInMillis
+    }
 
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
             name = element.select("div.col-lg-5 a").text()
             setUrlWithoutDomain(element.select("div.col-lg-5 a").attr("href"))
+            date_upload = parseRelativeDate(element.select("div.order-lg-8").text())
+            scanlator = element.select(".chapter-list-group a").joinToString { it.text() }
         }
     }
 
