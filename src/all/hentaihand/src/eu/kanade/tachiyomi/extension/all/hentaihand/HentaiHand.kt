@@ -6,7 +6,6 @@ import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
-import android.util.Log
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -213,19 +212,15 @@ class HentaiHand(override val lang: String, val hhLangId: Int) : ConfigurableSou
     private fun authIntercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         if (username.isEmpty() or password.isEmpty()) {
-            Log.e("interceptor", "Proceed un-authorized")
             return chain.proceed(request)
         }
 
         if (token.isEmpty()) {
-            Log.e("interceptor", "Log in and get token")
             token = this.login(chain, username, password)
         }
         val authRequest = request.newBuilder()
             .addHeader("Authorization", "Bearer $token")
             .build()
-        Log.e("interceptor", "Proceed authorized")
-        Log.e("intercept Authorization", authRequest.header("Authorization")!!)
         return chain.proceed(authRequest)
     }
 
@@ -247,12 +242,7 @@ class HentaiHand(override val lang: String, val hhLangId: Int) : ConfigurableSou
             return JSONObject(response.body()!!.string())
                 .getJSONObject("auth")
                 .getString("access_token")
-                .also {
-                    Log.e("token", it)
-                }
         } catch (e: JSONException) {
-            Log.e("responsebody", response.body().toString())
-            Log.e("responsecode", response.code().toString())
             throw Exception("Cannot parse login response body")
         }
     }
