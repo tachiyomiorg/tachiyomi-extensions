@@ -33,6 +33,11 @@ fun JsonObject.getNullable(key: String): JsonElement? {
     return value
 }
 
+fun Float.toStringWithoutDotZero(): String = when (this % 1) {
+    0F -> this.toInt().toString()
+    else -> this.toString()
+}
+
 class MangaMutiny : HttpSource() {
 
     override val name = "Manga Mutiny"
@@ -109,7 +114,7 @@ class MangaMutiny : HttpSource() {
     private fun chapterTitleBuilder(rootNode: JsonObject): String {
         val volume = rootNode.getNullable("volume")?.asInt
 
-        val chapter = rootNode.getNullable("chapter")?.asFloat
+        val chapter = rootNode.getNullable("chapter")?.asFloat?.toStringWithoutDotZero()
 
         val textTitle = rootNode.getNullable("title")?.asString
 
@@ -120,19 +125,18 @@ class MangaMutiny : HttpSource() {
             chapterTitle.append("Chapter $chapter")
         }
         if (textTitle != null && textTitle != "") {
-            if (volume != null || chapter != null) chapterTitle.append(" ")
+            if (volume != null || chapter != null) chapterTitle.append(": ")
             chapterTitle.append(textTitle)
         }
 
         return chapterTitle.toString()
     }
 
-    private fun parseDate(dateAsString: String): Long {
-        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
-        format.timeZone = TimeZone.getTimeZone("UTC")
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
-        return format.parse(dateAsString)?.time ?: 0
-    }
+    private fun parseDate(dateAsString: String): Long =
+        dateFormatter.parse(dateAsString)?.time ?: 0
 
     // latest
     override fun latestUpdatesRequest(page: Int): Request =
@@ -541,7 +545,7 @@ class MangaMutiny : HttpSource() {
         }
     }
 
-    private class AuthorFilter() : Filter.Text("Manga Author & Artist"), UriFilter {
+    private class AuthorFilter : Filter.Text("Manga Author & Artist"), UriFilter {
         override val uriParam = fun() = "creator"
 
         override val shouldAdd = fun() = state.isNotEmpty()
