@@ -240,6 +240,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Sleeping Knight Scans", "https://skscans.com", "en", overrideVersionCode = 2),
             MultiLang("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
                 className = "LeviatanScansFactory", overrideVersionCode = 3),
+            SingleLang("Manga1st", "https://manga1st.com", "en"),
     )
 
     companion object {
