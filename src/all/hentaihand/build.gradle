@@ -5,7 +5,7 @@ ext {
     extName = 'HentaiHand'
     pkgNameSuffix = 'all.hentaihand'
     extClass = '.HentaiHandFactory'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
     containsNsfw = true
 }
