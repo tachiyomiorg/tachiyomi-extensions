@@ -42,7 +42,7 @@ import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 
 @Nsfw
-class HentaiHand(override val lang: String, val hhLangId: Int) : ConfigurableSource, HttpSource() {
+class HentaiHand(override val lang: String, private val hhLangId: Int) : ConfigurableSource, HttpSource() {
 
     override val baseUrl: String = "https://hentaihand.com"
     override val name: String = "HentaiHand"
