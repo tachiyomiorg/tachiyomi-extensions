@@ -28,6 +28,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Credentials
+import okhttp3.Dns
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -336,6 +337,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
     override val supportsLatest = true
+    private val LOG_TAG = "extension.all.komga${if (suffix.isNotBlank()) ".$suffix" else ""}"
 
     override val baseUrl by lazy { getPrefBaseUrl() }
     private val username by lazy { getPrefUsername() }
@@ -361,6 +363,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         .build()
                 }
             }
+            .dns(Dns.SYSTEM) // don't use DNS over HTTPS as it breaks IP addressing
             .build()
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -428,114 +431,116 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
 
     init {
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    libraries = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptyList()
+        if (baseUrl.isNotBlank()) {
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        libraries = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading libraries for filters", tr)
                     }
-                },
-                { tr ->
-                    Log.e(LOG_TAG, "error while loading libraries for filters", tr)
-                }
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    collections = try {
-                        gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
-                    } catch (e: Exception) {
-                        emptyList()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        collections = try {
+                            gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading collections for filters", tr)
                     }
-                },
-                { tr ->
-                    Log.e(LOG_TAG, "error while loading collections for filters", tr)
-                }
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/genres", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    genres = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptySet()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/genres", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        genres = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptySet()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading genres for filters", tr)
                     }
-                },
-                { tr ->
-                    Log.e(LOG_TAG, "error while loading genres for filters", tr)
-                }
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    tags = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptySet()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        tags = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptySet()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading tags for filters", tr)
                     }
-                },
-                { tr ->
-                    Log.e(LOG_TAG, "error while loading tags for filters", tr)
-                }
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/publishers", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    publishers = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptySet()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/publishers", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        publishers = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptySet()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading publishers for filters", tr)
                     }
-                },
-                { tr ->
-                    Log.e(LOG_TAG, "error while loading publishers for filters", tr)
-                }
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/authors", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    authors = try {
-                        val list: List<AuthorDto> = gson.fromJson(response.body()?.charStream()!!)
-                        list.groupBy { it.role }
-                    } catch (e: Exception) {
-                        emptyMap()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/authors", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        authors = try {
+                            val list: List<AuthorDto> = gson.fromJson(response.body()?.charStream()!!)
+                            list.groupBy { it.role }
+                        } catch (e: Exception) {
+                            emptyMap()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading authors for filters", tr)
                     }
-                },
-                { tr ->
-                    Log.e(LOG_TAG, "error while loading authors for filters", tr)
-                }
-            )
+                )
+        }
     }
 
     companion object {
@@ -550,7 +555,5 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
         private const val TYPE_SERIES = "Series"
         private const val TYPE_READLISTS = "Read lists"
-
-        private const val LOG_TAG = "extension.all.komga"
     }
 }

@@ -1,3 +1,11 @@
+## 1.2.23
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* ignore DNS over HTTPS so it can reach IP addresses
+
 ## 1.2.22
 
 Minimum Komga version required: `0.75.0`

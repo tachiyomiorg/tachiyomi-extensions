@@ -5,13 +5,13 @@ ext {
     extName = 'Komga'
     pkgNameSuffix = 'all.komga'
     extClass = '.KomgaFactory'
-    extVersionCode = 22
+    extVersionCode = 23
     libVersion = '1.2'
 }
 
 dependencies {
     implementation 'io.reactivex:rxandroid:1.2.1'
-    implementation 'io.reactivex:rxjava:1.3.6'
+    implementation 'io.reactivex:rxjava:1.3.8'
 }
 
 apply from: "$rootDir/common.gradle"
