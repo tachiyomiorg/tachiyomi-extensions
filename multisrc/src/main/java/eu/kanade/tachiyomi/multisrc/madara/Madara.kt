@@ -499,7 +499,7 @@ abstract class Madara(
         return super.pageListRequest(chapter)
     }
 
-    open val pageListParseSelector = "div.page-break"
+    open val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select(pageListParseSelector).mapIndexed { index, element ->
