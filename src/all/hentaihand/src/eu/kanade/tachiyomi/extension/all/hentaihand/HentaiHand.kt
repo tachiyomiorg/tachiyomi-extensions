@@ -1,6 +1,13 @@
 package eu.kanade.tachiyomi.extension.all.hentaihand
 
 import android.annotation.SuppressLint
+import android.app.Application
+import android.content.SharedPreferences
+import android.support.v7.preference.EditTextPreference
+import android.support.v7.preference.PreferenceScreen
+import android.text.InputType
+import android.util.Log
+import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.nullObj
@@ -10,7 +17,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -19,15 +28,22 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
+import org.json.JSONException
+import org.json.JSONObject
 import rx.Observable
 import rx.schedulers.Schedulers
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 
 @Nsfw
-class HentaiHand(override val lang: String, val hhLangId: Int) : HttpSource() {
+class HentaiHand(override val lang: String, val hhLangId: Int) : ConfigurableSource, HttpSource() {
 
     override val baseUrl: String = "https://hentaihand.com"
     override val name: String = "HentaiHand"
@@ -35,7 +51,9 @@ class HentaiHand(override val lang: String, val hhLangId: Int) : HttpSource() {
 
     private val gson = Gson()
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor { authIntercept(it) }
+        .build()
 
     private fun parseGenericResponse(response: Response): MangasPage {
         val data = gson.fromJson<JsonObject>(response.body()!!.string())
@@ -190,6 +208,125 @@ class HentaiHand(override val lang: String, val hhLangId: Int) : HttpSource() {
 
     override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
 
+    // Authorization
+
+    private fun authIntercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        if (username.isEmpty() or password.isEmpty()) {
+            Log.e("interceptor", "Proceed un-authorized")
+            return chain.proceed(request)
+        }
+
+        if (token.isEmpty()) {
+            Log.e("interceptor", "Log in and get token")
+            token = this.login(chain, username, password)
+        }
+        val authRequest = request.newBuilder()
+            .addHeader("Authorization", "Bearer $token")
+            .build()
+        Log.e("interceptor", "Proceed authorized")
+        Log.e("intercept Authorization", authRequest.header("Authorization")!!)
+        return chain.proceed(authRequest)
+    }
+
+    private fun login(chain: Interceptor.Chain, username: String, password: String): String {
+        val jsonObject = JSONObject().apply {
+            this.put("username", username)
+            this.put("password", password)
+            this.put("remember_me", true)
+        }
+        val body = RequestBody.create(MEDIA_TYPE, jsonObject.toString())
+        val response = chain.proceed(POST("$baseUrl/api/login", headers, body))
+        if (response.code() == 401) {
+            throw Exception("Failed to login, check if username and password are correct")
+        }
+
+        if (response.body() == null)
+            throw Exception("Login response body is empty")
+        try {
+            return JSONObject(response.body()!!.string())
+                .getJSONObject("auth")
+                .getString("access_token")
+                .also {
+                    Log.e("token", it)
+                }
+        } catch (e: JSONException) {
+            Log.e("responsebody", response.body().toString())
+            Log.e("responsecode", response.code().toString())
+            throw Exception("Cannot parse login response body")
+        }
+    }
+
+    private var token: String = ""
+    private val username by lazy { getPrefUsername() }
+    private val password by lazy { getPrefPassword() }
+
+    // Preferences
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        screen.addPreference(screen.editTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.editTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password, true))
+    }
+
+    private fun androidx.preference.PreferenceScreen.editTextPreference(title: String, default: String, value: String, isPassword: Boolean = false): androidx.preference.EditTextPreference {
+        return androidx.preference.EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
+
+            if (isPassword) {
+                setOnBindEditTextListener {
+                    it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+            }
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
+        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
+    }
+
+    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
+        return EditTextPreference(context).apply {
+            key = title
+            this.title = title
+            summary = value
+            this.setDefaultValue(default)
+            dialogTitle = title
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val res = preferences.edit().putString(title, newValue as String).commit()
+                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+    }
+
+    private fun getPrefUsername(): String = preferences.getString(USERNAME_TITLE, USERNAME_DEFAULT)!!
+    private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
+
     // Filters
 
     private class SortFilter(sortPairs: List<Pair<String, String>>) : Filter.Select<String>("Sort By", sortPairs.map { it.first }.toTypedArray())
@@ -252,5 +389,10 @@ class HentaiHand(override val lang: String, val hhLangId: Int) : HttpSource() {
     companion object {
         @SuppressLint("SimpleDateFormat")
         private val DATE_FORMAT = SimpleDateFormat("yyyy-dd-MM")
+        private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private const val USERNAME_TITLE = "Username"
+        private const val USERNAME_DEFAULT = ""
+        private const val PASSWORD_TITLE = "Password"
+        private const val PASSWORD_DEFAULT = ""
     }
 }
