@@ -1,9 +1,9 @@
 package eu.kanade.tachiyomi.extension.fr.scanmanga
 
-import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
-import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -125,19 +125,37 @@ class ScanManga : ParsedHttpSource() {
     }
 
     private fun parseMangaFromJson(response: Response): MangasPage {
-        val jsonString = response.body()!!.string()
-        if (jsonString.equals("")) {
+        val jsonData = response.body()!!.string()!!
+        if (jsonData == "") {
             return MangasPage(listOf<SManga>(), false)
         }
 
-        val jsonObject = gson.fromJson<JsonObject>(jsonString)
+        val jsonObject = JsonParser().parse(jsonData).asJsonObject
 
         val mangas = jsonObject.keySet()
             .map { key ->
                 // "95","%24100-is-Too-Cheap","0","3","One Shot","","2 avril 2010","","335","178","4010",""
                 SManga.create().apply {
-                    url = "/" + Integer.parseInt(jsonObject.get(key)?.get(0).toString().replace("\"", "")) + "/" + jsonObject.get(key)?.get(1).toString().replace("\"", "") + ".html"
+                    url = "/" + jsonObject[key][0].string + "/" + jsonObject[key][1].string + ".html"
                     title = Parser.unescapeEntities(key, false)
+                    genre = jsonObject[key][2].string.let {
+                        when {
+                            it.contains("0") -> "Shōnen"
+                            it.contains("1") -> "Shōjo"
+                            it.contains("2") -> "Seinen"
+                            it.contains("3") -> "Josei"
+                            else -> null
+                        }
+                    }
+                    status = jsonObject[key][3].string.let {
+                        when {
+                            it.contains("0") -> SManga.ONGOING // En cours
+                            it.contains("1") -> SManga.ONGOING // En pause
+                            it.contains("2") -> SManga.COMPLETED // Terminé
+                            it.contains("3") -> SManga.COMPLETED // One shot
+                            else -> SManga.UNKNOWN
+                        }
+                    }
                 }
             }
 
@@ -150,7 +168,7 @@ class ScanManga : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             title = document.select("h2[itemprop=\"name\"]").text()
-            author = document.select("li[itemprop=\"author\"]").text()
+            author = document.select("li[itemprop=\"author\"] a").joinToString { it.text() }
             description = document.select("p[itemprop=\"description\"]").text()
             thumbnail_url = document.select(".contenu_fiche_technique .image_manga img").attr("src")
         }
