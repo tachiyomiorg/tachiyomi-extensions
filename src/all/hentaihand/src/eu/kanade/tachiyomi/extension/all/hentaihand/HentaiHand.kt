@@ -42,10 +42,14 @@ import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 
 @Nsfw
-class HentaiHand(override val lang: String, private val hhLangId: Int) : ConfigurableSource, HttpSource() {
+class HentaiHand(
+    override val lang: String,
+    private val hhLangId: Int? = null,
+    extraName: String = ""
+) : ConfigurableSource, HttpSource() {
 
     override val baseUrl: String = "https://hentaihand.com"
-    override val name: String = "HentaiHand"
+    override val name: String = "HentaiHand$extraName"
     override val supportsLatest = true
 
     private val gson = Gson()
@@ -73,7 +77,8 @@ class HentaiHand(override val lang: String, private val hhLangId: Int) : Configu
     override fun popularMangaParse(response: Response): MangasPage = parseGenericResponse(response)
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&sort=popularity&order=desc&duration=all&languages=$hhLangId")
+        val url = "$baseUrl/api/comics?page=$page&sort=popularity&order=desc&duration=all"
+        return GET(if (hhLangId == null) url else ("$url&languages=$hhLangId"))
     }
 
     // Latest
@@ -81,7 +86,8 @@ class HentaiHand(override val lang: String, private val hhLangId: Int) : Configu
     override fun latestUpdatesParse(response: Response): MangasPage = parseGenericResponse(response)
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/api/comics?page=$page&sort=uploaded_at&order=desc&duration=week&languages=$hhLangId")
+        val url = "$baseUrl/api/comics?page=$page&sort=uploaded_at&order=desc&duration=week"
+        return GET(if (hhLangId == null) url else ("$url&languages=$hhLangId"))
     }
 
     // Search
@@ -105,7 +111,9 @@ class HentaiHand(override val lang: String, private val hhLangId: Int) : Configu
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
             .addQueryParameter("page", page.toString())
             .addQueryParameter("q", query)
-            .addQueryParameter("languages", hhLangId.toString())
+
+        if (hhLangId != null)
+            url.addQueryParameter("languages", hhLangId.toString())
 
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
