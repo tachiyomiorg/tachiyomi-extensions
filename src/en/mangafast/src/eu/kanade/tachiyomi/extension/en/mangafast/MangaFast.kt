@@ -27,46 +27,55 @@ class MangaFast : ParsedHttpSource() {
         return GET("$baseUrl/list-manga" + if (page > 1) "/page/$page" else "", headers)
     }
 
-    override fun popularMangaSelector() = ".daftar .bge"
+    override fun popularMangaSelector() = ".list-content .ls4 .ls4v"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select(".bgei a").attr("href"))
-        title = element.select(".kan h3").text().trim()
-        thumbnail_url = element.select(".bgei img").attr("src")
+        val a = element.select("a")
+        setUrlWithoutDomain(a.attr("href"))
+        title = a.attr("title")
+        thumbnail_url = a.select("img").attr("src")
     }
 
     override fun popularMangaNextPageSelector() = ".btn-w a:contains(Next »)"
 
     // latest
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl", headers)
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
-    override fun latestUpdatesSelector() = ".ls8w div.ls8"
+    override fun latestUpdatesSelector() = ".ls8w div.ls8 .ls8v"
 
-    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select(".ls8j a").attr("href"))
-        title = element.select("h4").text().trim()
-        thumbnail_url = element.select(".ls8v img").attr("src")
-    }
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
     // search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/page/$page/?s=$query", headers)
 
-    override fun searchMangaSelector() = latestUpdatesSelector()
+    override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaFromElement(element: Element) = latestUpdatesFromElement(element)
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     // manga details
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        title = document.select("#Judul h1").text()
-        author = document.select("td[itemprop=creator]").text().trim()
-        status = parseStatus(document.select(".inftable").text())
-        genre = document.select("a[itemprop=genre]").joinToString { it.text() }
-        description = document.select("#Judul .desc").first().text().substringAfter(title).substringAfter(". ")
-        thumbnail_url = document.select("#Informasi .row img.shadow").first().attr("src")
+    override fun mangaDetailsParse(document: Document): SManga {
+        val articleTitle = document.select("article header[id=article-title]")
+        val articleInfo = document.select("article section[id=article-info]")
+
+        val manga = SManga.create().apply {
+            title = articleTitle.select("h1[itemprop=name]").text().trim()
+            description = articleTitle.select("p.desc").text().trim()
+            thumbnail_url = articleInfo.select("img.shadow").attr("src")
+        }
+        articleInfo.select("table.inftable tbody tr").forEach {
+            val row = it.select("td")
+            when (row[0].text()) {
+                "Genre" -> manga.genre = row[1].text().trim().removeSuffix(",")
+                "Author" -> manga.author = row[1].text().trim()
+                "Status" -> manga.status = parseStatus(row[1].text())
+            }
+        }
+
+        return manga
     }
 
     private fun parseStatus(status: String) = when {
@@ -79,9 +88,9 @@ class MangaFast : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-link"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("a").attr("href"))
-        name = element.select(".text-left").text()
-        date_upload = parseDate(element.select(".text-right").text())
+        setUrlWithoutDomain(element.attr("href"))
+        name = element.select(".left").text()
+        date_upload = parseDate(element.select(".right").text())
     }
 
     private fun parseDate(text: String): Long {
