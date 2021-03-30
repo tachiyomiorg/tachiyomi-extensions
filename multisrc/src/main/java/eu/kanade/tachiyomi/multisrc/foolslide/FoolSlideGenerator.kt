@@ -47,7 +47,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr"),
         SingleLang("Rama", "https://www.ramareader.it", "it"),
         SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
-        SingleLang("Hyakuro", "https://hyakuro.com/reader, "en"),
+        SingleLang("Hyakuro", "https://hyakuro.com/reader", "en"),
     )
 
     companion object {
