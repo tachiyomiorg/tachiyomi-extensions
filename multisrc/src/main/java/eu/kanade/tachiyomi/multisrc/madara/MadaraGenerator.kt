@@ -58,6 +58,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("FreeWebtoonCoins", "https://freewebtooncoins.com", "en"),
             SingleLang("Furio Scans", "https://furioscans.com", "pt-BR"),
             SingleLang("موقع لترجمة المانجا", "https://golden-manga.com", "ar", className = "GoldenManga"),
+        	SingleLang("GalaxyDegenScans", "https://gdegenscans.xyz/", "en"),
             SingleLang("Graze Scans", "https://grazescans.com/", "en"),
             SingleLang("GuncelManga", "https://guncelmanga.com", "tr"),
             SingleLang("Hero Manhua", "https://heromanhua.com", "en"),
