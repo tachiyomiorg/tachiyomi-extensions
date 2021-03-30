@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -37,8 +38,10 @@ class MangaHost : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .addInterceptor(::rateLimitIntercept)
         .build()
+
+    private val rateLimitInterceptor = RateLimitInterceptor(1, 1, TimeUnit.SECONDS)
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept", ACCEPT)
@@ -89,7 +92,7 @@ class MangaHost : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/find/")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/find")!!.newBuilder()
             .addQueryParameter("this", query)
 
         return GET(url.toString(), headers)
@@ -194,6 +197,14 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private fun rateLimitIntercept(chain: Interceptor.Chain): Response {
+        return if (chain.request().url().toString().contains(CDN_REGEX)) {
+            chain.proceed(chain.request())
+        } else {
+            rateLimitInterceptor.intercept(chain)
+        }
+    }
+
     private fun Call.asObservableIgnoreCode(code: Int): Observable<Response> {
         return asObservable().doOnNext { response ->
             if (!response.isSuccessful && response.code() != code) {
@@ -229,10 +240,11 @@ class MangaHost : ParsedHttpSource() {
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
+        private val CDN_REGEX = "/mangas_files/.*\\.jpg".toRegex()
 
         private val DATE_FORMAT by lazy {
             SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
