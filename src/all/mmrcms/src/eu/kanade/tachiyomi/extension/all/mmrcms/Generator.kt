@@ -258,6 +258,7 @@ class Generator {
             SourceData("fr", "Lelscan-VF", "https://lelscan-vf.co"),
             SourceData("id", "Komik Manga", "https://adm.komikmanga.com"),
             SourceData("ko", "Mangazuki Raws", "https://raws.mangazuki.co"),
+            SourceData("en", "Mangazuki", "https://mangazuki.co/"),
             SourceData("pt-BR", "Remangas", "https://remangas.top"),
             SourceData("pt-BR", "AnimaRegia", "https://animaregia.net"),
             SourceData("tr", "MangaVadisi", "http://manga-v2.mangavadisi.org"),
