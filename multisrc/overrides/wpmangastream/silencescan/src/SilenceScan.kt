@@ -39,6 +39,11 @@ class SilenceScan : WPMangaStream(
         description = infoEl.select("h2:contains(Sinopse) + div p").joinToString("\n") { it.text() }
         genre = infoEl.select("b:contains(Gêneros) + span a").joinToString { it.text() }
         thumbnail_url = infoEl.select("div.thumb img").imgAttr()
+
+        // add manga/manhwa/manhua thinggy to genre
+        val type = document.select(".imptdt:contains(Tipo) a, a[href*=type\\=]").firstOrNull()?.ownText()
+        genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
     }
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {

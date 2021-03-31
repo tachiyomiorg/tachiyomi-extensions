@@ -171,6 +171,11 @@ abstract class WPMangaStream(
                 artist = infoElement.select(".fmed b:contains(Artist)+span, .imptdt:contains(Artist) i").firstOrNull()?.ownText()
                 description = infoElement.select("div.desc p, div.entry-content p").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
+
+                // add manga/manhwa/manhua thinggy to genre
+                val type = document.select("span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
+                genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
             }
         }
     }

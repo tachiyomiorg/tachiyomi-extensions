@@ -97,6 +97,11 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                 artist = infoElement.select("span:contains(Author:)").firstOrNull()?.ownText()
                 description = infoElement.select("div.komik_info-description-sinopsis p").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.komik_info-content-thumbnail img").imgAttr()
+
+                // add manga/manhwa/manhua thinggy to genre
+                val type = document.select("span:contains(Type) a").firstOrNull()?.ownText()
+                genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
             }
         }
     }

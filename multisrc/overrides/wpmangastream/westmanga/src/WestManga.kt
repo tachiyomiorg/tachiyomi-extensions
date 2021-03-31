@@ -28,6 +28,11 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
                 author = infoElement.select(".infotable tr:contains(Author) td:last-child").firstOrNull()?.ownText()
                 description = infoElement.select(".entry-content-single[itemprop=\"description\"]").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
+
+                // add manga/manhwa/manhua thinggy to genre
+                val type = document.select(".infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
+                genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
             }
         }
     }
