@@ -54,6 +54,7 @@ class FMReaderGenerator : ThemeSourceGenerator {
         ),
         SingleLang("RawLH", "https://lovehug.net", "ja"),
         SingleLang("Say Truyen", "https://saytruyen.com", "vi"),
+        SingleLang("KSGroupScans", "https://ksgroupscans.com", "en"),
     )
 
     companion object {
