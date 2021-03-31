@@ -9,7 +9,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
 
     override val themeClass = "WPMangaReader"
 
-    override val baseVersionCode: Int = 2
+    override val baseVersionCode: Int = 3
 
     override val sources = listOf(
             SingleLang("Hikari Scan", "https://hikariscan.com.br", "pt-BR", overrideVersionCode = 1),

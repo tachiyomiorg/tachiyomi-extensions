@@ -86,6 +86,11 @@ abstract class WPMangaReader(
 
         thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("src")
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
+
+        // add series type(manga/manhwa/manhua/other) thinggy to genre
+        val type = document.select("span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
+        genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
     }
 
     private fun parseStatus(status: String) = when {
