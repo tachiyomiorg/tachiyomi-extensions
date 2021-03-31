@@ -126,7 +126,7 @@ class EarlyManga : ParsedHttpSource() {
 
     private val paginationNextPageSelector = popularMangaNextPageSelector()
 
-    override fun chapterListSelector() = ".chapter-container > .row:not(:first-child)"
+    override fun chapterListSelector() = ".chapter-container > .row:not(:first-child,.d-none)"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         val selectorEncoded1 = "TG1OdmJDro" + "wQWdJQ2NvbEFro" + "wnSUNBZ0lDQWdJQ0FrownSUNj" + "b2xBZ0lDQWdJQ0rowFnSUNBZ0xuSnZkeWN" +
@@ -141,7 +141,11 @@ class EarlyManga : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.getDefault()).parse(date)?.time ?: 0L
+        return try {
+            SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.US).parse(date)?.time ?: 0
+        } catch (_: Exception) {
+            0L
+        }
     }
 
     // pages
