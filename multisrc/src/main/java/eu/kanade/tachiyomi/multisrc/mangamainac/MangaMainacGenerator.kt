@@ -20,7 +20,7 @@ class MangaMainacGenerator : ThemeSourceGenerator {
         SingleLang("Hajime no Ippo Manga", "https://readhajimenoippo.com/", "en"),
         SingleLang("Read Berserk Manga Online", "https://berserkmanga.net/", "en"),
         SingleLang("Read Kaguya-sama: Love is War", "https://kaguyasama.net/", "en", className = "ReadKaguyaSamaLoveIsWar", pkgName = "readkaguyasamaloveiswar"),
-        SingleLang("Read Domestic Girlfriend Manga", "https://domesticgirlfriend.net/", "en""),
+        SingleLang("Read Domestic Girlfriend Manga", "https://domesticgirlfriend.net/", "en"),
         SingleLang("Read Black Clover Manga", "https://w1.blackclovermanga2.com/", "en"),
         SingleLang("TCB Scans", "https://onepiecechapters.com/", "en", overrideVersionCode = 2),
         SingleLang("Read Shingeki no Kyojin Manga", "https://readshingekinokyojin.com/", "en"),
