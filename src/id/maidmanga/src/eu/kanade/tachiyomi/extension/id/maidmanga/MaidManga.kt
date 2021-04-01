@@ -103,6 +103,12 @@ class MaidManga : ParsedHttpSource() {
             thumbnail_url = document.select("div.series-thumb img").attr("abs:src")
             status = parseStatus(document.select("div.block span.status").text())
             author = document.select("ul.series-infolist li b:contains(Author) + span").text()
+
+            // add manga/manhwa/manhua thinggy to genre
+            val type = document.select("div.block span.type").text()
+            genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
+            else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+            else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
         }
     }
 
