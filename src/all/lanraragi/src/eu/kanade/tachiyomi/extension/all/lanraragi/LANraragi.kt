@@ -541,21 +541,11 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return null
     }
 
-    private fun getArtist(tags: String?): String {
-        getNSTag(tags, "artist")?.let {
-            return it[1]
-        }
-
-        return "N/A"
-    }
+    private fun getArtist(tags: String?): String = getNSTag(tags, "artist")?.get(1) ?: "N/A"
 
     private fun getDateAdded(tags: String?): String {
-        getNSTag(tags, "date_added")?.let {
-            // Pad Date Added NS to milliseconds
-            return it[1].padEnd(13, '0')
-        }
-
-        return ""
+        // Pad Date Added NS to milliseconds
+        return getNSTag(tags, "date_added")?.get(1)?.padEnd(13, '0') ?: ""
     }
 
     // Headers (currently auth) are done in headersBuilder
