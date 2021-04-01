@@ -32,7 +32,6 @@ import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
 import rx.Single
-import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -556,7 +555,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             // Save users a Random refresh in the extension and from Library
             Single.fromCallable { getRandomIDResponse() }
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(
                     { randomArchiveID = getRandomID(it) },
                     {}
