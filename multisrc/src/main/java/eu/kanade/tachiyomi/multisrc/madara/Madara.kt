@@ -329,10 +329,10 @@ abstract class Madara(
                 manga.title = it.ownText()
             }
             select("div.author-content").first()?.let {
-                manga.author = it.text()
+                if (!it.text().contains("Updating", true)) manga.author = it.text()
             }
             select("div.artist-content").first()?.let {
-                manga.artist = it.text()
+                if (!it.text().contains("Updating", true)) manga.artist = it.text()
             }
             select("div.description-summary div.summary__content").let {
                 if (it.select("p").text().isNotEmpty()) {
@@ -361,6 +361,11 @@ abstract class Madara(
                 genres.add(genre)
             }
             manga.genre = genres.joinToString(", ")
+
+            // add manga/manhwa/manhua thinggy to genre
+            val type = document.select(".post-content_item:contains(Type) .summary-content").firstOrNull()?.ownText()
+            manga.genre += if (manga.genre!!.contains(type.toString(), true) || type == "-" || type!!.contains("Updating", true)) ""
+            else if (!type.isNullOrEmpty() && !manga.genre.isNullOrEmpty()) ", $type" else if (!type.isNullOrEmpty() && manga.genre.isNullOrEmpty()) "$type" else ""
         }
 
         return manga
