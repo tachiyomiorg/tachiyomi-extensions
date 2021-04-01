@@ -146,8 +146,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val filters = mutableListOf<Filter<*>>()
         val prefNewOnly = preferences.getBoolean("latestNewOnly", false)
 
-        filters.add(LatestView())
-
         if (prefNewOnly) filters.add(NewArchivesOnly(true))
 
         if (latestNamespacePref.isNotBlank()) {
@@ -173,7 +171,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
-                is LatestView -> if (filter.state) uri.appendQueryParameter("latest", "latest")
                 is StartingPage -> {
                     startPageOffset = filter.state.toIntOrNull() ?: 1
 
@@ -229,12 +226,12 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     private fun canShowRandom(response: Response): Boolean {
-        // Server has archives, no meaningful filtering, not paginating, and not Latest
+        // Server has archives, not paginating, no meaningful filtering. querySize check would have
+        // to be broken intentionally as it goes through searchMangaRequest. Likely for an API change.
         return (
             totalRecords > 0 &&
-                lastRecordsFiltered == totalRecords &&
                 getStart(response) == 0 &&
-                response.request().url().queryParameter("latest") == null
+                response.request().url().querySize() == 1 // ?start=
             )
     }
 
@@ -255,7 +252,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
     }
 
-    private class LatestView() : Filter.CheckBox("", true)
     private class DescendingOrder(overrideState: Boolean = false) : Filter.CheckBox("Descending Order", overrideState)
     private class NewArchivesOnly(overrideState: Boolean = false) : Filter.CheckBox("New Archives Only", overrideState)
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
