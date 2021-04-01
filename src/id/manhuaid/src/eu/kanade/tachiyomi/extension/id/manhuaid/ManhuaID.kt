@@ -67,6 +67,12 @@ class ManhuaID : ParsedHttpSource() {
             parseStatus(it)
         }
         thumbnail_url = document.select("img.img-fluid").attr("abs:src")
+
+        // add manga/manhwa/manhua thinggy to genre
+        val type = document.select("table tr:contains(Type) a, table a[href*=type]").firstOrNull()?.ownText()
+        genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
+        else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
     }
 
     private fun parseStatus(status: String) = when {
