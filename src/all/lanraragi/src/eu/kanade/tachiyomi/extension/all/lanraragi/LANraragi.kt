@@ -438,9 +438,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     // Helper
     private fun getRandomID(response: Response): String {
-        return response.let {
-            it.headers("Location").first()
-        }.split("=").last()
+        return response.headers("Location").firstOrNull()?.split("=")?.last() ?: ""
     }
 
     private fun getRandomIDResponse(): Response {
