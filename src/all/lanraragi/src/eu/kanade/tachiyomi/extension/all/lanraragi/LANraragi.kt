@@ -25,6 +25,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.CacheControl
+import okhttp3.Dns
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -543,22 +544,24 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     // Headers (currently auth) are done in headersBuilder
-    override val client: OkHttpClient = network.client.newBuilder().build()
+    override val client: OkHttpClient = network.client.newBuilder().dns(Dns.SYSTEM).build()
     // Specifically for /random to grab IDs without triggering a server-side extract
-    private val clientNoFollow: OkHttpClient = client.newBuilder().followRedirects(false).build()
+    private val clientNoFollow: OkHttpClient = client.newBuilder().dns(Dns.SYSTEM).followRedirects(false).build()
 
     init {
-        // Save a FilterList reset
-        getCategories()
+        if (baseUrl.isNotBlank()) {
+            // Save a FilterList reset
+            getCategories()
 
-        // Save users a Random refresh in the extension and from Library
-        Single.fromCallable { getRandomIDResponse() }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { randomArchiveID = getRandomID(it) },
-                {}
-            )
+            // Save users a Random refresh in the extension and from Library
+            Single.fromCallable { getRandomIDResponse() }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { randomArchiveID = getRandomID(it) },
+                    {}
+                )
+        }
     }
 
     companion object {
