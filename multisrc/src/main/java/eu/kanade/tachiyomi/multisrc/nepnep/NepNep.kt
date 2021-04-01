@@ -190,6 +190,12 @@ abstract class NepNep(
                 status = info.select("li.list-group-item:has(span:contains(Status)) a:contains(scan)").text().toStatus()
                 description = info.select("div.Content").text()
                 thumbnail_url = info.select("img").attr("abs:src")
+
+                // add manga/manhwa/manhua thinggy to genre
+                val type = info.select("li.list-group-item:has(span:contains(Type)) a, a[href*=type\\=]").firstOrNull()?.ownText()
+                genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
+                else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
             }
         }
     }
