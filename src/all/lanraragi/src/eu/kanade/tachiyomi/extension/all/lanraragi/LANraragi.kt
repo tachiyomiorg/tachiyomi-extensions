@@ -454,11 +454,33 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         fun toUriPart() = vals[state].first
     }
 
+    private fun getCategories() {
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/categories", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe(
+                {
+                    categories = try {
+                        gson.fromJson(it.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                },
+                {}
+            )
+    }
+
     private fun getCategoryPairs(categories: List<Category>): Array<Pair<String?, String>> {
         // Empty pair to disable. Sort by pinned status then name for convenience.
         // Web client sort is pinned > last_used but reflects between page changes.
 
         val pin = "\uD83D\uDCCC "
+
+        // Maintain categories sync for next FilterList reset. If there's demand for it, it's now
+        // possible to sort by last_used similar to the web client. Maybe an option toggle?
+        getCategories()
 
         return listOf(Pair("", ""))
             .plus(
@@ -542,28 +564,15 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     private val clientNoFollow: OkHttpClient = client.newBuilder().followRedirects(false).build()
 
     init {
+        // Save a FilterList reset
+        getCategories()
+
         // Save users a Random refresh in the extension and from Library
         Single.fromCallable { getRandomIDResponse() }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { randomArchiveID = getRandomID(it) },
-                {}
-            )
-
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/categories", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    categories = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                },
                 {}
             )
     }
