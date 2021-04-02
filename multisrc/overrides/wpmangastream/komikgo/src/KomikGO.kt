@@ -15,7 +15,7 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 
-class KomikGo : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
+class KomikGO : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
     // Formerly "Komik GO (WP Manga Stream)"
     override val id = 1070674823324721554
 
