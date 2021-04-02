@@ -106,7 +106,11 @@ class Readmanga : ParsedHttpSource() {
         }
 
         val manga = SManga.create()
-        manga.author = infoElement.select("span.elem_author").first()?.text()
+        var authorElement = infoElement.select("span.elem_author").first()?.text()
+        if (authorElement == null) {
+            authorElement = infoElement.select("span.elem_screenwriter").first()?.text()
+        }
+        manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
         manga.description = infoElement.select("div.manga-description").text()
@@ -147,6 +151,15 @@ class Readmanga : ParsedHttpSource() {
 
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href") + "?mtr=1")
+
+        var translators = ""
+        val translatorElement = urlElement.attr("title")
+        if (!translatorElement.isNullOrBlank()) {
+            translators = translatorElement
+                .replace("(Переводчик),", "&")
+                .removeSuffix(" (Переводчик)")
+        }
+        chapter.scanlator = translators
 
         chapter.name = urlText.removeSuffix(" новое").trim()
         if (manga.title.length > 25) {
