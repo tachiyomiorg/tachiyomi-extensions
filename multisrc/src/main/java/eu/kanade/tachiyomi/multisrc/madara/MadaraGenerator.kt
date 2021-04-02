@@ -192,7 +192,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Random Translations", "https://randomtranslations.com", "en"),
             SingleLang("RawDEX", "https://rawdex.net", "ko", isNsfw = true),
             SingleLang("Raw Mangas", "https://rawmangas.net", "ja", isNsfw = true, overrideVersionCode = 1),
-            SingleLang("ReadManhua", "https://readmanhua.net", "en", overrideVersionCode = 1),
+            SingleLang("ReadManhua", "https://readmanhua.net", "en", overrideVersionCode = 2),
             SingleLang("Renascence Scans (Renascans)", "https://new.renascans.com", "en", className = "RenaScans"),
             SingleLang("Rüya Manga", "https://www.ruyamanga.com", "tr", className = "RuyaManga"),
             SingleLang("S2Manga", "https://s2manga.com", "en"),
