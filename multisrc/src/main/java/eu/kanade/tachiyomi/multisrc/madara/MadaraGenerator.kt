@@ -25,7 +25,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("ArazNovel", "https://www.araznovel.com", "tr"),
             SingleLang("Argos Scan", "https://argosscan.com", "pt-BR"),
             SingleLang("Asgard Team", "https://www.asgard1team.com", "ar"),
-            SingleLang("Astral Library", "https://www.astrallibrary.net", "en"),
+            SingleLang("Astral Library", "https://www.astrallibrary.net", "en", overrideVersionCode = 1),
             SingleLang("Atikrost", "https://atikrost.com", "tr"),
             SingleLang("ATM-Subs", "https://atm-subs.fr", "fr", className = "ATMSubs"),
             SingleLang("AYATOON", "https://ayatoon.com", "tr"),
