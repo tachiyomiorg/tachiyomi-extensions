@@ -48,4 +48,3 @@ class HNIScantradEN : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "en"
         }
     }
 }
-
