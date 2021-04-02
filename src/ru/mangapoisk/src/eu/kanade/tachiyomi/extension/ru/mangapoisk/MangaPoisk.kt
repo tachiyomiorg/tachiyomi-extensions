@@ -1,9 +1,7 @@
 package eu.kanade.tachiyomi.extension.ru.mangapoisk
 
-import com.github.salomonbrys.kotson.float
 import com.github.salomonbrys.kotson.forEach
 import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -14,10 +12,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -30,7 +30,7 @@ class MangaPoisk : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.3987.163 Safari/537.36"
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
@@ -44,17 +44,29 @@ class MangaPoisk : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = if (query.isNotBlank()) {
-            "$baseUrl/search-ajax/?query=$query"
+            "$baseUrl/search?q=$query"
         } else {
-            var ret = String()
+            val url = HttpUrl.parse("$baseUrl/manga")!!.newBuilder()
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
-                    is GenreList -> {
-                        ret = "$baseUrl/genre/${filter.values[filter.state].id}/page/$page"
+                    is OrderBy -> {
+                        val ord = arrayOf("-year", "popular", "name", "-published_at", "-last_chapter_at")[filter.state!!.index]
+                        val ordRev = arrayOf("year", "-popular", "-name", "published_at", "last_chapter_at")[filter.state!!.index]
+                        url.addQueryParameter("sortBy", if (filter.state!!.ascending) "$ordRev" else "$ord")
+                    }
+                    is StatusList -> filter.state.forEach { status ->
+                        if (status.state) {
+                            url.addQueryParameter("translated[]", status.id)
+                        }
+                    }
+                    is GenreList -> filter.state.forEach { genre ->
+                        if (genre.state) {
+                            url.addQueryParameter("genres[]", genre.id)
+                        }
                     }
                 }
             }
-            ret
+            return GET(url.toString(), headers)
         }
         return GET(url, headers)
     }
@@ -64,67 +76,53 @@ class MangaPoisk : ParsedHttpSource() {
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun searchMangaParse(response: Response): MangasPage {
-        if (!response.request().url().toString().contains("search-ajax")) {
-            return popularMangaParse(response)
-        }
-        val jsonData = response.body()!!.string()
-        val json = JsonParser().parse(jsonData).asJsonObject
-        val results = json.getAsJsonArray("results")
-        val mangas = mutableListOf<SManga>()
-        results.forEach {
-            val element = it.asJsonObject
-            val manga = SManga.create()
-            manga.setUrlWithoutDomain(element.get("url").string)
-            manga.title = element.get("title").string.split("/").first()
-            val image = element.get("image").string
-            if (image.startsWith("http")) {
-                manga.thumbnail_url = image
-            } else {
-                manga.thumbnail_url = baseUrl + image
-            }
-
-            mangas.add(manga)
-        }
-
-        return MangasPage(mangas, false)
+        return popularMangaParse(response)
     }
 
     override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-        manga.thumbnail_url = element.select("img").first().attr("src")
-        manga.setUrlWithoutDomain(element.attr("href"))
-        element.select("a > h2.entry-title").first().let {
-            manga.title = it.text().split("/").first()
+        return SManga.create().apply {
+            var img = element.select("a > img").first().attr("data-src")
+            if (img.isEmpty()) {
+                img = element.select("a > img").first().attr("src")
+            }
+            thumbnail_url = img
+
+            element.select("a.card-about").first().let {
+                setUrlWithoutDomain(it.attr("href"))
+            }
+
+            element.select("a > h2.entry-title").first().let {
+                title = it.text().split("/").first()
+            }
         }
-        return manga
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga =
         popularMangaFromElement(element)
 
-    override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not Used")
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a.page-link"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = throw Exception("Not Used")
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("article div.card-body").first()
         val manga = SManga.create()
-        manga.genre = infoElement.select("a.label").joinToString { it.text() }
-        manga.description = infoElement.select(".description").text()
-        manga.thumbnail_url = infoElement.select("img").first().attr("src")
-        if (infoElement.text().contains("Перевод: закончен")) {
-            manga.status = SManga.COMPLETED
-        } else if (infoElement.text().contains("Перевод: продолжается")) {
-            manga.status = SManga.ONGOING
-        }
-
+        manga.genre = infoElement.select(".post-info > span:eq(10) > a").joinToString { it.text() }
+        manga.description = infoElement.select(".post-info > div .manga-description.entry").text()
+        manga.status = parseStatus(infoElement.select(".post-info > span:eq(7)").text())
+        manga.thumbnail_url = infoElement.select("img.img-fluid").first().attr("src")
         return manga
     }
 
+    private fun parseStatus(element: String): Int = when {
+        element.contains("Статус: Завершена") -> SManga.COMPLETED
+        element.contains("Статус: Выпускается") -> SManga.ONGOING
+        else -> SManga.UNKNOWN
+    }
     override fun chapterListParse(response: Response): List<SChapter> {
         val html = response.body()!!.string()
 
@@ -132,20 +130,41 @@ class MangaPoisk : ParsedHttpSource() {
         val mangaName = html.split("mangaName: '").last().split("' });").first()
         val json = JsonParser().parse(jsonData).asJsonArray
         val chapterList = mutableListOf<SChapter>()
-        json.forEach {
+  /*      json.forEach {
             chapterList.add(chapterFromElement(mangaName, it.asJsonObject))
-        }
+        }*/
         return chapterList
     }
 
-    override fun chapterListSelector(): String = throw Exception("Not Used")
+    override fun chapterListSelector() = "chapter-item > a"
 
-    private fun chapterFromElement(mangaName: String, element: JsonObject): SChapter {
+    private fun chapterFromElement(element: Element, manga: SManga): SChapter {
+        val urlElement = element.select("a").first()
+        val urlText = urlElement.text()
+
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain("/$mangaName/${element.get("volume").string}/${element.get("number").string})/1")
-        chapter.name = "Том ${element.get("volume").string} - Глава ${element.get("number").string} ${element.get("title").string}"
-        chapter.chapter_number = element.get("number").float
-        chapter.date_upload = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(element.get("date").string)?.time ?: 0L
+        chapter.setUrlWithoutDomain(urlElement.attr("href"))
+
+        chapter.name = urlText.removeSuffix(" новое").trim()
+        if (manga.title.length > 25) {
+            for (word in manga.title.split(' ')) {
+                chapter.name = chapter.name.removePrefix(word).trim()
+            }
+        }
+        val dots = chapter.name.indexOf("…")
+        val numbers = chapter.name.findAnyOf(IntRange(0, 9).map { it.toString() })?.first ?: 0
+
+        if (dots in 0 until numbers) {
+            chapter.name = chapter.name.substringAfter("…").trim()
+        }
+
+        chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
+            try {
+                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it)?.time ?: 0L
+            } catch (e: ParseException) {
+                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it)?.time ?: 0L
+            }
+        } ?: 0
         return chapter
     }
 
@@ -162,68 +181,32 @@ class MangaPoisk : ParsedHttpSource() {
         return resPages
     }
 
-    private class Genre(name: String, val id: String) : Filter.CheckBox(name) {
-        override fun toString(): String {
-            return name
-        }
-    }
+    private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
+    private class CheckFilter(name: String, val id: String) : Filter.CheckBox(name)
 
-    private class GenreList(genres: Array<Genre>) : Filter.Select<Genre>("Genres", genres, 0)
-
+    private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус", statuses)
+    private class GenreList(genres: List<CheckFilter>) : Filter.Group<CheckFilter>("Жанры", genres)
     override fun getFilterList() = FilterList(
+
+        OrderBy(),
+        StatusList(getStatusList()),
         GenreList(getGenreList())
     )
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
+        arrayOf("Год", "Популярности", "Алфавиту", "Дате добавления", "Дате обновления"),
+        Selection(1, false)
+    )
 
-    /*  [...document.querySelectorAll(".categories .item")]
-    *     .map(el => `Genre("${el.textContent.trim()}", "${el.getAttribute('href')}")`).join(',\n')
-    *   on https://manga-online.biz/genre/all/
-    */
-    private fun getGenreList() = arrayOf(
-        Genre("Все", "all"),
-        Genre("Боевик", "boevik"),
-        Genre("Боевые искусства", "boevye_iskusstva"),
-        Genre("Вампиры", "vampiry"),
-        Genre("Гарем", "garem"),
-        Genre("Гендерная интрига", "gendernaya_intriga"),
-        Genre("Героическое фэнтези", "geroicheskoe_fehntezi"),
-        Genre("Детектив", "detektiv"),
-        Genre("Дзёсэй", "dzyosehj"),
-        Genre("Додзинси", "dodzinsi"),
-        Genre("Драма", "drama"),
-        Genre("Игра", "igra"),
-        Genre("История", "istoriya"),
-        Genre("Меха", "mekha"),
-        Genre("Мистика", "mistika"),
-        Genre("Научная фантастика", "nauchnaya_fantastika"),
-        Genre("Повседневность", "povsednevnost"),
-        Genre("Постапокалиптика", "postapokaliptika"),
-        Genre("Приключения", "priklyucheniya"),
-        Genre("Психология", "psihologiya"),
-        Genre("Романтика", "romantika"),
-        Genre("Самурайский боевик", "samurajskij_boevik"),
-        Genre("Сверхъестественное", "sverhestestvennoe"),
-        Genre("Сёдзё", "syodzyo"),
-        Genre("Сёдзё-ай", "syodzyo-aj"),
-        Genre("Сёнэн", "syonen"),
-        Genre("Спорт", "sport"),
-        Genre("Сэйнэн", "sejnen"),
-        Genre("Трагедия", "tragediya"),
-        Genre("Триллер", "triller"),
-        Genre("Ужасы", "uzhasy"),
-        Genre("Фантастика", "fantastika"),
-        Genre("Фэнтези", "fentezi"),
-        Genre("Школа", "shkola"),
-        Genre("Этти", "etti"),
-        Genre("Юри", "yuri"),
-        Genre("Военный", "voennyj"),
-        Genre("Жосей", "zhosej"),
-        Genre("Магия", "magiya"),
-        Genre("Полиция", "policiya"),
-        Genre("Смена пола", "smena-pola"),
-        Genre("Супер сила", "super-sila"),
-        Genre("Эччи", "echchi"),
-        Genre("Яой", "yaoj"),
-        Genre("Сёнэн-ай", "syonen-aj")
+    private fun getStatusList() = listOf(
+        CheckFilter("Выпускается", "0"),
+        CheckFilter("Завершена", "1"),
+    )
+
+    private fun getGenreList() = listOf(
+        CheckFilter("приключения", "1"),
+        CheckFilter("романтика", "2"),
+        CheckFilter("боевик", "3"),
     )
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
