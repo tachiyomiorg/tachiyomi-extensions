@@ -245,7 +245,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             MultiLang("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
                 className = "LeviatanScansFactory", overrideVersionCode = 3),
             SingleLang("Manga1st", "https://manga1st.com", "en"),
-            SingleLang("Manga 1ST", "https://manga1st.online", "en", className = "MangaFirst"),
+            SingleLang("Manga1st.online", "https://manga1st.online", "en", className = "MangaFirstOnline"),
             SingleLang("Imperfect Comics", "https://imperfectcomic.com", "en"),
             SingleLang("Ookamii Manga", "https://manga.ookamii.xyz/", "en"),
             SingleLang("Mortals Groove", "https://mortalsgroove.com", "en")
