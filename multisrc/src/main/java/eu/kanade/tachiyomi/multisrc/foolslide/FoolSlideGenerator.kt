@@ -37,8 +37,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Helvetica Scans", "https://helveticascans.com", "en"),
         SingleLang("Kirishima Fansub", "https://www.kirishimafansub.net", "es"),
         SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true),
-        SingleLang("HNI-Scantrad", "https://hni-scantrad.com", "fr", className = "HNIScantrad"),
-        SingleLang("HNI-Scantrad", "https://hni-scantrad.com", "en", className = "HNIScantradEN"),
+        MultiLang("HNI-Scantrad", "https://hni-scantrad.com", listOf("fr", "en"), className = "HNIScantradFactory", pkgName = "hniscantrad", overrideVersionCode = 1),
         SingleLang("The Phoenix Scans", "https://www.phoenixscans.com", "it", className = "PhoenixScans"),
         SingleLang("GTO The Great Site", "https://www.gtothegreatsite.net", "it", className = "GTO"),
         SingleLang("Fall World Reader", "https://faworeader.altervista.org", "it", className = "FallenWorldOrder"),
@@ -48,6 +47,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Rama", "https://www.ramareader.it", "it"),
         SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
         SingleLang("Hyakuro", "https://hyakuro.com/reader", "en"),
+        SingleLang("Le Cercle du Scan", "https://lel.lecercleduscan.com", "fr")
     )
 
     companion object {
