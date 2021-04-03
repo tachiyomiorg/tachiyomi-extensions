@@ -61,6 +61,5 @@ java -jar Inspector-latest.jar ../apk inspector.txt
 cat inspector.txt
 
 rm Inspector-latest.jar
-rm *.zip
 rm *.jar
 
