@@ -32,20 +32,25 @@ if (System.getenv("CI") == null || System.getenv("CI_PUSH") == "true") {
 //            project(name).projectDir = File("generated-src/${dir.name}/${subdir.name}")
 //        }
 //    }
-    File(rootDir, "src/en").eachDir { subdir ->
-            val name = ":extensions:individual:en:${subdir.name}"
-            include(name)
-            project(name).projectDir = File("src/en/${subdir.name}")
-    }
+//    File(rootDir, "src/en").eachDir { subdir ->
+//            val name = ":extensions:individual:en:${subdir.name}"
+//            include(name)
+//            project(name).projectDir = File("src/en/${subdir.name}")
+//    }
 
     /**
      * If you're developing locally and only want to work with a single module,
      * comment out the parts above and uncomment below.
      */
-    // val lang = "all"
-    // val name = "mmrcms"
-    // include(":${lang}-${name}")
-    // project(":${lang}-${name}").projectDir = File("src/${lang}/${name}")
+     var lang = "all"
+     var name = "batoto"
+     include(":${lang}-${name}")
+     project(":${lang}-${name}").projectDir = File("src/${lang}/${name}")
+
+    lang = "all"
+    name = "cubari"
+    include(":${lang}-${name}")
+    project(":${lang}-${name}").projectDir = File("src/${lang}/${name}")
 } else {
     // Running in CI (GitHub Actions)
 
