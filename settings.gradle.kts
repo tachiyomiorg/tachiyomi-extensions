@@ -17,20 +17,25 @@ if (System.getenv("CI") == null || System.getenv("CI_PUSH") == "true") {
     project(":multisrc").projectDir = File("multisrc")
 
     // Loads all extensions
-    File(rootDir, "src").eachDir { dir ->
-        dir.eachDir { subdir ->
-            val name = ":extensions:individual:${dir.name}:${subdir.name}"
+//    File(rootDir, "src").eachDir { dir ->
+//        dir.eachDir { subdir ->
+//            val name = ":extensions:individual:${dir.name}:${subdir.name}"
+//            include(name)
+//            project(name).projectDir = File("src/${dir.name}/${subdir.name}")
+//        }
+//    }
+//    // Loads generated extensions from multisrc
+//    File(rootDir, "generated-src").eachDir { dir ->
+//        dir.eachDir { subdir ->
+//            val name = ":extensions:multisrc:${dir.name}:${subdir.name}"
+//            include(name)
+//            project(name).projectDir = File("generated-src/${dir.name}/${subdir.name}")
+//        }
+//    }
+    File(rootDir, "src/en").eachDir { subdir ->
+            val name = ":extensions:individual:en:${subdir.name}"
             include(name)
-            project(name).projectDir = File("src/${dir.name}/${subdir.name}")
-        }
-    }
-    // Loads generated extensions from multisrc
-    File(rootDir, "generated-src").eachDir { dir ->
-        dir.eachDir { subdir ->
-            val name = ":extensions:multisrc:${dir.name}:${subdir.name}"
-            include(name)
-            project(name).projectDir = File("generated-src/${dir.name}/${subdir.name}")
-        }
+            project(name).projectDir = File("src/en/${subdir.name}")
     }
 
     /**
