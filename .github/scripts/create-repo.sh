@@ -50,8 +50,6 @@ gzip -c index.json > index.json.gz
 
 cat index.json
 
-set +e
-
 echo
 echo "executing inspector"
 echo
