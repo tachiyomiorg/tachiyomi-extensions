@@ -181,11 +181,15 @@ open class BatoTo(
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         val urlElement = element.select("a.chapt")
-        val time = element.select("i.pl-3").text()
+        val group = element.select("div.extra > a:not(.ps-3)").text()
+        val time = element.select("i").text()
             .replace("a ", "1 ")
             .replace("an ", "1 ")
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
+        if (group != "") {
+            chapter.scanlator = group
+        }
         if (time != "") {
             chapter.date_upload = parseChapterDate(time)
         }
