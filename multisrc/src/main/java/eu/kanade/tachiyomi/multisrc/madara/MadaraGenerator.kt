@@ -226,7 +226,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Twilight Scans", "https://twilightscans.com", "en"),
             SingleLang("Uyuyan Balik", "https://uyuyanbalik.com/", "tr"),
             SingleLang("Vanguard Bun", "https://vanguardbun.com/", "en"),
-            SingleLang("Void Scans", "https://voidscans.com", "en", className = "Voidscans", overrideVersionCode = 1),
             SingleLang("Wakascan", "https://wakascan.com", "fr"),
             SingleLang("War Queen Scan", "https://wqscan.com", "pt-BR"),
             SingleLang("WebNovel", "https://webnovel.live", "en", className = "WebNovelLive", overrideVersionCode = 1),
@@ -248,7 +247,8 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manga1st.online", "https://manga1st.online", "en", className = "MangaFirstOnline"),
             SingleLang("Imperfect Comics", "https://imperfectcomic.com", "en"),
             SingleLang("Ookamii Manga", "https://manga.ookamii.xyz/", "en"),
-            SingleLang("Mortals Groove", "https://mortalsgroove.com", "en")
+            SingleLang("Mortals Groove", "https://mortalsgroove.com", "en"),
+            SingleLang("Cervo Scanlator", "https://cervoscan.xyz", "pt-BR")
     )
 
     companion object {
