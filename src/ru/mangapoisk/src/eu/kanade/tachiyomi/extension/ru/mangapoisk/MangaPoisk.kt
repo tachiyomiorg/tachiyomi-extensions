@@ -1,8 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.mangapoisk
 
 import com.github.salomonbrys.kotson.forEach
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -160,18 +158,14 @@ class MangaPoisk : ParsedHttpSource() {
         } ?: 0
         return chapter
     }
-
-    override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
-        val jsonData = html.split("new App.Router.Chapter(").last().split("});").first() + "}"
-        val json = JsonParser().parse(jsonData).asJsonObject
-        val cdnUrl = json.get("srcBaseUrl").string
-        val pages = json.get("pages").asJsonObject
-        val resPages = mutableListOf<Page>()
-        pages.forEach { page, jsonElement ->
-            resPages.add(Page(page.toInt(), imageUrl = "$cdnUrl/${jsonElement.asJsonObject.get("src").string}"))
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select(".img-fluid.page-image").mapIndexed { index, element ->
+            var imgPage = element.attr("data-src")
+            if (imgPage.isEmpty()) {
+                imgPage = element.attr("src")
+            }
+            Page(index, "", imgPage)
         }
-        return resPages
     }
 
     private class SearchFilter(name: String, val id: String) : Filter.TriState(name)
@@ -207,6 +201,4 @@ class MangaPoisk : ParsedHttpSource() {
     override fun searchMangaSelector(): String = throw Exception("Not Used")
 
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not Used")
-
-    override fun pageListParse(document: Document): List<Page> = throw Exception("Not Used")
 }
