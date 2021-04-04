@@ -191,20 +191,23 @@ class ComX : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val html = response.body()!!.string()
-        val beginTag = "comix_images=["
-        val beginIndex = html.indexOf(beginTag)
-        val endTag = "], comix_link='"
-        val endIndex = html.indexOf(endTag, beginIndex)
-        val comixIndex = html.indexOf("', page=", endIndex)
+        val baseImgUrl = "https://img.com-x.life/comix/"
 
-        val link = html.substring(endIndex + endTag.length, comixIndex)
+        val beginTag = "\"images\":["
+        val beginIndex = html.indexOf(beginTag)
+        val endIndex = html.indexOf("]", beginIndex)
+
         val urls: List<String> = html.substring(beginIndex + beginTag.length, endIndex)
-            .split(',')
+            .split(',').map {
+                val img = it.replace("\\", "").replace("\"", "")
+                baseImgUrl + img
+            }
 
         val pages = mutableListOf<Page>()
         for (i in urls.indices) {
-            pages.add(Page(i, "", link + (urls[i].removeSurrounding("'"))))
+            pages.add(Page(i, "", urls[i]))
         }
+
         return pages
     }
 
