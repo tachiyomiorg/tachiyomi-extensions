@@ -4,6 +4,7 @@ import com.github.salomonbrys.kotson.forEach
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -11,12 +12,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -123,20 +126,21 @@ class MangaPoisk : ParsedHttpSource() {
         element.contains("Статус: Выпускается") -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val html = response.body()!!.string()
-
-        val jsonData = html.split("App.Collection.MangaChapter(").last().split("]);").first() + "]"
-        val mangaName = html.split("mangaName: '").last().split("' });").first()
-        val json = JsonParser().parse(jsonData).asJsonArray
-        val chapterList = mutableListOf<SChapter>()
-  /*      json.forEach {
-            chapterList.add(chapterFromElement(mangaName, it.asJsonObject))
-        }*/
-        return chapterList
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return client.newCall(chapterListRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                chapterListParse(response, manga)
+            }
     }
-
-    override fun chapterListSelector() = "chapter-item > a"
+    private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
+        val document = response.asJsoup()
+        return document.select(chapterListSelector()).map { chapterFromElement(it, manga) }
+    }
+    override fun chapterListRequest(manga: SManga): Request {
+        return GET("$baseUrl${manga.url}/chaptersList", headers)
+    }
+    override fun chapterListSelector() = ".chapter-item > a"
 
     private fun chapterFromElement(element: Element, manga: SManga): SChapter {
         val urlElement = element.select("a").first()
@@ -145,20 +149,9 @@ class MangaPoisk : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
 
-        chapter.name = urlText.removeSuffix(" новое").trim()
-        if (manga.title.length > 25) {
-            for (word in manga.title.split(' ')) {
-                chapter.name = chapter.name.removePrefix(word).trim()
-            }
-        }
-        val dots = chapter.name.indexOf("…")
-        val numbers = chapter.name.findAnyOf(IntRange(0, 9).map { it.toString() })?.first ?: 0
+        chapter.name = urlText.trim()
 
-        if (dots in 0 until numbers) {
-            chapter.name = chapter.name.substringAfter("…").trim()
-        }
-
-        chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
+        chapter.date_upload = element.select("span.chapter-date").last()?.text()?.let {
             try {
                 SimpleDateFormat("dd.MM.yy", Locale.US).parse(it)?.time ?: 0L
             } catch (e: ParseException) {
