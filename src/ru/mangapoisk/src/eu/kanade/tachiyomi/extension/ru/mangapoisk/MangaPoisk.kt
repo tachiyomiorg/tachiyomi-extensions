@@ -156,10 +156,9 @@ class MangaPoisk : ParsedHttpSource() {
         chapter.date_upload = element.select("span.chapter-date").first()?.text()?.let {
             try {
                 when {
-                    it.contains("минуты назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 1000).time
-                    it.contains("часов назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 60 * 1000).time
-                    it.contains("дня назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 24 * 60 * 60 * 1000).time
-                    it.contains("дней назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 24 * 60 * 60 * 1000).time
+                    it.contains("минут") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 1000).time
+                    it.contains("час") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 60 * 1000).time
+                    it.contains("дня") || it.contains("дней") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 24 * 60 * 60 * 1000).time
                     else -> SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it)?.time ?: 0L
                 }
             } catch (e: Exception) {
