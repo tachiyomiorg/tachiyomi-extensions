@@ -144,6 +144,7 @@ class MangaPoisk : ParsedHttpSource() {
     override fun chapterListSelector() = ".chapter-item"
 
     private fun chapterFromElement(element: Element, manga: SManga): SChapter {
+        val title = element.select("span.chapter-title").first().text()
         val urlElement = element.select("a").first()
         val urlText = urlElement.text()
 
@@ -151,10 +152,14 @@ class MangaPoisk : ParsedHttpSource() {
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
 
         chapter.name = urlText.trim()
+        chapter.chapter_number = "Глава\\s(\\d+)".toRegex(RegexOption.IGNORE_CASE).find(title)?.groupValues?.get(1)?.toFloat() ?: -1F
         chapter.date_upload = element.select("span.chapter-date").first()?.text()?.let {
             try {
                 when {
-                    it.contains("назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 60 * 1000).time
+                    it.contains("минуты назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 1000).time
+                    it.contains("часов назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 60 * 60 * 1000).time
+                    it.contains("дня назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 24 * 60 * 60 * 1000).time
+                    it.contains("дней назад") -> Date(System.currentTimeMillis() - it.split("\\s".toRegex())[0].toLong() * 24 * 60 * 60 * 1000).time
                     else -> SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it)?.time ?: 0L
                 }
             } catch (e: Exception) {
@@ -165,11 +170,7 @@ class MangaPoisk : ParsedHttpSource() {
     }
     override fun pageListParse(document: Document): List<Page> {
         return document.select(".img-fluid.page-image").mapIndexed { index, element ->
-            var imgPage = element.attr("data-src")
-            if (imgPage.isEmpty()) {
-                imgPage = element.attr("src")
-            }
-            Page(index, "", imgPage)
+            Page(index, "", getImage(element))
         }
     }
 
@@ -178,11 +179,11 @@ class MangaPoisk : ParsedHttpSource() {
     private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус", statuses)
     private class GenreList(genres: List<CheckFilter>) : Filter.Group<CheckFilter>("Жанры", genres)
     override fun getFilterList() = FilterList(
-
         OrderBy(),
         StatusList(getStatusList()),
         GenreList(getGenreList())
     )
+
     private class OrderBy : Filter.Sort(
         "Сортировка",
         arrayOf("Год", "Популярности", "Алфавиту", "Дате добавления", "Дате обновления"),
