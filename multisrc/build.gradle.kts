@@ -1,3 +1,7 @@
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
+
 plugins {
     id("com.android.library")
     kotlin("android")
@@ -40,6 +44,18 @@ tasks {
                 "$javaPath -classpath $classPath $mainClass"
             }
             val javaProcess = Runtime.getRuntime().exec(javaCommand)
+
+            val inputStreamReader = InputStreamReader(javaProcess.inputStream)
+            val bufferedReader = BufferedReader(inputStreamReader)
+
+            var s: String?
+            while (bufferedReader.readLine().also { s = it } != null) {
+                logger.info(s)
+            }
+
+            bufferedReader.close()
+            inputStreamReader.close()
+
             val exitCode = javaProcess.waitFor()
             if (exitCode != 0) {
                 throw Exception("Java process failed with exit code: $exitCode")
