@@ -173,10 +173,10 @@ class TsukiMangas : HttpSource() {
         return SManga.create().apply {
             title = result["title"].string
             thumbnail_url = baseUrl + "/imgs/" + result["poster"].string.substringBefore("?")
-            description = result["synopsis"].string
-            status = result["status"].string.toStatus()
-            author = result["author"].string
-            artist = result["artist"].string
+            description = result["synopsis"].nullString.orEmpty()
+            status = result["status"].nullString.orEmpty().toStatus()
+            author = result["author"].nullString.orEmpty()
+            artist = result["artist"].nullString.orEmpty()
             genre = result["genres"].array.joinToString { it.obj["genre"].string }
         }
     }
