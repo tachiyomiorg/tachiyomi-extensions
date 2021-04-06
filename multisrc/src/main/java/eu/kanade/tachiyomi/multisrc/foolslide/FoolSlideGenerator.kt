@@ -34,7 +34,6 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Storm in Heaven", "https://www.storm-in-heaven.net", "it", className = "StormInHeaven"),
         SingleLang("LupiTeam", "https://lupiteam.net", "it"),
         SingleLang("Zandy no Fansub", "https://zandynofansub.aishiteru.org", "en"),
-        SingleLang("Helvetica Scans", "https://helveticascans.com", "en"),
         SingleLang("Kirishima Fansub", "https://www.kirishimafansub.net", "es"),
         SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true),
         MultiLang("HNI-Scantrad", "https://hni-scantrad.com", listOf("fr", "en"), className = "HNIScantradFactory", pkgName = "hniscantrad", overrideVersionCode = 1),

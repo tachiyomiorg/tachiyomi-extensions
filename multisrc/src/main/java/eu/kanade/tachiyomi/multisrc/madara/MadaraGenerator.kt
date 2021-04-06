@@ -176,7 +176,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Niji Translations", "https://niji-translations.com", "ar"),
             SingleLang("Ninjavi", "https://ninjavi.com", "ar"),
             SingleLang("Nitro Scans", "https://nitroscans.com", "en"),
-            SingleLang("NTS Void Scans", "https://ntsvoidscans.com", "en"),
             SingleLang("Off Scan", "https://offscan.top", "pt-BR"),
             SingleLang("مانجا اولاو", "https://olaoe.giize.com", "ar", className = "OlaoeManga"),
             SingleLang("OnManga", "https://onmanga.com", "en"),
