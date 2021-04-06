@@ -248,7 +248,11 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Imperfect Comics", "https://imperfectcomic.com", "en"),
             SingleLang("Ookamii Manga", "https://manga.ookamii.xyz/", "en"),
             SingleLang("Mortals Groove", "https://mortalsgroove.com", "en"),
-            SingleLang("Cervo Scanlator", "https://cervoscan.xyz", "pt-BR")
+            SingleLang("Cervo Scanlator", "https://cervoscan.xyz", "pt-BR"),
+            SingleLang("Comic Star", "http://comicstar.org", "en"),
+            SingleLang("Reset Scans", "https://reset-scans.com", "en"),
+            SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en"),
+            SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo"),
     )
 
     companion object {
