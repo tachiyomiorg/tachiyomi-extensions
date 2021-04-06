@@ -37,7 +37,13 @@ open class BatoTo(
         return GET("$baseUrl/browse?langs=$siteLang&sort=update&page=$page")
     }
 
-    override fun latestUpdatesSelector() = "div#series-list div.col"
+    override fun latestUpdatesSelector(): String {
+        return when (siteLang) {
+            "" -> "div#series-list div.col"
+            "en" -> "div#series-list div.col.no-flag"
+            else -> "div#series-list div.col:has([data-lang=\"$siteLang\"])"
+        }
+    }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -60,12 +66,10 @@ open class BatoTo(
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search?word=$query&page=$page")
         } else {
-            var author: String? = null
             val url = HttpUrl.parse("$baseUrl/browse")!!.newBuilder()
             url.addQueryParameter("page", page.toString())
             url.addQueryParameter("langs", siteLang)
@@ -200,6 +204,9 @@ open class BatoTo(
         val value = date.split(' ')[0].toInt()
 
         return when {
+            "secs" in date -> Calendar.getInstance().apply {
+                add(Calendar.SECOND, value * -1)
+            }.timeInMillis
             "mins" in date -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
             }.timeInMillis
@@ -217,6 +224,9 @@ open class BatoTo(
             }.timeInMillis
             "years" in date -> Calendar.getInstance().apply {
                 add(Calendar.YEAR, value * -1)
+            }.timeInMillis
+            "sec" in date -> Calendar.getInstance().apply {
+                add(Calendar.SECOND, value * -1)
             }.timeInMillis
             "min" in date -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
