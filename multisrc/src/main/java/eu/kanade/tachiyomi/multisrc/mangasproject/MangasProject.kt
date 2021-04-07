@@ -5,8 +5,6 @@ import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-//For some reason i can't import it into a multisrc
-//import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -41,7 +39,6 @@ abstract class MangasProject(
 
     // Sometimes the site is slow.
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        //For some reason i can't import it into a multisrc
         //.addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
