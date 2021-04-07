@@ -137,8 +137,12 @@ class MangaKawaii : ParsedHttpSource() {
         val elements = document.select(selectorDecoded)
 
         val pages = mutableListOf<Page>()
+        var j = 0
         for (i in 0 until elements.count()) {
-            pages.add(Page(i, document.location(), elements[i].attr("src").trim()))
+            if (elements[i].attr("src").trim() != "") {
+                pages.add(Page(j, document.location(), elements[i].attr("src").trim()))
+                ++j
+            }
         }
         return pages
     }
