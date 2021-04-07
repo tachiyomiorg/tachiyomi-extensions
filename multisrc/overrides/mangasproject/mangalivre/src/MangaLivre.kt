@@ -1,25 +1,21 @@
 package eu.kanade.tachiyomi.extension.pt.mangalivre
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.mangasproject.MangasProject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.SChapter
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.OkHttpClient
-import okhttp3.FormBody
-import okhttp3.Headers
-import okhttp3.HttpUrl
 import java.util.concurrent.TimeUnit
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 
-class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-br") {
+class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-BR") {
 
     // Hardcode the id because the language wasn't specific.
     override val id: Long = 4762777556012432014
-    
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
         .connectTimeout(1, TimeUnit.MINUTES)
