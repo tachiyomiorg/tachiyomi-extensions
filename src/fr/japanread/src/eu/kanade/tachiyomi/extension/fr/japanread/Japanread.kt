@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
@@ -95,9 +94,12 @@ class Japanread : ParsedHttpSource() {
         }
     }
 
-    // Chapters
-    override fun chapterListSelector() = "#chapters div[data-row=\"chapter\"]"
+    private fun apiHeaders() = headersBuilder().apply {
+        add("Referer", baseUrl)
+        add("x-requested-with", "XMLHttpRequest")
+    }.build()
 
+    // Chapters
     // Subtract relative date
     private fun parseRelativeDate(date: String): Long {
         val trimmedDate = date.substringAfter("Il y a").trim().split(" ")
@@ -117,6 +119,7 @@ class Japanread : ParsedHttpSource() {
         return calendar.timeInMillis
     }
 
+    override fun chapterListSelector() = "#chapters div[data-row=\"chapter\"]"
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
             name = element.select("div.col-lg-5 a").text()
@@ -126,17 +129,62 @@ class Japanread : ParsedHttpSource() {
         }
     }
 
-    // Pages
-    override fun pageListRequest(chapter: SChapter): Request {
-        val chapterId = chapter.url.substringAfterLast("/")
-        val pageHeaders = headersBuilder().apply {
-            add("x-requested-with", "XMLHttpRequest")
-        }.build()
-        return GET("$baseUrl/api/?id=$chapterId&type=chapter", pageHeaders)
-    }
+    // Alternative way through API in case jSoup doesn't work anymore
+    // It gives precise timestamp, but we are not using it
+    // since the API wrongly returns null for the scanlation group
+    /*private fun getChapterName(jsonElement: JsonElement): String {
+        var name = ""
 
-    override fun pageListParse(response: Response): List<Page> {
-        val jsonData = response.body()!!.string()
+        if (jsonElement["volume"].asString != "") {
+            name += "Tome " + jsonElement["volume"].asString + " "
+        }
+        if (jsonElement["chapter"].asString != "") {
+            name += "Ch " + jsonElement["chapter"].asString + " "
+        }
+
+        if (jsonElement["title"].asString != "") {
+            if (name != "") {
+                name += " - "
+            }
+            name += jsonElement["title"].asString
+        }
+
+        return name
+    }
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val mangaId = document.select("div[data-avg]").attr("data-avg")
+
+        client.newCall(GET(baseUrl + document.select("#chapters div[data-row=chapter]").first().select("div.col-lg-5 a").attr("href"), headers)).execute()
+
+        val apiResponse = client.newCall(GET("$baseUrl/api/?id=$mangaId&type=manga", apiHeaders())).execute()
+
+        val jsonData = apiResponse.body()!!.string()
+        val json = JsonParser().parse(jsonData).asJsonObject
+
+        return json["chapter"].obj.entrySet()
+            .map {
+                SChapter.create().apply {
+                    name = getChapterName(it.value.obj)
+                    url = "$baseUrl/api/?id=${it.key}&type=chapter"
+                    date_upload = it.value.obj["timestamp"].asLong * 1000
+                    // scanlator = element.select(".chapter-list-group a").joinToString { it.text() }
+                }
+            }
+            .sortedByDescending { it.date_upload }
+    }
+    override fun chapterListSelector() = throw UnsupportedOperationException("Not Used")
+    override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not Used")*/
+
+    // Pages
+    override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl${chapter.url}", headers)
+
+    override fun pageListParse(document: Document): List<Page> {
+        val chapterId = document.select("meta[data-chapter-id]").attr("data-chapter-id")
+
+        val apiResponse = client.newCall(GET("$baseUrl/api/?id=$chapterId&type=chapter", apiHeaders())).execute()
+
+        val jsonData = apiResponse.body()!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
 
         val baseImagesUrl = json["baseImagesUrl"].string
@@ -147,10 +195,7 @@ class Japanread : ParsedHttpSource() {
         }
     }
 
-    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException("Not Used")
-
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
-
     override fun imageRequest(page: Page): Request {
         return GET(page.imageUrl!!, headers)
     }
