@@ -11,7 +11,6 @@ import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import java.util.concurrent.TimeUnit
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 
 class LeitorNet : MangasProject("Leitor.net", "https://leitor.net", "pt-br") {
 
@@ -20,13 +19,7 @@ class LeitorNet : MangasProject("Leitor.net", "https://leitor.net", "pt-br") {
     // became a different website, but they still use the same structure.
     // Existing mangas and other titles in the library still work.
     override val id: Long = 2225174659569980836
-    
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .writeTimeout(1, TimeUnit.MINUTES)
-        .build()
+   
 
     /**
      * Temporary fix to bypass Cloudflare.
