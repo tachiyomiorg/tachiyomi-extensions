@@ -19,8 +19,8 @@ class WebtoonsFactory : SourceFactory {
     )
 
 }
-class WebtoonsEN : Webtoons("Webtoons", "https://www.webtoons.com", "en")
-class WebtoonsID : Webtoons("Webtoons", "https://www.webtoons.com", "id") {
+class WebtoonsEN : Webtoons("Webtoons.com", "https://www.webtoons.com", "en")
+class WebtoonsID : Webtoons("Webtoons.com", "https://www.webtoons.com", "id") {
     // Override ID as part of the name was removed to be more consiten with other enteries
     override val id: Long = 8749627068478740298
     
@@ -37,8 +37,8 @@ class WebtoonsID : Webtoons("Webtoons", "https://www.webtoons.com", "id") {
         return GregorianCalendar(year.toInt(), monthIndex, day.toInt()).time.time
     }
 }
-class WebtoonsTH : Webtoons("Webtoons", "https://www.webtoons.com", "th", dateFormat = SimpleDateFormat("d MMM yyyy", Locale("th")))
-class WebtoonsES : Webtoons("Webtoons", "https://www.webtoons.com", "es") {
+class WebtoonsTH : Webtoons("Webtoons.com", "https://www.webtoons.com", "th", dateFormat = SimpleDateFormat("d MMM yyyy", Locale("th")))
+class WebtoonsES : Webtoons("Webtoons.com", "https://www.webtoons.com", "es") {
     // Android seems to be unable to parse es dates like Indonesian; we'll use a short hard-coded table
     // instead.
     private val dateMap: Array<String> = arrayOf(
@@ -52,5 +52,5 @@ class WebtoonsES : Webtoons("Webtoons", "https://www.webtoons.com", "es") {
         return GregorianCalendar(year.toInt(), monthIndex, day.toInt()).time.time
     }
 }
-class WebtoonsFR : Webtoons("Webtoons", "https://www.webtoons.com", "fr", dateFormat = SimpleDateFormat("d MMM yyyy", Locale.FRENCH))
-class WebtoonsZH : Webtoons("Webtoons", "https://www.webtoons.com", "zh", "zh-hant", "zh_TW", SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE))
+class WebtoonsFR : Webtoons("Webtoons.com", "https://www.webtoons.com", "fr", dateFormat = SimpleDateFormat("d MMM yyyy", Locale.FRENCH))
+class WebtoonsZH : Webtoons("Webtoons.com", "https://www.webtoons.com", "zh", "zh-hant", "zh_TW", SimpleDateFormat("yyyy/MM/dd", Locale.TRADITIONAL_CHINESE))
