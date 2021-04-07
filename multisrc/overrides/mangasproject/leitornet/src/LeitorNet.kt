@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import java.util.concurrent.TimeUnit
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 
 class LeitorNet : MangasProject("Leitor.net", "https://leitor.net", "pt-br") {
