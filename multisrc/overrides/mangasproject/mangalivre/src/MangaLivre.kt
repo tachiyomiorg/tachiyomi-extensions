@@ -13,19 +13,12 @@ import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import java.util.concurrent.TimeUnit
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 
 class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-br") {
 
     // Hardcode the id because the language wasn't specific.
     override val id: Long = 4762777556012432014
     
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .writeTimeout(1, TimeUnit.MINUTES)
-        .build()
 
     override fun popularMangaRequest(page: Int): Request {
         val originalRequestUrl = super.popularMangaRequest(page).url().toString()
