@@ -277,6 +277,10 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
+
+        if (document.html().contains("mangalib.me/register"))
+            throw Exception("Для просмотра 18+ контента необходима авторизация через WebView")
+
         val chapInfo = document
             .select("script:containsData(window.__info)")
             .first()
