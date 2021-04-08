@@ -357,23 +357,22 @@ abstract class Madara(
             }
             val genres = select("div.genres-content a")
                 .map { element -> element.text() }
-                .toMutableSet()
-            manga.genre = genres.toList().joinToString(", ")
+                .toMutableList()
 
             // add tag(s) to genre
             select("div.tags-content a").forEach { element ->
-                if (!manga.genre!!.contains(element.text(), true)) {
+                if (genres.toString().contains(element.text(), true).not()) {
                     genres.add(element.text())
                 }
             }
-            manga.genre = genres.toList().joinToString(", ")
 
             // add manga/manhwa/manhua thinggy to genre
             document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
-                if (it.isEmpty().not() && it.notUpdating() && !manga.genre!!.contains(it, true) && it != "-") {
+                if (it.isEmpty().not() && it.notUpdating() && it != "-" && genres.toString().contains(it, true).not()) {
                     genres.add(it)
                 }
             }
+
             manga.genre = genres.toList().joinToString(", ")
 
             // add alternative name to manga description
