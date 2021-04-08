@@ -16,11 +16,8 @@ class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-B
     // Hardcode the id because the language wasn't specific.
     override val id: Long = 4762777556012432014
 
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+    override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .writeTimeout(1, TimeUnit.MINUTES)
         .build()
 
     override fun popularMangaRequest(page: Int): Request {

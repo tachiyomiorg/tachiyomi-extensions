@@ -8,11 +8,8 @@ import java.util.concurrent.TimeUnit
 
 class Toonei : MangasProject("Toonei", "https://toonei.com", "pt-BR") {
 
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+    override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .writeTimeout(1, TimeUnit.MINUTES)
         .build()
 
     override fun getReaderToken(document: Document): String? {

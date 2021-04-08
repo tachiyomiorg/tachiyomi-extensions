@@ -17,11 +17,8 @@ class LeitorNet : MangasProject("Leitor.net", "https://leitor.net", "pt-BR") {
     // Existing mangas and other titles in the library still work.
     override val id: Long = 2225174659569980836
 
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+    override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
-        .connectTimeout(1, TimeUnit.MINUTES)
-        .readTimeout(1, TimeUnit.MINUTES)
-        .writeTimeout(1, TimeUnit.MINUTES)
         .build()
 
     /**
