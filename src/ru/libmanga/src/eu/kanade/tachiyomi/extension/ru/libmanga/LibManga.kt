@@ -152,7 +152,9 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         val manga = SManga.create()
 
-        if (document.html().contains("Манга удалена по просьбе правообладателей")) {
+        if (document.html().contains("Манга удалена по просьбе правообладателей") ||
+            document.html().contains("Данный тайтл лицензирован на территории РФ.")
+        ) {
             manga.status = SManga.LICENSED
             return manga
         }
@@ -162,7 +164,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         val category = when {
             rawCategory == "Комикс западный" -> "комикс"
-            rawCategory.isNotBlank() -> rawCategory.toLowerCase()
+            rawCategory.isNotBlank() -> rawCategory.toLowerCase(Locale.ROOT)
             else -> "манга"
         }
 
@@ -173,7 +175,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         manga.status = when (
             body.select("div.media-info-list__title:contains(Статус перевода) + div")
                 .text()
-                .toLowerCase()
+                .toLowerCase(Locale.ROOT)
         ) {
             "продолжается" -> SManga.ONGOING
             "завершен" -> SManga.COMPLETED
@@ -195,23 +197,71 @@ class LibManga : ConfigurableSource, HttpSource() {
         val data = jsonParser.parse(dataStr).obj
         val chaptersList = data["chapters"]["list"].nullArray
         val slug = data["manga"]["slug"].string
+        val teams = data["chapters"]["branches"].array.reversed()
+        val sortingList = preferences.getInt(SORTING_PREF, 2)
+        var chapters: List<SChapter>? = null
 
-        return chaptersList?.map { chapterFromElement(it, slug) } ?: emptyList()
+        if (teams.isNotEmpty() && sortingList != 0) {
+            when (sortingList) {
+                1 -> {
+                    val tempChaptersList = mutableListOf<SChapter>()
+                    for (currentList in teams.withIndex()) {
+                        val teamId = teams[currentList.index]["id"].int
+                        chapters = chaptersList
+                            ?.filter { it["branch_id"].int == teamId }
+                            ?.map { chapterFromElement(it, slug, teamId) }
+                        chapters?.let { tempChaptersList.addAll(it) }
+                    }
+                    chapters = tempChaptersList
+                }
+                2 -> {
+                    val sizesChaptersLists = mutableListOf<Int>()
+                    for (currentList in teams.withIndex()) {
+                        val teamId = teams[currentList.index]["id"].int
+                        val chapterSize = chaptersList?.filter { it["branch_id"].int == teamId }!!.size
+                        sizesChaptersLists.add(chapterSize)
+                    }
+                    val max = sizesChaptersLists.indexOfFirst { it == sizesChaptersLists.maxOrNull() ?: 0 }
+                    val teamId = teams[max]["id"].int
+                    chapters = chaptersList?.filter { it["branch_id"].int == teamId }?.map { chapterFromElement(it, slug, teamId) }
+                }
+                3 -> {
+                    for (currentList in teams.withIndex()) {
+                        val isActive = teams[currentList.index]["teams"].array
+                        for (currentListInternal in isActive.withIndex()) {
+                            if (isActive[currentListInternal.index]["is_active"].int == 1) {
+                                val teamId = teams[currentList.index]["id"].int
+                                chapters = chaptersList?.filter { it["branch_id"].int == teamId }
+                                    ?.map { chapterFromElement(it, slug, teamId) }
+                                break
+                            }
+                        }
+                    }
+                    chapters ?: throw Exception("Активный перевод не назначен на сайте")
+                }
+            }
+        } else {
+            chapters = chaptersList?.map { chapterFromElement(it, slug) }
+        }
+
+        return chapters ?: emptyList()
     }
 
-    private fun chapterFromElement(chapterItem: JsonElement, slug: String): SChapter {
+    private fun chapterFromElement(chapterItem: JsonElement, slug: String, teamIdParam: Int? = null): SChapter {
         val chapter = SChapter.create()
 
         val volume = chapterItem["chapter_volume"].int
         val number = chapterItem["chapter_number"].string
+        val teamId = if (teamIdParam != null) "?bid=$teamIdParam" else ""
 
-        val url = "$baseUrl/$slug/v$volume/c$number"
+        val url = "$baseUrl/$slug/v$volume/c$number$teamId"
 
         chapter.setUrlWithoutDomain(url)
 
         val nameChapter = chapterItem["chapter_name"].nullString
         val fullNameChapter = "Том $volume. Глава $number"
 
+        chapter.scanlator = chapterItem["username"].string
         chapter.name = if (nameChapter.isNullOrBlank()) fullNameChapter else "$fullNameChapter - $nameChapter"
         chapter.date_upload = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             .parse(chapterItem["chapter_created_at"].string.substringBefore(" "))?.time ?: 0L
@@ -583,6 +633,9 @@ class LibManga : ConfigurableSource, HttpSource() {
         const val PREFIX_SLUG_SEARCH = "slug:"
         private const val SERVER_PREF = "MangaLibImageServer"
         private const val SERVER_PREF_Title = "Сервер изображений"
+
+        private const val SORTING_PREF = "MangaLibSorting"
+        private const val SORTING_PREF_Title = "Сортировка списков глав"
     }
 
     private var server: String? = preferences.getString(SERVER_PREF, null)
@@ -601,6 +654,21 @@ class LibManga : ConfigurableSource, HttpSource() {
             }
         }
 
+        val sortingPref = ListPreference(screen.context).apply {
+            key = SORTING_PREF
+            title = SORTING_PREF_Title
+            entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
+            entryValues = arrayOf("0", "1", "2", "3")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SORTING_PREF, index).commit()
+            }
+        }
+
+        screen.addPreference(sortingPref)
         screen.addPreference(serverPref)
     }
 
@@ -618,6 +686,21 @@ class LibManga : ConfigurableSource, HttpSource() {
             }
         }
 
+        val sortingPref = LegacyListPreference(screen.context).apply {
+            key = SORTING_PREF
+            title = SORTING_PREF_Title
+            entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
+            entryValues = arrayOf("0", "1", "2", "3")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(SORTING_PREF, index).commit()
+            }
+        }
+
+        screen.addPreference(sortingPref)
         screen.addPreference(serverPref)
     }
 }
