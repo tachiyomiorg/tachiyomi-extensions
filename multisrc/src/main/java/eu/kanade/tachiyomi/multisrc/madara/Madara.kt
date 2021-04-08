@@ -390,12 +390,25 @@ abstract class Madara(
                         else -> ""
                     }
             }
-                }
+
+            // add alternative name to manga description
+            val altNameString = document.select(altNameSelector).firstOrNull()?.ownText()
+            if (!altNameString.isNullOrEmpty() && !altNameString.contains("Updating", true)) {
+                manga.description = manga.description +
+                    when {
+                        !manga.description.isNullOrEmpty() -> "\n\n" + altName + altNameString
+                        manga.description.isNullOrEmpty() -> altName + altNameString
+                        else -> ""
+                    }
+            }
+        }
 
         return manga
     }
 
     open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
+    open val altNameSelector = ".post-content_item:contains(Alt) .summary-content"
+    open val altName = "Alternative Name: "
 
     protected fun imageFromElement(element: Element): String? {
         return when {
