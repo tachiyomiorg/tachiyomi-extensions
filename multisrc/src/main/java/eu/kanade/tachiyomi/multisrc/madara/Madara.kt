@@ -364,9 +364,15 @@ abstract class Madara(
 
             // add manga/manhwa/manhua thinggy to genre
             val type = document.select(".post-content_item:contains(Type) .summary-content").firstOrNull()?.ownText()
-            manga.genre += if (manga.genre!!.contains(type.toString(), true) || type == "-" || type!!.contains("Updating", true)) ""
-            else if (!type.isNullOrEmpty() && !manga.genre.isNullOrEmpty()) ", $type" else if (!type.isNullOrEmpty() && manga.genre.isNullOrEmpty()) "$type" else ""
-        }
+            manga.genre = manga.genre +
+                when {
+                    manga.genre!!.contains(type.toString(), true) -> ""
+                    type == "-" -> ""
+                    type!!.contains("Updating", true) -> ""
+                    !type.isNullOrEmpty() && !manga.genre.isNullOrEmpty() -> ", $type"
+                    !type.isNullOrEmpty() && manga.genre.isNullOrEmpty() -> type
+                    else -> ""
+                }
 
         return manga
     }
