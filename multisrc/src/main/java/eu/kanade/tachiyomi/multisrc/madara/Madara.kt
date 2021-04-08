@@ -329,10 +329,10 @@ abstract class Madara(
                 manga.title = it.ownText()
             }
             select("div.author-content").first()?.let {
-                if (!it.text().contains("Updating", true)) manga.author = it.text()
+                if (it.text().notUpdating()) manga.author = it.text()
             }
             select("div.artist-content").first()?.let {
-                if (!it.text().contains("Updating", true)) manga.artist = it.text()
+                if (it.text().notUpdating()) manga.artist = it.text()
             }
             select("div.description-summary div.summary__content").let {
                 if (it.select("p").text().isNotEmpty()) {
@@ -355,51 +355,36 @@ abstract class Madara(
                     else -> SManga.UNKNOWN
                 }
             }
-            val genres = mutableListOf<String>()
-            select("div.genres-content a").forEach { element ->
-                val genre = element.text()
-                genres.add(genre)
-            }
-            manga.genre = genres.joinToString(", ")
+            val genres = select("div.genres-content a")
+                .map { element -> element.text() }
+                .toMutableSet()
+            manga.genre = genres.toList().joinToString(", ")
 
             // add tag(s) to genre
-            val tags = mutableListOf<String>()
             select("div.tags-content a").forEach { element ->
-                val tag = element.text()
-                if (!manga.genre!!.contains(tag, true)) {
-                    tags.add(tag)
+                if (!manga.genre!!.contains(element.text(), true)) {
+                    genres.add(element.text())
                 }
             }
-            if (!tags.isNullOrEmpty()) {
-                manga.genre = manga.genre + // ","+ tags.joinToString(", ")
-                    when {
-                        !manga.genre.isNullOrEmpty() -> ", " + tags.joinToString(", ")
-                        manga.genre.isNullOrEmpty() -> tags.joinToString(", ")
-                        else -> ""
-                    }
-            }
+            manga.genre = genres.toList().joinToString(", ")
 
             // add manga/manhwa/manhua thinggy to genre
-            val type = document.select(seriesTypeSelector).firstOrNull()?.ownText()
-            if (!type.isNullOrEmpty() && !type.contains("Updating", true) && type == "-") {
-                manga.genre = manga.genre +
-                    when {
-                        manga.genre!!.contains(type.toString(), true) -> ""
-                        !manga.genre.isNullOrEmpty() -> ", $type"
-                        manga.genre.isNullOrEmpty() -> type
-                        else -> ""
-                    }
+            document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+                if (it.isEmpty().not() && it.notUpdating() && !manga.genre!!.contains(it, true) && it != "-") {
+                    genres.add(it)
+                }
             }
+            manga.genre = genres.toList().joinToString(", ")
 
             // add alternative name to manga description
-            val altNameString = document.select(altNameSelector).firstOrNull()?.ownText()
-            if (!altNameString.isNullOrEmpty() && !altNameString.contains("Updating", true)) {
-                manga.description = manga.description +
-                    when {
-                        !manga.description.isNullOrEmpty() -> "\n\n" + altName + altNameString
-                        manga.description.isNullOrEmpty() -> altName + altNameString
-                        else -> ""
+            document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+                if (it.isEmpty().not() && it.notUpdating()) {
+                    val altNameString = altName + it
+                    manga.description += when {
+                        manga.description.isNullOrEmpty() -> altNameString
+                        else -> "\n\n$altNameString"
                     }
+                }
             }
         }
 
@@ -409,6 +394,10 @@ abstract class Madara(
     open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
     open val altNameSelector = ".post-content_item:contains(Alt) .summary-content"
     open val altName = "Alternative Name: "
+
+    private fun String.notUpdating(): Boolean {
+        return this.contains("Updating", true).not()
+    }
 
     protected fun imageFromElement(element: Element): String? {
         return when {
