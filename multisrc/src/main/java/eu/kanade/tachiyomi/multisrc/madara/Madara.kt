@@ -362,6 +362,23 @@ abstract class Madara(
             }
             manga.genre = genres.joinToString(", ")
 
+            // add tag(s) to genre
+            val tags = mutableListOf<String>()
+            select("div.tags-content a").forEach { element ->
+                val tag = element.text()
+                if (!manga.genre!!.contains(tag, true)) {
+                    tags.add(tag)
+                }
+            }
+            if (!tags.isNullOrEmpty()) {
+                manga.genre = manga.genre + // ","+ tags.joinToString(", ")
+                    when {
+                        !manga.genre.isNullOrEmpty() -> ", " + tags.joinToString(", ")
+                        manga.genre.isNullOrEmpty() -> tags.joinToString(", ")
+                        else -> ""
+                    }
+            }
+
             // add manga/manhwa/manhua thinggy to genre
             val type = document.select(seriesTypeSelector).firstOrNull()?.ownText()
             if (!type.isNullOrEmpty() && !type.contains("Updating", true) && type == "-") {
@@ -377,6 +394,8 @@ abstract class Madara(
 
         return manga
     }
+
+    open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
 
     protected fun imageFromElement(element: Element): String? {
         return when {
