@@ -31,7 +31,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahosted.com"
+    override val baseUrl = "https://mangahostz.com"
 
     override val lang = "pt-BR"
 
@@ -240,7 +240,7 @@ class MangaHost : ParsedHttpSource() {
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
