@@ -25,13 +25,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.CacheControl
+import okhttp3.Dns
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
 import rx.Single
-import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -146,8 +146,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         val filters = mutableListOf<Filter<*>>()
         val prefNewOnly = preferences.getBoolean("latestNewOnly", false)
 
-        filters.add(LatestView())
-
         if (prefNewOnly) filters.add(NewArchivesOnly(true))
 
         if (latestNamespacePref.isNotBlank()) {
@@ -173,7 +171,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
-                is LatestView -> if (filter.state) uri.appendQueryParameter("latest", "latest")
                 is StartingPage -> {
                     startPageOffset = filter.state.toIntOrNull() ?: 1
 
@@ -229,12 +226,12 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     private fun canShowRandom(response: Response): Boolean {
-        // Server has archives, no meaningful filtering, not paginating, and not Latest
+        // Server has archives, not paginating, no meaningful filtering. querySize check would have
+        // to be broken intentionally as it goes through searchMangaRequest. Likely for an API change.
         return (
             totalRecords > 0 &&
-                lastRecordsFiltered == totalRecords &&
                 getStart(response) == 0 &&
-                response.request().url().queryParameter("latest") == null
+                response.request().url().querySize() == 1 // ?start=
             )
     }
 
@@ -255,7 +252,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         }
     }
 
-    private class LatestView() : Filter.CheckBox("", true)
     private class DescendingOrder(overrideState: Boolean = false) : Filter.CheckBox("Descending Order", overrideState)
     private class NewArchivesOnly(overrideState: Boolean = false) : Filter.CheckBox("New Archives Only", overrideState)
     private class UntaggedArchivesOnly : Filter.CheckBox("Untagged Archives Only", false)
@@ -438,9 +434,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
     // Helper
     private fun getRandomID(response: Response): String {
-        return response.let {
-            it.headers("Location").first()
-        }.split("=").last()
+        return response.headers("Location").firstOrNull()?.split("=")?.last() ?: ""
     }
 
     private fun getRandomIDResponse(): Response {
@@ -454,11 +448,33 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         fun toUriPart() = vals[state].first
     }
 
+    private fun getCategories() {
+        Single.fromCallable {
+            client.newCall(GET("$baseUrl/api/categories", headers)).execute()
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe(
+                {
+                    categories = try {
+                        gson.fromJson(it.body()?.charStream()!!)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                },
+                {}
+            )
+    }
+
     private fun getCategoryPairs(categories: List<Category>): Array<Pair<String?, String>> {
         // Empty pair to disable. Sort by pinned status then name for convenience.
         // Web client sort is pinned > last_used but reflects between page changes.
 
         val pin = "\uD83D\uDCCC "
+
+        // Maintain categories sync for next FilterList reset. If there's demand for it, it's now
+        // possible to sort by last_used similar to the web client. Maybe an option toggle?
+        getCategories()
 
         return listOf(Pair("", ""))
             .plus(
@@ -519,53 +535,32 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return null
     }
 
-    private fun getArtist(tags: String?): String {
-        getNSTag(tags, "artist")?.let {
-            return it[1]
-        }
-
-        return "N/A"
-    }
+    private fun getArtist(tags: String?): String = getNSTag(tags, "artist")?.get(1) ?: "N/A"
 
     private fun getDateAdded(tags: String?): String {
-        getNSTag(tags, "date_added")?.let {
-            // Pad Date Added NS to milliseconds
-            return it[1].padEnd(13, '0')
-        }
-
-        return ""
+        // Pad Date Added NS to milliseconds
+        return getNSTag(tags, "date_added")?.get(1)?.padEnd(13, '0') ?: ""
     }
 
     // Headers (currently auth) are done in headersBuilder
-    override val client: OkHttpClient = network.client.newBuilder().build()
+    override val client: OkHttpClient = network.client.newBuilder().dns(Dns.SYSTEM).build()
     // Specifically for /random to grab IDs without triggering a server-side extract
-    private val clientNoFollow: OkHttpClient = client.newBuilder().followRedirects(false).build()
+    private val clientNoFollow: OkHttpClient = client.newBuilder().dns(Dns.SYSTEM).followRedirects(false).build()
 
     init {
-        // Save users a Random refresh in the extension and from Library
-        Single.fromCallable { getRandomIDResponse() }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { randomArchiveID = getRandomID(it) },
-                {}
-            )
+        if (baseUrl.isNotBlank()) {
+            // Save a FilterList reset
+            getCategories()
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/categories", headers)).execute()
+            // Save users a Random refresh in the extension and from Library
+            Single.fromCallable { getRandomIDResponse() }
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(
+                    { randomArchiveID = getRandomID(it) },
+                    {}
+                )
         }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    categories = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                },
-                {}
-            )
     }
 
     companion object {

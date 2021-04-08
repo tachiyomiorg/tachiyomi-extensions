@@ -19,7 +19,7 @@ private val languages = listOf(
     Pair("de", "de"),
     Pair("el", "el"),
     Pair("en", "en"),
-    Pair("en_us", "en_us"),
+    Pair("en-US", "en_us"),
     Pair("es", "es"),
     Pair("es-419", "es_419"),
     Pair("eu", "eu"),

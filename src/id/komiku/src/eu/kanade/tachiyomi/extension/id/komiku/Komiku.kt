@@ -231,6 +231,12 @@ class Komiku : ParsedHttpSource() {
         genre = document.select("li[itemprop=genre] > a").joinToString { it.text() }
         status = parseStatus(document.select("table.inftable tr > td:contains(Status) + td").text())
         thumbnail_url = document.select("div.ims > img").attr("abs:src")
+
+        // add manga/manhwa/manhua thinggy to genre
+        val type = document.select("table.inftable tr:contains(Jenis) a, table.inftable tr:has(a[href*=category\\/]) a, a[href*=category\\/]").text()
+        genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
+        else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
+        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
     }
 
     private fun parseStatus(status: String) = when {

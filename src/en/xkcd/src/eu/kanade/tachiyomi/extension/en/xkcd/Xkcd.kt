@@ -59,12 +59,22 @@ class Xkcd : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val titleWords: Sequence<String>
         val altTextWords: Sequence<String>
+        val interactiveText = listOf(
+            "To experience the", "interactive version of this comic,",
+            "open it in WebView/browser."
+        )
+            .joinToString(separator = "%0A")
+            .replace(" ", "%20")
 
         // transforming filename from info.0.json isn't guaranteed to work, stick to html
         // if an HD image is available it'll be the srcset attribute
+        // if img tag is empty then it is an interactive comic viewable only in browser
         val image = document.select("div#comic img").let {
-            if (it.hasAttr("srcset")) it.attr("abs:srcset").substringBefore(" ")
-            else it.attr("abs:src")
+            when {
+                it == null || it.isEmpty() -> baseAltTextUrl + interactiveText + baseAltTextPostUrl
+                it.hasAttr("srcset") -> it.attr("abs:srcset").substringBefore(" ")
+                else -> it.attr("abs:src")
+            }
         }
 
         // create a text image for the alt text

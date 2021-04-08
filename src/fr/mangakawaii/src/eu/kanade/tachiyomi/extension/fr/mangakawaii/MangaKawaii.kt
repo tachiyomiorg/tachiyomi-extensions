@@ -100,15 +100,25 @@ class MangaKawaii : ParsedHttpSource() {
     }
 
     // Chapter list
-    //override fun chapterListRequest(manga: SManga): Request = GET("$baseUrl${manga.widgetPageUrl}", headers)
-    override fun chapterListSelector() = "tr[class*=volume-]:has(td)"
-    override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        url = element.select("td.table__chapter").select("a").attr("href")
-        name = element.select("td.table__chapter").select("span").text().trim()
-        chapter_number = element.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull()
-            ?: -1F
-        date_upload = element.select("td.table__date").firstOrNull()?.text()?.let { parseDate(it) }
-            ?: 0
+    override fun chapterListSelector() = throw Exception("Not used")
+    override fun chapterFromElement(element: Element): SChapter = throw Exception("Not used")
+    override fun chapterListParse(response: Response): List<SChapter> {
+        var document = response.asJsoup()
+        val widgetPageListUrl = Regex("""['"](/arrilot/load-widget.*?)['"]""").find(document.toString())?.groupValues?.get(1)
+        if (widgetPageListUrl != null) {
+            document = client.newCall(GET("$baseUrl$widgetPageListUrl", headers)).execute().asJsoup()
+        }
+
+        return document.select("tr[class*=volume-]:has(td)").map {
+            SChapter.create().apply {
+                url = it.select("td.table__chapter").select("a").attr("href")
+                name = it.select("td.table__chapter").select("span").text().trim()
+                chapter_number = it.select("td.table__chapter").select("span").text().substringAfter("Chapitre").replace(Regex("""[,-]"""), ".").trim().toFloatOrNull()
+                    ?: -1F
+                date_upload = it.select("td.table__date").firstOrNull()?.text()?.let { parseDate(it) }
+                    ?: 0
+            }
+        }
     }
 
     private fun parseDate(date: String): Long {
@@ -116,9 +126,7 @@ class MangaKawaii : ParsedHttpSource() {
     }
 
     // Pages
-    override fun pageListParse(response: Response): List<Page> {
-        val body = response.asJsoup()
-
+    override fun pageListParse(document: Document): List<Page> {
         val selectorEncoded1 = "Wkdim" + "gsai" + "mgWQyV2lkMm" + "xrS2img" + "ppZDFoY" + "kd4ZElHaW" +
             "RsdimgFp6cHVi" + "M1FvVzNOeVl5" + "bimgzlpZG" + "lkWjJsbVhT" + "a3imgNJQzVq" + "YjI1MFlpZFd" +
             "saWR1WlhJdFi" + "mgpteDFhV1FnTGi" + "mg5KdmlkZHlC" + "a2FYWimgTZiaW" + "imgRtOTBL" + "QzV0ZUMxaim" +
@@ -126,14 +134,23 @@ class MangaKawaii : ParsedHttpSource() {
             "mgGdHpp" + "ZGNtTXFQimg" + "V2RwWml" + "kbDBw"
         val selectorEncoded2 = String(Base64.decode(selectorEncoded1.replace("img", ""), Base64.DEFAULT))
         val selectorDecoded = String(Base64.decode(selectorEncoded2.replace("id", ""), Base64.DEFAULT))
-        var elements = body.select(selectorDecoded)
+        val elements = document.select(selectorDecoded)
 
         val pages = mutableListOf<Page>()
+        var j = 0
         for (i in 0 until elements.count()) {
-            pages.add(Page(i, "", elements[i].attr("src").trim()))
+            if (elements[i].attr("src").trim() != "") {
+                pages.add(Page(j, document.location(), elements[i].attr("src").trim()))
+                ++j
+            }
         }
         return pages
     }
-    override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
     override fun imageUrlParse(document: Document): String = throw Exception("Not used")
+    override fun imageRequest(page: Page): Request {
+        val imgHeaders = headersBuilder().apply {
+            add("Referer", page.url)
+        }.build()
+        return GET(page.imageUrl!!, imgHeaders)
+    }
 }

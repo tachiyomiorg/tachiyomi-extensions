@@ -37,7 +37,13 @@ open class BatoTo(
         return GET("$baseUrl/browse?langs=$siteLang&sort=update&page=$page")
     }
 
-    override fun latestUpdatesSelector() = "div#series-list div.col"
+    override fun latestUpdatesSelector(): String {
+        return when (siteLang) {
+            "" -> "div#series-list div.col"
+            "en" -> "div#series-list div.col.no-flag"
+            else -> "div#series-list div.col:has([data-lang=\"$siteLang\"])"
+        }
+    }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -60,12 +66,10 @@ open class BatoTo(
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search?word=$query&page=$page")
         } else {
-            var author: String? = null
             val url = HttpUrl.parse("$baseUrl/browse")!!.newBuilder()
             url.addQueryParameter("page", page.toString())
             url.addQueryParameter("langs", siteLang)
@@ -181,11 +185,15 @@ open class BatoTo(
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
         val urlElement = element.select("a.chapt")
-        val time = element.select("i.pl-3").text()
+        val group = element.select("div.extra > a:not(.ps-3)").text()
+        val time = element.select("i").text()
             .replace("a ", "1 ")
             .replace("an ", "1 ")
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
+        if (group != "") {
+            chapter.scanlator = group
+        }
         if (time != "") {
             chapter.date_upload = parseChapterDate(time)
         }
@@ -196,6 +204,9 @@ open class BatoTo(
         val value = date.split(' ')[0].toInt()
 
         return when {
+            "secs" in date -> Calendar.getInstance().apply {
+                add(Calendar.SECOND, value * -1)
+            }.timeInMillis
             "mins" in date -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
             }.timeInMillis
@@ -213,6 +224,9 @@ open class BatoTo(
             }.timeInMillis
             "years" in date -> Calendar.getInstance().apply {
                 add(Calendar.YEAR, value * -1)
+            }.timeInMillis
+            "sec" in date -> Calendar.getInstance().apply {
+                add(Calendar.SECOND, value * -1)
             }.timeInMillis
             "min" in date -> Calendar.getInstance().apply {
                 add(Calendar.MINUTE, value * -1)
