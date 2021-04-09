@@ -88,10 +88,26 @@ abstract class WPMangaReader(
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
-        val type = document.select("span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
-        genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+        val seriesTypeSelector = "span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child"
+        document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
+                genre += if (genre.isNullOrEmpty()) it else ", $it"
+            }
+        }
+
+        // add alternative name to manga description
+        document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not()) {
+                description += when {
+                    description.isNullOrEmpty() -> altName + it
+                    else -> "\n\n$altName" + it
+                }
+            }
+        }
     }
+
+    open val altNameSelector = ".alternative, .seriestualt"
+    open val altName = "Alternative Name: "
 
     private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
