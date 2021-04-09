@@ -68,7 +68,7 @@ class Mintmanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search/advanced")!!.newBuilder()
+        var url = HttpUrl.parse("$baseUrl/search/advanced")!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
@@ -79,6 +79,29 @@ class Mintmanga : ParsedHttpSource() {
                 is Category -> filter.state.forEach { category ->
                     if (category.state != Filter.TriState.STATE_IGNORE) {
                         url.addQueryParameter(category.id, arrayOf("=", "=in", "=ex")[category.state])
+                    }
+                }
+                is AgeList -> filter.state.forEach { age ->
+                    if (age.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(age.id, arrayOf("=", "=in", "=ex")[age.state])
+                    }
+                }
+                is More -> filter.state.forEach { more ->
+                    if (more.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(more.id, arrayOf("=", "=in", "=ex")[more.state])
+                    }
+                }
+                is FilList -> filter.state.forEach { fils ->
+                    if (fils.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(fils.id, arrayOf("=", "=in", "=ex")[fils.state])
+                    }
+                }
+                is OrderBy -> {
+                    if (filter.state == 0) {
+                        url = HttpUrl.parse("$baseUrl/search/advanced")!!.newBuilder()
+                    } else {
+                        val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
+                        url = HttpUrl.parse("$baseUrl/list?sortType=$ord")!!.newBuilder()
                     }
                 }
             }
@@ -248,9 +271,18 @@ class Mintmanga : ParsedHttpSource() {
         return GET(page.imageUrl!!, imgHeader)
     }
 
+    private class OrderBy : Filter.Select<String>(
+        "Сортировать\n(отдельно от фильтров)",
+        arrayOf("Без(фильтры)", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
+    )
+
     private class Genre(name: String, val id: String) : Filter.TriState(name)
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
-    private class Category(categories: List<Genre>) : Filter.Group<Genre>("Category", categories)
+
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Жанры", genres)
+    private class Category(categories: List<Genre>) : Filter.Group<Genre>("Категории", categories)
+    private class AgeList(ages: List<Genre>) : Filter.Group<Genre>("Возрастная рекомендация", ages)
+    private class More(moren: List<Genre>) : Filter.Group<Genre>("Прочее", moren)
+    private class FilList(fils: List<Genre>) : Filter.Group<Genre>("Фильтры", fils)
 
     /* [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")]
     *  .map(el => `Genre("${el.textContent.trim()}", $"{el.getAttribute('onclick')
@@ -258,22 +290,43 @@ class Mintmanga : ParsedHttpSource() {
     *  on https://mintmanga.live/search/advanced
     */
     override fun getFilterList() = FilterList(
+        OrderBy(),
         Category(getCategoryList()),
-        GenreList(getGenreList())
+        GenreList(getGenreList()),
+        AgeList(getAgeList()),
+        More(getMore()),
+        FilList(getFilList())
     )
-
-    private fun getCategoryList() = listOf(
+    private fun getFilList() = listOf(
+        Genre("Высокий рейтинг", "s_high_rate"),
+        Genre("Сингл", "s_single"),
+        Genre("Для взрослых", "s_mature"),
+        Genre("Завершенная", "s_completed"),
+        Genre("Переведено", "s_translated"),
+        Genre("Длинная", "s_many_chapters"),
+        Genre("Ожидает загрузки", "s_wait_upload"),
+    )
+    private fun getMore() = listOf(
         Genre("В цвете", "el_4614"),
         Genre("Веб", "el_1355"),
         Genre("Выпуск приостановлен", "el_5232"),
+        Genre("Не Яой", "el_1874"),
+        Genre("Сборник", "el_1348")
+    )
+
+    private fun getAgeList() = listOf(
+        Genre("NC-17", "el_3969"),
+        Genre("R", "el_3968"),
+        Genre("R18+", "el_3990")
+    )
+
+    private fun getCategoryList() = listOf(
         Genre("Ёнкома", "el_2741"),
         Genre("Комикс западный", "el_1903"),
         Genre("Комикс русский", "el_2173"),
         Genre("Манхва", "el_1873"),
         Genre("Маньхуа", "el_1875"),
-        Genre("Не Яой", "el_1874"),
         Genre("Ранобэ", "el_5688"),
-        Genre("Сборник", "el_1348")
     )
 
     private fun getGenreList() = listOf(
