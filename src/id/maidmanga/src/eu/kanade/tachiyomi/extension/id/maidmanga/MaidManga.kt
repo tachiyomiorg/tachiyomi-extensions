@@ -105,10 +105,22 @@ class MaidManga : ParsedHttpSource() {
             author = document.select("ul.series-infolist li b:contains(Author) + span").text()
 
             // add manga/manhwa/manhua thinggy to genre
-            val type = document.select("div.block span.type").text()
-            genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
-            else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-            else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+            document.select("div.block span.type").firstOrNull()?.ownText()?.let {
+                if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
+                    genre += if (genre.isNullOrEmpty()) it else ", $it"
+                }
+            }
+
+            // add alternative name to manga description
+            val altName = "Alternative Name: "
+            document.select(".series-title span").firstOrNull()?.ownText()?.let {
+                if (it.isEmpty().not()) {
+                    description += when {
+                        description.isNullOrEmpty() -> altName + it
+                        else -> "\n\n$altName" + it
+                    }
+                }
+            }
         }
     }
 
