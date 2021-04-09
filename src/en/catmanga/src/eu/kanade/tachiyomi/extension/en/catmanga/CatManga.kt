@@ -32,7 +32,17 @@ class CatManga : HttpSource() {
         return client.newCall(popularMangaRequest(page))
             .asObservableSuccess()
             .map { response ->
-                val mangas = getFilteredSeriesList(response.asJsoup().getDataJsonObject(), query)
+                val mangas = if (query.startsWith(SERIES_ID_SEARCH_PREFIX)) {
+                    getFilteredSeriesList(
+                        response.asJsoup().getDataJsonObject(),
+                        idFilter = query.removePrefix(SERIES_ID_SEARCH_PREFIX)
+                    )
+                } else {
+                    getFilteredSeriesList(
+                        response.asJsoup().getDataJsonObject(),
+                        titleFilter = query
+                    )
+                }
                 MangasPage(mangas, false)
             }
     }
@@ -119,20 +129,35 @@ class CatManga : HttpSource() {
     /**
      * @return filtered series from home page
      * @param data json data from [getDataJsonObject]
-     * @param filter will be used to check against title and alt_titles, null to disable filter
+     * @param titleFilter will be used to check against title and alt_titles, null to disable filter
+     * @param idFilter will be used to check against id, null to disable filter, only used when [titleFilter] is unset
      */
-    private fun getFilteredSeriesList(data: JSONObject, filter: String? = null): List<SManga> {
+    private fun getFilteredSeriesList(
+        data: JSONObject,
+        titleFilter: String? = null,
+        idFilter: String? = null
+    ): List<SManga> {
         val series = data.getJSONObject("props").getJSONObject("pageProps").getJSONArray("series")
         val mangas = mutableListOf<SManga>()
         for (i in 0 until series.length()) {
             val manga = series.getJSONObject(i)
+            val mangaId = manga.getString("series_id")
             val mangaTitle = manga.getString("title")
             val mangaAltTitles = manga.getJSONArray("alt_titles")
-            if (filter != null && !(mangaTitle.contains(filter, true) || mangaAltTitles.contains(filter))) {
-                continue
+
+            // Filtering
+            if (titleFilter != null) {
+                if (!(mangaTitle.contains(titleFilter, true) || mangaAltTitles.contains(titleFilter))) {
+                    continue
+                }
+            } else if (idFilter != null) {
+                if (!mangaId.contains(idFilter, true)) {
+                    continue
+                }
             }
+
             mangas += SManga.create().apply {
-                url = "/series/${manga.getString("series_id")}"
+                url = "/series/$mangaId"
                 title = mangaTitle
                 thumbnail_url = manga.getJSONObject("cover_art").getString("source")
             }
@@ -168,5 +193,9 @@ class CatManga : HttpSource() {
 
     override fun imageUrlParse(response: Response): String {
         throw UnsupportedOperationException("Not used.")
+    }
+
+    companion object {
+        const val SERIES_ID_SEARCH_PREFIX = "series_id:"
     }
 }
