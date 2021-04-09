@@ -154,8 +154,21 @@ abstract class MangaBox(
                 ?.replace("""<\s*br\s*/?>""".toRegex(), "\n")
                 ?.replace("<[^>]*>".toRegex(), "")
             thumbnail_url = document.select(thumbnailSelector).attr("abs:src")
+
+            // add alternative name to manga description
+            document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+                if (it.isEmpty().not()) {
+                    description += when {
+                        description.isNullOrEmpty() -> altName + it
+                        else -> "\n\n$altName" + it
+                    }
+                }
+            }
         }
     }
+
+    open val altNameSelector = ".story-alternative, tr:has(.info-alternative) h2"
+    open val altName = "Alternative Name: "
 
     private fun parseStatus(status: String?) = when {
         status == null -> SManga.UNKNOWN
