@@ -378,10 +378,10 @@ abstract class Madara(
             // add alternative name to manga description
             document.select(altNameSelector).firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not() && it.notUpdating()) {
-                    val altNameString = altName + it
+                    altName += it
                     manga.description += when {
-                        manga.description.isNullOrEmpty() -> altNameString
-                        else -> "\n\n$altNameString"
+                        manga.description.isNullOrEmpty() -> altName
+                        else -> "\n\n$altName"
                     }
                 }
             }
@@ -392,7 +392,7 @@ abstract class Madara(
 
     open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
     open val altNameSelector = ".post-content_item:contains(Alt) .summary-content"
-    open val altName = "Alternative Name: "
+    open var altName = "Alternative Name: "
 
     private fun String.notUpdating(): Boolean {
         return this.contains("Updating", true).not()
