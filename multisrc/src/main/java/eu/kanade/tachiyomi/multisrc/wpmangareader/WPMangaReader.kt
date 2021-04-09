@@ -88,10 +88,9 @@ abstract class WPMangaReader(
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
-        val seriesTypeSelector = "span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child"
         document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
-            if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
-                genre += if (genre.isNullOrEmpty()) it else ", $it"
+            if (it.isEmpty().not() && genre!!.contains(it, true).not()) {
+                genre += if (genre!!.isEmpty()) it else ", $it"
             }
         }
 
@@ -99,15 +98,16 @@ abstract class WPMangaReader(
         document.select(altNameSelector).firstOrNull()?.ownText()?.let {
             if (it.isEmpty().not()) {
                 description += when {
-                    description.isNullOrEmpty() -> altName + it
+                    description!!.isEmpty() -> altName + it
                     else -> "\n\n$altName" + it
                 }
             }
         }
     }
 
+    open val seriesTypeSelector = "span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child"
     open val altNameSelector = ".alternative, .seriestualt"
-    open val altName = "Alternative Name: "
+    open val altName = "Alternative Name" + ": "
 
     private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING

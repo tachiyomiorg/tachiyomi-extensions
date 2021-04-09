@@ -121,7 +121,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         document.select(".attr > tbody > tr:contains(Alter) td").firstOrNull()?.ownText()?.let {
             if (it.isEmpty().not()) {
                 description += when {
-                    description.isNullOrEmpty() -> altName + it
+                    description!!.isEmpty() -> altName + it
                     else -> "\n\n$altName" + it
                 }
             }

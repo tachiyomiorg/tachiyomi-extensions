@@ -70,8 +70,8 @@ class ManhuaID : ParsedHttpSource() {
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
         document.select("table tr:contains(Type) a, table a[href*=type]").firstOrNull()?.ownText()?.let {
-            if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
-                genre += if (genre.isNullOrEmpty()) it else ", $it"
+            if (it.isEmpty().not() && genre!!.contains(it, true).not()) {
+                genre += if (genre!!.isEmpty()) it else ", $it"
             }
         }
     }

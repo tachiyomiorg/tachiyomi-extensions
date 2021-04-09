@@ -104,10 +104,10 @@ class MaidManga : ParsedHttpSource() {
             status = parseStatus(document.select("div.block span.status").text())
             author = document.select("ul.series-infolist li b:contains(Author) + span").text()
 
-            // add manga/manhwa/manhua thinggy to genre
+            // add series type(manga/manhwa/manhua/other) thinggy to genre
             document.select("div.block span.type").firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
-                    genre += if (genre.isNullOrEmpty()) it else ", $it"
+                    genre += if (genre!!.isEmpty()) it else ", $it"
                 }
             }
 
@@ -116,7 +116,7 @@ class MaidManga : ParsedHttpSource() {
             document.select(".series-title span").firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not()) {
                     description += when {
-                        description.isNullOrEmpty() -> altName + it
+                        description!!.isEmpty() -> altName + it
                         else -> "\n\n$altName" + it
                     }
                 }

@@ -171,7 +171,7 @@ abstract class FMReader(
             infoElement.select(altNameSelector).firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not() && it.contains("Updating", true).not()) {
                     description += when {
-                        description.isNullOrEmpty() -> altName + it
+                        description!!.isEmpty() -> altName + it
                         else -> "\n\n$altName" + it
                     }
                 }
@@ -180,7 +180,7 @@ abstract class FMReader(
     }
 
     open val altNameSelector = "li:contains(Other names)"
-    open val altName = "Alternative Name"
+    open val altName = "Alternative Name" // the alt name already contains ": " eg. ": alt name1, alt name2"
 
     // languages: en, vi, tr
     fun parseStatus(status: String?): Int {

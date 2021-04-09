@@ -37,28 +37,33 @@ class SilenceScan : WPMangaStream(
         artist = infoEl.select("b:contains(Artista) + span").text()
         status = parseStatus(infoEl.select("div.imptdt:contains(Status) i").text())
         description = infoEl.select("h2:contains(Sinopse) + div p").joinToString("\n") { it.text() }
-        genre = infoEl.select("b:contains(Gêneros) + span a").joinToString { it.text() }
         thumbnail_url = infoEl.select("div.thumb img").imgAttr()
 
+        val genres = infoEl.select("b:contains(Gêneros) + span a")
+            .map { element -> element.text().toLowerCase() }
+            .toMutableSet()
+
         // add series type(manga/manhwa/manhua/other) thinggy to genre
-        val seriesTypeSelector = ".imptdt:contains(Tipo) a, a[href*=type\\=]"
         document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
-            if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
-                genre += if (genre.isNullOrEmpty()) it else ", $it"
+            if (it.isEmpty().not() && genres.contains(it).not()) {
+                genres.add(it.toLowerCase())
             }
         }
+
+        genre = genres.toList().map { it.capitalize() }.joinToString(", ")
 
         // add alternative name to manga description
         document.select(altNameSelector).firstOrNull()?.ownText()?.let {
             if (it.isEmpty().not() && it !="N/A" && it != "-") {
                 description += when {
-                    description.isNullOrEmpty() -> altName + it
+                    description!!.isEmpty() -> altName + it
                     else -> "\n\n$altName" + it
                 }
             }
         }
     }
 
+    override val seriesTypeSelector = ".imptdt:contains(Tipo) a, a[href*=type\\=]"
     override val altNameSelector = ".wd-full:contains(Alt) span"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {

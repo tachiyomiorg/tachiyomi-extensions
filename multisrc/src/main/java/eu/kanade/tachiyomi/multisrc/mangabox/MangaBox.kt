@@ -159,7 +159,7 @@ abstract class MangaBox(
             document.select(altNameSelector).firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not()) {
                     description += when {
-                        description.isNullOrEmpty() -> altName + it
+                        description!!.isEmpty() -> altName + it
                         else -> "\n\n$altName" + it
                     }
                 }
@@ -168,7 +168,7 @@ abstract class MangaBox(
     }
 
     open val altNameSelector = ".story-alternative, tr:has(.info-alternative) h2"
-    open val altName = "Alternative Name: "
+    open val altName = "Alternative Name" + ": "
 
     private fun parseStatus(status: String?) = when {
         status == null -> SManga.UNKNOWN

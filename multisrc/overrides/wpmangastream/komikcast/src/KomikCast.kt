@@ -99,10 +99,9 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                 thumbnail_url = infoElement.select("div.komik_info-content-thumbnail img").imgAttr()
 
                 // add series type(manga/manhwa/manhua/other) thinggy to genre
-                val seriesTypeSelector = "span:contains(Type) a"
                 document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
-                    if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
-                        genre += if (genre.isNullOrEmpty()) it else ", $it"
+                    if (it.isEmpty().not() && genre!!.contains(it, true).not()) {
+                        genre += if (genre!!.isEmpty()) it else ", $it"
                     }
                 }
 
@@ -110,7 +109,7 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                 document.select(altNameSelector).firstOrNull()?.ownText()?.let {
                     if (it.isEmpty().not() && it !="N/A" && it != "-") {
                         description += when {
-                            description.isNullOrEmpty() -> altName + it
+                            description!!.isEmpty() -> altName + it
                             else -> "\n\n$altName" + it
                         }
                     }
@@ -119,6 +118,7 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         }
     }
 
+    override val seriesTypeSelector = "span:contains(Type) a"
     override val altNameSelector = ".komik_info-content-native"
 
     override fun chapterListSelector() = "div.komik_info-chapters li"

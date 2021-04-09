@@ -30,10 +30,9 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
 
                 // add series type(manga/manhwa/manhua/other) thinggy to genre
-                val seriesTypeSelector = ".infotable tr:contains(Type) td:last-child"
                 document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
-                    if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
-                        genre += if (genre.isNullOrEmpty()) it else ", $it"
+                    if (it.isEmpty().not() && genre!!.contains(it, true).not()) {
+                        genre += if (genre!!.isEmpty()) it else ", $it"
                     }
                 }
 
@@ -41,7 +40,7 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
                 document.select(altNameSelector).firstOrNull()?.ownText()?.let {
                     if (it.isEmpty().not() && it !="N/A" && it != "-") {
                         description += when {
-                            description.isNullOrEmpty() -> altName + it
+                            description!!.isEmpty() -> altName + it
                             else -> "\n\n$altName" + it
                         }
                     }
@@ -49,6 +48,8 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
             }
         }
     }
+
+    override val seriesTypeSelector = ".infotable tr:contains(Type) td:last-child"
     override fun getGenreList(): List<Genre> = listOf(
         Genre("4 Koma", "344"),
         Genre("Action", "13"),
