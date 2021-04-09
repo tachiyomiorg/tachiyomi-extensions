@@ -102,6 +102,7 @@ class Mintmanga : ParsedHttpSource() {
                     } else {
                         val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
                         url = HttpUrl.parse("$baseUrl/list?sortType=$ord")!!.newBuilder()
+                        return GET(url.toString(), headers)
                     }
                 }
             }
