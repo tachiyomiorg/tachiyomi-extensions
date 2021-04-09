@@ -191,11 +191,24 @@ abstract class NepNep(
                 description = info.select("div.Content").text()
                 thumbnail_url = info.select("img").attr("abs:src")
 
-                // add manga/manhwa/manhua thinggy to genre
-                val type = info.select("li.list-group-item:has(span:contains(Type)) a, a[href*=type\\=]").firstOrNull()?.ownText()
-                genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
-                else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+                // add series type(manga/manhwa/manhua/other) thinggy to genre
+                val seriesTypeSelector = "li.list-group-item:has(span:contains(Type)) a, a[href*=type\\=]"
+                info.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
+                        genre += if (genre.isNullOrEmpty()) it else ", $it"
+                    }
+                }
+
+                // add alternative name to manga description
+                val altName = "Alternative Name: "
+                info.select("li.list-group-item:has(span:contains(Alter))").firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                        description += when {
+                            description.isNullOrEmpty() -> altName + it
+                            else -> "\n\n$altName" + it
+                        }
+                    }
+                }
             }
         }
     }
