@@ -232,11 +232,13 @@ class Komiku : ParsedHttpSource() {
         status = parseStatus(document.select("table.inftable tr > td:contains(Status) + td").text())
         thumbnail_url = document.select("div.ims > img").attr("abs:src")
 
-        // add manga/manhwa/manhua thinggy to genre
-        val type = document.select("table.inftable tr:contains(Jenis) a, table.inftable tr:has(a[href*=category\\/]) a, a[href*=category\\/]").text()
-        genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
-        else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+        // add series type(manga/manhwa/manhua/other) thinggy to genre
+        val seriesTypeSelector = "table.inftable tr:contains(Jenis) a, table.inftable tr:has(a[href*=category\\/]) a, a[href*=category\\/]"
+        document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
+                genre += if (genre.isNullOrEmpty()) it else ", $it"
+            }
+        }
     }
 
     private fun parseStatus(status: String) = when {
