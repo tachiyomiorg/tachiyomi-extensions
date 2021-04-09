@@ -40,11 +40,26 @@ class SilenceScan : WPMangaStream(
         genre = infoEl.select("b:contains(Gêneros) + span a").joinToString { it.text() }
         thumbnail_url = infoEl.select("div.thumb img").imgAttr()
 
-        // add manga/manhwa/manhua thinggy to genre
-        val type = document.select(".imptdt:contains(Tipo) a, a[href*=type\\=]").firstOrNull()?.ownText()
-        genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+        // add series type(manga/manhwa/manhua/other) thinggy to genre
+        val seriesTypeSelector = ".imptdt:contains(Tipo) a, a[href*=type\\=]"
+        document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
+                genre += if (genre.isNullOrEmpty()) it else ", $it"
+            }
+        }
+
+        // add alternative name to manga description
+        document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                description += when {
+                    description.isNullOrEmpty() -> altName + it
+                    else -> "\n\n$altName" + it
+                }
+            }
+        }
     }
+
+    override val altNameSelector = ".wd-full:contains(Alt) span"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("span.chapternum").text()

@@ -29,10 +29,23 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
                 description = infoElement.select(".entry-content-single[itemprop=\"description\"]").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
 
-                // add manga/manhwa/manhua thinggy to genre
-                val type = document.select(".infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
-                genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+                // add series type(manga/manhwa/manhua/other) thinggy to genre
+                val seriesTypeSelector = ".infotable tr:contains(Type) td:last-child"
+                document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && it != "-" && genre!!.contains(it, true).not()) {
+                        genre += if (genre.isNullOrEmpty()) it else ", $it"
+                    }
+                }
+
+                // add alternative name to manga description
+                document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                        description += when {
+                            description.isNullOrEmpty() -> altName + it
+                            else -> "\n\n$altName" + it
+                        }
+                    }
+                }
             }
         }
     }
