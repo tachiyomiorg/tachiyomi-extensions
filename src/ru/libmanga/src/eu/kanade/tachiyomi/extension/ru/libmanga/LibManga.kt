@@ -198,12 +198,12 @@ class LibManga : ConfigurableSource, HttpSource() {
         val chaptersList = data["chapters"]["list"].nullArray
         val slug = data["manga"]["slug"].string
         val teams = data["chapters"]["branches"].array.reversed()
-        val sortingList = preferences.getInt(SORTING_PREF, 2)
+        val sortingList = preferences.getString(SORTING_PREF, "ms_largest")
         var chapters: List<SChapter>? = null
 
-        if (teams.isNotEmpty() && sortingList != 0) {
+        if (teams.isNotEmpty() && !sortingList.equals("ms_mixing")) {
             when (sortingList) {
-                1 -> {
+                "ms_combining" -> {
                     val tempChaptersList = mutableListOf<SChapter>()
                     for (currentList in teams.withIndex()) {
                         val teamId = teams[currentList.index]["id"].int
@@ -214,7 +214,7 @@ class LibManga : ConfigurableSource, HttpSource() {
                     }
                     chapters = tempChaptersList
                 }
-                2 -> {
+                "ms_largest" -> {
                     val sizesChaptersLists = mutableListOf<Int>()
                     for (currentList in teams.withIndex()) {
                         val teamId = teams[currentList.index]["id"].int
@@ -225,7 +225,7 @@ class LibManga : ConfigurableSource, HttpSource() {
                     val teamId = teams[max]["id"].int
                     chapters = chaptersList?.filter { it["branch_id"].int == teamId }?.map { chapterFromElement(it, slug, teamId) }
                 }
-                3 -> {
+                "ms_active" -> {
                     for (currentList in teams.withIndex()) {
                         val isActive = teams[currentList.index]["teams"].array
                         for (currentListInternal in isActive.withIndex()) {
@@ -662,13 +662,12 @@ class LibManga : ConfigurableSource, HttpSource() {
             key = SORTING_PREF
             title = SORTING_PREF_Title
             entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
-            entryValues = arrayOf("0", "1", "2", "3")
+            entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(SORTING_PREF, index).commit()
+                preferences.edit().putString(SORTING_PREF, selected).commit()
             }
         }
 
@@ -694,13 +693,12 @@ class LibManga : ConfigurableSource, HttpSource() {
             key = SORTING_PREF
             title = SORTING_PREF_Title
             entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
-            entryValues = arrayOf("0", "1", "2", "3")
+            entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(SORTING_PREF, index).commit()
+                preferences.edit().putString(SORTING_PREF, selected).commit()
             }
         }
 
