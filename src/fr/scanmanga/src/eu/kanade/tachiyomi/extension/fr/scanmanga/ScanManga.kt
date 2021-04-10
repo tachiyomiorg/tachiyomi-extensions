@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -175,12 +176,17 @@ class ScanManga : ParsedHttpSource() {
     }
 
     // Chapters
-    override fun chapterListSelector() = "div.texte_volume_manga ul li.chapitre div.chapitre_nom a"
+    override fun chapterListSelector() = throw Exception("Not used")
+    override fun chapterFromElement(element: Element): SChapter = throw Exception("Not used")
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
 
-    override fun chapterFromElement(element: Element): SChapter {
-        return SChapter.create().apply {
-            name = element.text()
-            setUrlWithoutDomain(element.attr("href"))
+        return document.select("div.texte_volume_manga ul li.chapitre div.chapitre_nom a").map {
+            SChapter.create().apply {
+                name = it.text()
+                setUrlWithoutDomain(it.attr("href"))
+                scanlator = document.select("li[itemprop=\"translator\"] a").joinToString { it.text() }
+            }
         }
     }
 
