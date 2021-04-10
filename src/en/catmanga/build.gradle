@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'MangaLib'
-    pkgNameSuffix = 'ru.libmanga'
-    extClass = '.LibManga'
-    extVersionCode = 35
+    extName = 'CatManga'
+    pkgNameSuffix = "en.catmanga"
+    extClass = '.CatManga'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 
