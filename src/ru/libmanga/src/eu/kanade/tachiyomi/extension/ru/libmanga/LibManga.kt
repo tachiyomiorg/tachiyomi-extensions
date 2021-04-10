@@ -2,6 +2,8 @@ package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.util.Patterns
+import android.webkit.URLUtil
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
@@ -275,7 +277,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         }
     }
 
-    override fun pageListParse(response: Response): List<Page> {
+    override fun pageListParse(response: Response,): List<Page> {
         val document = response.asJsoup()
 
         if (document.html().contains("mangalib.me/register"))
@@ -294,9 +296,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject
         val defaultServer: String = chapInfoJson["img"]["server"].string
+        var autoServer = "secondary"
         val imgUrl: String = chapInfoJson["img"]["url"].string
-
-        val serverToUse = if (this.server == null) defaultServer else this.server
+        val serverToUse = if (this.server == null) defaultServer else if (this.server == "auto") autoServer else
+            this.server
+        System.out.println("defaultServerServer= " + this.server)
         val imageServerUrl: String = servers[serverToUse].string
 
         // Get pages
@@ -312,8 +316,27 @@ class LibManga : ConfigurableSource, HttpSource() {
         val pages = mutableListOf<Page>()
 
         pagesJson.forEach { page ->
-            pages.add(Page(page["p"].int, "", imageServerUrl + "/" + imgUrl + page["u"].string))
+            val ifauto = imageServerUrl + "/" + imgUrl + page["u"].string
+            val PageN = Page(page["p"].int, "", ifauto)
+            if (this.server == "auto") {
+
+                fun String.isValidUrl(): Boolean = Patterns.WEB_URL.matcher(this).matches() &&
+                    URLUtil.isValidUrl(ifauto)
+                if (!ifauto.isValidUrl()) {
+                    autoServer = "secondary"
+                    pages.add(PageN)
+                    System.out.println("defaultServerOPEN= " + ifauto)
+                } else {
+                    autoServer = "fourth"
+                    pages.add(PageN)
+                    System.out.println("defaultServerNOT= " + ifauto)
+                }
+            } else {
+                pages.add(PageN)
+                System.out.println("defaultServerOPENnull= " + ifauto)
+            }
         }
+
         return pages
     }
 
@@ -648,8 +671,8 @@ class LibManga : ConfigurableSource, HttpSource() {
         val serverPref = ListPreference(screen.context).apply {
             key = SERVER_PREF
             title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
-            entryValues = arrayOf("secondary", "fourth", "compress")
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)", "Авто")
+            entryValues = arrayOf("secondary", "fourth", "compress", "auto")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -679,8 +702,8 @@ class LibManga : ConfigurableSource, HttpSource() {
         val serverPref = LegacyListPreference(screen.context).apply {
             key = SERVER_PREF
             title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)")
-            entryValues = arrayOf("secondary", "fourth", "compress")
+            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)", "Авто")
+            entryValues = arrayOf("secondary", "fourth", "compress", "auto")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
