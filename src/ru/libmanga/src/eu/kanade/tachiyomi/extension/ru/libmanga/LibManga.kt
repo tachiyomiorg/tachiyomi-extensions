@@ -316,21 +316,23 @@ class LibManga : ConfigurableSource, HttpSource() {
         val pages = mutableListOf<Page>()
 
         pagesJson.forEach { page ->
-            val ifauto = imageServerUrl + "/" + imgUrl + page["u"].string
-            val PageN = Page(page["p"].int, "", ifauto)
+            var ifauto = imageServerUrl + "/" + imgUrl + page["u"].string
+            var PageN = Page(page["p"].int, "", ifauto)
             if (this.server == "auto") {
-
                 fun String.isValidUrl(): Boolean = Patterns.WEB_URL.matcher(this).matches() &&
                     URLUtil.isValidUrl(ifauto)
                 if (!ifauto.isValidUrl()) {
-                    autoServer = "secondary"
-                    pages.add(PageN)
-                    System.out.println("defaultServerOPEN= " + ifauto)
-                } else {
-                    autoServer = "fourth"
-                    pages.add(PageN)
+                    ifauto = servers["fourth"].string + "/" + imgUrl + page["u"].string
+                    PageN = Page(page["p"].int, "", ifauto)
                     System.out.println("defaultServerNOT= " + ifauto)
+                    if (!ifauto.isValidUrl()) {
+                        ifauto = servers["compress"].string + "/" + imgUrl + page["u"].string
+                        PageN = Page(page["p"].int, "", ifauto)
+                        System.out.println("defaultServerNOT2= " + ifauto)
+                    }
                 }
+                System.out.println("defaultServerNOT0= " + ifauto)
+                pages.add(PageN)
             } else {
                 pages.add(PageN)
                 System.out.println("defaultServerOPENnull= " + ifauto)
