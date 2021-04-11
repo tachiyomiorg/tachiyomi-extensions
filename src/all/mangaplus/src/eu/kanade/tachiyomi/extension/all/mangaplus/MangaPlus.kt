@@ -76,6 +76,17 @@ abstract class MangaPlus(
 
     private var titleList: List<Title>? = null
 
+    /**
+     * MANGA Plus recently started supporting other languages, but
+     * they are not defined by the API. This is a temporary fix
+     * to properly filter the titles while their API doesn't get an update.
+     */
+    private val titlesToFix: Map<Int, Language> = mapOf(
+        100149 to Language.PORTUGUESE_BR,
+        100150 to Language.PORTUGUESE_BR,
+        100151 to Language.PORTUGUESE_BR
+    )
+
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
             .set("Referer", "$baseUrl/manga_list/hot")
@@ -90,7 +101,7 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        titleList = result.success.titleRankingView!!.titles
+        titleList = fixWrongLanguages(result.success.titleRankingView!!.titles)
             .filter { it.language == langCode }
 
         val mangas = titleList!!.map {
@@ -122,13 +133,14 @@ abstract class MangaPlus(
         val popularResponse = client.newCall(popularMangaRequest(1)).execute().asProto()
 
         if (popularResponse.success != null) {
-            titleList = popularResponse.success.titleRankingView!!.titles
+            titleList = fixWrongLanguages(popularResponse.success.titleRankingView!!.titles)
                 .filter { it.language == langCode }
         }
 
         val mangas = result.success.webHomeView!!.groups
             .flatMap { it.titles }
             .mapNotNull { it.title }
+            .let { fixWrongLanguages(it) }
             .filter { it.language == langCode }
             .map {
                 SManga.create().apply {
@@ -161,7 +173,7 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        titleList = result.success.allTitlesView!!.titles
+        titleList = fixWrongLanguages(result.success.allTitlesView!!.titles)
             .filter { it.language == langCode }
 
         val mangas = titleList!!.map {
@@ -421,9 +433,16 @@ abstract class MangaPlus(
         return response
     }
 
+    private fun fixWrongLanguages(titles: List<Title>): List<Title> {
+        return titles.map { title ->
+            val correctLanguage = titlesToFix[title.titleId]
+            if (correctLanguage != null) title.copy(language = correctLanguage) else title
+        }
+    }
+
     private val ErrorResult.langPopup: Popup
-        get() = when (lang) {
-            "es" -> spanishPopup
+        get() = when (internalLang) {
+            "esp" -> spanishPopup
             else -> englishPopup
         }
 
@@ -452,7 +471,7 @@ abstract class MangaPlus(
     companion object {
         private const val API_URL = "https://jumpg-webapi.tokyo-cdn.com/api"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
 
