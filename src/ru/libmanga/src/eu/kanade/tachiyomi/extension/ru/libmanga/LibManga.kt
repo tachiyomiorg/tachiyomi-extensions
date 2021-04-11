@@ -199,7 +199,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val chaptersList = data["chapters"]["list"].nullArray
         val slug = data["manga"]["slug"].string
         val teams = data["chapters"]["branches"].array.reversed()
-        val sortingList = preferences.getString(SORTING_PREF, "ms_largest")
+        val sortingList = preferences.getString(SORTING_PREF, "ms_mixing")
         var chapters: List<SChapter>? = null
 
         if (teams.isNotEmpty() && !sortingList.equals("ms_mixing")) {
@@ -279,8 +279,14 @@ class LibManga : ConfigurableSource, HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
 
-        if (document.html().contains("mangalib.me/register"))
-            throw Exception("Для просмотра 18+ контента необходима авторизация через WebView")
+        val redirect = document.html()
+        if (!redirect.contains("window.__info")) {
+            if (redirect.contains("hold-transition login-page")) {
+                throw Exception("Для просмотра 18+ контента необходима авторизация через WebView")
+            } else if (redirect.contains("header__logo")) {
+                throw Exception("Лицензировано - Главы не доступны")
+            }
+        }
 
         val chapInfo = document
             .select("script:containsData(window.__info)")
@@ -669,7 +675,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         private const val SERVER_PREF_Title = "Сервер изображений"
 
         private const val SORTING_PREF = "MangaLibSorting"
-        private const val SORTING_PREF_Title = "Сортировка списков глав"
+        private const val SORTING_PREF_Title = "Способ выбора переводчиков"
     }
 
     private var server: String? = preferences.getString(SERVER_PREF, null)
@@ -691,7 +697,10 @@ class LibManga : ConfigurableSource, HttpSource() {
         val sortingPref = ListPreference(screen.context).apply {
             key = SORTING_PREF
             title = SORTING_PREF_Title
-            entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
+            entries = arrayOf(
+                "Полный список (без повторных переводов)", "Все переводы (друг за другом)",
+                "Наибольшее число глав", "Активный перевод"
+            )
             entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
 
@@ -722,7 +731,10 @@ class LibManga : ConfigurableSource, HttpSource() {
         val sortingPref = LegacyListPreference(screen.context).apply {
             key = SORTING_PREF
             title = SORTING_PREF_Title
-            entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
+            entries = arrayOf(
+                "Полный список (без повторных переводов)", "Все переводы (друг за другом)",
+                "Наибольшее число глав", "Активный перевод"
+            )
             entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
 

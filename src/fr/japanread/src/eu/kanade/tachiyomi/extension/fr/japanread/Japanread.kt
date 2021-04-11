@@ -62,7 +62,7 @@ class Japanread : ParsedHttpSource() {
         return GET("$baseUrl/search?q=$query&page=$page")
     }
 
-    override fun searchMangaSelector() = "#manga-container > div > div"
+    override fun searchMangaSelector() = "#manga-container > div > div.col-lg-6"
 
     override fun searchMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
