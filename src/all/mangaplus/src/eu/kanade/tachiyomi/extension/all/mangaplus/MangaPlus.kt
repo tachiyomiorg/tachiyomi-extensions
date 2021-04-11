@@ -82,6 +82,14 @@ abstract class MangaPlus(
      * to properly filter the titles while their API doesn't get an update.
      */
     private val titlesToFix: Map<Int, Language> = mapOf(
+        // Thai
+        100079 to Language.THAI,
+        100080 to Language.THAI,
+        100082 to Language.THAI,
+        100120 to Language.THAI,
+        100121 to Language.THAI,
+
+        // Brazilian Portuguese
         100149 to Language.PORTUGUESE_BR,
         100150 to Language.PORTUGUESE_BR,
         100151 to Language.PORTUGUESE_BR
@@ -101,7 +109,8 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        titleList = fixWrongLanguages(result.success.titleRankingView!!.titles)
+        titleList = result.success.titleRankingView!!.titles
+            .fixWrongLanguages()
             .filter { it.language == langCode }
 
         val mangas = titleList!!.map {
@@ -133,14 +142,15 @@ abstract class MangaPlus(
         val popularResponse = client.newCall(popularMangaRequest(1)).execute().asProto()
 
         if (popularResponse.success != null) {
-            titleList = fixWrongLanguages(popularResponse.success.titleRankingView!!.titles)
+            titleList = popularResponse.success.titleRankingView!!.titles
+                .fixWrongLanguages()
                 .filter { it.language == langCode }
         }
 
         val mangas = result.success.webHomeView!!.groups
             .flatMap { it.titles }
             .mapNotNull { it.title }
-            .let { fixWrongLanguages(it) }
+            .fixWrongLanguages()
             .filter { it.language == langCode }
             .map {
                 SManga.create().apply {
@@ -173,7 +183,8 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        titleList = fixWrongLanguages(result.success.allTitlesView!!.titles)
+        titleList = result.success.allTitlesView!!.titles
+            .fixWrongLanguages()
             .filter { it.language == langCode }
 
         val mangas = titleList!!.map {
@@ -433,11 +444,9 @@ abstract class MangaPlus(
         return response
     }
 
-    private fun fixWrongLanguages(titles: List<Title>): List<Title> {
-        return titles.map { title ->
-            val correctLanguage = titlesToFix[title.titleId]
-            if (correctLanguage != null) title.copy(language = correctLanguage) else title
-        }
+    private fun List<Title>.fixWrongLanguages(): List<Title> = map { title ->
+        val correctLanguage = titlesToFix[title.titleId]
+        if (correctLanguage != null) title.copy(language = correctLanguage) else title
     }
 
     private val ErrorResult.langPopup: Popup

@@ -90,11 +90,14 @@ enum class Language(val id: Int) {
     @SerializedName("1")
     SPANISH(1),
 
-    // Temporary add the Portuguese (Brazil) language,
-    // that is not present on the API yet.
+    // Temporary add the languages that are not present on the API yet.
     // @ProtoNumber(2)
     // @SerializedName("2")
-    PORTUGUESE_BR(2)
+    THAI(2),
+
+    // @ProtoNumber(3)
+    // @SerializedName("3")
+    PORTUGUESE_BR(3)
 }
 
 @Serializable
@@ -222,7 +225,8 @@ const val DECODE_SCRIPT: String =
     var Language = new Enum("Language")
         .add("ENGLISH", 0)
         .add("SPANISH", 1);
-    //     .add("PORTUGUESE_BR", 2);
+    //     .add("THAI", 2)
+    //     .add("PORTUGUESE_BR", 3);
 
     var UpdatedTitleGroup = new Type("UpdatedTitleGroup")
         .add(new Field("groupName", 1, "string"))
