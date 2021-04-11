@@ -391,7 +391,7 @@ abstract class Madara(
 
     open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
     open val altNameSelector = ".post-content_item:contains(Alt) .summary-content"
-    open val altName = "Alternative Name: "
+    open val altName = "Alternative Name" + ": "
 
     private fun String.notUpdating(): Boolean {
         return this.contains("Updating", true).not()
