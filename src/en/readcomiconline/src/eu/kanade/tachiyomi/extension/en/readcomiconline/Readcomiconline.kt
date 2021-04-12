@@ -29,7 +29,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "ReadComicOnline"
 
-    override val baseUrl = "https://readcomiconline.to"
+    override val baseUrl = "https://readcomiconline.li"
 
     override val lang = "en"
 
@@ -149,7 +149,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
-    // on https://readcomiconline.to/AdvanceSearch
+    // on https://readcomiconline.li/AdvanceSearch
     private fun getGenreList() = listOf(
         Genre("Action"),
         Genre("Adventure"),
@@ -174,6 +174,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         Genre("Mature"),
         Genre("Military"),
         Genre("Movies & TV"),
+        Genre("Music"),
         Genre("Mystery"),
         Genre("Mythology"),
         Genre("Personal"),
@@ -187,6 +188,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         Genre("School Life"),
         Genre("Sci-Fi"),
         Genre("Slice of Life"),
+        Genre("Sport"),
         Genre("Spy"),
         Genre("Superhero"),
         Genre("Supernatural"),
