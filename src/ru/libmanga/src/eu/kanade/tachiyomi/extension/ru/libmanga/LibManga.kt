@@ -301,7 +301,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject.toMap()
         val defaultServer: String = chapInfoJson["img"]["server"].string
-        val autoServer = setOf(defaultServer, "secondary", "fourth", "main", "compress")
+        val autoServer = setOf(defaultServer, "secondary", "fourth", "compress")
         val imgUrl: String = chapInfoJson["img"]["url"].string
 
         val serverToUse = when (this.server) {
@@ -327,7 +327,6 @@ class LibManga : ConfigurableSource, HttpSource() {
             val serversUrls = keys.map {
                 servers[it]?.string + imgUrl + page["u"].string
             }.joinToString(separator = ",,") { it }
-            pages.add(Page(page["p"].int, serversUrls))
         }
 
         return pages
@@ -335,7 +334,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     private fun checkImage(url: String): Boolean {
         val response = client.newCall(Request.Builder().url(url).head().headers(headers).build()).execute()
-        return response.isSuccessful && (response.header("Content-Length")?.toInt()!! > 150)
+        return response.isSuccessful && (response.header("Content-Length")?.toInt()!! > 320)
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> {
@@ -393,9 +392,19 @@ class LibManga : ConfigurableSource, HttpSource() {
                         url.addQueryParameter("types[]", category.id)
                     }
                 }
+                is FormatList -> filter.state.forEach { forma ->
+                    if (forma.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(if (forma.isIncluded()) "format[include][]" else "format[exclude][]", forma.id)
+                    }
+                }
                 is StatusList -> filter.state.forEach { status ->
                     if (status.state) {
                         url.addQueryParameter("status[]", status.id)
+                    }
+                }
+                is StatusTitleList -> filter.state.forEach { title ->
+                    if (title.state) {
+                        url.addQueryParameter("manga_status[]", title.id)
                     }
                 }
                 is GenreList -> filter.state.forEach { genre ->
@@ -461,7 +470,9 @@ class LibManga : ConfigurableSource, HttpSource() {
     private class CheckFilter(name: String, val id: String) : Filter.CheckBox(name)
 
     private class CategoryList(categories: List<CheckFilter>) : Filter.Group<CheckFilter>("Тип", categories)
+    private class FormatList(formas: List<SearchFilter>) : Filter.Group<SearchFilter>("Формат выпуска", formas)
     private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус перевода", statuses)
+    private class StatusTitleList(titles: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус тайтла", titles)
     private class GenreList(genres: List<SearchFilter>) : Filter.Group<SearchFilter>("Жанры", genres)
     private class TagList(tags: List<SearchFilter>) : Filter.Group<SearchFilter>("Теги", tags)
     private class AgeList(ages: List<CheckFilter>) : Filter.Group<CheckFilter>("Возрастное ограничение", ages)
@@ -469,9 +480,11 @@ class LibManga : ConfigurableSource, HttpSource() {
     override fun getFilterList() = FilterList(
         OrderBy(),
         CategoryList(getCategoryList()),
+        FormatList(getFormatList()),
         GenreList(getGenreList()),
         TagList(getTagList()),
         StatusList(getStatusList()),
+        StatusTitleList(getStatusTitleList()),
         AgeList(getAgeList())
     )
 
@@ -495,6 +508,15 @@ class LibManga : ConfigurableSource, HttpSource() {
         CheckFilter("Комикс западный", "9")
     )
 
+    private fun getFormatList() = listOf(
+        SearchFilter("4-кома (Ёнкома)", "1"),
+        SearchFilter("Сборник", "2"),
+        SearchFilter("Додзинси", "3"),
+        SearchFilter("Сингл", "4"),
+        SearchFilter("В цвете", "5"),
+        SearchFilter("Веб", "6")
+    )
+
     /*
     * Use console
     * Object.entries(__FILTER_ITEMS__.status).map(([k, v]) => `SearchFilter("${v.label}", "${v.id}")`).join(',\n')
@@ -507,6 +529,14 @@ class LibManga : ConfigurableSource, HttpSource() {
         CheckFilter("Заброшен", "4")
     )
 
+    private fun getStatusTitleList() = listOf(
+        CheckFilter("Онгоинг", "1"),
+        CheckFilter("Завершён", "2"),
+        CheckFilter("Анонс", "3"),
+        CheckFilter("Приостановлен", "4"),
+        CheckFilter("Выпуск прекращён", "5"),
+    )
+
     /*
     * Use console
     * __FILTER_ITEMS__.genres.map(it => `SearchFilter("${it.name}", "${it.id}")`).join(',\n')
@@ -517,13 +547,11 @@ class LibManga : ConfigurableSource, HttpSource() {
         SearchFilter("боевик", "34"),
         SearchFilter("боевые искусства", "35"),
         SearchFilter("вампиры", "36"),
-        SearchFilter("веб", "78"),
         SearchFilter("гарем", "37"),
         SearchFilter("гендерная интрига", "38"),
         SearchFilter("героическое фэнтези", "39"),
         SearchFilter("детектив", "40"),
         SearchFilter("дзёсэй", "41"),
-        SearchFilter("додзинси", "42"),
         SearchFilter("драма", "43"),
         SearchFilter("ёнкома", "75"),
         SearchFilter("игра", "44"),
