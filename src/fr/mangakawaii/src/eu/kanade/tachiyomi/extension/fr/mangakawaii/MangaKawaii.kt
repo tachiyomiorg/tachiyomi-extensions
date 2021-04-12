@@ -103,13 +103,14 @@ class MangaKawaii : ParsedHttpSource() {
     override fun chapterListSelector() = throw Exception("Not used")
     override fun chapterFromElement(element: Element): SChapter = throw Exception("Not used")
     override fun chapterListParse(response: Response): List<SChapter> {
-        var document = response.asJsoup()
+        val document = response.asJsoup()
+        var widgetDocument = document
         val widgetPageListUrl = Regex("""['"](/arrilot/load-widget.*?)['"]""").find(document.toString())?.groupValues?.get(1)
         if (widgetPageListUrl != null) {
-            document = client.newCall(GET("$baseUrl$widgetPageListUrl", headers)).execute().asJsoup()
+            widgetDocument = client.newCall(GET("$baseUrl$widgetPageListUrl", headers)).execute().asJsoup()
         }
 
-        return document.select("tr[class*=volume-]:has(td)").map {
+        return widgetDocument.select("tr[class*=volume-]:has(td)").map {
             SChapter.create().apply {
                 url = it.select("td.table__chapter").select("a").attr("href")
                 name = it.select("td.table__chapter").select("span").text().trim()
@@ -117,6 +118,7 @@ class MangaKawaii : ParsedHttpSource() {
                     ?: -1F
                 date_upload = it.select("td.table__date").firstOrNull()?.text()?.let { parseDate(it) }
                     ?: 0
+                scanlator = document.select("[itemprop=translator] a").joinToString { it.text().replace(Regex("""[\[\]]"""), "") }
             }
         }
     }

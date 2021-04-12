@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.util.Patterns
-import android.webkit.URLUtil
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
@@ -13,6 +11,7 @@ import com.github.salomonbrys.kotson.nullArray
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
+import com.github.salomonbrys.kotson.toMap
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
@@ -200,7 +199,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val chaptersList = data["chapters"]["list"].nullArray
         val slug = data["manga"]["slug"].string
         val teams = data["chapters"]["branches"].array.reversed()
-        val sortingList = preferences.getString(SORTING_PREF, "ms_largest")
+        val sortingList = preferences.getString(SORTING_PREF, "ms_mixing")
         var chapters: List<SChapter>? = null
 
         if (teams.isNotEmpty() && !sortingList.equals("ms_mixing")) {
@@ -277,11 +276,17 @@ class LibManga : ConfigurableSource, HttpSource() {
         }
     }
 
-    override fun pageListParse(response: Response,): List<Page> {
+    override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
 
-        if (document.html().contains("mangalib.me/register"))
-            throw Exception("Для просмотра 18+ контента необходима авторизация через WebView")
+        val redirect = document.html()
+        if (!redirect.contains("window.__info")) {
+            if (redirect.contains("hold-transition login-page")) {
+                throw Exception("Для просмотра 18+ контента необходима авторизация через WebView")
+            } else if (redirect.contains("header__logo")) {
+                throw Exception("Лицензировано - Главы не доступны")
+            }
+        }
 
         val chapInfo = document
             .select("script:containsData(window.__info)")
@@ -294,14 +299,16 @@ class LibManga : ConfigurableSource, HttpSource() {
             .first()
 
         val chapInfoJson = jsonParser.parse(chapInfo).obj
-        val servers = chapInfoJson["servers"].asJsonObject
+        val servers = chapInfoJson["servers"].asJsonObject.toMap()
         val defaultServer: String = chapInfoJson["img"]["server"].string
-        var autoServer = "secondary"
+        val autoServer = setOf(defaultServer, "secondary", "fourth", "main", "compress")
         val imgUrl: String = chapInfoJson["img"]["url"].string
-        val serverToUse = if (this.server == null) defaultServer else if (this.server == "auto") autoServer else
-            this.server
-        System.out.println("defaultServerServer= " + this.server)
-        val imageServerUrl: String = servers[serverToUse].string
+
+        val serverToUse = when (this.server) {
+            null -> autoServer
+            "auto" -> autoServer
+            else -> listOf(this.server)
+        }
 
         // Get pages
         val pagesArr = document
@@ -316,30 +323,32 @@ class LibManga : ConfigurableSource, HttpSource() {
         val pages = mutableListOf<Page>()
 
         pagesJson.forEach { page ->
-            var ifauto = imageServerUrl + "/" + imgUrl + page["u"].string
-            var PageN = Page(page["p"].int, "", ifauto)
-            if (this.server == "auto") {
-                fun String.isValidUrl(): Boolean = Patterns.WEB_URL.matcher(this).matches() &&
-                    URLUtil.isValidUrl(ifauto)
-                if (!ifauto.isValidUrl()) {
-                    ifauto = servers["fourth"].string + "/" + imgUrl + page["u"].string
-                    PageN = Page(page["p"].int, "", ifauto)
-                    System.out.println("defaultServerNOT= " + ifauto)
-                    if (!ifauto.isValidUrl()) {
-                        ifauto = servers["compress"].string + "/" + imgUrl + page["u"].string
-                        PageN = Page(page["p"].int, "", ifauto)
-                        System.out.println("defaultServerNOT2= " + ifauto)
-                    }
-                }
-                System.out.println("defaultServerNOT0= " + ifauto)
-                pages.add(PageN)
-            } else {
-                pages.add(PageN)
-                System.out.println("defaultServerOPENnull= " + ifauto)
-            }
+            val keys = servers.keys.filter { serverToUse.indexOf(it) > 0 }.sortedBy { serverToUse.indexOf(it) }
+            val serversUrls = keys.map {
+                servers[it]?.string + imgUrl + page["u"].string
+            }.joinToString(separator = ",,") { it }
+            pages.add(Page(page["p"].int, serversUrls))
         }
 
         return pages
+    }
+
+    private fun checkImage(url: String): Boolean {
+        val response = client.newCall(Request.Builder().url(url).head().headers(headers).build()).execute()
+        return response.isSuccessful && (response.header("Content-Length")?.toInt()!! > 150)
+    }
+
+    override fun fetchImageUrl(page: Page): Observable<String> {
+        if (page.imageUrl != null) {
+            return Observable.just(page.imageUrl)
+        }
+
+        val urls = page.url.split(",,")
+        if (urls.size == 1) {
+            return Observable.just(urls[0])
+        }
+
+        return Observable.from(urls).filter { checkImage(it) }.first()
     }
 
     override fun imageUrlParse(response: Response): String = ""
@@ -552,6 +561,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         SearchFilter("юри", "73"),
         SearchFilter("яой", "74")
     )
+
     private fun getTagList() = listOf(
         SearchFilter("Азартные игры", "304"),
         SearchFilter("Алхимия", "225"),
@@ -658,13 +668,14 @@ class LibManga : ConfigurableSource, HttpSource() {
         CheckFilter("16+", "1"),
         CheckFilter("18+", "2")
     )
+
     companion object {
         const val PREFIX_SLUG_SEARCH = "slug:"
         private const val SERVER_PREF = "MangaLibImageServer"
         private const val SERVER_PREF_Title = "Сервер изображений"
 
         private const val SORTING_PREF = "MangaLibSorting"
-        private const val SORTING_PREF_Title = "Сортировка списков глав"
+        private const val SORTING_PREF_Title = "Способ выбора переводчиков"
     }
 
     private var server: String? = preferences.getString(SERVER_PREF, null)
@@ -686,7 +697,10 @@ class LibManga : ConfigurableSource, HttpSource() {
         val sortingPref = ListPreference(screen.context).apply {
             key = SORTING_PREF
             title = SORTING_PREF_Title
-            entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
+            entries = arrayOf(
+                "Полный список (без повторных переводов)", "Все переводы (друг за другом)",
+                "Наибольшее число глав", "Активный перевод"
+            )
             entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
 
@@ -717,7 +731,10 @@ class LibManga : ConfigurableSource, HttpSource() {
         val sortingPref = LegacyListPreference(screen.context).apply {
             key = SORTING_PREF
             title = SORTING_PREF_Title
-            entries = arrayOf("Перемешивание списков", "Объединение списков(друг за другом)", "Наибольшее число глав", "Активный перевод")
+            entries = arrayOf(
+                "Полный список (без повторных переводов)", "Все переводы (друг за другом)",
+                "Наибольшее число глав", "Активный перевод"
+            )
             entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
 
