@@ -323,7 +323,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val pages = mutableListOf<Page>()
 
         pagesJson.forEach { page ->
-            val keys = servers.keys.filter { serverToUse.indexOf(it) > 0 }.sortedBy { serverToUse.indexOf(it) }
+            val keys = servers.keys.filter { serverToUse.indexOf(it) >= 0 }.sortedBy { serverToUse.indexOf(it) }
             val serversUrls = keys.map {
                 servers[it]?.string + imgUrl + page["u"].string
             }.joinToString(separator = ",,") { it }
