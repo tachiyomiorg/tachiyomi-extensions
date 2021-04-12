@@ -327,6 +327,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             val serversUrls = keys.map {
                 servers[it]?.string + imgUrl + page["u"].string
             }.joinToString(separator = ",,") { it }
+            pages.add(Page(page["p"].int, serversUrls))
         }
 
         return pages
