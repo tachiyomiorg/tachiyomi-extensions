@@ -30,12 +30,12 @@ abstract class WPMangaReader(
     override val client: OkHttpClient = network.cloudflareClient
 
     // popular
-    override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx "
+    override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx, .listo .bs .bsx"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page=$page&order=popular", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("src")
+        thumbnail_url = element.select("img").attr("abs:src")
         title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
     }
@@ -84,7 +84,7 @@ abstract class WPMangaReader(
                 .text()
         )
 
-        thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("src")
+        thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("abs:src")
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
