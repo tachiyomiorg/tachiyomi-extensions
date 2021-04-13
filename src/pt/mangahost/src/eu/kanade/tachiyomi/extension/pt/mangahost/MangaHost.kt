@@ -31,7 +31,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahostz.com"
+    override val baseUrl = "https://mangahosted.com"
 
     override val lang = "pt-BR"
 
@@ -56,7 +56,7 @@ class MangaHost : ParsedHttpSource() {
 
             title = element.attr("title").withoutLanguage()
             thumbnail_url = thumbnailEl.attr(thumbnailAttr).toLargeUrl()
-            setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
+            setUrlWithoutDomain(element.attr("href"))
         }
 
     override fun popularMangaRequest(page: Int): Request {
@@ -191,7 +191,7 @@ class MangaHost : ParsedHttpSource() {
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
             .set("Accept", ACCEPT_IMAGE)
-            .set("Referer", baseUrl)
+            .set("Referer", "$baseUrl/")
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
