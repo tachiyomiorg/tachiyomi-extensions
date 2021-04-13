@@ -5,7 +5,7 @@ ext {
     extName = 'Rain Of Snow'
     pkgNameSuffix = 'en.rainofsnow'
     extClass = '.RainOfSnow'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
     containsNsfw = false
 }

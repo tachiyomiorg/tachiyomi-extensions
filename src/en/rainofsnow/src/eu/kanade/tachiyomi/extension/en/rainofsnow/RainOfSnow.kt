@@ -33,15 +33,15 @@ open class RainOfSnow() : ParsedHttpSource() {
         .build()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/comics-library/page/$page")
+        return GET("$baseUrl/comics/page/$page")
     }
 
-    override fun popularMangaSelector() = "ul.boxhover1 li"
+    override fun popularMangaSelector() = ".box .minbox"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.url = element.select("h4 a").attr("abs:href")
-        manga.title = element.select("h4").text()
+        manga.url = element.select("h3 a").attr("abs:href")
+        manga.title = element.select("h3").text()
         manga.thumbnail_url = element.select("img").attr("abs:src")
         return manga
     }
@@ -70,13 +70,11 @@ open class RainOfSnow() : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.title = document.select(".text-center h3").text()
-        manga.author = document.select("li:contains(author) .n2").text()
-        manga.artist = document.select("li:contains(author) .n2").text()
-        manga.status = 0
-        manga.genre = document.select("li:contains(tags) .n2").text()
-        manga.description = document.select(".col-md-8 .text").text()
-        manga.thumbnail_url = document.select(".imgbox img").attr("abs:src")
+        manga.title = document.select(".text h2").text()
+        manga.author = document.select(".vbtcolor1 li:contains(Author) .vt2").text()
+        manga.genre = document.select(".vbtcolor1 li:contains(Tags) .vt2").text()
+        manga.description = document.select("#synop p").text()
+        manga.thumbnail_url = document.select(".imagboca1 img").attr("abs:src")
         return manga
     }
 
@@ -91,7 +89,7 @@ open class RainOfSnow() : ParsedHttpSource() {
         return super.chapterListParse(response).reversed()
     }
 
-    override fun chapterListSelector() = ".chapter1 li"
+    override fun chapterListSelector() = "#chapter li"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
