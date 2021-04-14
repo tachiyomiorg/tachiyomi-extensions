@@ -41,7 +41,7 @@ class MangaHost : ParsedHttpSource() {
         .addInterceptor(::rateLimitIntercept)
         .build()
 
-    private val rateLimitInterceptor = RateLimitInterceptor(1, 1, TimeUnit.SECONDS)
+    private val rateLimitInterceptor = RateLimitInterceptor(1, 3, TimeUnit.SECONDS)
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept", ACCEPT)
