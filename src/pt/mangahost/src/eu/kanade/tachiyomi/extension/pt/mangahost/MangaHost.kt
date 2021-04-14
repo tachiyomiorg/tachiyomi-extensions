@@ -38,10 +38,9 @@ class MangaHost : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(::rateLimitIntercept)
+        .addInterceptor(RateLimitInterceptor(1, 3, TimeUnit.SECONDS))
+        .addInterceptor(::blockMessageIntercept)
         .build()
-
-    private val rateLimitInterceptor = RateLimitInterceptor(1, 3, TimeUnit.SECONDS)
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept", ACCEPT)
@@ -197,12 +196,15 @@ class MangaHost : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun rateLimitIntercept(chain: Interceptor.Chain): Response {
-        return if (chain.request().url().toString().contains(CDN_REGEX)) {
-            chain.proceed(chain.request())
-        } else {
-            rateLimitInterceptor.intercept(chain)
+    private fun blockMessageIntercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+
+        if (!response.isSuccessful && response.code() == 403) {
+            response.close()
+            throw Exception(BLOCK_MESSAGE)
         }
+
+        return response
     }
 
     private fun Call.asObservableIgnoreCode(code: Int): Observable<Response> {
@@ -245,6 +247,8 @@ class MangaHost : ParsedHttpSource() {
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
         private val CDN_REGEX = "/mangas_files/.*\\.jpg".toRegex()
+
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. Tente novamente mais tarde ou migre para outra fonte."
 
         private val DATE_FORMAT by lazy {
             SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
