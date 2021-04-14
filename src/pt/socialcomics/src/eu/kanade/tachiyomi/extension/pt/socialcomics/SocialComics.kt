@@ -15,6 +15,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -37,6 +38,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.IOException
 import java.lang.UnsupportedOperationException
+import java.util.concurrent.TimeUnit
 import androidx.preference.EditTextPreference as AndroidXEditTextPreference
 import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 
@@ -51,7 +53,8 @@ class SocialComics : HttpSource(), ConfigurableSource {
     override val supportsLatest = false
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor { authIntercept(it) }
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .addInterceptor(::authIntercept)
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -411,7 +414,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
         private const val ACCEPT_JSON = "application/json, text/plain, */*"
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
 

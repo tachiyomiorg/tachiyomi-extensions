@@ -5,8 +5,12 @@ ext {
     extName = 'MangaYabu!'
     pkgNameSuffix = 'pt.mangayabu'
     extClass = '.MangaYabu'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"
