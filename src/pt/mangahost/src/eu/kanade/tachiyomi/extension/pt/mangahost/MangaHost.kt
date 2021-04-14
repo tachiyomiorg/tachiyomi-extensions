@@ -248,7 +248,7 @@ class MangaHost : ParsedHttpSource() {
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
         private val CDN_REGEX = "/mangas_files/.*\\.jpg".toRegex()
 
-        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. Tente novamente mais tarde ou migre para outra fonte."
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. Migre para outra fonte caso o problema persistir."
 
         private val DATE_FORMAT by lazy {
             SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
