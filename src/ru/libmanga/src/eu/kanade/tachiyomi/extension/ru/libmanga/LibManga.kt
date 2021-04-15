@@ -301,7 +301,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val chapInfoJson = jsonParser.parse(chapInfo).obj
         val servers = chapInfoJson["servers"].asJsonObject.toMap()
         val defaultServer: String = chapInfoJson["img"]["server"].string
-        val autoServer = setOf(defaultServer, "secondary", "fourth", "compress")
+        val autoServer = setOf("secondary", "fourth", defaultServer, "compress")
         val imgUrl: String = chapInfoJson["img"]["url"].string
 
         val serverToUse = when (this.server) {
