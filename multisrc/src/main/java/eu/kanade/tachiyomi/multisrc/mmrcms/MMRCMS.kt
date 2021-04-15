@@ -69,7 +69,7 @@ abstract class MMRCMS (
         "https://www.op-vf.com" -> """{"language":"fr","name":"Op-VF","base_url":"https://www.op-vf.com","supports_latest":true,"isNsfw":false,"item_url":"https://www.op-vf.com/manga/","categories":[],"tags":"null"}"""
         "https://www.frscan.me" -> """{"language":"fr","name":"FR Scan","base_url":"https://www.frscan.me","supports_latest":false,"isNsfw":false,"item_url":"\u003chtml\u003e\n \u003chead\u003e\u003c/head\u003e\n \u003cbody\u003e\n  Product activation error\n \u003c/body\u003e\n\u003c/html\u003e/","categories":[],"tags":"null"}"""
         "https://www.hentaishark.com"-> """{"language":"other","name":"HentaiShark","base_url":"https://www.hentaishark.com","supports_latest":true,"isNsfw":true,"item_url":"https://www.hentaishark.com/manga/","categories":[{"id":"1","name":"Doujinshi"},{"id":"2","name":"Manga"},{"id":"3","name":"Western"},{"id":"4","name":"non-h"},{"id":"5","name":"imageset"},{"id":"6","name":"artistcg"},{"id":"7","name":"misc"}],"tags":"null"}"""
-        else -> ""
+        else -> MMRCMSJsonGen(name, baseUrl, lang).generateJson()
     },
 ) : HttpSource() {
     /**
