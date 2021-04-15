@@ -29,6 +29,7 @@ class MangaKawaii : ParsedHttpSource() {
 
     override val name = "Mangakawaii"
     override val baseUrl = "https://www.mangakawaii.com"
+    val cdnUrl = "https://cdn.mangakawaii.com"
     override val lang = "fr"
     override val supportsLatest = true
     private val rateLimitInterceptor = RateLimitInterceptor(1) // 1 request per second
@@ -57,7 +58,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.hot-manga__item-caption").select("div.hot-manga__item-name").text().trim()
         setUrlWithoutDomain(element.select("a").attr("href"))
-        thumbnail_url = "https://cdn.mangakawaii.com/uploads" + element.select("a").attr("href") + "/cover/cover_250x350.jpg"
+        thumbnail_url = "$cdnUrl/uploads" + element.select("a").attr("href") + "/cover/cover_250x350.jpg"
     }
 
     // Latest
@@ -67,7 +68,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
-        thumbnail_url = "https://cdn.mangakawaii.com/uploads" + element.select("a").attr("href") + "/cover/cover_250x350.jpg"
+        thumbnail_url = "$cdnUrl/uploads" + element.select("a").attr("href") + "/cover/cover_250x350.jpg"
     }
 
     // Search
@@ -82,7 +83,7 @@ class MangaKawaii : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("a").text().trim()
         setUrlWithoutDomain(element.select("a").attr("href"))
-        thumbnail_url = "https://cdn.mangakawaii.com/uploads" + element.select("a").attr("href") + "/cover/cover_250x350.jpg"
+        thumbnail_url = "$cdnUrl/uploads" + element.select("a").attr("href") + "/cover/cover_250x350.jpg"
     }
 
     // Manga details
@@ -141,7 +142,7 @@ class MangaKawaii : ParsedHttpSource() {
         val pages = mutableListOf<Page>()
         var j = 0
         for (i in 0 until elements.count()) {
-            if (elements[i].attr("src").trim() != "") {
+            if (elements[i].attr("src").trim().startsWith(cdnUrl)) {
                 pages.add(Page(j, document.location(), elements[i].attr("src").trim()))
                 ++j
             }
