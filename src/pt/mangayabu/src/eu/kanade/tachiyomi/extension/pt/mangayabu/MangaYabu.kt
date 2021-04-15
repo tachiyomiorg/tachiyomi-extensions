@@ -48,7 +48,7 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request = GET(baseUrl, headers)
 
-    override fun popularMangaSelector(): String = "main.home div.features:contains(Populares) div.feature > a"
+    override fun popularMangaSelector(): String = "#main div.row:contains(Populares) div.carousel div.card > a"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         val thumb = element.select("img").first()!!
@@ -67,7 +67,7 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
 
-    override fun latestUpdatesSelector() = "main.home div.features:contains(Lançamentos) div.feature div.img-container > a"
+    override fun latestUpdatesSelector() = "#main div.row:contains(Lançamentos) div.card div.card-image > a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         val thumb = element.select("img").first()!!
@@ -94,35 +94,37 @@ class MangaYabu : ParsedHttpSource() {
         return POST("$baseUrl/wp-admin/admin-ajax.php", newHeaders, form)
     }
 
-    override fun searchMangaSelector() = "ul li.gsuggested a"
+    override fun searchMangaSelector() = "ul.popup-list div.row > div.col.s4 a.search-links"
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("div.contento span.search-name").first()!!.text().withoutFlags()
-        thumbnail_url = element.select("img.search-thumb")!!.attr("src")
+        val thumbnail = element.select("img").first()!!
+
+        title = thumbnail.attr("alt").withoutFlags()
+        thumbnail_url = thumbnail.attr("src")
         setUrlWithoutDomain(element.attr("href"))
     }
 
     override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.manga-single-list div.manga-info").first()!!
-        val statusStr = infoElement.select("div.manga-status").first()!!.textWithoutLabel()
+        val infoElement = document.select("div.manga-column")
 
         return SManga.create().apply {
-            title = infoElement.select("div.manga-title h1")!!.text()
-            status = when (statusStr) {
-                "Em lançamento" -> SManga.ONGOING
-                "Completo" -> SManga.COMPLETED
-                else -> SManga.UNKNOWN
-            }
-            genre = infoElement.select("div.manga-genres").first()!!.textWithoutLabel()
-                .replace(" ,", ",")
-            description = document.select("div.manga-synopsis").first()!!.text()
-            thumbnail_url = infoElement.select("div.manga-cover img")!!.attr("src")
+            title = document.select("div.manga-info > h1").first()!!.text()
+            status = infoElement.select("div.manga-column:contains(Status:)").first()!!
+                .textWithoutLabel()
+                .toStatus()
+            genre = infoElement.select("div.manga-column:contains(Gêneros:)").first()!!
+                .textWithoutLabel()
+            description = document.select("div.manga-info").first()!!.text()
+                .substringAfter(title)
+                .trim()
+            thumbnail_url = document.select("div.manga-index div.mango-hover img")!!
+                .attr("src")
         }
     }
 
-    override fun chapterListSelector() = "div.manga-single-list div.manga-chapters div.single-chapter"
+    override fun chapterListSelector() = "div.manga-info:contains(Capítulos) div.manga-chapters div.single-chapter"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("a").first()!!.text()
@@ -131,7 +133,7 @@ class MangaYabu : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.manga-pages img")
+        return document.select("div.image-navigator img.slideit")
             .mapIndexed { i, element ->
                 Page(i, document.location(), element.attr("abs:src"))
             }
@@ -169,6 +171,12 @@ class MangaYabu : ParsedHttpSource() {
         } catch (e: ParseException) {
             0L
         }
+    }
+
+    private fun String.toStatus() = when (this) {
+        "Em lançamento" -> SManga.ONGOING
+        "Completo" -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
     }
 
     private fun String.withoutFlags(): String = replace(FLAG_REGEX, "").trim()
