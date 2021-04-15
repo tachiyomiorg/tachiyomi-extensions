@@ -32,10 +32,10 @@ abstract class Luscious(
     override val name: String,
     override val baseUrl: String,
     override val lang: String ) : HttpSource() {
-  
-  //Based on Luscios single source extension form https://github.com/tachiyomiorg/tachiyomi-extensions/commit/aacf56d0c0ddb173372aac69d798ae998f178377 
+
+  //Based on Luscios single source extension form https://github.com/tachiyomiorg/tachiyomi-extensions/commit/aacf56d0c0ddb173372aac69d798ae998f178377
   //with modifiaction to make it support multisrc
-  
+
     override val supportsLatest: Boolean = true
     private val apiBaseUrl: String = "$baseUrl/graphql/nobatch/"
     private val gson = Gson()
@@ -214,7 +214,7 @@ abstract class Luscious(
             .let { it["data"]["picture"]["list"].asJsonObject }
 
         return data["items"].asJsonArray.mapIndexed { index, it ->
-            Page(index, imageUrl = it["url_to_original"].asString)
+            Page(index, imageUrl = it["thumbnails"][0]["url"].asString)
         } + if (data["info"]["total_pages"].asInt > 1) { // get 2nd page onwards
             (ITEMS_PER_PAGE until data["info"]["total_items"].asInt).chunked(ITEMS_PER_PAGE).mapIndexed { page, indices ->
                 indices.map { Page(it, url = buildAlbumPicturesPageUrl(id, page + 2, sortPagesByOption)) }
@@ -257,7 +257,7 @@ abstract class Luscious(
                 val data = gson.fromJson<JsonObject>(it.body()!!.string()).let { data ->
                     data["data"]["picture"]["list"].asJsonObject
                 }
-                data["items"].asJsonArray[page.index % 50].asJsonObject["url_to_original"].asString
+                data["items"].asJsonArray[page.index % 50].asJsonObject["thumbnails"][0]["url"].asString
             }
     }
 
@@ -596,7 +596,9 @@ abstract class Luscious(
                             has_next_page
                         }
                     items {
-                        url_to_original
+                        thumbnails {
+                            url
+                        }
                     }
                 }
               }
