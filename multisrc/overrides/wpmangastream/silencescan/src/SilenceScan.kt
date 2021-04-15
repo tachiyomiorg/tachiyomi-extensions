@@ -37,14 +37,34 @@ class SilenceScan : WPMangaStream(
         artist = infoEl.select("b:contains(Artista) + span").text()
         status = parseStatus(infoEl.select("div.imptdt:contains(Status) i").text())
         description = infoEl.select("h2:contains(Sinopse) + div p").joinToString("\n") { it.text() }
-        genre = infoEl.select("b:contains(Gêneros) + span a").joinToString { it.text() }
         thumbnail_url = infoEl.select("div.thumb img").imgAttr()
 
-        // add manga/manhwa/manhua thinggy to genre
-        val type = document.select(".imptdt:contains(Tipo) a, a[href*=type\\=]").firstOrNull()?.ownText()
-        genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+        val genres = infoEl.select("b:contains(Gêneros) + span a")
+            .map { element -> element.text().toLowerCase() }
+            .toMutableSet()
+
+        // add series type(manga/manhwa/manhua/other) thinggy to genre
+        document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && genres.contains(it).not()) {
+                genres.add(it.toLowerCase())
+            }
+        }
+
+        genre = genres.toList().map { it.capitalize() }.joinToString(", ")
+
+        // add alternative name to manga description
+        document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                description += when {
+                    description!!.isEmpty() -> altName + it
+                    else -> "\n\n$altName" + it
+                }
+            }
+        }
     }
+
+    override val seriesTypeSelector = ".imptdt:contains(Tipo) a, a[href*=type\\=]"
+    override val altNameSelector = ".wd-full:contains(Alt) span"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("span.chapternum").text()

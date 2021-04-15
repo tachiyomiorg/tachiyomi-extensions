@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.catmanga
 
+import android.app.Application
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -14,6 +15,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class CatManga : HttpSource() {
 
@@ -92,10 +95,12 @@ class CatManga : HttpSource() {
 
         val querySeries = jsonObject.getJSONObject("query").getString("series")
         val seriesUrl = jsonObject.getString("page").replace("[series]", querySeries)
+        val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_time_found:$querySeries", 0)
+        val seriesPrefsEditor = seriesPrefs.edit()
 
         val series = jsonObject.getJSONObject("props").getJSONObject("pageProps").getJSONObject("series")
         val chapters = series.getJSONArray("chapters")
-        return (0 until chapters.length()).map { i ->
+        val list = (0 until chapters.length()).reversed().map { i ->
             val chapter = chapters.getJSONObject(i)
             val title = chapter.optString("title")
             val groups = chapter.getJSONArray("groups").joinToString()
@@ -106,9 +111,19 @@ class CatManga : HttpSource() {
                 chapter_number = number.toFloat()
                 name = "Chapter $displayNumber" + if (title.isNotBlank()) " - $title" else ""
                 scanlator = groups
-                date_upload = System.currentTimeMillis()
+
+                // Save current time when a chapter is found for the first time, and reuse it on future checks to
+                // prevent manga entry without any new chapter bumped to the top of "Latest chapter" list
+                // when the library is updated.
+                val currentTimeMillis = System.currentTimeMillis()
+                if (!seriesPrefs.contains(number)) {
+                    seriesPrefsEditor.putLong(number, currentTimeMillis)
+                }
+                date_upload = seriesPrefs.getLong(number, currentTimeMillis)
             }
-        }.reversed()
+        }
+        seriesPrefsEditor.apply()
+        return list
     }
 
     override fun pageListParse(response: Response): List<Page> {

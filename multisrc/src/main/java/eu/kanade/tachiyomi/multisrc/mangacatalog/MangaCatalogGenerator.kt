@@ -32,3 +32,4 @@ class MangaCatalogGenerator : ThemeSourceGenerator {
         }
     }
 }
+

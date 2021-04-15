@@ -198,7 +198,7 @@ class Readmanga : ParsedHttpSource() {
             chapter.name = chapter.name.substringAfter("…").trim()
         }
 
-        chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
+        chapter.date_upload = element.select("td.d-none").last()?.text()?.let {
             try {
                 SimpleDateFormat("dd.MM.yy", Locale.US).parse(it)?.time ?: 0L
             } catch (e: ParseException) {

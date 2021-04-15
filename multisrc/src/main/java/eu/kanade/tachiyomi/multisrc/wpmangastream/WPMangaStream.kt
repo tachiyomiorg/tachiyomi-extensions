@@ -165,20 +165,41 @@ abstract class WPMangaStream(
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
             document.select("div.bigcontent, div.animefull, div.main-info").firstOrNull()?.let { infoElement ->
-                genre = infoElement.select("span:contains(Genre) a, .mgen a").joinToString { it.text() }
                 status = parseStatus(infoElement.select("span:contains(Status:), .imptdt:contains(Status) i").firstOrNull()?.ownText())
                 author = infoElement.select("span:contains(Author:), span:contains(Pengarang:), .fmed b:contains(Author)+span, .imptdt:contains(Author) i").firstOrNull()?.ownText()
                 artist = infoElement.select(".fmed b:contains(Artist)+span, .imptdt:contains(Artist) i").firstOrNull()?.ownText()
                 description = infoElement.select("div.desc p, div.entry-content p").joinToString("\n") { it.text() }
                 thumbnail_url = infoElement.select("div.thumb img").imgAttr()
 
-                // add manga/manhwa/manhua thinggy to genre
-                val type = document.select("span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
-                genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+                val genres = infoElement.select("span:contains(Genre) a, .mgen a")
+                    .map { element -> element.text().toLowerCase() }
+                    .toMutableSet()
+
+                // add series type(manga/manhwa/manhua/other) thinggy to genre
+                document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && genres.contains(it).not()) {
+                        genres.add(it.toLowerCase())
+                    }
+                }
+
+                genre = genres.toList().map { it.capitalize() }.joinToString(", ")
+
+                // add alternative name to manga description
+                document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                        description += when {
+                            description!!.isEmpty() -> altName + it
+                            else -> "\n\n$altName" + it
+                        }
+                    }
+                }
             }
         }
     }
+
+    open val seriesTypeSelector = "span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child"
+    open val altNameSelector = ".alternative, .wd-full:contains(Alt) span, .alter, .seriestualt"
+    open val altName = "Alternative Name" + ": "
 
     protected fun parseStatus(element: String?): Int = when {
         element == null -> SManga.UNKNOWN

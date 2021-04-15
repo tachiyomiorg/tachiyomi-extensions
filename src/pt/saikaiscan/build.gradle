@@ -5,8 +5,12 @@ ext {
     extName = 'Saikai Scan'
     pkgNameSuffix = 'pt.saikaiscan'
     extClass = '.SaikaiScan'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

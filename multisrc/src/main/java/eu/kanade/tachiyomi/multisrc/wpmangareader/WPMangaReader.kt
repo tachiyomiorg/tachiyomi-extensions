@@ -30,12 +30,12 @@ abstract class WPMangaReader(
     override val client: OkHttpClient = network.cloudflareClient
 
     // popular
-    override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx "
+    override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx, .listo .bs .bsx"
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page=$page&order=popular", headers)
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("src")
+        thumbnail_url = element.select("img").attr("abs:src")
         title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
     }
@@ -84,14 +84,30 @@ abstract class WPMangaReader(
                 .text()
         )
 
-        thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("src")
+        thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("abs:src")
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
-        val type = document.select("span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child").firstOrNull()?.ownText()
-        genre += if (genre!!.contains(type.toString())) "" else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-        else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+        document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && genre!!.contains(it, true).not()) {
+                genre += if (genre!!.isEmpty()) it else ", $it"
+            }
+        }
+
+        // add alternative name to manga description
+        document.select(altNameSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not()) {
+                description += when {
+                    description!!.isEmpty() -> altName + it
+                    else -> "\n\n$altName" + it
+                }
+            }
+        }
     }
+
+    open val seriesTypeSelector = "span:contains(Type) a, .imptdt:contains(Type) a, a[href*=type\\=], .infotable tr:contains(Type) td:last-child"
+    open val altNameSelector = ".alternative, .seriestualt"
+    open val altName = "Alternative Name" + ": "
 
     private fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING

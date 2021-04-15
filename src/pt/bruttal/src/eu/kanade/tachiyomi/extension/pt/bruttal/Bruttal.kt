@@ -7,6 +7,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -16,9 +17,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.util.concurrent.TimeUnit
 
 class Bruttal : HttpSource() {
 
@@ -29,6 +32,10 @@ class Bruttal : HttpSource() {
     override val lang = "pt-BR"
 
     override val supportsLatest = false
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Referer", "$baseUrl/bruttal/")
@@ -181,7 +188,7 @@ class Bruttal : HttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
         private val JSON_PARSER by lazy { JsonParser() }
     }

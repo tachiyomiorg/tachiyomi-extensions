@@ -186,16 +186,33 @@ abstract class NepNep(
             SManga.create().apply {
                 title = info.select("h1").text()
                 author = info.select("li.list-group-item:has(span:contains(Author)) a").first()?.text()
-                genre = info.select("li.list-group-item:has(span:contains(Genre)) a").joinToString { it.text() }
                 status = info.select("li.list-group-item:has(span:contains(Status)) a:contains(scan)").text().toStatus()
                 description = info.select("div.Content").text()
                 thumbnail_url = info.select("img").attr("abs:src")
 
-                // add manga/manhwa/manhua thinggy to genre
-                val type = info.select("li.list-group-item:has(span:contains(Type)) a, a[href*=type\\=]").firstOrNull()?.ownText()
-                genre += if (genre!!.contains(type.toString(), true) || type == "-") ""
-                else if (!type.isNullOrEmpty() && !genre.isNullOrEmpty()) ", $type"
-                else if (!type.isNullOrEmpty() && genre.isNullOrEmpty()) "$type" else ""
+                val genres = info.select("li.list-group-item:has(span:contains(Genre)) a")
+                    .map { element -> element.text() }
+                    .toMutableSet()
+
+                // add series type(manga/manhwa/manhua/other) thinggy to genre
+                info.select("li.list-group-item:has(span:contains(Type)) a, a[href*=type\\=]").firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not()) {
+                        genres.add(it)
+                    }
+                }
+
+                genre = genres.toList().joinToString(", ")
+
+                // add alternative name to manga description
+                val altName = "Alternative Name: "
+                info.select("li.list-group-item:has(span:contains(Alter))").firstOrNull()?.ownText()?.let {
+                    if (it.isEmpty().not() && it !="N/A") {
+                        description += when {
+                            description!!.isEmpty() -> altName + it
+                            else -> "\n\n$altName" + it
+                        }
+                    }
+                }
             }
         }
     }

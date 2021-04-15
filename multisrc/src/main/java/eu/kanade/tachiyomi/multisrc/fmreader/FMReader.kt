@@ -159,13 +159,28 @@ abstract class FMReader(
         val infoElement = document.select("div.row").first()
 
         return SManga.create().apply {
-            author = infoElement.select("li a.btn-info").text()
+            infoElement.select("li a.btn-info").text().let {
+                if (it.contains("Updating", true).not()) author = it
+            }
             genre = infoElement.select("li a.btn-danger").joinToString { it.text() }
             status = parseStatus(infoElement.select("li a.btn-success").first()?.text())
             description = document.select("div.detail .content, div.row ~ div.row:has(h3:first-child) p, .summary-content p").text().trim()
             thumbnail_url = infoElement.select("img.thumbnail").imgAttr()
+
+            // add alternative name to manga description
+            infoElement.select(altNameSelector).firstOrNull()?.ownText()?.let {
+                if (it.isEmpty().not() && it.contains("Updating", true).not()) {
+                    description += when {
+                        description!!.isEmpty() -> altName + it
+                        else -> "\n\n$altName" + it
+                    }
+                }
+            }
         }
     }
+
+    open val altNameSelector = "li:contains(Other names)"
+    open val altName = "Alternative Name" // the alt name already contains ": " eg. ": alt name1, alt name2"
 
     // languages: en, vi, tr
     fun parseStatus(status: String?): Int {

@@ -10,48 +10,23 @@ class FMReaderGenerator : ThemeSourceGenerator {
 
     override val themeClass = "FMReader"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     /** For future sources: when testing and popularMangaRequest() returns a Jsoup error instead of results
      *  most likely the fix is to override popularMangaNextPageSelector()   */
 
     override val sources = listOf(
-        SingleLang(
-            "18LHPlus",
-            "https://18lhplus.com",
-            "en",
-            className = "EighteenLHPlus"
-        ),
+        SingleLang("18LHPlus", "https://18lhplus.com", "en", className = "EighteenLHPlus"),
         SingleLang("Epik Manga", "https://www.epikmanga.com", "tr"),
-        SingleLang(
-            "HanaScan (RawQQ)",
-            "https://hanascan.com",
-            "ja",
-            className = "HanaScanRawQQ"
-        ),
+        SingleLang("HanaScan (RawQQ)", "https://hanascan.com", "ja", className = "HanaScanRawQQ"),
         SingleLang("HeroScan", "https://heroscan.com", "en"),
         SingleLang("KissLove", "https://kissaway.net", "ja"),
-        SingleLang(
-            "LHTranslation",
-            "https://lhtranslation.net",
-            "en",
-            overrideVersionCode = 1
-        ),
+        SingleLang("LHTranslation", "https://lhtranslation.net", "en", overrideVersionCode = 1),
         SingleLang("Manga-TR", "https://manga-tr.com", "tr", className = "MangaTR"),
-        SingleLang("ManhuaScan", "https://manhuascan.com", "en"),
-        SingleLang("Manhwa18", "https://manhwa18.com", "en"),
-        MultiLang(
-            "Manhwa18.net",
-            "https://manhwa18.net",
-            listOf("en", "ko"),
-            className = "Manhwa18NetFactory"
-        ),
-        SingleLang(
-            "ManhwaSmut",
-            "https://manhwasmut.com",
-            "en",
-            overrideVersionCode = 1
-        ),
+        SingleLang("ManhuaScan", "https://manhuascan.com", "en", isNsfw = true, overrideVersionCode = 1),
+        SingleLang("Manhwa18", "https://manhwa18.com", "en", isNsfw = true),
+        MultiLang("Manhwa18.net", "https://manhwa18.net", listOf("en", "ko"), className = "Manhwa18NetFactory", isNsfw = true),
+        SingleLang("ManhwaSmut", "https://manhwasmut.com", "en", isNsfw = true, overrideVersionCode = 2),
         SingleLang("RawLH", "https://lovehug.net", "ja"),
         SingleLang("Say Truyen", "https://saytruyen.com", "vi"),
         SingleLang("KSGroupScans", "https://ksgroupscans.com", "en"),

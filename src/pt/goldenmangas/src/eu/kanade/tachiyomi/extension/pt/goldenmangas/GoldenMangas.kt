@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.goldenmangas
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -34,6 +35,7 @@ class GoldenMangas : ParsedHttpSource() {
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .writeTimeout(1, TimeUnit.MINUTES)
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -172,10 +174,12 @@ class GoldenMangas : ParsedHttpSource() {
     private fun String.withoutLanguage(): String = replace(FLAG_REGEX, "").trim()
 
     companion object {
-        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         private const val ACCEPT_IMAGE = "image/webp,image/apng,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
         private val FLAG_REGEX = "\\((Pt[-/]br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
 
