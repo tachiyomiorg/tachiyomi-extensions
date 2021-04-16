@@ -21,7 +21,6 @@ class MMRCMSGenerator : ThemeSourceGenerator {
         SingleLang("Scan VF", "https://www.scan-vf.net", "fr"),
         SingleLang("Scan OP", "https://scan-op.cc", "fr"),
         SingleLang("Komikid", "https://www.komikid.com", "id"),
-        SingleLang("Mangás Yuri", "https://mangasyuri.net", "pt-BR", className = "MangasYuri"),
         SingleLang("Nikushima", "http://azbivo.webd.pro", "pl"),
         SingleLang("MangaHanta", "http://mangahanta.com", "tr"),
         SingleLang("Fallen Angels Scans", "https://truyen.fascans.com", "vi"),
@@ -43,7 +42,6 @@ class MMRCMSGenerator : ThemeSourceGenerator {
         SingleLang("MangaID", "https://mangaid.click", "id"),
         SingleLang("Jpmangas", "https://jpmangas.co", "fr"),
         SingleLang("Op-VF", "https://www.op-vf.com", "fr", className = "OpVF"),
-        SingleLang("FR Scan", "https://www.frscan.me", "fr"),
         // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
         SingleLang("HentaiShark", "https://www.hentaishark.com", "other", isNsfw = true),
     )
@@ -56,9 +54,9 @@ class MMRCMSGenerator : ThemeSourceGenerator {
     }
 }
 
-
 // Reference from old Factory Source
 // Changed CMS
+// SingleLang("Mangás Yuri", "https://mangasyuri.net", "pt-BR", className = "MangasYuri"), // Is now selling manga
 // SourceData("es", "Tumangaonline.co", "http://tumangaonline.com"),
 // SourceData("id", "MangaYu", "https://mangayu.com"),
 // SourceData("en", "MangaTreat Scans", "http://www.mangatreat.com"),
@@ -66,6 +64,7 @@ class MMRCMSGenerator : ThemeSourceGenerator {
 // SourceData("tr", "Epikmanga", "https://www.epikmanga.com"),
 // SourceData("en", "Hatigarm Scans", "https://hatigarmscans.net"),
 // Went offline
+// SingleLang("FR Scan", "https://www.frscan.me", "fr"),
 // SourceData("ru", "Japit Comics", "https://j-comics.ru"),
 // SourceData("es", "Universo Yuri", "https://universoyuri.com"),
 // SourceData("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),
