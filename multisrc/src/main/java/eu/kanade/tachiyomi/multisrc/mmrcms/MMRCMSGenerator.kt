@@ -56,7 +56,7 @@ class MMRCMSGenerator : ThemeSourceGenerator {
 
 // Reference from old Factory Source
 // Changed CMS
-// SingleLang("Mangás Yuri", "https://mangasyuri.net", "pt-BR", className = "MangasYuri"), // Is now selling manga
+// SingleLang("Mangás Yuri", "https://mangasyuri.net", "pt-BR", className = "MangasYuri"), //ID "Mangás Yuri" -> 6456162511058446409 //Is now selling manga 
 // SourceData("es", "Tumangaonline.co", "http://tumangaonline.com"),
 // SourceData("id", "MangaYu", "https://mangayu.com"),
 // SourceData("en", "MangaTreat Scans", "http://www.mangatreat.com"),
