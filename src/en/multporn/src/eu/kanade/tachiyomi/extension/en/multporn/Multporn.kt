@@ -128,7 +128,7 @@ class Multporn : ParsedHttpSource() {
     private fun buildSearchMangaRequest(page: Int, query: String, filtersArg: FilterList = FilterList()): Request {
         val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
             .addQueryParameter("page", page.toString())
-            .addQueryParameter("search_api_views_fulltext", query)
+            .addQueryParameter("views_fulltext", query)
 
         (if (filtersArg.isEmpty()) getFilterList(SEARCH_DEFAULT_SORT_BY_FILTER_STATE) else filtersArg).forEach {
             when (it) {
