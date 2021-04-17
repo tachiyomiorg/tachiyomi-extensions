@@ -15,8 +15,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Cookie
-import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,12 +24,16 @@ import org.json.JSONObject
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 import kotlin.collections.ArrayList
 
 class CopyManga : ConfigurableSource, HttpSource() {
@@ -45,6 +47,24 @@ class CopyManga : ConfigurableSource, HttpSource() {
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+    private val trustManager = object : X509TrustManager {
+        override fun getAcceptedIssuers(): Array<X509Certificate> {
+            return emptyArray()
+        }
+
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+        }
+
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+        }
+    }
+    private val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, arrayOf(trustManager), SecureRandom())
+    }
+
+    override val client: OkHttpClient = super.client.newBuilder()
+        .sslSocketFactory(sslContext.socketFactory, trustManager)
+        .build()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize", headers)
     override fun popularMangaParse(response: Response): MangasPage = parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
@@ -175,22 +195,6 @@ class CopyManga : ConfigurableSource, HttpSource() {
 
         return ret
     }
-
-    override val client: OkHttpClient = super.client.newBuilder()
-        .cookieJar(
-            object : CookieJar {
-                private var innerCookies: MutableList<Cookie>? = null
-
-                override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {
-                    innerCookies = cookies
-                }
-
-                override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
-                    return if (innerCookies != null) innerCookies!! else mutableListOf()
-                }
-            }
-        )
-        .build()
 
     override fun headersBuilder() = super.headersBuilder()
         .add("Referer", baseUrl)
