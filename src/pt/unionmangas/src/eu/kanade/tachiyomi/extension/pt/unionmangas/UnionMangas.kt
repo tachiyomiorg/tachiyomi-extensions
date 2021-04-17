@@ -48,9 +48,9 @@ class UnionMangas : ParsedHttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
-        .add("Origin", baseUrl)
-        .add("Referer", baseUrl)
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
+        .add("Referer", "$baseUrl/inicial")
 
     override fun popularMangaRequest(page: Int): Request {
         val listPath = if (page == 1) "" else "/visualizacoes/${page - 1}"
@@ -80,7 +80,9 @@ class UnionMangas : ParsedHttpSource() {
         val newHeaders = headersBuilder()
             .add("Content-Type", form.contentType().toString())
             .add("Content-Length", form.contentLength().toString())
+            .add("Origin", baseUrl)
             .add("X-Requested-With", "XMLHttpRequest")
+            .set("Accept", "*/*")
             .build()
 
         return POST("$baseUrl/assets/noticias.php", newHeaders, form)
@@ -105,7 +107,7 @@ class UnionMangas : ParsedHttpSource() {
         }
 
         val newHeaders = headersBuilder()
-            .add("Accept", "application/json, text/javascript, */*; q=0.01")
+            .set("Accept", ACCEPT_JSON)
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 
@@ -187,6 +189,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
+            .set("Accept", ACCEPT_IMAGE)
             .set("Referer", page.url)
             .build()
 
@@ -221,6 +224,11 @@ class UnionMangas : ParsedHttpSource() {
     private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
 
     companion object {
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
