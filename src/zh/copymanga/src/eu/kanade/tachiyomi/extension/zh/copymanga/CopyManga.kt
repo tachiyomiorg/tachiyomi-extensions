@@ -15,7 +15,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Cookie
+import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -172,6 +175,22 @@ class CopyManga : ConfigurableSource, HttpSource() {
 
         return ret
     }
+
+    override val client: OkHttpClient = super.client.newBuilder()
+        .cookieJar(
+            object : CookieJar {
+                private var innerCookies: MutableList<Cookie>? = null
+
+                override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {
+                    innerCookies = cookies
+                }
+
+                override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
+                    return if (innerCookies != null) innerCookies!! else mutableListOf()
+                }
+            }
+        )
+        .build()
 
     override fun headersBuilder() = super.headersBuilder()
         .add("Referer", baseUrl)
