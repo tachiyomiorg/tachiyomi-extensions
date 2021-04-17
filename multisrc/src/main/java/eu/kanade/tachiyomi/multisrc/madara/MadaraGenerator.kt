@@ -251,6 +251,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Reset Scans", "https://reset-scans.com", "en", overrideVersionCode = 2),
             SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en"),
             SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo"),
+            SingleLang("Random Scan", "https://randomscan.online/", "pt-BR"),
     )
 
     companion object {
