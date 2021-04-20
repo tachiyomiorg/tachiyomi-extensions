@@ -9,13 +9,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
+import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.util.concurrent.TimeUnit
 
 class HQDragon : ParsedHttpSource() {
@@ -29,8 +31,13 @@ class HQDragon : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .addInterceptor(RateLimitInterceptor(1, 2, TimeUnit.SECONDS))
         .build()
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
+        .add("Referer", "$baseUrl/")
 
     // Popular
 
@@ -39,130 +46,161 @@ class HQDragon : ParsedHttpSource() {
         return GET(baseUrl, headers)
     }
 
-    override fun popularMangaSelector() = "ol.list-unstyled.mb-0 li a"
+    override fun popularMangaParse(response: Response): MangasPage {
+        val results = super.popularMangaParse(response)
 
-    override fun popularMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
 
-        manga.setUrlWithoutDomain(element.attr("href"))
-        manga.title = element.text()
-
-        return manga
+        return results
     }
 
-    override fun popularMangaNextPageSelector() = "Not needed"
+    override fun popularMangaSelector() = "h4:contains(Top 10) + ol.mb-0 li a"
+
+    override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
+        title = element.text()
+        setUrlWithoutDomain(element.attr("href"))
+    }
+
+    override fun popularMangaNextPageSelector(): String? = null
 
     // Latest
 
+    override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
+        return super.fetchLatestUpdates(page)
+            .map { results -> results.copy(hasNextPage = page < 5) }
+    }
+
     override fun latestUpdatesRequest(page: Int): Request {
-        val body = FormBody.Builder()
+        val formBody = FormBody.Builder()
             .add("pagina", page.toString())
             .build()
 
         val headers = headersBuilder()
-            .add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+            .add("Content-Length", formBody.contentLength().toString())
+            .add("Content-Type", formBody.contentType().toString())
+            .add("Origin", baseUrl)
+            .add("X-Requested-With", "XMLHttpRequest")
+            .set("Accept", "*/*")
             .build()
 
-        return POST("$baseUrl/assets/php/index_paginar.php", headers, body)
+        return POST("$baseUrl/assets/php/index_paginar.php", headers, formBody)
     }
-
-    override fun latestUpdatesSelector() = "body a:has(img)"
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        val mangas = mutableListOf<SManga>()
+        val results = super.latestUpdatesParse(response)
 
-        document.select(latestUpdatesSelector())
-            .forEach { mangas.add(latestUpdatesFromElements(it, it.nextElementSibling())) }
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
 
-        return MangasPage(mangas, document.select("a[href\$=5693-x-force-2018]").isEmpty())
+        return results
     }
 
-    private fun latestUpdatesFromElements(imageElement: Element, titleElement: Element): SManga {
-        val manga = SManga.create()
+    override fun latestUpdatesSelector() = "a:has(img)"
 
-        manga.thumbnail_url = imageElement.select("img").attr("src")
-        manga.setUrlWithoutDomain(titleElement.attr("href"))
-        manga.title = titleElement.ownText()
+    override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
+        val image = element.select("img").first()
 
-        return manga
+        title = image.attr("alt")
+        thumbnail_url = image.attr("abs:src")
+        setUrlWithoutDomain(element.attr("href"))
     }
 
-    override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
-
-    override fun latestUpdatesNextPageSelector() = "not using"
+    override fun latestUpdatesNextPageSelector(): String? = null
 
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/pesquisa?pesquisa=$query", headers)
+        val url = HttpUrl.parse("$baseUrl/pesquisa")!!.newBuilder()
+            .addQueryParameter("titulo", query)
+
+        return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = "div.col-6"
+    override fun searchMangaParse(response: Response): MangasPage {
+        val results = super.searchMangaParse(response)
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        element.select("a + a").let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.text()
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
         }
-        manga.thumbnail_url = element.select("img").attr("abs:src")
 
-        return manga
+        return results
     }
 
-    override fun searchMangaNextPageSelector() = "Not needed"
+    override fun searchMangaSelector() = "div.col-sm-6.col-md-3:has(img.img-thumbnail)"
+
+    override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
+        val link = element.select("a + a").first()
+
+        title = link.text()
+        thumbnail_url = element.select("img").first().attr("abs:src")
+        setUrlWithoutDomain(link.attr("href"))
+    }
+
+    override fun searchMangaNextPageSelector(): String? = null
 
     // Manga summary page
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.blog-post div.row").first()
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
+        val infoElement = document.select("div.blog-post div.row").firstOrNull()
+            ?: throw Exception(BLOCK_MESSAGE)
 
-        val manga = SManga.create()
-        manga.title = infoElement.select("h3").first().text()
-        manga.author = infoElement.select("p:contains(editora)").first().ownText()
-        val status = infoElement.select("p:contains(status) span").text()
-        manga.status = parseStatus(status)
-        manga.description = infoElement.select("p:contains(sinopse)").first().ownText()
-        manga.thumbnail_url = infoElement.select("img").attr("abs:src")
-
-        return manga
-    }
-
-    private fun parseStatus(status: String?) = when {
-        status == null -> SManga.UNKNOWN
-        status.contains("Ativo") -> SManga.ONGOING
-        status.contains("Completo") -> SManga.COMPLETED
-        else -> SManga.UNKNOWN
+        title = infoElement.select("h3").first().text()
+        author = infoElement.select("p:contains(Editora:)").first().textWithoutLabel()
+        status = infoElement.select("p:contains(Status:) span").first().text().toStatus()
+        description = infoElement.select("p:contains(Sinopse:)").first().ownText()
+        thumbnail_url = infoElement.select("div.col-md-4 .img-fluid").first().attr("src")
     }
 
     // Chapters
 
-    override fun chapterListSelector() = "tr a"
+    override fun chapterListSelector() = "table.table tr a"
 
-    override fun chapterFromElement(element: Element): SChapter {
-        val chapter = SChapter.create()
-
-        chapter.setUrlWithoutDomain(element.attr("href"))
-        chapter.name = element.text()
-
-        return chapter
+    override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
+        name = element.text().replace("Ler ", "")
+        setUrlWithoutDomain(element.attr("href"))
     }
 
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-
-        document.select("img.img-responsive").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:src")))
-        }
-
-        return pages
+        return document.select("img.img-responsive.img-manga")
+            .filter { it.attr("src").contains("/leitor/") }
+            .mapIndexed { i, element ->
+                Page(i, document.location(), element.absUrl("src"))
+            }
     }
 
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document) = ""
 
-    override fun getFilterList() = FilterList()
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Accept", ACCEPT_IMAGE)
+            .set("Referer", page.url)
+            .build()
+
+        return GET(page.imageUrl!!, newHeaders)
+    }
+
+    private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
+
+    private fun String.toStatus(): Int = when {
+        contains("Ativo") -> SManga.ONGOING
+        contains("Completo") -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
+
+    companion object {
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
+
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. " +
+            "Migre para outra fonte caso o problema persistir."
+    }
 }
