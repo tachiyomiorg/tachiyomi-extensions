@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.pt.argosscan
+package eu.kanade.tachiyomi.extension.pt.littlemonsterscan
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import java.text.SimpleDateFormat
