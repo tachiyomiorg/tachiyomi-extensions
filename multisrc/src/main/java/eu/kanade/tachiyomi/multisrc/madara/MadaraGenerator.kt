@@ -251,7 +251,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Reset Scans", "https://reset-scans.com", "en", overrideVersionCode = 2),
             SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en"),
             SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo"),
-            SingleLang("Random Scan", "https://randomscan.online", "pt-BR"),
+            SingleLang("Random Scan", "https://randomscan.online", "pt-BR", overrideVersionCode = 1),
             SingleLang("Fukushuu no Yuusha", "https://fny-scantrad.com", "fr"),
             SingleLang("Three Queens Scanlator", "https://tqscan.com.br", "pt-BR"),
             SingleLang("Winter Scan", "https://winterscan.com.br", "pt-BR"),
