@@ -4,4 +4,4 @@ import eu.kanade.tachiyomi.multisrc.madara.Madara
 import eu.kanade.tachiyomi.annotations.Nsfw
 
 @Nsfw
-class Pornwha : Madara("Pornwha", "https://pornwha.com/", "en")
+class Pornwha : Madara("Pornwha", "https://pornwha.com", "en")
