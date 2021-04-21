@@ -251,13 +251,13 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Reset Scans", "https://reset-scans.com", "en", overrideVersionCode = 2),
             SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en"),
             SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo"),
-            SingleLang("Random Scan", "https://randomscan.online/", "pt-BR"),
-            SingleLang("Fukushuu no Yuusha", "https://fny-scantrad.com/", "fr"),
-            SingleLang("Three Queens Scanlator", "https://tqscan.com.br/", "pt-BR"),
-            SingleLang("Winter Scan", "https://winterscan.com.br/", "pt-BR"),
-            SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br/", "pt-BR"),
-            SingleLang("Wonderland", "https://landwebtoons.site/", "pt-BR"),
-            SingleLang("Pornwha", "https://pornwha.com/", "en", isNsfw = true),
+            SingleLang("Random Scan", "https://randomscan.online", "pt-BR"),
+            SingleLang("Fukushuu no Yuusha", "https://fny-scantrad.com", "fr"),
+            SingleLang("Three Queens Scanlator", "https://tqscan.com.br", "pt-BR"),
+            SingleLang("Winter Scan", "https://winterscan.com.br", "pt-BR"),
+            SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br", "pt-BR"),
+            SingleLang("Wonderland", "https://landwebtoons.site", "pt-BR"),
+            SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
     )
 
     companion object {
