@@ -12,7 +12,7 @@ class MMRCMSGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
-        SingleLang("مانجا اون لاين", "https://onma.me", "ar", className = "onma"),
+        SingleLang("مانجا اون لاين", "https://onma.me", "ar", className = "ONMA"),
         SingleLang("Read Comics Online", "https://readcomicsonline.ru", "en"),
         SingleLang("Fallen Angels", "https://manga.fascans.com", "en"),
         SingleLang("Zahard", "https://zahard.top", "en"),
