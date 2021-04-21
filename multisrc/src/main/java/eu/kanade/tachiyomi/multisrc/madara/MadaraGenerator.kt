@@ -252,6 +252,9 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en"),
             SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo"),
             SingleLang("Random Scan", "https://randomscan.online/", "pt-BR"),
+            SingleLang("Wonderland Land Webtoons", "https://landwebtoons.site/", "pt-BR"),
+            SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br/", "pt-BR"),
+            SingleLang("Winter", "https://winterscan.com.br/", "pt-BR"),
     )
 
     companion object {
