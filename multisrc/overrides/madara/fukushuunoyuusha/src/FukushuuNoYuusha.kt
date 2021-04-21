@@ -5,5 +5,5 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class FukushuuNoYuusha : Madara(
-    "Fukushuu no Yuusha", "https://fny-scantrad.com/", 
+    "Fukushuu no Yuusha", "https://fny-scantrad.com", 
     "fr", dateFormat = SimpleDateFormat("dd/MM/yy", Locale.US))
