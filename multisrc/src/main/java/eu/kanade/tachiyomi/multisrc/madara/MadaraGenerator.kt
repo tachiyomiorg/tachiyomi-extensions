@@ -254,7 +254,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Random Scan", "https://randomscan.online/", "pt-BR"),
             SingleLang("Wonderland Land Webtoons", "https://landwebtoons.site/", "pt-BR"),
             SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br/", "pt-BR"),
-            SingleLang("Winter", "https://winterscan.com.br/", "pt-BR"),
+            SingleLang("Winter Scan", "https://winterscan.com.br/", "pt-BR"),
     )
 
     companion object {
