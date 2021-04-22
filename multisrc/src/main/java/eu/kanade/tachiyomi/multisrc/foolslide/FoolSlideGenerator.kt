@@ -16,7 +16,6 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("The Cat Scans", "https://reader2.thecatscans.com/", "en"),
         SingleLang("Silent Sky", "https://reader.silentsky-scans.net", "en"),
         SingleLang("Death Toll Scans", "https://reader.deathtollscans.net", "en"),
-        SingleLang("One Time Scans", "https://reader.otscans.com", "en"),
         SingleLang("MangaScouts", "http://onlinereader.mangascouts.org", "de"),
         SingleLang("Lilyreader", "https://manga.smuglo.li", "en"),
         SingleLang("Evil Flowers", "https://reader.evilflowers.com", "en"),
@@ -47,6 +46,8 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
         SingleLang("Hyakuro", "https://hyakuro.com/reader", "en"),
         SingleLang("Le Cercle du Scan", "https://lel.lecercleduscan.com", "fr")
+        //Sites that are down
+        //SingleLang("One Time Scans", "https://reader.otscans.com", "en"),
     )
 
     companion object {
