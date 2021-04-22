@@ -45,7 +45,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Rama", "https://www.ramareader.it", "it"),
         SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
         SingleLang("Hyakuro", "https://hyakuro.com/reader", "en"),
-        SingleLang("Le Cercle du Scan", "https://lel.lecercleduscan.com", "fr")
+        SingleLang("Le Cercle du Scan", "https://lel.lecercleduscan.com", "fr", className = "LeCercleDuScan", overrideVersionCode = 1)
         //Sites that are down
         //SingleLang("One Time Scans", "https://reader.otscans.com", "en"),
     )
