@@ -41,7 +41,7 @@ class Scantrad : ParsedHttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36")
+        .add("User-Agent", "Mozilla/5.0 (Linux; Android 7.0; SM-G930VC Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.83 Mobile Safari/537.36")
         .add("Accept-Language", "fr")
 
     // Popular
@@ -50,14 +50,19 @@ class Scantrad : ParsedHttpSource() {
         return GET("$baseUrl/mangas", headers)
     }
 
-    override fun popularMangaSelector() = "div.h-left a"
+    override fun popularMangaSelector() = "div.manga"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        manga.setUrlWithoutDomain(element.attr("href"))
-        manga.title = element.select("div.hmi-titre").text()
-        manga.thumbnail_url = element.select("img").attr("abs:src")
+        with(element) {
+            select("a.mri-top").let {
+                manga.setUrlWithoutDomain(it.attr("href"))
+                manga.title = it.text()
+            }
+
+            manga.thumbnail_url = select("div.manga_img img").attr("abs:data-src")
+        }
 
         return manga
     }
@@ -79,14 +84,14 @@ class Scantrad : ParsedHttpSource() {
         return MangasPage(mangas.distinctBy { it.url }, false)
     }
 
-    override fun latestUpdatesSelector() = "div.h-left > div.home-manga"
+    override fun latestUpdatesSelector() = "#home-chapter div.home-manga"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        manga.setUrlWithoutDomain(element.select("div.hmi-titre a").first().attr("abs:href"))
-        manga.title = element.select("div.hmi-titre a").first().text()
-        manga.thumbnail_url = element.select("img").attr("abs:src")
+        manga.setUrlWithoutDomain(element.select("div.hmi-titre a").attr("abs:href"))
+        manga.title = element.select("div.hmi-titre a").text()
+        manga.thumbnail_url = element.select("a.hm-image img").attr("abs:data-src")
 
         return manga
     }
@@ -120,11 +125,14 @@ class Scantrad : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
 
-        document.select("div.mf-info").let {
-            manga.title = it.select("div.titre").text()
-            manga.description = it.select("div.synopsis").text()
-            manga.thumbnail_url = it.select("div.poster img").attr("abs:src")
-            manga.status = parseStatus(it.select("div.sub-i:last-of-type span").text())
+        document.select("div.mf-chapitre").let {
+            manga.author = it.select("div.titre div").text().substringAfter("de").trim()
+            //      manga.title = it.select("div.titre").text().removeSuffix(manga.author.orEmpty())
+            manga.description = it.select("div.new-main p").text()
+            manga.thumbnail_url = it.select("div.ctt-img img").attr("abs:src")
+            manga.status = parseStatus(it.select("div.sub-i").text())
+            val genres = it.select("div.sub-i").text().substringBefore("Status").substringAfter("Genre :")
+            manga.genre = genres.trim().replace(" ", ", ")
         }
 
         return manga
@@ -138,24 +146,23 @@ class Scantrad : ParsedHttpSource() {
 
     // Chapters
 
-    // ignore links from Amazon that get mixed in
-    override fun chapterListSelector() = "div.chapitre:has(span:contains(lire))"
+    override fun chapterListSelector() = "div.chapitre"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
-        chapter.setUrlWithoutDomain(element.select("a.chr-button").attr("href"))
-        chapter.name = element.select("div.chl-titre").text()
+        chapter.setUrlWithoutDomain(element.select("a.ch-left").attr("href"))
+        chapter.name = element.select("span.chl-num").text()
         chapter.date_upload = parseChapterDate(element.select("div.chl-date").text())
 
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long {
-        val value = date.split(" ")[3].toIntOrNull()
+        val value = date.split(" ")[0].toIntOrNull()
 
         return if (value != null) {
-            when (date.split(" ")[4]) {
+            when (date.split(" ")[1]) {
                 "minute", "minutes" -> Calendar.getInstance().apply {
                     add(Calendar.MINUTE, value * -1)
                     set(Calendar.SECOND, 0)
@@ -181,7 +188,7 @@ class Scantrad : ParsedHttpSource() {
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
-                "an", "ans", "année" -> Calendar.getInstance().apply {
+                "an", "ans", "année", "années" -> Calendar.getInstance().apply {
                     add(Calendar.YEAR, value * -1)
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
