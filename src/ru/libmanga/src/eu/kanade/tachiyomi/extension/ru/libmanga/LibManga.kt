@@ -8,10 +8,12 @@ import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullArray
+import com.github.salomonbrys.kotson.nullInt
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.github.salomonbrys.kotson.toMap
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
@@ -198,57 +200,72 @@ class LibManga : ConfigurableSource, HttpSource() {
         val data = jsonParser.parse(dataStr).obj
         val chaptersList = data["chapters"]["list"].nullArray
         val slug = data["manga"]["slug"].string
-        val teams = data["chapters"]["branches"].array.reversed()
+        val branches = data["chapters"]["branches"].array.reversed()
         val sortingList = preferences.getString(SORTING_PREF, "ms_mixing")
-        var chapters: List<SChapter>? = null
 
-        if (teams.isNotEmpty() && !sortingList.equals("ms_mixing")) {
-            when (sortingList) {
-                "ms_combining" -> {
-                    val tempChaptersList = mutableListOf<SChapter>()
-                    for (currentList in teams.withIndex()) {
-                        val teamId = teams[currentList.index]["id"].int
-                        chapters = chaptersList
-                            ?.filter { it["branch_id"].int == teamId }
-                            ?.map { chapterFromElement(it, slug, teamId) }
-                        chapters?.let { tempChaptersList.addAll(it) }
-                    }
-                    chapters = tempChaptersList
-                }
-                "ms_largest" -> {
-                    val sizesChaptersLists = mutableListOf<Int>()
-                    for (currentList in teams.withIndex()) {
-                        val teamId = teams[currentList.index]["id"].int
-                        val chapterSize = chaptersList?.filter { it["branch_id"].int == teamId }!!.size
-                        sizesChaptersLists.add(chapterSize)
-                    }
-                    val max = sizesChaptersLists.indexOfFirst { it == sizesChaptersLists.maxOrNull() ?: 0 }
-                    val teamId = teams[max]["id"].int
-                    chapters = chaptersList?.filter { it["branch_id"].int == teamId }?.map { chapterFromElement(it, slug, teamId) }
-                }
-                "ms_active" -> {
-                    for (currentList in teams.withIndex()) {
-                        val isActive = teams[currentList.index]["teams"].array
-                        for (currentListInternal in isActive.withIndex()) {
-                            if (isActive[currentListInternal.index]["is_active"].int == 1) {
-                                val teamId = teams[currentList.index]["id"].int
-                                chapters = chaptersList?.filter { it["branch_id"].int == teamId }
-                                    ?.map { chapterFromElement(it, slug, teamId) }
-                                break
-                            }
-                        }
-                    }
-                    chapters ?: throw Exception("Активный перевод не назначен на сайте")
-                }
-            }
+        val chapters: List<SChapter>? = if (branches.isNotEmpty() && !sortingList.equals("ms_mixing")) {
+            sortChaptersByTranslator(sortingList, chaptersList, slug, branches)
         } else {
-            chapters = chaptersList?.map { chapterFromElement(it, slug) }
+            chaptersList
+                ?.filter { it["status"].nullInt != 2 }
+                ?.map { chapterFromElement(it, sortingList, slug) }
         }
 
         return chapters ?: emptyList()
     }
 
-    private fun chapterFromElement(chapterItem: JsonElement, slug: String, teamIdParam: Int? = null): SChapter {
+    private fun sortChaptersByTranslator
+    (sortingList: String?, chaptersList: JsonArray?, slug: String, branches: List<JsonElement>): List<SChapter>? {
+        var chapters: List<SChapter>? = null
+        when (sortingList) {
+            "ms_combining" -> {
+                val tempChaptersList = mutableListOf<SChapter>()
+                for (currentBranch in branches.withIndex()) {
+                    val teamId = branches[currentBranch.index]["id"].int
+                    chapters = chaptersList
+                        ?.filter { it["branch_id"].int == teamId && it["status"].nullInt != 2 }
+                        ?.map { chapterFromElement(it, sortingList, slug, teamId, branches) }
+                    chapters?.let { tempChaptersList.addAll(it) }
+                }
+                chapters = tempChaptersList
+            }
+            "ms_largest" -> {
+                val sizesChaptersLists = mutableListOf<Int>()
+                for (currentBranch in branches.withIndex()) {
+                    val teamId = branches[currentBranch.index]["id"].int
+                    val chapterSize = chaptersList
+                        ?.filter { it["branch_id"].int == teamId }!!.size
+                    sizesChaptersLists.add(chapterSize)
+                }
+                val max = sizesChaptersLists.indexOfFirst { it == sizesChaptersLists.maxOrNull() ?: 0 }
+                val teamId = branches[max]["id"].int
+
+                chapters = chaptersList
+                    ?.filter { it["branch_id"].int == teamId && it["status"].nullInt != 2 }
+                    ?.map { chapterFromElement(it, sortingList, slug, teamId, branches) }
+            }
+            "ms_active" -> {
+                for (currentBranch in branches.withIndex()) {
+                    val teams = branches[currentBranch.index]["teams"].array
+                    for (currentTeam in teams.withIndex()) {
+                        if (teams[currentTeam.index]["is_active"].int == 1) {
+                            val teamId = branches[currentBranch.index]["id"].int
+                            chapters = chaptersList
+                                ?.filter { it["branch_id"].int == teamId && it["status"].nullInt != 2 }
+                                ?.map { chapterFromElement(it, sortingList, slug, teamId, branches) }
+                            break
+                        }
+                    }
+                }
+                chapters ?: throw Exception("Активный перевод не назначен на сайте")
+            }
+        }
+
+        return chapters
+    }
+
+    private fun chapterFromElement
+    (chapterItem: JsonElement, sortingList: String?, slug: String, teamIdParam: Int? = null, branches: List<JsonElement>? = null): SChapter {
         val chapter = SChapter.create()
 
         val volume = chapterItem["chapter_volume"].int
@@ -262,11 +279,32 @@ class LibManga : ConfigurableSource, HttpSource() {
         val nameChapter = chapterItem["chapter_name"].nullString
         val fullNameChapter = "Том $volume. Глава $number"
 
-        chapter.scanlator = chapterItem["username"].string
+        if (!sortingList.equals("ms_mixing")) {
+            chapter.scanlator = branches?.let { getScanlatorTeamName(it, chapterItem) } ?: chapterItem["username"].string
+        }
         chapter.name = if (nameChapter.isNullOrBlank()) fullNameChapter else "$fullNameChapter - $nameChapter"
         chapter.date_upload = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             .parse(chapterItem["chapter_created_at"].string.substringBefore(" "))?.time ?: 0L
+
         return chapter
+    }
+
+    private fun getScanlatorTeamName(branches: List<JsonElement>, chapterItem: JsonElement): String? {
+        var scanlatorData: String? = null
+        for (currentBranch in branches.withIndex()) {
+            val branch = branches[currentBranch.index]
+            val teams = branch["teams"].array
+            if (chapterItem["branch_id"].int == branch["id"].int) {
+                for (currentTeam in teams.withIndex()) {
+                    val team = teams[currentTeam.index]
+                    val scanlatorId = chapterItem["chapter_scanlator_id"].int
+                    scanlatorData = if ((scanlatorId == team["id"].int) ||
+                        (scanlatorId == 0 && team["is_active"].int == 1)
+                    ) team["name"].string else branch["teams"][0]["name"].string
+                }
+            }
+        }
+        return scanlatorData
     }
 
     override fun prepareNewChapter(chapter: SChapter, manga: SManga) {
@@ -554,7 +592,6 @@ class LibManga : ConfigurableSource, HttpSource() {
         SearchFilter("детектив", "40"),
         SearchFilter("дзёсэй", "41"),
         SearchFilter("драма", "43"),
-        SearchFilter("ёнкома", "75"),
         SearchFilter("игра", "44"),
         SearchFilter("исекай", "79"),
         SearchFilter("история", "45"),

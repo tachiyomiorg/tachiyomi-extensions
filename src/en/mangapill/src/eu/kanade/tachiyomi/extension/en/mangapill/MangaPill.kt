@@ -22,7 +22,7 @@ class MangaPill : ParsedHttpSource() {
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/search?page=$page&title=&type=&status=1", headers)
+        return GET("$baseUrl/search?q=&type=&status=&page=$page", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -104,7 +104,7 @@ class MangaPill : ParsedHttpSource() {
 
         val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
             .addQueryParameter("page", page.toString())
-            .addQueryParameter("title", query)
+            .addQueryParameter("q", query)
 
         filters.forEach { filter ->
             when (filter) {
@@ -133,13 +133,13 @@ class MangaPill : ParsedHttpSource() {
         "Type",
         arrayOf(
             Pair("All", ""),
-            Pair("Manga", "1"),
-            Pair("Novel", "2"),
-            Pair("One-Shot", "3"),
-            Pair("Doujinshi", "4"),
-            Pair("Manhwa", "5"),
-            Pair("Manhua", "6"),
-            Pair("Oel", "7")
+            Pair("Manga", "manga"),
+            Pair("Novel", "novel"),
+            Pair("One-Shot", "one-shot"),
+            Pair("Doujinshi", "doujinshi"),
+            Pair("Manhwa", "manhwa"),
+            Pair("Manhua", "manhua"),
+            Pair("Oel", "oel")
         )
     )
 
@@ -149,11 +149,11 @@ class MangaPill : ParsedHttpSource() {
         "Status",
         arrayOf(
             Pair("All", ""),
-            Pair("Publishing", "1"),
-            Pair("Finished", "2"),
-            Pair("On Hiatus", "3"),
-            Pair("Discontinued", "4"),
-            Pair("Not yet Published", "5")
+            Pair("Publishing", "publishing"),
+            Pair("Finished", "finished"),
+            Pair("On Hiatus", "on hiatus"),
+            Pair("Discontinued", "discontinued"),
+            Pair("Not yet Published", "not yet published")
         )
     )
 
@@ -166,49 +166,49 @@ class MangaPill : ParsedHttpSource() {
     )
 
     private fun getGenreList() = listOf(
-        Genre("Action", "1"),
-        Genre("Adventure", "2"),
-        Genre("Cars", "3"),
-        Genre("Comedy", "4"),
-        Genre("Dementia", "5"),
-        Genre("Demons", "6"),
-        Genre("Drama", "8"),
-        Genre("Ecchi", "9"),
-        Genre("Fantasy", "10"),
-        Genre("Game", "11"),
-        Genre("Harem", "35"),
-        Genre("Hentai", "12"),
-        Genre("Historical", "13"),
-        Genre("Horror", "14"),
-        Genre("Josei", "43"),
-        Genre("Kids", "15"),
-        Genre("Magic", "16"),
-        Genre("Martial Arts", "17"),
-        Genre("Mecha", "18"),
-        Genre("Military", "38"),
-        Genre("Music", "19"),
-        Genre("Mystery", "7"),
-        Genre("Parody", "20"),
-        Genre("Police", "39"),
-        Genre("Psychological", "40"),
-        Genre("Romance", "22"),
-        Genre("Samurai", "21"),
-        Genre("School", "23"),
-        Genre("Sci-Fi", "24"),
-        Genre("Seinen", "42"),
-        Genre("Shoujo", "25"),
-        Genre("Shoujo Ai", "26"),
-        Genre("Shounen", "27"),
-        Genre("Shounen Ai", "28"),
-        Genre("Slice of Life", "36"),
-        Genre("Space", "29"),
-        Genre("Sports", "30"),
-        Genre("Super Power", "31"),
-        Genre("Supernatural", "37"),
-        Genre("Thriller", "41"),
-        Genre("Vampire", "32"),
-        Genre("Yaoi", "33"),
-        Genre("Yuri", "34")
+        Genre("Action"),
+        Genre("Adventure"),
+        Genre("Cars"),
+        Genre("Comedy"),
+        Genre("Dementia"),
+        Genre("Demons"),
+        Genre("Drama"),
+        Genre("Ecchi"),
+        Genre("Fantasy"),
+        Genre("Game"),
+        Genre("Harem"),
+        Genre("Hentai"),
+        Genre("Historical"),
+        Genre("Horror"),
+        Genre("Josei"),
+        Genre("Kids"),
+        Genre("Magic"),
+        Genre("Martial Arts"),
+        Genre("Mecha"),
+        Genre("Military"),
+        Genre("Music"),
+        Genre("Mystery"),
+        Genre("Parody"),
+        Genre("Police"),
+        Genre("Psychological"),
+        Genre("Romance"),
+        Genre("Samurai"),
+        Genre("School"),
+        Genre("Sci-Fi"),
+        Genre("Seinen"),
+        Genre("Shoujo"),
+        Genre("Shoujo Ai"),
+        Genre("Shounen"),
+        Genre("Shounen Ai"),
+        Genre("Slice of Life"),
+        Genre("Space"),
+        Genre("Sports"),
+        Genre("Super Power"),
+        Genre("Supernatural"),
+        Genre("Thriller"),
+        Genre("Vampire"),
+        Genre("Yaoi"),
+        Genre("Yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :

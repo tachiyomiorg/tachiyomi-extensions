@@ -80,6 +80,7 @@ data class BookDto(
 
 data class PagesDto(
     val id: Int,
+    val height: Int,
     val link: String,
     val page: Int,
     val count_comments: Int
@@ -96,6 +97,7 @@ data class UserDto(
 data class PaidPagesDto(
     val id: Long,
     val link: String,
+    val height: Int,
     val page: Int
 )
 

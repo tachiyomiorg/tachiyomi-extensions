@@ -320,16 +320,15 @@ class Remanga : ConfigurableSource, HttpSource() {
         val body = response.body()?.string()!!
         return try {
             val page = gson.fromJson<SeriesWrapperDto<PageDto>>(body)
-
-            page.content.pages.map {
+            page.content.pages.filter { it.height > 1 }.map {
                 Page(it.page, "", it.link)
             }
         } catch (e: JsonSyntaxException) {
             val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
             val result = mutableListOf<Page>()
             page.content.pages.forEach {
-                it.forEach {
-                    result.add(Page(result.size, "", it.link))
+                it.filter { page -> page.height > 1 }.forEach { page ->
+                    result.add(Page(result.size, "", page.link))
                 }
             }
             return result

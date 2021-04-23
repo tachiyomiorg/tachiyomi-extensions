@@ -69,6 +69,7 @@ class MangaFast : ParsedHttpSource() {
         articleInfo.select("table.inftable tbody tr").forEach {
             val row = it.select("td")
             when (row[0].text()) {
+                "Comic Title" -> manga.title = row[1].text().trim()
                 "Genre" -> manga.genre = row[1].text().trim().removeSuffix(",")
                 "Author" -> manga.author = row[1].text().trim()
                 "Status" -> manga.status = parseStatus(row[1].text())
@@ -85,7 +86,7 @@ class MangaFast : ParsedHttpSource() {
     }
 
     // chapter list
-    override fun chapterListSelector() = ".chapter-link"
+    override fun chapterListSelector() = ".chapter-link:not([title=\"Spoiler Manga\"])"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.attr("href"))

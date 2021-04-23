@@ -16,7 +16,6 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("The Cat Scans", "https://reader2.thecatscans.com/", "en"),
         SingleLang("Silent Sky", "https://reader.silentsky-scans.net", "en"),
         SingleLang("Death Toll Scans", "https://reader.deathtollscans.net", "en"),
-        SingleLang("One Time Scans", "https://reader.otscans.com", "en"),
         SingleLang("MangaScouts", "http://onlinereader.mangascouts.org", "de"),
         SingleLang("Lilyreader", "https://manga.smuglo.li", "en"),
         SingleLang("Evil Flowers", "https://reader.evilflowers.com", "en"),
@@ -35,7 +34,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("LupiTeam", "https://lupiteam.net", "it"),
         SingleLang("Zandy no Fansub", "https://zandynofansub.aishiteru.org", "en"),
         SingleLang("Kirishima Fansub", "https://www.kirishimafansub.net", "es"),
-        SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true),
+        SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true, overrideVersionCode = 1),
         MultiLang("HNI-Scantrad", "https://hni-scantrad.com", listOf("fr", "en"), className = "HNIScantradFactory", pkgName = "hniscantrad", overrideVersionCode = 1),
         SingleLang("The Phoenix Scans", "https://www.phoenixscans.com", "it", className = "PhoenixScans"),
         SingleLang("GTO The Great Site", "https://www.gtothegreatsite.net", "it", className = "GTO"),
@@ -47,6 +46,8 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Mabushimajo", "http://mabushimajo.com", "tr"),
         SingleLang("Hyakuro", "https://hyakuro.com/reader", "en"),
         SingleLang("Le Cercle du Scan", "https://lel.lecercleduscan.com", "fr")
+        //Sites that are down
+        //SingleLang("One Time Scans", "https://reader.otscans.com", "en"),
     )
 
     companion object {
