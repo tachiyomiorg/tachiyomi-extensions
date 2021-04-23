@@ -13,6 +13,7 @@ class MadaraGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 3
 
     override val sources = listOf(
+            SingleLang("24hRomance", "https://24hromance.com", "en", className = "Romance24h"),
             SingleLang("Adonis Fansub", "https://manga.adonisfansub.com", "tr"),
             SingleLang("AkuManga", "https://akumanga.com", "ar"),
             SingleLang("AlianzaMarcial", "https://alianzamarcial.xyz", "es"),
