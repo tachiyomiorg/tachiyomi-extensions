@@ -198,6 +198,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("S2Manga", "https://s2manga.com", "en"),
             SingleLang("SamuraiScan", "https://samuraiscan.com", "es"),
             SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true),
+            SingleLang("Setsu Scans", "https://setsuscans.com", "en"),
             SingleLang("Shield Manga", "https://shieldmanga.club", "en", overrideVersionCode = 2),
             SingleLang("Shinzoo Scan", "https://shinzooscan.xyz", "pt-BR", overrideVersionCode = 1),
             SingleLang("ShoujoHearts", "https://shoujohearts.com", "en", overrideVersionCode = 1),
