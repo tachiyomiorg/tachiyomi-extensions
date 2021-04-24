@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Scantrad'
-    pkgNameSuffix = 'fr.scantrad'
-    extClass = '.Scantrad'
-    extVersionCode = 17
+    extName = 'FuryoSquad'
+    pkgNameSuffix = 'fr.furyosquad'
+    extClass = '.FuryoSquad'
+    extVersionCode = 1
     libVersion = '1.2'
 }
 

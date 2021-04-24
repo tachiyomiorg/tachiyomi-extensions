@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.fr.scantrad
+package eu.kanade.tachiyomi.extension.fr.furyosquad
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
@@ -10,7 +10,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -22,11 +21,11 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-class Scantrad : ParsedHttpSource() {
+class FuryoSquad : ParsedHttpSource() {
 
-    override val name = "Scantrad"
+    override val name = "FuryoSquad"
 
-    override val baseUrl = "https://scantrad.net"
+    override val baseUrl = "https://www.furyosquad.com/"
 
     override val lang = "fr"
 
@@ -40,28 +39,22 @@ class Scantrad : ParsedHttpSource() {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Linux; Android 7.0; SM-G930VC Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.83 Mobile Safari/537.36")
-        .add("Accept-Language", "fr")
-
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/mangas", headers)
     }
 
-    override fun popularMangaSelector() = "div.manga"
+    override fun popularMangaSelector() = "div#fs-tous div.fs-card-body"
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
 
         with(element) {
-            select("a.mri-top").let {
-                manga.setUrlWithoutDomain(it.attr("href"))
-                manga.title = it.text()
-            }
+            manga.url = select("div.fs-card-img-container a").attr("href")
+            manga.title = select("span.fs-comic-title a").text()
 
-            manga.thumbnail_url = select("div.manga_img img").attr("abs:data-src")
+            manga.thumbnail_url = select("div.fs-card-img-container img").attr("abs:src")
         }
 
         return manga
@@ -84,14 +77,17 @@ class Scantrad : ParsedHttpSource() {
         return MangasPage(mangas.distinctBy { it.url }, false)
     }
 
-    override fun latestUpdatesSelector() = "#home-chapter div.home-manga"
+    override fun latestUpdatesSelector() = "table.table-striped tr"
 
     override fun latestUpdatesFromElement(element: Element): SManga {
         val manga = SManga.create()
 
-        manga.setUrlWithoutDomain(element.select("div.hmi-titre a").attr("abs:href"))
-        manga.title = element.select("div.hmi-titre a").text()
-        manga.thumbnail_url = element.select("a.hm-image img").attr("abs:data-src")
+        with(element) {
+            manga.url = select("span.fs-comic-title a").attr("href")
+            manga.title = select("span.fs-comic-title a").text()
+
+            manga.thumbnail_url = select("img.fs-chap-img").attr("abs:src")
+        }
 
         return manga
     }
@@ -125,44 +121,78 @@ class Scantrad : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
 
-        document.select("div.mf-chapitre").let {
-            manga.author = it.select("div.titre div").text().substringAfter("de").trim()
-            //      manga.title = it.select("div.titre").text().removeSuffix(manga.author.orEmpty())
-            manga.description = it.select("div.new-main p").text()
-            manga.thumbnail_url = it.select("div.ctt-img img").attr("abs:src")
-            manga.status = parseStatus(it.select("div.sub-i").text())
-            val genres = it.select("div.sub-i").text().substringBefore("Status").substringAfter("Genre :")
-            manga.genre = genres.trim().replace(" ", ", ")
+        document.select("div.comic-info").let {
+            it.select("p.fs-comic-label").forEach { el ->
+                when (el.text().toLowerCase(Locale.ROOT)) {
+                    "scénario" -> manga.author = el.nextElementSibling().text()
+                    "dessins" -> manga.artist = el.nextElementSibling().text()
+                    "genre" -> manga.genre = el.nextElementSibling().text()
+                }
+            }
+            manga.description = it.select("div.fs-comic-description").text()
+            manga.thumbnail_url = it.select("img.comic-cover").attr("abs:src")
         }
 
         return manga
     }
 
-    private fun parseStatus(status: String) = when {
-        status.contains("En cours") -> SManga.ONGOING
-        status.contains("Terminé") -> SManga.COMPLETED
-        else -> SManga.UNKNOWN
-    }
-
     // Chapters
 
-    override fun chapterListSelector() = "div.chapitre"
+    override fun chapterListSelector() = "div.fs-chapter-list div.element"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
 
-        chapter.setUrlWithoutDomain(element.select("a.ch-left").attr("href"))
-        chapter.name = element.select("span.chl-num").text()
-        chapter.date_upload = parseChapterDate(element.select("div.chl-date").text())
+        chapter.url = element.select("div.title a").attr("href")
+        chapter.name = element.select("div.title a").attr("title")
+        chapter.date_upload = parseChapterDate(element.select("div.meta_r").text())
 
         return chapter
     }
 
     private fun parseChapterDate(date: String): Long {
-        val value = date.split(" ")[0].toIntOrNull()
+        val lcDate = date.toLowerCase(Locale.ROOT)
+        if (lcDate.startsWith("il y a"))
+            parseRelativeDate(lcDate).let { return it }
+
+        // Handle 'day before yesterday', yesterday' and 'today', using midnight
+        var relativeDate: Calendar? = null
+        // Result parsed but no year, copy current year over
+        when {
+            lcDate.startsWith("avant-hier") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.add(Calendar.DAY_OF_MONTH, -2) // day before yesterday
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+            lcDate.startsWith("hier") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.add(Calendar.DAY_OF_MONTH, -1) // yesterday
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0)
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+            lcDate.startsWith("aujourd'hui") -> {
+                relativeDate = Calendar.getInstance()
+                relativeDate.set(Calendar.HOUR_OF_DAY, 0) // today
+                relativeDate.set(Calendar.MINUTE, 0)
+                relativeDate.set(Calendar.SECOND, 0)
+                relativeDate.set(Calendar.MILLISECOND, 0)
+            }
+        }
+
+        return relativeDate?.timeInMillis ?: 0L
+    }
+
+    private fun parseRelativeDate(date: String): Long {
+
+        val value = date.split(" ")[3].toIntOrNull()
 
         return if (value != null) {
-            when (date.split(" ")[1]) {
+            when (date.split(" ")[4]) {
                 "minute", "minutes" -> Calendar.getInstance().apply {
                     add(Calendar.MINUTE, value * -1)
                     set(Calendar.SECOND, 0)
@@ -211,8 +241,8 @@ class Scantrad : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
 
-        document.select("div.sc-lel img[id]").forEachIndexed { i, img ->
-            pages.add(Page(i, "", img.attr("abs:data-src")))
+        document.select("div.fs-read img[id]").forEachIndexed { i, img ->
+            pages.add(Page(i, "", img.attr("abs:src")))
         }
 
         return pages

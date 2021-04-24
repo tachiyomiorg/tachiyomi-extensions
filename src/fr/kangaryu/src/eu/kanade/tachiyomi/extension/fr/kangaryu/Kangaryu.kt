@@ -42,15 +42,16 @@ class Kangaryu : ParsedHttpSource() {
         return GET("$baseUrl/manga-list", headers)
     }
 
-    override fun popularMangaSelector() = "div.profile-card-2"
+    override fun popularMangaSelector() = "div.l-card"
 
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
-            element.select("div.profile-name a").let {
-                setUrlWithoutDomain(it.attr("href"))
-                title = it.text()
+            element.select("div.card-image").let {
+                setUrlWithoutDomain(it.select("a").attr("href"))
+                thumbnail_url = it.select("img").attr("abs:src")
             }
-            thumbnail_url = element.select("img").attr("abs:src")
+
+            title = element.select("a.chart-title").text()
         }
     }
 
@@ -114,12 +115,13 @@ class Kangaryu : ParsedHttpSource() {
                 artist = select("dd a[href*=artist]").text()
                 genre = select("dd a[href*=category]").joinToString { it.text() }
             }
+            description = document.select("div.col-lg-12 p").text()
         }
     }
 
     private fun String.toStatus() = when {
-        this.contains("Ongoing", ignoreCase = true) -> SManga.ONGOING
-        this.contains("Completed", ignoreCase = true) -> SManga.COMPLETED
+        this.contains("En cours", ignoreCase = true) -> SManga.ONGOING
+        this.contains("Terminé", ignoreCase = true) -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -129,7 +131,7 @@ class Kangaryu : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
-            name = element.select("h5").text()
+            name = element.select("h5.chapter-title-rtl").text()
             setUrlWithoutDomain(element.select("h5 a").attr("href"))
             date_upload = element.select("div.date-chapter-title-rtl").text().toDate()
         }
