@@ -219,7 +219,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Toonily.net", "https://toonily.net", "en", isNsfw = true, className = "ToonilyNet", overrideVersionCode = 1),
             SingleLang("ToonPoint", "https://toonpoint.com", "en"),
             SingleLang("Top Manhua", "https://topmanhua.com", "en"),
-            SingleLang("TritiniaScans", "https://tritinia.com", "en"),
+            SingleLang("TritiniaScans", "https://tritinia.com", "en", overrideVersionCode = 1),
             SingleLang("TruyenTranhAudio.com", "https://truyentranhaudio.com", "vi", className = "TruyenTranhAudioCom"),
             SingleLang("TruyenTranhAudio.online", "https://truyentranhaudio.online", "vi", className = "TruyenTranhAudioOnline"),
             SingleLang("Tsubaki No Scan", "https://tsubakinoscan.com", "fr"),
