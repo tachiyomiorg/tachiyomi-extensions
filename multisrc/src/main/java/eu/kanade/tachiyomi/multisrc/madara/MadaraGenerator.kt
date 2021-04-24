@@ -262,6 +262,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br", "pt-BR"),
             SingleLang("Wonderland", "https://landwebtoons.site", "pt-BR"),
             SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
+            SingleLang("Wakamics", "https://wakamics.net", "en")
     )
 
     companion object {
