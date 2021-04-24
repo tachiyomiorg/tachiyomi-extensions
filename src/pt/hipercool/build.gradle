@@ -5,9 +5,13 @@ ext {
     extName = 'HipercooL'
     pkgNameSuffix = 'pt.hipercool'
     extClass = '.Hipercool'
-    extVersionCode = 5
+    extVersionCode = 6
     libVersion = '1.2'
     containsNsfw = true
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

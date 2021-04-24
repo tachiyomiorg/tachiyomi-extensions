@@ -81,7 +81,7 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET(getMangaUrl("$baseUrl/api/comics?per_page=36&page=$page&q=&sort=popularity&order=desc&duration=week"), headers)
+        return GET(getMangaUrl("$baseUrl/api/comics?per_page=36&page=$page&q=&sort=popularity&order=desc&duration=all"), headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage = parseMangaFromJson(response)
@@ -102,7 +102,6 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
         val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
             .addQueryParameter("per_page", "36")
             .addQueryParameter("page", page.toString())
-            .addQueryParameter("order", "desc")
             .addQueryParameter("q", query)
             .addQueryParameter("nsfw", enableNsfw.toString())
 
@@ -136,13 +135,8 @@ class ReadManhwa : ConfigurableSource, HttpSource() {
                     }
                 }
                 is OrderBy -> {
-                    var orderby = ""
-                    if (filter.state!!.ascending) {
-                        orderby = "asc"
-                    } else {
-                        orderby = "desc"
-                    }
-                    var sort = arrayOf("uploaded_at", "title", "pages", "favorites", "popularity")[filter.state!!.index]
+                    val orderby = if (filter.state!!.ascending) "asc" else "desc"
+                    val sort = arrayOf("uploaded_at", "title", "pages", "favorites", "popularity")[filter.state!!.index]
                     url.addQueryParameter("sort", sort)
                     url.addQueryParameter("order", orderby)
                 }

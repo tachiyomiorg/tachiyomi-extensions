@@ -16,6 +16,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -23,12 +24,17 @@ import org.json.JSONObject
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
+import kotlin.collections.ArrayList
 
 class CopyManga : ConfigurableSource, HttpSource() {
 
@@ -41,6 +47,24 @@ class CopyManga : ConfigurableSource, HttpSource() {
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+    private val trustManager = object : X509TrustManager {
+        override fun getAcceptedIssuers(): Array<X509Certificate> {
+            return emptyArray()
+        }
+
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+        }
+
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+        }
+    }
+    private val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, arrayOf(trustManager), SecureRandom())
+    }
+
+    override val client: OkHttpClient = super.client.newBuilder()
+        .sslSocketFactory(sslContext.socketFactory, trustManager)
+        .build()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize", headers)
     override fun popularMangaParse(response: Response): MangasPage = parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
@@ -49,7 +73,7 @@ class CopyManga : ConfigurableSource, HttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         // when perform html search, sort by popular
-        var apiUrlString = "$baseUrl/api/kb/web/search/count?format=json&limit=$searchPageSize&offset=${(page - 1) * searchPageSize}&platform=2&q=$query"
+        var apiUrlString = "$baseUrl/api/kb/web/search/comics?limit=$searchPageSize&offset=${(page - 1) * searchPageSize}&platform=2&q=$query&q_type="
         var htmlUrlString = "$baseUrl/comics?offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize"
         var requestUrlString: String
 
@@ -174,7 +198,7 @@ class CopyManga : ConfigurableSource, HttpSource() {
 
     override fun headersBuilder() = super.headersBuilder()
         .add("Referer", baseUrl)
-        .add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36 Tachiyomi/1.0")
+        .add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
 
     // Unused, we can get image urls directly from the chapter page
     override fun imageUrlParse(response: Response) =
@@ -287,7 +311,7 @@ class CopyManga : ConfigurableSource, HttpSource() {
         val body = response.body()!!.string()
         // results > comic > list []
         val res = JSONObject(body)
-        val comicArray = res.optJSONObject("results")?.optJSONObject("comic")?.optJSONArray("list")
+        val comicArray = res.optJSONObject("results")?.optJSONArray("list")
         if (comicArray == null) {
             return MangasPage(listOf(), false)
         }
@@ -346,9 +370,13 @@ class CopyManga : ConfigurableSource, HttpSource() {
         return bytes
     }
 
-    private fun stringToUnixTimestamp(string: String, pattern: String = "yyyy-MM-dd", timeZone: String = "CTT"): Long {
-        val date = LocalDate.parse(string, DateTimeFormatter.ofPattern(pattern))
-        return date.atStartOfDay(ZoneId.of(timeZone)).toInstant().epochSecond
+    private fun stringToUnixTimestamp(string: String, pattern: String = "yyyy-MM-dd", locale: Locale = Locale.CHINA): Long {
+        return try {
+            val time = SimpleDateFormat(pattern, locale).parse(string)?.time
+            if (time != null) time / 1000 else Date().time / 1000
+        } catch (ex: Exception) {
+            Date().time / 1000
+        }
     }
 
     // thanks to unpacker toolsite, http://matthewfl.com/unPacker.html

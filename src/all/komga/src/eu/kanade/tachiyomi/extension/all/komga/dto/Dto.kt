@@ -13,7 +13,8 @@ data class SeriesDto(
     val lastModified: String?,
     val fileLastModified: String,
     val booksCount: Int,
-    val metadata: SeriesMetadataDto
+    val metadata: SeriesMetadataDto,
+    val booksMetadata: BookMetadataAggregationDto
 )
 
 data class SeriesMetadataDto(
@@ -36,6 +37,16 @@ data class SeriesMetadataDto(
     val genresLock: Boolean,
     val tags: Set<String>,
     val tagsLock: Boolean
+)
+
+data class BookMetadataAggregationDto(
+    val authors: List<AuthorDto> = emptyList(),
+    val releaseDate: String?,
+    val summary: String,
+    val summaryNumber: String,
+
+    val created: String,
+    val lastModified: String
 )
 
 data class BookDto(
@@ -89,6 +100,15 @@ data class CollectionDto(
     val name: String,
     val ordered: Boolean,
     val seriesIds: List<String>,
+    val createdDate: String,
+    val lastModifiedDate: String,
+    val filtered: Boolean
+)
+
+data class ReadListDto(
+    val id: String,
+    val name: String,
+    val bookIds: List<String>,
     val createdDate: String,
     val lastModifiedDate: String,
     val filtered: Boolean

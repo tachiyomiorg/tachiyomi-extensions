@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.mangahost
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -10,6 +11,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -20,6 +22,7 @@ import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaHost : ParsedHttpSource() {
 
@@ -34,11 +37,16 @@ class MangaHost : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(RateLimitInterceptor(1, 3, TimeUnit.SECONDS))
+        .addInterceptor(::blockMessageIntercept)
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
         .add("Referer", baseUrl)
+        .add("User-Agent", USER_AGENT)
 
     private fun genericMangaFromElement(element: Element): SManga =
         SManga.create().apply {
@@ -47,7 +55,7 @@ class MangaHost : ParsedHttpSource() {
 
             title = element.attr("title").withoutLanguage()
             thumbnail_url = thumbnailEl.attr(thumbnailAttr).toLargeUrl()
-            setUrlWithoutDomain(element.attr("href").substringBeforeLast("-mh"))
+            setUrlWithoutDomain(element.attr("href"))
         }
 
     override fun popularMangaRequest(page: Int): Request {
@@ -83,7 +91,7 @@ class MangaHost : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/find/")!!.newBuilder()
+        val url = HttpUrl.parse("$baseUrl/find")!!.newBuilder()
             .addQueryParameter("this", query)
 
         return GET(url.toString(), headers)
@@ -146,6 +154,11 @@ class MangaHost : ParsedHttpSource() {
         chapter_number = element.select("div.pop-title span.btn-caps").text()
             .toFloatOrNull() ?: 1f
         setUrlWithoutDomain(element.select("div.tags a").attr("href"))
+
+        if (scanlator!!.split("/").count() >= 5) {
+            val scanlators = scanlator!!.split("/")
+            scanlator = scanlators[0] + " e mais " + (scanlators.count() - 1)
+        }
     }
 
     /**
@@ -176,10 +189,22 @@ class MangaHost : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
-            .set("Referer", page.url)
+            .set("Accept", ACCEPT_IMAGE)
+            .set("Referer", "$baseUrl/")
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
+    }
+
+    private fun blockMessageIntercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+
+        if (!response.isSuccessful && response.code() == 403) {
+            response.close()
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return response
     }
 
     private fun Call.asObservableIgnoreCode(code: Int): Observable<Response> {
@@ -212,11 +237,18 @@ class MangaHost : ParsedHttpSource() {
     private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
     companion object {
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
+        private val CDN_REGEX = "/mangas_files/.*\\.jpg".toRegex()
+
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. Migre para outra fonte caso o problema persistir."
 
         private val DATE_FORMAT by lazy {
             SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)

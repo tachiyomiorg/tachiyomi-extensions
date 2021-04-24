@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.fr.scantrad
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -19,8 +20,7 @@ import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.math.absoluteValue
-import kotlin.random.Random
+import java.util.concurrent.TimeUnit
 
 class Scantrad : ParsedHttpSource() {
 
@@ -32,13 +32,17 @@ class Scantrad : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
-    protected open val userAgentRandomizer = " ${Random.nextInt().absoluteValue}"
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
-    override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36$userAgentRandomizer")
-    }
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36")
+        .add("Accept-Language", "fr")
 
     // Popular
 
@@ -210,5 +214,4 @@ class Scantrad : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
-
 }

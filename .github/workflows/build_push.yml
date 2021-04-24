@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  check_wrapper:
+    name: Validate Gradle Wrapper
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+  build:
+    name: Build extension repo
+    needs: check_wrapper
+    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout master branch
+        uses: actions/checkout@v2
+        with:
+          ref: master
+          path: master
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Copy CI gradle.properties
+        run: |
+          cd master
+          mkdir -p ~/.gradle
+          cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
+
+      - name: Generate sources from the multi-source library
+        uses: eskatos/gradle-command-action@v1
+        env:
+          CI_PUSH: "true"
+        with:
+          build-root-directory: master
+          wrapper-directory: master
+          arguments: :multisrc:generateExtensions
+          wrapper-cache-enabled: true
+          dependencies-cache-enabled: true
+          configuration-cache-enabled: true
+
+      - name: Build extensions
+        uses: eskatos/gradle-command-action@v1
+        env:
+          CI_PUSH: "true"
+        with:
+          build-root-directory: master
+          wrapper-directory: master
+          arguments: assembleRelease
+          wrapper-cache-enabled: true
+          dependencies-cache-enabled: true
+          configuration-cache-enabled: true
+
+      - name: Sign APKs
+        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
+        run: |
+          cd master
+          ./.github/scripts/sign-apks.sh \
+            ${{ secrets.SIGNING_KEY }} \
+            ${{ secrets.ALIAS }} \
+            ${{ secrets.KEY_STORE_PASSWORD }} \
+            ${{ secrets.KEY_PASSWORD }}
+
+      - name: Create repo artifacts
+        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
+        run: |
+          cd master
+          ./.github/scripts/create-repo.sh
+
+      - name: Checkout repo branch
+        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
+        uses: actions/checkout@v2
+        with:
+          ref: repo
+          path: repo
+
+      - name: Deploy repo
+        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
+        run: |
+          cd repo
+          ../master/.github/scripts/commit-repo.sh

@@ -5,15 +5,18 @@ import android.content.SharedPreferences
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
+import android.util.Log
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.extension.all.komga.dto.AuthorDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.LibraryDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.PageWrapperDto
+import eu.kanade.tachiyomi.extension.all.komga.dto.ReadListDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.SeriesDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -25,6 +28,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Credentials
+import okhttp3.Dns
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -53,7 +57,17 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         processSeriesPage(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/api/v1/series?search=$query&page=${page - 1}")!!.newBuilder()
+        val collectionId = (filters.find { it is CollectionSelect } as? CollectionSelect)?.let {
+            it.values[it.state].id
+        }
+
+        val type = when {
+            collectionId != null -> "collections/$collectionId/series"
+            filters.find { it is TypeSelect }?.state == 1 -> "readlists"
+            else -> "series"
+        }
+
+        val url = HttpUrl.parse("$baseUrl/api/v1/$type?search=$query&page=${page - 1}")!!.newBuilder()
 
         filters.forEach { filter ->
             when (filter) {
@@ -71,17 +85,6 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                     }
                     if (libraryToInclude.isNotEmpty()) {
                         url.addQueryParameter("library_id", libraryToInclude.joinToString(","))
-                    }
-                }
-                is CollectionGroup -> {
-                    val collectionToInclude = mutableListOf<String>()
-                    filter.state.forEach { content ->
-                        if (content.state) {
-                            collectionToInclude.add(content.id)
-                        }
-                    }
-                    if (collectionToInclude.isNotEmpty()) {
-                        url.addQueryParameter("collection_id", collectionToInclude.joinToString(","))
                     }
                 }
                 is StatusGroup -> {
@@ -128,6 +131,17 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         url.addQueryParameter("publisher", publisherToInclude.joinToString(","))
                     }
                 }
+                is AuthorGroup -> {
+                    val authorToInclude = mutableListOf<AuthorDto>()
+                    filter.state.forEach { content ->
+                        if (content.state) {
+                            authorToInclude.add(content.author)
+                        }
+                    }
+                    authorToInclude.forEach {
+                        url.addQueryParameter("author", "${it.name},${it.role}")
+                    }
+                }
                 is Filter.Sort -> {
                     var sortCriteria = when (filter.state?.index) {
                         0 -> "metadata.titleSort"
@@ -152,10 +166,14 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun mangaDetailsRequest(manga: SManga): Request =
         GET(baseUrl + manga.url, headers)
 
-    override fun mangaDetailsParse(response: Response): SManga {
-        val series = gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
-        return series.toSManga()
-    }
+    override fun mangaDetailsParse(response: Response): SManga =
+        if (response.fromReadList()) {
+            val readList = gson.fromJson<ReadListDto>(response.body()?.charStream()!!)
+            readList.toSManga()
+        } else {
+            val series = gson.fromJson<SeriesDto>(response.body()?.charStream()!!)
+            series.toSManga()
+        }
 
     override fun chapterListRequest(manga: SManga): Request =
         GET("$baseUrl${manga.url}/books?unpaged=true&media_status=READY", headers)
@@ -163,15 +181,16 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!).content
 
-        return page.map { book ->
+        val r = page.map { book ->
             SChapter.create().apply {
                 chapter_number = book.metadata.numberSort
-                name = "${book.metadata.number} - ${book.metadata.title} (${book.size})"
+                name = "${if (!response.fromReadList()) "${book.metadata.number} - " else ""}${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = book.metadata.releaseDate?.let { parseDate(it) }
                     ?: parseDateTime(book.fileLastModified)
             }
-        }.sortedByDescending { it.chapter_number }
+        }
+        return if (!response.fromReadList()) r.sortedByDescending { it.chapter_number } else r.reversed()
     }
 
     override fun pageListRequest(chapter: SChapter): Request =
@@ -194,15 +213,15 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     }
 
     private fun processSeriesPage(response: Response): MangasPage {
-        var lastPage: Boolean
-        val page = with(gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)) {
-            lastPage = last
-            content
+        if (response.fromReadList()) {
+            with(gson.fromJson<PageWrapperDto<ReadListDto>>(response.body()?.charStream()!!)) {
+                return MangasPage(content.map { it.toSManga() }, !last)
+            }
+        } else {
+            with(gson.fromJson<PageWrapperDto<SeriesDto>>(response.body()?.charStream()!!)) {
+                return MangasPage(content.map { it.toSManga() }, !last)
+            }
         }
-        val mangas = page.map {
-            it.toSManga()
-        }
-        return MangasPage(mangas, !lastPage)
     }
 
     private fun SeriesDto.toSManga(): SManga =
@@ -216,8 +235,22 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 else -> SManga.UNKNOWN
             }
             genre = (metadata.genres + metadata.tags).joinToString(", ")
-            description = metadata.summary
+            description = metadata.summary.ifBlank { booksMetadata.summary }
+            booksMetadata.authors.groupBy { it.role }.let { map ->
+                author = map["writer"]?.map { it.name }?.distinct()?.joinToString()
+                artist = map["penciller"]?.map { it.name }?.distinct()?.joinToString()
+            }
         }
+
+    private fun ReadListDto.toSManga(): SManga =
+        SManga.create().apply {
+            title = name
+            url = "/api/v1/readlists/$id"
+            thumbnail_url = "$baseUrl/api/v1/readlists/$id/thumbnail"
+            status = SManga.UNKNOWN
+        }
+
+    private fun Response.fromReadList() = request().url().toString().contains("/api/v1/readlists")
 
     private fun parseDate(date: String?): Long =
         if (date == null)
@@ -247,10 +280,10 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     override fun imageUrlParse(response: Response): String = ""
 
+    private class TypeSelect : Filter.Select<String>("Search for", arrayOf(TYPE_SERIES, TYPE_READLISTS))
     private class LibraryFilter(val id: String, name: String) : Filter.CheckBox(name, false)
     private class LibraryGroup(libraries: List<LibraryFilter>) : Filter.Group<LibraryFilter>("Libraries", libraries)
-    private class CollectionFilter(val id: String, name: String) : Filter.CheckBox(name, false)
-    private class CollectionGroup(collections: List<CollectionFilter>) : Filter.Group<CollectionFilter>("Collections", collections)
+    private class CollectionSelect(collections: List<CollectionFilterEntry>) : Filter.Select<CollectionFilterEntry>("Collection", collections.toTypedArray())
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Selection(0, true))
     private class StatusFilter(name: String) : Filter.CheckBox(name, false)
     private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
@@ -261,28 +294,50 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private class TagGroup(tags: List<TagFilter>) : Filter.Group<TagFilter>("Tags", tags)
     private class PublisherFilter(publisher: String) : Filter.CheckBox(publisher, false)
     private class PublisherGroup(publishers: List<PublisherFilter>) : Filter.Group<PublisherFilter>("Publishers", publishers)
+    private class AuthorFilter(val author: AuthorDto) : Filter.CheckBox(author.name, false)
+    private class AuthorGroup(role: String, authors: List<AuthorFilter>) : Filter.Group<AuthorFilter>(role, authors)
 
-    override fun getFilterList(): FilterList =
-        FilterList(
-            UnreadOnly(),
-            LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
-            CollectionGroup(collections.map { CollectionFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
-            StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
-            GenreGroup(genres.map { GenreFilter(it) }),
-            TagGroup(tags.map { TagFilter(it) }),
-            PublisherGroup(publishers.map { PublisherFilter(it) }),
-            SeriesSort()
-        )
+    private data class CollectionFilterEntry(
+        val name: String,
+        val id: String? = null
+    ) {
+        override fun toString() = name
+    }
+
+    override fun getFilterList(): FilterList {
+        val filters = try {
+            mutableListOf<Filter<*>>(
+                UnreadOnly(),
+                TypeSelect(),
+                CollectionSelect(listOf(CollectionFilterEntry("None")) + collections.map { CollectionFilterEntry(it.name, it.id) }),
+                LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
+                StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
+                GenreGroup(genres.map { GenreFilter(it) }),
+                TagGroup(tags.map { TagFilter(it) }),
+                PublisherGroup(publishers.map { PublisherFilter(it) })
+            ).also {
+                it.addAll(authors.map { (role, authors) -> AuthorGroup(role, authors.map { AuthorFilter(it) }) })
+                it.add(SeriesSort())
+            }
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "error while creating filter list", e)
+            emptyList()
+        }
+
+        return FilterList(filters)
+    }
 
     private var libraries = emptyList<LibraryDto>()
     private var collections = emptyList<CollectionDto>()
     private var genres = emptySet<String>()
     private var tags = emptySet<String>()
     private var publishers = emptySet<String>()
+    private var authors = emptyMap<String, List<AuthorDto>>() // roles to list of authors
 
     override val name = "Komga${if (suffix.isNotBlank()) " ($suffix)" else ""}"
     override val lang = "en"
     override val supportsLatest = true
+    private val LOG_TAG = "extension.all.komga${if (suffix.isNotBlank()) ".$suffix" else ""}"
 
     override val baseUrl by lazy { getPrefBaseUrl() }
     private val username by lazy { getPrefUsername() }
@@ -308,6 +363,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                         .build()
                 }
             }
+            .dns(Dns.SYSTEM) // don't use DNS over HTTPS as it breaks IP addressing
             .build()
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -375,85 +431,116 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
 
     init {
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    libraries = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptyList()
+        if (baseUrl.isNotBlank()) {
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/libraries", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        libraries = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading libraries for filters", tr)
                     }
-                },
-                {}
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    collections = try {
-                        gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
-                    } catch (e: Exception) {
-                        emptyList()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/collections?unpaged=true", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        collections = try {
+                            gson.fromJson<PageWrapperDto<CollectionDto>>(response.body()?.charStream()!!).content
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading collections for filters", tr)
                     }
-                },
-                {}
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/genres", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    genres = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptySet()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/genres", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        genres = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptySet()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading genres for filters", tr)
                     }
-                },
-                {}
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    tags = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptySet()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        tags = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptySet()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading tags for filters", tr)
                     }
-                },
-                {}
-            )
+                )
 
-        Single.fromCallable {
-            client.newCall(GET("$baseUrl/api/v1/publishers", headers)).execute()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { response ->
-                    publishers = try {
-                        gson.fromJson(response.body()?.charStream()!!)
-                    } catch (e: Exception) {
-                        emptySet()
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/publishers", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        publishers = try {
+                            gson.fromJson(response.body()?.charStream()!!)
+                        } catch (e: Exception) {
+                            emptySet()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading publishers for filters", tr)
                     }
-                },
-                {}
-            )
+                )
+
+            Single.fromCallable {
+                client.newCall(GET("$baseUrl/api/v1/authors", headers)).execute()
+            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        authors = try {
+                            val list: List<AuthorDto> = gson.fromJson(response.body()?.charStream()!!)
+                            list.groupBy { it.role }
+                        } catch (e: Exception) {
+                            emptyMap()
+                        }
+                    },
+                    { tr ->
+                        Log.e(LOG_TAG, "error while loading authors for filters", tr)
+                    }
+                )
+        }
     }
 
     companion object {
@@ -465,5 +552,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         private const val PASSWORD_DEFAULT = ""
 
         private val supportedImageTypes = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
+
+        private const val TYPE_SERIES = "Series"
+        private const val TYPE_READLISTS = "Read lists"
     }
 }

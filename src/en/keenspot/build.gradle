@@ -5,7 +5,7 @@ ext {
     extName = 'keenspot'
     pkgNameSuffix = 'en.keenspot'
     extClass = '.KeenspotFactory'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

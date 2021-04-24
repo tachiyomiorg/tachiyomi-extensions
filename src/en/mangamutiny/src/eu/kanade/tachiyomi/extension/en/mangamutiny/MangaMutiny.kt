@@ -5,6 +5,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -15,6 +16,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
+import rx.Observable
 import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -31,15 +33,26 @@ fun JsonObject.getNullable(key: String): JsonElement? {
     return value
 }
 
+fun Float.toStringWithoutDotZero(): String = when (this % 1) {
+    0F -> this.toInt().toString()
+    else -> this.toString()
+}
+
 class MangaMutiny : HttpSource() {
 
     override val name = "Manga Mutiny"
-    override val baseUrl = "https://api.mangamutiny.org"
+    override val baseUrl = "https://mangamutiny.org"
+
     override val supportsLatest = true
 
     override val lang = "en"
 
     private val parser = JsonParser()
+
+    private val baseUrlAPI = "https://api.mangamutiny.org"
+
+    private val webViewSingleMangaPath = "title/"
+    private val webViewMultipleMangaPath = "titles/"
 
     override fun headersBuilder(): Headers.Builder {
         return super.headersBuilder().apply {
@@ -53,6 +66,10 @@ class MangaMutiny : HttpSource() {
 
     private val fetchAmount = 21
 
+    companion object {
+        const val PREFIX_ID_SEARCH = "slug:"
+    }
+
     // Popular manga
     override fun popularMangaRequest(page: Int): Request = mangaRequest(page)
 
@@ -63,7 +80,7 @@ class MangaMutiny : HttpSource() {
         mangaDetailsRequestCommon(manga, false)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterList = ArrayList<SChapter>()
+        val chapterList = mutableListOf<SChapter>()
         val responseBody = response.body()
 
         if (responseBody != null) {
@@ -77,18 +94,27 @@ class MangaMutiny : HttpSource() {
                         name = chapterTitleBuilder(singleChapterJsonObject)
                         url = singleChapterJsonObject.get("slug").asString
                         date_upload = parseDate(singleChapterJsonObject.get("releasedAt").asString)
+
+                        chapterNumberBuilder(singleChapterJsonObject)?.let { chapterNumber ->
+                            chapter_number = chapterNumber
+                        }
                     }
                 )
             }
+
+            responseBody.close()
         }
 
         return chapterList
     }
 
+    private fun chapterNumberBuilder(rootNode: JsonObject): Float? =
+        rootNode.getNullable("chapter")?.asFloat
+
     private fun chapterTitleBuilder(rootNode: JsonObject): String {
         val volume = rootNode.getNullable("volume")?.asInt
 
-        val chapter = rootNode.getNullable("chapter")?.asInt
+        val chapter = rootNode.getNullable("chapter")?.asFloat?.toStringWithoutDotZero()
 
         val textTitle = rootNode.getNullable("title")?.asString
 
@@ -99,23 +125,22 @@ class MangaMutiny : HttpSource() {
             chapterTitle.append("Chapter $chapter")
         }
         if (textTitle != null && textTitle != "") {
-            if (volume != null || chapter != null) chapterTitle.append(" ")
+            if (volume != null || chapter != null) chapterTitle.append(": ")
             chapterTitle.append(textTitle)
         }
 
         return chapterTitle.toString()
     }
 
-    private fun parseDate(dateAsString: String): Long {
-        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
-        format.timeZone = TimeZone.getTimeZone("UTC")
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
-        return format.parse(dateAsString)?.time ?: 0
-    }
+    private fun parseDate(dateAsString: String): Long =
+        dateFormatter.parse(dateAsString)?.time ?: 0
 
     // latest
     override fun latestUpdatesRequest(page: Int): Request =
-        mangaRequest(page, FilterList(SortFilter().apply { this.state = 1 }))
+        mangaRequest(page, filters = FilterList(SortFilter().apply { this.state = 1 }))
 
     override fun latestUpdatesParse(response: Response): MangasPage = mangaParse(response)
 
@@ -123,11 +148,17 @@ class MangaMutiny : HttpSource() {
     override fun mangaDetailsRequest(manga: SManga): Request = mangaDetailsRequestCommon(manga)
 
     private fun mangaDetailsRequestCommon(manga: SManga, lite: Boolean = true): Request {
-        val uri = Uri.parse(baseUrl).buildUpon()
-            .appendEncodedPath(apiMangaUrlPath)
-            .appendPath(manga.url)
-
-        if (lite) uri.appendQueryParameter("lite", "1")
+        val uri = if (isForWebView()) {
+            Uri.parse(baseUrl).buildUpon()
+                .appendEncodedPath(webViewSingleMangaPath)
+                .appendPath(manga.url)
+        } else {
+            Uri.parse(baseUrlAPI).buildUpon()
+                .appendEncodedPath(apiMangaUrlPath)
+                .appendPath(manga.url).let {
+                    if (lite) it.appendQueryParameter("lite", "1") else it
+                }
+        }
 
         return GET(uri.build().toString(), headers)
     }
@@ -148,19 +179,21 @@ class MangaMutiny : HttpSource() {
                 thumbnail_url = rootNode.getNullable("thumbnail")?.asString
                 title = rootNode.get("title").asString
                 url = rootNode.get("slug").asString
-                artist = rootNode.get("artists").asString
+                artist = rootNode.getNullable("artists")?.asString
                 author = rootNode.get("authors").asString
 
                 genre = rootNode.get("tags").asJsonArray
                     .joinToString { singleGenre -> singleGenre.asString }
             }
+
+            responseBody.close()
         }
 
         return manga
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val uri = Uri.parse(baseUrl).buildUpon()
+        val uri = Uri.parse(baseUrlAPI).buildUpon()
             .appendEncodedPath(apiChapterUrlPath)
             .appendEncodedPath(chapter.url)
 
@@ -188,6 +221,8 @@ class MangaMutiny : HttpSource() {
             for (i in 0 until images.size()) {
                 pageList.add(Page(i, "", chapterUrl + images[i].asString))
             }
+
+            responseBody.close()
         }
 
         return pageList
@@ -195,14 +230,16 @@ class MangaMutiny : HttpSource() {
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
-        mangaRequest(page, filters, query)
+        mangaRequest(page, query, filters)
 
     override fun searchMangaParse(response: Response): MangasPage = mangaParse(response)
 
-    // commonly functions
+    // commonly used functions
     private fun mangaParse(response: Response): MangasPage {
         val mangasPage = ArrayList<SManga>()
         val responseBody = response.body()
+
+        var totalObjects = 0
 
         if (responseBody != null) {
             val rootNode = parser.parse(responseBody.charStream())
@@ -221,41 +258,92 @@ class MangaMutiny : HttpSource() {
                         }
                     )
                 }
+
+                // total number of manga the server found in its database
+                // and is returning paginated page by page:
+                totalObjects = rootObject.getNullable("total")?.asInt ?: 0
             }
 
             responseBody.close()
         }
 
-        return MangasPage(mangasPage, mangasPage.size == fetchAmount)
+        val skipped = response.request().url().queryParameter("skip")?.toInt() ?: 0
+
+        val moreElementsToSkip = skipped + fetchAmount < totalObjects
+
+        val pageSizeEqualsFetchAmount = mangasPage.size == fetchAmount
+
+        val hasMorePages = pageSizeEqualsFetchAmount && moreElementsToSkip
+
+        return MangasPage(mangasPage, hasMorePages)
     }
 
-    private fun mangaRequest(page: Int, filters: FilterList? = null, query: String? = null): Request {
-        val uri = Uri.parse(baseUrl).buildUpon()
-        uri.appendEncodedPath(apiMangaUrlPath)
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+
+            val tempManga = SManga.create().apply {
+                url = realQuery
+            }
+
+            client.newCall(mangaDetailsRequestCommon(tempManga, true))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
+
+    private fun mangaRequest(page: Int, query: String? = null, filters: FilterList? = null): Request {
+        val forWebView = isForWebView()
+
+        val uri = if (forWebView) {
+            Uri.parse(baseUrl).buildUpon().apply {
+                appendEncodedPath(webViewMultipleMangaPath)
+            }
+        } else {
+            Uri.parse(baseUrlAPI).buildUpon().apply {
+                appendEncodedPath(apiMangaUrlPath)
+            }
+        }
+
         if (query?.isNotBlank() == true) {
             uri.appendQueryParameter("text", query)
         }
 
-        if (filters != null) {
-            val uriParameterMap = mutableMapOf<String, String>()
-
-            for (singleFilter in filters) {
-                if (singleFilter is UriFilter) {
-                    singleFilter.potentiallyAddToUriParameterMap(uriParameterMap)
-                }
-            }
-
-            for (uriParameter in uriParameterMap) {
-                uri.appendQueryParameter(uriParameter.key, uriParameter.value)
-            }
+        val applicableFilters = if (filters != null && filters.isNotEmpty()) {
+            filters
         } else {
-            uri.appendQueryParameter("sort", "-rating -ratingCount")
+            FilterList(SortFilter())
         }
-        uri.appendQueryParameter("limit", fetchAmount.toString())
 
-        if (page != 1) {
-            uri.appendQueryParameter("skip", (page * fetchAmount).toString())
+        val uriParameterMap = mutableMapOf<String, String>()
+
+        for (singleFilter in applicableFilters) {
+            if (singleFilter is UriFilter) {
+                singleFilter.addParameter(uriParameterMap)
+            }
         }
+
+        for (uriParameter in uriParameterMap) {
+            uri.appendQueryParameter(uriParameter.key, uriParameter.value)
+        }
+
+        if (!forWebView) {
+            uri.appendQueryParameter("limit", fetchAmount.toString())
+            if (page != 1) {
+                uri.appendQueryParameter("skip", ((page - 1) * fetchAmount).toString())
+            }
+        }
+
         return GET(uri.build().toString(), headers)
     }
 
@@ -277,39 +365,40 @@ class MangaMutiny : HttpSource() {
     }
 
     private interface UriFilter {
-        fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>)
-        fun appendValueToKeyInUriParameterMap(parameterMap: MutableMap<String, String>, parameterName: String, additionalValue: String) {
-            if (additionalValue.isNotEmpty()) {
-                val newParameterValueBuilder = StringBuilder()
-                if (parameterMap[parameterName] != null) {
-                    newParameterValueBuilder.append(parameterMap[parameterName] + " ")
-                }
-                newParameterValueBuilder.append(additionalValue)
+        val uriParam: () -> String
+        val shouldAdd: () -> Boolean
+        val getParameter: () -> String
 
-                parameterMap[parameterName] = newParameterValueBuilder.toString()
+        fun addParameter(parameterMap: MutableMap<String, String>) {
+            if (shouldAdd()) {
+                val newParameterValueBuilder = StringBuilder()
+                if (parameterMap[uriParam()] != null) {
+                    newParameterValueBuilder.append(parameterMap[uriParam()] + " ")
+                }
+                newParameterValueBuilder.append(getParameter())
+
+                parameterMap[uriParam()] = newParameterValueBuilder.toString()
             }
         }
     }
-    private open class UriSelectFilter(
+
+    private abstract class UriSelectFilter(
         displayName: String,
-        val uriParam: String,
+        override val uriParam: () -> String,
         val vals: Array<Pair<String, String>>,
-        val firstIsUnspecified: Boolean = true,
-        defaultValue: Int = 0
+        val defaultValue: Int = 0
     ) :
         Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray(), defaultValue), UriFilter {
 
-        // If not otherwise specified, any new parameter will overwrite any existing parameter in the parameter map
-        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
-            if (state != 0 || !firstIsUnspecified) {
-                parameterMap[uriParam] = vals[state].first
-            }
-        }
+        override val shouldAdd = fun() =
+            this.state != defaultValue
+
+        override val getParameter = fun() = vals[state].first
     }
 
     private class StatusFilter : UriSelectFilter(
         "Status",
-        "status",
+        fun() = "status",
         arrayOf(
             Pair("", "All"),
             Pair("completed", "Completed"),
@@ -319,7 +408,7 @@ class MangaMutiny : HttpSource() {
 
     private class CategoryFilter : UriSelectFilter(
         "Category",
-        "tags",
+        fun() = "tags",
         arrayOf(
             Pair("", "All"),
             Pair("josei", "Josei"),
@@ -327,141 +416,159 @@ class MangaMutiny : HttpSource() {
             Pair("shoujo", "Shoujo"),
             Pair("shounen", "Shounen")
         )
-    ) {
-        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) =
-            appendValueToKeyInUriParameterMap(parameterMap, uriParam, vals[state].first)
-    }
+    )
 
     // A single filter: either a genre or a format filter
-    private class GenreFilter(val uriParam: String, displayName: String) : Filter.CheckBox(displayName)
+    private class GenreOrFormatFilter(val uriParam: String, displayName: String) :
+        Filter.CheckBox(displayName)
 
     // A collection of genre or format filters
-    private abstract class GenreFilterList(name: String, elementList: List<GenreFilter>) : Filter.Group<GenreFilter>(name, elementList), UriFilter {
-        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
-            val genresParameterValue = state.filter { it.state }.joinToString(" ") { it.uriParam }
-            if (genresParameterValue.isNotEmpty()) {
-                appendValueToKeyInUriParameterMap(parameterMap, "tags", genresParameterValue)
-            }
-        }
+    private abstract class GenreOrFormatFilterList(name: String, specificUriParam: String, elementList: List<GenreOrFormatFilter>) : Filter.Group<GenreOrFormatFilter>(name, elementList), UriFilter {
+
+        override val shouldAdd = fun() = state.any { it.state }
+
+        override val getParameter = fun() =
+            state.filter { it.state }.joinToString(" ") { it.uriParam }
+
+        override val uriParam = fun() = if (isForWebView()) specificUriParam else "tags"
     }
-    // Actual genere filter list
-    private class GenresFilter : GenreFilterList(
+
+    // Generes filter list
+    private class GenresFilter : GenreOrFormatFilterList(
         "Genres",
+        "genres",
         listOf(
-            GenreFilter("action", "action"),
-            GenreFilter("adult", "adult"),
-            GenreFilter("adventure", "adventure"),
-            GenreFilter("aliens", "aliens"),
-            GenreFilter("animals", "animals"),
-            GenreFilter("comedy", "comedy"),
-            GenreFilter("cooking", "cooking"),
-            GenreFilter("crossdressing", "crossdressing"),
-            GenreFilter("delinquents", "delinquents"),
-            GenreFilter("demons", "demons"),
-            GenreFilter("drama", "drama"),
-            GenreFilter("ecchi", "ecchi"),
-            GenreFilter("fantasy", "fantasy"),
-            GenreFilter("gender_bender", "gender bender"),
-            GenreFilter("genderswap", "genderswap"),
-            GenreFilter("ghosts", "ghosts"),
-            GenreFilter("gore", "gore"),
-            GenreFilter("gyaru", "gyaru"),
-            GenreFilter("harem", "harem"),
-            GenreFilter("historical", "historical"),
-            GenreFilter("horror", "horror"),
-            GenreFilter("incest", "incest"),
-            GenreFilter("isekai", "isekai"),
-            GenreFilter("loli", "loli"),
-            GenreFilter("magic", "magic"),
-            GenreFilter("magical_girls", "magical girls"),
-            GenreFilter("mangamutiny", "mangamutiny"),
-            GenreFilter("martial_arts", "martial arts"),
-            GenreFilter("mature", "mature"),
-            GenreFilter("mecha", "mecha"),
-            GenreFilter("medical", "medical"),
-            GenreFilter("military", "military"),
-            GenreFilter("monster_girls", "monster girls"),
-            GenreFilter("monsters", "monsters"),
-            GenreFilter("mystery", "mystery"),
-            GenreFilter("ninja", "ninja"),
-            GenreFilter("office_workers", "office workers"),
-            GenreFilter("philosophical", "philosophical"),
-            GenreFilter("psychological", "psychological"),
-            GenreFilter("reincarnation", "reincarnation"),
-            GenreFilter("reverse_harem", "reverse harem"),
-            GenreFilter("romance", "romance"),
-            GenreFilter("school_life", "school life"),
-            GenreFilter("sci_fi", "sci fi"),
-            GenreFilter("sci-fi", "sci-fi"),
-            GenreFilter("sexual_violence", "sexual violence"),
-            GenreFilter("shota", "shota"),
-            GenreFilter("shoujo_ai", "shoujo ai"),
-            GenreFilter("shounen_ai", "shounen ai"),
-            GenreFilter("slice_of_life", "slice of life"),
-            GenreFilter("smut", "smut"),
-            GenreFilter("sports", "sports"),
-            GenreFilter("superhero", "superhero"),
-            GenreFilter("supernatural", "supernatural"),
-            GenreFilter("survival", "survival"),
-            GenreFilter("time_travel", "time travel"),
-            GenreFilter("tragedy", "tragedy"),
-            GenreFilter("video_games", "video games"),
-            GenreFilter("virtual_reality", "virtual reality"),
-            GenreFilter("webtoons", "webtoons"),
-            GenreFilter("wuxia", "wuxia"),
-            GenreFilter("zombies", "zombies")
+            GenreOrFormatFilter("action", "action"),
+            GenreOrFormatFilter("adult", "adult"),
+            GenreOrFormatFilter("adventure", "adventure"),
+            GenreOrFormatFilter("aliens", "aliens"),
+            GenreOrFormatFilter("animals", "animals"),
+            GenreOrFormatFilter("comedy", "comedy"),
+            GenreOrFormatFilter("cooking", "cooking"),
+            GenreOrFormatFilter("crossdressing", "crossdressing"),
+            GenreOrFormatFilter("delinquents", "delinquents"),
+            GenreOrFormatFilter("demons", "demons"),
+            GenreOrFormatFilter("drama", "drama"),
+            GenreOrFormatFilter("ecchi", "ecchi"),
+            GenreOrFormatFilter("fantasy", "fantasy"),
+            GenreOrFormatFilter("gender_bender", "gender bender"),
+            GenreOrFormatFilter("genderswap", "genderswap"),
+            GenreOrFormatFilter("ghosts", "ghosts"),
+            GenreOrFormatFilter("gore", "gore"),
+            GenreOrFormatFilter("gyaru", "gyaru"),
+            GenreOrFormatFilter("harem", "harem"),
+            GenreOrFormatFilter("historical", "historical"),
+            GenreOrFormatFilter("horror", "horror"),
+            GenreOrFormatFilter("incest", "incest"),
+            GenreOrFormatFilter("isekai", "isekai"),
+            GenreOrFormatFilter("loli", "loli"),
+            GenreOrFormatFilter("magic", "magic"),
+            GenreOrFormatFilter("magical_girls", "magical girls"),
+            GenreOrFormatFilter("mangamutiny", "mangamutiny"),
+            GenreOrFormatFilter("martial_arts", "martial arts"),
+            GenreOrFormatFilter("mature", "mature"),
+            GenreOrFormatFilter("mecha", "mecha"),
+            GenreOrFormatFilter("medical", "medical"),
+            GenreOrFormatFilter("military", "military"),
+            GenreOrFormatFilter("monster_girls", "monster girls"),
+            GenreOrFormatFilter("monsters", "monsters"),
+            GenreOrFormatFilter("mystery", "mystery"),
+            GenreOrFormatFilter("ninja", "ninja"),
+            GenreOrFormatFilter("office_workers", "office workers"),
+            GenreOrFormatFilter("philosophical", "philosophical"),
+            GenreOrFormatFilter("psychological", "psychological"),
+            GenreOrFormatFilter("reincarnation", "reincarnation"),
+            GenreOrFormatFilter("reverse_harem", "reverse harem"),
+            GenreOrFormatFilter("romance", "romance"),
+            GenreOrFormatFilter("school_life", "school life"),
+            GenreOrFormatFilter("sci_fi", "sci fi"),
+            GenreOrFormatFilter("sci-fi", "sci-fi"),
+            GenreOrFormatFilter("sexual_violence", "sexual violence"),
+            GenreOrFormatFilter("shota", "shota"),
+            GenreOrFormatFilter("shoujo_ai", "shoujo ai"),
+            GenreOrFormatFilter("shounen_ai", "shounen ai"),
+            GenreOrFormatFilter("slice_of_life", "slice of life"),
+            GenreOrFormatFilter("smut", "smut"),
+            GenreOrFormatFilter("sports", "sports"),
+            GenreOrFormatFilter("superhero", "superhero"),
+            GenreOrFormatFilter("supernatural", "supernatural"),
+            GenreOrFormatFilter("survival", "survival"),
+            GenreOrFormatFilter("time_travel", "time travel"),
+            GenreOrFormatFilter("tragedy", "tragedy"),
+            GenreOrFormatFilter("video_games", "video games"),
+            GenreOrFormatFilter("virtual_reality", "virtual reality"),
+            GenreOrFormatFilter("webtoons", "webtoons"),
+            GenreOrFormatFilter("wuxia", "wuxia"),
+            GenreOrFormatFilter("zombies", "zombies")
         )
     )
 
     // Actual format filter List
-    private class FormatsFilter : GenreFilterList(
+    private class FormatsFilter : GenreOrFormatFilterList(
         "Formats",
+        "formats",
         listOf(
-            GenreFilter("4-koma", "4-koma"),
-            GenreFilter("adaptation", "adaptation"),
-            GenreFilter("anthology", "anthology"),
-            GenreFilter("award_winning", "award winning"),
-            GenreFilter("doujinshi", "doujinshi"),
-            GenreFilter("fan_colored", "fan colored"),
-            GenreFilter("full_color", "full color"),
-            GenreFilter("long_strip", "long strip"),
-            GenreFilter("official_colored", "official colored"),
-            GenreFilter("oneshot", "oneshot"),
-            GenreFilter("web_comic", "web comic")
-        )
+            GenreOrFormatFilter("4-koma", "4-koma"),
+            GenreOrFormatFilter("adaptation", "adaptation"),
+            GenreOrFormatFilter("anthology", "anthology"),
+            GenreOrFormatFilter("award_winning", "award winning"),
+            GenreOrFormatFilter("doujinshi", "doujinshi"),
+            GenreOrFormatFilter("fan_colored", "fan colored"),
+            GenreOrFormatFilter("full_color", "full color"),
+            GenreOrFormatFilter("long_strip", "long strip"),
+            GenreOrFormatFilter("official_colored", "official colored"),
+            GenreOrFormatFilter("oneshot", "oneshot"),
+            GenreOrFormatFilter("web_comic", "web comic")
+        ),
+
     )
 
     private class SortFilter : UriSelectFilter(
         "Sort",
-        "sort",
+        fun() = "sort",
         arrayOf(
-            Pair("-rating -ratingCount", "Popular"),
+            Pair("title", "Name"),
             Pair("-lastReleasedAt", "Last update"),
             Pair("-createdAt", "Newest"),
-            Pair("title", "Name")
+            Pair("-rating -ratingCount", "Popular")
         ),
-        firstIsUnspecified = false,
-        defaultValue = 0
-    )
+        defaultValue = 3
+    ) {
+        override val shouldAdd = fun() = if (isForWebView()) state != defaultValue else true
 
-    private class AuthorFilter : Filter.Text("Manga Author & Artist"), UriFilter {
-        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
-            if (state.isNotEmpty()) {
-                parameterMap["creator"] = state
+        override val getParameter = fun(): String {
+            return if (isForWebView()) {
+                this.state.toString()
+            } else {
+                this.vals[this.state].first
             }
         }
     }
 
-    /**The scanlator filter exists on the mangamutiny website website, however it doesn't work.
+    private class AuthorFilter : Filter.Text("Manga Author & Artist"), UriFilter {
+        override val uriParam = fun() = "creator"
+
+        override val shouldAdd = fun() = state.isNotEmpty()
+
+        override val getParameter = fun(): String = state
+    }
+
+    /**The scanlator filter exists on the mangamutiny website, however it doesn't work.
      This should stay disabled in the extension until it's properly implemented on the website,
      otherwise users may be confused by searches that return no results.**/
     /*
     private class ScanlatorFilter : Filter.Text("Scanlator Name"), UriFilter {
-        override fun potentiallyAddToUriParameterMap(parameterMap: MutableMap<String, String>) {
-            if (state.isNotEmpty()) {
-                parameterMap["scanlator"] = state
-            }
-        }
+        override val uriParam = fun() = "scanlator"
+
+        override val shouldAdd = fun() = state.isNotEmpty()
+
+        override val getParameter = fun(): String = state
     }
      */
 }
+
+private fun isForWebView(): Boolean =
+    Thread.currentThread().stackTrace.map { it.methodName }
+        .firstOrNull {
+            it.contains("WebView", true) && !it.contains("isForWebView")
+        } != null

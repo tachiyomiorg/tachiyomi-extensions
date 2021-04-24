@@ -14,14 +14,10 @@ import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.os.Build
 import android.support.v7.preference.EditTextPreference
 import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
-import android.util.Base64
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -53,10 +49,11 @@ import org.jsoup.Jsoup
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 class Remanga : ConfigurableSource, HttpSource() {
     override val name = "Remanga"
@@ -69,10 +66,11 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private var token: String = ""
 
-    override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
-        add("Referer", baseUrl)
-    }
+    protected open val userAgentRandomizer = " ${Random.nextInt().absoluteValue}"
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/78.0$userAgentRandomizer")
+        .add("Referer", "https://www.google.com")
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -134,9 +132,12 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     private fun LibraryDto.toSManga(): SManga =
         SManga.create().apply {
+            // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
-            thumbnail_url = "$baseUrl/${img.high}"
+            thumbnail_url = if (img.high.isNotEmpty()) {
+                "$baseUrl/${img.high}"
+            } else "$baseUrl/${img.mid}"
         }
 
     private val simpleDateFormat by lazy { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US) }
@@ -210,18 +211,27 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun MangaDetDto.toSManga(): SManga {
         val o = this
         return SManga.create().apply {
+            // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = Jsoup.parse(o.description).text()
+            this.description = "Русское название: " + rus_name + "\n" + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name }
             status = parseStatus(o.status.id)
         }
     }
+    private fun titleDetailsRequest(manga: SManga): Request {
+        val titleId = manga.url
 
+        val newHeaders = headersBuilder().build()
+
+        return GET("$baseUrl/$titleId", newHeaders)
+    }
+
+    // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         var warnLogin = false
-        return client.newCall(mangaDetailsRequest(manga))
+        return client.newCall(titleDetailsRequest(manga))
             .asObservable().doOnNext { response ->
                 if (!response.isSuccessful) {
                     response.close()
@@ -235,7 +245,9 @@ class Remanga : ConfigurableSource, HttpSource() {
                     }
             }
     }
-
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET(baseUrl.replace("api.", "") + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
+    }
     override fun mangaDetailsParse(response: Response): SManga {
         val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
         branches[series.content.en_name] = series.content.branches
@@ -281,8 +293,7 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     @SuppressLint("DefaultLocale")
     private fun chapterName(book: BookDto): String {
-        val chapterId: Any = if (book.chapter % 1 == 0f) book.chapter.toInt() else book.chapter
-        var chapterName = "${book.tome}. Глава $chapterId"
+        var chapterName = "${book.tome}. Глава ${book.chapter}"
         if (book.name.isNotBlank()) {
             chapterName += " ${book.name.capitalize()}"
         }
@@ -293,7 +304,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
         return chapters.content.filter { !it.is_paid or it.is_bought }.map { chapter ->
             SChapter.create().apply {
-                chapter_number = chapter.chapter
+                chapter_number = chapter.chapter.split(".").take(2).joinToString(".").toFloat()
                 name = chapterName(chapter)
                 url = "/api/titles/chapters/${chapter.id}"
                 date_upload = parseDate(chapter.upload_date)
@@ -309,58 +320,29 @@ class Remanga : ConfigurableSource, HttpSource() {
         val body = response.body()?.string()!!
         return try {
             val page = gson.fromJson<SeriesWrapperDto<PageDto>>(body)
-
-            page.content.pages.map {
+            page.content.pages.filter { it.height > 1 }.map {
                 Page(it.page, "", it.link)
             }
         } catch (e: JsonSyntaxException) {
             val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
-            page.content.pages.mapIndexed { i, element ->
-                Page(i, element.joinToString { it.link })
+            val result = mutableListOf<Page>()
+            page.content.pages.forEach {
+                it.filter { page -> page.height > 1 }.forEach { page ->
+                    result.add(Page(result.size, "", page.link))
+                }
             }
+            return result
         }
     }
 
-    override fun fetchImageUrl(page: Page): Observable<String> {
-        val urls = page.url.split(", ")
-        val res = this.combineImage(urls)
-        return Observable.just("https://127.0.0.1/?imagebase64,$res")
-    }
+    override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
 
     override fun imageUrlRequest(page: Page): Request = throw NotImplementedError("Unused")
 
     override fun imageUrlParse(response: Response): String = throw NotImplementedError("Unused")
 
-    private fun combineImage(pages: List<String>): String {
-        val refererHeaders = Headers.Builder().apply {
-            add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
-            add("Referer", "https://img.remanga.org")
-        }.build()
-        val s = client.newCall(GET(pages[0], refererHeaders)).execute().body()!!.bytes()
-        val b = BitmapFactory.decodeByteArray(s, 0, s.size)
-
-        val cs = Bitmap.createBitmap(b.width, b.height * pages.size, Bitmap.Config.ARGB_8888)
-        val comboImage = Canvas(cs)
-        var totalHeight = b.height
-        comboImage.drawBitmap(b, 0f, 0f, null)
-        for (i in 1 until pages.size) {
-            val bytes = client.newCall(GET(pages[i], refererHeaders)).execute().body()!!.bytes()
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            comboImage.drawBitmap(bitmap, 0f, (b.height * i).toFloat(), null)
-            totalHeight += bitmap.getHeight()
-        }
-        cs.reconfigure(cs.getWidth(), totalHeight, cs.getConfig())
-
-        val output = ByteArrayOutputStream()
-        cs.compress(Bitmap.CompressFormat.JPEG, 100, output)
-        return Base64.encodeToString(output.toByteArray(), Base64.DEFAULT)
-    }
-
     override fun imageRequest(page: Page): Request {
-        val refererHeaders = Headers.Builder().apply {
-            add("User-Agent", "Tachiyomi" + System.getProperty("http.agent"))
-            add("Referer", "https://img.remanga.org")
-        }.build()
+        val refererHeaders = headersBuilder().build()
         return GET(page.imageUrl!!, refererHeaders)
     }
 

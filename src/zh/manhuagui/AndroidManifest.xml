@@ -29,6 +29,22 @@
                     android:host="tw.manhuagui.com"
                     android:pathPattern="/comic/..*"
                     android:scheme="https" />
+                <data
+                    android:host="mhgui.com"
+                    android:pathPattern="/comic/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="m.mhgui.com"
+                    android:pathPattern="/comic/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="www.mhgui.com"
+                    android:pathPattern="/comic/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="tw.mhgui.com"
+                    android:pathPattern="/comic/..*"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>

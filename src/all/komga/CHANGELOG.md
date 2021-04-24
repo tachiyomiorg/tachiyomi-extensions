@@ -1,3 +1,45 @@
+## 1.2.23
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* ignore DNS over HTTPS so it can reach IP addresses
+
+## 1.2.22
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* add error logs and better catch exceptions
+
+## 1.2.21
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* browse read lists (from the filter menu)
+* filter by collection, respecting the collection's ordering
+
+## 1.2.20
+
+Minimum Komga version required: `0.75.0`
+
+### Features
+
+* filter by authors, grouped by role
+
+## 1.2.19
+
+Minimum Komga version required: `0.68.0`
+
+### Features
+
+* display Series authors
+* display Series summary from books if no summary exists for Series
+
 ## 1.2.18
 
 Minimum Komga version required: `0.63.2`

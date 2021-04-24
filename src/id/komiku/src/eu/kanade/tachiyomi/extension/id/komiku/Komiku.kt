@@ -79,7 +79,7 @@ class Komiku : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/cari/page/$page/")?.newBuilder()!!.addQueryParameter("s", query)
+        val url = HttpUrl.parse("$baseUrl/pustaka/page/$page/")?.newBuilder()!!.addQueryParameter("s", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is CategoryNames -> {
@@ -231,6 +231,14 @@ class Komiku : ParsedHttpSource() {
         genre = document.select("li[itemprop=genre] > a").joinToString { it.text() }
         status = parseStatus(document.select("table.inftable tr > td:contains(Status) + td").text())
         thumbnail_url = document.select("div.ims > img").attr("abs:src")
+
+        // add series type(manga/manhwa/manhua/other) thinggy to genre
+        val seriesTypeSelector = "table.inftable tr:contains(Jenis) a, table.inftable tr:has(a[href*=category\\/]) a, a[href*=category\\/]"
+        document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
+            if (it.isEmpty().not() && genre!!.contains(it, true).not()) {
+                genre += if (genre!!.isEmpty()) it else ", $it"
+            }
+        }
     }
 
     private fun parseStatus(status: String) = when {
@@ -244,7 +252,7 @@ class Komiku : ParsedHttpSource() {
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.select("a").attr("href"))
-        name = element.select("a").attr("title")
+        name = element.select("a").text()
 
         val timeStamp = element.select("td.tanggalseries")
         if (timeStamp.text().contains("lalu")) {

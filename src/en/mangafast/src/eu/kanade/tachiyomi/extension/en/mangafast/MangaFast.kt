@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
@@ -21,43 +22,61 @@ class MangaFast : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/list-manga/", headers)
+    // popular
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/list-manga" + if (page > 1) "/page/$page" else "", headers)
+    }
 
-    override fun popularMangaSelector() = "li.ranking1"
+    override fun popularMangaSelector() = ".list-content .ls4 .ls4v"
 
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a").attr("href"))
-        title = element.select("h4").text().trim()
-        thumbnail_url = element.select("img").attr("abs:data-src").substringBeforeLast("resize")
+        val a = element.select("a")
+        setUrlWithoutDomain(a.attr("href"))
+        title = a.attr("title")
+        thumbnail_url = a.select("img").attr("src")
     }
 
-    override fun popularMangaNextPageSelector(): String? = null
+    override fun popularMangaNextPageSelector() = ".btn-w a:contains(Next »)"
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/read/page/$page", headers)
+    // latest
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
-    override fun latestUpdatesSelector() = "div.ls5"
+    override fun latestUpdatesSelector() = ".ls8w div.ls8 .ls8v"
 
-    override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
-        setUrlWithoutDomain(element.select("a").attr("href"))
-        title = element.select("h3").text().trim()
-        thumbnail_url = element.select("img").attr("abs:data-src").substringBeforeLast("resize")
-    }
+    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = "a.next"
+    override fun latestUpdatesNextPageSelector(): String? = null
 
+    // search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/page/$page/?s=$query", headers)
 
-    override fun searchMangaSelector() = latestUpdatesSelector()
+    override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaFromElement(element: Element) = latestUpdatesFromElement(element)
+    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select("td[itemprop=creator]").text().trim()
-        status = parseStatus(document.select(".inftable").text())
-        genre = document.select("a[itemprop=genre]").joinToString { it.text() }
-        description = document.select("[itemprop=description]").first().text().trim()
+    // manga details
+    override fun mangaDetailsParse(document: Document): SManga {
+        val articleTitle = document.select("article header[id=article-title]")
+        val articleInfo = document.select("article section[id=article-info]")
+
+        val manga = SManga.create().apply {
+            title = articleTitle.select("h1[itemprop=name]").text().trim()
+            description = articleTitle.select("p.desc").text().trim()
+            thumbnail_url = articleInfo.select("img.shadow").attr("src")
+        }
+        articleInfo.select("table.inftable tbody tr").forEach {
+            val row = it.select("td")
+            when (row[0].text()) {
+                "Comic Title" -> manga.title = row[1].text().trim()
+                "Genre" -> manga.genre = row[1].text().trim().removeSuffix(",")
+                "Author" -> manga.author = row[1].text().trim()
+                "Status" -> manga.status = parseStatus(row[1].text())
+            }
+        }
+
+        return manga
     }
 
     private fun parseStatus(status: String) = when {
@@ -66,12 +85,13 @@ class MangaFast : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "tr:has(td.tgs:matches(\\d{4}-\\d{2}-\\d{2}))"
+    // chapter list
+    override fun chapterListSelector() = ".chapter-link:not([title=\"Spoiler Manga\"])"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
-        setUrlWithoutDomain(element.select("a").attr("href"))
-        name = element.select("a").attr("title")
-        date_upload = parseDate(element.select("td.tgs").text())
+        setUrlWithoutDomain(element.attr("href"))
+        name = element.select(".left").text()
+        date_upload = parseDate(element.select(".right").text())
     }
 
     private fun parseDate(text: String): Long {
@@ -88,8 +108,9 @@ class MangaFast : ParsedHttpSource() {
         }
     }
 
+    // pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select("div.chp2 > img").mapIndexed { i, element ->
+        return document.select(".content-comic > img").mapIndexed { i, element ->
             var url = element.attr("abs:data-src")
 
             if (url.isEmpty()) {

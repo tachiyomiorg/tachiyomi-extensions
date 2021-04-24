@@ -135,11 +135,11 @@ class VizShonenJump : ParsedHttpSource() {
         val mangaFromList = mangaList!!.firstOrNull { it.url == mangaUrl }
 
         return SManga.create().apply {
-            author = seriesIntro.select("div.type-rg span").first()?.text()
+            author = seriesIntro.select("div.type-rg span").firstOrNull()?.text()
                 ?.replace("Created by ", "")
             artist = author
             status = SManga.ONGOING
-            description = seriesIntro.select("h4").first().text()
+            description = seriesIntro.select("h4").firstOrNull()?.text()
             thumbnail_url = mangaFromList?.thumbnail_url ?: ""
         }
     }
@@ -192,8 +192,12 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
+        val mangaUrl = chapter.url
+            .substringBefore("-chapter")
+            .replace("jump/", "jump/chapters/")
+
         val newHeaders = headersBuilder()
-            .set("Referer", baseUrl + chapter.url.substringBefore("-chapter"))
+            .set("Referer", baseUrl + mangaUrl)
             .build()
 
         return GET(baseUrl + chapter.url, newHeaders)

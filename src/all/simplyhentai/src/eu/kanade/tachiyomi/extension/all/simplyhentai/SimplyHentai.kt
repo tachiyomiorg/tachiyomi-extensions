@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.simplyhentai
 
+import android.annotation.SuppressLint
 import com.github.salomonbrys.kotson.forEach
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -13,12 +14,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
 
 abstract class SimplyHentai(
     override val lang: String,
@@ -119,6 +122,7 @@ abstract class SimplyHentai(
             manga.description += info.select("div.link-box > div.box-title:contains(Characters) ~ a").let { e ->
                 if (e.text().isNotEmpty()) ("Characters: ${e.joinToString { it.text() }}\n\n") else ""
             }
+            manga.status = SManga.COMPLETED
         }
         manga.thumbnail_url = document.select("div.col-xs-12 img.img-responsive").attr("abs:data-src")
 
@@ -128,11 +132,17 @@ abstract class SimplyHentai(
     // Chapters
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapter = SChapter.create().apply {
-            name = "Chapter"
-            url = response.request().url().toString().removeSuffix("/").substringAfterLast("/")
-        }
-        return listOf(chapter)
+        return listOf(
+            SChapter.create().apply {
+                name = "Chapter"
+                url = response.request().url().toString().removeSuffix("/").substringAfterLast("/")
+                chapter_number = 1f
+
+                date_upload = response.asJsoup().select(".stat-container div:contains(Uploaded) div.bold")?.text().let {
+                    DATE_FORMAT.parse(it!!)?.time
+                } ?: 0L
+            }
+        )
     }
 
     override fun chapterListSelector() = "not used"
@@ -199,4 +209,10 @@ abstract class SimplyHentai(
         SearchPair("Granblue Fantasy", "2041"),
         SearchPair("Girls Und Panzer", "1324")
     )
+
+    companion object {
+
+        @SuppressLint("SimpleDateFormat")
+        private val DATE_FORMAT = SimpleDateFormat("dd.MM.yyyy")
+    }
 }

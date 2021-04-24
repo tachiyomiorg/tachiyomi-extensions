@@ -180,7 +180,7 @@ class Bacakomik : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         var i = 0
-        document.select("div#chimg noscript img").forEach { element ->
+        document.select("div.imgch-auh img").forEach { element ->
             val url = element.attr("src")
             i++
             if (url.isNotEmpty()) {

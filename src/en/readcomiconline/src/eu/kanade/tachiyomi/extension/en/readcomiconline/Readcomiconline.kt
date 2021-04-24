@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -28,13 +29,17 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "ReadComicOnline"
 
-    override val baseUrl = "https://readcomiconline.to"
+    override val baseUrl = "https://readcomiconline.li"
 
     override val lang = "en"
 
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder() = Headers.Builder().apply {
+        add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+    }
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -144,7 +149,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
-    // on https://readcomiconline.to/AdvanceSearch
+    // on https://readcomiconline.li/AdvanceSearch
     private fun getGenreList() = listOf(
         Genre("Action"),
         Genre("Adventure"),
@@ -169,6 +174,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         Genre("Mature"),
         Genre("Military"),
         Genre("Movies & TV"),
+        Genre("Music"),
         Genre("Mystery"),
         Genre("Mythology"),
         Genre("Personal"),
@@ -182,6 +188,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         Genre("School Life"),
         Genre("Sci-Fi"),
         Genre("Slice of Life"),
+        Genre("Sport"),
         Genre("Spy"),
         Genre("Superhero"),
         Genre("Supernatural"),

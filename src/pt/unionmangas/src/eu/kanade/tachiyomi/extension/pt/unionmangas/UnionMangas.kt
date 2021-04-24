@@ -1,10 +1,13 @@
 package eu.kanade.tachiyomi.extension.pt.unionmangas
 
 import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.nullObj
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -39,18 +42,17 @@ class UnionMangas : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    // Sometimes the site is very slow.
-    override val client: OkHttpClient =
-        network.cloudflareClient.newBuilder()
-            .connectTimeout(3, TimeUnit.MINUTES)
-            .readTimeout(3, TimeUnit.MINUTES)
-            .writeTimeout(3, TimeUnit.MINUTES)
-            .build()
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(3, TimeUnit.MINUTES)
+        .readTimeout(3, TimeUnit.MINUTES)
+        .writeTimeout(3, TimeUnit.MINUTES)
+        .addInterceptor(RateLimitInterceptor(1, 2, TimeUnit.SECONDS))
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
-        .add("Origin", baseUrl)
-        .add("Referer", baseUrl)
+        .add("Accept", ACCEPT)
+        .add("Accept-Language", ACCEPT_LANGUAGE)
+        .add("Referer", "$baseUrl/home")
 
     override fun popularMangaRequest(page: Int): Request {
         val listPath = if (page == 1) "" else "/visualizacoes/${page - 1}"
@@ -62,7 +64,17 @@ class UnionMangas : ParsedHttpSource() {
         return GET("$baseUrl/lista-mangas/visualizacoes$pageStr", newHeaders)
     }
 
-    override fun popularMangaSelector(): String = "div.bloco-manga"
+    override fun popularMangaParse(response: Response): MangasPage {
+        val results = super.popularMangaParse(response)
+
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return results
+    }
+
+    override fun popularMangaSelector(): String = "div.col-md-3.col-xs-6:has(img.img-thumbnail)"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div[id^=bloco-tooltip] > b").first().text().withoutLanguage()
@@ -80,10 +92,22 @@ class UnionMangas : ParsedHttpSource() {
         val newHeaders = headersBuilder()
             .add("Content-Type", form.contentType().toString())
             .add("Content-Length", form.contentLength().toString())
+            .add("Origin", baseUrl)
             .add("X-Requested-With", "XMLHttpRequest")
+            .set("Accept", "*/*")
             .build()
 
         return POST("$baseUrl/assets/noticias.php", newHeaders, form)
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val results = super.latestUpdatesParse(response)
+
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return results
     }
 
     override fun latestUpdatesSelector() = "div.row[style] div.col-md-12[style]"
@@ -101,16 +125,16 @@ class UnionMangas : ParsedHttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.startsWith(PREFIX_SLUG_SEARCH)) {
             val slug = query.removePrefix(PREFIX_SLUG_SEARCH)
-            return GET("$baseUrl/perfil-manga/$slug", headers)
+            return GET("$baseUrl/pagina-manga/$slug", headers)
         }
 
         val newHeaders = headersBuilder()
-            .add("Accept", "application/json, text/javascript, */*; q=0.01")
+            .set("Accept", ACCEPT_JSON)
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 
         val url = HttpUrl.parse("$baseUrl/assets/busca.php")!!.newBuilder()
-            .addQueryParameter("q", query)
+            .addQueryParameter("titulo", query)
 
         return GET(url.toString(), newHeaders)
     }
@@ -118,14 +142,15 @@ class UnionMangas : ParsedHttpSource() {
     override fun searchMangaParse(response: Response): MangasPage {
         val requestUrl = response.request().url().toString()
 
-        if (requestUrl.contains("perfil-manga")) {
-            val slug = requestUrl.substringAfter("perfil-manga/")
+        if (requestUrl.contains("pagina-manga")) {
+            val slug = requestUrl.substringAfter("pagina-manga/")
             val manga = mangaDetailsParse(response)
-                .apply { url = "/perfil-manga/$slug" }
+                .apply { url = "/pagina-manga/$slug" }
             return MangasPage(listOf(manga), false)
         }
 
-        val result = response.asJsonObject()
+        val result = response.asJson().nullObj
+            ?: throw Exception(BLOCK_MESSAGE)
 
         val mangas = result["items"].array
             .map { searchMangaFromObject(it.obj) }
@@ -136,11 +161,18 @@ class UnionMangas : ParsedHttpSource() {
     private fun searchMangaFromObject(obj: JsonObject): SManga = SManga.create().apply {
         title = obj["titulo"].string.withoutLanguage()
         thumbnail_url = obj["imagem"].string
-        setUrlWithoutDomain("$baseUrl/perfil-manga/${obj["url"].string}")
+        setUrlWithoutDomain("$baseUrl/pagina-manga/${obj["url"].string}")
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        // Map the mangas that are already in library with the old URL to the new one.
+        val newUrl = manga.url.replace("perfil-manga", "pagina-manga")
+        return GET(baseUrl + newUrl, headers)
     }
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
-        val infoElement = document.select("div.tamanho-bloco-perfil").first()
+        val infoElement = document.select("div.perfil-manga").firstOrNull()
+            ?: throw Exception(BLOCK_MESSAGE)
         val rowInfo = infoElement.select("div.row:eq(2)").first()
 
         title = infoElement.select("h2").first().text().withoutLanguage()
@@ -152,11 +184,21 @@ class UnionMangas : ParsedHttpSource() {
         thumbnail_url = infoElement.select(".img-thumbnail").first().attr("src")
     }
 
-    override fun chapterListSelector() = "div.row.lancamento-linha"
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val results = super.chapterListParse(response)
+
+        if (results.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return results
+    }
+
+    override fun chapterListSelector() = "div.row.capitulos"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val firstColumn = element.select("div.col-md-6:eq(0)").first()!!
-        val secondColumn = element.select("div.col-md-6:eq(1)").first()
+        val secondColumn = element.select("div.col-md-6:eq(1)").firstOrNull()
 
         name = firstColumn.select("a").first().text()
         scanlator = secondColumn?.select("a")?.joinToString { it.text() }
@@ -181,6 +223,7 @@ class UnionMangas : ParsedHttpSource() {
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
+            .set("Accept", ACCEPT_IMAGE)
             .set("Referer", page.url)
             .build()
 
@@ -212,11 +255,19 @@ class UnionMangas : ParsedHttpSource() {
 
     private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
+    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
 
     companion object {
+        private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
+            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
+        private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
+
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. " +
+            "Migre para outra fonte caso o problema persistir."
 
         private val JSON_PARSER by lazy { JsonParser() }
 

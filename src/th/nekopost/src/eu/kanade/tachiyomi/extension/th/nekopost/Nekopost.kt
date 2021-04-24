@@ -10,6 +10,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -26,9 +28,15 @@ class Nekopost : ParsedHttpSource() {
     override val baseUrl: String = "https://www.nekopost.net/manga/"
 
     private val mangaListUrl: String = "https://www.nekopost.net/project/ajax_load_update/m/"
-    private val baseFileUrl: String = "https://www.nekopost.net/file_server/"
+    private val baseFileUrl: String = "https://fs.nekopost.net/"
     private val legacyChapterDataUrl: String = "https://www.nekopost.net/reader/loadChapterContent/"
     private val searchUrl: String = "https://www.nekopost.net/search/"
+
+    override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", baseUrl)
+    }
 
     override val lang: String = "th"
     override val name: String = "Nekopost"

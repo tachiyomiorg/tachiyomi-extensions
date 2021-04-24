@@ -47,7 +47,8 @@ class MangaDexFactory : SourceFactory {
         MangaDexLithuanian(),
         MangaDexHebrew(),
         MangaDexHindi(),
-        MangaDexNorwegian()
+        MangaDexNorwegian(),
+        MangaDexOther()
     )
 }
 class MangaDexEnglish : MangaDex("en", "gb")
@@ -91,3 +92,4 @@ class MangaDexLithuanian : MangaDex("lt", "il")
 class MangaDexHebrew : MangaDex("he", "il")
 class MangaDexHindi : MangaDex("hi", "in")
 class MangaDexNorwegian : MangaDex("no", "no")
+class MangaDexOther : MangaDex("other", " ")

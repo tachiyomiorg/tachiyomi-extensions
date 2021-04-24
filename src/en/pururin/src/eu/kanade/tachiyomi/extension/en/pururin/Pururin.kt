@@ -68,52 +68,84 @@ class Pururin : ParsedHttpSource() {
         manga.genre = genres.joinToString(", ")
         manga.thumbnail_url = document.select("div.cover-wrapper v-lazy-image").attr("abs:src")
 
-        var tags = ""
-        genres.forEach { tags += " <$it>" }
-
-        manga.description = "Title: " + manga.title + "\n\n" + getDesc(document) + tags
+        manga.description = getDesc(document)
 
         return manga
     }
 
     private fun getDesc(document: Document): String {
         val infoElement = document.select("div.box.box-gallery")
-        val stringBuilder = StringBuilder()
-        val magazine = infoElement.select("tr:has(td:contains(Convention)) a").text()
-        val parodies = infoElement.select("tr:has(td:contains(Parody)) a").text()
-        val pagess = infoElement.select("tr:has(td:contains(Pages)) td:eq(1)").text()
+        val uploader = infoElement.select("tr:has(td:contains(Uploader)) .user-link")?.text()
+        val pages = infoElement.select("tr:has(td:contains(Pages)) td:eq(1)").text()
+        val ratingCount = infoElement.select("tr:has(td:contains(Ratings)) span[itemprop=\"ratingCount\"]")?.attr("content")
 
-        if (magazine.isNotEmpty()) {
-            stringBuilder.append("Magazine: ")
-            stringBuilder.append(magazine)
-            stringBuilder.append("\n\n")
+        val rating = infoElement.select("tr:has(td:contains(Ratings)) gallery-rating").attr(":rating")?.toFloatOrNull()?.let {
+            if (it > 5.0f) minOf(it, 5.0f) // cap rating to 5.0 for rare cases where value exceeds 5.0f
+            else it
         }
 
-        if (parodies.isNotEmpty()) {
-            stringBuilder.append("Parodies: ")
-            stringBuilder.append(parodies)
-            stringBuilder.append("\n\n")
-        }
+        val multiDescriptions = listOf(
+            "Convention",
+            "Parody",
+            "Circle",
+            "Category",
+            "Character",
+            "Language"
+        ).map { it to infoElement.select("tr:has(td:contains($it)) a").map { v -> v.text() } }
+            .filter { !it.second.isNullOrEmpty() }
+            .map { "${it.first}: ${it.second.joinToString()}" }
 
-        stringBuilder.append("Pages: ")
-        stringBuilder.append(pagess)
-        stringBuilder.append("\n\n")
+        val descriptions = listOf(
+            multiDescriptions.joinToString("\n\n"),
+            uploader?.let { "Uploader: $it" },
+            pages?.let { "Pages: $it" },
+            rating?.let { "Ratings: $it" + (ratingCount?.let { c -> " ($c ratings)" } ?: "") }
+        )
 
-        return stringBuilder.toString()
+        return descriptions.joinToString("\n\n")
     }
 
-    override fun chapterListSelector() = "div.gallery-action a"
+    override fun chapterListParse(response: Response) = with(response.asJsoup()) {
+        val mangaInfoElements = this.select(".table-gallery-info tr td:first-child").map {
+            it.text() to it.nextElementSibling()
+        }.toMap()
 
-    // TODO Make it work for collections
-    override fun chapterFromElement(element: Element): SChapter {
+        val chapters = this.select(".table-collection tbody tr")
+        if (!chapters.isNullOrEmpty())
+            chapters.map {
+                val details = it.select("td")
+                SChapter.create().apply {
+                    chapter_number = details[0].text().removePrefix("#").toFloat()
+                    name = details[1].select("a").text()
+                    setUrlWithoutDomain(details[1].select("a").attr("href"))
 
-        val chapter = SChapter.create()
+                    if (it.hasClass("active") && mangaInfoElements.containsKey("Scanlator"))
+                        scanlator = mangaInfoElements.getValue("Scanlator").select("li a")?.joinToString { s -> s.text() }
+                }
+            }
+        else
+            listOf(
+                SChapter.create().apply {
+                    name = "Chapter"
+                    setUrlWithoutDomain(response.request().url().toString())
 
-        chapter.setUrlWithoutDomain(element.attr("href"))
-        chapter.name = "Read the chapter"
-
-        return chapter
+                    if (mangaInfoElements.containsKey("Scanlator"))
+                        scanlator = mangaInfoElements.getValue("Scanlator").select("li a")?.joinToString { s -> s.text() }
+                }
+            )
     }
+
+    override fun pageListRequest(chapter: SChapter): Request = GET(
+        "$baseUrl${chapter.url.let {
+            it.substringAfterLast("/").let { titleUri ->
+                it.replace(titleUri, "01/$titleUri")
+            }.replace("gallery", "read")
+        }}"
+    )
+
+    override fun chapterListSelector(): String = throw UnsupportedOperationException("Not used")
+
+    override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()

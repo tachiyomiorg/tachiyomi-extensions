@@ -26,6 +26,7 @@ import rx.Single
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Locale
 import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
 import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
 
@@ -162,7 +163,7 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
             client.newCall(GET("$baseUrl/cg/$id", headers)).asObservableSuccess()
                 .map { MangasPage(listOf(mangaDetailsParse(it).apply { url = "/cg/$id" }), false) }
         } else {
-            val splitQuery = query.split(" ")
+            val splitQuery = query.toLowerCase(Locale.ENGLISH).split(" ")
 
             val positive = splitQuery.filter { !it.startsWith('-') }.toMutableList()
             if (nozomiLang != "all") positive += "language:$nozomiLang"
@@ -283,12 +284,17 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
             val path = if (jsonElement["haswebp"].string == "0" || !hitomiAlwaysWebp()) "images" else "webp"
             val hashPath1 = hash.takeLast(1)
             val hashPath2 = hash.takeLast(3).take(2)
-            Page(i, "", "https://${subdomainFromGalleryId(hashPath2)}a.hitomi.la/$path/$hashPath1/$hashPath2/$hash.$ext")
+
+            // https://ltn.hitomi.la/reader.js
+            // function make_image_element()
+            val secondSubdomain = if (jsonElement["haswebp"].string == "0" && jsonElement["hasavif"].string == "0") "b" else "a"
+
+            Page(i, "", "https://${firstSubdomainFromGalleryId(hashPath2)}$secondSubdomain.hitomi.la/$path/$hashPath1/$hashPath2/$hash.$ext")
         }
     }
 
     // https://ltn.hitomi.la/common.js
-    private fun subdomainFromGalleryId(pathSegment: String): Char {
+    private fun firstSubdomainFromGalleryId(pathSegment: String): Char {
         var numberOfFrontends = 3
         var g = pathSegment.toInt(16)
         if (g < 0x30) numberOfFrontends = 2

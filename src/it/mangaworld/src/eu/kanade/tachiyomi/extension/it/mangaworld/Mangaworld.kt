@@ -25,7 +25,7 @@ import java.util.Locale
 class Mangaworld : ParsedHttpSource() {
 
     override val name = "Mangaworld"
-    override val baseUrl = "https://www.mangaworld.cc"
+    override val baseUrl = "https://www.mangaworld.io"
     override val lang = "it"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
@@ -151,8 +151,8 @@ class Mangaworld : ParsedHttpSource() {
         val metaData = document.select("div.comic-info").first()
 
         val manga = SManga.create()
-        manga.author = infoElement.select("a[href^=https://www.mangaworld.cc/archive?author=]").first()?.text()
-        manga.artist = infoElement.select("a[href^=https://www.mangaworld.cc/archive?artist=]")?.text()
+        manga.author = infoElement.select("a[href^=https://www.mangaworld.io/archive?author=]").first()?.text()
+        manga.artist = infoElement.select("a[href^=https://www.mangaworld.io/archive?artist=]")?.text()
 
         val genres = mutableListOf<String>()
         metaData.select("div.meta-data a.badge").forEach { element ->
@@ -160,7 +160,7 @@ class Mangaworld : ParsedHttpSource() {
             genres.add(genre)
         }
         manga.genre = genres.joinToString(", ")
-        manga.status = parseStatus(infoElement.select("a[href^=https://www.mangaworld.cc/archive?status=]").first().attr("href"))
+        manga.status = parseStatus(infoElement.select("a[href^=https://www.mangaworld.io/archive?status=]").first().attr("href"))
 
         manga.description = document.select("div#noidungm")?.text()
         manga.thumbnail_url = document.select(".comic-info .thumb > img").attr("src")

@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Japanread'
+    pkgNameSuffix = 'fr.japanread'
+    extClass = '.Japanread'
+    extVersionCode = 4
+    libVersion = '1.2'
+    containsNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"

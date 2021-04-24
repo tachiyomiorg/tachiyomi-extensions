@@ -16,7 +16,7 @@ class VCPVMPFactory : SourceFactory {
 class VCP : VCPVMP("VCP", "https://vercomicsporno.com")
 
 class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
-    override val pageListSelector = "div.comicimg img:last-child:not([alt^=banner])"
+    override val pageListSelector = "div.comicimg img[src^=$baseUrl]"
 
     // Array.from(document.querySelectorAll('div.tagcloud a.tag-cloud-link'))
     // .map(a => `Pair("${a.innerText}", "${a.href.replace('https://vermangasporno.com/genero/', '')}")`).join(',\n')

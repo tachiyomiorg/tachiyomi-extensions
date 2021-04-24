@@ -43,7 +43,7 @@ class ManhwaManga : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
-            GET("$baseUrl/s?s=$query", headers)
+            GET("$baseUrl/?s=$query", headers)
         } else {
             val url = HttpUrl.parse("$baseUrl/category/")!!.newBuilder()
             filters.forEach { filter ->

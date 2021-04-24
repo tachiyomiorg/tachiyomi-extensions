@@ -29,7 +29,9 @@ class Toonkor : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "Toonkor"
 
-    private val defaultBaseUrl = "https://toonkor.ws"
+    private val defaultBaseUrl = "https://tkor.cx"
+
+    private val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
 
     override val baseUrl by lazy { getPrefBaseUrl() }
 
@@ -241,7 +243,6 @@ class Toonkor : ConfigurableSource, ParsedHttpSource() {
 
     companion object {
         private const val BASE_URL_PREF_TITLE = "Override BaseUrl"
-        private const val BASE_URL_PREF = "overrideBaseUrl_v${BuildConfig.VERSION_NAME}"
         private const val BASE_URL_PREF_SUMMARY = "Override default domain with a different one"
     }
 }

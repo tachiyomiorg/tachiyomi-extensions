@@ -5,7 +5,7 @@ ext {
     extName = 'Toonkor'
     pkgNameSuffix = 'ko.toonkor'
     extClass = '.Toonkor'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

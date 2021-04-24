@@ -4,14 +4,18 @@ import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.ParseException
@@ -25,12 +29,29 @@ class HentaiVN : ParsedHttpSource() {
     override val lang = "vi"
     override val name = "HentaiVN"
     override val supportsLatest = true
-    override val client: OkHttpClient = network.cloudflareClient
+
+    private val searchUrl = "$baseUrl/forum/search-plus.php"
+    private val searchClient = network.cloudflareClient
+
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .cookieJar(CookieJar.NO_COOKIES)
+        .addInterceptor { chain ->
+            val originalRequest = chain.request()
+            when {
+                originalRequest.url().toString().startsWith(searchUrl) -> {
+                    searchClient.newCall(originalRequest).execute()
+                }
+                else -> chain.proceed(originalRequest)
+            }
+        }
+        .build()
+
     override fun headersBuilder(): Headers.Builder = super.headersBuilder().add("Referer", baseUrl)
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH)
 
     override fun chapterFromElement(element: Element): SChapter {
+        if (element.select("a").isEmpty()) throw Exception(element.select("h2").html())
         val chapter = SChapter.create()
         element.select("a").first().let {
             chapter.name = it.select("h2").text()
@@ -58,7 +79,7 @@ class HentaiVN : ParsedHttpSource() {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text().trim()
         }
-        manga.thumbnail_url = element.select("img.img-list").attr("abs:src")
+        manga.thumbnail_url = element.select(".box-cover a img").attr("data-src")
         return manga
     }
 
@@ -76,7 +97,7 @@ class HentaiVN : ParsedHttpSource() {
         manga.author = infoElement.select("p:contains(Tác giả:) a").text()
         manga.description = infoElement.select(":root > p:contains(Nội dung:) + p").text()
         manga.genre = infoElement.select("p:contains(Thể loại:) a").joinToString { it.text() }
-        manga.thumbnail_url = document.select(".main > .page-right > .right-info > .page-ava > img").attr("abs:src")
+        manga.thumbnail_url = document.select(".main > .page-right > .right-info > .page-ava > img").attr("src")
         manga.status = parseStatus(infoElement.select("p:contains(Tình Trạng:) a").firstOrNull()?.text())
         return manga
     }
@@ -107,6 +128,22 @@ class HentaiVN : ParsedHttpSource() {
 
     override fun popularMangaSelector() = latestUpdatesSelector()
 
+    override fun searchMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+        if (document.select("p").toString().contains("Bạn chỉ có thể sử dụng chức năng này khi đã đăng ký thành viên"))
+            throw Exception("Đăng nhập qua WebView để kích hoạt tìm kiếm")
+
+        val mangas = document.select(searchMangaSelector()).map { element ->
+            searchMangaFromElement(element)
+        }
+
+        val hasNextPage = searchMangaNextPageSelector().let { selector ->
+            document.select(selector).first()
+        } != null
+
+        return MangasPage(mangas, hasNextPage)
+    }
+
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select(".search-des > a").first().let {
@@ -120,7 +157,7 @@ class HentaiVN : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = "ul.pagination > li:contains(Cuối)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/forum/search-plus.php?name=$query&page=$page&dou=&char=&group=0&search=")!!.newBuilder()
+        val url = HttpUrl.parse("$searchUrl?name=$query&page=$page&dou=&char=&group=0&search=")!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)
@@ -139,7 +176,7 @@ class HentaiVN : ParsedHttpSource() {
         return GET(url.toString(), headers)
     }
 
-    override fun searchMangaSelector() = "#container .search-li"
+    override fun searchMangaSelector() = ".search-ul .search-li"
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)

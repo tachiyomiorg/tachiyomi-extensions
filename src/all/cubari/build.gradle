@@ -1,0 +1,12 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Cubari'
+    pkgNameSuffix = "all.cubari"
+    extClass = '.CubariFactory'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+apply from: "$rootDir/common.gradle"

@@ -101,8 +101,11 @@ class Gmanga : ConfigurableSource, HttpSource() {
                 SManga.create().apply {
                     url = "/mangas/${it["id"].asString}"
                     title = it["title"].asString
-                    val thumbnail = "medium_${it["cover"].asString.substringBeforeLast(".")}.webp"
-                    thumbnail_url = "https://media.$domain/uploads/manga/cover/${it["id"].asString}/$thumbnail"
+
+                    thumbnail_url = it["cover"].nullString?.let { coverFileName ->
+                        val thumbnail = "medium_${coverFileName.substringBeforeLast(".")}.webp"
+                        "https://media.$domain/uploads/manga/cover/${it["id"].asString}/$thumbnail"
+                    }
                 }
             },
             false

@@ -1,13 +1,15 @@
 name: Issue closer
+
 on:
   issues:
     types: [opened, edited, reopened]
+
 jobs:
   autoclose:
     runs-on: ubuntu-latest
     steps:
       - name: Autoclose issues
-        uses: arkon/issue-closer-action@v2.0
+        uses: arkon/issue-closer-action@v3.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           rules: |

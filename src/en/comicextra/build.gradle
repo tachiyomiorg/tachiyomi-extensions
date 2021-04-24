@@ -5,7 +5,7 @@ ext {
     extName = 'ComicExtra'
     pkgNameSuffix = 'en.comicextra'
     extClass = '.ComicExtra'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
 }
 

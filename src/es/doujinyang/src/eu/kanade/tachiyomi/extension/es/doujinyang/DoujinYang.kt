@@ -24,7 +24,7 @@ import java.util.Locale
 class DoujinYang : ParsedHttpSource() {
 
     override val name = "Doujin-Yang"
-    override val baseUrl = "https://doujin-yang.es"
+    override val baseUrl = "https://doujin-es.com"
     override val lang = "es"
     override val supportsLatest = true
 

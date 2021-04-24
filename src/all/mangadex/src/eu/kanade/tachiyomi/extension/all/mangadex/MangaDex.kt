@@ -71,7 +71,7 @@ abstract class MangaDex(
         MangadexDescription(internalLang)
     }
 
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
+    private val rateLimitInterceptor = MdRateLimitInterceptor()
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(rateLimitInterceptor)
@@ -413,7 +413,7 @@ abstract class MangaDex(
     }
 
     private fun searchMangaByIdRequest(id: String): Request {
-        return GET(API_URL + API_MANGA + id, headers, CacheControl.FORCE_NETWORK)
+        return GET(API_URL + API_MANGA + id + API_MANGA_INCLUDE_CHAPTERS, headers, CacheControl.FORCE_NETWORK)
     }
 
     private fun getMangaId(url: String): String {
@@ -495,7 +495,7 @@ abstract class MangaDex(
     }
 
     private fun getFinalChapter(jsonObj: JsonObject): String =
-        jsonObj.get("last_chapter").nullString?.trim() ?: ""
+        jsonObj.get("lastChapter").nullString?.trim() ?: ""
 
     private fun isOneshot(chapterJson: JsonArray, lastChapter: String): Boolean {
         val chapter =
@@ -1080,6 +1080,17 @@ class CoverInterceptor : Interceptor {
             }
         }
     }
+}
+
+class MdRateLimitInterceptor : Interceptor {
+    private val coverRegex = Regex("""/images/.*\.jpg""")
+    private val baseInterceptor = RateLimitInterceptor(2)
+
+    override fun intercept(chain: Interceptor.Chain): Response =
+        if (chain.request().url().toString().contains(coverRegex))
+            chain.proceed(chain.request())
+        else
+            baseInterceptor.intercept(chain)
 }
 
 class MdAtHomeReportInterceptor(

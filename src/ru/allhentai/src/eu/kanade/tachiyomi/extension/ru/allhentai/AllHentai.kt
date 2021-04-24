@@ -27,7 +27,7 @@ class AllHentai : ParsedHttpSource() {
 
     override val name = "AllHentai"
 
-    override val baseUrl = "http://allhentai.ru"
+    override val baseUrl = "https://allhentai.ru"
 
     override val lang = "ru"
 
@@ -99,7 +99,11 @@ class AllHentai : ParsedHttpSource() {
         }
 
         val manga = SManga.create()
-        manga.author = infoElement.select("span.elem_author").first()?.text()
+        var authorElement = infoElement.select("span.elem_author").first()?.text()
+        if (authorElement == null) {
+            authorElement = infoElement.select("span.elem_screenwriter").first()?.text()
+        }
+        manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
         manga.description = infoElement.select("div.manga-description").text()
@@ -141,6 +145,15 @@ class AllHentai : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href") + "?mtr=1")
 
+        var translators = ""
+        val translatorElement = urlElement.attr("title")
+        if (!translatorElement.isNullOrBlank()) {
+            translators = translatorElement
+                .replace("(Переводчик),", "&")
+                .removeSuffix(" (Переводчик)")
+        }
+        chapter.scanlator = translators
+
         chapter.name = urlText.removeSuffix(" новое").trim()
         if (manga.title.length > 25) {
             for (word in manga.title.split(' ')) {
@@ -154,11 +167,11 @@ class AllHentai : ParsedHttpSource() {
             chapter.name = chapter.name.substringAfter("…").trim()
         }
 
-        chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
+        chapter.date_upload = element.select("td.d-none").last()?.text()?.let {
             try {
-                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it).time
+                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it)?.time ?: 0L
             } catch (e: ParseException) {
-                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
+                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it)?.time ?: 0L
             }
         } ?: 0
         return chapter
@@ -205,6 +218,9 @@ class AllHentai : ParsedHttpSource() {
             } else {
                 if (urlParts[1].endsWith("/manga/")) {
                     urlParts[0] + urlParts[2]
+                } else if (urlParts[1].isEmpty()) {
+                    val imageUrl = urlParts[2].split('?')
+                    "https:" + urlParts[0] + imageUrl[0]
                 } else {
                     urlParts[1] + urlParts[0] + urlParts[2]
                 }
