@@ -198,7 +198,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Rüya Manga", "https://www.ruyamanga.com", "tr", className = "RuyaManga"),
             SingleLang("S2Manga", "https://s2manga.com", "en"),
             SingleLang("SamuraiScan", "https://samuraiscan.com", "es"),
-            SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true),
             SingleLang("Setsu Scans", "https://setsuscans.com", "en"),
             SingleLang("Shield Manga", "https://shieldmanga.club", "en", overrideVersionCode = 2),
             SingleLang("Shinzoo Scan", "https://shinzooscan.xyz", "pt-BR", overrideVersionCode = 1),
