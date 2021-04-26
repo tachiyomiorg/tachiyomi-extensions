@@ -211,6 +211,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("SoloScanlation", "https://soloscanlation.site", "en"),
             SingleLang("Spooky Scanlations", "https://spookyscanlations.xyz", "es"),
             SingleLang("StageComics", "https://stagecomics.com", "pt-BR"),
+            SingleLang("Sugar Babies", "https://sugarbscan.com", "en"),
             SingleLang("TheTopComic", "https://thetopcomic.com", "en"),
             SingleLang("365Manga", "https://365manga.com", "en", className = "ThreeSixtyFiveManga"),
             SingleLang("ToonGod", "https://www.toongod.com", "en"),
