@@ -135,7 +135,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaTX", "https://mangatx.com", "en"),
             SingleLang("Mangauptocats", "https://mangauptocats.online", "th"),
             SingleLang("MangaUS", "https://mangaus.xyz", "en", overrideVersionCode = 1),
-            SingleLang("Manga Weebs", "https://mangaweebs.in", "en"),
+            SingleLang("Manga Weebs", "https://mangaweebs.in", "en", overrideVersionCode = 1),
             SingleLang("MangaWT", "https://mangawt.com", "tr"),
             SingleLang("MangaYaku", "https://mangayaku.my.id", "id"),
             SingleLang("MangaYosh", "https://mangayosh.xyz", "id"),
@@ -148,6 +148,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manhua ES", "https://manhuaes.com", "en", overrideVersionCode = 4),
             SingleLang("ManhuaFast", "https://manhuafast.com", "en"),
             SingleLang("Manhuaga", "https://manhuaga.com", "en", overrideVersionCode = 1),
+            SingleLang("Manhualo", "https://manhualo.com", "en"),
             SingleLang("Manhua Plus", "https://manhuaplus.com", "en", overrideVersionCode = 3),
             SingleLang("Manhuas.net", "https://manhuas.net", "en", className = "Manhuasnet"),
             SingleLang("Manhuas World", "https://manhuasworld.com", "en"),
@@ -197,7 +198,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Rüya Manga", "https://www.ruyamanga.com", "tr", className = "RuyaManga"),
             SingleLang("S2Manga", "https://s2manga.com", "en"),
             SingleLang("SamuraiScan", "https://samuraiscan.com", "es"),
-            SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true),
             SingleLang("Setsu Scans", "https://setsuscans.com", "en"),
             SingleLang("Shield Manga", "https://shieldmanga.club", "en", overrideVersionCode = 2),
             SingleLang("Shinzoo Scan", "https://shinzooscan.xyz", "pt-BR", overrideVersionCode = 1),
@@ -218,7 +218,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Toonily.net", "https://toonily.net", "en", isNsfw = true, className = "ToonilyNet", overrideVersionCode = 1),
             SingleLang("ToonPoint", "https://toonpoint.com", "en"),
             SingleLang("Top Manhua", "https://topmanhua.com", "en"),
-            SingleLang("TritiniaScans", "https://tritinia.com", "en"),
+            SingleLang("TritiniaScans", "https://tritinia.com", "en", overrideVersionCode = 1),
             SingleLang("TruyenTranhAudio.com", "https://truyentranhaudio.com", "vi", className = "TruyenTranhAudioCom"),
             SingleLang("TruyenTranhAudio.online", "https://truyentranhaudio.online", "vi", className = "TruyenTranhAudioOnline"),
             SingleLang("Tsubaki No Scan", "https://tsubakinoscan.com", "fr"),
@@ -261,6 +261,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br", "pt-BR"),
             SingleLang("Wonderland", "https://landwebtoons.site", "pt-BR"),
             SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
+            SingleLang("Wakamics", "https://wakamics.net", "en")
     )
 
     companion object {

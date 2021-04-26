@@ -10,7 +10,7 @@ class LusciousGenerator : ThemeSourceGenerator {
 
     override val themeClass = "Luscious"
 
-    override val baseVersionCode: Int = 2
+    override val baseVersionCode: Int = 4
 
     override val sources = listOf(
         MultiLang("Luscious", "https://www.luscious.net", listOf("en","ja", "es", "it", "de", "fr", "zh", "ko", "other", "pt", "th"), isNsfw = true, className = "LusciousFactory", overrideVersionCode = 2),

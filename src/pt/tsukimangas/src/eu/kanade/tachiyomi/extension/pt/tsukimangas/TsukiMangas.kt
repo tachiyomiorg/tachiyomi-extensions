@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.pt.tsukimangas
 
 import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
@@ -56,7 +57,7 @@ class TsukiMangas : HttpSource() {
     override fun popularMangaParse(response: Response): MangasPage {
         val result = response.asJson().obj
 
-        val popularMangas = result["slides"].array
+        val popularMangas = result["topviewsmonth"].array
             .map { popularMangaItemParse(it.obj) }
 
         return MangasPage(popularMangas, false)
@@ -236,7 +237,8 @@ class TsukiMangas : HttpSource() {
         val result = response.asJson().obj
 
         return result["pages"].array.mapIndexed { i, page ->
-            val cdnUrl = "https://cdn${page.obj["server"].string}.tsukimangas.com"
+            val server = page["server"].string
+            val cdnUrl = "https://cdn$server.tsukimangas.com"
             Page(i, "$baseUrl/", cdnUrl + page.obj["url"].string)
         }
     }
