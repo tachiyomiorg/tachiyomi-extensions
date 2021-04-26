@@ -281,7 +281,7 @@ class Komiku : ParsedHttpSource() {
     // pages
     override fun pageListParse(document: Document): List<Page> {
         return document.select("#Baca_Komik img").mapIndexed { i, element ->
-            Page(i, "", element.attr("abs:src"))
+            Page(i, "", element.attr("onError").substringAfter("src=\'").substringBefore("'"))
         }
     }
 
