@@ -35,7 +35,7 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
 
     override val supportsLatest = true
     override val name = "MangaPark"
-    override val baseUrl = "https://mangapark.net"
+    override val baseUrl = "https://v2.mangapark.net"
 
     private val nextPageSelector = ".paging:not(.order) > li:last-child > a"
 
