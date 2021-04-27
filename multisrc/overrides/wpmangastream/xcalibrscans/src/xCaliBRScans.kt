@@ -16,9 +16,4 @@ class xCaliBRScans : WPMangaStream("xCaliBR Scans", "https://xcalibrscans.com", 
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select(pageSelector)
-            .mapIndexed { i, img -> Page(i, "", img.attr("data-src")) }
-    }
-
 }
