@@ -363,7 +363,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
         response.close()
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val SERVICE_URL = "https://service.socialcomics.com.br"
@@ -373,8 +373,6 @@ class SocialComics : HttpSource(), ConfigurableSource {
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private const val EMAIL_PREF_KEY = "email"
         private const val EMAIL_PREF_TITLE = "E-mail"

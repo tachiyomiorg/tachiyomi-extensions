@@ -124,7 +124,7 @@ class MundoMangaKun : ParsedHttpSource() {
         val link = element.attr("onclick")
             .substringAfter("this,")
             .substringBeforeLast(")")
-            .let { JSON_PARSER.parse(it) }
+            .let { JsonParser.parseString(it) }
             .array
             .first { it.obj["tipo"].string == "LEITOR" }
 
@@ -135,7 +135,7 @@ class MundoMangaKun : ParsedHttpSource() {
         return document.select("script:containsData(var paginas)").first().data()
             .substringAfter("var paginas=")
             .substringBefore(";var")
-            .let { JSON_PARSER.parse(it) }
+            .let { JsonParser.parseString(it) }
             .array
             .mapIndexed { i, page -> Page(i, document.location(), page.string) }
     }
@@ -237,7 +237,5 @@ class MundoMangaKun : ParsedHttpSource() {
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
     }
 }

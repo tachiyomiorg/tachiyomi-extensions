@@ -283,7 +283,7 @@ abstract class MangasProject(
     protected open fun getReaderToken(document: Document): String? {
         return document.select("script[src*=\"reader.\"]").firstOrNull()
             ?.attr("abs:src")
-            ?.let { it.toHttpUrlOrNull() }
+            ?.toHttpUrlOrNull()
             ?.queryParameter("token")
     }
 
@@ -304,7 +304,7 @@ abstract class MangasProject(
             throw Exception("HTTP error $code")
         }
 
-        return JSON_PARSER.parse(body!!.string()).obj
+        return JsonParser.parseString(body!!.string()).obj
     }
 
     private fun String.toDate(): Long {
@@ -322,8 +322,6 @@ abstract class MangasProject(
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
 

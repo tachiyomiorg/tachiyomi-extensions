@@ -347,7 +347,7 @@ class TsukiMangas : HttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"
@@ -355,8 +355,6 @@ class TsukiMangas : HttpSource() {
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         // By request of site owner. Detailed at Issue #4912 (in Portuguese).
         private val USER_AGENT = "Tachiyomi " + System.getProperty("http.agent")
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }

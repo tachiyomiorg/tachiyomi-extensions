@@ -180,7 +180,7 @@ class ShonenJumpPlus : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val episodeJson = document.select("script#episode-json")
             .attr("data-value")
-            .let { JSON_PARSER.parse(it).obj }
+            .let { JsonParser.parseString(it).obj }
 
         return episodeJson["readableProduct"]["pageStructure"]["pages"].asJsonArray
             .filter { it["type"].string == "main" }
@@ -269,11 +269,10 @@ class ShonenJumpPlus : ParsedHttpSource() {
         }
     }
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body!!.string()).obj
+    private fun Response.asJsonObject(): JsonObject = JsonParser.parseString(body!!.string()).obj
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
-        private val JSON_PARSER by lazy { JsonParser() }
         private val DATE_PARSER by lazy { SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH) }
 
         private val LIST_MODES = listOf(

@@ -248,7 +248,7 @@ class MangaTube : HttpSource() {
             val apiParams = document.select("script:containsData(pAPI)").first()!!.data()
                 .substringAfter("pAPI = ")
                 .substringBeforeLast(";")
-                .let { JSON_PARSER.parse(it) }
+                .let { JsonParser.parseString(it) }
 
             val newUrl = chain.request().url.newBuilder()
                 .addQueryParameter("nonce", apiParams["nonce"].string)
@@ -272,7 +272,7 @@ class MangaTube : HttpSource() {
         }
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"
@@ -282,8 +282,6 @@ class MangaTube : HttpSource() {
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
 
         private val TOKEN_REGEX = "token\\s+= \"(.*)\"".toRegex()
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
 

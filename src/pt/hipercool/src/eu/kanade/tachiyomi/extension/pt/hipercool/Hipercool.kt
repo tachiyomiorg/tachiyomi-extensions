@@ -7,6 +7,7 @@ import com.github.salomonbrys.kotson.jsonObject
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
@@ -57,7 +58,7 @@ class Hipercool : HttpSource() {
         .add("X-Requested-With", "XMLHttpRequest")
 
     private fun genericMangaListParse(response: Response): MangasPage {
-        val result = response.asJsonArray()
+        val result = response.asJson().array
 
         if (result.size() == 0)
             return MangasPage(emptyList(), false)
@@ -129,7 +130,7 @@ class Hipercool : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val result = response.asJsonObject()
+        val result = response.asJson().obj
 
         val artists = result["tags"].array
             .filter { it["label"].string == "Artista" }
@@ -160,7 +161,7 @@ class Hipercool : HttpSource() {
     override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val result = response.asJsonObject()
+        val result = response.asJson().obj
 
         if (!result["chapters"]!!.isJsonArray)
             return emptyList()
@@ -242,9 +243,7 @@ class Hipercool : HttpSource() {
             .addQueryParameter("revision", revision.toString())
             .toString()
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body!!.string()).obj
-
-    private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body!!.string()).array
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val STATIC_URL = "https://static.hiper.cool"
@@ -253,8 +252,6 @@ class Hipercool : HttpSource() {
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
         private const val DEFAULT_COUNT = 40
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }

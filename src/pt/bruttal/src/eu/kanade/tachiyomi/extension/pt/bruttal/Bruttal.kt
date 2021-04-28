@@ -184,12 +184,10 @@ class Bruttal : HttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used")
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
     }
 }

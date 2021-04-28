@@ -16,6 +16,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
@@ -52,7 +53,7 @@ class HQNow : HttpSource() {
     // Popular
 
     override fun popularMangaRequest(page: Int): Request {
-        return POST(baseUrl, jsonHeaders, RequestBody.create(null, "{\"operationName\":\"getHqsByFilters\",\"variables\":{\"orderByViews\":true,\"loadCovers\":true,\"limit\":30},\"query\":\"query getHqsByFilters(\$orderByViews: Boolean, \$limit: Int, \$publisherId: Int, \$loadCovers: Boolean) {\\n  getHqsByFilters(orderByViews: \$orderByViews, limit: \$limit, publisherId: \$publisherId, loadCovers: \$loadCovers) {\\n    id\\n    name\\n    editoraId\\n    status\\n    publisherName\\n    hqCover\\n    synopsis\\n    updatedAt\\n  }\\n}\\n\"}"))
+        return POST(baseUrl, jsonHeaders, "{\"operationName\":\"getHqsByFilters\",\"variables\":{\"orderByViews\":true,\"loadCovers\":true,\"limit\":30},\"query\":\"query getHqsByFilters(\$orderByViews: Boolean, \$limit: Int, \$publisherId: Int, \$loadCovers: Boolean) {\\n  getHqsByFilters(orderByViews: \$orderByViews, limit: \$limit, publisherId: \$publisherId, loadCovers: \$loadCovers) {\\n    id\\n    name\\n    editoraId\\n    status\\n    publisherName\\n    hqCover\\n    synopsis\\n    updatedAt\\n  }\\n}\\n\"}".toRequestBody(null))
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -62,7 +63,7 @@ class HQNow : HttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return POST(baseUrl, jsonHeaders, RequestBody.create(null, "{\"operationName\":\"getRecentlyUpdatedHqs\",\"variables\":{},\"query\":\"query getRecentlyUpdatedHqs {\\n  getRecentlyUpdatedHqs {\\n    name\\n    hqCover\\n    synopsis\\n    id\\n    updatedAt\\n    updatedChapters\\n  }\\n}\\n\"}"))
+        return POST(baseUrl, jsonHeaders, "{\"operationName\":\"getRecentlyUpdatedHqs\",\"variables\":{},\"query\":\"query getRecentlyUpdatedHqs {\\n  getRecentlyUpdatedHqs {\\n    name\\n    hqCover\\n    synopsis\\n    id\\n    updatedAt\\n    updatedChapters\\n  }\\n}\\n\"}".toRequestBody(null))
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
@@ -76,7 +77,7 @@ class HQNow : HttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
             queryIsTitle = true
-            POST(baseUrl, jsonHeaders, RequestBody.create(null, "{\"operationName\":\"getHqsByName\",\"variables\":{\"name\":\"$query\"},\"query\":\"query getHqsByName(\$name: String!) {\\n  getHqsByName(name: \$name) {\\n    id\\n    name\\n    editoraId\\n    status\\n    publisherName\\n    impressionsCount\\n  }\\n}\\n\"}"))
+            POST(baseUrl, jsonHeaders, "{\"operationName\":\"getHqsByName\",\"variables\":{\"name\":\"$query\"},\"query\":\"query getHqsByName(\$name: String!) {\\n  getHqsByName(name: \$name) {\\n    id\\n    name\\n    editoraId\\n    status\\n    publisherName\\n    impressionsCount\\n  }\\n}\\n\"}".toRequestBody(null))
         } else {
             queryIsTitle = false
             var searchLetter = ""
@@ -88,7 +89,7 @@ class HQNow : HttpSource() {
                     }
                 }
             }
-            POST(baseUrl, jsonHeaders, RequestBody.create(null, "{\"operationName\":\"getHqsByNameStartingLetter\",\"variables\":{\"letter\":\"$searchLetter-$searchLetter\"},\"query\":\"query getHqsByNameStartingLetter(\$letter: String!) {\\n  getHqsByNameStartingLetter(letter: \$letter) {\\n    id\\n    name\\n    editoraId\\n    status\\n    publisherName\\n    impressionsCount\\n  }\\n}\\n\"}"))
+            POST(baseUrl, jsonHeaders, "{\"operationName\":\"getHqsByNameStartingLetter\",\"variables\":{\"letter\":\"$searchLetter-$searchLetter\"},\"query\":\"query getHqsByNameStartingLetter(\$letter: String!) {\\n  getHqsByNameStartingLetter(letter: \$letter) {\\n    id\\n    name\\n    editoraId\\n    status\\n    publisherName\\n    impressionsCount\\n  }\\n}\\n\"}".toRequestBody(null))
         }
     }
 
@@ -99,7 +100,7 @@ class HQNow : HttpSource() {
     // Details
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return POST(baseUrl, jsonHeaders, RequestBody.create(null, "{\"operationName\":\"getHqsById\",\"variables\":{\"id\":${manga.url}},\"query\":\"query getHqsById(\$id: Int!) {\\n  getHqsById(id: \$id) {\\n    id\\n    name\\n    synopsis\\n    editoraId\\n    status\\n    publisherName\\n    hqCover\\n    impressionsCount\\n    capitulos {\\n      name\\n      id\\n      number\\n    }\\n  }\\n}\\n\"}"))
+        return POST(baseUrl, jsonHeaders, "{\"operationName\":\"getHqsById\",\"variables\":{\"id\":${manga.url}},\"query\":\"query getHqsById(\$id: Int!) {\\n  getHqsById(id: \$id) {\\n    id\\n    name\\n    synopsis\\n    editoraId\\n    status\\n    publisherName\\n    hqCover\\n    impressionsCount\\n    capitulos {\\n      name\\n      id\\n      number\\n    }\\n  }\\n}\\n\"}".toRequestBody(null))
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -140,7 +141,7 @@ class HQNow : HttpSource() {
     // Pages
 
     override fun pageListRequest(chapter: SChapter): Request {
-        return POST(baseUrl, jsonHeaders, RequestBody.create(null, "{\"operationName\":\"getChapterById\",\"variables\":{\"chapterId\":${chapter.url}},\"query\":\"query getChapterById(\$chapterId: Int!) {\\n  getChapterById(chapterId: \$chapterId) {\\n    name\\n    number\\n    oneshot\\n    pictures {\\n      pictureUrl\\n    }\\n    hq {\\n      id\\n      name\\n      capitulos {\\n        id\\n        number\\n      }\\n    }\\n  }\\n}\\n\"}"))
+        return POST(baseUrl, jsonHeaders, "{\"operationName\":\"getChapterById\",\"variables\":{\"chapterId\":${chapter.url}},\"query\":\"query getChapterById(\$chapterId: Int!) {\\n  getChapterById(chapterId: \$chapterId) {\\n    name\\n    number\\n    oneshot\\n    pictures {\\n      pictureUrl\\n    }\\n    hq {\\n      id\\n      name\\n      capitulos {\\n        id\\n        number\\n      }\\n    }\\n  }\\n}\\n\"}".toRequestBody(null))
     }
 
     override fun pageListParse(response: Response): List<Page> {

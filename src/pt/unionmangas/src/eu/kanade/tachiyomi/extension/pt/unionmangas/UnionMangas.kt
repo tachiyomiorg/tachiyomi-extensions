@@ -255,7 +255,7 @@ class UnionMangas : ParsedHttpSource() {
 
     private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
@@ -268,8 +268,6 @@ class UnionMangas : ParsedHttpSource() {
 
         private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. " +
             "Migre para outra fonte caso o problema persistir."
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH)

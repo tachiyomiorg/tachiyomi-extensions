@@ -184,7 +184,7 @@ class MundoHentai : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
 
-    override fun latestUpdatesNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesNextPageSelector(): String = throw UnsupportedOperationException("Not used")
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
