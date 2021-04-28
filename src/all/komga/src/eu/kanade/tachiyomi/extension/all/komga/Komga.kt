@@ -487,7 +487,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 )
 
             Single.fromCallable {
-                client.newCall(GET("$baseUrl/api/v1/tags", headers)).execute()
+                client.newCall(GET("$baseUrl/api/v1/tags/series", headers)).execute()
             }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
