@@ -251,6 +251,9 @@ open class Cubari(override val lang: String) : HttpSource() {
         val chapterList = ArrayList<SChapter>()
 
         val iter = chapters.keys()
+        
+        val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_time_found:$querySeries", 0)
+        val seriesPrefsEditor = seriesPrefs.edit()
 
         while (iter.hasNext()) {
             val chapterNum = iter.next()
@@ -280,12 +283,12 @@ open class Cubari(override val lang: String) : HttpSource() {
                 }
                 chapter.name = if (chapterObj.has("volume")) {
                     
-                    "Vol. " + chapterObj.getString("volume") + " Ch. " chapterNum + " - " + chapterObj.getString("title")
+                    "Vol. " + chapterObj.getString("volume") + " Ch. " + chapterNum + " - " + chapterObj.getString("title")
                     //Output "Vol. 1 Ch. 1 - Chapter Name"
                     
                 } else {
                 
-                    "Ch. " chapterNum + " - " + chapterObj.getString("title")
+                    "Ch. " + chapterNum + " - " + chapterObj.getString("title")
                     //Output "Ch. 1 - Chapter Name"
                     
                 }
