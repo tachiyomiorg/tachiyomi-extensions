@@ -89,7 +89,7 @@ class HeavenManga : ParsedHttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (response.request().url().toString().contains("query=")) super.searchMangaParse(response)
+        return if (response.request.url.toString().contains("query=")) super.searchMangaParse(response)
         else popularMangaParse(response)
     }
 

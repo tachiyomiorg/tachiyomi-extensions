@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -46,7 +46,7 @@ class MangaPoisk : ParsedHttpSource() {
         val url = if (query.isNotBlank()) {
             "$baseUrl/search?q=$query"
         } else {
-            val url = HttpUrl.parse("$baseUrl/manga")!!.newBuilder()
+            val url = "$baseUrl/manga".toHttpUrlOrNull()!!.newBuilder()
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is OrderBy -> {

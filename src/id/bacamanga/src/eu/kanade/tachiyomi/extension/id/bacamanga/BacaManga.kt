@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -33,7 +33,7 @@ class BacaManga : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = if (query.isNotBlank()) {
-            val url = HttpUrl.parse("$baseUrl/page/$page")!!.newBuilder()
+            val url = "$baseUrl/page/$page".toHttpUrlOrNull()!!.newBuilder()
             val pattern = "\\s+".toRegex()
             val q = query.replace(pattern, "+")
             if (query.isNotEmpty()) {
@@ -43,7 +43,7 @@ class BacaManga : ParsedHttpSource() {
             }
             url.toString()
         } else {
-            val url = HttpUrl.parse("$baseUrl/daftar-komik/page/$page")!!.newBuilder()
+            val url = "$baseUrl/daftar-komik/page/$page".toHttpUrlOrNull()!!.newBuilder()
             var orderBy: String
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
@@ -143,7 +143,7 @@ class BacaManga : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         val scriptToParse = document.select("script[src*=cache]").first().attr("src")
-        val slideaid = client.newCall(GET(scriptToParse, headers)).execute().body()!!.string()
+        val slideaid = client.newCall(GET(scriptToParse, headers)).execute().body!!.string()
         val imagesList = slideaid.substringAfter("var imgch").substringBefore(";").substringAfter("=").trim()
         val img_url = slideaid.substringAfter("#chimg").substringBefore("onError").substringAfter("src=\"").substringBefore("'").trim()
         val json = JsonParser().parse(imagesList).asJsonArray

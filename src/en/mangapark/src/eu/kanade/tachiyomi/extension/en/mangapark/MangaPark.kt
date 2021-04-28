@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -126,7 +124,6 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
                 }
             }
         }
-
     }
 
     // force network to make sure chapter prefs take effect
@@ -279,8 +276,8 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
     private val objRegex = Regex("""var _load_pages = (\[.*])""")
 
     override fun pageListParse(response: Response): List<Page> {
-        val obj = objRegex.find(response.body()!!.string())?.groupValues?.get(1)
-            ?: throw Exception("_load_pages not found - ${response.request().url()}")
+        val obj = objRegex.find(response.body!!.string())?.groupValues?.get(1)
+            ?: throw Exception("_load_pages not found - ${response.request.url}")
         val jsonArray = JSONArray(obj)
         return (0 until jsonArray.length()).map { i -> jsonArray.getJSONObject(i).getString("u") }
             .mapIndexed { i, url -> Page(i, "", if (url.startsWith("//")) "https://$url" else url) }
@@ -590,23 +587,6 @@ class MangaPark : ConfigurableSource, ParsedHttpSource() {
         screen.addPreference(myPref)
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val myPref = ListPreference(screen.context).apply {
-            key = SOURCE_PREF_TITLE
-            title = SOURCE_PREF_TITLE
-            entries = sourceArray.map { it.first }.toTypedArray()
-            entryValues = sourceArray.map { it.second }.toTypedArray()
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(SOURCE_PREF, entry).commit()
-            }
-        }
-        screen.addPreference(myPref)
-    }
     private fun getSourcePref(): String? = preferences.getString(SOURCE_PREF, "all")
 
     companion object {

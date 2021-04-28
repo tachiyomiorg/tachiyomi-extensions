@@ -19,7 +19,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -75,7 +75,7 @@ class NineHentai : HttpSource() {
     }
 
     private fun getMangaList(response: Response, page: Int): MangasPage {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val jsonObject = JsonParser().parse(jsonData).asJsonObject
         val totalPages = jsonObject["total_count"].int
         val results = jsonObject["results"].array
@@ -150,7 +150,7 @@ class NineHentai : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val jsonObject = JsonParser().parse(jsonData).asJsonObject
         val jsonArray = jsonObject.getAsJsonObject("results")
         var imageUrl: String
@@ -168,7 +168,7 @@ class NineHentai : HttpSource() {
                 "$imageUrl/preview/${totalPages}t.jpg",
                 headersBuilder().build()
             )
-        ).execute().code().let { code ->
+        ).execute().code.let { code ->
             if (code == 404) totalPages--
         }
 
@@ -214,7 +214,7 @@ class NineHentai : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> = throw Exception("Not Used")
 
     companion object {
-        private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private val MEDIA_TYPE = "application/json; charset=utf-8".toMediaTypeOrNull()
         private const val SEARCH_URL = "/api/getBook"
         private const val MANGA_URL = "/api/getBookByID"
     }

@@ -1,5 +1,10 @@
 package eu.kanade.tachiyomi.multisrc.luscious
 
+import android.app.Application
+import android.content.SharedPreferences
+import androidx.preference.CheckBoxPreference
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.addProperty
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -9,6 +14,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -16,23 +22,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
-import android.app.Application
-import android.content.SharedPreferences
-import android.net.Uri
-import androidx.preference.CheckBoxPreference
-import androidx.preference.PreferenceScreen
-import androidx.preference.ListPreference
-import eu.kanade.tachiyomi.source.ConfigurableSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import android.support.v7.preference.CheckBoxPreference as LegacyCheckBoxPreference
-import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
-import android.support.v7.preference.ListPreference as LegacyListPreference
 
 abstract class Luscious(
     override val name: String,
@@ -138,7 +134,7 @@ abstract class Luscious(
 
     private fun buildAlbumListRequest(page: Int, filters: FilterList, query: String = ""): Request {
         val input = buildAlbumListRequestInput(page, filters, query)
-        val url = HttpUrl.parse(apiBaseUrl)!!.newBuilder()
+        val url = apiBaseUrl.toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("operationName", "AlbumList")
             .addQueryParameter("query", ALBUM_LIST_REQUEST_GQL)
             .addQueryParameter("variables", input.toString())
@@ -147,7 +143,7 @@ abstract class Luscious(
     }
 
     private fun parseAlbumListResponse(response: Response): MangasPage {
-        val data = gson.fromJson<JsonObject>(response.body()!!.string())
+        val data = gson.fromJson<JsonObject>(response.body!!.string())
         with(data["data"]["album"]["list"]) {
             return MangasPage(
                 this["items"].asJsonArray.map {
@@ -170,7 +166,7 @@ abstract class Luscious(
 
     private fun buildAlbumInfoRequest(id: String): Request {
         val input = buildAlbumInfoRequestInput(id)
-        val url = HttpUrl.parse(apiBaseUrl)!!.newBuilder()
+        val url = apiBaseUrl.toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("operationName", "AlbumGet")
             .addQueryParameter("query", albumInfoQuery)
             .addQueryParameter("variables", input.toString())
@@ -208,12 +204,12 @@ abstract class Luscious(
             false -> {
                 var nextPage = true
                 var page = 2
-                val id = response.request().url().queryParameter("variables").toString()
+                val id = response.request.url.queryParameter("variables").toString()
                     .let { gson.fromJson<JsonObject>(it)["input"]["filters"].asJsonArray }
                     .let { it.first { f -> f["name"].asString == "album_id" } }
                     .let { it["value"].asString }
 
-                var data = gson.fromJson<JsonObject>(response.body()!!.string())
+                var data = gson.fromJson<JsonObject>(response.body!!.string())
                     .let { it["data"]["picture"]["list"].asJsonObject }
 
                 while (nextPage) {
@@ -231,7 +227,7 @@ abstract class Luscious(
                     }
                     if (nextPage) {
                         val newPage = client.newCall(GET(buildAlbumPicturesPageUrl(id, page, sortPagesByOption))).execute()
-                        data = gson.fromJson<JsonObject>(newPage.body()!!.string())
+                        data = gson.fromJson<JsonObject>(newPage.body!!.string())
                             .let { it["data"]["picture"]["list"].asJsonObject }
                     }
                     page++
@@ -272,7 +268,7 @@ abstract class Luscious(
 
     private fun buildAlbumPicturesPageUrl(id: String, page: Int, sortPagesByOption: String): String {
         val input = buildAlbumPicturesRequestInput(id, page, sortPagesByOption)
-        return HttpUrl.parse(apiBaseUrl)!!.newBuilder()
+        return apiBaseUrl.toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("operationName", "AlbumListOwnPictures")
             .addQueryParameter("query", ALBUM_PICTURES_REQUEST_GQL)
             .addQueryParameter("variables", input.toString())
@@ -283,12 +279,12 @@ abstract class Luscious(
         val pages = mutableListOf<Page>()
         var nextPage = true
         var page = 2
-        val id = response.request().url().queryParameter("variables").toString()
+        val id = response.request.url.queryParameter("variables").toString()
             .let { gson.fromJson<JsonObject>(it)["input"]["filters"].asJsonArray }
             .let { it.first { f -> f["name"].asString == "album_id" } }
             .let { it["value"].asString }
 
-        var data = gson.fromJson<JsonObject>(response.body()!!.string())
+        var data = gson.fromJson<JsonObject>(response.body!!.string())
             .let { it["data"]["picture"]["list"].asJsonObject }
 
         while (nextPage) {
@@ -305,7 +301,7 @@ abstract class Luscious(
             }
             if (nextPage) {
                 val newPage = client.newCall(GET(buildAlbumPicturesPageUrl(id, page, sortPagesByOption))).execute()
-                data = gson.fromJson<JsonObject>(newPage.body()!!.string())
+                data = gson.fromJson<JsonObject>(newPage.body!!.string())
                     .let { it["data"]["picture"]["list"].asJsonObject }
             }
             page++
@@ -341,7 +337,7 @@ abstract class Luscious(
         return client.newCall(GET(page.url, headers))
             .asObservableSuccess()
             .map {
-                val data = gson.fromJson<JsonObject>(it.body()!!.string()).let { data ->
+                val data = gson.fromJson<JsonObject>(it.body!!.string()).let { data ->
                     data["data"]["picture"]["list"].asJsonObject
                 }
                 when (getResolutionPref()){
@@ -360,7 +356,7 @@ abstract class Luscious(
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val data = gson.fromJson<JsonObject>(response.body()!!.string())
+        val data = gson.fromJson<JsonObject>(response.body!!.string())
         with(data["data"]["album"]["get"]) {
             val manga = SManga.create()
             manga.url = this["url"].asString
@@ -776,37 +772,6 @@ abstract class Luscious(
             }
         }
         val mergeChapterPref = CheckBoxPreference(screen.context).apply {
-            key = "${MERGE_CHAPTER_PREF_KEY}_$lang"
-            title = MERGE_CHAPTER_PREF_TITLE
-            summary = MERGE_CHAPTER_PREF_SUMMARY
-            setDefaultValue(MERGE_CHAPTER_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${MERGE_CHAPTER_PREF_KEY}_$lang", checkValue).commit()
-            }
-        }
-        screen.addPreference(resolutionPref)
-        screen.addPreference(mergeChapterPref)
-    }
-
-    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
-        val resolutionPref = LegacyListPreference(screen.context).apply {
-            key = "${RESOLUTION_PREF_KEY}_$lang"
-            title = RESOLUTION_PREF_TITLE
-            entries = RESOLUTION_PREF_ENTRIES
-            entryValues = RESOLUTION_PREF_ENTRY_VALUES
-            setDefaultValue(RESOLUTION_PREF_DEFAULT_VALUE)
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString("${RESOLUTION_PREF_KEY}_$lang", entry).commit()
-            }
-        }
-        val mergeChapterPref = LegacyCheckBoxPreference(screen.context).apply {
             key = "${MERGE_CHAPTER_PREF_KEY}_$lang"
             title = MERGE_CHAPTER_PREF_TITLE
             summary = MERGE_CHAPTER_PREF_SUMMARY

@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -29,7 +29,7 @@ class DoujinHentai : Madara("DoujinHentai", "https://doujinhentai.net", "es", Si
     override fun popularMangaNextPageSelector() = "a[rel=next]"
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/lista-manga-hentai?orderby=last&page=$page", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse(baseUrl)!!.newBuilder()
+        val url = baseUrl.toHttpUrl().newBuilder()
         if (query.isNotBlank()) {
             url.addPathSegment("search")
             url.addQueryParameter("query", query) // query returns results all on one page

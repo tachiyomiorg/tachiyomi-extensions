@@ -10,7 +10,7 @@ import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import eu.kanade.tachiyomi.source.model.Filter
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
@@ -48,7 +48,7 @@ class KomikGO : WPMangaStream("Komik GO", "https://komikgo.com", "id") {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/page/$page")!!.newBuilder()
+        val url = "$baseUrl/page/$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("post_type", "wp-manga")
         val pattern = "\\s+".toRegex()
         val q = query.replace(pattern, "+")

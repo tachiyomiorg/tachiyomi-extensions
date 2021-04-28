@@ -7,9 +7,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -46,7 +46,7 @@ class AndromedaScans : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val type = "application/x-www-form-urlencoded; charset=UTF-8"
-        val body = RequestBody.create(MediaType.parse(type), "action=data_fetch&keyword=$query")
+        val body = "action=data_fetch&keyword=$query".toRequestBody(type.toMediaTypeOrNull())
 
         return POST("$baseUrl/wp-admin/admin-ajax.php", headers, body)
     }

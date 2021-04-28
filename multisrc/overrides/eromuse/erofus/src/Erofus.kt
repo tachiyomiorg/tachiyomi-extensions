@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Response
 import rx.Observable
 
@@ -32,7 +32,7 @@ class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
                 pageStack.addLast(StackItem("$baseUrl/?search=$query&sort=$currentSortingMode&page=1", SEARCH_RESULTS_OR_BASE))
             } else {
                 val albumFilter = filterList.filterIsInstance<AlbumFilter>().first().selection()
-                val url = HttpUrl.parse(baseUrl + albumFilter.pathSegments)!!.newBuilder()
+                val url = (baseUrl + albumFilter.pathSegments).toHttpUrl().newBuilder()
                     .addQueryParameter("sort", currentSortingMode)
                     .addQueryParameter("page", "1")
 
@@ -48,7 +48,7 @@ class Erofus : EroMuse("Erofus", "https://www.erofus.com") {
     override fun mangaDetailsParse(response: Response): SManga {
         return SManga.create().apply {
             with(response.asJsoup()) {
-                setUrlWithoutDomain(response.request().url().toString())
+                setUrlWithoutDomain(response.request.url.toString())
                 thumbnail_url = select("$albumSelector img").firstOrNull()?.imgAttr()
                 author = when (getAlbumType(url)) {
                     AUTHOR -> {

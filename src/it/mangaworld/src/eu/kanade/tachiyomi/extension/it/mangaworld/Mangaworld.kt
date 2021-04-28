@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -82,10 +82,9 @@ class Mangaworld : ParsedHttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/archive?page=$page")!!.newBuilder()
-        val pattern = "\\s+".toRegex()
+        val url = "$baseUrl/archive?page=$page".toHttpUrlOrNull()!!.newBuilder()
         val q = query
-        if (query.length > 0) {
+        if (query.isNotEmpty()) {
             url.addQueryParameter("keyword", q)
         } else {
             url.addQueryParameter("keyword", "")

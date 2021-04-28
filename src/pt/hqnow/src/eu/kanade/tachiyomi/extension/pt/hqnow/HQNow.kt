@@ -39,7 +39,7 @@ class HQNow : HttpSource() {
     private val jsonHeaders = headersBuilder().add("content-type", "application/json").build()
 
     private fun mangaFromResponse(response: Response, selector: String, coversAvailable: Boolean = true): List<SManga> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["data"][selector].asJsonArray
+        return gson.fromJson<JsonObject>(response.body!!.string())["data"][selector].asJsonArray
             .map {
                 SManga.create().apply {
                     url = it["id"].asString
@@ -103,7 +103,7 @@ class HQNow : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["data"]["getHqsById"][0]
+        return gson.fromJson<JsonObject>(response.body!!.string())["data"]["getHqsById"][0]
             .let {
                 SManga.create().apply {
                     title = it["name"].asString
@@ -126,7 +126,7 @@ class HQNow : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["data"]["getHqsById"][0]["capitulos"].asJsonArray
+        return gson.fromJson<JsonObject>(response.body!!.string())["data"]["getHqsById"][0]["capitulos"].asJsonArray
             .map {
                 SChapter.create().apply {
                     url = it["id"].asString
@@ -144,7 +144,7 @@ class HQNow : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["data"]["getChapterById"]["pictures"].asJsonArray
+        return gson.fromJson<JsonObject>(response.body!!.string())["data"]["getChapterById"]["pictures"].asJsonArray
             .mapIndexed { i, json -> Page(i, "", json["pictureUrl"].asString) }
     }
 

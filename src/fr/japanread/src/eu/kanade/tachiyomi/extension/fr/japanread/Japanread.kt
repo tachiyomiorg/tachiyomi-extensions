@@ -159,7 +159,7 @@ class Japanread : ParsedHttpSource() {
 
         val apiResponse = client.newCall(GET("$baseUrl/api/?id=$mangaId&type=manga", apiHeaders())).execute()
 
-        val jsonData = apiResponse.body()!!.string()
+        val jsonData = apiResponse.body!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
 
         return json["chapter"].obj.entrySet()
@@ -184,7 +184,7 @@ class Japanread : ParsedHttpSource() {
 
         val apiResponse = client.newCall(GET("$baseUrl/api/?id=$chapterId&type=chapter", apiHeaders())).execute()
 
-        val jsonData = apiResponse.body()!!.string()
+        val jsonData = apiResponse.body!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
 
         val baseImagesUrl = json["baseImagesUrl"].string

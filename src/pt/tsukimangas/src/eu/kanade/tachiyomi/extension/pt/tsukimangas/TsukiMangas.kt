@@ -20,7 +20,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -94,7 +94,7 @@ class TsukiMangas : HttpSource() {
             .set("Referer", "$baseUrl/lista-completa")
             .build()
 
-        val url = HttpUrl.parse("$baseUrl/api/v2/mangas?page=$page")!!.newBuilder()
+        val url = "$baseUrl/api/v2/mangas?page=$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
 
         filters.forEach { filter ->
@@ -193,7 +193,7 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val mangaUrl = response.request().header("Referer")!!.substringAfter(baseUrl)
+        val mangaUrl = response.request.header("Referer")!!.substringAfter(baseUrl)
 
         return response.asJson().array
             .flatMap { chapterListItemParse(it.obj, mangaUrl) }
@@ -347,7 +347,7 @@ class TsukiMangas : HttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
+    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"

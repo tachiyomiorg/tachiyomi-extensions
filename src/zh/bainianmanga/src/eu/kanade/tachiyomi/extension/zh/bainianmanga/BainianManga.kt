@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -25,7 +25,7 @@ class BainianManga : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/page/hot/$page.html", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/new/$page.html", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/index.php?m=vod-search-pg-$page-wd-$query.html")?.newBuilder()
+        val url = "$baseUrl/index.php?m=vod-search-pg-$page-wd-$query.html".toHttpUrlOrNull()?.newBuilder()
         return GET(url.toString(), headers)
     }
 

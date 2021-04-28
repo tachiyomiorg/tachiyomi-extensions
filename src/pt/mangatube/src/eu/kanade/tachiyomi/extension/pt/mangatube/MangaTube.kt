@@ -20,7 +20,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -108,7 +108,7 @@ class MangaTube : HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/wp-json/site/search/")!!.newBuilder()
+        val url = "$baseUrl/wp-json/site/search/".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("keyword", query)
             .addQueryParameter("type", "undefined")
             .toString()
@@ -152,7 +152,7 @@ class MangaTube : HttpSource() {
             .set("Referer", baseUrl + mangaUrl)
             .build()
 
-        val url = HttpUrl.parse("$baseUrl/jsons/series/chapters_list.json")!!.newBuilder()
+        val url = "$baseUrl/jsons/series/chapters_list.json".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("page", page.toString())
             .addQueryParameter("id_s", mangaId)
             .toString()
@@ -161,7 +161,7 @@ class MangaTube : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val mangaUrl = response.request().header("Referer")!!.substringAfter(baseUrl)
+        val mangaUrl = response.request.header("Referer")!!.substringAfter(baseUrl)
 
         var result = response.asJson().obj
 
@@ -201,7 +201,7 @@ class MangaTube : HttpSource() {
             .set("Referer", chapterUrl)
             .build()
 
-        val url = HttpUrl.parse("$baseUrl/jsons/series/images_list.json")!!.newBuilder()
+        val url = "$baseUrl/jsons/series/images_list.json".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("id_serie", serieId)
             .addQueryParameter("secury", token)
             .toString()
@@ -214,7 +214,7 @@ class MangaTube : HttpSource() {
         val apiParams = document.select("script:containsData(id_serie)").firstOrNull()
             ?.data() ?: throw Exception(TOKEN_NOT_FOUND)
 
-        val chapterUrl = response.request().url().toString()
+        val chapterUrl = response.request.url.toString()
         val serieId = apiParams.substringAfter("\"")
             .substringBefore("\"")
         val token = TOKEN_REGEX.find(apiParams)!!.groupValues[1]
@@ -241,7 +241,7 @@ class MangaTube : HttpSource() {
     }
 
     private fun searchIntercept(chain: Interceptor.Chain): Response {
-        if (chain.request().url().toString().contains("/search/")) {
+        if (chain.request().url.toString().contains("/search/")) {
             val homeRequest = popularMangaRequest(1)
             val document = chain.proceed(homeRequest).asJsoup()
 
@@ -250,7 +250,7 @@ class MangaTube : HttpSource() {
                 .substringBeforeLast(";")
                 .let { JSON_PARSER.parse(it) }
 
-            val newUrl = chain.request().url().newBuilder()
+            val newUrl = chain.request().url.newBuilder()
                 .addQueryParameter("nonce", apiParams["nonce"].string)
                 .build()
 
@@ -272,7 +272,7 @@ class MangaTube : HttpSource() {
         }
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
+    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"

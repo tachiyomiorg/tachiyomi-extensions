@@ -14,7 +14,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -155,7 +155,7 @@ class Mangahub : ParsedHttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val cdn = "https://img.mghubcdn.com/file/imghub"
 
-        return gson.fromJson<JsonObject>(response.body()!!.string())["data"]["chapter"]["pages"].string
+        return gson.fromJson<JsonObject>(response.body!!.string())["data"]["chapter"]["pages"].string
             .removeSurrounding("\"").replace("\\", "")
             .let { cleaned ->
                 val jsonObject = gson.fromJson<JsonObject>(cleaned)
@@ -170,7 +170,7 @@ class Mangahub : ParsedHttpSource() {
 
     // https://mangahub.io/search/page/1?q=a&order=POPULAR&genre=all
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search/page/$page")?.newBuilder()!!.addQueryParameter("q", query)
+        val url = "$baseUrl/search/page/$page".toHttpUrlOrNull()?.newBuilder()!!.addQueryParameter("q", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is OrderBy -> {

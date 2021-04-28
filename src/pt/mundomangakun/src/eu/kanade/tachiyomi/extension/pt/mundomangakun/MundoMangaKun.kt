@@ -13,13 +13,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
 import java.util.concurrent.TimeUnit
 
 class MundoMangaKun : ParsedHttpSource() {
@@ -70,7 +69,7 @@ class MundoMangaKun : ParsedHttpSource() {
             .build()
 
         val pagePath = if (page != 1) "page/$page/" else ""
-        val url = HttpUrl.parse("$baseUrl/leitor-online/$pagePath")!!.newBuilder()
+        val url = "$baseUrl/leitor-online/$pagePath".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("leitor_titulo_projeto", query)
 
         filters.forEach { filter ->

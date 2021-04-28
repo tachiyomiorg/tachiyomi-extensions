@@ -8,7 +8,7 @@ class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
                 chain.proceed(originalRequest).let { response ->
-                    if (response.code() == 403 && originalRequest.url().host().contains("b-cdn")) {
+                    if (response.code == 403 && originalRequest.url.host.contains("b-cdn")) {
                         response.close()
                         chain.proceed(originalRequest.newBuilder().removeHeader("Referer").addHeader("Referer", "https://isekaiscan.com").build())
                     } else {

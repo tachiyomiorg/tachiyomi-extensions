@@ -29,7 +29,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -39,8 +39,6 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
-import android.support.v7.preference.ListPreference as LegacyListPreference
-import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
 class LibManga : ConfigurableSource, HttpSource() {
 
@@ -110,7 +108,7 @@ class LibManga : ConfigurableSource, HttpSource() {
                 .asObservableSuccess()
                 .flatMap { response ->
                     // Obtain token
-                    val resBody = response.body()!!.string()
+                    val resBody = response.body!!.string()
                     csrfToken = "_token\" content=\"(.*)\"".toRegex().find(resBody)!!.groups[1]!!.value
                     return@flatMap fetchPopularMangaFromApi(page)
                 }
@@ -127,7 +125,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val resBody = response.body()!!.string()
+        val resBody = response.body!!.string()
         val result = jsonParser.parse(resBody).obj
         val items = result["items"]
         val popularMangas = items["data"].nullArray?.map { popularMangaFromElement(it) }
@@ -417,10 +415,10 @@ class LibManga : ConfigurableSource, HttpSource() {
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (csrfToken.isEmpty()) {
             val tokenResponse = client.newCall(popularMangaRequest(page)).execute()
-            val resBody = tokenResponse.body()!!.string()
+            val resBody = tokenResponse.body!!.string()
             csrfToken = "_token\" content=\"(.*)\"".toRegex().find(resBody)!!.groups[1]!!.value
         }
-        val url = HttpUrl.parse("$baseUrl/filterlist?page=$page")!!.newBuilder()
+        val url = "$baseUrl/filterlist?page=$page".toHttpUrlOrNull()!!.newBuilder()
         if (query.isNotEmpty()) {
             url.addQueryParameter("name", query)
         }
@@ -472,7 +470,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     // Hack search method to add some results from search popup
     override fun searchMangaParse(response: Response): MangasPage {
-        val searchRequest = response.request().url().queryParameter("name")
+        val searchRequest = response.request.url.queryParameter("name")
         val mangas = mutableListOf<SManga>()
 
         if (!searchRequest.isNullOrEmpty()) {
@@ -486,7 +484,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             val popup = client.newCall(
                 GET("$baseUrl/search?query=$searchRequest", popupSearchHeaders)
             )
-                .execute().body()!!.string()
+                .execute().body!!.string()
 
             val jsonList = jsonParser.parse(popup).array
             jsonList.forEach {
@@ -761,40 +759,6 @@ class LibManga : ConfigurableSource, HttpSource() {
         }
 
         val sortingPref = ListPreference(screen.context).apply {
-            key = SORTING_PREF
-            title = SORTING_PREF_Title
-            entries = arrayOf(
-                "Полный список (без повторных переводов)", "Все переводы (друг за другом)",
-                "Наибольшее число глав", "Активный перевод"
-            )
-            entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                preferences.edit().putString(SORTING_PREF, selected).commit()
-            }
-        }
-
-        screen.addPreference(sortingPref)
-        screen.addPreference(serverPref)
-    }
-
-    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
-        val serverPref = LegacyListPreference(screen.context).apply {
-            key = SERVER_PREF
-            title = SERVER_PREF_Title
-            entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)", "Авто")
-            entryValues = arrayOf("secondary", "fourth", "compress", "auto")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                server = newValue.toString()
-                true
-            }
-        }
-
-        val sortingPref = LegacyListPreference(screen.context).apply {
             key = SORTING_PREF
             title = SORTING_PREF_Title
             entries = arrayOf(

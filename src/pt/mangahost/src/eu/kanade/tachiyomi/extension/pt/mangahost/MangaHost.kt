@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Call
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -111,7 +111,7 @@ class MangaHost : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/find")!!.newBuilder()
+        val url = "$baseUrl/find".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("this", query)
 
         return GET(url.toString(), headers)
@@ -230,7 +230,7 @@ class MangaHost : ParsedHttpSource() {
     private fun blockMessageIntercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
 
-        if (response.code() == 403 || response.code() == 1020) {
+        if (response.code == 403 || response.code == 1020) {
             response.close()
             throw Exception(BLOCK_MESSAGE)
         }
@@ -240,9 +240,9 @@ class MangaHost : ParsedHttpSource() {
 
     private fun Call.asObservableIgnoreCode(code: Int): Observable<Response> {
         return asObservable().doOnNext { response ->
-            if (!response.isSuccessful && response.code() != code) {
+            if (!response.isSuccessful && response.code != code) {
                 response.close()
-                throw Exception("HTTP error ${response.code()}")
+                throw Exception("HTTP error ${response.code}")
             }
         }
     }

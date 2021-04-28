@@ -135,7 +135,7 @@ abstract class FoolSlide(
     /**
      * Transform a GET request into a POST request that automatically authorizes all adult content
      */
-    private fun allowAdult(request: Request) = allowAdult(request.url().toString())
+    private fun allowAdult(request: Request) = allowAdult(request.url.toString())
 
     private fun allowAdult(url: String): Request {
         return POST(

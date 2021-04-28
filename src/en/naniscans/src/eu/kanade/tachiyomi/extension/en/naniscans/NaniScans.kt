@@ -13,7 +13,6 @@ import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
-import java.lang.UnsupportedOperationException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -29,7 +28,7 @@ class NaniScans : HttpSource() {
     override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val titlesJson = JSONArray(response.body()!!.string())
+        val titlesJson = JSONArray(response.body!!.string())
         val mangaMap = mutableMapOf<Long, SManga>()
 
         for (i in 0 until titlesJson.length()) {
@@ -52,7 +51,7 @@ class NaniScans : HttpSource() {
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/api/titles")
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val titlesJson = JSONArray(response.body()!!.string())
+        val titlesJson = JSONArray(response.body!!.string())
         val mangaList = mutableListOf<SManga>()
 
         for (i in 0 until titlesJson.length()) {
@@ -78,7 +77,7 @@ class NaniScans : HttpSource() {
     override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/titles/${manga.url}")
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val titleJson = JSONObject(response.body()!!.string())
+        val titleJson = JSONObject(response.body!!.string())
 
         if (titleJson.getString("type") != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
@@ -98,7 +97,7 @@ class NaniScans : HttpSource() {
     override fun chapterListRequest(manga: SManga) = GET("$baseUrl/api/titles/${manga.url}")
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val titleJson = JSONObject(response.body()!!.string())
+        val titleJson = JSONObject(response.body!!.string())
 
         if (titleJson.getString("type") != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
@@ -125,7 +124,7 @@ class NaniScans : HttpSource() {
     override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/api/chapters/${chapter.url.substring(37, 73)}")
 
     override fun pageListParse(response: Response): List<Page> {
-        val jsonObject = JSONObject(response.body()!!.string())
+        val jsonObject = JSONObject(response.body!!.string())
 
         val pagesJson = jsonObject.getJSONArray("pages")
         val pagesList = mutableListOf<Page>()

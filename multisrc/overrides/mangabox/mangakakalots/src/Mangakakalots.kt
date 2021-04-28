@@ -10,7 +10,7 @@ class Mangakakalots : MangaBox("Mangakakalots (unoriginal)", "https://mangakakal
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
         val mangas = document.select(searchMangaSelector()).map { mangaFromElement(it) }
-        val hasNextPage = !response.request().url().toString()
+        val hasNextPage = !response.request.url.toString()
             .contains(document.select(searchMangaNextPageSelector()).attr("href"))
 
         return MangasPage(mangas, hasNextPage)

@@ -9,13 +9,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -60,7 +59,7 @@ class TaoSect : ParsedHttpSource() {
     override fun popularMangaNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/pesquisar-leitor")!!.newBuilder()
+        val url = "$baseUrl/pesquisar-leitor".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("leitor_titulo_projeto", query)
 
         filters.forEach { filter ->

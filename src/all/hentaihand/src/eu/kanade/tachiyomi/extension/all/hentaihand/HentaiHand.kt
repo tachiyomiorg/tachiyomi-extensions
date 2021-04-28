@@ -3,8 +3,6 @@ package eu.kanade.tachiyomi.extension.all.hentaihand
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
@@ -26,9 +24,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -59,7 +57,7 @@ class HentaiHand(
         .build()
 
     private fun parseGenericResponse(response: Response): MangasPage {
-        val data = gson.fromJson<JsonObject>(response.body()!!.string())
+        val data = gson.fromJson<JsonObject>(response.body!!.string())
         return MangasPage(
             data.getAsJsonArray("data").map {
                 SManga.create().apply {
@@ -100,7 +98,7 @@ class HentaiHand(
             .asObservableSuccess()
             .subscribeOn(Schedulers.io())
             .map {
-                val data = gson.fromJson<JsonObject>(it.body()!!.string())
+                val data = gson.fromJson<JsonObject>(it.body!!.string())
                 // only the first tag will be used
                 data.getAsJsonArray("data").firstOrNull()?.let { t -> t["id"].asInt }
             }.toBlocking().first()
@@ -108,7 +106,7 @@ class HentaiHand(
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
 
-        val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
+        val url = "$baseUrl/api/comics".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("page", page.toString())
             .addQueryParameter("q", query)
 
@@ -158,7 +156,7 @@ class HentaiHand(
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val data = gson.fromJson<JsonObject>(response.body()!!.string())
+        val data = gson.fromJson<JsonObject>(response.body!!.string())
         return SManga.create().apply {
 
             artist = tagArrayToString(data.getAsJsonArray("artists"))
@@ -188,7 +186,7 @@ class HentaiHand(
     override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val data = gson.fromJson<JsonObject>(response.body()!!.string())
+        val data = gson.fromJson<JsonObject>(response.body!!.string())
         return listOf(
             SChapter.create().apply {
                 url = "/en/comic/${data["slug"].asString}/reader/1"
@@ -207,7 +205,7 @@ class HentaiHand(
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val data = gson.fromJson<JsonObject>(response.body()!!.string())
+        val data = gson.fromJson<JsonObject>(response.body!!.string())
         return data.getAsJsonArray("images").mapIndexed { i, it ->
             Page(i, "/en/comic/${data["comic"]["slug"].asString}/reader/${it["page"].asInt}", it["source_url"].asString)
         }
@@ -240,14 +238,14 @@ class HentaiHand(
         }
         val body = RequestBody.create(MEDIA_TYPE, jsonObject.toString())
         val response = chain.proceed(POST("$baseUrl/api/login", headers, body))
-        if (response.code() == 401) {
+        if (response.code == 401) {
             throw Exception("Failed to login, check if username and password are correct")
         }
 
-        if (response.body() == null)
+        if (response.body == null)
             throw Exception("Login response body is empty")
         try {
-            return JSONObject(response.body()!!.string())
+            return JSONObject(response.body!!.string())
                 .getJSONObject("auth")
                 .getString("access_token")
         } catch (e: JSONException) {
@@ -283,32 +281,6 @@ class HentaiHand(
                     it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
             }
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
-        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
-    }
-
-    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
-        return EditTextPreference(context).apply {
-            key = title
-            this.title = title
-            summary = value
-            this.setDefaultValue(default)
-            dialogTitle = title
-
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()
@@ -387,7 +359,7 @@ class HentaiHand(
     companion object {
         @SuppressLint("SimpleDateFormat")
         private val DATE_FORMAT = SimpleDateFormat("yyyy-dd-MM")
-        private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private val MEDIA_TYPE = "application/json; charset=utf-8".toMediaTypeOrNull()
         private const val USERNAME_TITLE = "Username"
         private const val USERNAME_DEFAULT = ""
         private const val PASSWORD_TITLE = "Password"

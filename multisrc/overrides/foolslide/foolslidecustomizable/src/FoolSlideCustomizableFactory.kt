@@ -5,10 +5,8 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -27,30 +25,6 @@ class FoolSlideCustomizable : ConfigurableSource, FoolSlide("FoolSlide Customiza
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val baseUrlPref = androidx.preference.EditTextPreference(screen.context).apply {
-            key = BASE_URL_PREF_TITLE
-            title = BASE_URL_PREF_TITLE
-            summary = BASE_URL_PREF_SUMMARY
-            this.setDefaultValue(DEFAULT_BASEURL)
-            dialogTitle = BASE_URL_PREF_TITLE
-            dialogMessage = "Default: $DEFAULT_BASEURL"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
-                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(baseUrlPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val baseUrlPref = EditTextPreference(screen.context).apply {
             key = BASE_URL_PREF_TITLE
             title = BASE_URL_PREF_TITLE
             summary = BASE_URL_PREF_SUMMARY

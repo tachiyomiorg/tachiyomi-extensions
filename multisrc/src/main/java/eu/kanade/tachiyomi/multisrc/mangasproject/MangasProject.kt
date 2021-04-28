@@ -16,7 +16,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -64,7 +64,7 @@ abstract class MangasProject(
         val popularMangas = result["most_read"].array
             .map { popularMangaItemParse(it.obj) }
 
-        val hasNextPage = response.request().url().queryParameter("page")!!.toInt() < 10
+        val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < 10
 
         return MangasPage(popularMangas, hasNextPage)
     }
@@ -85,7 +85,7 @@ abstract class MangasProject(
         val latestMangas = result["releases"].array
             .map { latestMangaItemParse(it.obj) }
 
-        val hasNextPage = response.request().url().queryParameter("page")!!.toInt() < 5
+        val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < 5
 
         return MangasPage(latestMangas, hasNextPage)
     }
@@ -197,7 +197,7 @@ abstract class MangasProject(
             throw Exception(MANGA_REMOVED)
         }
 
-        val mangaUrl = response.request().url().toString().replace(baseUrl, "")
+        val mangaUrl = response.request.url.toString().replace(baseUrl, "")
         val mangaId = mangaUrl.substringAfterLast("/")
         var page = 1
 
@@ -277,13 +277,13 @@ abstract class MangasProject(
     }
 
     open fun getChapterUrl(response: Response): String {
-        return response.request().url().toString()
+        return response.request.url.toString()
     }
 
     protected open fun getReaderToken(document: Document): String? {
         return document.select("script[src*=\"reader.\"]").firstOrNull()
             ?.attr("abs:src")
-            ?.let { HttpUrl.parse(it) }
+            ?.let { it.toHttpUrlOrNull() }
             ?.queryParameter("token")
     }
 
@@ -301,10 +301,10 @@ abstract class MangasProject(
 
     private fun Response.asJsonObject(): JsonObject {
         if (!isSuccessful) {
-            throw Exception("HTTP error ${code()}")
+            throw Exception("HTTP error $code")
         }
 
-        return JSON_PARSER.parse(body()!!.string()).obj
+        return JSON_PARSER.parse(body!!.string()).obj
     }
 
     private fun String.toDate(): Long {

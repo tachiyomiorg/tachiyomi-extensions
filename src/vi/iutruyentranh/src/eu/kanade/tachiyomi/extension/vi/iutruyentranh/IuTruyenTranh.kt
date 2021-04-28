@@ -8,12 +8,11 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.lang.UnsupportedOperationException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -61,7 +60,7 @@ class IuTruyenTranh : ParsedHttpSource() {
 
     @SuppressLint("DefaultLocale")
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search/$page?")!!.newBuilder().addQueryParameter("name", query)
+        val url = "$baseUrl/search/$page?".toHttpUrlOrNull()!!.newBuilder().addQueryParameter("name", query)
         val genres = mutableListOf<String>()
         val genresEx = mutableListOf<String>()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->

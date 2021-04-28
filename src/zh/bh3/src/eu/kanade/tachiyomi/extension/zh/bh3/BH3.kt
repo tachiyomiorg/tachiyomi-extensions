@@ -66,7 +66,7 @@ class BH3 : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsondata = response.body()!!.string()
+        val jsondata = response.body!!.string()
         val json = JsonParser().parse(jsondata).asJsonArray
         val chapters = mutableListOf<SChapter>()
         json.forEach {

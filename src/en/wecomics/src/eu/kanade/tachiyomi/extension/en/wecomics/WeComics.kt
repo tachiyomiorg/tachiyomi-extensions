@@ -52,7 +52,7 @@ class WeComics : HttpSource() {
         GET("$baseUrl/h5/rank/getAllComicList/page/$page?plain=1")
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         val mangas = jsonObject["data"]["comic_list"].asJsonArray.map {
             SManga.create().apply {
@@ -84,7 +84,7 @@ class WeComics : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         return MangasPage(
             jsonObject["data"].asJsonArray.map {
@@ -116,7 +116,7 @@ class WeComics : HttpSource() {
         GET("${baseUrl}${manga.url}&type=search", headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         val it = jsonObject["data"]["comic"].asJsonObject
         return SManga.create().apply {
@@ -136,7 +136,7 @@ class WeComics : HttpSource() {
         GET("https://m.wecomics.com/h5/comic/detail/id/${getMangaId(manga.url)}?plain=1", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
         val mangaId = jsonObject["data"]["comic"]["comic_id"].asInt
 
         return jsonObject["data"]["chapter_list"].asJsonArray.map {
@@ -158,11 +158,11 @@ class WeComics : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
 
         // Error code 401 when not logged in and data is empty when logged in,
         // assuming this is populated after a purchase
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
         if (jsonObject["error_code"].asInt != 2 &&
             jsonObject["data"]["chapter"]["data"].asString != ""
         )

@@ -112,7 +112,7 @@ abstract class NyaHentai (
         listOf(
             SChapter.create().apply {
                 name = "Single Chapter"
-                setUrlWithoutDomain(response.request().url().toString())
+                setUrlWithoutDomain(response.request.url.toString())
             }
         )
     }
@@ -185,7 +185,7 @@ abstract class NyaHentai (
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (response.request().url().toString().contains("tag?")) {
+        return if (response.request.url.toString().contains("tag?")) {
             response.asJsoup().select("table.table tbody tr a:first-of-type").attr("abs:href").let {
                 if (it.isNotEmpty()) {
                     tagUrl = it

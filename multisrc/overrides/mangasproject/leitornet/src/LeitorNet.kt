@@ -25,7 +25,7 @@ class LeitorNet : MangasProject("Leitor.net", "https://leitor.net", "pt-BR") {
      * Temporary fix to bypass Cloudflare.
      */
     override fun pageListRequest(chapter: SChapter): Request {
-        val newHeaders = super.pageListRequest(chapter).headers().newBuilder()
+        val newHeaders = super.pageListRequest(chapter).headers.newBuilder()
             .set("Referer", "https://mangalivre.net/home")
             .build()
 

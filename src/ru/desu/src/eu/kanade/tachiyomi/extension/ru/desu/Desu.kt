@@ -101,7 +101,7 @@ class Desu : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val obj = JSONObject(res).getJSONArray("response")
         val nav = JSONObject(res).getJSONObject("pageNavParams")
         val count = nav.getInt("count")
@@ -131,12 +131,12 @@ class Desu : HttpSource() {
         return GET(baseUrl.substringBefore("/api") + manga.url, headers)
     }
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
-        val obj = JSONObject(response.body()!!.string()).getJSONObject("response")
+        val obj = JSONObject(response.body!!.string()).getJSONObject("response")
         mangaFromJSON(obj, true)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val obj = JSONObject(response.body()!!.string()).getJSONObject("response")
+        val obj = JSONObject(response.body!!.string()).getJSONObject("response")
         val ret = ArrayList<SChapter>()
 
         val cid = obj.getInt("id")
@@ -164,7 +164,7 @@ class Desu : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val obj = JSONObject(response.body()!!.string()).getJSONObject("response")
+        val obj = JSONObject(response.body!!.string()).getJSONObject("response")
         val pages = obj.getJSONObject("pages")
         val list = pages.getJSONArray("list")
         val ret = ArrayList<Page>(list.length())

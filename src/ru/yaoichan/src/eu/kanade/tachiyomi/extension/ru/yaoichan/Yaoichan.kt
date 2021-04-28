@@ -171,7 +171,7 @@ class Yaoichan : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
+        val html = response.body!!.string()
         val beginIndex = html.indexOf("fullimg\":[") + 10
         val endIndex = html.indexOf(",]", beginIndex)
         val trimmedHtml = html.substring(beginIndex, endIndex).replace("\"", "")

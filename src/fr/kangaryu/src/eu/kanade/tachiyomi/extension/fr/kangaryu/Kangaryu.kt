@@ -90,7 +90,7 @@ class Kangaryu : ParsedHttpSource() {
     private val gson by lazy { Gson() }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val mangas = gson.fromJson<JsonObject>(response.body()!!.string())["suggestions"].array.map { json ->
+        val mangas = gson.fromJson<JsonObject>(response.body!!.string())["suggestions"].array.map { json ->
             SManga.create().apply {
                 url = "/manga/${json["data"].string}"
                 title = json["value"].string

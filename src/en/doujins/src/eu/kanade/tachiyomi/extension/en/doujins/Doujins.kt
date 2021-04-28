@@ -49,7 +49,7 @@ class Doujins : HttpSource() {
         return listOf(
             SChapter.create().apply {
                 name = "Chapter"
-                setUrlWithoutDomain(response.request().url().toString())
+                setUrlWithoutDomain(response.request.url.toString())
 
                 val dateAndPageCountString = response.asJsoup().select(".text-md-right.text-sm-left > .folder-message").text()
 
@@ -68,7 +68,7 @@ class Doujins : HttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         return MangasPage(
-            gson.fromJson<JsonObject>(response.body()!!.string())["folders"].asJsonArray.map {
+            gson.fromJson<JsonObject>(response.body!!.string())["folders"].asJsonArray.map {
                 SManga.create().apply {
                     setUrlWithoutDomain(it["link"].asString)
                     title = it["name"].asString
@@ -114,7 +114,7 @@ class Doujins : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
-        val pageUrl = response.request().url().toString()
+        val pageUrl = response.request.url.toString()
         return document.select(".doujin").mapIndexed { i, page ->
             Page(i, "$pageUrl${page.attr("data-link")}", page.attr("data-file").replace("amp;", ""))
         }

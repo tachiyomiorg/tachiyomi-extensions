@@ -103,7 +103,7 @@ class Hiveworks : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector() + ", div.originalsblock"
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaParse(response: Response): MangasPage {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val document = response.asJsoup()
 
         val selectManga = document.select(searchMangaSelector())
@@ -195,7 +195,7 @@ class Hiveworks : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val document = response.asJsoup()
         val baseUrl = document.select("div script").html().substringAfter("href='").substringBefore("'")
         val elements = document.select(chapterListSelector())
@@ -227,7 +227,7 @@ class Hiveworks : ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
     override fun pageListParse(response: Response): List<Page> {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val document = response.asJsoup()
         val pages = mutableListOf<Page>()
 
@@ -430,9 +430,9 @@ class Hiveworks : ParsedHttpSource() {
         return asObservable().doOnNext { response ->
             if (!response.isSuccessful) {
                 response.close()
-                when (response.code()) {
+                when (response.code) {
                     404 -> throw Exception("This comic has a unsupported chapter list")
-                    else -> throw Exception("HiveWorks Comics HTTP Error ${response.code()}")
+                    else -> throw Exception("HiveWorks Comics HTTP Error ${response.code}")
                 }
             }
         }

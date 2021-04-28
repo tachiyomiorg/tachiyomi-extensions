@@ -18,7 +18,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -34,9 +34,9 @@ class Kumanga : HttpSource() {
         .followRedirects(true)
         .addInterceptor { chain ->
             val originalRequest = chain.request()
-            if (originalRequest.url().toString().endsWith("token=")) {
+            if (originalRequest.url.toString().endsWith("token=")) {
                 getKumangaToken()
-                val url = originalRequest.url().toString() + kumangaToken
+                val url = originalRequest.url.toString() + kumangaToken
                 val newRequest = originalRequest.newBuilder().url(url).build()
                 chain.proceed(newRequest)
             } else {
@@ -105,7 +105,7 @@ class Kumanga : HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val json = parseJson(res)
         val data = json["contents"].array
         val retrievedCount = json["retrievedCount"].int
@@ -196,7 +196,7 @@ class Kumanga : HttpSource() {
     override fun imageUrlParse(response: Response) = throw Exception("Not Used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=$query&retrieveCategories=true&retrieveAuthors=false&contentType=manga&token=$kumangaToken")!!.newBuilder()
+        val url = "$baseUrl/backend/ajax/searchengine.php?page=$page&perPage=10&keywords=$query&retrieveCategories=true&retrieveAuthors=false&contentType=manga&token=$kumangaToken".toHttpUrlOrNull()!!.newBuilder()
 
         filters.forEach { filter ->
             when (filter) {

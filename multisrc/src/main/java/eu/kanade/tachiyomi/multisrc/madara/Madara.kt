@@ -14,7 +14,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -123,9 +123,9 @@ abstract class Madara(
                 if (!response.isSuccessful) {
                     response.close()
                     // Error message for exceeding last page
-                    if (response.code() == 404)
+                    if (response.code == 404)
                         error("Already on the Last Page!")
-                    else throw Exception("HTTP error ${response.code()}")
+                    else throw Exception("HTTP error ${response.code}")
                 }
             }
             .map { response ->
@@ -138,7 +138,7 @@ abstract class Madara(
     protected open fun searchPage(page: Int): String = "page/$page/"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/${searchPage(page)}")!!.newBuilder()
+        val url = "$baseUrl/${searchPage(page)}".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("s", query)
         url.addQueryParameter("post_type", "wp-manga")
         filters.forEach { filter ->

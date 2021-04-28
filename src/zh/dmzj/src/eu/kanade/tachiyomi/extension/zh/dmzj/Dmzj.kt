@@ -3,8 +3,8 @@ package eu.kanade.tachiyomi.extension.zh.dmzj
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -18,7 +18,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -53,15 +53,15 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     private val v3apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
-        HttpUrl.parse(v3apiUrl)!!,
+        v3apiUrl.toHttpUrlOrNull()!!,
         preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
     )
     private val apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
-        HttpUrl.parse(apiUrl)!!,
+        apiUrl.toHttpUrlOrNull()!!,
         preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
     )
     private val imageCDNRateLimitInterceptor = SpecificHostRateLimitInterceptor(
-        HttpUrl.parse(imageCDNUrl)!!,
+        imageCDNUrl.toHttpUrlOrNull()!!,
         preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt()
     )
 
@@ -190,7 +190,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val body = response.body()!!.string()
+        val body = response.body!!.string()
 
         return if (body.contains("g_search_data")) {
             simpleSearchJsonParse(body.substringAfter("=").trim().removeSuffix(";"))
@@ -223,9 +223,9 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
-        val obj = JSONObject(response.body()!!.string())
+        val obj = JSONObject(response.body!!.string())
 
-        if (response.request().url().toString().startsWith(v3apiUrl)) {
+        if (response.request.url.toString().startsWith(v3apiUrl)) {
             title = obj.getString("title")
             thumbnail_url = obj.getString("cover")
             var arr = obj.getJSONArray("authors")
@@ -285,10 +285,10 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val obj = JSONObject(response.body()!!.string())
+        val obj = JSONObject(response.body!!.string())
         val ret = ArrayList<SChapter>()
 
-        if (response.request().url().toString().startsWith(v3apiUrl)) {
+        if (response.request.url.toString().startsWith(v3apiUrl)) {
             val cid = obj.getString("id")
             val chaptersList = obj.getJSONArray("chapters")
             for (i in 0 until chaptersList.length()) {
@@ -326,29 +326,29 @@ class Dmzj : ConfigurableSource, HttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers) // Bypass base url
 
     override fun pageListParse(response: Response): List<Page> {
-        val arr = if (response.request().url().toString().startsWith(oldPageListApiUrl)) {
-            JSONObject(response.body()!!.string()).getJSONArray("page_url")
+        val arr = if (response.request.url.toString().startsWith(oldPageListApiUrl)) {
+            JSONObject(response.body!!.string()).getJSONArray("page_url")
         } else {
             // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
             try {
-                val obj = JSONObject(response.body()!!.string())
+                val obj = JSONObject(response.body!!.string())
                 obj.getJSONObject("chapter").getJSONArray("page_url") // api.m.dmzj1.com already return HD image url
             } catch (_: Exception) {
                 // example url: http://v3api.dmzj.com/chapter/44253/101852.json
-                val url = response.request().url().toString()
+                val url = response.request.url.toString()
                     .replace("api.m", "v3api")
                     .replace("comic/", "")
                     .replace(".html", ".json")
-                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
+                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body!!.string()) }
                 obj.getJSONArray("page_url_hd") // page_url in v3api.dmzj1.com will return compressed image, page_url_hd will return HD image url as api.m.dmzj1.com does.
             } catch (_: Exception) {
                 // Fallback to old api
                 // example url: https://m.dmzj.com/chapinfo/44253/101852.html
-                val url = response.request().url().toString()
+                val url = response.request.url.toString()
                     .replaceFirst("api.", "")
                     .replaceFirst(".dmzj1.", ".dmzj.")
                     .replaceFirst("comic/chapter", "chapinfo")
-                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body()!!.string()) }
+                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body!!.string()) }
                 obj.getJSONArray("page_url")
             }
         }
@@ -480,49 +480,6 @@ class Dmzj : ConfigurableSource, HttpSource() {
         open fun toUriPart() = vals[state].second
     }
 
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val apiRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
-            key = API_RATELIMIT_PREF
-            title = API_RATELIMIT_PREF_TITLE
-            summary = API_RATELIMIT_PREF_SUMMARY
-            entries = ENTRIES_ARRAY
-            entryValues = ENTRIES_ARRAY
-
-            setDefaultValue("5")
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(API_RATELIMIT_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val imgCDNRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
-            key = IMAGE_CDN_RATELIMIT_PREF
-            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
-            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
-            entries = ENTRIES_ARRAY
-            entryValues = ENTRIES_ARRAY
-
-            setDefaultValue("5")
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(apiRateLimitPreference)
-        screen.addPreference(imgCDNRateLimitPreference)
-    }
-
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val apiRateLimitPreference = ListPreference(screen.context).apply {
             key = API_RATELIMIT_PREF
@@ -561,6 +518,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
                 }
             }
         }
+
         screen.addPreference(apiRateLimitPreference)
         screen.addPreference(imgCDNRateLimitPreference)
     }

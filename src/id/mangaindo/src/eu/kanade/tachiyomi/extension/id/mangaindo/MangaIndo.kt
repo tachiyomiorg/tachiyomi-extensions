@@ -76,7 +76,7 @@ class MangaIndo : ParsedHttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        return gson.fromJson<JsonObject>(response.body()!!.string()).let { json ->
+        return gson.fromJson<JsonObject>(response.body!!.string()).let { json ->
             val mangas = json["data"].asJsonArray.map { data ->
                 SManga.create().apply {
                     title = data["post"]["post_title"].asString

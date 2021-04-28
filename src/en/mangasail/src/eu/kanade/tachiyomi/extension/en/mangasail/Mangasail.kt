@@ -97,7 +97,7 @@ class Mangasail : ParsedHttpSource() {
     // Function to get data fragments from website
     private fun getNodeDetail(node: String, field: String): String? {
         val requestUrl = "$baseUrl/sites/all/modules/authcache/modules/authcache_p13n/frontcontroller/authcache.php?a[field][0]=$node:full:en&r=asm/field/node/$field&o[q]=node/$node"
-        val responseString = client.newCall(GET(requestUrl, headers)).execute().body()?.string() ?: return null
+        val responseString = client.newCall(GET(requestUrl, headers)).execute().body?.string() ?: return null
         return with(gson.fromJson<JsonObject>(responseString)) {
             when (field) {
                 "field_image2" -> this["field"]["$node:full:en"].asString.substringAfter("src=\"").substringBefore("\"")

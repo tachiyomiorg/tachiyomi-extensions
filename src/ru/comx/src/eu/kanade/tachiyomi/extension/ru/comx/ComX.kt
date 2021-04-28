@@ -156,7 +156,7 @@ class ComX : ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val id = response.request().url().toString().removePrefix("$baseUrl/").split('-')[0]
+        val id = response.request.url.toString().removePrefix("$baseUrl/").split('-')[0]
 
         val list = mutableListOf<SChapter>()
         list += chapterResponseParse(document)
@@ -190,7 +190,7 @@ class ComX : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
+        val html = response.body!!.string()
         val baseImgUrl = "https://img.com-x.life/comix/"
 
         val beginTag = "\"images\":["

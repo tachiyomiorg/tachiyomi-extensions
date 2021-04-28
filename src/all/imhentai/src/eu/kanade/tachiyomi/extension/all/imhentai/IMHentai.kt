@@ -11,11 +11,11 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -72,7 +72,7 @@ class IMHentai(override val lang: String, private val imhLang: String) : ParsedH
     private fun toBinary(boolean: Boolean) = if (boolean) "1" else "0"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+        val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("key", query)
             .addQueryParameter("page", page.toString())
             .addQueryParameter(getLanguageURIByName(imhLang).uri, toBinary(true)) // main language always enabled
@@ -168,7 +168,7 @@ class IMHentai(override val lang: String, private val imhLang: String) : ParsedH
     override fun chapterListParse(response: Response): List<SChapter> {
         return listOf(
             SChapter.create().apply {
-                setUrlWithoutDomain(response.request().url().toString())
+                setUrlWithoutDomain(response.request.url.toString())
                 name = "Chapter"
                 chapter_number = 1f
             }
@@ -185,7 +185,7 @@ class IMHentai(override val lang: String, private val imhLang: String) : ParsedH
         return client.newCall(GET("$baseUrl${chapter.url}"))
             .asObservableSuccess()
             .map { pageLoadMetaParse(it.asJsoup()) }
-            .map { RequestBody.create(MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8"), it) }
+            .map { it.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaTypeOrNull()) }
             .concatMap { client.newCall(POST(PAEG_LOAD_URL, pageLoadHeaders, it)).asObservableSuccess() }
             .map { pageListParse(it) }
     }

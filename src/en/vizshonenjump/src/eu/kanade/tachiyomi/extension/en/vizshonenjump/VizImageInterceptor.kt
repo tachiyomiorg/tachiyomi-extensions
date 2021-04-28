@@ -7,7 +7,7 @@ import android.graphics.Rect
 import com.drew.imaging.ImageMetadataReader
 import com.drew.metadata.exif.ExifSubIFDDirectory
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.ByteArrayInputStream
@@ -19,10 +19,10 @@ class VizImageInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
 
-        if (chain.request().url().queryParameter(SIGNATURE) == null)
+        if (chain.request().url.queryParameter(SIGNATURE) == null)
             return response
 
-        val image = decodeImage(response.body()!!.byteStream())
+        val image = decodeImage(response.body!!.byteStream())
         val body = ResponseBody.create(MEDIA_TYPE, image)
         return response.newBuilder()
             .body(body)
@@ -155,7 +155,7 @@ class VizImageInterceptor : Interceptor {
 
     companion object {
         private const val SIGNATURE = "Signature"
-        private val MEDIA_TYPE = MediaType.parse("image/png")
+        private val MEDIA_TYPE = "image/png".toMediaTypeOrNull()
 
         private const val CELL_WIDTH_COUNT = 10
         private const val CELL_HEIGHT_COUNT = 15

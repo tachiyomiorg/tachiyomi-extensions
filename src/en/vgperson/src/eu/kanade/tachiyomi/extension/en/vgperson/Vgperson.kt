@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.vgperson
 
 import android.os.Build.VERSION
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList

@@ -148,7 +148,7 @@ class Henchan : ParsedHttpSource() {
                 if (!response.isSuccessful) {
                     response.close()
                     // Error message for exceeding last page
-                    if (response.code() == 404)
+                    if (response.code == 404)
                         Observable.just(
                             listOf(
                                 SChapter.create().apply {
@@ -158,7 +158,7 @@ class Henchan : ParsedHttpSource() {
                                 }
                             )
                         )
-                    else throw Exception("HTTP error ${response.code()}")
+                    else throw Exception("HTTP error ${response.code}")
                 }
             }
             .map { response ->
@@ -178,7 +178,7 @@ class Henchan : ParsedHttpSource() {
     override fun chapterListSelector() = ".related"
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val responseUrl = response.request().url().toString()
+        val responseUrl = response.request.url.toString()
         val document = response.asJsoup()
 
         // exhentai chapter
@@ -219,7 +219,7 @@ class Henchan : ParsedHttpSource() {
         var url = document.select("div#pagination_related a:contains(Вперед)").attr("href")
         while (url.isNotBlank()) {
             val get = GET(
-                "${response.request().url()}/$url",
+                "${response.request.url}/$url",
                 headers = headers
             )
             val nextPage = client.newCall(get).execute().asJsoup()

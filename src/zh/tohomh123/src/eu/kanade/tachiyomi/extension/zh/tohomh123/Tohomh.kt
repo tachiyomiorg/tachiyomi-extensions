@@ -145,7 +145,7 @@ class Tohomh : ParsedHttpSource() {
     private val gson = Gson()
 
     override fun imageUrlParse(response: Response): String {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["Code"].asString
+        return gson.fromJson<JsonObject>(response.body!!.string())["Code"].asString
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

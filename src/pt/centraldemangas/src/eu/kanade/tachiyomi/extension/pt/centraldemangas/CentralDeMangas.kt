@@ -192,7 +192,7 @@ class CentralDeMangas : ParsedHttpSource() {
 
     private fun getCoverUrl(slug: String): String = "$COVER_CDN/150x200/$slug.jpg"
 
-    private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body()!!.string()).array
+    private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body!!.string()).array
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
