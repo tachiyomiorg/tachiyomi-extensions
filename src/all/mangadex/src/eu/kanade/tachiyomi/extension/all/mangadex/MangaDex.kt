@@ -2,14 +2,14 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
+import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -21,26 +21,18 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.CacheControl
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
 
-/*
- * Copyright (C) 2020 The Neko Manga Open Source Project
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSource() {
     override val name = "MangaDex"
     override val baseUrl = "https://www.mangadex.org"
-    val apiUrl = "http://api.mangadex.org.dev.mdcloud.moe"
 
-    //maybe after mvp comes out
+    // maybe after mvp comes out
     override val supportsLatest = false
 
     private val helper = MangaDexHelper()
@@ -59,13 +51,13 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
         ).addInterceptor(MdAtHomeReportInterceptor(network.client, headersBuilder().build()))
             .build()
 
-    //POPULAR Manga Section
+    // POPULAR Manga Section
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(
-            "$apiUrl/manga/?limit=25&offset=${page * 25}",
-            headers,
-            CacheControl.FORCE_NETWORK
+            url = "${MDConstants.apiMangaUrl}?limit=${MDConstants.mangaLimit}&offset=${helper.getMangaListOffset(page)}",
+            headers = headers,
+            cache = CacheControl.FORCE_NETWORK
         )
     }
 
@@ -78,7 +70,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
         val hasMoreResults =
             (mangaListResponse["limit"].int + mangaListResponse["offset"].int) < mangaListResponse["total"].int
 
-        val mangaList = mangaListResponse["results"].array.map { createManga(it) }
+        val mangaList = mangaListResponse["results"].array.map { helper.createManga(it) }
         return MangasPage(mangaList, hasMoreResults)
     }
 
@@ -90,28 +82,42 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     // SEARCH section
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        TODO("Not yet implemented")
+        if (query.startsWith(MDConstants.prefixIdSearch)) {
+            val url = HttpUrl.parse(MDConstants.apiMangaUrl)!!.newBuilder()
+                .addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
+            return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
+        }
+
+        val url = HttpUrl.parse(MDConstants.apiMangaUrl)!!.newBuilder()
+            .addQueryParameter("limit", MDConstants.mangaLimit.toString())
+            .addQueryParameter("offset", (helper.getMangaListOffset(page)))
+            .addQueryParameter("title", query.replace(MDConstants.whitespaceRegex, " "))
+
+        // add filters
+
+        return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
 
-    //Manga Details section
+    // Manga Details section
     /**
      * get manga details url throws exception if the url is the old format so people migrate
      */
     override fun mangaDetailsRequest(manga: SManga): Request {
-        if (!helper.containsUuid(manga.url)) {
+        Log.e("ESCO", manga.url)
+        if (!helper.containsUuid(manga.url.trim())) {
             throw Exception("Old manga id format, please migrate entry to MangaDex")
         }
-        return GET("$apiUrl/${manga.url}", headers, CacheControl.FORCE_NETWORK)
+        return GET("${MDConstants.apiUrl}${manga.url}", headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = JsonParser().parse(response.body()!!.string()).obj
-        return createManga(manga)
+        return helper.createManga(manga, client)
     }
 
-    //Chapter list section
+    // Chapter list section
     /**
      * get chapter list if manga url is old format throws exception
      */
@@ -125,168 +131,124 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     /**
      * Required because api is paged
      */
-    fun actualChapterListRequest(mangaId: String, offset: Int) =
+    private fun actualChapterListRequest(mangaId: String, offset: Int) =
         GET(
-            url = apiUrl + helper.getChapterEndpoint(mangaId, offset, lang),
+            url = helper.getChapterEndpoint(mangaId, offset, lang),
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
         )
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        if (response.isSuccessful.not()) {
-            throw Exception("Error getting chapter list http code: ${response.code()}")
+        try {
+            if (response.isSuccessful.not()) {
+                throw Exception("Error getting chapter list http code: ${response.code()}")
+            }
+            val chapterListResponse = JsonParser().parse(response.body()!!.string()).obj
+
+            val chapterListResults = chapterListResponse["results"].asJsonArray
+
+            val mangaId =
+                response.request().url().toString().substringBefore("/feed")
+                    .substringAfter(MDConstants.apiMangaUrl)
+
+            val limit = chapterListResponse["limit"].int
+
+            var offset = chapterListResponse["offset"].int
+
+            var hasMoreResults = (limit + offset) < chapterListResponse["total"].int
+
+            // max results that can be returned is 500 so need to make more api calls if limit+offset > total chapters
+            while (hasMoreResults) {
+                offset += limit
+                val newResponse =
+                    client.newCall(actualChapterListRequest(mangaId, offset)).execute()
+                val newChapterListJson = JsonParser().parse(newResponse.body()!!.string()).obj
+                chapterListResults.addAll(newChapterListJson["results"].asJsonArray)
+                hasMoreResults = (limit + offset) < newChapterListJson["total"].int
+            }
+
+            val groupMap = helper.createGroupMap(chapterListResults, client)
+            val now = Date().time
+
+            return chapterListResults.map { helper.createChapter(it, groupMap) }
+                .filter { it.date_upload <= now && "MangaPlus" != it.scanlator }
+        } catch (e: Exception) {
+            Log.e("ESCO", "error", e)
+            throw(e)
         }
-        val chapterListResponse = JsonParser().parse(response.body()!!.string()).obj
+    }
 
-        val chapterListResults = chapterListResponse["results"].asJsonArray
-
-        val mangaId =
-            response.request().url().toString().substringBefore("/feed").substringAfter("/manga/")
-
-        val limit = chapterListResponse["limit"].int
-
-        var offset = chapterListResponse["offset"].int
-
-        var hasMoreResults = (limit + offset) < chapterListResponse["total"].int
-
-
-        while (hasMoreResults) {
-            offset += limit
-            val newResponse = client.newCall(actualChapterListRequest(mangaId, offset)).execute()
-            val newChapterListJson = JsonParser().parse(newResponse.body()!!.string()).obj
-            chapterListResults.addAll(newChapterListJson["results"].asJsonArray)
-            hasMoreResults = (limit + offset) < newChapterListJson["total"].int
-        }
-
-        val groupIds =
-            chapterListResults.map { it["data"].array["groups"].array }.flatten()
-                .map { it.string }.distinct()
-
-        // ignore errors if request fails, there is no batch group search yet..
-        val groupMap = runCatching {
-            groupIds.mapNotNull { groupId ->
-                val response = client.newCall(GET("$apiUrl/group/$groupId")).execute()
-                val name = when (response.isSuccessful) {
-                    true -> {
-                        JsonParser().parse(response.body()!!.string())
-                            .obj["data"]["attributes"]["name"].nullString
-                    }
-                    false -> null
-                }
-
-                when (name == null) {
-                    true -> null
-                    false -> Pair(groupId, helper.cleanString(name))
-                }
-
-            }.toMap()
-        }?.getOrNull() ?: emptyMap()
-
-        val now = Date().time
-        return chapterListResults.map { createChapter(it, groupMap) }
-            .filter { it.date_upload <= now && "Manga Plus" != it.scanlator }
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET(MDConstants.apiUrl + chapter.url, headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        TODO("Not yet implemented")
+        val chapterJson = JsonParser().parse(response.body()!!.string()).obj["data"]
+        val atHomeRequestUrl = "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+        val response =
+            client.newCall(GET(atHomeRequestUrl, headers, CacheControl.FORCE_NETWORK)).execute()
+
+        if (response.isSuccessful.not()) {
+            throw Exception("Error getting chapter pages ${response.code()}")
+        }
+
+        val usingDataSaver = preferences.getInt(MDConstants.dataSaverPref, 0) == 1
+
+        // have to add the time, and url to the page because pages timeout within 30mins now
+        val now = Date().time
+        val host = JsonParser().parse(response.body()!!.string()).string
+        val hash = chapterJson["attributes"]["hash"].string
+        val pageSuffix = if (usingDataSaver) {
+            chapterJson["attributes"]["dataSaver"].array.map { "/data-saver/$hash/${it.string}" }
+        } else {
+            chapterJson["attributes"]["data"].array.map { "/data/$hash/${it.string}" }
+        }
+
+        return pageSuffix.mapIndexed { index, pageSuffix ->
+            val mdAtHomeMetadataUrl = "$host,$atHomeRequestUrl,$now"
+            Page(index, mdAtHomeMetadataUrl, pageSuffix)
+        }
     }
 
-    override fun imageUrlParse(response: Response): String {
-        TODO("Not yet implemented")
+    override fun imageRequest(page: Page): Request {
+        return helper.getValidImageUrlForPage(page, headers, client)
+    }
+
+    override fun imageUrlParse(response: Response): String = ""
+
+    // mangadex is mvp no settings yet
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val dataSaverPref = androidx.preference.ListPreference(screen.context).apply {
+            key = MDConstants.dataSaverPref
+            title = MDConstants.dataSaverPrefTitle
+            entries = arrayOf("Disable", "Enable")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(MDConstants.dataSaverPref, index).commit()
+            }
+        }
+        screen.addPreference(dataSaverPref)
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        TODO("Not yet implemented")
-    }
+        val dataSaverPref = ListPreference(screen.context).apply {
+            key = MDConstants.dataSaverPref
+            title = MDConstants.dataSaverPrefTitle
+            entries = arrayOf("Disable", "Enable")
+            entryValues = arrayOf("0", "1")
+            summary = "%s"
 
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        TODO("Not yet implemented")
-    }
-
-    /**
-     * Create an SManga from json element
-     */
-    fun createManga(mangaJson: JsonElement): SManga {
-        val data = mangaJson["data"].obj
-        val dexId = data["id"].string
-        val attr = data["attributes"].obj
-
-        val nonGenres = listOf(
-            attr["contentRating"].nullString,
-            attr["originalLanguage"]?.nullString,
-            attr["publicationDemographic"]?.nullString
-        )
-
-        val authorIds = data["relationships"].array.filter { relationship ->
-            relationship["type"].string.equals("author", true)
-        }.map { relationship -> relationship["id"].string }
-            .distinct()
-
-        //get authors ignore if they error, artists are labelled as authors currently
-        val authors = runCatching {
-            authorIds.mapNotNull { id ->
-                val response = client.newCall(GET("$apiUrl/author/$id")).execute()
-                when (response.isSuccessful) {
-                    true -> {
-                        JsonParser().parse(response.body()!!.string())
-                            .obj["data"]["attributes"]["name"].nullString
-                    }
-                    false -> null
-                }
-            }.map { helper.cleanString(it) }
-
-        }.getOrNull() ?: emptyList()
-
-        val genreList =
-            (nonGenres + attr["tags"].array.map { tag -> tag["id"].string }.map { dexTag ->
-                helper.tags.firstOrNull { tag -> tag.name.equals(dexTag, true) }
-            }.map { it?.name }).filterNotNull()
-
-
-        return SManga.create().apply {
-            url = "/manga/$dexId"
-            title = helper.cleanString(attr["title"]["en"].string)
-            description = helper.cleanString(attr["description"]["??"].string)
-            author = authors.joinToString(", ")
-            status = helper.getPublicationStatus(attr["publicationDemographic"].nullString)
-            thumbnail_url = ""
-            genre = genreList.joinToString(", ")
-        }
-    }
-
-    fun createChapter(chapterJsonResponse: JsonElement, groupMap: Map<String, String>): SChapter {
-
-        val data = chapterJsonResponse["data"].obj
-        val attr = data["attributes"]
-
-        val chapterName = mutableListOf<String>()
-        // Build chapter name
-
-        attr["volume"].nullString?.let {
-            chapterName.add("Vol.$it")
-        }
-
-        attr["chapter"].nullString?.let {
-            chapterName.add("Ch.$it")
-        }
-
-        attr["title"].nullString?.let {
-            if (chapterName.isNotEmpty()) {
-                chapterName.add("-")
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                preferences.edit().putInt(MDConstants.dataSaverPref, index).commit()
             }
-            chapterName.add(it)
         }
-        // if volume, chapter and title is empty its a oneshot
-        if (chapterName.isEmpty()) {
-            chapterName.add("Oneshot")
-        }
-        //In future calculate [END] if non mvp api doesnt provide it
 
-        return SChapter.create().apply {
-            name = helper.cleanString(chapterName.joinToString(" "))
-            date_upload = 0L //helper.parseDate(attr["publishAt"].string)
-            scanlator =
-                attr["groups"].array.mapNotNull { groupMap[it.string] }.joinToString { " & " }
-        }
+        screen.addPreference(dataSaverPref)
     }
 }

@@ -1,3 +1,4 @@
+/*
 package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Application
@@ -547,12 +548,14 @@ abstract class OldMangaDex(
         return chapters.also { if (it.isEmpty() && hasMangaPlus) throw Exception("This only has MangaPlus chapters, use the MangaPlus extension") }
     }
 
-    /**
-     * Filter out the following chapters:
-     *   language doesn't match the chosen language
-     *   Future chapters
-     *   Chapters from MangaPlus since they have to be read in MangaPlus extension
-     */
+    */
+/**
+ * Filter out the following chapters:
+ *   language doesn't match the chosen language
+ *   Future chapters
+ *   Chapters from MangaPlus since they have to be read in MangaPlus extension
+ *//*
+
     private fun shouldKeepChapter(chapterJson: JsonObject, now: Long): Boolean {
         return when {
             chapterJson["language"].string != internalLang -> false
@@ -1063,3 +1066,4 @@ abstract class OldMangaDex(
 
 
 
+*/

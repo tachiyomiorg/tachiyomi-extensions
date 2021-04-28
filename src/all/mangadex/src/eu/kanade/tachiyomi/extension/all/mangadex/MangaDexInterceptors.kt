@@ -34,7 +34,7 @@ class MdAtHomeReportInterceptor(
 
     private val gson: Gson by lazy { Gson() }
     private val mdAtHomeUrlRegex =
-        Regex("""^https://[\w\d]+\.[\w\d]+\.mangadex\.network.*${'$'}""")
+        Regex("""^https://[\w\d]+\.[\w\d]+\.mangadex(\b-test\b)?\.network.*${'$'}""")
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
@@ -52,7 +52,7 @@ class MdAtHomeReportInterceptor(
 
                 val postResult = client.newCall(
                     POST(
-                        "https://api.mangadex.network/report",
+                        MDConstants.atHomePostUrl,
                         headers,
                         RequestBody.create(null, jsonString)
                     )
@@ -73,7 +73,7 @@ val coverInterceptor = Interceptor { chain ->
     val originalRequest = chain.request()
     return@Interceptor chain.proceed(chain.request()).let { response ->
         if (response.code() == 404 && originalRequest.url().toString()
-                .contains(coverRegex)
+            .contains(coverRegex)
         ) {
             response.close()
             chain.proceed(
@@ -86,5 +86,3 @@ val coverInterceptor = Interceptor { chain ->
         }
     }
 }
-
-

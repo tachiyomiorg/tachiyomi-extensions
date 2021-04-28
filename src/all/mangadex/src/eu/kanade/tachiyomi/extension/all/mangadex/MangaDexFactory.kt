@@ -52,7 +52,7 @@ class MangaDexFactory : SourceFactory {
     )
 }
 
-/*class MangaDexEnglish : MangaDex("en")
+class MangaDexEnglish : MangaDex("en")
 class MangaDexJapanese : MangaDex("ja")
 class MangaDexPolish : MangaDex("pl")
 class MangaDexSerboCroatian : MangaDex("sh")
@@ -93,4 +93,4 @@ class MangaDexLithuanian : MangaDex("lt")
 class MangaDexHebrew : MangaDex("he")
 class MangaDexHindi : MangaDex("hi")
 class MangaDexNorwegian : MangaDex("no")
-class MangaDexOther : MangaDex("other")*/
+class MangaDexOther : MangaDex("other")
