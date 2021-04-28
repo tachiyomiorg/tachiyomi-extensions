@@ -109,7 +109,7 @@ abstract class WPMangaReader(
     open val altNameSelector = ".alternative, .seriestualt"
     open val altName = "Alternative Name" + ": "
 
-    private fun parseStatus(status: String) = when {
+    open fun parseStatus(status: String) = when {
         status.contains("Ongoing") -> SManga.ONGOING
         status.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
@@ -188,7 +188,7 @@ abstract class WPMangaReader(
             Pair("", "<select>"),
             Pair("title", "A-Z"),
             Pair("update", "Latest Update"),
-            Pair("create", "Latest Added")
+            Pair("latest", "Latest Added")
         )
     )
 

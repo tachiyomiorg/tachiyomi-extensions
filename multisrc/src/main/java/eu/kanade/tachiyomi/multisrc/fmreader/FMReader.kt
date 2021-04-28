@@ -49,6 +49,7 @@ abstract class FMReader(
             element.hasAttr("data-original") -> element.attr("abs:data-original")
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("data-bg") -> element.attr("abs:data-bg")
+            element.hasAttr("data-srcset") -> element.attr("abs:data-srcset")
             else -> element.attr("abs:src")
         }
     }

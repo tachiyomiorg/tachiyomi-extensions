@@ -2,7 +2,7 @@
 
 I acknowledge that:
 
-- I have updated to the latest version of the app (stable is v0.10.11)
+- I have updated to the latest version of the app (stable is v0.10.12)
 - I have updated all extensions
 - If this is an issue with the app itself, that I should be opening an issue in https://github.com/tachiyomiorg/tachiyomi
 - I have searched the existing issues for duplicates
