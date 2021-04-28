@@ -263,11 +263,32 @@ open class Cubari(override val lang: String) : HttpSource() {
                 val chapter = SChapter.create()
 
                 chapter.scanlator = groups.getString(groupNum)
+                
+                //Api for gist (and some others maybe) doesn't give a "release_date" so we will use the Manga update time. 
+                //So when new chapter comes the manga will go on top if sortinf is set to "Last Updated"
+                //Code by ivaniskandar (Implemented on CatManga extension.)
+                
                 if (chapterObj.has("release_date")) {
                     chapter.date_upload =
                         chapterObj.getJSONObject("release_date").getLong(groupNum) * 1000
+                } else {
+                    val currentTimeMillis = System.currentTimeMillis()
+                    if (!seriesPrefs.contains(number)) {
+                        seriesPrefsEditor.putLong(number, currentTimeMillis)
+                    }
+                    chapter.date_upload = seriesPrefs.getLong(number, currentTimeMillis)
                 }
-                chapter.name = chapterNum + " - " + chapterObj.getString("title")
+                chapter.name = if (chapterObj.has("volume")) {
+                    
+                    "Vol. " + chapterObj.getString("volume") + " Ch. " chapterNum + " - " + chapterObj.getString("title")
+                    //Output "Vol. 1 Ch. 1 - Chapter Name"
+                    
+                } else {
+                
+                    "Ch. " chapterNum + " - " + chapterObj.getString("title")
+                    //Output "Ch. 1 - Chapter Name"
+                    
+                }
                 chapter.chapter_number = chapterNum.toFloat()
                 chapter.url =
                     if (chapterGroups.optJSONArray(groupNum) != null) {
@@ -279,6 +300,7 @@ open class Cubari(override val lang: String) : HttpSource() {
             }
         }
 
+        seriesPrefsEditor.apply()
         return chapterList.reversed()
     }
 
