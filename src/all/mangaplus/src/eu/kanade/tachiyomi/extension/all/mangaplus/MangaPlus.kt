@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.all.mangaplus
 import android.app.Application
 import android.content.SharedPreferences
 import android.os.Build
+import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
@@ -14,6 +15,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -422,11 +424,11 @@ abstract class MangaPlus(
 
     private fun Response.asProto(): MangaPlusResponse {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M)
-            return ProtoBuf.decodeFromByteArray(MangaPlusSerializer, body!!.bytes())
+            return ProtoBuf.decodeFromByteArray(body!!.bytes())
 
         // The kotlinx.serialization library eventually always have some issues with
-        // devices with Android version below Nougat. So, if the device is running Marshmallow
-        // or lower, the deserialization is done using ProtobufJS + Duktape + Gson.
+        // devices with Android version below Nougat. So, if the device is running Android 6.x,
+        // the deserialization is done using ProtobufJS + Duktape + Gson.
 
         val bytes = body!!.bytes()
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
@@ -445,7 +447,7 @@ abstract class MangaPlus(
     companion object {
         private const val API_URL = "https://jumpg-webapi.tokyo-cdn.com/api"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
 
