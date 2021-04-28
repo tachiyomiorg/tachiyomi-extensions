@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.cubari
 
+import android.app.Application
 import android.os.Build
 import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.network.GET
@@ -16,6 +17,8 @@ import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 open class Cubari(override val lang: String) : HttpSource() {
 
