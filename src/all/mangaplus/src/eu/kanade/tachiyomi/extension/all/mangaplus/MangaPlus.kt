@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.extension.all.mangaplus
 import android.app.Application
 import android.content.SharedPreferences
 import android.os.Build
-import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
