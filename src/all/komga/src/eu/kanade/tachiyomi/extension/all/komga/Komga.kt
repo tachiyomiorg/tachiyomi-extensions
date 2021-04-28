@@ -164,7 +164,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         processSeriesPage(response)
 
     override fun mangaDetailsRequest(manga: SManga): Request =
-        GET(baseUrl + manga.url, headers)
+        GET(manga.url, headers)
 
     override fun mangaDetailsParse(response: Response): SManga =
         if (response.fromReadList()) {
@@ -176,7 +176,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("$baseUrl${manga.url}/books?unpaged=true&media_status=READY", headers)
+        GET("${manga.url}/books?unpaged=true&media_status=READY", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!).content
@@ -227,8 +227,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private fun SeriesDto.toSManga(): SManga =
         SManga.create().apply {
             title = metadata.title
-            url = "/api/v1/series/$id"
-            thumbnail_url = "$baseUrl/api/v1/series/$id/thumbnail"
+            url = "$baseUrl/api/v1/series/$id"
+            thumbnail_url = "$url/thumbnail"
             status = when (metadata.status) {
                 "ONGOING" -> SManga.ONGOING
                 "ENDED" -> SManga.COMPLETED
@@ -245,8 +245,8 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private fun ReadListDto.toSManga(): SManga =
         SManga.create().apply {
             title = name
-            url = "/api/v1/readlists/$id"
-            thumbnail_url = "$baseUrl/api/v1/readlists/$id/thumbnail"
+            url = "$baseUrl/api/v1/readlists/$id"
+            thumbnail_url = "$url/thumbnail"
             status = SManga.UNKNOWN
         }
 
