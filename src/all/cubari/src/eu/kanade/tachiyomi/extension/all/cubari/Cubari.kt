@@ -273,10 +273,10 @@ open class Cubari(override val lang: String) : HttpSource() {
                         chapterObj.getJSONObject("release_date").getLong(groupNum) * 1000
                 } else {
                     val currentTimeMillis = System.currentTimeMillis()
-                    if (!seriesPrefs.contains(number)) {
-                        seriesPrefsEditor.putLong(number, currentTimeMillis)
+                    if (!seriesPrefs.contains(chapterNum)) {
+                        seriesPrefsEditor.putLong(chapterNum, currentTimeMillis)
                     }
-                    chapter.date_upload = seriesPrefs.getLong(number, currentTimeMillis)
+                    chapter.date_upload = seriesPrefs.getLong(chapterNum, currentTimeMillis)
                 }
                 chapter.name = if (chapterObj.has("volume")) {
                     
