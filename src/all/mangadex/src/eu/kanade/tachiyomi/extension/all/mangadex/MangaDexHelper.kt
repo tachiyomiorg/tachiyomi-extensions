@@ -72,7 +72,6 @@ class MangaDexHelper() {
         }
     }
 
-
     fun parseDate(dateAsString: String): Long =
         MDConstants.dateFormatter.parse(dateAsString)?.time ?: 0
 

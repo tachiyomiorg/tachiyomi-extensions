@@ -25,6 +25,7 @@ import okhttp3.Response
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
+import java.util.Locale
 
 abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSource() {
     override val name = "MangaDex"
@@ -54,9 +55,9 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun popularMangaRequest(page: Int): Request {
         return GET(
             url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${
-                helper.getMangaListOffset(
-                    page
-                )
+            helper.getMangaListOffset(
+                page
+            )
             }",
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
@@ -96,7 +97,10 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
             addQueryParameter("offset", (helper.getMangaListOffset(page)))
-            addQueryParameter("title", query.replace(MDConstants.whitespaceRegex, " "))
+            val actualQuery = query.replace(MDConstants.whitespaceRegex, " ")
+            if (actualQuery.isNotBlank()) {
+                addQueryParameter("title", actualQuery)
+            }
 
             // add filters
             filters.forEach { filter ->
@@ -104,14 +108,14 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                     is ContentRatingList -> {
                         filter.state.forEach { rating ->
                             if (rating.state) {
-                                addQueryParameter("contentRating[]", rating.name)
+                                addQueryParameter("contentRating[]", rating.name.toLowerCase(Locale.US))
                             }
                         }
                     }
                     is DemographicList -> {
                         filter.state.forEach { demographic ->
                             if (demographic.state) {
-                                addQueryParameter("publicationDemographic[]", demographic.name)
+                                addQueryParameter("publicationDemographic[]", demographic.name.toLowerCase(Locale.US))
                             }
                         }
                     }
@@ -127,7 +131,6 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                 }
             }
         }
-
 
         return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
     }
@@ -266,7 +269,6 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                 preferences.edit().putInt(MDConstants.dataSaverPref, index).commit()
             }
         }
-
 
         screen.addPreference(dataSaverPref)
     }
