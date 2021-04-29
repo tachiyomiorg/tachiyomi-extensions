@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 import eu.kanade.tachiyomi.source.model.Filter
 
-class Demographic(name: String) : Filter.TriState(name)
+class Demographic(name: String) : Filter.CheckBox(name)
 
 class ContentRating(name: String) : Filter.CheckBox(name)
 class ContentRatingList(contentRating: List<ContentRating>) : Filter.Group<ContentRating>("Content Rating", contentRating)

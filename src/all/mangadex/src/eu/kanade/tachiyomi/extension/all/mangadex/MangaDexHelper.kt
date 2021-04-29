@@ -72,6 +72,7 @@ class MangaDexHelper() {
         }
     }
 
+
     fun parseDate(dateAsString: String): Long =
         MDConstants.dateFormatter.parse(dateAsString)?.time ?: 0
 
@@ -99,7 +100,7 @@ class MangaDexHelper() {
                         }
                     val response =
                         client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
-                    JsonParser().parse(response.body()!!.string()).string
+                    JsonParser.parseString(response.body!!.string()).string
                 }
             }
         return GET(mdAtHomeServerUrl + page.imageUrl, headers)
@@ -146,7 +147,7 @@ class MangaDexHelper() {
                 val response = client.newCall(GET("${MDConstants.apiUrl}/author/$id")).execute()
                 when (response.isSuccessful) {
                     true -> {
-                        JsonParser().parse(response.body()!!.string())
+                        JsonParser.parseString(response.body!!.string())
                             .obj["data"]["attributes"]["name"].nullString
                     }
                     false -> null
@@ -195,7 +196,7 @@ class MangaDexHelper() {
                     client.newCall(GET("${MDConstants.apiUrl}/group/$groupId")).execute()
                 val name = when (groupResponse.isSuccessful) {
                     true -> {
-                        JsonParser().parse(groupResponse.body()!!.string())
+                        JsonParser.parseString(groupResponse.body!!.string())
                             .obj["data"]["attributes"]["name"].nullString
                     }
                     false -> null

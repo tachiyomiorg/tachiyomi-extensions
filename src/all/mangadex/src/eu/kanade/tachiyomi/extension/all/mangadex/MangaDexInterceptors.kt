@@ -18,7 +18,7 @@ private val coverRegex = Regex("""/images/.*\.jpg""")
 private val baseInterceptor = RateLimitInterceptor(3)
 
 val mdRateLimitInterceptor = Interceptor { chain ->
-    return@Interceptor when (chain.request().url().toString().contains(coverRegex)) {
+    return@Interceptor when (chain.request().url.toString().contains(coverRegex)) {
         true -> chain.proceed(chain.request())
         false -> baseInterceptor.intercept(chain)
     }
@@ -40,7 +40,7 @@ class MdAtHomeReportInterceptor(
         val originalRequest = chain.request()
 
         return chain.proceed(chain.request()).let { response ->
-            val url = originalRequest.url().toString()
+            val url = originalRequest.url.toString()
             if (url.contains(mdAtHomeUrlRegex)) {
                 val jsonString = gson.toJson(
                     mapOf(
@@ -72,13 +72,13 @@ class MdAtHomeReportInterceptor(
 val coverInterceptor = Interceptor { chain ->
     val originalRequest = chain.request()
     return@Interceptor chain.proceed(chain.request()).let { response ->
-        if (response.code() == 404 && originalRequest.url().toString()
+        if (response.code == 404 && originalRequest.url.toString()
             .contains(coverRegex)
         ) {
             response.close()
             chain.proceed(
                 originalRequest.newBuilder().url(
-                    originalRequest.url().toString().substringBeforeLast(".") + ".thumb.jpg"
+                    originalRequest.url.toString().substringBeforeLast(".") + ".thumb.jpg"
                 ).build()
             )
         } else {

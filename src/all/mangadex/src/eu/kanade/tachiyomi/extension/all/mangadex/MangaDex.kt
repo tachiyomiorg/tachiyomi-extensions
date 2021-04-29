@@ -2,9 +2,6 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.preference.MultiSelectListPreference
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
@@ -22,7 +19,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.CacheControl
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import uy.kohesive.injekt.Injekt
@@ -56,7 +53,11 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(
-            url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${helper.getMangaListOffset(page)}",
+            url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${
+                helper.getMangaListOffset(
+                    page
+                )
+            }",
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
         )
@@ -64,10 +65,10 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun popularMangaParse(response: Response): MangasPage {
         if (response.isSuccessful.not()) {
-            throw Exception("Error getting popular manga http code: ${response.code()}")
+            throw Exception("Error getting popular manga http code: ${response.code}")
         }
 
-        val mangaListResponse = JsonParser().parse(response.body()!!.string()).obj
+        val mangaListResponse = JsonParser.parseString(response.body!!.string()).obj
         val hasMoreResults =
             (mangaListResponse["limit"].int + mangaListResponse["offset"].int) < mangaListResponse["total"].int
 
@@ -84,17 +85,48 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.startsWith(MDConstants.prefixIdSearch)) {
-            val url = HttpUrl.parse(MDConstants.apiMangaUrl)!!.newBuilder()
+            val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
                 .addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
             return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
         }
 
-        val url = HttpUrl.parse(MDConstants.apiMangaUrl)!!.newBuilder()
-            .addQueryParameter("limit", MDConstants.mangaLimit.toString())
-            .addQueryParameter("offset", (helper.getMangaListOffset(page)))
-            .addQueryParameter("title", query.replace(MDConstants.whitespaceRegex, " "))
+        val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
 
-        // add filters
+        url.apply {
+
+            addQueryParameter("limit", MDConstants.mangaLimit.toString())
+            addQueryParameter("offset", (helper.getMangaListOffset(page)))
+            addQueryParameter("title", query.replace(MDConstants.whitespaceRegex, " "))
+
+            // add filters
+            filters.forEach { filter ->
+                when (filter) {
+                    is ContentRatingList -> {
+                        filter.state.forEach { rating ->
+                            if (rating.state) {
+                                addQueryParameter("contentRating[]", rating.name)
+                            }
+                        }
+                    }
+                    is DemographicList -> {
+                        filter.state.forEach { demographic ->
+                            if (demographic.state) {
+                                addQueryParameter("publicationDemographic[]", demographic.name)
+                            }
+                        }
+                    }
+                    is TagList -> {
+                        filter.state.forEach { tag ->
+                            if (tag.isIncluded()) {
+                                addQueryParameter("includedTags[]", tag.id)
+                            } else if (tag.isExcluded()) {
+                                addQueryParameter("excludedTags[]", tag.id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
 
         return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
@@ -115,7 +147,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val manga = JsonParser().parse(response.body()!!.string()).obj
+        val manga = JsonParser.parseString(response.body!!.string()).obj
         return helper.createManga(manga, client)
     }
 
@@ -143,14 +175,14 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun chapterListParse(response: Response): List<SChapter> {
         try {
             if (response.isSuccessful.not()) {
-                throw Exception("Error getting chapter list http code: ${response.code()}")
+                throw Exception("Error getting chapter list http code: ${response.code}")
             }
-            val chapterListResponse = JsonParser().parse(response.body()!!.string()).obj
+            val chapterListResponse = JsonParser().parse(response.body!!.string()).obj
 
             val chapterListResults = chapterListResponse["results"].asJsonArray
 
             val mangaId =
-                response.request().url().toString().substringBefore("/feed")
+                response.request.url.toString().substringBefore("/feed")
                     .substringAfter(MDConstants.apiMangaUrl)
 
             val limit = chapterListResponse["limit"].int
@@ -164,7 +196,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                 offset += limit
                 val newResponse =
                     client.newCall(actualChapterListRequest(mangaId, offset)).execute()
-                val newChapterListJson = JsonParser().parse(newResponse.body()!!.string()).obj
+                val newChapterListJson = JsonParser.parseString(newResponse.body!!.string()).obj
                 chapterListResults.addAll(newChapterListJson["results"].asJsonArray)
                 hasMoreResults = (limit + offset) < newChapterListJson["total"].int
             }
@@ -185,20 +217,20 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val chapterJson = JsonParser().parse(response.body()!!.string()).obj["data"]
+        val chapterJson = JsonParser().parse(response.body!!.string()).obj["data"]
         val atHomeRequestUrl = "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
         val response =
             client.newCall(GET(atHomeRequestUrl, headers, CacheControl.FORCE_NETWORK)).execute()
 
         if (response.isSuccessful.not()) {
-            throw Exception("Error getting chapter pages ${response.code()}")
+            throw Exception("Error getting chapter pages ${response.code}")
         }
 
         val usingDataSaver = preferences.getInt(MDConstants.dataSaverPref, 0) == 1
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
-        val host = JsonParser().parse(response.body()!!.string()).string
+        val host = JsonParser().parse(response.body!!.string()).string
         val hash = chapterJson["attributes"]["hash"].string
         val pageSuffix = if (usingDataSaver) {
             chapterJson["attributes"]["dataSaver"].array.map { "/data-saver/$hash/${it.string}" }
@@ -206,9 +238,9 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
             chapterJson["attributes"]["data"].array.map { "/data/$hash/${it.string}" }
         }
 
-        return pageSuffix.mapIndexed { index, pageSuffix ->
+        return pageSuffix.mapIndexed { index, imgUrl ->
             val mdAtHomeMetadataUrl = "$host,$atHomeRequestUrl,$now"
-            Page(index, mdAtHomeMetadataUrl, pageSuffix)
+            Page(index, mdAtHomeMetadataUrl, imgUrl)
         }
     }
 
@@ -238,7 +270,6 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
         screen.addPreference(dataSaverPref)
     }
-
 
     override fun getFilterList(): FilterList {
         return FilterList(
