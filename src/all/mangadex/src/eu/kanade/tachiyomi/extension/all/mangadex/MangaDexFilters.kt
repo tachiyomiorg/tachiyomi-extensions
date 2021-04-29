@@ -8,6 +8,7 @@ class ContentRating(name: String) : Filter.CheckBox(name)
 class ContentRatingList(contentRating: List<ContentRating>) : Filter.Group<ContentRating>("Content Rating", contentRating)
 class DemographicList(demographics: List<Demographic>) : Filter.Group<Demographic>("Publication Demographic", demographics)
 class Tag(val id: String, name: String) : Filter.TriState(name)
+class TagList(tags: List<Tag>) : Filter.Group<Tag>("Tags", tags)
 
 fun getDemographics() = listOf(
     Demographic("Shounen"),
@@ -16,7 +17,7 @@ fun getDemographics() = listOf(
     Demographic("Josei")
 )
 
-fun getContentRating() = listOf("Safe", "Suggestive", "Erotica", "Pornographic")
+fun getContentRating() = listOf(ContentRating("Safe"), ContentRating("Suggestive"), ContentRating("Erotica"), ContentRating("Pornographic"))
 
 fun getTags() = listOf(
     Tag("391b0423-d847-456f-aff0-8b0cfc03066b", "Action"),

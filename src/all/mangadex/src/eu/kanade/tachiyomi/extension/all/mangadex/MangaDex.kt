@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.preference.MultiSelectListPreference
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.PreferenceScreen
 import android.util.Log
@@ -32,7 +33,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override val name = "MangaDex"
     override val baseUrl = "https://www.mangadex.org"
 
-    // maybe after mvp comes out
+    // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
     override val supportsLatest = false
 
     private val helper = MangaDexHelper()
@@ -55,7 +56,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(
-            url = "${MDConstants.apiMangaUrl}?limit=${MDConstants.mangaLimit}&offset=${helper.getMangaListOffset(page)}",
+            url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${helper.getMangaListOffset(page)}",
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
         )
@@ -94,6 +95,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
             .addQueryParameter("title", query.replace(MDConstants.whitespaceRegex, " "))
 
         // add filters
+
 
         return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
     }
@@ -224,6 +226,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
             entries = arrayOf("Disable", "Enable")
             entryValues = arrayOf("0", "1")
             summary = "%s"
+            setDefaultValue("0")
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
@@ -231,24 +234,17 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                 preferences.edit().putInt(MDConstants.dataSaverPref, index).commit()
             }
         }
+
+
         screen.addPreference(dataSaverPref)
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val dataSaverPref = ListPreference(screen.context).apply {
-            key = MDConstants.dataSaverPref
-            title = MDConstants.dataSaverPrefTitle
-            entries = arrayOf("Disable", "Enable")
-            entryValues = arrayOf("0", "1")
-            summary = "%s"
 
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(MDConstants.dataSaverPref, index).commit()
-            }
-        }
-
-        screen.addPreference(dataSaverPref)
+    override fun getFilterList(): FilterList {
+        return FilterList(
+            ContentRatingList(getContentRating()),
+            DemographicList(getDemographics()),
+            TagList(getTags())
+        )
     }
 }
