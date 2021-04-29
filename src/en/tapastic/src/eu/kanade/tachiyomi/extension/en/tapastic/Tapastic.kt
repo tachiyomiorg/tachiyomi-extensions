@@ -3,8 +3,6 @@ package eu.kanade.tachiyomi.extension.en.tapastic
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -41,24 +39,6 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
-            key = SHOW_LOCKED_CHAPTERS_Title
-            title = SHOW_LOCKED_CHAPTERS_Title
-            entries = prefsEntries
-            entryValues = prefsEntryValues
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
-            }
-        }
-        screen.addPreference(chapterListPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val chapterListPref = ListPreference(screen.context).apply {
             key = SHOW_LOCKED_CHAPTERS_Title
             title = SHOW_LOCKED_CHAPTERS_Title
             entries = prefsEntries
@@ -182,7 +162,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
         // recursively build the chapter list
         fun parseChapters(page: Int) {
             val url = "$baseUrl/series/$mangaId/episodes?page=$page&sort=NEWEST&init_load=0&large=true&last_access=0&"
-            val json = gson.fromJson<JsonObject>(client.newCall(GET(url, headers)).execute().body()!!.string())["data"]
+            val json = gson.fromJson<JsonObject>(client.newCall(GET(url, headers)).execute().body!!.string())["data"]
 
             Jsoup.parse(json["body"].string).select(chapterListSelector())
                 .let { list ->

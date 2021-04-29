@@ -10,7 +10,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -70,7 +70,7 @@ class Onemanhua : ParsedHttpSource() {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search?searchString=$query&page=$page", headers)
         } else {
-            val url = HttpUrl.parse("$baseUrl/show")!!.newBuilder()
+            val url = "$baseUrl/show".toHttpUrlOrNull()!!.newBuilder()
             url.addQueryParameter("page", page.toString())
 
             filters.forEach { filter ->

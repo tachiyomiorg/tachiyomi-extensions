@@ -56,7 +56,7 @@ class Qiximh : HttpSource() {
 
     // Override
     private fun FormBody.value(name: String): String {
-        return (0 until size())
+        return (0 until size)
             .first { name(it) == name }
             .let { value(it) }
     }
@@ -100,7 +100,7 @@ class Qiximh : HttpSource() {
             )
         }
 
-        val requestBody = origRequest.body() as FormBody
+        val requestBody = origRequest.body as FormBody
         val currentPage: Int = requestBody.value("page_num").toInt()
         val hasNextPage = currentPage < maxPage
 
@@ -108,7 +108,7 @@ class Qiximh : HttpSource() {
     }
 
     private fun commonRankDataParse(response: Response): MangasPage {
-        return commonDataProcess(response.request(), response.body()!!.string())
+        return commonDataProcess(response.request, response.body!!.string())
     }
 
     // Popular Manga
@@ -152,7 +152,7 @@ class Qiximh : HttpSource() {
         }
     }
     override fun searchMangaParse(response: Response): MangasPage {
-        val responseBody = response.body()
+        val responseBody = response.body
         val mangaArr = mutableListOf<SManga>()
 
         if (responseBody != null) {
@@ -160,7 +160,7 @@ class Qiximh : HttpSource() {
             if (!responseString.isNullOrEmpty()) {
                 if (responseString.startsWith("[")) {
                     // This is to process filter
-                    return commonDataProcess(response.request(), responseString)
+                    return commonDataProcess(response.request, responseString)
                 } else {
                     val jsonData = JSONObject(responseString)
                     if (jsonData.get("msg") == "success") {
@@ -255,7 +255,7 @@ class Qiximh : HttpSource() {
             }
         }
 
-        val mangaUrl = response.request().url().toString()
+        val mangaUrl = response.request.url.toString()
 
         val request = POST(
             "$baseUrl/bookchapter/",
@@ -267,7 +267,7 @@ class Qiximh : HttpSource() {
         )
 
         val inlineResponse = client.newCall(request).execute()
-        val jsonData = JSONArray(inlineResponse.body()!!.string())
+        val jsonData = JSONArray(inlineResponse.body!!.string())
 
         val chapterArr = mutableListOf<SChapter>()
         chapterArr.addAll(htmlChapters)

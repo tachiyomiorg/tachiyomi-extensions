@@ -21,7 +21,7 @@ class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
     private class Sucuri : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val response = chain.proceed(chain.request())
-            if (response.header("x-sucuri-cache").isNullOrEmpty() && response.request().url().toString().contains("//mangaswat.com"))
+            if (response.header("x-sucuri-cache").isNullOrEmpty() && response.request.url.toString().contains("//mangaswat.com"))
                 throw IOException("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
             return response
         }

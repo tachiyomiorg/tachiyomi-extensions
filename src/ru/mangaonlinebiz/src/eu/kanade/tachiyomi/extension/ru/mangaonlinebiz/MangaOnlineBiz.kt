@@ -64,10 +64,10 @@ class MangaOnlineBiz : ParsedHttpSource() {
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun searchMangaParse(response: Response): MangasPage {
-        if (!response.request().url().toString().contains("search-ajax")) {
+        if (!response.request.url.toString().contains("search-ajax")) {
             return popularMangaParse(response)
         }
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject
         val results = json.getAsJsonArray("results")
         val mangas = mutableListOf<SManga>()
@@ -126,7 +126,7 @@ class MangaOnlineBiz : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val html = response.body()!!.string()
+        val html = response.body!!.string()
 
         val jsonData = html.split("App.Collection.MangaChapter(").last().split("]);").first() + "]"
         val mangaName = html.split("mangaName: '").last().split("' });").first()
@@ -150,7 +150,7 @@ class MangaOnlineBiz : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
+        val html = response.body!!.string()
         val jsonData = html.split("new App.Router.Chapter(").last().split("});").first() + "}"
         val json = JsonParser().parse(jsonData).asJsonObject
         val cdnUrl = json.get("srcBaseUrl").string

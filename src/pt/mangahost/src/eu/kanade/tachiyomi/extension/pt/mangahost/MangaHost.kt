@@ -4,13 +4,14 @@ import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Call
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -31,7 +32,7 @@ class MangaHost : ParsedHttpSource() {
 
     override val name = "Mangá Host"
 
-    override val baseUrl = "https://mangahosted.com"
+    override val baseUrl = "https://mangahostz.com"
 
     override val lang = "pt-BR"
 
@@ -48,15 +49,14 @@ class MangaHost : ParsedHttpSource() {
         .add("Referer", baseUrl)
         .add("User-Agent", USER_AGENT)
 
-    private fun genericMangaFromElement(element: Element): SManga =
-        SManga.create().apply {
-            val thumbnailEl = element.select("img")
-            val thumbnailAttr = if (thumbnailEl.hasAttr("data-path")) "data-path" else "src"
+    private fun genericMangaFromElement(element: Element): SManga = SManga.create().apply {
+        val thumbnailEl = element.select("img")
+        val thumbnailAttr = if (thumbnailEl.hasAttr("data-path")) "data-path" else "src"
 
-            title = element.attr("title").withoutLanguage()
-            thumbnail_url = thumbnailEl.attr(thumbnailAttr).toLargeUrl()
-            setUrlWithoutDomain(element.attr("href"))
-        }
+        title = element.attr("title").withoutLanguage()
+        thumbnail_url = thumbnailEl.attr(thumbnailAttr).toLargeUrl()
+        setUrlWithoutDomain(element.attr("href"))
+    }
 
     override fun popularMangaRequest(page: Int): Request {
         val listPath = if (page == 1) "" else "/mais-visualizados/page/${page - 1}"
@@ -66,6 +66,16 @@ class MangaHost : ParsedHttpSource() {
 
         val pageStr = if (page != 1) "/page/$page" else ""
         return GET("$baseUrl/mangas/mais-visualizados$pageStr", newHeaders)
+    }
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val results = super.popularMangaParse(response)
+
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return results
     }
 
     override fun popularMangaSelector(): String = "div#dados div.manga-block div.manga-block-left a"
@@ -84,14 +94,24 @@ class MangaHost : ParsedHttpSource() {
         return GET("$baseUrl/lancamentos$pageStr", newHeaders)
     }
 
-    override fun latestUpdatesSelector() = "div#dados div.line-lancamentos div.column-img a"
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val results = super.latestUpdatesParse(response)
+
+        if (results.mangas.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return results
+    }
+
+    override fun latestUpdatesSelector() = "div#dados div.w-row div.column-img a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = genericMangaFromElement(element)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/find")!!.newBuilder()
+        val url = "$baseUrl/find".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("this", query)
 
         return GET(url.toString(), headers)
@@ -117,6 +137,7 @@ class MangaHost : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("div.box-content div.w-row div.w-col:eq(1) article")
+            .firstOrNull() ?: throw Exception(BLOCK_MESSAGE)
 
         author = infoElement.select("div.text li div:contains(Autor:)").textWithoutLabel()
         artist = infoElement.select("div.text li div:contains(Arte:)").textWithoutLabel()
@@ -142,8 +163,18 @@ class MangaHost : ParsedHttpSource() {
         }
     }
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val chapters = super.chapterListParse(response)
+
+        if (chapters.isEmpty()) {
+            throw Exception(BLOCK_MESSAGE)
+        }
+
+        return chapters
+    }
+
     override fun chapterListSelector(): String =
-        "article.article > section.clearfix div.chapters div.cap div.card.pop"
+        "article section.clearfix div.chapters div.cap div.card.pop"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("div.pop-title").text().withoutLanguage()
@@ -199,7 +230,7 @@ class MangaHost : ParsedHttpSource() {
     private fun blockMessageIntercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
 
-        if (!response.isSuccessful && response.code() == 403) {
+        if (response.code == 403 || response.code == 1020) {
             response.close()
             throw Exception(BLOCK_MESSAGE)
         }
@@ -209,9 +240,9 @@ class MangaHost : ParsedHttpSource() {
 
     private fun Call.asObservableIgnoreCode(code: Int): Observable<Response> {
         return asObservable().doOnNext { response ->
-            if (!response.isSuccessful && response.code() != code) {
+            if (!response.isSuccessful && response.code != code) {
                 response.close()
-                throw Exception("HTTP error ${response.code()}")
+                throw Exception("HTTP error ${response.code}")
             }
         }
     }
@@ -224,9 +255,9 @@ class MangaHost : ParsedHttpSource() {
         }
     }
 
-    private fun String.toStatus() = when {
-        contains("Ativo") -> SManga.ONGOING
-        contains("Completo") -> SManga.COMPLETED
+    private fun String.toStatus() = when (this) {
+        "Ativo" -> SManga.ONGOING
+        "Completo" -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -246,9 +277,9 @@ class MangaHost : ParsedHttpSource() {
 
         private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
         private val IMAGE_REGEX = "_(small|medium|xmedium)\\.".toRegex()
-        private val CDN_REGEX = "/mangas_files/.*\\.jpg".toRegex()
 
-        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. Migre para outra fonte caso o problema persistir."
+        private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. " +
+            "Migre para outra fonte caso o problema persistir."
 
         private val DATE_FORMAT by lazy {
             SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)

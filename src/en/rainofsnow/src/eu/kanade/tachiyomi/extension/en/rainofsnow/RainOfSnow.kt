@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -49,7 +49,7 @@ open class RainOfSnow() : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = ".page-numbers .next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/")!!.newBuilder()
+        val url = "$baseUrl/".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("serchfor", "comics")
         url.addQueryParameter("s", query)
         return GET(url.build().toString(), headers)

@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.extension.ar.gmanga
 
-import android.support.v7.preference.PreferenceScreen
+import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.nullString
@@ -21,7 +21,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -54,8 +54,6 @@ class Gmanga : ConfigurableSource, HttpSource() {
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) = preferences.setupPreferenceScreen(screen)
-
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) = preferences.setupPreferenceScreen(screen)
 
     override fun chapterListRequest(manga: SManga): Request {
         val mangaId = manga.url.substringAfterLast("/")
@@ -128,7 +126,7 @@ class Gmanga : ConfigurableSource, HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val data = gson.fromJson<JsonObject>(response.asJsoup().select(".js-react-on-rails-component").html())
         val releaseData = data["readerDataAction"]["readerData"]["release"].asJsonObject
 
@@ -163,7 +161,7 @@ class Gmanga : ConfigurableSource, HttpSource() {
     }
 
     private fun decryptResponse(response: Response): JsonObject {
-        val encryptedData = gson.fromJson<JsonObject>(response.body()!!.string())["data"].asString
+        val encryptedData = gson.fromJson<JsonObject>(response.body!!.string())["data"].asString
         val decryptedData = decrypt(encryptedData)
         return gson.fromJson(decryptedData)
     }
@@ -179,6 +177,6 @@ class Gmanga : ConfigurableSource, HttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
-        private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private val MEDIA_TYPE = "application/json; charset=utf-8".toMediaTypeOrNull()
     }
 }

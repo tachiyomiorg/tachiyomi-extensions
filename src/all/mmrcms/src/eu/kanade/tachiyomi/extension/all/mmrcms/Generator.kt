@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
-import kotlin.jvm.Throws
 
 /**
  * This class generates the sources for MMRCMS.
@@ -123,21 +122,21 @@ class Generator {
             val request = Request.Builder().url(url)
             getOkHttpClient().newCall(request.build()).execute().let { response ->
                 // Bypass Cloudflare ("Please wait 5 seconds" page)
-                if (response.code() == 503 && response.header("Server") in serverCheck) {
+                if (response.code == 503 && response.header("Server") in serverCheck) {
                     var cookie = "${response.header("Set-Cookie")!!.substringBefore(";")}; "
-                    Jsoup.parse(response.body()!!.string()).let { document ->
+                    Jsoup.parse(response.body!!.string()).let { document ->
                         val path = document.select("[id=\"challenge-form\"]").attr("action")
                         val chk = document.select("[name=\"s\"]").attr("value")
                         getOkHttpClient().newCall(Request.Builder().url("$url/$path?s=$chk").build()).execute().let { solved ->
                             cookie += solved.header("Set-Cookie")!!.substringBefore(";")
                             request.addHeader("Cookie", cookie).build().let {
-                                return Jsoup.parse(getOkHttpClient().newCall(it).execute().body()?.string())
+                                return Jsoup.parse(getOkHttpClient().newCall(it).execute().body?.string())
                             }
                         }
                     }
                 }
-                if (response.code() == 200) {
-                    return Jsoup.parse(response.body()?.string())
+                if (response.code == 200) {
+                    return Jsoup.parse(response.body?.string())
                 }
             }
         } catch (e: Exception) {

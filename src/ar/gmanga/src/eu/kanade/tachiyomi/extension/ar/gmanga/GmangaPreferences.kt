@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.extension.ar.gmanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -14,27 +14,8 @@ class GmangaPreferences(id: Long) {
     }
 
     fun setupPreferenceScreen(screen: PreferenceScreen) {
-
         STRING_PREFERENCES.forEach {
             val preference = ListPreference(screen.context).apply {
-                key = it.key
-                title = it.title
-                entries = it.entries()
-                entryValues = it.entryValues()
-                summary = "%s"
-            }
-
-            if (!preferences.contains(it.key))
-                preferences.edit().putString(it.key, it.default().key).apply()
-
-            screen.addPreference(preference)
-        }
-    }
-
-    fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-
-        STRING_PREFERENCES.forEach {
-            val preference = androidx.preference.ListPreference(screen.context).apply {
                 key = it.key
                 title = it.title
                 entries = it.entries()

@@ -34,7 +34,7 @@ class ComicoChallenge : Comico("Comico Challenge", "/challenge", true) {
 
     override fun popularMangaParse(response: Response): MangasPage {
         val mangas = mutableListOf<SManga>()
-        val body = response.body()!!.string()
+        val body = response.body!!.string()
 
         gson.fromJson<JsonObject>(body)["result"]["list"].asJsonArray.forEach {
             val manga = SManga.create()
@@ -82,7 +82,7 @@ class ComicoChallenge : Comico("Comico Challenge", "/challenge", true) {
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
 
-        gson.fromJson<JsonObject>(response.body()!!.string())["result"]["list"].asJsonArray
+        gson.fromJson<JsonObject>(response.body!!.string())["result"]["list"].asJsonArray
             .forEach { chapters.add(chapterFromJson(it)) }
 
         return chapters.reversed()

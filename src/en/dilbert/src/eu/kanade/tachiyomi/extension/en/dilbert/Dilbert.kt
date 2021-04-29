@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.dilbert
 
 import android.os.Build.VERSION
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -89,7 +89,7 @@ class Dilbert : ParsedHttpSource() {
             val res = client.newCall(chapterListRequest(manga, page)).execute()
             if (!res.isSuccessful) {
                 res.close()
-                throw Exception("HTTP error ${res.code()}")
+                throw Exception("HTTP error ${res.code}")
             }
             return res.asJsoup().also {
                 chapters.addAll(it.select(".comic-item").map(::chapterFromElement))

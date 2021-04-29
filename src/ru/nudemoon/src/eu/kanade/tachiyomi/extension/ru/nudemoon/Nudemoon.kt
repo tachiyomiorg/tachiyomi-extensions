@@ -154,7 +154,7 @@ class Nudemoon : ParsedHttpSource() {
     override fun chapterListSelector() = popularMangaSelector()
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val responseUrl = response.request().url().toString()
+        val responseUrl = response.request.url.toString()
         val document = response.asJsoup()
 
         if (!responseUrl.contains("/vse_glavy/")) {

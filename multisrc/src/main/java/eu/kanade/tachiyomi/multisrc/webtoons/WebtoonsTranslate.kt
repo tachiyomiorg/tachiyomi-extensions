@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONObject
@@ -26,8 +26,8 @@ open class WebtoonsTranslate (
     // popularMangaRequest already returns manga sorted by latest update
     override val supportsLatest = false
 
-    private val apiBaseUrl = HttpUrl.parse("https://global.apis.naver.com")!!
-    private val mobileBaseUrl = HttpUrl.parse("https://m.webtoons.com")!!
+    private val apiBaseUrl = "https://global.apis.naver.com".toHttpUrlOrNull()!!
+    private val mobileBaseUrl = "https://m.webtoons.com".toHttpUrlOrNull()!!
     private val thumbnailBaseUrl = "https://mwebtoon-phinf.pstatic.net"
 
     private val pageListUrlPattern = "/lineWebtoon/ctrans/translatedEpisodeDetail_jsonp.json?titleNo=%s&episodeNo=%d&languageCode=%s&teamVersion=%d"
@@ -56,11 +56,11 @@ open class WebtoonsTranslate (
     override fun popularMangaRequest(page: Int): Request = mangaRequest(page, pageSize)
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val offset = response.request().url().queryParameter("offset")!!.toInt()
+        val offset = response.request.url.queryParameter("offset")!!.toInt()
         var totalCount: Int
         val mangas = mutableListOf<SManga>()
 
-        JSONObject(response.body()!!.string()).let { json ->
+        JSONObject(response.body!!.string()).let { json ->
             json.getString("code").let { code ->
                 if (code != "000") throw Exception("Error getting popular manga: error code $code")
             }
@@ -118,7 +118,7 @@ open class WebtoonsTranslate (
     private fun searchMangaParse(response: Response, query: String): MangasPage {
         val mangas = mutableListOf<SManga>()
 
-        JSONObject(response.body()!!.string()).let { json ->
+        JSONObject(response.body!!.string()).let { json ->
             json.getString("code").let { code ->
                 if (code != "000") throw Exception("Error getting manga: error code $code")
             }
@@ -168,7 +168,7 @@ open class WebtoonsTranslate (
     override fun pageListParse(document: Document): List<Page> = throw Exception("Not used")
 
     override fun chapterListRequest(manga: SManga): Request {
-        val titleNo = HttpUrl.parse(manga.url)!!
+        val titleNo = manga.url.toHttpUrlOrNull()!!
             .queryParameter("titleNo")
         val chapterUrl = apiBaseUrl
             .resolve("/lineWebtoon/ctrans/translatedEpisodes_jsonp.json")!!
@@ -182,7 +182,7 @@ open class WebtoonsTranslate (
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterData = response.body()!!.string()
+        val chapterData = response.body!!.string()
         val chapterJson = JSONObject(chapterData)
         val responseCode = chapterJson.getString("code")
         if (responseCode != "000") {
@@ -217,7 +217,7 @@ open class WebtoonsTranslate (
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val pageJson = JSONObject(response.body()!!.string())
+        val pageJson = JSONObject(response.body!!.string())
         val results = pageJson.getJSONObject("result").getJSONArray("imageInfo")
         val ret = ArrayList<Page>()
         for (i in 0 until results.length()) {

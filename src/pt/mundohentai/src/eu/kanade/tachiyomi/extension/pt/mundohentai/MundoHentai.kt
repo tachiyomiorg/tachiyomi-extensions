@@ -10,7 +10,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -63,7 +63,7 @@ class MundoHentai : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotEmpty()) {
-            val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+            val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
                 .addQueryParameter("q", query)
                 .toString()
 
@@ -184,7 +184,7 @@ class MundoHentai : ParsedHttpSource() {
 
     override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException("Not used")
 
-    override fun latestUpdatesNextPageSelector(): String? = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesNextPageSelector(): String = throw UnsupportedOperationException("Not used")
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +

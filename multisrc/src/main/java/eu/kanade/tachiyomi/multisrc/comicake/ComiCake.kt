@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.multisrc.comicake
 
 import android.os.Build
-import eu.kanade.tachiyomi.extensions.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -45,7 +45,7 @@ abstract class ComiCake(
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return getMangasPageFromComicsResponse(res)
     }
 
@@ -97,7 +97,7 @@ abstract class ComiCake(
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val comicJson = JSONObject(response.body()!!.string())
+        val comicJson = JSONObject(response.body!!.string())
         return parseComicJson(comicJson, true)
     }
 
@@ -130,7 +130,7 @@ abstract class ComiCake(
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return getMangasPageFromComicsResponse(res)
     }
 
@@ -139,7 +139,7 @@ abstract class ComiCake(
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return getMangasPageFromComicsResponse(res, true)
     }
 
@@ -156,7 +156,7 @@ abstract class ComiCake(
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterJson = JSONObject(response.body()!!.string())
+        val chapterJson = JSONObject(response.body!!.string())
         val results = chapterJson.getJSONArray("results")
         val ret = ArrayList<SChapter>()
         for (i in 0 until results.length()) {
@@ -166,7 +166,7 @@ abstract class ComiCake(
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val webPub = JSONObject(response.body()!!.string())
+        val webPub = JSONObject(response.body!!.string())
         val readingOrder = webPub.getJSONArray("readingOrder")
         val ret = ArrayList<Page>()
         for (i in 0 until readingOrder.length()) {

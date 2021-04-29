@@ -10,7 +10,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -149,7 +149,7 @@ class VizShonenJump : ParsedHttpSource() {
 
         val newHeaders = headersBuilder()
             .add("X-Requested-With", "XMLHttpRequest")
-            .set("Referer", response.request().url().toString())
+            .set("Referer", response.request.url.toString())
             .build()
 
         val loginCheckRequest = GET(REFRESH_LOGIN_LINKS_URL, newHeaders)
@@ -214,7 +214,7 @@ class VizShonenJump : ParsedHttpSource() {
 
         return IntRange(1, pageCount)
             .map {
-                val imageUrl = HttpUrl.parse("$baseUrl/manga/get_manga_url")!!.newBuilder()
+                val imageUrl = "$baseUrl/manga/get_manga_url".toHttpUrlOrNull()!!.newBuilder()
                     .addQueryParameter("device_id", "3")
                     .addQueryParameter("manga_id", mangaId)
                     .addQueryParameter("page", it.toString())
@@ -226,7 +226,7 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun imageUrlRequest(page: Page): Request {
-        val url = HttpUrl.parse(page.url)!!
+        val url = page.url.toHttpUrlOrNull()!!
         val referer = url.queryParameter("referer")!!
         val newUrl = url.newBuilder()
             .removeAllEncodedQueryParameters("referer")
@@ -241,10 +241,10 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(response: Response): String {
-        val cdnUrl = response.body()!!.string()
-        val referer = response.request().header("Referer")!!
+        val cdnUrl = response.body!!.string()
+        val referer = response.request.header("Referer")!!
 
-        return HttpUrl.parse(cdnUrl)!!.newBuilder()
+        return cdnUrl.toHttpUrlOrNull()!!.newBuilder()
             .addEncodedQueryParameter("referer", referer)
             .toString()
     }
@@ -252,7 +252,7 @@ class VizShonenJump : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        val imageUrl = HttpUrl.parse(page.imageUrl!!)!!
+        val imageUrl = page.imageUrl!!.toHttpUrlOrNull()!!
         val referer = imageUrl.queryParameter("referer")!!
         val newImageUrl = imageUrl.newBuilder()
             .removeAllEncodedQueryParameters("referer")

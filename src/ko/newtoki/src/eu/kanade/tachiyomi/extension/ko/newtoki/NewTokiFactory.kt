@@ -5,7 +5,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
@@ -34,7 +34,7 @@ class NewTokiWebtoon : NewToki("NewToki", "https://newtoki$domainNumber.com", "w
     override val id by lazy { generateSourceId("NewToki (Webtoon)", lang, versionId) }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/webtoon" + (if (page > 1) "/p$page" else ""))!!.newBuilder()
+        val url = ("$baseUrl/webtoon" + (if (page > 1) "/p$page" else "")).toHttpUrl().newBuilder()
         filters.forEach { filter ->
             when (filter) {
                 is SearchTargetTypeList -> {

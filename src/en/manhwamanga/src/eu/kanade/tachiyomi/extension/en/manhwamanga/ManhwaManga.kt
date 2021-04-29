@@ -10,7 +10,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -45,7 +45,7 @@ class ManhwaManga : ParsedHttpSource() {
         return if (query.isNotBlank()) {
             GET("$baseUrl/?s=$query", headers)
         } else {
-            val url = HttpUrl.parse("$baseUrl/category/")!!.newBuilder()
+            val url = "$baseUrl/category/".toHttpUrlOrNull()!!.newBuilder()
             filters.forEach { filter ->
                 when (filter) {
 

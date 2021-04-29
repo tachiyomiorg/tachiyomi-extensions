@@ -231,7 +231,7 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
     // Grabs page containing filters and puts it into cache
     private fun filterAssist(url: String): String {
         val response = client.newCall(GET(url, headers)).execute()
-        return response.body()!!.string()
+        return response.body!!.string()
     }
 
     // Returns page from cache to reduce calls to website

@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -74,11 +74,11 @@ class Eggporncomics : ParsedHttpSource() {
                 if (!response.isSuccessful) {
                     // when combining a category filter and comics filter, if there are no results the source
                     // issues a 404, override that so as not to confuse users
-                    if (response.request().url().toString().contains("category-tag") && response.code() == 404) {
+                    if (response.request.url.toString().contains("category-tag") && response.code == 404) {
                         Observable.just(MangasPage(emptyList(), false))
                     } else {
                         response.close()
-                        throw Exception("HTTP error ${response.code()}")
+                        throw Exception("HTTP error ${response.code}")
                     }
                 }
             }
@@ -93,7 +93,7 @@ class Eggporncomics : ParsedHttpSource() {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search/${query.replace(queryRegex, "-")}?page=$page", headers)
         } else {
-            val url = HttpUrl.parse(baseUrl)!!.newBuilder()
+            val url = baseUrl.toHttpUrlOrNull()!!.newBuilder()
             val filterList = if (filters.isEmpty()) getFilterList() else filters
             val category = filterList.find { it is CategoryFilter } as UriPartFilter
             val comics = filterList.find { it is ComicsFilter } as UriPartFilter
@@ -141,7 +141,7 @@ class Eggporncomics : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         return listOf(
             SChapter.create().apply {
-                setUrlWithoutDomain(response.request().url().toString())
+                setUrlWithoutDomain(response.request.url.toString())
                 name = "Chapter"
                 date_upload = response.asJsoup().select("div.info > div.meta li:contains(days ago)").firstOrNull()
                     ?.let { Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -(it.text().substringBefore(" ").toIntOrNull() ?: 0)) }.timeInMillis }

@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -113,7 +113,7 @@ class HQDragon : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/pesquisa")!!.newBuilder()
+        val url = "$baseUrl/pesquisa".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("titulo", query)
 
         return GET(url.toString(), headers)

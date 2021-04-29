@@ -7,6 +7,7 @@ import com.github.salomonbrys.kotson.jsonObject
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
@@ -21,11 +22,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
 import java.text.ParseException
@@ -57,7 +58,7 @@ class Hipercool : HttpSource() {
         .add("X-Requested-With", "XMLHttpRequest")
 
     private fun genericMangaListParse(response: Response): MangasPage {
-        val result = response.asJsonArray()
+        val result = response.asJson().array
 
         if (result.size() == 0)
             return MangasPage(emptyList(), false)
@@ -96,7 +97,7 @@ class Hipercool : HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage = genericMangaListParse(response)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val mediaType = MediaType.parse("application/json; charset=utf-8")
+        val mediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
 
         // Create json body.
         val json = jsonObject(
@@ -106,7 +107,7 @@ class Hipercool : HttpSource() {
             "type" to "text"
         )
 
-        val body = RequestBody.create(mediaType, json.toString())
+        val body = json.toString().toRequestBody(mediaType)
 
         return POST("$baseUrl/api/books/chapters/search", headers, body)
     }
@@ -129,7 +130,7 @@ class Hipercool : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val result = response.asJsonObject()
+        val result = response.asJson().obj
 
         val artists = result["tags"].array
             .filter { it["label"].string == "Artista" }
@@ -160,7 +161,7 @@ class Hipercool : HttpSource() {
     override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val result = response.asJsonObject()
+        val result = response.asJson().obj
 
         if (!result["chapters"]!!.isJsonArray)
             return emptyList()
@@ -176,7 +177,7 @@ class Hipercool : HttpSource() {
         // The property is written wrong.
         date_upload = DATE_FORMATTER.tryParseTime(obj["publishied_at"].string)
 
-        val fullUrl = HttpUrl.parse("$baseUrl/books")!!.newBuilder()
+        val fullUrl = "$baseUrl/books".toHttpUrlOrNull()!!.newBuilder()
             .addPathSegment(book["slug"].string)
             .addPathSegment(obj["slug"].string)
             .addQueryParameter("images", obj["images"].int.toString())
@@ -187,10 +188,10 @@ class Hipercool : HttpSource() {
     }
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        val chapterUrl = HttpUrl.parse(baseUrl + chapter.url)!!
+        val chapterUrl = (baseUrl + chapter.url).toHttpUrlOrNull()!!
 
-        val bookSlug = chapterUrl.pathSegments()[1]
-        val chapterSlug = chapterUrl.pathSegments()[2]
+        val bookSlug = chapterUrl.pathSegments[1]
+        val chapterSlug = chapterUrl.pathSegments[2]
         val images = chapterUrl.queryParameter("images")!!.toInt()
         val revision = chapterUrl.queryParameter("revision")!!.toInt()
 
@@ -198,7 +199,7 @@ class Hipercool : HttpSource() {
 
         // Create the pages.
         for (i in 1..images) {
-            val imageUrl = HttpUrl.parse("$STATIC_URL/books")!!.newBuilder()
+            val imageUrl = "$STATIC_URL/books".toHttpUrlOrNull()!!.newBuilder()
                 .addPathSegment(bookSlug)
                 .addPathSegment(chapterSlug)
                 .addPathSegment("$bookSlug-chapter-$chapterSlug-page-$i.jpg")
@@ -236,15 +237,13 @@ class Hipercool : HttpSource() {
     }
 
     private fun String.toThumbnailUrl(revision: Int): String =
-        HttpUrl.parse("$STATIC_URL/books")!!.newBuilder()
+        "$STATIC_URL/books".toHttpUrlOrNull()!!.newBuilder()
             .addPathSegment(this)
             .addPathSegment("$this-cover.jpg")
             .addQueryParameter("revision", revision.toString())
             .toString()
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
-
-    private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body()!!.string()).array
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val STATIC_URL = "https://static.hiper.cool"
@@ -253,8 +252,6 @@ class Hipercool : HttpSource() {
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
         private const val DEFAULT_COUNT = 40
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }

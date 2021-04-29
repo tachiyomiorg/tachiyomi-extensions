@@ -50,8 +50,8 @@ class RemoteStorageUtils {
 
             var webView: WebView? = null
 
-            val origRequestUrl = request.url().toString()
-            val headers = request.headers().toMultimap().mapValues {
+            val origRequestUrl = request.url.toString()
+            val headers = request.headers.toMultimap().mapValues {
                 it.value.getOrNull(0) ?: ""
             }.toMutableMap()
             val jsInterface = JsInterface(latch)
@@ -94,7 +94,7 @@ class RemoteStorageUtils {
             return if (transparent) {
                 response
             } else {
-                response.newBuilder().body(ResponseBody.create(response.body()?.contentType(), jsInterface.payload)).build()
+                response.newBuilder().body(ResponseBody.create(response.body?.contentType(), jsInterface.payload)).build()
             }
         }
     }

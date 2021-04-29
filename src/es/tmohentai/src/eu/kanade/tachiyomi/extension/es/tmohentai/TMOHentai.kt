@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.es.tmohentai
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -15,7 +13,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -125,7 +123,7 @@ class TMOHentai : ConfigurableSource, ParsedHttpSource() {
     override fun imageRequest(page: Page) = GET("$baseUrl${page.imageUrl!!}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/section/all?view=list")!!.newBuilder()
+        val url = "$baseUrl/section/all?view=list".toHttpUrlOrNull()!!.newBuilder()
 
         url.addQueryParameter("search[searchText]", query)
         url.addQueryParameter("page", page.toString())
@@ -294,29 +292,6 @@ class TMOHentai : ConfigurableSource, ParsedHttpSource() {
             title = PAGE_METHOD_PREF_TITLE
             entries = arrayOf("Cascada", "Páginado")
             entryValues = arrayOf("cascade", "paginated")
-            summary = PAGE_METHOD_PREF_SUMMARY
-            setDefaultValue(PAGE_METHOD_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(PAGE_METHOD_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(pageMethodPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val pageMethodPref = ListPreference(screen.context).apply {
-            key = PAGE_METHOD_PREF
-            title = PAGE_METHOD_PREF_TITLE
-            entries = arrayOf("Cascada", "Páginado")
-            entryValues = arrayOf(PAGE_METHOD_PREF_CASCADE, PAGE_METHOD_PREF_PAGINATED)
             summary = PAGE_METHOD_PREF_SUMMARY
             setDefaultValue(PAGE_METHOD_PREF_DEFAULT_VALUE)
 

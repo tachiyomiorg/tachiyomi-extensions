@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.all.hitomi
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
@@ -61,7 +59,7 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
         val range = response.header("Content-Range")!!
         val total = range.substringAfter('/').toLong()
         val end = range.substringBefore('/').substringAfter('-').toLong()
-        val body = response.body()!!
+        val body = response.body!!
         return parseNozomiPage(body.bytes())
             .map {
                 MangasPage(it, end < total - 1)
@@ -276,7 +274,7 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
     private val jsonParser = JsonParser()
 
     override fun pageListParse(response: Response): List<Page> {
-        val str = response.body()!!.string()
+        val str = response.body!!.string()
         val json = jsonParser.parse(str.removePrefix("var galleryinfo = "))
         return json["files"].array.mapIndexed { i, jsonElement ->
             val hash = jsonElement["hash"].string
@@ -305,7 +303,7 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
 
     override fun imageRequest(page: Page): Request {
         val request = super.imageRequest(page)
-        val hlId = request.url().pathSegments().let {
+        val hlId = request.url.pathSegments.let {
             it[it.lastIndex - 1]
         }
         return request.newBuilder()
@@ -341,35 +339,6 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val webpPref = CheckBoxPreference(screen.context).apply {
-            key = "${WEBP_PREF_KEY}_$lang"
-            title = WEBP_PREF_TITLE
-            summary = WEBP_PREF_SUMMARY
-            setDefaultValue(WEBP_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${WEBP_PREF_KEY}_$lang", checkValue).commit()
-            }
-        }
-
-        val coverPref = CheckBoxPreference(screen.context).apply {
-            key = "${COVER_PREF_KEY}_$lang"
-            title = COVER_PREF_TITLE
-            summary = COVER_PREF_SUMMARY
-            setDefaultValue(COVER_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${COVER_PREF_KEY}_$lang", checkValue).commit()
-            }
-        }
-
-        screen.addPreference(webpPref)
-        screen.addPreference(coverPref)
     }
 
     override fun setupPreferenceScreen(screen: AndroidXPreferenceScreen) {

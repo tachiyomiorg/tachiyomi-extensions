@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -30,14 +31,14 @@ class Manhuaren : HttpSource() {
     override val baseUrl = "http://mangaapi.manhuaren.com"
 
     private val pageSize = 20
-    private val baseHttpUrl = HttpUrl.parse(baseUrl)!!
+    private val baseHttpUrl = baseUrl.toHttpUrlOrNull()!!
 
     private val c = "4e0a48e1c0b54041bce9c8f0e036124d"
     private val cacheControl: CacheControl by lazy { CacheControl.Builder().maxAge(10, MINUTES).build() }
 
     private fun generateGSNHash(url: HttpUrl): String {
         var s = c + "GET"
-        url.queryParameterNames().toSortedSet().forEach {
+        url.queryParameterNames.toSortedSet().forEach {
             if (it != "gsn") {
                 s += it
                 s += urlEncode(url.queryParameterValues(it)[0])
@@ -118,7 +119,7 @@ class Manhuaren : HttpSource() {
     }
 
     private fun mangasPageParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val arr = JSONObject(res).getJSONObject("response").getJSONArray("mangas")
         return mangasFromJSONArray(arr)
     }
@@ -178,7 +179,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val obj = JSONObject(res).getJSONObject("response")
         if (obj.has("result")) {
             return mangasFromJSONArray(obj.getJSONArray("result"))
@@ -187,7 +188,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val obj = JSONObject(res).getJSONObject("response")
         title = obj.getString("mangaName")
         thumbnail_url = ""
@@ -224,7 +225,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return myGet(HttpUrl.parse(baseUrl + manga.url)!!)
+        return myGet((baseUrl + manga.url).toHttpUrlOrNull()!!)
     }
 
     override fun chapterListRequest(manga: SManga) = mangaDetailsRequest(manga)
@@ -251,7 +252,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val obj = JSONObject(res).getJSONObject("response")
         val ret = ArrayList<SChapter>()
         listOf("mangaEpisode", "mangaWords", "mangaRolls").forEach {
@@ -263,7 +264,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val obj = JSONObject(res).getJSONObject("response")
         val ret = ArrayList<Page>()
         val host = obj.getJSONArray("hostList").getString(0)
@@ -276,7 +277,7 @@ class Manhuaren : HttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val url = HttpUrl.parse(baseUrl + chapter.url)!!.newBuilder()
+        val url = (baseUrl + chapter.url).toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("netType", "4")
             .addQueryParameter("loadreal", "1")
             .addQueryParameter("imageQuality", "2")

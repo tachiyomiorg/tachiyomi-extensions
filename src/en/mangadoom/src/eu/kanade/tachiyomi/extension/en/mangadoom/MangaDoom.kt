@@ -95,7 +95,7 @@ class MangaDoom : HttpSource() {
         val dlElement = innerContentElement.select("div.col-md-8 > dl").first()
 
         return SManga.create().apply {
-            this.url = response.request().url().toString()
+            this.url = response.request.url.toString()
 
             this.title = innerContentElement
                 .select("h5.widget-heading:matchText").first().text()
@@ -517,8 +517,8 @@ class MangaDoom : HttpSource() {
                     )
                 ).execute()
 
-            return if (genreResponse.code() == 200 &&
-                contentUpToDate(genreResponse.receivedResponseAtMillis())
+            return if (genreResponse.code == 200 &&
+                contentUpToDate(genreResponse.receivedResponseAtMillis)
             ) {
                 responseToGenreFilterContentPair(genreResponse)
             } else {
@@ -534,7 +534,7 @@ class MangaDoom : HttpSource() {
                         }
 
                         override fun onResponse(call: Call, response: Response) {
-                            genreFilterContentFrom = response.receivedResponseAtMillis()
+                            genreFilterContentFrom = response.receivedResponseAtMillis
                             genreFiltersContent = responseToGenreFilterContentPair(response)
                         }
                     }

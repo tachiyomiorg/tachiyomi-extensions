@@ -49,7 +49,7 @@ class Tsumino : ParsedHttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage {
         val allManga = mutableListOf<SManga>()
-        val body = response.body()!!.string()
+        val body = response.body!!.string()
         val jsonManga = gson.fromJson<JsonObject>(body)["data"].asJsonArray
         for (i in 0 until jsonManga.size()) {
             val manga = SManga.create()

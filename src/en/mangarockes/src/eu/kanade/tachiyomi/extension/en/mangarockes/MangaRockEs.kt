@@ -10,12 +10,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -37,13 +37,13 @@ class MangaRockEs : ParsedHttpSource() {
     // Handles the page decoding
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor(
         fun(chain): Response {
-            val url = chain.request().url().toString()
+            val url = chain.request().url.toString()
             val response = chain.proceed(chain.request())
             if (!url.endsWith(".mri")) return response
 
             val decoded: ByteArray = decodeMri(response)
-            val mediaType = MediaType.parse("image/webp")
-            val rb = ResponseBody.create(mediaType, decoded)
+            val mediaType = "image/webp".toMediaTypeOrNull()
+            val rb = decoded.toResponseBody(mediaType)
             return response.newBuilder().body(rb).build()
         }
     ).build()
@@ -82,7 +82,7 @@ class MangaRockEs : ParsedHttpSource() {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search/${query.replace(" ", "+")}/$page", headers)
         } else {
-            val url = HttpUrl.parse("$baseUrl/manga" + if (page > 1) "/$page" else "")!!.newBuilder()
+            val url = ("$baseUrl/manga" + if (page > 1) "/$page" else "").toHttpUrl().newBuilder()
             filters.forEach { filter ->
                 when (filter) {
                     is StatusFilter -> url.addQueryParameter("status", filter.toUriPart())
@@ -163,7 +163,7 @@ class MangaRockEs : ParsedHttpSource() {
     private val gson by lazy { Gson() }
 
     override fun pageListParse(response: Response): List<Page> {
-        val responseString = response.body()!!.string()
+        val responseString = response.body!!.string()
         return Regex("""mangaData = (\[.*]);""", RegexOption.IGNORE_CASE).find(responseString)?.groupValues?.get(1)?.let { array ->
             gson.fromJson<JsonArray>(array)
                 .mapIndexed { i, jsonElement -> Page(i, "", jsonElement.asJsonObject["url"].asString) }
@@ -181,7 +181,7 @@ class MangaRockEs : ParsedHttpSource() {
     // See drawWebpToCanvas function in the site's client.js file
     // Extracted code: https://jsfiddle.net/6h2sLcs4/30/
     private fun decodeMri(response: Response): ByteArray {
-        val data = response.body()!!.bytes()
+        val data = response.body!!.bytes()
 
         // Decode file if it starts with "E" (space when XOR-ed later)
         if (data[0] != 69.toByte()) return data

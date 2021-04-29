@@ -138,7 +138,7 @@ class AComics : ParsedHttpSource() {
             val chapter = SChapter.create()
             chapter.chapter_number = index.toFloat()
             chapter.name = index.toString()
-            val url = response.request().url().toString().split("/about")[0].split(baseUrl)[1]
+            val url = response.request.url.toString().split("/about")[0].split(baseUrl)[1]
             chapter.url = "$url/$index"
             res.add(chapter)
         }

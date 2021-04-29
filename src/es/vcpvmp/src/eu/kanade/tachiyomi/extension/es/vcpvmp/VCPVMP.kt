@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -70,7 +70,7 @@ open class VCPVMP(override val name: String, override val baseUrl: String) : Par
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = HttpUrl.parse(baseUrl)!!.newBuilder()
+        var url = baseUrl.toHttpUrlOrNull()!!.newBuilder()
         val isOnVCP = (baseUrl == "https://vercomicsporno.com")
 
         url.addPathSegments("page")
@@ -82,7 +82,7 @@ open class VCPVMP(override val name: String, override val baseUrl: String) : Par
                 is Genre -> {
                     when (filter.toUriPart().isNotEmpty()) {
                         true -> {
-                            url = HttpUrl.parse(baseUrl)!!.newBuilder()
+                            url = baseUrl.toHttpUrlOrNull()!!.newBuilder()
 
                             url.addPathSegments(if (isOnVCP) "tags" else "genero")
                             url.addPathSegments(filter.toUriPart())

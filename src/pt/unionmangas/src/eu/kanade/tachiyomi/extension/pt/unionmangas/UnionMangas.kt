@@ -18,7 +18,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -133,14 +133,14 @@ class UnionMangas : ParsedHttpSource() {
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 
-        val url = HttpUrl.parse("$baseUrl/assets/busca.php")!!.newBuilder()
+        val url = "$baseUrl/assets/busca.php".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("titulo", query)
 
         return GET(url.toString(), newHeaders)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val requestUrl = response.request().url().toString()
+        val requestUrl = response.request.url.toString()
 
         if (requestUrl.contains("pagina-manga")) {
             val slug = requestUrl.substringAfter("pagina-manga/")
@@ -255,7 +255,7 @@ class UnionMangas : ParsedHttpSource() {
 
     private fun Element.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
@@ -268,8 +268,6 @@ class UnionMangas : ParsedHttpSource() {
 
         private const val BLOCK_MESSAGE = "O site está bloqueando o Tachiyomi. " +
             "Migre para outra fonte caso o problema persistir."
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH)

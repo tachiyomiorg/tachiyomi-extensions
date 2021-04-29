@@ -3,9 +3,7 @@ package eu.kanade.tachiyomi.extension.en.guya
 import android.app.Application
 import android.content.SharedPreferences
 import android.os.Build
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservable
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -61,7 +59,7 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     // Gets the response object from the request
     override fun popularMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return parseManga(JSONObject(res))
     }
 
@@ -99,7 +97,7 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     private fun mangaDetailsParse(response: Response, manga: SManga): SManga {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return parseMangaFromJson(JSONObject(res), "", manga.title)
     }
 
@@ -133,7 +131,7 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     // Called after the request
     private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return parseChapterList(res, manga)
     }
 
@@ -167,7 +165,7 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     private fun pageListParse(response: Response, chapter: SChapter): List<Page> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
 
         val json = JSONObject(res)
         val chapterNum = chapter.name.split(" - ")[0]
@@ -225,7 +223,7 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     private fun searchMangaParseWithSlug(response: Response, slug: String): MangasPage {
-        val results = JSONObject(response.body()!!.string())
+        val results = JSONObject(response.body!!.string())
         val mangaIter = results.keys()
         val truncatedJSON = JSONObject()
 
@@ -242,7 +240,7 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val json = JSONObject(res)
         val truncatedJSON = JSONObject()
 
@@ -260,32 +258,6 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val preference = androidx.preference.ListPreference(screen.context).apply {
-            key = "preferred_scanlator"
-            title = "Preferred scanlator"
-            entries = arrayOf<String>()
-            entryValues = arrayOf<String>()
-            for (key in scanlators.keys()) {
-                entries += scanlators.getValueFromKey(key)
-                entryValues += key
-            }
-            summary = "Current: %s\n\n" +
-                "This setting sets the scanlation group to prioritize " +
-                "on chapter refresh/update. It will get the next available if " +
-                "your preferred scanlator isn't an option (yet)."
-
-            this.setDefaultValue("1")
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue.toString()
-                preferences.edit().putString(scanlatorPreference, selected).commit()
-            }
-        }
-
-        screen.addPreference(preference)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val preference = ListPreference(screen.context).apply {
             key = "preferred_scanlator"
             title = "Preferred scanlator"
             entries = arrayOf<String>()
@@ -347,7 +319,7 @@ open class Guya : ConfigurableSource, HttpSource() {
     }
 
     private fun proxyPageListParse(response: Response, chapter: SChapter): List<Page> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val pages = if (chapter.url.removePrefix(PROXY_PREFIX).startsWith(NESTED_PROXY_API_PREFIX)) {
             JSONArray(res)
         } else {
@@ -378,7 +350,7 @@ open class Guya : ConfigurableSource, HttpSource() {
 
     private fun proxySearchMangaParse(response: Response, query: String): MangasPage {
         return MangasPage(
-            arrayListOf(parseMangaFromJson(JSONObject(response.body()!!.string()), query)),
+            arrayListOf(parseMangaFromJson(JSONObject(response.body!!.string()), query)),
             false
         )
     }
@@ -572,7 +544,7 @@ open class Guya : ConfigurableSource, HttpSource() {
             if (!response.isSuccessful) {
                 retryCount++
             } else {
-                val json = JSONObject(response.body()!!.string())
+                val json = JSONObject(response.body!!.string())
                 val iter = json.keys()
                 while (iter.hasNext()) {
                     val scanId = iter.next()

@@ -16,7 +16,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -64,7 +64,7 @@ abstract class MangasProject(
         val popularMangas = result["most_read"].array
             .map { popularMangaItemParse(it.obj) }
 
-        val hasNextPage = response.request().url().queryParameter("page")!!.toInt() < 10
+        val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < 10
 
         return MangasPage(popularMangas, hasNextPage)
     }
@@ -85,7 +85,7 @@ abstract class MangasProject(
         val latestMangas = result["releases"].array
             .map { latestMangaItemParse(it.obj) }
 
-        val hasNextPage = response.request().url().queryParameter("page")!!.toInt() < 5
+        val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < 5
 
         return MangasPage(latestMangas, hasNextPage)
     }
@@ -197,7 +197,7 @@ abstract class MangasProject(
             throw Exception(MANGA_REMOVED)
         }
 
-        val mangaUrl = response.request().url().toString().replace(baseUrl, "")
+        val mangaUrl = response.request.url.toString().replace(baseUrl, "")
         val mangaId = mangaUrl.substringAfterLast("/")
         var page = 1
 
@@ -277,13 +277,13 @@ abstract class MangasProject(
     }
 
     open fun getChapterUrl(response: Response): String {
-        return response.request().url().toString()
+        return response.request.url.toString()
     }
 
     protected open fun getReaderToken(document: Document): String? {
         return document.select("script[src*=\"reader.\"]").firstOrNull()
             ?.attr("abs:src")
-            ?.let { HttpUrl.parse(it) }
+            ?.toHttpUrlOrNull()
             ?.queryParameter("token")
     }
 
@@ -301,10 +301,10 @@ abstract class MangasProject(
 
     private fun Response.asJsonObject(): JsonObject {
         if (!isSuccessful) {
-            throw Exception("HTTP error ${code()}")
+            throw Exception("HTTP error $code")
         }
 
-        return JSON_PARSER.parse(body()!!.string()).obj
+        return JsonParser.parseString(body!!.string()).obj
     }
 
     private fun String.toDate(): Long {
@@ -322,8 +322,6 @@ abstract class MangasProject(
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
 

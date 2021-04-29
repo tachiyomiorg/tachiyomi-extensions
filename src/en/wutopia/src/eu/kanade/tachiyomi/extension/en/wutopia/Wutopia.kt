@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.en.wutopia
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -55,7 +53,7 @@ class Wutopia : ConfigurableSource, HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val json = gson.fromJson<JsonObject>(response.body()!!.string())
+        val json = gson.fromJson<JsonObject>(response.body!!.string())
 
         val mangas = json["list"].asJsonArray.map {
             SManga.create().apply {
@@ -106,7 +104,7 @@ class Wutopia : ConfigurableSource, HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["cartoon"].let { json ->
+        return gson.fromJson<JsonObject>(response.body!!.string())["cartoon"].let { json ->
             SManga.create().apply {
                 thumbnail_url = json["acrossPicUrlWebp"].asString
                 author = json["author"].asString
@@ -132,7 +130,7 @@ class Wutopia : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["list"].asJsonArray
+        return gson.fromJson<JsonObject>(response.body!!.string())["list"].asJsonArray
             .let { json ->
                 if (chapterListPref() == "free") json.filter { it["isPayed"].bool } else json
             }
@@ -153,7 +151,7 @@ class Wutopia : ConfigurableSource, HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["chapter"]["picList"].asJsonArray.mapIndexed { i, json ->
+        return gson.fromJson<JsonObject>(response.body!!.string())["chapter"]["picList"].asJsonArray.mapIndexed { i, json ->
             Page(i, "", json["picUrl"].asString)
         }
     }
@@ -168,24 +166,6 @@ class Wutopia : ConfigurableSource, HttpSource() {
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
-            key = SHOW_LOCKED_CHAPTERS_Title
-            title = SHOW_LOCKED_CHAPTERS_Title
-            entries = prefsEntries
-            entryValues = prefsEntryValues
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
-            }
-        }
-        screen.addPreference(chapterListPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val chapterListPref = ListPreference(screen.context).apply {
             key = SHOW_LOCKED_CHAPTERS_Title
             title = SHOW_LOCKED_CHAPTERS_Title
             entries = prefsEntries

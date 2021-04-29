@@ -8,7 +8,7 @@ import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.string
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -18,7 +18,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -44,7 +44,7 @@ class FansubsCat : HttpSource() {
     private val apiBaseUrl = "https://api.fansubs.cat"
 
     private fun parseMangaFromJson(response: Response): MangasPage {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         val mangas = jsonObject["result"].asJsonArray.map { json ->
             SManga.create().apply {
@@ -62,7 +62,7 @@ class FansubsCat : HttpSource() {
     }
 
     private fun parseChapterListFromJson(response: Response): List<SChapter> {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         return jsonObject["result"].asJsonArray.map { json ->
             SChapter.create().apply {
@@ -76,7 +76,7 @@ class FansubsCat : HttpSource() {
     }
 
     private fun parsePageListFromJson(response: Response): List<Page> {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         return jsonObject["result"].asJsonArray.mapIndexed { i, it ->
             Page(i, it["url"].asString, it["url"].asString)
@@ -102,7 +102,7 @@ class FansubsCat : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$apiBaseUrl/manga/search/$page")!!.newBuilder()
+        val url = "$apiBaseUrl/manga/search/$page".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("query", query)
         return GET(url.toString(), headers)
     }
@@ -124,7 +124,7 @@ class FansubsCat : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         return SManga.create().apply {
             url = jsonObject["result"]["slug"].string

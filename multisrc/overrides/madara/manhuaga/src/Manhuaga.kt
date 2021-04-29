@@ -8,7 +8,7 @@ class Manhuaga : Madara("Manhuaga", "https://manhuaga.com", "en") {
         .addInterceptor { chain ->
             val originalRequest = chain.request()
             chain.proceed(originalRequest).let { response ->
-                if (response.code() == 403) {
+                if (response.code == 403) {
                     response.close()
                     chain.proceed(originalRequest.newBuilder().removeHeader("Referer").addHeader("Referer", "https://manhuaga.com").build())
                 } else {

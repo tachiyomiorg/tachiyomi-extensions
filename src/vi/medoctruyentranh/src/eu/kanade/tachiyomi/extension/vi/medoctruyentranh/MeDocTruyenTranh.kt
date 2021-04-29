@@ -138,7 +138,7 @@ class MeDocTruyenTranh : ParsedHttpSource() {
             .mapJSONArray { _, jsonObject: JSONObject ->
                 SChapter.create().apply {
                     name = jsonObject.getString("title")
-                    setUrlWithoutDomain("${response.request().url()}/${jsonObject.getString("chapter_index")}")
+                    setUrlWithoutDomain("${response.request.url}/${jsonObject.getString("chapter_index")}")
                     date_upload = parseChapterDate(jsonObject.getString("time"))
                 }
             }

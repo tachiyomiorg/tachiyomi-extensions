@@ -15,7 +15,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -75,7 +75,7 @@ abstract class SimplyHentai(
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+        val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("query", query)
             .addQueryParameter("language_ids[$searchLang]", searchLang)
             .addQueryParameter("page", page.toString())
@@ -135,7 +135,7 @@ abstract class SimplyHentai(
         return listOf(
             SChapter.create().apply {
                 name = "Chapter"
-                url = response.request().url().toString().removeSuffix("/").substringAfterLast("/")
+                url = response.request.url.toString().removeSuffix("/").substringAfterLast("/")
                 chapter_number = 1f
 
                 date_upload = response.asJsoup().select(".stat-container div:contains(Uploaded) div.bold")?.text().let {
@@ -158,7 +158,7 @@ abstract class SimplyHentai(
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
 
-        gson.fromJson<JsonObject>(response.body()!!.string()).forEach { _, jsonElement ->
+        gson.fromJson<JsonObject>(response.body!!.string()).forEach { _, jsonElement ->
             pages.add(Page(pages.size, "", jsonElement["sizes"]["full"].string))
         }
 

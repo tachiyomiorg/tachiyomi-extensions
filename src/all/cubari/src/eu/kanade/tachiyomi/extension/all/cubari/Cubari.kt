@@ -1,7 +1,8 @@
 package eu.kanade.tachiyomi.extension.all.cubari
 
+import android.app.Application
 import android.os.Build
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -16,6 +17,8 @@ import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 open class Cubari(override val lang: String) : HttpSource() {
 
@@ -40,14 +43,14 @@ open class Cubari(override val lang: String) : HttpSource() {
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         return client.newBuilder()
             .addInterceptor(RemoteStorageUtils.HomeInterceptor())
-            .build()!!
+            .build()
             .newCall(latestUpdatesRequest(page))
             .asObservableSuccess()
             .map { response -> latestUpdatesParse(response) }
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        return parseMangaList(JSONArray(response.body()!!.string()), SortType.UNPINNED)
+        return parseMangaList(JSONArray(response.body!!.string()), SortType.UNPINNED)
     }
 
     override fun popularMangaRequest(page: Int): Request {
@@ -57,14 +60,14 @@ open class Cubari(override val lang: String) : HttpSource() {
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         return client.newBuilder()
             .addInterceptor(RemoteStorageUtils.HomeInterceptor())
-            .build()!!
+            .build()
             .newCall(popularMangaRequest(page))
             .asObservableSuccess()
             .map { response -> popularMangaParse(response) }
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        return parseMangaList(JSONArray(response.body()!!.string()), SortType.PINNED)
+        return parseMangaList(JSONArray(response.body!!.string()), SortType.PINNED)
     }
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
@@ -83,7 +86,7 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     private fun mangaDetailsParse(response: Response, manga: SManga): SManga {
-        return parseMangaFromApi(JSONObject(response.body()!!.string()), manga)
+        return parseMangaFromApi(JSONObject(response.body!!.string()), manga)
     }
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
@@ -107,7 +110,7 @@ open class Cubari(override val lang: String) : HttpSource() {
 
     // Called after the request
     private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return parseChapterList(res, manga)
     }
 
@@ -146,7 +149,7 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     private fun directPageListParse(response: Response): List<Page> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val pages = JSONArray(res)
         val pageArray = ArrayList<Page>()
 
@@ -162,7 +165,7 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     private fun seriesJsonPageListParse(response: Response, chapter: SChapter): List<Page> {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         val json = JSONObject(res)
         val groups = json.getJSONObject("groups")
         val groupIter = groups.keys()
@@ -210,7 +213,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                 // Only tag for recently read on search
                 client.newBuilder()
                     .addInterceptor(RemoteStorageUtils.TagInterceptor())
-                    .build()!!
+                    .build()
                     .newCall(searchMangaRequest(page, trimmedQuery, filters))
                     .asObservableSuccess()
                     .map { response ->
@@ -238,7 +241,7 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
-        return parseSearchList(JSONObject(response.body()!!.string()), query)
+        return parseSearchList(JSONObject(response.body!!.string()), query)
     }
 
     // ------------- Helpers and whatnot ---------------
@@ -247,10 +250,15 @@ open class Cubari(override val lang: String) : HttpSource() {
         val json = JSONObject(payload)
         val groups = json.getJSONObject("groups")
         val chapters = json.getJSONObject("chapters")
+        val seriesSlug = json.getString("slug")
+
 
         val chapterList = ArrayList<SChapter>()
 
         val iter = chapters.keys()
+        
+        val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_updateTime:$seriesSlug", 0)
+        val seriesPrefsEditor = seriesPrefs.edit()
 
         while (iter.hasNext()) {
             val chapterNum = iter.next()
@@ -263,11 +271,32 @@ open class Cubari(override val lang: String) : HttpSource() {
                 val chapter = SChapter.create()
 
                 chapter.scanlator = groups.getString(groupNum)
+                
+                //Api for gist (and some others maybe) doesn't give a "release_date" so we will use the Manga update time. 
+                //So when new chapter comes the manga will go on top if sortinf is set to "Last Updated"
+                //Code by ivaniskandar (Implemented on CatManga extension.)
+                
                 if (chapterObj.has("release_date")) {
                     chapter.date_upload =
                         chapterObj.getJSONObject("release_date").getLong(groupNum) * 1000
+                } else {
+                    val currentTimeMillis = System.currentTimeMillis()
+                    if (!seriesPrefs.contains(chapterNum)) {
+                        seriesPrefsEditor.putLong(chapterNum, currentTimeMillis)
+                    }
+                    chapter.date_upload = seriesPrefs.getLong(chapterNum, currentTimeMillis)
                 }
-                chapter.name = chapterNum + " - " + chapterObj.getString("title")
+                chapter.name = if (chapterObj.has("volume")) {
+                    
+                    "Vol. " + chapterObj.getString("volume") + " Ch. " + chapterNum + " - " + chapterObj.getString("title")
+                    //Output "Vol. 1 Ch. 1 - Chapter Name"
+                    
+                } else {
+                
+                    "Ch. " + chapterNum + " - " + chapterObj.getString("title")
+                    //Output "Ch. 1 - Chapter Name"
+                    
+                }
                 chapter.chapter_number = chapterNum.toFloat()
                 chapter.url =
                     if (chapterGroups.optJSONArray(groupNum) != null) {
@@ -279,6 +308,7 @@ open class Cubari(override val lang: String) : HttpSource() {
             }
         }
 
+        seriesPrefsEditor.apply()
         return chapterList.reversed()
     }
 

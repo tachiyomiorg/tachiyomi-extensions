@@ -2,9 +2,6 @@ package eu.kanade.tachiyomi.extension.es.lectormanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -18,7 +15,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -56,13 +53,13 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     }
 
     private val webRateLimitInterceptor = SpecificHostRateLimitInterceptor(
-        HttpUrl.parse(baseUrl)!!,
+        baseUrl.toHttpUrlOrNull()!!,
         preferences.getString(WEB_RATELIMIT_PREF, WEB_RATELIMIT_PREF_DEFAULT_VALUE)!!.toInt(),
         60
     )
 
     private val imageCDNRateLimitInterceptor = SpecificHostRateLimitInterceptor(
-        HttpUrl.parse(imageCDNUrl)!!,
+        imageCDNUrl.toHttpUrlOrNull()!!,
         preferences.getString(IMAGE_CDN_RATELIMIT_PREF, IMAGE_CDN_RATELIMIT_PREF_DEFAULT_VALUE)!!.toInt(),
         60
     )
@@ -93,7 +90,7 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/library")!!.newBuilder()
+        val url = "$baseUrl/library".toHttpUrlOrNull()!!.newBuilder()
 
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
@@ -487,84 +484,6 @@ class LectorManga : ConfigurableSource, ParsedHttpSource() {
         }
 
         val imgCDNRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
-            key = IMAGE_CDN_RATELIMIT_PREF
-            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
-            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
-            entries = ENTRIES_ARRAY
-            entryValues = ENTRIES_ARRAY
-
-            setDefaultValue(IMAGE_CDN_RATELIMIT_PREF_DEFAULT_VALUE)
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(scanlatorPref)
-        screen.addPreference(pageMethodPref)
-        screen.addPreference(apiRateLimitPreference)
-        screen.addPreference(imgCDNRateLimitPreference)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-
-        val scanlatorPref = CheckBoxPreference(screen.context).apply {
-            key = SCANLATOR_PREF
-            title = SCANLATOR_PREF_TITLE
-            summary = SCANLATOR_PREF_SUMMARY
-            setDefaultValue(SCANLATOR_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean(SCANLATOR_PREF, checkValue).commit()
-            }
-        }
-
-        val pageMethodPref = ListPreference(screen.context).apply {
-            key = PAGE_METHOD_PREF
-            title = PAGE_METHOD_PREF_TITLE
-            entries = arrayOf("Cascada", "Páginado")
-            entryValues = arrayOf("cascade", "paginated")
-            summary = PAGE_METHOD_PREF_SUMMARY
-            setDefaultValue(PAGE_METHOD_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(PAGE_METHOD_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        // Rate limit
-        val apiRateLimitPreference = ListPreference(screen.context).apply {
-            key = WEB_RATELIMIT_PREF
-            title = WEB_RATELIMIT_PREF_TITLE
-            summary = WEB_RATELIMIT_PREF_SUMMARY
-            entries = ENTRIES_ARRAY
-            entryValues = ENTRIES_ARRAY
-
-            setDefaultValue(WEB_RATELIMIT_PREF_DEFAULT_VALUE)
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(WEB_RATELIMIT_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val imgCDNRateLimitPreference = ListPreference(screen.context).apply {
             key = IMAGE_CDN_RATELIMIT_PREF
             title = IMAGE_CDN_RATELIMIT_PREF_TITLE
             summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY

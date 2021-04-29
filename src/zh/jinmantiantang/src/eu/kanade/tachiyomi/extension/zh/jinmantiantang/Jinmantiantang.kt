@@ -18,12 +18,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
@@ -34,8 +34,6 @@ import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.floor
-import android.support.v7.preference.EditTextPreference as LegacyEditTextPreference
-import android.support.v7.preference.PreferenceScreen as LegacyPreferenceScreen
 
 @Nsfw
 class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
@@ -56,16 +54,16 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
     // 处理URL请求
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor(
         fun(chain): Response {
-            val url = chain.request().url().toString()
+            val url = chain.request().url.toString()
             val response = chain.proceed(chain.request())
             if (!url.contains("media/photos", ignoreCase = true)) return response // 对非漫画图片连接直接放行
             if (url.substring(url.indexOf("photos/") + 7, url.lastIndexOf("/")).toInt() < scrambleId) return response // 对在漫画章节ID为220980之前的图片未进行图片分割,直接放行
 // 章节ID:220980(包含)之后的漫画(2020.10.27之后)图片进行了分割倒序处理
-            val res = response.body()!!.byteStream().use {
+            val res = response.body!!.byteStream().use {
                 decodeImage(it)
             }
-            val mediaType = MediaType.parse("image/avif,image/webp,image/apng,image/*,*/*")
-            val outputBytes = ResponseBody.create(mediaType, res)
+            val mediaType = "image/avif,image/webp,image/apng,image/*,*/*".toMediaTypeOrNull()
+            val outputBytes = res.toResponseBody(mediaType)
             return response.newBuilder().body(outputBytes).build()
         }
     ).build()
@@ -158,15 +156,15 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
                 newQuery = "$newQuery+%2B$keyword"
                 params = params.substringAfter("&")
             }
-            HttpUrl.parse("$baseUrl/search/photos?search_query=$newQuery&page=$page&$params")?.newBuilder()
+            "$baseUrl/search/photos?search_query=$newQuery&page=$page&$params".toHttpUrlOrNull()?.newBuilder()
         } else {
             params = if (params == "") "/albums?" else params
             if (query == "") {
-                HttpUrl.parse("$baseUrl$params&page=$page")?.newBuilder()
+                "$baseUrl$params&page=$page".toHttpUrlOrNull()?.newBuilder()
             } else {
                 // 在搜索栏的关键词前添加-号来实现对筛选结果的过滤, 像 "-YAOI -扶他 -毛絨絨 -獵奇", 注意此时搜索功能不可用.
                 val removedGenres = query.split(" ").filter { it.startsWith("-") }.joinToString("+") { it.removePrefix("-") }
-                HttpUrl.parse("$baseUrl$params&page=$page&screen=$removedGenres")?.newBuilder()
+                "$baseUrl$params&page=$page&screen=$removedGenres".toHttpUrlOrNull()?.newBuilder()
             }
         }
         return GET(url.toString(), headers)
@@ -421,20 +419,6 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         EditTextPreference(screen.context).apply {
-            key = "BLOCK_GENRES_LIST"
-            title = BLOCK_PREF_TITLE
-            setDefaultValue(BLOCK_PREF_DEFAULT)
-            dialogTitle = BLOCK_PREF_DIALOGTITLE
-            setOnPreferenceChangeListener { _, newValue ->
-                preferences.edit().putString("BLOCK_GENRES_LIST", newValue as String).commit()
-            }
-        }.let {
-            screen.addPreference(it)
-        }
-    }
-
-    override fun setupPreferenceScreen(screen: LegacyPreferenceScreen) {
-        LegacyEditTextPreference(screen.context).apply {
             key = "BLOCK_GENRES_LIST"
             title = BLOCK_PREF_TITLE
             setDefaultValue(BLOCK_PREF_DEFAULT)

@@ -3,11 +3,8 @@ package eu.kanade.tachiyomi.extension.ko.newtoki
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.widget.Toast
-import eu.kanade.tachiyomi.extensions.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -304,96 +301,6 @@ open class NewToki(override val name: String, private val defaultBaseUrl: String
         }
 
         val rateLimitPeriodPref = androidx.preference.EditTextPreference(screen.context).apply {
-            key = RATE_LIMIT_PERIOD_PREF_TITLE
-            title = RATE_LIMIT_PERIOD_PREF_TITLE
-            summary = RATE_LIMIT_PERIOD_PREF_SUMMARY
-            this.setDefaultValue(defaultRateLimitPeriod.toString())
-            dialogTitle = RATE_LIMIT_PERIOD_PREF_TITLE
-            dialogMessage = "Min 1 to Max 9, Invalid value will treat as $defaultRateLimitPeriod. Only Integer.\nDefault: $defaultRateLimitPeriod"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    // Make sure to validate the value.
-                    val p = (newValue as String).toLongOrNull(10)
-                    var value = p ?: defaultRateLimitPeriod
-                    if (p == null || value !in 1..9) {
-                        Toast.makeText(screen.context, RATE_LIMIT_PERIOD_PREF_WARNING_INVALID_VALUE, Toast.LENGTH_LONG).show()
-                        value = defaultRateLimitPeriod
-                    }
-                    val res = preferences.edit().putLong(RATE_LIMIT_PERIOD_PREF, value).commit()
-                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(baseUrlPref)
-        if (name == "ManaToki") {
-            screen.addPreference(latestExperimentPref)
-            screen.addPreference(latestWithDetailPref)
-        }
-        screen.addPreference(rateLimitPeriodPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val baseUrlPref = EditTextPreference(screen.context).apply {
-            key = BASE_URL_PREF_TITLE
-            title = BASE_URL_PREF_TITLE
-            summary = BASE_URL_PREF_SUMMARY
-            this.setDefaultValue(defaultBaseUrl)
-            dialogTitle = BASE_URL_PREF_TITLE
-            dialogMessage = "Default: $defaultBaseUrl"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(BASE_URL_PREF, newValue as String).commit()
-                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val latestExperimentPref = CheckBoxPreference(screen.context).apply {
-            key = EXPERIMENTAL_LATEST_PREF_TITLE
-            title = EXPERIMENTAL_LATEST_PREF_TITLE
-            summary = EXPERIMENTAL_LATEST_PREF_SUMMARY
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_PREF, newValue as Boolean).commit()
-                    Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val latestWithDetailPref = CheckBoxPreference(screen.context).apply {
-            key = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
-            title = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_TITLE
-            summary = EXPERIMENTAL_LATEST_WITH_DETAIL_PREF_SUMMARY
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putBoolean(EXPERIMENTAL_LATEST_WITH_DETAIL_PREF, newValue as Boolean).commit()
-                    // Toast.makeText(screen.context, RESTART_TACHIYOMI, Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val rateLimitPeriodPref = EditTextPreference(screen.context).apply {
             key = RATE_LIMIT_PERIOD_PREF_TITLE
             title = RATE_LIMIT_PERIOD_PREF_TITLE
             summary = RATE_LIMIT_PERIOD_PREF_SUMMARY

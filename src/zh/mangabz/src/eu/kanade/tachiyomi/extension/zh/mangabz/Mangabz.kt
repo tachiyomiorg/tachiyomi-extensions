@@ -2,9 +2,6 @@ package eu.kanade.tachiyomi.extension.zh.mangabz
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
@@ -18,7 +15,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -43,9 +40,9 @@ class Mangabz : ConfigurableSource, HttpSource() {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
-    private val mainSiteRateLimitInterceptor = SpecificHostRateLimitInterceptor(HttpUrl.parse(baseUrl)!!, preferences.getString(MAINSITE_RATELIMIT_PREF, "5")!!.toInt())
-    private val imageCDNRateLimitInterceptor1 = SpecificHostRateLimitInterceptor(HttpUrl.parse(imageServer[0])!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt())
-    private val imageCDNRateLimitInterceptor2 = SpecificHostRateLimitInterceptor(HttpUrl.parse(imageServer[1])!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt())
+    private val mainSiteRateLimitInterceptor = SpecificHostRateLimitInterceptor(baseUrl.toHttpUrlOrNull()!!, preferences.getString(MAINSITE_RATELIMIT_PREF, "5")!!.toInt())
+    private val imageCDNRateLimitInterceptor1 = SpecificHostRateLimitInterceptor(imageServer[0].toHttpUrlOrNull()!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt())
+    private val imageCDNRateLimitInterceptor2 = SpecificHostRateLimitInterceptor(imageServer[1].toHttpUrlOrNull()!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "5")!!.toInt())
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .set("Referer", "https://mangabz.com")
@@ -248,7 +245,7 @@ class Mangabz : ConfigurableSource, HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
         val scriptTag = (document.select("head script").filter { it.data().isNotBlank() })[0].data()
-        val chapterUrl = response.request().url().toString()
+        val chapterUrl = response.request.url.toString()
 
         val mid = getJSVar(scriptTag, "MANGABZ_MID", "(\\w+)")!!
         val cid = getJSVar(scriptTag, "MANGABZ_CID", "(\\w+)")!!
@@ -271,7 +268,7 @@ class Mangabz : ConfigurableSource, HttpSource() {
 
         // Page 1 may return 1~2 image urls.
         val apiUrlInPage1 = "$baseUrl/$path/chapterimage.ashx?cid=$cid&page=1&key=&_cid=$cid&_mid=$mid&_sign=$sign&_dt="
-        val imgUrlList = fetchImageUrlListFromAPI(apiUrlInPage1, response.request().headers())
+        val imgUrlList = fetchImageUrlListFromAPI(apiUrlInPage1, response.request.headers)
         for (i in 0 until imgUrlList.length()) {
             val imgUrl = imgUrlList[i] as String
             val pageNum = extractPageNumFromImageUrlRegex.find(imgUrl)!!.groups[1]!!.value.toInt() - 1
@@ -282,7 +279,7 @@ class Mangabz : ConfigurableSource, HttpSource() {
     }
 
     private fun fetchImageUrlListFromAPI(apiUrl: String, requestHeaders: Headers = headers): JSONArray {
-        val jsEvalPayload = client.newCall(GET(apiUrl, requestHeaders)).execute().body()!!.string()
+        val jsEvalPayload = client.newCall(GET(apiUrl, requestHeaders)).execute().body!!.string()
         val imgUrlDecode = Duktape.create().use {
             it.evaluate("$jsEvalPayload; JSON.stringify(d);") as String
         }
@@ -353,67 +350,6 @@ class Mangabz : ConfigurableSource, HttpSource() {
         }
 
         val zhHantPreference = androidx.preference.CheckBoxPreference(screen.context).apply {
-            key = SHOW_ZH_HANT_WEBSITE_PREF
-            title = SHOW_ZH_HANT_WEBSITE_PREF_TITLE
-            summary = SHOW_ZH_HANT_WEBSITE_PREF_SUMMARY
-
-            setDefaultValue(false)
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putBoolean(SHOW_ZH_HANT_WEBSITE_PREF, newValue as Boolean).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        screen.addPreference(mainSiteRateLimitPreference)
-        screen.addPreference(imgCDNRateLimitPreference)
-        screen.addPreference(zhHantPreference)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val mainSiteRateLimitPreference = ListPreference(screen.context).apply {
-            key = MAINSITE_RATELIMIT_PREF
-            title = MAINSITE_RATELIMIT_PREF_TITLE
-            entries = ENTRIES_ARRAY
-            entryValues = ENTRIES_ARRAY
-            summary = MAINSITE_RATELIMIT_PREF_SUMMARY
-
-            setDefaultValue("5")
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(MAINSITE_RATELIMIT_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val imgCDNRateLimitPreference = ListPreference(screen.context).apply {
-            key = IMAGE_CDN_RATELIMIT_PREF
-            title = IMAGE_CDN_RATELIMIT_PREF_TITLE
-            entries = ENTRIES_ARRAY
-            entryValues = ENTRIES_ARRAY
-            summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
-
-            setDefaultValue("5")
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
-        val zhHantPreference = CheckBoxPreference(screen.context).apply {
             key = SHOW_ZH_HANT_WEBSITE_PREF
             title = SHOW_ZH_HANT_WEBSITE_PREF_TITLE
             summary = SHOW_ZH_HANT_WEBSITE_PREF_SUMMARY

@@ -77,7 +77,7 @@ class ReadM : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not used")
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val json = JSONObject(response.body()!!.string()).getJSONArray("manga")
+        val json = JSONObject(response.body!!.string()).getJSONArray("manga")
 
         val manga = (0 until json.length()).asSequence().toList().map { it ->
             SManga.create().apply {

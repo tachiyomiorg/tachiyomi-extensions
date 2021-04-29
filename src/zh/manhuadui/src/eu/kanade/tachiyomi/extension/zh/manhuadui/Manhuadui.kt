@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -39,7 +39,7 @@ class Manhuadui : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/update/$page/", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query != "") {
-            val url = HttpUrl.parse("$baseUrl/search/?keywords=$query")?.newBuilder()
+            val url = "$baseUrl/search/?keywords=$query".toHttpUrlOrNull()?.newBuilder()
             GET(url.toString(), headers)
         } else {
             val params = filters.map {
@@ -47,7 +47,7 @@ class Manhuadui : ParsedHttpSource() {
                     it.toUriPart()
                 } else ""
             }.filter { it != "" }.joinToString("-")
-            val url = HttpUrl.parse("$baseUrl/list/$params/$page/")?.newBuilder()
+            val url = "$baseUrl/list/$params/$page/".toHttpUrlOrNull()?.newBuilder()
             GET(url.toString(), headers)
         }
     }

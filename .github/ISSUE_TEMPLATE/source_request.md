@@ -1,5 +1,5 @@
 ---
-name: "Source Request"
+name: "🌐 Source Request"
 title: "[Source Request] <Source Name>"
 about: "Suggest a new source for Tachiyomi"
 labels: "Source Request"

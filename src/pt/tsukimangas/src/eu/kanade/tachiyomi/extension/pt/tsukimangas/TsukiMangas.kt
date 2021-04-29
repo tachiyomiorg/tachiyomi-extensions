@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.pt.tsukimangas
 
 import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
@@ -19,7 +20,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -56,7 +57,7 @@ class TsukiMangas : HttpSource() {
     override fun popularMangaParse(response: Response): MangasPage {
         val result = response.asJson().obj
 
-        val popularMangas = result["slides"].array
+        val popularMangas = result["topviewsmonth"].array
             .map { popularMangaItemParse(it.obj) }
 
         return MangasPage(popularMangas, false)
@@ -93,7 +94,7 @@ class TsukiMangas : HttpSource() {
             .set("Referer", "$baseUrl/lista-completa")
             .build()
 
-        val url = HttpUrl.parse("$baseUrl/api/v2/mangas?page=$page")!!.newBuilder()
+        val url = "$baseUrl/api/v2/mangas?page=$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
 
         filters.forEach { filter ->
@@ -192,7 +193,7 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val mangaUrl = response.request().header("Referer")!!.substringAfter(baseUrl)
+        val mangaUrl = response.request.header("Referer")!!.substringAfter(baseUrl)
 
         return response.asJson().array
             .flatMap { chapterListItemParse(it.obj, mangaUrl) }
@@ -236,7 +237,8 @@ class TsukiMangas : HttpSource() {
         val result = response.asJson().obj
 
         return result["pages"].array.mapIndexed { i, page ->
-            val cdnUrl = "https://cdn${page.obj["server"].string}.tsukimangas.com"
+            val server = page["server"].string
+            val cdnUrl = "https://cdn$server.tsukimangas.com"
             Page(i, "$baseUrl/", cdnUrl + page.obj["url"].string)
         }
     }
@@ -345,7 +347,7 @@ class TsukiMangas : HttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"
@@ -353,8 +355,6 @@ class TsukiMangas : HttpSource() {
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         // By request of site owner. Detailed at Issue #4912 (in Portuguese).
         private val USER_AGENT = "Tachiyomi " + System.getProperty("http.agent")
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }

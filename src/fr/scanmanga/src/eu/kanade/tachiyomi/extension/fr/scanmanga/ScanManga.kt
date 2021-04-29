@@ -126,7 +126,7 @@ class ScanManga : ParsedHttpSource() {
     }
 
     private fun parseMangaFromJson(response: Response): MangasPage {
-        val jsonData = response.body()!!.string()!!
+        val jsonData = response.body!!.string()!!
         if (jsonData == "") {
             return MangasPage(listOf<SManga>(), false)
         }

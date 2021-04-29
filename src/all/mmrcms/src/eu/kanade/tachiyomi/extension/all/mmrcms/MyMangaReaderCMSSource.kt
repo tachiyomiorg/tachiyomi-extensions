@@ -109,9 +109,9 @@ open class MyMangaReaderCMSSource(
 
     override fun popularMangaParse(response: Response) = internalMangaParse(response)
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (listOf("query", "q").any { it in response.request().url().queryParameterNames() }) {
+        return if (listOf("query", "q").any { it in response.request.url.queryParameterNames }) {
             // If a search query was specified, use search instead!
-            val jsonArray = jsonParser.parse(response.body()!!.string()).let {
+            val jsonArray = jsonParser.parse(response.body!!.string()).let {
                 if (name == "Mangas.pw") it.array else it["suggestions"].array
             }
             MangasPage(

@@ -10,7 +10,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -84,7 +84,7 @@ class MyHentaiGallery : ParsedHttpSource() {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search/$page?query=$query", headers)
         } else {
-            val url = HttpUrl.parse("$baseUrl/gallery/category")!!.newBuilder()
+            val url = "$baseUrl/gallery/category".toHttpUrl().newBuilder()
 
             filters.forEach { filter ->
                 when (filter) {
@@ -130,7 +130,7 @@ class MyHentaiGallery : ParsedHttpSource() {
         return listOf(
             SChapter.create().apply {
                 name = "Chapter"
-                url = response.request().url().toString().substringAfter(baseUrl)
+                url = response.request.url.toString().substringAfter(baseUrl)
             }
         )
     }

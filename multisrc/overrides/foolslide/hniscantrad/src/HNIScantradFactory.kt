@@ -43,7 +43,7 @@ class HNIScantradEN : FoolSlide("HNI-Scantrad", "https://hni-scantrad.com", "en"
         }
     }
     override fun pageListParse(response: Response): List<Page> {
-        return Regex("""imageArray\[\d+]='(.*)'""").findAll(response.body()!!.string()).toList().mapIndexed { i, mr ->
+        return Regex("""imageArray\[\d+]='(.*)'""").findAll(response.body!!.string()).toList().mapIndexed { i, mr ->
             Page(i, "", "$baseUrl$urlModifier/${mr.groupValues[1]}")
         }
     }

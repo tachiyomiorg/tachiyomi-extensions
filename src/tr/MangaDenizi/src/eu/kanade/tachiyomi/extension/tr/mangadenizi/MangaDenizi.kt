@@ -70,7 +70,7 @@ class MangaDenizi : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element) = throw UnsupportedOperationException("Unused")
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val res = response.body()!!.string()
+        val res = response.body!!.string()
         return getMangasPage(res)
     }
 

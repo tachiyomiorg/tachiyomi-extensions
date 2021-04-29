@@ -21,7 +21,7 @@ class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-B
         .build()
 
     override fun popularMangaRequest(page: Int): Request {
-        val originalRequestUrl = super.popularMangaRequest(page).url().toString()
+        val originalRequestUrl = super.popularMangaRequest(page).url.toString()
         return GET(originalRequestUrl + DEFAULT_TYPE, sourceHeaders)
     }
 
@@ -30,7 +30,7 @@ class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-B
             return super.searchMangaRequest(page, query, filters)
         }
 
-        val popularRequestUrl = super.popularMangaRequest(page).url().toString()
+        val popularRequestUrl = super.popularMangaRequest(page).url.toString()
         val type = filters.filterIsInstance<TypeFilter>()
             .firstOrNull()?.selected?.value ?: DEFAULT_TYPE
 
@@ -38,7 +38,7 @@ class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-B
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        if (response.request().url().pathSegments().contains("search")) {
+        if (response.request.url.pathSegments.contains("search")) {
             return super.searchMangaParse(response)
         }
 

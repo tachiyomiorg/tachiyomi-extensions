@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.en.readcomiconline
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -130,7 +128,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url + "&quality=${qualitypref()}", headers)
 
     override fun pageListParse(response: Response): List<Page> {
-        return Regex("""lstImages\.push\("(http.*)"\)""").findAll(response.body()!!.string())
+        return Regex("""lstImages\.push\("(http.*)"\)""").findAll(response.body!!.string())
             .toList()
             .mapIndexed { i, mr -> Page(i, "", mr.groupValues[1]) }
     }
@@ -204,24 +202,6 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val qualitypref = androidx.preference.ListPreference(screen.context).apply {
-            key = QUALITY_PREF_Title
-            title = QUALITY_PREF_Title
-            entries = arrayOf("High Quality", "Low Quality")
-            entryValues = arrayOf("hq", "lq")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(QUALITY_PREF, entry).commit()
-            }
-        }
-        screen.addPreference(qualitypref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val qualitypref = ListPreference(screen.context).apply {
             key = QUALITY_PREF_Title
             title = QUALITY_PREF_Title
             entries = arrayOf("High Quality", "Low Quality")

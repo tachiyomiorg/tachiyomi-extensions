@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -42,7 +42,7 @@ open class MangaToon(
         return GET("$baseUrl/$urllang/genre/new?page=$page0", headers)
     }
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/$urllang/search?word=$query")?.newBuilder()
+        val url = "$baseUrl/$urllang/search?word=$query".toHttpUrlOrNull()?.newBuilder()
         return GET(url.toString(), headers)
     }
 
