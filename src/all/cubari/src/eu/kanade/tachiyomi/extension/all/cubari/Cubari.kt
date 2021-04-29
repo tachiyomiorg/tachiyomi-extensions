@@ -250,14 +250,14 @@ open class Cubari(override val lang: String) : HttpSource() {
         val json = JSONObject(payload)
         val groups = json.getJSONObject("groups")
         val chapters = json.getJSONObject("chapters")
-        val seriesSlug = json.getJSONObject("slug")
+        val seriesSlug = json.getString("slug")
 
 
         val chapterList = ArrayList<SChapter>()
 
         val iter = chapters.keys()
         
-        val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_time_found:$seriesSlug", 0)
+        val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_updateTime:$seriesSlug", 0)
         val seriesPrefsEditor = seriesPrefs.edit()
 
         while (iter.hasNext()) {
