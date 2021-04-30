@@ -27,57 +27,40 @@ class Japanread : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    // Popular
-    override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga-list?page=$page", headers)
-    }
-
-    override fun popularMangaSelector() = "div#manga-container div.col-lg-6"
-
-    override fun popularMangaFromElement(element: Element): SManga {
+    // Generic (used by popular/latest/search)
+    private fun mangaListFromElement(element: Element): SManga {
         return SManga.create().apply {
             title = element.select("img").attr("alt")
             setUrlWithoutDomain(element.select("a").attr("abs:href"))
             thumbnail_url = element.select("img").attr("src").replace("manga_medium", "manga_large")
         }
     }
+    private fun mangaListSelector() = "div#manga-container div.col-lg-6"
+    private fun mangaListNextPageSelector() = "a[rel=next]"
 
-    override fun popularMangaNextPageSelector(): String = "a[rel=next]"
+    // Popular
+    override fun popularMangaRequest(page: Int): Request {
+        return GET("$baseUrl/manga-list?sortType=9&page=$page", headers)
+    }
+    override fun popularMangaSelector() = mangaListSelector()
+    override fun popularMangaFromElement(element: Element) = mangaListFromElement(element)
+    override fun popularMangaNextPageSelector() = mangaListNextPageSelector()
 
     // Latest
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/?page=$page", headers)
+        return GET("$baseUrl/manga-list?sortType=0&page=$page", headers)
     }
-
-    override fun latestUpdatesSelector() = "section.main-content > .container > .row > .col-lg-9 tbody > tr > td[rowspan]"
-
-    override fun latestUpdatesFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            title = element.nextElementSibling().nextElementSibling().select("a").text()
-            setUrlWithoutDomain(element.select("a").attr("href"))
-            thumbnail_url = element.select("img").attr("src").replace("manga_medium", "manga_large")
-        }
-    }
-
-    override fun latestUpdatesNextPageSelector() = "a[rel=next]"
+    override fun latestUpdatesSelector() = mangaListSelector()
+    override fun latestUpdatesFromElement(element: Element) = mangaListFromElement(element)
+    override fun latestUpdatesNextPageSelector() = mangaListNextPageSelector()
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return GET("$baseUrl/search?q=$query&page=$page")
     }
-
-    override fun searchMangaSelector() = "#manga-container > div > div.col-lg-6"
-
-    override fun searchMangaFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            title = element.select("div.text-truncate a").text()
-            setUrlWithoutDomain(element.select("div.text-truncate a").attr("href"))
-            description = element.select("div.text-muted").text()
-            thumbnail_url = element.select("img").attr("src").replace("manga_medium", "manga_large")
-        }
-    }
-
-    override fun searchMangaNextPageSelector() = "a[rel=next]"
+    override fun searchMangaSelector() = mangaListSelector()
+    override fun searchMangaFromElement(element: Element) = mangaListFromElement(element)
+    override fun searchMangaNextPageSelector() = mangaListNextPageSelector()
 
     // Details
     override fun mangaDetailsParse(document: Document): SManga {
