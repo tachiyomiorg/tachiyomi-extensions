@@ -21,6 +21,8 @@ import java.util.Date
 
 class MangaDexHelper() {
 
+    val mdFilters = MangaDexFilters()
+
     /**
      * Gets the UUID from the url
      */
@@ -88,21 +90,33 @@ class MangaDexHelper() {
                     val tokenRequestUrl = data[1]
                     val cacheControl =
                         if (Date().time - (
-                            tokenTracker[tokenRequestUrl]
-                                ?: 0
-                            ) > MDConstants.mdAtHomeTokenLifespan
+                                tokenTracker[tokenRequestUrl]
+                                    ?: 0
+                                ) > MDConstants.mdAtHomeTokenLifespan
                         ) {
                             tokenTracker[tokenRequestUrl] = Date().time
                             CacheControl.FORCE_NETWORK
                         } else {
                             CacheControl.FORCE_CACHE
                         }
-                    val response =
-                        client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
-                    JsonParser.parseString(response.body!!.string()).string
+                    getMdAtHomeUrl(tokenRequestUrl, client, headers, cacheControl)
                 }
             }
         return GET(mdAtHomeServerUrl + page.imageUrl, headers)
+    }
+
+    /**
+     * get the md@home url
+     */
+    fun getMdAtHomeUrl(
+        tokenRequestUrl: String,
+        client: OkHttpClient,
+        headers: Headers,
+        cacheControl: CacheControl
+    ): String {
+        val response =
+            client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
+        return JsonParser.parseString(response.body!!.string()).obj["baseUrl"].string
     }
 
     /**
@@ -155,7 +169,7 @@ class MangaDexHelper() {
         }.getOrNull() ?: emptyList()
 
         // get tag list
-        val tags = getTags()
+        val tags = mdFilters.getTags()
 
         // map ids to tag names
         val genreList = (

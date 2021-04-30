@@ -25,7 +25,6 @@ import okhttp3.Response
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
-import java.util.Locale
 
 abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSource() {
     override val name = "MangaDex"
@@ -55,9 +54,9 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun popularMangaRequest(page: Int): Request {
         return GET(
             url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${
-            helper.getMangaListOffset(
-                page
-            )
+                helper.getMangaListOffset(
+                    page
+                )
             }",
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
@@ -91,48 +90,20 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
             return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
         }
 
-        val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
+        val tempUrl = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
 
-        url.apply {
-
+        tempUrl.apply {
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
             addQueryParameter("offset", (helper.getMangaListOffset(page)))
             val actualQuery = query.replace(MDConstants.whitespaceRegex, " ")
             if (actualQuery.isNotBlank()) {
                 addQueryParameter("title", actualQuery)
             }
-
-            // add filters
-            filters.forEach { filter ->
-                when (filter) {
-                    is ContentRatingList -> {
-                        filter.state.forEach { rating ->
-                            if (rating.state) {
-                                addQueryParameter("contentRating[]", rating.name.toLowerCase(Locale.US))
-                            }
-                        }
-                    }
-                    is DemographicList -> {
-                        filter.state.forEach { demographic ->
-                            if (demographic.state) {
-                                addQueryParameter("publicationDemographic[]", demographic.name.toLowerCase(Locale.US))
-                            }
-                        }
-                    }
-                    is TagList -> {
-                        filter.state.forEach { tag ->
-                            if (tag.isIncluded()) {
-                                addQueryParameter("includedTags[]", tag.id)
-                            } else if (tag.isExcluded()) {
-                                addQueryParameter("excludedTags[]", tag.id)
-                            }
-                        }
-                    }
-                }
-            }
         }
 
-        return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
+        val finalUrl = helper.mdFilters.addFiltersToUrl(tempUrl, filters)
+
+        return GET(finalUrl, headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
@@ -220,20 +191,16 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val chapterJson = JsonParser().parse(response.body!!.string()).obj["data"]
+        val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
         val atHomeRequestUrl = "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
-        val response =
-            client.newCall(GET(atHomeRequestUrl, headers, CacheControl.FORCE_NETWORK)).execute()
 
-        if (response.isSuccessful.not()) {
-            throw Exception("Error getting chapter pages ${response.code}")
-        }
+        val host =
+            helper.getMdAtHomeUrl(atHomeRequestUrl, client, headers, CacheControl.FORCE_NETWORK)
 
         val usingDataSaver = preferences.getInt(MDConstants.dataSaverPref, 0) == 1
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
-        val host = JsonParser().parse(response.body!!.string()).string
         val hash = chapterJson["attributes"]["hash"].string
         val pageSuffix = if (usingDataSaver) {
             chapterJson["attributes"]["dataSaver"].array.map { "/data-saver/$hash/${it.string}" }
@@ -273,11 +240,5 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
         screen.addPreference(dataSaverPref)
     }
 
-    override fun getFilterList(): FilterList {
-        return FilterList(
-            ContentRatingList(getContentRating()),
-            DemographicList(getDemographics()),
-            TagList(getTags())
-        )
-    }
+    override fun getFilterList(): FilterList = helper.mdFilters.getMDFilterList()
 }
