@@ -4,16 +4,31 @@ import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
 import com.google.gson.Gson
+<<<<<<< HEAD
+import eu.kanade.tachiyomi.multisrc.mmrcms.MMRCMSSources.Companion.sourceList
+=======
+>>>>>>> origin/mmrcms
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+<<<<<<< HEAD
+import java.io.File
+import java.io.PrintWriter
 import java.security.cert.CertificateException
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+=======
+import java.security.cert.CertificateException
+>>>>>>> origin/mmrcms
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+<<<<<<< HEAD
+=======
 import kotlin.jvm.Throws
+>>>>>>> origin/mmrcms
 
 /**
  * This class generates the sources for MMRCMS.
@@ -22,6 +37,88 @@ import kotlin.jvm.Throws
  * CMS: https://getcyberworks.com/product/manga-reader-cms/
  */
 
+<<<<<<< HEAD
+class MMRCMSJsonGen {
+    //private var preRunTotal: String
+
+    init {
+        System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2,TLSv1.3")
+        //preRunTotal = Regex("""-> (\d+)""").findAll(File(relativePath).readText(Charsets.UTF_8)).last().groupValues[1]
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    fun generate() {
+        val buffer = StringBuffer()
+        val dateTime = ZonedDateTime.now()
+        val formattedDate = dateTime.format(DateTimeFormatter.RFC_1123_DATE_TIME)
+        buffer.append("package eu.kanade.tachiyomi.multisrc.mmrcms")
+        buffer.append("\n\n// GENERATED FILE, DO NOT MODIFY!\n// Generated $formattedDate\n\n")
+        buffer.append("class SourceData() {\n")
+        buffer.append("    companion object {\n")
+        buffer.append("        fun giveMetaData(url:String): String{\n")
+        buffer.append("            return when (url) {\n")
+        var number = 1
+        sources.forEach {
+            try {
+                val map = mutableMapOf<String, Any>()
+                map["name"] = it.name
+                map["base_url"] = it.baseUrl
+                map["supports_latest"] = supportsLatest(it.baseUrl)
+
+                val advancedSearchDocument = getDocument("${it.baseUrl}/advanced-search", false)
+
+                var parseCategories = mutableListOf<Map<String, String>>()
+                if (advancedSearchDocument != null) {
+                    parseCategories = parseCategories(advancedSearchDocument)
+                }
+
+                val homePageDocument = getDocument(it.baseUrl)
+
+                val itemUrl = getItemUrl(homePageDocument, it.baseUrl)
+
+                var prefix = itemUrl.substringAfterLast("/").substringBeforeLast("/")
+
+                // Sometimes itemUrl is the root of the website, and thus the prefix found is the website address.
+                // In this case, we set the default prefix as "manga".
+                if (prefix.startsWith("www") || prefix.startsWith("wwv")) {
+                    prefix = "manga"
+                }
+
+                val mangaListDocument = getDocument("${it.baseUrl}/$prefix-list")!!
+
+                if (parseCategories.isEmpty()) {
+                    parseCategories = parseCategories(mangaListDocument)
+                }
+                map["item_url"] = "$itemUrl/"
+                map["categories"] = parseCategories
+                val tags = parseTags(mangaListDocument)
+                map["tags"] = "null"
+                if (tags.size in 1..49) {
+                    map["tags"] = tags
+                }
+
+                if (!itemUrl.startsWith(it.baseUrl)) println("**Note: ${it.name} URL does not match! Check for changes: \n ${it.baseUrl} vs $itemUrl")
+
+                val toJson = Gson().toJson(map)
+
+                buffer.append("                \"${it.baseUrl}\" -> \"\"\"$toJson\"\"\"\n")
+                number++
+            } catch (e: Exception) {
+                println("error generating source ${it.name} ${e.printStackTrace()}")
+            }
+        }
+
+        buffer.append("                else -> \"\"\n")
+        buffer.append("            }\n")
+        buffer.append("        }\n")
+        buffer.append("    }\n")
+        buffer.append("}\n")
+        //println("Pre-run sources: $preRunTotal")
+        println("Post-run sources: ${number - 1}")
+        val writer = PrintWriter(relativePath)
+        writer.write(buffer.toString())
+        writer.close()
+=======
 class MMRCMSJsonGen (
     private val name: String,
     private val baseUrl: String,
@@ -76,6 +173,7 @@ class MMRCMSJsonGen (
         if (!itemUrl.startsWith(baseUrl)) println("**Note: $name} URL does not match! Check for changes: \n $baseUrl vs $itemUrl")
 
         return Gson().toJson(map)
+>>>>>>> origin/mmrcms
     }
 
     private fun getDocument(url: String, printStackTrace: Boolean = true): Document? {
@@ -85,21 +183,36 @@ class MMRCMSJsonGen (
             val request = Request.Builder().url(url)
             getOkHttpClient().newCall(request.build()).execute().let { response ->
                 // Bypass Cloudflare ("Please wait 5 seconds" page)
+<<<<<<< HEAD
+                if (response.code == 503 && response.header("Server") in serverCheck) {
+                    var cookie = "${response.header("Set-Cookie")!!.substringBefore(";")}; "
+                    Jsoup.parse(response.body!!.string()).let { document ->
+=======
                 if (response.code() == 503 && response.header("Server") in serverCheck) {
                     var cookie = "${response.header("Set-Cookie")!!.substringBefore(";")}; "
                     Jsoup.parse(response.body()!!.string()).let { document ->
+>>>>>>> origin/mmrcms
                         val path = document.select("[id=\"challenge-form\"]").attr("action")
                         val chk = document.select("[name=\"s\"]").attr("value")
                         getOkHttpClient().newCall(Request.Builder().url("$url/$path?s=$chk").build()).execute().let { solved ->
                             cookie += solved.header("Set-Cookie")!!.substringBefore(";")
                             request.addHeader("Cookie", cookie).build().let {
+<<<<<<< HEAD
+                                return Jsoup.parse(getOkHttpClient().newCall(it).execute().body?.string())
+=======
                                 return Jsoup.parse(getOkHttpClient().newCall(it).execute().body()?.string())
+>>>>>>> origin/mmrcms
                             }
                         }
                     }
                 }
+<<<<<<< HEAD
+                if (response.code == 200) {
+                    return Jsoup.parse(response.body?.string())
+=======
                 if (response.code() == 200) {
                     return Jsoup.parse(response.body()?.string())
+>>>>>>> origin/mmrcms
                 }
             }
         } catch (e: Exception) {
@@ -193,4 +306,18 @@ class MMRCMSJsonGen (
             .writeTimeout(1, TimeUnit.MINUTES)
             .build()
     }
+<<<<<<< HEAD
+
+    companion object {
+        val sources = sourceList
+
+        val relativePath = System.getProperty("user.dir") + "/multisrc/src/main/java/eu/kanade/tachiyomi/multisrc/mmrcms/SourceData.kt"
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            MMRCMSJsonGen().generate()
+        }
+    }
+=======
+>>>>>>> origin/mmrcms
 }

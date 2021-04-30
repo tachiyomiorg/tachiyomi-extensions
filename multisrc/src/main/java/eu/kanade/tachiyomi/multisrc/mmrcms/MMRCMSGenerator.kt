@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.multisrc.mmrcms
 
+<<<<<<< HEAD
+import generator.ThemeSourceData
+=======
+>>>>>>> origin/mmrcms
 import generator.ThemeSourceData.SingleLang
 import generator.ThemeSourceGenerator
 
@@ -9,6 +13,16 @@ class MMRCMSGenerator : ThemeSourceGenerator {
 
     override val themeClass = "MMRCMS"
 
+<<<<<<< HEAD
+    override val baseVersionCode: Int = MMRCMSSources.version
+
+    override val sources = MMRCMSSources.sourceList.map {
+        SingleLang(it.name, it.baseUrl, it.lang, it.isNsfw, it.className, it.pkgName, it.overrideVersionCode)
+    }
+
+    companion object {
+
+=======
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
@@ -48,12 +62,15 @@ class MMRCMSGenerator : ThemeSourceGenerator {
     )
 
     companion object {
+>>>>>>> origin/mmrcms
         @JvmStatic
         fun main(args: Array<String>) {
             MMRCMSGenerator().createAll()
         }
     }
 }
+<<<<<<< HEAD
+=======
 
 // Reference from old Factory Source
 // Changed CMS
@@ -121,3 +138,4 @@ class MMRCMSGenerator : ThemeSourceGenerator {
 // SourceData("ru", "NAKAMA", "http://nakama.ru"),
 // SourceData("tr", "MangAoi", "http://mangaoi.com"),
 // SourceData("tr", "ManhuaTR", "http://www.manhua-tr.com"),
+>>>>>>> origin/mmrcms
