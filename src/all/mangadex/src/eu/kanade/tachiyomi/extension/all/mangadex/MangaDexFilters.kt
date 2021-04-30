@@ -10,6 +10,7 @@ class MangaDexFilters() {
     internal fun getMDFilterList() = FilterList(
         ContentRatingList(getContentRating()),
         DemographicList(getDemographics()),
+        StatusList(getStatus()),
         TagList(getTags()),
         TagInclusionMode(),
         TagExclusionMode(),
@@ -20,10 +21,22 @@ class MangaDexFilters() {
         Filter.Group<Demographic>("Publication Demographic", demographics)
 
     private fun getDemographics() = listOf(
+        Demographic("None"),
         Demographic("Shounen"),
         Demographic("Shoujo"),
         Demographic("Seinen"),
         Demographic("Josei")
+    )
+
+    private class Status(name: String) : Filter.CheckBox(name)
+    private class StatusList(status: List<Status>) :
+        Filter.Group<Status>("Status", status)
+
+    private fun getStatus() = listOf(
+        Status("Onging"),
+        Status("Completed"),
+        Status("Hiatus"),
+        Status("Abandoned"),
     )
 
     private class ContentRating(name: String) : Filter.CheckBox(name)
@@ -147,6 +160,18 @@ class MangaDexFilters() {
                                 addQueryParameter(
                                     "publicationDemographic[]",
                                     demographic.name.toLowerCase(
+                                        Locale.US
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    is StatusList -> {
+                        filter.state.forEach { status ->
+                            if (status.state) {
+                                addQueryParameter(
+                                    "status[]",
+                                    status.name.toLowerCase(
                                         Locale.US
                                     )
                                 )
