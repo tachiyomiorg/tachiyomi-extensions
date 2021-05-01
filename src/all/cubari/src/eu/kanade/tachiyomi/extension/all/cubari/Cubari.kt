@@ -286,7 +286,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                     }
                     chapter.date_upload = seriesPrefs.getLong(chapterNum, currentTimeMillis)
                 }
-                chapter.name = if (chapterObj.has("volume")) {
+                chapter.name = if (chapterObj.getString("volume") != "Uncategorized") {
                     
                     "Vol. " + chapterObj.getString("volume") + " Ch. " + chapterNum + " - " + chapterObj.getString("title")
                     //Output "Vol. 1 Ch. 1 - Chapter Name"
