@@ -3,7 +3,9 @@ package eu.kanade.tachiyomi.extension.en.vizshonenjump
 import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.nullInt
 import com.github.salomonbrys.kotson.nullObj
+import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
@@ -158,6 +160,8 @@ class VizShonenJump : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val allChapters = super.chapterListParse(response)
 
+        checkIfIsLoggedIn()
+
         if (loggedIn == true) {
             return allChapters.map { oldChapter ->
                 oldChapter.apply {
@@ -267,20 +271,25 @@ class VizShonenJump : ParsedHttpSource() {
         return GET(newImageUrl, newHeaders)
     }
 
+    private fun checkIfIsLoggedIn(chain: Interceptor.Chain? = null) {
+        val refreshHeaders = headersBuilder()
+            .add("X-Requested-With", "XMLHttpRequest")
+            .build()
+
+        val loginCheckRequest = GET("$baseUrl/$REFRESH_LOGIN_LINKS_URL", refreshHeaders)
+        val loginCheckResponse = chain?.proceed(loginCheckRequest)
+            ?: client.newCall(loginCheckRequest).execute()
+        val document = loginCheckResponse.asJsoup()
+
+        loggedIn = document.select("div#o_account-links-content").first()!!
+            .attr("logged_in")!!.toBoolean()
+
+        loginCheckResponse.close()
+    }
+
     private fun authCheckIntercept(chain: Interceptor.Chain): Response {
         if (loggedIn == null) {
-            val refreshHeaders = headersBuilder()
-                .add("X-Requested-With", "XMLHttpRequest")
-                .build()
-
-            val loginCheckRequest = GET("$baseUrl/$REFRESH_LOGIN_LINKS_URL", refreshHeaders)
-            val loginCheckResponse = chain.proceed(loginCheckRequest)
-            val document = loginCheckResponse.asJsoup()
-
-            loggedIn = document.select("div#o_account-links-content").first()!!
-                .attr("logged_in")!!.toBoolean()
-
-            loginCheckResponse.close()
+           checkIfIsLoggedIn(chain)
         }
 
         return chain.proceed(chain.request())
@@ -311,7 +320,7 @@ class VizShonenJump : ParsedHttpSource() {
 
         authCheckResponse.close()
 
-        if (authCheckJson["ok"].bool && authCheckJson["archive_info"]["ok"].bool) {
+        if (authCheckJson["ok"].int == 1 && authCheckJson["archive_info"]["ok"].int == 1) {
             val newChapterUrl = chain.request().url.newBuilder()
                 .removeAllQueryParameters("locked")
                 .build()
@@ -323,14 +332,16 @@ class VizShonenJump : ParsedHttpSource() {
         }
 
         if (
-            authCheckJson["archive_info"]["err"].nullObj != null &&
-            authCheckJson["archive_info"]["err"]["code"].int == 4 &&
+            authCheckJson["archive_info"]["err"].isJsonObject &&
+            authCheckJson["archive_info"]["err"]["code"].nullInt == 4 &&
             loggedIn == true
         ) {
             throw Exception(SESSION_EXPIRED)
         }
 
-        throw Exception(AUTH_CHECK_FAILED)
+        val errorMessage = authCheckJson["archive_info"]["err"].nullObj?.get("msg")?.nullString
+
+        throw Exception(errorMessage ?: AUTH_CHECK_FAILED)
     }
 
     private fun String.toDate(): Long {
