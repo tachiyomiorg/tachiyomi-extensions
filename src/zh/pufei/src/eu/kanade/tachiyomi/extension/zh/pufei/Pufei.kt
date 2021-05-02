@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.zh.pufei
 
 // temp patch:
-// https://github.com/inorichi/tachiyomi/pull/2031
+// https://github.com/tachiyomiorg/tachiyomi/pull/2031
 
 import android.util.Base64
 import com.squareup.duktape.Duktape
@@ -13,27 +13,27 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 fun asJsoup(response: Response, html: String? = null): Document {
-    return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request().url().toString())
+    return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request.url.toString())
 }
 
 fun bodyWithAutoCharset(response: Response, _charset: String? = null): String {
-    val htmlBytes: ByteArray = response.body()!!.bytes()
+    val htmlBytes: ByteArray = response.body!!.bytes()
     var c = _charset
 
     if (c == null) {
-        var regexPat = Regex("""charset=(\w+)""")
+        val regexPat = Regex("""charset=(\w+)""")
         val match = regexPat.find(String(htmlBytes))
         c = match?.groups?.get(1)?.value
     }
@@ -48,10 +48,10 @@ fun ByteArray.toHexString() = joinToString("%") { "%02x".format(it) }
 class Pufei : ParsedHttpSource() {
 
     override val name = "扑飞漫画"
-    override val baseUrl = "http://m.ipufei.com"
+    override val baseUrl = "http://m.pufei8.com"
     override val lang = "zh"
     override val supportsLatest = true
-    val imageServer = "http://res.img.220012.net/" // Alternative: "http://res.img.ipufei.com/"
+    val imageServer = "http://res.img.youzipi.net/"
 
     override val client: OkHttpClient
         get() = network.client.newBuilder()
@@ -60,9 +60,9 @@ class Pufei : ParsedHttpSource() {
 
     private val rewriteOctetStream: Interceptor = Interceptor { chain ->
         val originalResponse: Response = chain.proceed(chain.request())
-        if (originalResponse.headers("Content-Type").contains("application/octet-stream") && originalResponse.request().url().toString().contains(".jpg")) {
-            val orgBody = originalResponse.body()!!.bytes()
-            val newBody = ResponseBody.create(MediaType.parse("image/jpeg"), orgBody)
+        if (originalResponse.headers("Content-Type").contains("application/octet-stream") && originalResponse.request.url.toString().contains(".jpg")) {
+            val orgBody = originalResponse.body!!.bytes()
+            val newBody = orgBody.toResponseBody("image/jpeg".toMediaTypeOrNull())
             originalResponse.newBuilder()
                 .body(newBody)
                 .build()
@@ -74,7 +74,7 @@ class Pufei : ParsedHttpSource() {
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", baseUrl)
+        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/manhua/paihang.html", headers)
 
@@ -85,6 +85,7 @@ class Pufei : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.select("h3").text().trim()
+            manga.thumbnail_url = it.select("div.thumb img").attr("data-src")
         }
         return manga
     }
@@ -98,12 +99,12 @@ class Pufei : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.book-detail")
+        val infoElement = document.select("div.book-detail div.cont-list")
 
         val manga = SManga.create()
         manga.description = infoElement.select("div#bookIntro > p").text().trim()
         manga.thumbnail_url = infoElement.select("div.thumb > img").first()?.attr("src")
-//        manga.author = infoElement.select("dd").first()?.text()
+        manga.author = infoElement.select(":nth-child(4) dd").first()?.text()
         return manga
     }
 
@@ -114,7 +115,8 @@ class Pufei : ParsedHttpSource() {
     private fun encodeGBK(str: String) = "%" + str.toByteArray(charset("gb2312")).toHexString()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/e/search/?searchget=1&tbname=mh&show=title,player,playadmin,bieming,pinyin,playadmin&tempid=4&keyboard=" + encodeGBK(query))?.newBuilder()
+        val url = ("$baseUrl/e/search/?searchget=1&tbname=mh&show=title,player,playadmin,bieming,pinyin,playadmin&tempid=4&keyboard=" + encodeGBK(query)).toHttpUrlOrNull()
+            ?.newBuilder()
         return GET(url.toString(), headers)
     }
 
@@ -151,10 +153,11 @@ class Pufei : ParsedHttpSource() {
         val imgbase64 = re.find(html)?.groups?.get(1)?.value
         val imgCode = String(Base64.decode(imgbase64, Base64.DEFAULT))
         val imgArrStr = Duktape.create().use {
-            it.evaluate(imgCode + """.join('|')""") as String
+            it.evaluate("$imgCode.join('|')") as String
         }
+        val hasHost = imgArrStr.startsWith("http")
         return imgArrStr.split('|').mapIndexed { i, imgStr ->
-            Page(i, "", imageServer + imgStr)
+            Page(i, "", if (hasHost) imgStr else imageServer + imgStr)
         }
     }
 
@@ -163,11 +166,11 @@ class Pufei : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
-            "All"
+        "All"
     )
 
     // temp patch

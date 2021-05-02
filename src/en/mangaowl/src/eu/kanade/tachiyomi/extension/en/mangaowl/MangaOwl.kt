@@ -6,19 +6,20 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaOwl : ParsedHttpSource() {
 
     override val name = "MangaOwl"
 
-    override val baseUrl = "https://mangaowl.com"
+    override val baseUrl = "https://mangaowls.com"
 
     override val lang = "en"
 
@@ -66,7 +67,7 @@ class MangaOwl : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/search/$query/$page", headers)
+        return GET("$baseUrl/search/$page?search=$query&search_field=110&sort=4&completed=2", headers)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -82,11 +83,11 @@ class MangaOwl : ParsedHttpSource() {
 
         return SManga.create().apply {
             title = infoElement.select("h2").first().ownText()
-            author = infoElement.select("p:contains(author) a").text()
+            author = infoElement.select("p.fexi_header_para a.author_link").text()
             artist = author
-            status = parseStatus(infoElement.select("p:contains(pub. status)").first().ownText())
-            genre = infoElement.select("a.label").mapNotNull { it.text() }.joinToString(", ")
-            description = infoElement.select("div.single-right-grids.description").first().ownText()
+            status = parseStatus(infoElement.select("p.fexi_header_para:contains(status)").first().ownText())
+            genre = infoElement.select(".owl-tags a").joinToString { it.text() }
+            description = infoElement.select(".description").first().ownText()
             thumbnail_url = infoElement.select("img").first()?.let { img ->
                 if (img.hasAttr("data-src")) img.attr("abs:data-src") else img.attr("abs:src")
             }
@@ -111,7 +112,7 @@ class MangaOwl : ParsedHttpSource() {
             chapter.setUrlWithoutDomain(it.attr("href").replace("/reader/reader/", "/reader/"))
             chapter.name = it.select("label")[0].text()
         }
-        chapter.date_upload = parseChapterDate(element.select("small").text())
+        chapter.date_upload = parseChapterDate(element.select("small:last-of-type").text())
 
         return chapter
     }
@@ -123,7 +124,11 @@ class MangaOwl : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long {
-        return dateFormat.parse(string).time
+        return try {
+            dateFormat.parse(string)?.time ?: 0
+        } catch (_: ParseException) {
+            0
+        }
     }
 
     // Pages

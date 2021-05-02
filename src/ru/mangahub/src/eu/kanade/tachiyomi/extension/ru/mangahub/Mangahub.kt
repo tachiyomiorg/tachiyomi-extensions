@@ -8,13 +8,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 open class Mangahub : ParsedHttpSource() {
 
@@ -96,7 +96,7 @@ open class Mangahub : ParsedHttpSource() {
         val chapter = SChapter.create()
         chapter.name = urlElement.text()
         chapter.date_upload = element.select("div.text-muted").text()?.let {
-            SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(it).time
+            SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(it)?.time ?: 0L
         } ?: 0
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         return chapter
@@ -114,7 +114,7 @@ open class Mangahub : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val chapInfo = document.select("reader").attr("data-reader-store").replace("&quot;", "\"").replace("\\/", "/")
+        val chapInfo = document.select("reader").attr("data-store").replace("&quot;", "\"").replace("\\/", "/")
         val chapter = jsonParser.parse(chapInfo).asJsonObject
         val scans = chapter["scans"].asJsonArray
 

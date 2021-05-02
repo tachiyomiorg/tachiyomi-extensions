@@ -1,8 +1,8 @@
 apply plugin: 'org.jmailen.kotlinter'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '29.0.3'
+    compileSdkVersion Config.compileSdk
+    buildToolsVersion Config.buildTools
 
     buildTypes {
         release {
@@ -12,35 +12,52 @@ android {
 
     sourceSets {
         main {
-            manifest.srcFile "$rootDir/AndroidManifest.xml"
+            manifest.srcFile "AndroidManifest.xml"
             java.srcDirs = ['src']
-            resources.srcDirs = ['src']
-            aidl.srcDirs = ['src']
-            renderscript.srcDirs = ['src']
-            res.srcDirs = ["$rootDir/res"]
-            assets.srcDirs = ['assets']
+            res.srcDirs = ['res']
         }
         release {
-            res.srcDirs = ['res']
             manifest.srcFile "AndroidManifest.xml"
         }
         debug {
-            res.srcDirs = ['res']
             manifest.srcFile "AndroidManifest.xml"
         }
     }
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 27
+        minSdkVersion Config.minSdk
+        targetSdkVersion Config.targetSdk
         applicationIdSuffix pkgNameSuffix
         versionCode extVersionCode
         versionName "$libVersion.$extVersionCode"
         setProperty("archivesBaseName", "tachiyomi-$pkgNameSuffix-v$versionName")
         manifestPlaceholders = [
-                appName: appName,
+                appName : "Tachiyomi: $extName",
                 extClass: extClass,
+                extFactory: project.ext.properties.getOrDefault("extFactory", ""),
+                nsfw: project.ext.properties.getOrDefault("containsNsfw", false) ? 1 : 0,
         ]
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+    }
+
+    buildFeatures {
+        // Disable unused AGP features
+        aidl false
+        renderScript false
+        resValues false
+        shaders false
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 }
 
@@ -49,12 +66,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compileOnly "com.github.tachiyomiorg:extensions-lib:$libVersion"
-    compileOnly 'com.squareup.okhttp3:okhttp:3.10.0'
-    compileOnly 'io.reactivex:rxjava:1.3.6'
-    compileOnly 'org.jsoup:jsoup:1.10.2'
+    implementation project(":core")
 }
+apply from: "$rootDir/common-dependencies.gradle"
 
 preBuild.dependsOn(lintKotlin)
 lintKotlin.dependsOn(formatKotlin)

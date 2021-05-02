@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Sleepy Panda Scans'
+    extName = 'Sleepy Panda Scans'
     pkgNameSuffix = 'en.sleepypandascans'
     extClass = '.SleepyPandaScans'
     extVersionCode = 3

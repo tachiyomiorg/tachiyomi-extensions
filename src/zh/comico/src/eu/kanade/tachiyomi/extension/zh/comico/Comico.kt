@@ -12,14 +12,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 abstract class Comico(
     override val name: String,
@@ -27,7 +27,7 @@ abstract class Comico(
     override val supportsLatest: Boolean
 ) : ParsedHttpSource() {
 
-    override val baseUrl = "http://www.comico.com.tw"
+    override val baseUrl = "https://www.comico.com.tw"
 
     override val lang = "zh"
 
@@ -135,7 +135,7 @@ abstract class Comico(
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
 
-        gson.fromJson<JsonObject>(response.body()!!.string())["result"]["list"].asJsonArray.forEach {
+        gson.fromJson<JsonObject>(response.body!!.string())["result"]["list"].asJsonArray.forEach {
             if (it["freeFlg"].asString == "Y") chapters.add(chapterFromJson(it))
         }
 
@@ -143,7 +143,7 @@ abstract class Comico(
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).parse(date).time
+        return SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).parse(date)?.time ?: 0L
     }
 
     override fun pageListParse(document: Document): List<Page> {
@@ -156,7 +156,7 @@ abstract class Comico(
         document.select("script:containsData(imageData)").first().data().let {
             if (it.isNotEmpty()) {
                 it.substringAfter("imageData:[").substringBefore("]").trim().split(",")
-                .forEach { img -> pages.add(Page(pages.size, "", img.replace("\'", ""))) }
+                    .forEach { img -> pages.add(Page(pages.size, "", img.replace("\'", ""))) }
             }
         }
 

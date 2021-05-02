@@ -1,0 +1,32 @@
+name: Issue closer
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+jobs:
+  autoclose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Autoclose issues
+        uses: arkon/issue-closer-action@v3.2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          rules: |
+            [
+              {
+                "type": "title",
+                "regex": ".*<(Source Name|short description)>*",
+                "message": "You did not fill out the description in the title"
+              },
+              {
+                "type": "body",
+                "regex": ".*DELETE THIS SECTION IF YOU HAVE READ AND ACKNOWLEDGED IT.*",
+                "message": "The acknowledgment section was not removed"
+              },
+              {
+                "type": "body",
+                "regex": ".*\\* (Tachiyomi version|Android version|Device|Name|Link|Extension version): \\?.*",
+                "message": "The requested information was not filled out"
+              }
+            ]

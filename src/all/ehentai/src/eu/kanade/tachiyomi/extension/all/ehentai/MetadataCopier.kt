@@ -38,8 +38,9 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     manga.status = SManga.COMPLETED
     title?.let { t ->
         if (ONGOING_SUFFIX.any {
-                t.endsWith(it, ignoreCase = true)
-            }) manga.status = SManga.ONGOING
+            t.endsWith(it, ignoreCase = true)
+        }
+        ) manga.status = SManga.ONGOING
     }
 
     // Build a nice looking description out of what we know
@@ -61,7 +62,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
     favorites?.let { detailsDesc += "Favorited: $it times\n" }
     averageRating?.let {
         detailsDesc += "Rating: $it"
-        ratingCount?.let { detailsDesc += " ($it)" }
+        ratingCount?.let { count -> detailsDesc += " ($count)" }
         detailsDesc += "\n"
     }
 

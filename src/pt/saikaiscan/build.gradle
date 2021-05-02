@@ -2,11 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Saikai Scan'
+    extName = 'Saikai Scan'
     pkgNameSuffix = 'pt.saikaiscan'
     extClass = '.SaikaiScan'
-    extVersionCode = 3
+    extVersionCode = 5
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

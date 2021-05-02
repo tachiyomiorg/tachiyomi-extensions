@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Patch Friday'
+    extName = 'Patch Friday'
     pkgNameSuffix = 'en.patchfriday'
     extClass = '.PatchFriday'
     extVersionCode = 1

@@ -86,13 +86,14 @@ class ComX : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): Nothing? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return POST("$baseUrl/comix/",
-                body = FormBody.Builder()
-                        .add("do", "search")
-                        .add("story", query)
-                        .add("subaction", "search")
-                        .build(),
-                headers = headers
+        return POST(
+            "$baseUrl/comix/",
+            body = FormBody.Builder()
+                .add("do", "search")
+                .add("story", query)
+                .add("subaction", "search")
+                .build(),
+            headers = headers
         )
     }
 
@@ -109,10 +110,12 @@ class ComX : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = infoElement.select("p:eq(2)").text().removePrefix("Издатель: ")
         manga.genre = infoElement.select("p:eq(3)").text()
-                .removePrefix("Жанр: ")
+            .removePrefix("Жанр: ").split(",").plusElement("Комикс").joinToString { it.trim() }
 
-        manga.status = parseStatus(infoElement.select("p:eq(4)").text()
-                .removePrefix("Статус: "))
+        manga.status = parseStatus(
+            infoElement.select("p:eq(4)").text()
+                .removePrefix("Статус: ")
+        )
 
         val text = infoElement.select("*").text()
         if (!text.contains("Добавить описание на комикс")) {
@@ -134,9 +137,9 @@ class ComX : ParsedHttpSource() {
     private fun parseStatus(element: String): Int = when {
         element.contains("Продолжается") -> SManga.ONGOING
         element.contains("Завершён") ||
-                element.contains("Лимитка") ||
-                element.contains("Ван шот") ||
-                element.contains("Графический роман") -> SManga.COMPLETED
+            element.contains("Лимитка") ||
+            element.contains("Ван шот") ||
+            element.contains("Графический роман") -> SManga.COMPLETED
 
         else -> SManga.UNKNOWN
     }
@@ -148,12 +151,12 @@ class ComX : ParsedHttpSource() {
     }
 
     private fun chapterPageListParse(document: Document): List<String> {
-        return document.select("span[class=\"\"]").map { it -> it.text() }
+        return document.select("span[class=\"\"]").map { it.text() }
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        val id = response.request().url().toString().removePrefix("$baseUrl/").split('-')[0]
+        val id = response.request.url.toString().removePrefix("$baseUrl/").split('-')[0]
 
         val list = mutableListOf<SChapter>()
         list += chapterResponseParse(document)
@@ -161,12 +164,14 @@ class ComX : ParsedHttpSource() {
         val pages = chapterPageListParse(document).distinct()
 
         for (page in pages) {
-            val post = POST("$baseUrl/engine/mods/comix/listPages.php",
-                    body = FormBody.Builder()
-                            .add("newsid", id)
-                            .add("page", page)
-                            .build(),
-                    headers = headers)
+            val post = POST(
+                "$baseUrl/engine/mods/comix/listPages.php",
+                body = FormBody.Builder()
+                    .add("newsid", id)
+                    .add("page", page)
+                    .build(),
+                headers = headers
+            )
 
             list += chapterResponseParse(client.newCall(post).execute().asJsoup())
         }
@@ -185,21 +190,24 @@ class ComX : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
-        val beginTag = "comix_images=["
-        val beginIndex = html.indexOf(beginTag)
-        val endTag = "], comix_link='"
-        val endIndex = html.indexOf(endTag, beginIndex)
-        val comixIndex = html.indexOf("', page=", endIndex)
+        val html = response.body!!.string()
+        val baseImgUrl = "https://img.com-x.life/comix/"
 
-        val link = html.substring(endIndex + endTag.length, comixIndex)
+        val beginTag = "\"images\":["
+        val beginIndex = html.indexOf(beginTag)
+        val endIndex = html.indexOf("]", beginIndex)
+
         val urls: List<String> = html.substring(beginIndex + beginTag.length, endIndex)
-                .split(',')
+            .split(',').map {
+                val img = it.replace("\\", "").replace("\"", "")
+                baseImgUrl + img
+            }
 
         val pages = mutableListOf<Page>()
         for (i in urls.indices) {
-            pages.add(Page(i, "", link + (urls[i].removeSurrounding("'"))))
+            pages.add(Page(i, "", urls[i]))
         }
+
         return pages
     }
 

@@ -13,9 +13,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
-abstract class DbMultiverse(override val lang: String) : ParsedHttpSource() {
+abstract class DbMultiverse(override val lang: String, private val internalLang: String) : ParsedHttpSource() {
 
-    override val name = "Dragon Ball Multiverse"
+    override val name =
+        if (internalLang.endsWith("_PA")) "Dragon Ball Multiverse Parody"
+        else "Dragon Ball Multiverse"
     override val baseUrl = "https://www.dragonball-multiverse.com"
     override val supportsLatest = false
 
@@ -64,7 +66,7 @@ abstract class DbMultiverse(override val lang: String) : ParsedHttpSource() {
     private fun createManga(document: Document?) = SManga.create().apply {
         title = name
         status = SManga.ONGOING
-        url = "/${lang.replace("-", "_")}/chapters.html"
+        url = "/$internalLang/chapters.html"
         description = "Dragon Ball Multiverse (DBM) is a free online comic, made by a whole team of fans. It's our personal sequel to DBZ."
         thumbnail_url = document?.select("div[ch=\"1\"] img")?.attr("abs:src")
     }

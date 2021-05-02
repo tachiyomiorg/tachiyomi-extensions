@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -30,7 +30,7 @@ class Webcomics : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "section.mangas div div.col-md-3"
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", "https://www.webcomicsapp.com")
+        .add("Referer", "https://www.webcomicsapp.com")
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/popular.html", headers)
 
@@ -81,7 +81,7 @@ class Webcomics : ParsedHttpSource() {
     override fun searchMangaSelector() = ".wiki-book-list > .row"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/wiki.html?search=$query&page=$page")?.newBuilder()
+        val url = "$baseUrl/wiki.html?search=$query&page=$page".toHttpUrlOrNull()?.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreFilter -> {
@@ -122,8 +122,8 @@ class Webcomics : ParsedHttpSource() {
 
         /* Source only allows 20 chapters to be readable on their website, trying to read past
            that results in a page list empty error; so might as well not grab them. */
-        if (document.select("${chapterListSelector()}:nth-child(21)").isEmpty()) {
-            return document.select(chapterListSelector()).asReversed().map { chapterFromElement(it) }
+        return if (document.select("${chapterListSelector()}:nth-child(21)").isEmpty()) {
+            document.select(chapterListSelector()).asReversed().map { chapterFromElement(it) }
         } else {
             val chapters = mutableListOf<SChapter>()
             for (i in 1..20)
@@ -133,7 +133,7 @@ class Webcomics : ParsedHttpSource() {
             lockedNotification.name = "[Attention] Additional chapters are restricted by the source to their own app"
             lockedNotification.url = "wiki.html"
             chapters.add(lockedNotification)
-            return chapters.reversed()
+            chapters.reversed()
         }
     }
 
@@ -151,36 +151,36 @@ class Webcomics : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = GET(baseUrl + "/" + chapter.url, headers)
 
     override fun pageListParse(document: Document) = document
-            .select("section.book-reader .img-list > li > img")
-            .mapIndexed {
-                i, element ->
-                Page(i, "", element.attr("data-original"))
-            }
+        .select("section.book-reader .img-list > li > img")
+        .mapIndexed {
+            i, element ->
+            Page(i, "", element.attr("data-original"))
+        }
 
     override fun imageUrlParse(document: Document) = ""
 
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     // [...$('.row.wiki-book-nav .col-md-8 ul a')].map(el => `"${el.textContent.trim()}"`).join(',\n')
     // https://www.webcomicsapp.com/wiki.html
     private fun getGenreList() = arrayOf(
-            "All",
-            "Fantasy",
-            "Comedy",
-            "Drama",
-            "Modern",
-            "Action",
-            "Monster",
-            "Romance",
-            "Boys'Love",
-            "Harem",
-            "Thriller",
-            "Historical",
-            "Sci-fi",
-            "Slice of Life"
+        "All",
+        "Fantasy",
+        "Comedy",
+        "Drama",
+        "Modern",
+        "Action",
+        "Monster",
+        "Romance",
+        "Boys'Love",
+        "Harem",
+        "Thriller",
+        "Historical",
+        "Sci-fi",
+        "Slice of Life"
     )
 }

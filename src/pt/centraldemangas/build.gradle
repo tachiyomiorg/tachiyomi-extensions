@@ -2,16 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Central de Mangás'
+    extName = 'Central de Mangás'
     pkgNameSuffix = 'pt.centraldemangas'
     extClass = '.CentralDeMangas'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 
 dependencies {
-    compileOnly 'com.google.code.gson:gson:2.8.2'
-    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

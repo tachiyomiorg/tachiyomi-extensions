@@ -1,0 +1,15 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'CopyManga'
+    pkgNameSuffix = 'zh.copymanga'
+    extClass = '.CopyManga'
+    extVersionCode = 8
+    libVersion = '1.2'
+}
+apply from: "$rootDir/common.gradle"
+
+dependencies {
+    implementation 'com.luhuiguo:chinese-utils:1.0'
+}

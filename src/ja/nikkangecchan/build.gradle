@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Nikkangecchan'
+    extName = 'Nikkangecchan'
     pkgNameSuffix = 'ja.nikkangecchan'
     extClass = '.Nikkangecchan'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

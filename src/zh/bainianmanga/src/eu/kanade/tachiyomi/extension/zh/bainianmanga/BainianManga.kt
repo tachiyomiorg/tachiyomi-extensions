@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -25,7 +25,7 @@ class BainianManga : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/page/hot/$page.html", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/page/new/$page.html", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/index.php?m=vod-search-pg-$page-wd-$query.html")?.newBuilder()
+        val url = "$baseUrl/index.php?m=vod-search-pg-$page-wd-$query.html".toHttpUrlOrNull()?.newBuilder()
         return GET(url.toString(), headers)
     }
 
@@ -43,7 +43,7 @@ class BainianManga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = searchMangaNextPageSelector()
 
     override fun headersBuilder() = super.headersBuilder()
-            .add("Referer", baseUrl)
+        .add("Referer", baseUrl)
 
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
@@ -103,10 +103,10 @@ class BainianManga : ParsedHttpSource() {
     private class GenreFilter(genres: Array<String>) : Filter.Select<String>("Genre", genres)
 
     override fun getFilterList() = FilterList(
-            GenreFilter(getGenreList())
+        GenreFilter(getGenreList())
     )
 
     private fun getGenreList() = arrayOf(
-            "All"
+        "All"
     )
 }

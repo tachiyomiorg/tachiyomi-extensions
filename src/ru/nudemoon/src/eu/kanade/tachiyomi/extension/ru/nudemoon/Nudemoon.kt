@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.nudemoon
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -8,14 +9,15 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Locale
 
+@Nsfw
 class Nudemoon : ParsedHttpSource() {
 
     override val name = "Nude-Moon"
@@ -26,11 +28,34 @@ class Nudemoon : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    private val cookiesHeader by lazy {
+        val cookies = mutableMapOf<String, String>()
+        cookies["NMfYa"] = "1"
+        buildCookies(cookies)
+    }
+
+    private fun buildCookies(cookies: Map<String, String>) =
+        cookies.entries.joinToString(separator = "; ", postfix = ";") {
+            "${URLEncoder.encode(it.key, "UTF-8")}=${URLEncoder.encode(it.value, "UTF-8")}"
+        }
+
+    override val client = network.client.newBuilder()
+        .addNetworkInterceptor { chain ->
+            val newReq = chain
+                .request()
+                .newBuilder()
+                .addHeader("Cookie", cookiesHeader)
+                .addHeader("Referer", baseUrl)
+                .build()
+
+            chain.proceed(newReq)
+        }.build()!!
+
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/all_manga?views&rowstart=${30 * (page - 1)}", headers)
+        GET("$baseUrl/all_manga?views&rowstart=${30 * (page - 1)}", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/all_manga?date&rowstart=${30 * (page - 1)}", headers)
+        GET("$baseUrl/all_manga?date&rowstart=${30 * (page - 1)}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         // Search by query on this site works really badly, i don't even sure of the need to implement it
@@ -95,10 +120,10 @@ class Nudemoon : ParsedHttpSource() {
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+        popularMangaFromElement(element)
 
     override fun searchMangaFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+        popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a.small:contains(Следующая)"
 
@@ -129,7 +154,7 @@ class Nudemoon : ParsedHttpSource() {
     override fun chapterListSelector() = popularMangaSelector()
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val responseUrl = response.request().url().toString()
+        val responseUrl = response.request.url.toString()
         val document = response.asJsoup()
 
         if (!responseUrl.contains("/vse_glavy/")) {
@@ -160,7 +185,7 @@ class Nudemoon : ParsedHttpSource() {
         chapter.name = chapterName
         chapter.date_upload = infoElem.text().substringAfter("Дата:").substringBefore("Просмотров").trim().let {
             try {
-                SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it).time
+                SimpleDateFormat("dd MMMM yyyy", Locale("ru")).parse(it)?.time ?: 0L
             } catch (e: Exception) {
                 0
             }
@@ -183,97 +208,99 @@ class Nudemoon : ParsedHttpSource() {
 
     private class Genre(name: String, val id: String = name.replace(' ', '_')) : Filter.CheckBox(name.capitalize())
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Тэги", genres)
-    private class OrderBy : Filter.Sort("Сортировка",
-            arrayOf("Дата", "Просмотры", "Лайки"),
-            Selection(1, false))
+    private class OrderBy : Filter.Sort(
+        "Сортировка",
+        arrayOf("Дата", "Просмотры", "Лайки"),
+        Selection(1, false)
+    )
 
     override fun getFilterList() = FilterList(
-            OrderBy(),
-            GenreList(getGenreList())
+        OrderBy(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("анал"),
-            Genre("без цензуры"),
-            Genre("беременные"),
-            Genre("близняшки"),
-            Genre("большие груди"),
-            Genre("в бассейне"),
-            Genre("в больнице"),
-            Genre("в ванной"),
-            Genre("в общественном месте"),
-            Genre("в первый раз"),
-            Genre("в транспорте"),
-            Genre("в туалете"),
-            Genre("гарем"),
-            Genre("гипноз"),
-            Genre("горничные"),
-            Genre("горячий источник"),
-            Genre("групповой секс"),
-            Genre("драма"),
-            Genre("запредельное"),
-            Genre("золотой дождь"),
-            Genre("зрелые женщины"),
-            Genre("идолы"),
-            Genre("извращение"),
-            Genre("измена"),
-            Genre("имеют парня"),
-            Genre("клизма"),
-            Genre("колготки"),
-            Genre("комиксы"),
-            Genre("комиксы 3D"),
-            Genre("косплей"),
-            Genre("мастурбация"),
-            Genre("мерзкий мужик"),
-            Genre("много спермы"),
-            Genre("молоко"),
-            Genre("монстры"),
-            Genre("на камеру"),
-            Genre("на природе"),
-            Genre("обычный секс"),
-            Genre("огромный член"),
-            Genre("пляж"),
-            Genre("подглядывание"),
-            Genre("принуждение"),
-            Genre("продажность"),
-            Genre("пьяные"),
-            Genre("рабыни"),
-            Genre("романтика"),
-            Genre("с ушками"),
-            Genre("секс игрушки"),
-            Genre("спящие"),
-            Genre("страпон"),
-            Genre("студенты"),
-            Genre("суккуб"),
-            Genre("тентакли"),
-            Genre("толстушки"),
-            Genre("трапы"),
-            Genre("ужасы"),
-            Genre("униформа"),
-            Genre("учитель и ученик"),
-            Genre("фемдом"),
-            Genre("фетиш"),
-            Genre("фурри"),
-            Genre("футанари"),
-            Genre("футфетиш"),
-            Genre("фэнтези"),
-            Genre("цветная"),
-            Genre("чикан"),
-            Genre("чулки"),
-            Genre("шимейл"),
-            Genre("эксгибиционизм"),
-            Genre("юмор"),
-            Genre("юри"),
-            Genre("ahegao"),
-            Genre("BDSM"),
-            Genre("ganguro"),
-            Genre("gender bender"),
-            Genre("megane"),
-            Genre("mind break"),
-            Genre("monstergirl"),
-            Genre("netorare"),
-            Genre("nipple penetration"),
-            Genre("titsfuck"),
-            Genre("x-ray")
+        Genre("анал"),
+        Genre("без цензуры"),
+        Genre("беременные"),
+        Genre("близняшки"),
+        Genre("большие груди"),
+        Genre("в бассейне"),
+        Genre("в больнице"),
+        Genre("в ванной"),
+        Genre("в общественном месте"),
+        Genre("в первый раз"),
+        Genre("в транспорте"),
+        Genre("в туалете"),
+        Genre("гарем"),
+        Genre("гипноз"),
+        Genre("горничные"),
+        Genre("горячий источник"),
+        Genre("групповой секс"),
+        Genre("драма"),
+        Genre("запредельное"),
+        Genre("золотой дождь"),
+        Genre("зрелые женщины"),
+        Genre("идолы"),
+        Genre("извращение"),
+        Genre("измена"),
+        Genre("имеют парня"),
+        Genre("клизма"),
+        Genre("колготки"),
+        Genre("комиксы"),
+        Genre("комиксы 3D"),
+        Genre("косплей"),
+        Genre("мастурбация"),
+        Genre("мерзкий мужик"),
+        Genre("много спермы"),
+        Genre("молоко"),
+        Genre("монстры"),
+        Genre("на камеру"),
+        Genre("на природе"),
+        Genre("обычный секс"),
+        Genre("огромный член"),
+        Genre("пляж"),
+        Genre("подглядывание"),
+        Genre("принуждение"),
+        Genre("продажность"),
+        Genre("пьяные"),
+        Genre("рабыни"),
+        Genre("романтика"),
+        Genre("с ушками"),
+        Genre("секс игрушки"),
+        Genre("спящие"),
+        Genre("страпон"),
+        Genre("студенты"),
+        Genre("суккуб"),
+        Genre("тентакли"),
+        Genre("толстушки"),
+        Genre("трапы"),
+        Genre("ужасы"),
+        Genre("униформа"),
+        Genre("учитель и ученик"),
+        Genre("фемдом"),
+        Genre("фетиш"),
+        Genre("фурри"),
+        Genre("футанари"),
+        Genre("футфетиш"),
+        Genre("фэнтези"),
+        Genre("цветная"),
+        Genre("чикан"),
+        Genre("чулки"),
+        Genre("шимейл"),
+        Genre("эксгибиционизм"),
+        Genre("юмор"),
+        Genre("юри"),
+        Genre("ahegao"),
+        Genre("BDSM"),
+        Genre("ganguro"),
+        Genre("gender bender"),
+        Genre("megane"),
+        Genre("mind break"),
+        Genre("monstergirl"),
+        Genre("netorare"),
+        Genre("nipple penetration"),
+        Genre("titsfuck"),
+        Genre("x-ray")
     )
 }

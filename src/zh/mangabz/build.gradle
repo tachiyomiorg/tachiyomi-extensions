@@ -1,0 +1,26 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Mangabz'
+    pkgNameSuffix = 'zh.mangabz'
+    extClass = '.Mangabz'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.1'
+}
+
+android {
+    defaultConfig {
+        multiDexEnabled true
+    }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+    }
+}
+
+apply from: "$rootDir/common.gradle"

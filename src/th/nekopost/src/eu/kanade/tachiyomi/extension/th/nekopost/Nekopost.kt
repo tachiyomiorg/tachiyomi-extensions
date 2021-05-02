@@ -10,10 +10,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.net.URL
-import java.util.Calendar
-import java.util.Locale
-import kotlin.collections.set
+import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -21,14 +19,24 @@ import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URL
+import java.util.Calendar
+import java.util.Locale
+import kotlin.collections.set
 
 class Nekopost : ParsedHttpSource() {
     override val baseUrl: String = "https://www.nekopost.net/manga/"
 
     private val mangaListUrl: String = "https://www.nekopost.net/project/ajax_load_update/m/"
-    private val baseFileUrl: String = "https://www.nekopost.net/file_server/"
+    private val baseFileUrl: String = "https://fs.nekopost.net/"
     private val legacyChapterDataUrl: String = "https://www.nekopost.net/reader/loadChapterContent/"
     private val searchUrl: String = "https://www.nekopost.net/search/"
+
+    override val client: OkHttpClient = network.cloudflareClient
+
+    override fun headersBuilder(): Headers.Builder {
+        return super.headersBuilder().add("Referer", baseUrl)
+    }
 
     override val lang: String = "th"
     override val name: String = "Nekopost"
@@ -198,29 +206,31 @@ class Nekopost : ParsedHttpSource() {
                             for (chIndex in 0 until chListData.length()) {
                                 val chInfo = chListData.getJSONObject(chIndex)
 
-                                chList.add(ChapterInfo().apply {
-                                    nc_chapter_id = chInfo.getString("nc_chapter_id").toInt()
-                                    nc_chapter_no = chInfo.getString("nc_chapter_no").toFloat()
-                                    nc_chapter_name = chInfo.getString("nc_chapter_name")
-                                    nc_provider = chInfo.getString("nc_provider")
-                                    nc_created_date = chInfo.getString("nc_created_date").let {
-                                        it.split("-").toTypedArray().apply {
-                                            this[1] = (NPUtils.monthList.indexOf(this[1].toUpperCase(Locale.ROOT)) + 1).toString().padStart(2, '0')
-                                        }
-                                    }.joinToString("-").let { NPUtils.convertDateStringToEpoch(it) }
-                                    nc_owner_id = chInfo.getString("nc_owner_id").toInt()
-                                    nc_data_file = chInfo.getString("nc_data_file").let {
-                                        if (it.isNullOrBlank()) {
-                                            legacy_data_file = true
-                                            if (nc_chapter_no - nc_chapter_no.toInt() == 0f)
-                                                nc_chapter_no.toInt().toString()
-                                            else
-                                                nc_chapter_no.toString()
-                                        } else {
-                                            it
+                                chList.add(
+                                    ChapterInfo().apply {
+                                        nc_chapter_id = chInfo.getString("nc_chapter_id").toInt()
+                                        nc_chapter_no = chInfo.getString("nc_chapter_no").toFloat()
+                                        nc_chapter_name = chInfo.getString("nc_chapter_name")
+                                        nc_provider = chInfo.getString("nc_provider")
+                                        nc_created_date = chInfo.getString("nc_created_date").let {
+                                            it.split("-").toTypedArray().apply {
+                                                this[1] = (NPUtils.monthList.indexOf(this[1].toUpperCase(Locale.ROOT)) + 1).toString().padStart(2, '0')
+                                            }
+                                        }.joinToString("-").let { NPUtils.convertDateStringToEpoch(it) }
+                                        nc_owner_id = chInfo.getString("nc_owner_id").toInt()
+                                        nc_data_file = chInfo.getString("nc_data_file").let {
+                                            if (it.isNullOrBlank()) {
+                                                legacy_data_file = true
+                                                if (nc_chapter_no - nc_chapter_no.toInt() == 0f)
+                                                    nc_chapter_no.toInt().toString()
+                                                else
+                                                    nc_chapter_no.toString()
+                                            } else {
+                                                it
+                                            }
                                         }
                                     }
-                                })
+                                )
                             }
 
                             chList
@@ -233,11 +243,13 @@ class Nekopost : ParsedHttpSource() {
                                 val cateInfo = cateListData.getJSONObject(cateIndex)
 
                                 if (cateInfo.getString("project_id") != "null") {
-                                    cateList.add(ProjectCate().apply {
-                                        npc_id = cateInfo.getString("npc_id").toInt()
-                                        npc_name = cateInfo.getString("npc_name")
-                                        npc_name_link = cateInfo.getString("npc_name_link")
-                                    })
+                                    cateList.add(
+                                        ProjectCate().apply {
+                                            npc_id = cateInfo.getString("npc_id").toInt()
+                                            npc_name = cateInfo.getString("npc_name")
+                                            npc_name_link = cateInfo.getString("npc_name_link")
+                                        }
+                                    )
                                 }
                             }
 
@@ -303,7 +315,8 @@ class Nekopost : ParsedHttpSource() {
                     true
                 } else false
             },
-            mangaList)
+            mangaList
+        )
 
         val hasNextPage = mangaList.isNotEmpty()
 
@@ -334,21 +347,29 @@ class Nekopost : ParsedHttpSource() {
         if (ch.legacy_data_file) {
             JSONArray(URL("${legacyChapterDataUrl}${pj.info.np_project_id}/${ch.nc_data_file}").readText()).getJSONArray(3).let { pageItem ->
                 for (pageIndex in 0 until pageItem.length()) {
-                    pageList.add(pageItem.getJSONObject(pageIndex).let { pageData ->
-                        Page(pageData.getString("page_no").toInt() - 1,
-                            "",
-                            "${ch.getChapterJsonFolder()}${pageData.getString("value_url")}")
-                    })
+                    pageList.add(
+                        pageItem.getJSONObject(pageIndex).let { pageData ->
+                            Page(
+                                pageData.getString("page_no").toInt() - 1,
+                                "",
+                                "${ch.getChapterJsonFolder()}${pageData.getString("value_url")}"
+                            )
+                        }
+                    )
                 }
             }
         } else {
             JSONObject(URL("${ch.getChapterJsonFolder()}${ch.nc_data_file}").readText()).getJSONArray("pageItem").let { pageItem ->
                 for (pageIndex in 0 until pageItem.length()) {
-                    pageList.add(pageItem.getJSONObject(pageIndex).let { pageData ->
-                        Page(pageData.getInt("pageNo") - 1,
-                            "",
-                            "${ch.getChapterJsonFolder()}${pageData.getString("fileName")}")
-                    })
+                    pageList.add(
+                        pageItem.getJSONObject(pageIndex).let { pageData ->
+                            Page(
+                                pageData.getInt("pageNo") - 1,
+                                "",
+                                "${ch.getChapterJsonFolder()}${pageData.getString("fileName")}"
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -390,7 +411,8 @@ class Nekopost : ParsedHttpSource() {
                     true
                 } else false
             },
-            mangaList)
+            mangaList
+        )
 
         val hasNextPage = mangaList.isNotEmpty()
 

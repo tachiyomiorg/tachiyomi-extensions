@@ -9,12 +9,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.SimpleDateFormat
 
 class ManManga : ParsedHttpSource() {
     override val name = "Man Manga"
@@ -73,7 +73,7 @@ class ManManga : ParsedHttpSource() {
             searchMangaFromElement(element)
         }
 
-        val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
+        val hasNextPage = searchMangaNextPageSelector().let { selector ->
             document.select(selector).first()
         } != null
 
@@ -82,19 +82,19 @@ class ManManga : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response)
+            }
     }
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         val getThumbnailUrl = document.select(".bg-box .bg").attr("style")
 
         author = document.select(".author").text().replace("Author：", "").trim()
-        genre = document.select(".tags span").map {
+        genre = document.select(".tags span").joinToString(", ") {
             it.text().trim()
-        }.joinToString(", ")
+        }
         status = document.select(".type").text().replace("Status：", "").trim().let {
             parseStatus(it)
         }
@@ -125,12 +125,12 @@ class ManManga : ParsedHttpSource() {
         if (document.select("ul.img-list > li.unloaded > img").toString().isNotEmpty()) {
             document.select("ul.img-list > li.unloaded > img").forEach {
                 val imgUrl = it.attr("data-src")
-                pages.add(Page(pages.size, "", "$imgUrl"))
+                pages.add(Page(pages.size, "", imgUrl))
             }
         } else {
             document.select("ul.img-list > li.loaded > img").forEach {
                 val imgUrl = it.attr("data-src")
-                pages.add(Page(pages.size, "", "$imgUrl"))
+                pages.add(Page(pages.size, "", imgUrl))
             }
         }
         return pages

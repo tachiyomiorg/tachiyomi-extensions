@@ -47,10 +47,15 @@ class CloneManga : ParsedHttpSource() {
             status = SManga.UNKNOWN
             url = element.select("a").first().attr("href")
             description = element.select("h4").first()?.text() ?: ""
-            thumbnail_url = baseUrl + attr.substring(attr.indexOf("site/themes"),
-                attr.indexOf(")"))
+            thumbnail_url = baseUrl + attr.substring(
+                attr.indexOf("site/themes"),
+                attr.indexOf(")")
+            )
         }
     }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = fetchPopularManga(1)
+        .map { mp -> MangasPage(mp.mangas.filter { it.title.contains(query, ignoreCase = true) }, false) }
 
     override fun mangaDetailsParse(document: Document): SManga {
         // Populate with already fetched details
@@ -62,8 +67,10 @@ class CloneManga : ParsedHttpSource() {
         val document = response.asJsoup()
         val series = document.location()
         val numChapters = Regex(
-            pattern = "&page=(.*)&lang=").findAll(
-            input = document.getElementsByTag("script")[3].toString())
+            pattern = "&page=(.*)&lang="
+        ).findAll(
+            input = document.getElementsByTag("script")[3].toString()
+        )
             .elementAt(3).destructured.component1()
             .toInt()
         val chapters = ArrayList<SChapter>()
@@ -90,11 +97,6 @@ class CloneManga : ParsedHttpSource() {
             .select("img").first().absUrl("src")
         // List of pages will always contain only one page
         return listOf(Page(1, "", imgAbsoluteUrl))
-    }
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList):
-        Observable<MangasPage> {
-        return Observable.empty()
     }
 
     override fun imageUrlParse(document: Document): String { throw Exception("Not used") }

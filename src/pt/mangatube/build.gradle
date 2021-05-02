@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'MangaTube'
+    pkgNameSuffix = 'pt.mangatube'
+    extClass = '.MangaTube'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
+}
+
+apply from: "$rootDir/common.gradle"
+

@@ -2,19 +2,21 @@ package eu.kanade.tachiyomi.extension.en.readm
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 class ReadM : ParsedHttpSource() {
 
@@ -47,10 +49,10 @@ class ReadM : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request = GET("$baseUrl/latest-releases/$page", headers)
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
-    override fun latestUpdatesSelector(): String = "ul.latest-updates li"
+    override fun latestUpdatesSelector(): String = "ul.latest-updates > li"
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("data-src")
-        element.select("a").first().apply {
+        thumbnail_url = element.select("img").attr("abs:data-src")
+        element.select("h2 a").first().apply {
             title = this.text().trim()
             url = this.attr("href")
         }
@@ -60,31 +62,34 @@ class ReadM : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val formBody = FormBody.Builder()
-            .add("manga-name", query)
-        filters.forEach { filter ->
-            when (filter) {
-                is TypeFilter -> formBody.add("type", typeArray[filter.state].second)
-                is AuthorName -> formBody.add("author-name", filter.state)
-                is ArtistName -> formBody.add("artist-name", filter.state)
-                is StatusFilter -> formBody.add("status", statusArray[filter.state].second)
-                is GenreFilter -> filter.state.forEach { genre ->
-                    if (genre.isExcluded()) formBody.add("exclude[]", genre.id)
-                    if (genre.isIncluded()) formBody.add("include[]", genre.id)
-                }
-            }
-        }
-        if (filters.isEmpty()) {
-            formBody
-                .add("type", "all")
-                .add("status", "both")
-        }
-        val searchHeaders = headers.newBuilder().add("X-Requested-With", "XMLHttpRequest").build()
-        return POST("$baseUrl/service/advanced_search", searchHeaders, formBody.build())
+            .add("dataType", "json")
+            .add("phrase", query)
+
+        val searchHeaders = headers.newBuilder()
+            .add("X-Requested-With", "XMLHttpRequest")
+            .add("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+            .build()
+        return POST("$baseUrl/service/search", searchHeaders, formBody.build())
     }
 
-    override fun searchMangaNextPageSelector(): String? = null
-    override fun searchMangaSelector(): String = "div.poster-with-subject"
-    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    override fun searchMangaNextPageSelector(): String = throw Exception("Not used")
+    override fun searchMangaSelector(): String = throw Exception("Not used")
+    override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not used")
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        val json = JSONObject(response.body!!.string()).getJSONArray("manga")
+
+        val manga = (0 until json.length()).asSequence().toList().map { it ->
+            SManga.create().apply {
+                val jsonObject = json.getJSONObject(it)
+                title = jsonObject.getString("title")
+                url = jsonObject.getString("url")
+                thumbnail_url = jsonObject.getString("image")
+            }
+        }
+
+        return MangasPage(manga, false)
+    }
 
     // Details
 
@@ -95,6 +100,14 @@ class ReadM : ParsedHttpSource() {
         artist = document.select("span#last_episode a").text().trim()
         description = document.select("div.series-summary-wrapper p").text().trim()
         genre = document.select("div.series-summary-wrapper div.item a").joinToString(", ") { it.text().trim() }
+        status = parseStatus(document.select("div.series-genres .series-status").firstOrNull()?.ownText())
+    }
+
+    protected fun parseStatus(element: String?): Int = when {
+        element == null -> SManga.UNKNOWN
+        listOf("ongoing").any { it.contains(element, ignoreCase = true) } -> SManga.ONGOING
+        listOf("completed").any { it.contains(element, ignoreCase = true) } -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
     }
 
     // Chapters
@@ -146,76 +159,4 @@ class ReadM : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> = document.select("div.ch-images img").mapIndexed { index, element ->
         Page(index, "", element.attr("abs:src"))
     }
-
-    // Filters
-
-    override fun getFilterList(): FilterList = FilterList(
-        TypeFilter(typeArray),
-        AuthorName(),
-        ArtistName(),
-        StatusFilter(statusArray),
-        GenreFilter(genreArray())
-    )
-
-    private class TypeFilter(values: Array<Pair<String, String>>) : Filter.Select<String>("Type", values.map { it.first }.toTypedArray())
-    private class AuthorName : Filter.Text("Author Name")
-    private class ArtistName : Filter.Text("Artist Name")
-    private class StatusFilter(values: Array<Pair<String, String>>) : Filter.Select<String>("Status", values.map { it.first }.toTypedArray())
-    private class GenreFilter(state: List<Tag>) : Filter.Group<Tag>("Genres", state)
-    private class Tag(name: String, val id: String) : Filter.TriState(name)
-
-    private val typeArray = arrayOf(
-        Pair("All", "all"),
-        Pair("Japanese Manga", "japanese"),
-        Pair("Korean Manhwa", "korean"),
-        Pair("Chinese Manhua", "chinese")
-    )
-
-    private val statusArray = arrayOf(
-        Pair("Both", "both"),
-        Pair("Ongoing", "ongoing"),
-        Pair("Completed", "completed")
-    )
-
-    private fun genreArray() = listOf(
-        Tag("Action", "1"),
-        Tag("Adventure", "23"),
-        Tag("Comedy", "12"),
-        Tag("Doujinshi", "26"),
-        Tag("Drama", "9"),
-        Tag("Ecchi", "2"),
-        Tag("Fantasy", "3"),
-        Tag("Gender Bender", "30"),
-        Tag("Harem", "4"),
-        Tag("Historical", "36"),
-        Tag("Horror", "34"),
-        Tag("Josei", "17"),
-        Tag("Lolicon", "39"),
-        Tag("Manga", "5"),
-        Tag("Manhua", "31"),
-        Tag("Manhwa", "32"),
-        Tag("Martial Arts", "22"),
-        Tag("Mecha", "33"),
-        Tag("Mystery", "13"),
-        Tag("None", "41"),
-        Tag("One shot", "16"),
-        Tag("Psychological", "14"),
-        Tag("Romance", "6"),
-        Tag("School Life", "10"),
-        Tag("Sci fi", "19"),
-        Tag("Sci-fi", "40"),
-        Tag("Seinen", "24"),
-        Tag("Shotacon", "38"),
-        Tag("Shoujo", "8"),
-        Tag("Shoujo Ai", "37"),
-        Tag("Shounen", "7"),
-        Tag("Shounen Ai", "35"),
-        Tag("Slice of Life", "21"),
-        Tag("Sports", "29"),
-        Tag("Supernatural", "11"),
-        Tag("Tragedy", "15"),
-        Tag("Uncategorized", "43"),
-        Tag("Yaoi", "28"),
-        Tag("Yuri", "20")
-    ).sortedWith(compareBy { it.name })
 }

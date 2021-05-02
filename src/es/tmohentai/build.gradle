@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: TMOHentai'
+    extName = 'TMOHentai'
     pkgNameSuffix = 'es.tmohentai'
     extClass = '.TMOHentai'
-    extVersionCode = 2
+    extVersionCode = 5
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

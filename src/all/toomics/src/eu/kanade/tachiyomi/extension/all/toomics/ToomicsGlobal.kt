@@ -7,10 +7,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.net.URLDecoder
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -18,6 +14,10 @@ import okhttp3.RequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLDecoder
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.concurrent.TimeUnit
 
 abstract class ToomicsGlobal(
     private val siteLang: String,
@@ -43,24 +43,23 @@ abstract class ToomicsGlobal(
         .add("User-Agent", USER_AGENT)
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/$siteLang/webtoon/free_all", headers)
+        return GET("$baseUrl/$siteLang/webtoon/favorite", headers)
     }
 
     // ToomicsGlobal does not have a popular list, so use recommended instead.
     override fun popularMangaSelector(): String = "li > div.visual"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        element.select("a").let {
-            title = it.text()
-            setUrlWithoutDomain(it.attr("href"))
-        }
-        thumbnail_url = element.select("img").attr("abs:data-original")
+        title = element.select("h4[class$=title]").first().ownText()
+        // sometimes href contains "/ab/on" at the end and redirects to a chapter instead of manga
+        setUrlWithoutDomain(element.select("a").attr("href").removeSuffix("/ab/on"))
+        thumbnail_url = element.select("img").attr("src")
     }
 
     override fun popularMangaNextPageSelector(): String? = null
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/$siteLang/webtoon/free", headers)
+        return GET("$baseUrl/$siteLang/webtoon/new_comics", headers)
     }
 
     override fun latestUpdatesSelector(): String = popularMangaSelector()
@@ -93,7 +92,7 @@ abstract class ToomicsGlobal(
                 val toonId = element.select("a").attr("onclick")
                     .substringAfter("Base.setDisplay('A', '")
                     .substringBefore("'")
-                    .let { URLDecoder.decode(it, "UTF-8") }
+                    .let { url -> URLDecoder.decode(url, "UTF-8") }
                     .substringAfter("?toon=")
                     .substringBefore("&")
                 url = "/$siteLang/webtoon/episode/toon/$toonId"
@@ -119,14 +118,15 @@ abstract class ToomicsGlobal(
             .map { it.reversed() }
     }
 
-    override fun chapterListSelector(): String = "li.normal_ep:has(.coin-type1)"
+    // coin-type1 - free chapter, coin-type6 - already read chapter
+    override fun chapterListSelector(): String = "li.normal_ep:has(.coin-type1, .coin-type6)"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val num = element.select("div.cell-num").text()
         val numText = if (num.isNotEmpty()) "$num - " else ""
 
-        name = numText + element.select("div.cell-title")?.first()?.ownText()
-        chapter_number = num.toFloatOrNull() ?: 0f
+        name = numText + element.select("div.cell-title strong")?.first()?.ownText()
+        chapter_number = num.toFloatOrNull() ?: -1f
         date_upload = parseChapterDate(element.select("div.cell-time time").text()!!)
         scanlator = "Toomics"
         url = element.select("a").attr("onclick")
@@ -135,10 +135,13 @@ abstract class ToomicsGlobal(
     }
 
     override fun pageListParse(document: Document): List<Page> {
+        if (document.select("div.section_age_verif").isNotEmpty())
+            throw Exception("Verify age via WebView")
+
         val url = document.select("head meta[property='og:url']").attr("content")
 
         return document.select("div[id^=load_image_] img")
-            .mapIndexed { i, el -> Page(i, url, el.attr("abs:data-original")) }
+            .mapIndexed { i, el -> Page(i, url, el.attr("data-src")) }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
@@ -153,7 +156,7 @@ abstract class ToomicsGlobal(
 
     private fun parseChapterDate(date: String): Long {
         return try {
-            dateFormat.parse(date).time
+            dateFormat.parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }

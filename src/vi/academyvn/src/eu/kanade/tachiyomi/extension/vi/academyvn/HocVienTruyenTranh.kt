@@ -7,13 +7,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.util.Calendar
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.util.Calendar
 
 class HocVienTruyenTranh : ParsedHttpSource() {
 
@@ -60,7 +60,7 @@ class HocVienTruyenTranh : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = "li > a:contains(»)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/searchs?")!!.newBuilder().addQueryParameter("keyword", query)
+        val url = "$baseUrl/searchs?".toHttpUrlOrNull()!!.newBuilder().addQueryParameter("keyword", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Type -> url.addQueryParameter("type", if (filter.state == 0) "-1" else type.indexOf(filter.state.toString()).toString())

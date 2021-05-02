@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.yesmangas
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
@@ -7,11 +8,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
+import java.util.concurrent.TimeUnit
 
 class YesMangas : ParsedHttpSource() {
 
@@ -26,6 +29,10 @@ class YesMangas : ParsedHttpSource() {
 
     override val supportsLatest = true
 
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .build()
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
@@ -36,9 +43,8 @@ class YesMangas : ParsedHttpSource() {
     override fun popularMangaSelector(): String = "div#destaques div.three.columns a.img"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.attr("title").replace(LANG_REGEX, "")
-        thumbnail_url = element.select("img").attr("data-path")
-            .replace("xmedium", "xlarge")
+        title = element.attr("title").withoutLanguage()
+        thumbnail_url = element.select("img").attr("data-path").toLargeUrl()
         url = element.attr("href")
     }
 
@@ -49,16 +55,15 @@ class YesMangas : ParsedHttpSource() {
     override fun latestUpdatesSelector(): String = "div#lancamentos table.u-full-width tbody tr td:eq(0) a"
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.attr("title").replace(LANG_REGEX, "")
-        thumbnail_url = element.select("img").attr("data-path")
-            .replace("xmedium", "xlarge")
+        title = element.attr("title").withoutLanguage()
+        thumbnail_url = element.select("img").attr("data-path").toLargeUrl()
         setUrlWithoutDomain(element.attr("href"))
     }
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+        val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("q", query)
 
         return GET(url.toString(), headers)
@@ -67,67 +72,75 @@ class YesMangas : ParsedHttpSource() {
     override fun searchMangaSelector(): String = "tbody#leituras tr td:eq(0) a"
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        title = element.select("img").attr("alt").replace(LANG_REGEX, "")
-        thumbnail_url = element.select("img").attr("data-path")
-            .replace("medium", "xlarge")
+        title = element.attr("title").withoutLanguage()
+        thumbnail_url = element.select("img").attr("data-path").toLargeUrl()
         setUrlWithoutDomain(element.attr("href"))
     }
 
     override fun searchMangaNextPageSelector(): String? = null
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        var container = document.select("div#descricao")
-        var statusEl = container.select("ul li:contains(Status)")
-        var authorEl = container.select("ul li:contains(Autor)")
-        var artistEl = container.select("ul li:contains(Desenho)")
-        var genresEl = container.select("ul li:contains(Categorias)")
-        var synopsis = container.select("article")
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
+        val container = document.select("div#descricao").first()
 
-        return SManga.create().apply {
-            status = parseStatus(removeLabel(statusEl.text()))
-            author = removeLabel(authorEl.text())
-            artist = removeLabel(artistEl.text())
-            description = synopsis.text().substringBefore("Relacionados")
-            genre = removeLabel(genresEl.text())
-            thumbnail_url = container.select("img").first().attr("data-path")
-        }
-    }
-
-    private fun parseStatus(status: String) = when {
-        status.contains("Completo") -> SManga.COMPLETED
-        status.contains("Ativo") -> SManga.ONGOING
-        else -> SManga.UNKNOWN
+        author = container.select("ul li:contains(Autor)").textWithoutLabel()
+        artist = container.select("ul li:contains(Desenho)").textWithoutLabel()
+        genre = container.select("ul li:contains(Categorias)").textWithoutLabel()
+        status = container.select("ul li:contains(Status)").text().toStatus()
+        description = container.select("article").text()
+            .substringBefore("Relacionados")
+        thumbnail_url = container.select("img").first()
+            .attr("data-path")
+            .toLargeUrl()
     }
 
     override fun chapterListSelector(): String = "div#capitulos a.button"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        chapter_number = element.text().toFloatOrNull() ?: 1f
         name = element.attr("title").substringAfter(" - ")
+        chapter_number = element.text().toFloatOrNull() ?: -1f
+        setUrlWithoutDomain(element.attr("href"))
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", baseUrl + chapter.url.substringBeforeLast("/"))
+            .build()
+
+        return GET(baseUrl + chapter.url, newHeaders)
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        var script = document.select("script").last().data()
-        var images = script.substringAfter(SCRIPT_BEGIN).substringBefore(SCRIPT_END)
-                .replace(SCRIPT_REGEX.toRegex(), "")
-
-        var newDocument = Jsoup.parse(images)
-
-        return newDocument.select("a img")
-                .mapIndexed { i, el -> Page(i, "", el.attr("src")) }
+        return document.select("div.read-slideshow a img")
+            .mapIndexed { i, el -> Page(i, document.location(), el.attr("src")) }
     }
 
     override fun imageUrlParse(document: Document): String = ""
 
-    private fun removeLabel(info: String) = info.substringAfter(":")
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Referer", page.url)
+            .build()
+
+        return GET(page.imageUrl!!, newHeaders)
+    }
+
+    private fun String.withoutLanguage(): String = replace(LANG_REGEX, "")
+
+    private fun String.toLargeUrl(): String = replace(IMAGE_REGEX, "_full.")
+
+    private fun Elements.textWithoutLabel(): String = text()!!.substringAfter(":").trim()
+
+    private fun String.toStatus() = when {
+        contains("Completo") -> SManga.COMPLETED
+        contains("Ativo") -> SManga.ONGOING
+        else -> SManga.UNKNOWN
+    }
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
-        private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
 
-        private const val SCRIPT_BEGIN = "var images = ["
-        private const val SCRIPT_END = "];"
-        private const val SCRIPT_REGEX = "\"|,"
+        private val LANG_REGEX = "( )?\\((PT-)?BR\\)".toRegex()
+        private val IMAGE_REGEX = "_(small|medium|xmedium|xlarge)\\.".toRegex()
     }
 }

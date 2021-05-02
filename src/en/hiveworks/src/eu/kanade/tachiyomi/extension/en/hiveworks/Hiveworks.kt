@@ -11,10 +11,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,6 +18,10 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class Hiveworks : ParsedHttpSource() {
 
@@ -103,16 +103,20 @@ class Hiveworks : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector() + ", div.originalsblock"
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaParse(response: Response): MangasPage {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val document = response.asJsoup()
 
         val selectManga = document.select(searchMangaSelector())
-        val mangas = if (url.endsWith("localSearch")) {
-            selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
-        } else if (url.contains("originals")) {
-            selectManga.map { element -> searchOriginalMangaFromElement(element) }
-        } else {
-            selectManga.map { element -> searchMangaFromElement(element) }
+        val mangas = when {
+            url.endsWith("localSearch") -> {
+                selectManga.filter { it.text().contains(searchQuery, true) }.map { element -> searchMangaFromElement(element) }
+            }
+            url.contains("originals") -> {
+                selectManga.map { element -> searchOriginalMangaFromElement(element) }
+            }
+            else -> {
+                selectManga.map { element -> searchMangaFromElement(element) }
+            }
         }
 
         val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
@@ -191,7 +195,7 @@ class Hiveworks : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val document = response.asJsoup()
         val baseUrl = document.select("div script").html().substringAfter("href='").substringBefore("'")
         val elements = document.select(chapterListSelector())
@@ -223,7 +227,7 @@ class Hiveworks : ParsedHttpSource() {
 
     override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers)
     override fun pageListParse(response: Response): List<Page> {
-        val url = response.request().url().toString()
+        val url = response.request.url.toString()
         val document = response.asJsoup()
         val pages = mutableListOf<Page>()
 
@@ -286,84 +290,104 @@ class Hiveworks : ParsedHttpSource() {
         fun addToUri(uri: Uri.Builder)
     }
 
-    private class UpdateDay : UriSelectFilter("Update Day", "update-day", arrayOf(
-        Pair("all", "All"),
-        Pair("monday", "Monday"),
-        Pair("tuesday", "Tuesday"),
-        Pair("wednesday", "Wednesday"),
-        Pair("thursday", "Thursday"),
-        Pair("friday", "Friday"),
-        Pair("saturday", "Saturday"),
-        Pair("sunday", "Sunday")
-    ))
+    private class UpdateDay : UriSelectFilter(
+        "Update Day",
+        "update-day",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("monday", "Monday"),
+            Pair("tuesday", "Tuesday"),
+            Pair("wednesday", "Wednesday"),
+            Pair("thursday", "Thursday"),
+            Pair("friday", "Friday"),
+            Pair("saturday", "Saturday"),
+            Pair("sunday", "Sunday")
+        )
+    )
 
-    private class RatingFilter : UriSelectFilter("Rating", "age", arrayOf(
-        Pair("all", "All"),
-        Pair("everyone", "Everyone"),
-        Pair("teen", "Teen"),
-        Pair("young-adult", "Young Adult"),
-        Pair("mature", "Mature")
-    ))
+    private class RatingFilter : UriSelectFilter(
+        "Rating",
+        "age",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("everyone", "Everyone"),
+            Pair("teen", "Teen"),
+            Pair("young-adult", "Young Adult"),
+            Pair("mature", "Mature")
+        )
+    )
 
-    private class GenreFilter : UriSelectFilter("Genre", "genre", arrayOf(
-        Pair("all", "All"),
-        Pair("action/adventure", "Action/Adventure"),
-        Pair("animated", "Animated"),
-        Pair("autobio", "Autobio"),
-        Pair("comedy", "Comedy"),
-        Pair("drama", "Drama"),
-        Pair("dystopian", "Dystopian"),
-        Pair("fairytale", "Fairytale"),
-        Pair("fantasy", "Fantasy"),
-        Pair("finished", "Finished"),
-        Pair("historical-fiction", "Historical Fiction"),
-        Pair("horror", "Horror"),
-        Pair("lgbt", "LGBT"),
-        Pair("mystery", "Mystery"),
-        Pair("romance", "Romance"),
-        Pair("sci-fi", "Science Fiction"),
-        Pair("slice-of-life", "Slice of Life"),
-        Pair("steampunk", "Steampunk"),
-        Pair("superhero", "Superhero"),
-        Pair("urban-fantasy", "Urban Fantasy")
-    ))
+    private class GenreFilter : UriSelectFilter(
+        "Genre",
+        "genre",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("action/adventure", "Action/Adventure"),
+            Pair("animated", "Animated"),
+            Pair("autobio", "Autobio"),
+            Pair("comedy", "Comedy"),
+            Pair("drama", "Drama"),
+            Pair("dystopian", "Dystopian"),
+            Pair("fairytale", "Fairytale"),
+            Pair("fantasy", "Fantasy"),
+            Pair("finished", "Finished"),
+            Pair("historical-fiction", "Historical Fiction"),
+            Pair("horror", "Horror"),
+            Pair("lgbt", "LGBT"),
+            Pair("mystery", "Mystery"),
+            Pair("romance", "Romance"),
+            Pair("sci-fi", "Science Fiction"),
+            Pair("slice-of-life", "Slice of Life"),
+            Pair("steampunk", "Steampunk"),
+            Pair("superhero", "Superhero"),
+            Pair("urban-fantasy", "Urban Fantasy")
+        )
+    )
 
-    private class TitleFilter : UriSelectFilter("Title", "alpha", arrayOf(
-        Pair("all", "All"),
-        Pair("a", "A"),
-        Pair("b", "B"),
-        Pair("c", "C"),
-        Pair("d", "D"),
-        Pair("e", "E"),
-        Pair("f", "F"),
-        Pair("g", "G"),
-        Pair("h", "H"),
-        Pair("i", "I"),
-        Pair("j", "J"),
-        Pair("k", "K"),
-        Pair("l", "L"),
-        Pair("m", "M"),
-        Pair("n", "N"),
-        Pair("o", "O"),
-        Pair("p", "P"),
-        Pair("q", "Q"),
-        Pair("r", "R"),
-        Pair("s", "S"),
-        Pair("t", "T"),
-        Pair("u", "U"),
-        Pair("v", "V"),
-        Pair("w", "W"),
-        Pair("x", "X"),
-        Pair("y", "Y"),
-        Pair("z", "Z"),
-        Pair("numbers-symbols", "Numbers / Symbols")
-    ))
+    private class TitleFilter : UriSelectFilter(
+        "Title",
+        "alpha",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("a", "A"),
+            Pair("b", "B"),
+            Pair("c", "C"),
+            Pair("d", "D"),
+            Pair("e", "E"),
+            Pair("f", "F"),
+            Pair("g", "G"),
+            Pair("h", "H"),
+            Pair("i", "I"),
+            Pair("j", "J"),
+            Pair("k", "K"),
+            Pair("l", "L"),
+            Pair("m", "M"),
+            Pair("n", "N"),
+            Pair("o", "O"),
+            Pair("p", "P"),
+            Pair("q", "Q"),
+            Pair("r", "R"),
+            Pair("s", "S"),
+            Pair("t", "T"),
+            Pair("u", "U"),
+            Pair("v", "V"),
+            Pair("w", "W"),
+            Pair("x", "X"),
+            Pair("y", "Y"),
+            Pair("z", "Z"),
+            Pair("numbers-symbols", "Numbers / Symbols")
+        )
+    )
 
-    private class SortFilter : UriSelectFilter("Sort By", "sortby", arrayOf(
-        Pair("none", "None"),
-        Pair("a-z", "A-Z"),
-        Pair("z-a", "Z-A")
-    ))
+    private class SortFilter : UriSelectFilter(
+        "Sort By",
+        "sortby",
+        arrayOf(
+            Pair("none", "None"),
+            Pair("a-z", "A-Z"),
+            Pair("z-a", "Z-A")
+        )
+    )
 
     // Other Code
 
@@ -406,9 +430,9 @@ class Hiveworks : ParsedHttpSource() {
         return asObservable().doOnNext { response ->
             if (!response.isSuccessful) {
                 response.close()
-                when (response.code()) {
+                when (response.code) {
                     404 -> throw Exception("This comic has a unsupported chapter list")
-                    else -> throw Exception("HiveWorks Comics HTTP Error ${response.code()}")
+                    else -> throw Exception("HiveWorks Comics HTTP Error ${response.code}")
                 }
             }
         }

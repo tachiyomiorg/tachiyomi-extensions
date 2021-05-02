@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Novelle Leggere'
+    extName = 'Novelle Leggere'
     pkgNameSuffix = 'it.novelleleggere'
     extClass = '.NovelleLeggere'
-    extVersionCode = 1
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

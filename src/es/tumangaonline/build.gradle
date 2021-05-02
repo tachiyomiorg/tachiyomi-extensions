@@ -2,16 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: TuMangaOnline'
+    extName = 'TuMangaOnline'
     pkgNameSuffix = 'es.tumangaonline'
     extClass = '.TuMangaOnline'
-    extVersionCode = 26
+    extVersionCode = 33
     libVersion = '1.2'
 }
 
 dependencies {
-    compileOnly project(':preference-stub')
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

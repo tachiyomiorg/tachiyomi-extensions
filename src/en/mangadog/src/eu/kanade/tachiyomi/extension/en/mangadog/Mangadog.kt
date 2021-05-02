@@ -13,11 +13,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Mangadog : HttpSource() {
 
@@ -32,13 +32,13 @@ class Mangadog : HttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/index/latestupdate/getUpdateResult?page=$page", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val uri = Uri.parse("$baseUrl/index/keywordsearch/index").buildUpon()
-                .appendQueryParameter("query", query)
+            .appendQueryParameter("query", query)
         return GET(uri.toString(), headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        // val page = response.request().url().queryParameterValues("page").toString().toInt()
-        val jsonData = response.body()!!.string()
+        // val page = response.request.url.queryParameterValues("page").toString().toInt()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]["data"]
         val mangas = mutableListOf<SManga>()
@@ -61,7 +61,7 @@ class Mangadog : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]
         val mangas = mutableListOf<SManga>()
@@ -74,7 +74,7 @@ class Mangadog : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["suggestions"]
         val mangas = mutableListOf<SManga>()
@@ -100,7 +100,7 @@ class Mangadog : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]["data"]
         val chapters = mutableListOf<SChapter>()
@@ -122,7 +122,7 @@ class Mangadog : HttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun mangaDetailsParse(response: Response): SManga {

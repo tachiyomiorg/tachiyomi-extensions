@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Bruttal'
+    pkgNameSuffix = 'pt.bruttal'
+    extClass = '.Bruttal'
+    extVersionCode = 2
+    libVersion = '1.2'
+}
+
+
+dependencies {
+    implementation project(':lib-ratelimit')
+}
+
+apply from: "$rootDir/common.gradle"

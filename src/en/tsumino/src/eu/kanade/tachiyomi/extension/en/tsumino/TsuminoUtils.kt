@@ -39,7 +39,6 @@ class TsuminoUtils {
             val pages = document.select("#Pages").text()
             val parodies = document.select("#Parody a")
             val characters = document.select("#Character a")
-            val tags = document.select("#Tag a")
 
             stringBuilder.append("Pages: $pages")
 
@@ -67,18 +66,6 @@ class TsuminoUtils {
                 }
             }
 
-            if (tags.size > 0) {
-                stringBuilder.append("\n\n")
-                stringBuilder.append("Tags: ")
-
-                tags.forEach {
-                    stringBuilder.append(it.text())
-
-                    if (it != tags.last())
-                        stringBuilder.append(", ")
-                }
-            }
-
             return stringBuilder.toString()
         }
 
@@ -100,7 +87,7 @@ class TsuminoUtils {
                 name = "Chapter"
                 scanlator = getGroups(document)
                 chapter_number = 1f
-                url = response.request().url().encodedPath()
+                url = response.request.url.encodedPath
                     .replace("entry", "Read/Index")
             }
             chapterList.add(chapter)

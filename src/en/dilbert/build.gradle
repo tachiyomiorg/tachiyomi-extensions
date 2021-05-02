@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Dilbert'
+    extName = 'Dilbert'
     pkgNameSuffix = 'en.dilbert'
     extClass = '.Dilbert'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

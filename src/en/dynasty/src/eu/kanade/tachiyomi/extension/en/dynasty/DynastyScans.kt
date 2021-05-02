@@ -8,9 +8,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.ArrayList
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -19,6 +16,9 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.select.Elements
+import java.text.SimpleDateFormat
+import java.util.ArrayList
+import java.util.Locale
 
 abstract class DynastyScans : ParsedHttpSource() {
 
@@ -30,13 +30,13 @@ abstract class DynastyScans : ParsedHttpSource() {
 
     override val supportsLatest = false
 
-    var parent: List<Node> = ArrayList()
+    private var parent: List<Node> = ArrayList()
 
-    var list = InternalList(ArrayList(), "")
+    private var list = InternalList(ArrayList(), "")
 
-    var imgList = InternalList(ArrayList(), "")
+    private var imgList = InternalList(ArrayList(), "")
 
-    var _valid: Validate = Validate(false, -1)
+    private var _valid: Validate = Validate(false, -1)
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(popularMangaInitialUrl(), headers)
@@ -70,9 +70,11 @@ abstract class DynastyScans : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = "div.pagination > ul > li.active + li > a"
 
     private fun buildListfromResponse(): List<Node> {
-        return client.newCall(Request.Builder().headers(headers)
-                .url(popularMangaInitialUrl()).build()).execute().asJsoup()
-                .select("div#main").filter { it.hasText() }.first().childNodes()
+        return client.newCall(
+            Request.Builder().headers(headers)
+                .url(popularMangaInitialUrl()).build()
+        ).execute().asJsoup()
+            .select("div#main").first { it.hasText() }.childNodes()
     }
 
     protected fun parseHeader(document: Document, manga: SManga): Boolean {
@@ -147,31 +149,41 @@ abstract class DynastyScans : ParsedHttpSource() {
                 chapter.name += " and ${nodes[nodes.indexOfPartial(" and ") + 1]}"
             }
         }
-        chapter.date_upload = nodes[nodes.indexOfPartial("released")].let {
-            SimpleDateFormat("MMM dd yy", Locale.ENGLISH).parse(it.substringAfter("released ").replace("\'", "")).time
-        }
+        chapter.date_upload = nodes[nodes.indexOfPartial("released")]
+            .substringAfter("released ")
+            .replace("\'", "")
+            .toDate("MMM dd yy")
         return chapter
+    }
+
+    protected fun String?.toDate(pattern: String): Long {
+        this ?: return 0
+        return try {
+            SimpleDateFormat(pattern, Locale.ENGLISH).parse(this)?.time ?: 0
+        } catch (_: Exception) {
+            0
+        }
     }
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         try {
             val imageUrl = document.select("script").last().html().substringAfter("var pages = [").substringBefore("];")
-            var imageUrls = JSONArray("[$imageUrl]")
+            val imageUrls = JSONArray("[$imageUrl]")
 
-            (0..imageUrls.length() - 1)
-                    .map { imageUrls.getJSONObject(it) }
-                    .map { baseUrl + it.get("image") }
-                    .forEach { pages.add(Page(pages.size, "", it)) }
+            (0 until imageUrls.length())
+                .map { imageUrls.getJSONObject(it) }
+                .map { baseUrl + it.get("image") }
+                .forEach { pages.add(Page(pages.size, "", it)) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
         return pages
     }
 
-    class InternalList : ArrayList<String> {
+    class InternalList(nodes: List<Node>, type: String) : ArrayList<String>() {
 
-        constructor(nodes: List<Node>, type: String) {
+        init {
             if (type == "text") {
                 for (node in nodes) {
                     if (node is TextNode) {
@@ -183,32 +195,32 @@ abstract class DynastyScans : ParsedHttpSource() {
             }
             if (type == "src") {
                 nodes
-                        .filter { it is Element && it.hasClass("thumbnails") }
-                        .flatMap { it.childNodes() }
-                        .filterIsInstance<Element>()
-                        .filter { it.hasClass("span2") }
-                        .forEach { this.add(it.child(0).child(0).attr(type)) }
+                    .filter { it is Element && it.hasClass("thumbnails") }
+                    .flatMap { it.childNodes() }
+                    .filterIsInstance<Element>()
+                    .filter { it.hasClass("span2") }
+                    .forEach { this.add(it.child(0).child(0).attr(type)) }
             }
             if (type == "href") {
                 nodes
-                        .filter { it is Element && it.hasClass("thumbnails") }
-                        .flatMap { it.childNodes() }
-                        .filterIsInstance<Element>()
-                        .filter { it.hasClass("span2") }
-                        .forEach { this.add(it.child(0).attr(type)) }
+                    .filter { it is Element && it.hasClass("thumbnails") }
+                    .flatMap { it.childNodes() }
+                    .filterIsInstance<Element>()
+                    .filter { it.hasClass("span2") }
+                    .forEach { this.add(it.child(0).attr(type)) }
             }
         }
 
         fun indexOfPartial(partial: String): Int {
             return (0..this.lastIndex).firstOrNull { this[it].contains(partial) }
-                    ?: -1
+                ?: -1
         }
 
         fun getItem(partial: String): String {
             return (0..this.lastIndex)
-                    .firstOrNull { super.get(it).contains(partial) }
-                    ?.let { super.get(it) }
-                    ?: ""
+                .firstOrNull { super.get(it).contains(partial) }
+                ?.let { super.get(it) }
+                ?: ""
         }
     }
 

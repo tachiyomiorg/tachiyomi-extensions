@@ -2,15 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Pufei'
+    extName = 'Pufei'
     pkgNameSuffix = 'zh.pufei'
     extClass = '.Pufei'
-    extVersionCode = 4
+    extVersionCode = 6
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly project(':duktape-stub')
 }
 
 apply from: "$rootDir/common.gradle"

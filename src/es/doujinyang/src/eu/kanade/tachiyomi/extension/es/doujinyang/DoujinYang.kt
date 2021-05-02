@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.es.doujinyang
 
 import android.net.Uri
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -11,18 +12,19 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-open class DoujinYang : ParsedHttpSource() {
+@Nsfw
+class DoujinYang : ParsedHttpSource() {
 
     override val name = "Doujin-Yang"
-    override val baseUrl = "https://doujin-yang.es"
+    override val baseUrl = "https://doujin-es.com"
     override val lang = "es"
     override val supportsLatest = true
 
@@ -136,7 +138,7 @@ open class DoujinYang : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        return response.body()!!.string().substringAfter(",[").substringBefore("]")
+        return response.body!!.string().substringAfter(",[").substringBefore("]")
             .replace(Regex("""[\\"]"""), "").split(",").let { list ->
                 val path = "https:" + list[0]
                 list.drop(1).mapIndexed { i, img -> Page(i, "", path + img) }
@@ -156,7 +158,9 @@ open class DoujinYang : ParsedHttpSource() {
     )
 
     class GenreFilter : UriPartFilter(
-        "Género", "genero", arrayOf(
+        "Género",
+        "genero",
+        arrayOf(
             Pair("all", "All"),
             Pair("1", "Ahegao"),
             Pair("379", "Alien"),
@@ -242,7 +246,9 @@ open class DoujinYang : ParsedHttpSource() {
     )
 
     class LetterFilter : UriPartFilter(
-        "Letra", "letra", arrayOf(
+        "Letra",
+        "letra",
+        arrayOf(
             Pair("all", "All"),
             Pair("a", "A"),
             Pair("b", "B"),
@@ -274,13 +280,19 @@ open class DoujinYang : ParsedHttpSource() {
     )
 
     class StatusFilter : UriPartFilter(
-        "Estado", "estado", arrayOf(
-            Pair("all", "All"), Pair("1", "En desarrollo"), Pair("0", "Finalizado")
+        "Estado",
+        "estado",
+        arrayOf(
+            Pair("all", "All"),
+            Pair("1", "En desarrollo"),
+            Pair("0", "Finalizado")
         )
     )
 
     class SortFilter : UriPartFilterreq(
-        "Sort", "orden", arrayOf(
+        "Sort",
+        "orden",
+        arrayOf(
             Pair("visitas", "Visitas"),
             Pair("desc", "Descendente"),
             Pair("asc", "Ascendente"),

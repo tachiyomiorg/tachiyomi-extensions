@@ -10,13 +10,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Tohomh : ParsedHttpSource() {
 
@@ -124,7 +124,7 @@ class Tohomh : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(string: String): Long {
-            return dateFormat.parse(string).time
+        return dateFormat.parse(string)?.time ?: 0L
     }
 
     // Pages
@@ -145,7 +145,7 @@ class Tohomh : ParsedHttpSource() {
     private val gson = Gson()
 
     override fun imageUrlParse(response: Response): String {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["Code"].asString
+        return gson.fromJson<JsonObject>(response.body!!.string())["Code"].asString
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")

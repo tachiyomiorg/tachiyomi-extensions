@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Dragon Ball Multiverse'
+    extName = 'Dragon Ball Multiverse'
     pkgNameSuffix = 'all.dragonball_multiverse'
     extClass = '.DbMFactory'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 

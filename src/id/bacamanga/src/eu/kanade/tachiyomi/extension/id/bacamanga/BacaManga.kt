@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.extension.id.bacamanga
 
-import android.util.Base64
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -8,86 +8,79 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
-import java.io.UnsupportedEncodingException
-import java.net.URLDecoder
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
-import org.json.JSONObject
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class BacaManga : ParsedHttpSource() {
 
-    override val name = "Baca Manga"
-    override val baseUrl = "https://bacamanga.co"
+    override val name = "BacaManga"
+    override val baseUrl = "https://bacamanga.cc"
     override val lang = "id"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=popular", headers)
+        return GET("$baseUrl/komik-populer/page/$page/", headers)
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/manga/page/$page/?order=update", headers)
+        return GET("$baseUrl/manga/page/$page/", headers)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val builtUrl = "$baseUrl/manga/page/$page/"
-        val url = HttpUrl.parse(builtUrl)!!.newBuilder()
-        url.addQueryParameter("title", query)
-        filters.forEach { filter ->
-            when (filter) {
-                is AuthorFilter -> {
-                    url.addQueryParameter("author", filter.state)
-                }
-                is YearFilter -> {
-                    url.addQueryParameter("yearx", filter.state)
-                }
-                is StatusFilter -> {
-                    val status = when (filter.state) {
-                        Filter.TriState.STATE_INCLUDE -> "completed"
-                        Filter.TriState.STATE_EXCLUDE -> "ongoing"
-                        else -> ""
-                    }
-                    url.addQueryParameter("status", status)
-                }
-                is TypeFilter -> {
-                    url.addQueryParameter("type", filter.toUriPart())
-                }
-                is OrderByFilter -> {
-                    url.addQueryParameter("order", filter.toUriPart())
-                }
-                is GenreList -> {
-                    filter.state.forEach {
-                        if (it.state) {
-                            url.addQueryParameter("genre[]", it.id)
+        val url = if (query.isNotBlank()) {
+            val url = "$baseUrl/page/$page".toHttpUrlOrNull()!!.newBuilder()
+            val pattern = "\\s+".toRegex()
+            val q = query.replace(pattern, "+")
+            if (query.isNotEmpty()) {
+                url.addQueryParameter("s", q)
+            } else {
+                url.addQueryParameter("s", "")
+            }
+            url.toString()
+        } else {
+            val url = "$baseUrl/daftar-komik/page/$page".toHttpUrlOrNull()!!.newBuilder()
+            var orderBy: String
+            (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+                when (filter) {
+                    is Status -> url.addQueryParameter("status", arrayOf("", "ongoing", "completed")[filter.state])
+                    is GenreList -> {
+                        val genreInclude = mutableListOf<String>()
+                        filter.state.forEach {
+                            if (it.state == 1) {
+                                genreInclude.add(it.id)
+                            }
                         }
+                        if (genreInclude.isNotEmpty()) {
+                            genreInclude.forEach { genre ->
+                                url.addQueryParameter("genre[]", genre)
+                            }
+                        }
+                    }
+                    is SortBy -> {
+                        orderBy = filter.toUriPart()
+                        url.addQueryParameter("order", orderBy)
                     }
                 }
             }
+            url.toString()
         }
-        return GET(url.build().toString(), headers)
+        return GET(url, headers)
     }
 
-    override fun popularMangaSelector() = "div.bs"
+    override fun popularMangaSelector() = "div.animepost"
     override fun latestUpdatesSelector() = popularMangaSelector()
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
-        manga.thumbnail_url = element.select("div.limit img").attr("src")
-        element.select("a").first().let {
-            manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.attr("title")
-        }
+        manga.thumbnail_url = element.select("img").attr("data-lazy-src")
+        manga.setUrlWithoutDomain(element.select(".bigor > a").attr("href"))
+        manga.title = element.select(".bigor .tt h2").text()
         return manga
     }
 
@@ -99,188 +92,178 @@ class BacaManga : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select(".spe")
-        val sepName = infoElement.select("span:nth-child(4)").last()
+        val infoElement = document.select(".infox").first()
+        val sepName = infoElement.select(".spe > span:nth-child(4)").last()
         val manga = SManga.create()
-        manga.author = sepName.ownText()
+        manga.author = infoElement.select(".spe span:contains(Pengarang)").text().replace("Pengarang: ", "").trim()
         manga.artist = sepName.ownText()
-        manga.genre = infoElement.select("span:nth-child(1) > a")
-            .joinToString(", ") { it.text() }
-        manga.status = parseStatus(infoElement.select("span:nth-child(2)").text())
-        manga.description = document.select("div[itemprop=articleBody]").last().text()
-        manga.thumbnail_url = document.select(".thumb > img:nth-child(1)").attr("src")
+        val genres = mutableListOf<String>()
+        infoElement.select(".genre-info > a").forEach { element ->
+            val genre = element.text()
+            genres.add(genre)
+        }
+        manga.genre = genres.joinToString(", ")
+        manga.status = parseStatus(infoElement.select(".spe span:contains(Status)").text())
+        manga.description = document.select("div[^itemprop]").last().text()
+        manga.thumbnail_url = document.select(".thumb noscript img").first().attr("src")
 
         return manga
     }
 
     private fun parseStatus(element: String): Int = when {
-        element.contains("ongoing", ignoreCase = true) -> SManga.ONGOING
-        element.contains("completed", ignoreCase = true) -> SManga.COMPLETED
+
+        element.toLowerCase().contains("berjalan") -> SManga.ONGOING
+        element.toLowerCase().contains("tamat") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val document = response.asJsoup()
-        val chapters = document.select(chapterListSelector()).map { chapterFromElement(it) }
-        // Add date for latest chapter only
-        document.select("script.yoast-schema-graph").html()
-            .let {
-                val date = JSONObject(it).getJSONArray("@graph")
-                    .getJSONObject(3).getString("dateModified")
-                chapters[0].date_upload = parseDate(date)
-            }
-        return chapters
-    }
-
-    private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH).parse(date).time
-    }
-
-    override fun chapterListSelector() = ".lchx"
+    override fun chapterListSelector() = "div#chapter_list ul li"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.select("a").first()
+        val urlElement = element.select(".lchx a").first()
+        val timeElement = element.select("span.rightoff").first()
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
+        chapter.date_upload = 0
         return chapter
+    }
+
+    override fun prepareNewChapter(chapter: SChapter, manga: SManga) {
+        val basic = Regex("""Chapter\s([0-9]+)""")
+        when {
+            basic.containsMatchIn(chapter.name) -> {
+                basic.find(chapter.name)?.let {
+                    chapter.chapter_number = it.groups[1]?.value!!.toFloat()
+                }
+            }
+        }
     }
 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
-        val script = document.select("div#readerarea script").html()
-        val key = script.substringAfter("atob(").substringBefore(");")
-        val coded = script.substringAfter("*/var $key = \"").substringBefore("\";")
-        val decoded = URLDecoder.decode(decodeBase64(coded), "UTF-8")
-        val images = Jsoup.parse(decoded)
-        images.select("img").forEachIndexed { i, element ->
-            val url = element.attr("src")
-            pages.add(Page(i, "", url))
+        val scriptToParse = document.select("script[src*=cache]").first().attr("src")
+        val slideaid = client.newCall(GET(scriptToParse, headers)).execute().body!!.string()
+        val imagesList = slideaid.substringAfter("var imgch").substringBefore(";").substringAfter("=").trim()
+        val img_url = slideaid.substringAfter("#chimg").substringBefore("onError").substringAfter("src=\"").substringBefore("'").trim()
+        val json = JsonParser().parse(imagesList).asJsonArray
+        json.forEachIndexed { i, url ->
+            val url_clean = url.toString().removeSurrounding("\"")
+            // BASE URL HARD CODED
+            pages.add(Page(i, "", "$img_url$url_clean"))
         }
         return pages
-    }
-
-    private fun decodeBase64(coded: String): String {
-        var valueDecoded = ByteArray(0)
-        try {
-            valueDecoded = Base64.decode(coded.toByteArray(charset("UTF-8")), Base64.DEFAULT)
-        } catch (e: UnsupportedEncodingException) {
-        }
-
-        return String(valueDecoded)
     }
 
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        return if (page.imageUrl!!.contains("i0.wp.com")) {
-            val headers = Headers.Builder()
+        val headers = Headers.Builder()
+        headers.apply {
+            add("Referer", baseUrl)
+            add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")
+        }
+
+        if (page.imageUrl!!.contains("i0.wp.com")) {
             headers.apply {
                 add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
             }
-            GET(page.imageUrl!!, headers.build())
-        } else GET(page.imageUrl!!, headers)
+        }
+        return GET(page.imageUrl!!, headers.build())
     }
 
-    private class AuthorFilter : Filter.Text("Author")
-
-    private class YearFilter : Filter.Text("Year")
-
-    private class OrderByFilter : UriPartFilter("Sort by", arrayOf(
+    private class SortBy : UriPartFilter(
+        "Sort by",
+        arrayOf(
             Pair("Default", ""),
             Pair("A-Z", "title"),
             Pair("Z-A", "titlereverse"),
             Pair("Latest Update", "update"),
             Pair("Latest Added", "latest"),
             Pair("Popular", "popular")
-    ))
+        )
+    )
 
-    private class StatusFilter : Filter.TriState("Completed")
-
-    private class TypeFilter : UriPartFilter("Type", arrayOf(
+    private class Status : UriPartFilter(
+        "Status",
+        arrayOf(
             Pair("All", ""),
-            Pair("Manga", "Manga"),
-            Pair("Manhua", "Manhua"),
-            Pair("Manhwa", "Manhwa")
-    ))
+            Pair("Ongoing", "Ongoing"),
+            Pair("Completed", "Completed")
+        )
+    )
 
-    private class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
+    private class Genre(name: String, val id: String = name) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("NOTE: Ignored if using text search!"),
-            Filter.Separator(),
-            AuthorFilter(),
-            Filter.Separator(),
-            YearFilter(),
-            Filter.Separator(),
-            StatusFilter(),
-            Filter.Separator(),
-            OrderByFilter(),
-            Filter.Separator(),
-            TypeFilter(),
-            Filter.Separator(),
-            GenreList(getGenreList())
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        SortBy(),
+        Filter.Separator(),
+        Status(),
+        Filter.Separator(),
+        GenreList(getGenreList())
     )
 
     private fun getGenreList() = listOf(
-            Genre("Action", "action"),
-            Genre("Adult", "adult"),
-            Genre("Adventure", "adventure"),
-            Genre("Comedy", "comedy"),
-            Genre("Crime", "crime"),
-            Genre("Demons", "demons"),
-            Genre("Doujinshi", "doujinshi"),
-            Genre("Drama", "drama"),
-            Genre("Ecchi", "ecchi"),
-            Genre("Echi", "echi"),
-            Genre("Fantasy", "fantasy"),
-            Genre("Game", "game"),
-            Genre("Gender Bender", "gender-bender"),
-            Genre("Harem", "harem"),
-            Genre("Historical", "historical"),
-            Genre("Horor", "horor"),
-            Genre("Horror", "horror"),
-            Genre("Isekai", "isekai"),
-            Genre("Josei", "josei"),
-            Genre("Magic", "magic"),
-            Genre("Manhua", "manhua"),
-            Genre("Manhwa", "manhwa"),
-            Genre("Martial Art", "martial-art"),
-            Genre("Martial Arts", "martial-arts"),
-            Genre("Mature", "mature"),
-            Genre("Mecha", "mecha"),
-            Genre("Medical", "medical"),
-            Genre("Military", "military"),
-            Genre("Monster", "monster"),
-            Genre("Monster Girls", "monster-girls"),
-            Genre("Music", "music"),
-            Genre("Mystery", "mystery"),
-            Genre("Post-Apocalyptic", "post-apocalyptic"),
-            Genre("Psychological", "psychological"),
-            Genre("Romance", "romance"),
-            Genre("School", "school"),
-            Genre("School Life", "school-life"),
-            Genre("Sci-Fi", "sci-fi"),
-            Genre("Seinen", "seinen"),
-            Genre("Shoujo Ai", "shoujo-ai"),
-            Genre("Shoujo", "shoujo"),
-            Genre("Shounen Ai", "shounen-ai"),
-            Genre("Shounen", "shounen"),
-            Genre("Si-fi", "si-fi"),
-            Genre("Slice of Life", "slice-of-life"),
-            Genre("Smut", "smut"),
-            Genre("Sports", "sports"),
-            Genre("Super Power", "super-power"),
-            Genre("Supernatural", "supernatural"),
-            Genre("Thriller", "thriller"),
-            Genre("Tragedy", "tragedy"),
-            Genre("Vampire", "vampire"),
-            Genre("Webtoon", "webtoon"),
-            Genre("Webtoons", "webtoons"),
-            Genre("Yaoi", "yaoi"),
-            Genre("Yuri", "yuri"),
-            Genre("Zombies", "zombies")
+        Genre("Action", "action"),
+        Genre("Adult", "adult"),
+        Genre("Adventure", "adventure"),
+        Genre("Comedy", "comedy"),
+        Genre("Demon", "demon"),
+        Genre("Demons", "demons"),
+        Genre("Doujinshi", "doujinshi"),
+        Genre("Drama", "drama"),
+        Genre("Ecchi", "ecchi"),
+        Genre("Fantasy", "fantasy"),
+        Genre("Game", "game"),
+        Genre("Gender Bender", "gender-bender"),
+        Genre("Genres: Action", "genres-action"),
+        Genre("Gore", "gore"),
+        Genre("Harem", "harem"),
+        Genre("Historical", "historical"),
+        Genre("Horor", "horor"),
+        Genre("Horror", "horror"),
+        Genre("Isekai", "isekai"),
+        Genre("Josei", "josei"),
+        Genre("Lolicon", "lolicon"),
+        Genre("Magic", "magic"),
+        Genre("Manhua", "manhua"),
+        Genre("Martial Art", "martial-art"),
+        Genre("Martial Arts", "martial-arts"),
+        Genre("Mature", "mature"),
+        Genre("Mecha", "mecha"),
+        Genre("Medical", "medical"),
+        Genre("Military", "military"),
+        Genre("Mistery", "mistery"),
+        Genre("Music", "music"),
+        Genre("Mystery", "mystery"),
+        Genre("Project", "project"),
+        Genre("Psychological", "psychological"),
+        Genre("Reincarnation", "reincarnation"),
+        Genre("Romance", "romance"),
+        Genre("School", "school"),
+        Genre("School Life", "school-life"),
+        Genre("school of life", "school-of-life"),
+        Genre("Sci-fi", "sci-fi"),
+        Genre("Seinen", "seinen"),
+        Genre("sepernatural", "sepernatural"),
+        Genre("Shotacon", "shotacon"),
+        Genre("Shoujo", "shoujo"),
+        Genre("Shoujo Ai", "shoujo-ai"),
+        Genre("Shounen", "shounen"),
+        Genre("Shounen Ai", "shounen-ai"),
+        Genre("Slice of Life", "slice-of-life"),
+        Genre("Smut", "smut"),
+        Genre("Sports", "sports"),
+        Genre("Super Power", "super-power"),
+        Genre("Supernatural", "supernatural"),
+        Genre("Thriller", "thriller"),
+        Genre("Tragedy", "tragedy"),
+        Genre("Webtoons", "webtoons"),
+        Genre("Worn and Torn Newbie", "worn-and-torn-newbie"),
+        Genre("Yuri", "yuri")
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :

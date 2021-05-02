@@ -1,16 +1,33 @@
 package eu.kanade.tachiyomi.extension.fr.japscan
 
+import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.app.Application
+import android.content.SharedPreferences
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Rect
 import android.net.Uri
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.View
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
+import com.google.gson.Gson
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -19,69 +36,111 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.FormBody
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
-import org.apache.commons.lang3.StringUtils
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 
-class Japscan : ParsedHttpSource() {
+class Japscan : ConfigurableSource, ParsedHttpSource() {
 
     override val id: Long = 11
 
     override val name = "Japscan"
 
-    override val baseUrl = "https://www.japscan.co"
+    override val baseUrl = "https://www.japscan.se"
 
     override val lang = "fr"
 
     override val supportsLatest = true
 
-    private val keysheetChapterUrl1 = "https://www.japscan.co/lecture-en-ligne/bloody-kiss/volume-1/"
-    private val keysheetChapterUrl2 = "https://www.japscan.co/lecture-en-ligne/1-nen-a-gumi-no-monster/1/"
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
-    private var keysheet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    internal class JsObject(private val latch: CountDownLatch, var width: Int = 0, var height: Int = 0) {
+        @JavascriptInterface
+        fun passSize(widthjs: Int, ratio: Float) {
+            Log.d("japscan", "wvsc js returned $widthjs, $ratio")
+            width = widthjs
+            height = (width.toFloat() / ratio).toInt()
+            latch.countDown()
+        }
+    }
 
-    private val realpageBk2 = "221518b2f9a20842e4c5379223a5881255d2e522c32277923242520284a542f28085b952e422b1e5a97216b262e5e6621535a22/552c5c112f3e2c4f2e122f025517294925042f322d54513e25822c7e2ev0274751116a4266386a0d56w2506a578b562f6exd2e6/65f435e996fs95fw1160125x715062eve104e33va38454bu632x1315b4fxa10244e2c438932ta38v1158d4e323cx237x933u435/1038xa1"
-    private val realpageBk4 = "a336f98370e3d9130516d873045639a35633468374c3389353f36313759623633176406345c3e2e60033e713c37687239616b3f6732612a3d4437/5738213e1d642b3d5a3f113d4e3b666c423e973a8d3bja3a50662772597a4270196akc6b74609a613277l1337d6c0776ge60k3220735l85410640/33a25325d2a927b446al56al36fi8672e4dl120113dj7205543ja455354i847lc436955lf26315739529643h744j6249c5e4e40l34el14ci74822/49l12"
-    private val realpageBk14 = "4033163017801660626355d0118326c0c3202380719055b0e070e020a2e3d0c04883e750d2a029f397704470f0e3a4208303f0b370a37930816022/f0097038e3a9a0e2c0781021d0f303a120f6d075b05nd0e27379d48204b164f8a36od374a3c6f3e0b4fpa0841357f44kc3co798740c8c02p924853/e7b0398052d996e491534p331p331m8319616p6958d01n8922c1cn2122827m915pb1e372ep29a0e2d0c24681el51dna926f291714p71fpe1am2189/01fpb9"
-    private val realpageBk29 = "e952450996d945591172e4b9e0528549828912293089e469a939a939c172c9d997b276f991c9a842566973f96922e359c222f9b21/932984980e931e908d98742f819f179a7a9d0c972e2a07975794419az6931c248032173809377523a028322b51279a3fbf903e2d6/03dw72bae8a6399bd1f7f26bf8d7196za85140fz00d121ey504b0092d14b581971e9b1e5508x408z8815213080eb60ab30ay30c87/0cbd8"
-    private val realpageMonster1 = "d7b023a0f83391903313f630b090311054d04910118397b0c140003368b3e3d343e0a390a76032c0d990f16387104953d110405378d030/4388f0d7a052f05820e853203377a04760e06034a0c5b019c05p805223198472d41174f863aqe394f3e6c32014ar30642387f41m13dqe9/f8a0f7700rf95890era9a9e26211a1a29062dqb12ra1fp319p993r11fq31bp9936115pd1421214819pb9c8410p396qb1e2d14qe1ap99a8/603rc9"
-    private val realPageUrls = listOf(
-        realpageBk2,
-        realpageBk4,
-        realpageBk14,
-        realpageBk29,
-        realpageMonster1
-    )
-
+    @SuppressLint("SetJavaScriptEnabled")
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor { chain ->
-        val indicator = "&decodeImage"
-
+        val indicator = "&wvsc"
+        val cleanupjs = "var checkExist=setInterval(function(){if(document.getElementsByTagName('CNV-VV').length){clearInterval(checkExist);var e=document.body,a=e.children;for(e.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=a[0].tagName;)e.removeChild(a[0]);for(var t of[].slice.call(a[0].all_canvas))t.style.maxWidth='100%';window.android.passSize(a[0].all_canvas[0].width,a[0].all_canvas[0].width/a[0].all_canvas[0].height)}},100);"
         val request = chain.request()
-        val url = request.url().toString()
+        val url = request.url.toString()
 
         val newRequest = request.newBuilder()
             .url(url.substringBefore(indicator))
             .build()
         val response = chain.proceed(newRequest)
-
         if (!url.endsWith(indicator)) return@addInterceptor response
-
-        val res = response.body()!!.byteStream().use {
-            decodeImage(it)
+        // Webview screenshotting code
+        val handler = Handler(Looper.getMainLooper())
+        val latch = CountDownLatch(1)
+        var webView: WebView? = null
+        var height = 0
+        var width = 0
+        val jsinterface = JsObject(latch)
+        Log.d("japscan", "init wvsc")
+        handler.post {
+            val webview = WebView(Injekt.get<Application>())
+            webView = webview
+            webview.settings.javaScriptEnabled = true
+            webview.settings.domStorageEnabled = true
+            webview.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            webview.settings.useWideViewPort = false
+            webview.settings.loadWithOverviewMode = false
+            webview.settings.userAgentString = webview.settings.userAgentString.replace("Mobile", "eliboM").replace("Android", "diordnA")
+            webview.addJavascriptInterface(jsinterface, "android")
+            var retries = 1
+            webview.webChromeClient = object : WebChromeClient() {
+                @SuppressLint("NewApi")
+                override fun onProgressChanged(view: WebView, progress: Int) {
+                    if (progress == 100 && retries--> 0) {
+                        Log.d("japscan", "wvsc loading finished")
+                        view.evaluateJavascript(cleanupjs) {}
+                    }
+                }
+            }
+            webview.loadUrl(url.replace("&wvsc", ""))
         }
 
-        val rb = ResponseBody.create(MediaType.parse("image/png"), res)
+        latch.await()
+        width = jsinterface.width
+        height = jsinterface.height
+        // webView!!.isDrawingCacheEnabled = true
+
+        webView!!.measure(width, height)
+        webView!!.layout(0, 0, width, height)
+        Thread.sleep(350)
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        webView!!.draw(canvas)
+
+        // val bitmap: Bitmap = webView!!.drawingCache
+        val output = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+        val rb = output.toByteArray().toResponseBody("image/png".toMediaTypeOrNull())
+        handler.post { webView!!.destroy() }
         response.newBuilder().body(rb).build()
     }.build()
 
@@ -89,17 +148,13 @@ class Japscan : ParsedHttpSource() {
         val dateFormat by lazy {
             SimpleDateFormat("dd MMM yyyy", Locale.US)
         }
+        private const val SHOW_SPOILER_CHAPTERS_Title = "Les chapitres en Anglais ou non traduit sont upload en tant que \" Spoilers \" sur Japscan"
+        private const val SHOW_SPOILER_CHAPTERS = "JAPSCAN_SPOILER_CHAPTERS"
+        private val prefsEntries = arrayOf("Montrer uniquement les chapitres traduit en Français", "Montrer les chapitres spoiler")
+        private val prefsEntryValues = arrayOf("hide", "show")
     }
 
-    private fun loadKeysheetChapters() {
-        var response = client.newCall(GET(keysheetChapterUrl1, headers)).execute()
-        val doc = response.asJsoup()
-        response = client.newCall(GET(keysheetChapterUrl2, headers)).execute()
-        val doc2 = response.asJsoup()
-
-        // 「MULTI-DOCUMENT DRIFTING!!」
-        createKeysheet(doc, doc2)
-    }
+    private fun chapterListPref() = preferences.getString(SHOW_SPOILER_CHAPTERS, "hide")
 
     // Popular
     override fun popularMangaRequest(page: Int): Request {
@@ -124,12 +179,7 @@ class Japscan : ParsedHttpSource() {
         element.select("a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
             manga.title = it.text()
-
-            val s = StringUtils.stripAccents(it.text())
-                .replace("[\\W]".toRegex(), "-")
-                .replace("[-]{2,}".toRegex(), "-")
-                .replace("^-|-$".toRegex(), "")
-            manga.thumbnail_url = "$baseUrl/imgs/mangas/$s.jpg".toLowerCase(Locale.ROOT)
+            manga.thumbnail_url = "$baseUrl/imgs/${it.attr("href").replace(Regex("/$"),".jpg").replace("manga","mangas")}".toLowerCase(Locale.ROOT)
         }
         return manga
     }
@@ -154,6 +204,8 @@ class Japscan : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
+    private val gson = Gson()
+
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isEmpty()) {
@@ -173,15 +225,36 @@ class Japscan : ParsedHttpSource() {
             val searchHeaders = headers.newBuilder()
                 .add("X-Requested-With", "XMLHttpRequest")
                 .build()
-            return POST("$baseUrl/live-search/", searchHeaders, formBody)
+
+            try {
+                return client.newCall(POST("$baseUrl/live-search/", searchHeaders, formBody)).execute().use { response ->
+                    if (!response.isSuccessful) throw Exception("Unexpected code $response")
+
+                    val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
+
+                    if (jsonObject.asJsonArray.size() === 0) {
+                        Log.d("japscan", "Search not returning anything, using duckduckgo")
+
+                        throw Exception("No data")
+                    }
+
+                    return response.request
+                }
+            } finally {
+                // Fallback to duckduckgo if the search does not return any result
+                val uri = Uri.parse("https://duckduckgo.com/lite/").buildUpon()
+                    .appendQueryParameter("q", "$query site:$baseUrl/manga/")
+                    .appendQueryParameter("kd", "-1")
+                return GET(uri.toString(), headers)
+            }
         }
     }
 
-    override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active)"
+    override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active),.next_form .navbutton"
     override fun searchMangaSelector(): String = "div.card div.p-2, a.result-link"
     override fun searchMangaParse(response: Response): MangasPage {
-        if ("live-search" in response.request().url().toString()) {
-            val body = response.body()!!.string()
+        if ("live-search" in response.request.url.toString()) {
+            val body = response.body!!.string()
             val json = JsonParser().parse(body).asJsonArray
             val mangas = json.map { jsonElement ->
                 searchMangaFromJson(jsonElement)
@@ -205,11 +278,20 @@ class Japscan : ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
-        thumbnail_url = element.select("img").attr("abs:src")
-        element.select("p a").let {
-            title = it.text()
-            url = it.attr("href")
+    override fun searchMangaFromElement(element: Element): SManga {
+        if (element.attr("class") == "result-link") {
+            return SManga.create().apply {
+                title = element.text().substringAfter(" ").substringBefore(" | JapScan")
+                setUrlWithoutDomain(element.attr("abs:href"))
+            }
+        } else {
+            return SManga.create().apply {
+                thumbnail_url = element.select("img").attr("abs:src")
+                element.select("p a").let {
+                    title = it.text()
+                    url = it.attr("href")
+                }
+            }
         }
     }
 
@@ -246,7 +328,7 @@ class Japscan : ParsedHttpSource() {
     }
 
     override fun chapterListSelector() = "#chapters_list > div.collapse > div.chapters_list" +
-        ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW),.badge:contains(VUS)))"
+        if (chapterListPref() == "hide") { ":not(:has(.badge:contains(SPOILER),.badge:contains(RAW),.badge:contains(VUS)))" } else { "" }
     // JapScan sometimes uploads some "spoiler preview" chapters, containing 2 or 3 untranslated pictures taken from a raw. Sometimes they also upload full RAWs/US versions and replace them with a translation as soon as available.
     // Those have a span.badge "SPOILER" or "RAW". The additional pseudo selector makes sure to exclude these from the chapter list.
 
@@ -269,100 +351,70 @@ class Japscan : ParsedHttpSource() {
         }
     }
 
-    private fun createKeysheet(doc: Document, doc2: Document) {
-        val pageUrls = mutableListOf<String>()
+    override fun pageListParse(document: Document): List<Page> {
+        // no webview screenshot needed anymore :
+        // document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
 
-        var pages = doc.select("select#pages").first()?.select("option")!! // if this is null we're done
-        for (i in listOf(1, 3, 13, 28)) {
-            pageUrls.add(pages[i].attr("data-img").substring("https://c.japscan.co/".length, pages[i].attr("data-img").length - 4))
+        val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
+        Log.d("japscan", "ZJS at $zjsurl")
+        val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body!!.string()
+        Log.d("japscan", "webtoon, netdumping initiated")
+        val pagecount = document.getElementsByTag("option").size
+        val pages = ArrayList<Page>()
+        val handler = Handler(Looper.getMainLooper())
+        val checkNew = ArrayList<String>(pagecount)
+        var maxIter = document.getElementsByTag("option").size
+        var isSinglePage = false
+        if ((zjs.toLowerCase().split("new image").size - 1) == 1) {
+            isSinglePage = true
+            maxIter = 1
         }
-        pages = doc2.select("select#pages").first()?.select("option")!! // if this is null we're done
-        for (i in listOf(0)) {
-            pageUrls.add(pages[i].attr("data-img").substring("https://c.japscan.co/".length, pages[i].attr("data-img").length - 4))
-        }
+        var webView: WebView? = null
+        val dummyimage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        val dummystream = ByteArrayOutputStream()
+        dummyimage.compress(Bitmap.CompressFormat.JPEG, 100, dummystream)
+        val barrier = CyclicBarrier(2)
 
-        val az = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray()
-        val ks = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray()
-
-        for (i in 0 until realPageUrls.count())
-            for (j in 0 until realPageUrls[i].length) {
-                if (realPageUrls[i][j] != pageUrls[i][j]) {
-                    ks[az.indexOf(pageUrls[i][j])] = realPageUrls[i][j]
+        for (i in 0 until maxIter) {
+            handler.post {
+                if (webView == null) {
+                    val webview = WebView(Injekt.get<Application>())
+                    webView = webview
+                    webview.settings.javaScriptEnabled = true
+                    webview.settings.domStorageEnabled = true
+                    webview.settings.userAgentString = webview.settings.userAgentString.replace("Mobile", "eliboM").replace("Android", "diordnA")
+                    webview.webViewClient = object : WebViewClient() {
+                        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+                        override fun shouldInterceptRequest(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): WebResourceResponse? {
+                            if (request.url.toString().startsWith("https://cdn.statically.io/img/c.japscan.se/") && !checkNew.contains(request.url.toString())) {
+                                checkNew.add(request.url.toString())
+                                pages.add(Page(pages.size, "", request.url.toString()))
+                                Log.d("japscan", "intercepted ${request.url}")
+                                if (pages.size == pagecount || !isSinglePage) {
+                                    barrier.await()
+                                }
+                                return WebResourceResponse("image/jpeg", "UTF-8", ByteArrayInputStream(dummystream.toByteArray()))
+                            }
+                            return super.shouldInterceptRequest(view, request)
+                        }
+                    }
+                }
+                if (isSinglePage) {
+                    webView?.loadUrl(baseUrl + document.select("li[^data-]").first().dataset()["chapter-url"])
+                } else {
+                    webView?.loadUrl(baseUrl + document.getElementsByTag("option")[i].attr("value"))
                 }
             }
-        keysheet = ks.joinToString("")
-    }
-
-    override fun pageListParse(document: Document): List<Page> {
-        loadKeysheetChapters()
-        val pages = mutableListOf<Page>()
-        var imagePath = "(.*\\/).*".toRegex().find(document.select("#image").attr("data-src"))?.groupValues?.get(1)
-        val imageScrambled = if (!document.select("script[src^='/js/iYFbYi_U']").isNullOrEmpty()) "&decodeImage" else ""
-
-        document.select("select#pages").first()?.select("option")?.forEach {
-            if (it.attr("data-img").startsWith("http")) imagePath = ""
-            pages.add(Page(pages.size, "", decodeImageUrl("$imagePath${it.attr("data-img")}") + imageScrambled))
+            barrier.await()
         }
-
+        handler.post { webView!!.destroy() }
         return pages
     }
 
-    private fun decodeImageUrl(url: String): String {
-        val az = "0123456789abcdefghijklmnopqrstuvwxyz"
-        // skip https://, cut after next slash and before extension
-        val urlBase = url.substring(0, url.indexOf('/', 10) + 1)
-        val extension = url.substring(url.length - 4, url.length)
-        val encodedPart = url.substring(url.indexOf('/', 10) + 1, url.length - 4)
-
-        return urlBase + encodedPart.map { if (az.indexOf(it) < 0) it else keysheet[az.indexOf(it)] }.joinToString("") + extension
-    }
-
     override fun imageUrlParse(document: Document): String = ""
-
-    private fun decodeImage(img: InputStream): ByteArray {
-        val input = BitmapFactory.decodeStream(img)
-
-        val xResult = Bitmap.createBitmap(input.width,
-            input.height,
-            Bitmap.Config.ARGB_8888)
-        val xCanvas = Canvas(xResult)
-
-        val result = Bitmap.createBitmap(input.width,
-            input.height,
-            Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-
-        for (x in 0..input.width step 200) {
-            val col1 = Rect(x, 0, x + 100, input.height)
-            if ((x + 200) < input.width) {
-                val col2 = Rect(x + 100, 0, x + 200, input.height)
-                xCanvas.drawBitmap(input, col1, col2, null)
-                xCanvas.drawBitmap(input, col2, col1, null)
-            } else {
-                val col2 = Rect(x + 100, 0, input.width, input.height)
-                xCanvas.drawBitmap(input, col1, col1, null)
-                xCanvas.drawBitmap(input, col2, col2, null)
-            }
-        }
-
-        for (y in 0..input.height step 200) {
-            val row1 = Rect(0, y, input.width, y + 100)
-
-            if ((y + 200) < input.height) {
-                val row2 = Rect(0, y + 100, input.width, y + 200)
-                canvas.drawBitmap(xResult, row1, row2, null)
-                canvas.drawBitmap(xResult, row2, row1, null)
-            } else {
-                val row2 = Rect(0, y + 100, input.width, input.height)
-                canvas.drawBitmap(xResult, row1, row1, null)
-                canvas.drawBitmap(xResult, row2, row2, null)
-            }
-        }
-
-        val output = ByteArrayOutputStream()
-        result.compress(Bitmap.CompressFormat.PNG, 100, output)
-        return output.toByteArray()
-    }
 
     // Filters
     private class TextField(name: String) : Filter.Text(name)
@@ -388,4 +440,23 @@ class Japscan : ParsedHttpSource() {
     }
 
     private var pageNumberDoc: Document? = null
+
+    // Prefs
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_SPOILER_CHAPTERS_Title
+            title = SHOW_SPOILER_CHAPTERS_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SHOW_SPOILER_CHAPTERS, entry).commit()
+            }
+        }
+        screen.addPreference(chapterListPref)
+    }
 }

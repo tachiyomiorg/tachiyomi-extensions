@@ -2,16 +2,17 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: ManHuaGui'
+    extName = 'ManHuaGui'
     pkgNameSuffix = 'zh.manhuagui'
     extClass = '.Manhuagui'
-    extVersionCode = 1
+    extVersionCode = 8
     libVersion = '1.2'
 }
 
 dependencies {
-    compileOnly project(':duktape-stub')
-    compileOnly 'com.google.code.gson:gson:2.8.2'
+    compileOnly "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
+    compileOnly "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

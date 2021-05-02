@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.it.hentaifantasy
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.Filter
@@ -8,17 +9,18 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.regex.Pattern
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.regex.Pattern
 
+@Nsfw
 class HentaiFantasy : ParsedHttpSource() {
     override val name = "HentaiFantasy"
 
@@ -68,21 +70,22 @@ class HentaiFantasy : ParsedHttpSource() {
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var tags = mutableListOf<String>()
-        var paths = mutableListOf<String>()
+        val tags = mutableListOf<String>()
+        val paths = mutableListOf<String>()
         for (filter in if (filters.isEmpty()) getFilterList() else filters) {
             when (filter) {
-                is TagList -> filter.state
-                    .filter { it.state }
-                    .map {
-                        paths.add(it.name.toLowerCase().replace(" ", "_"))
-                        it.id.toString()
-                    }
-                    .forEach { tags.add(it) }
+                is TagList ->
+                    filter.state
+                        .filter { it.state }
+                        .map {
+                            paths.add(it.name.toLowerCase().replace(" ", "_"))
+                            it.id.toString()
+                        }
+                        .forEach { tags.add(it) }
             }
         }
 
-        var searchTags = tags.size > 0
+        val searchTags = tags.size > 0
         if (!searchTags && query.length < 3) {
             throw Exception("Inserisci almeno tre caratteri")
         }
@@ -97,7 +100,7 @@ class HentaiFantasy : ParsedHttpSource() {
             }
         }
 
-        var searchPath = if (!searchTags) {
+        val searchPath = if (!searchTags) {
             "search"
         } else if (paths.size == 1) {
             "tag/${paths[0]}/$page"
@@ -116,7 +119,7 @@ class HentaiFantasy : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        var genres = mutableListOf<String>()
+        val genres = mutableListOf<String>()
         document.select("div#tablelist > div.row").forEach { row ->
             when (row.select("div.cell > b").first().text().trim()) {
                 "Autore" -> manga.author = row.select("div.cell > a").text().trim()
@@ -149,17 +152,21 @@ class HentaiFantasy : ParsedHttpSource() {
     }
 
     private fun parseChapterDate(date: String): Long {
-        return if (date == "Oggi") {
-            Calendar.getInstance().timeInMillis
-        } else if (date == "Ieri") {
-            Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -1)
-            }.timeInMillis
-        } else {
-            try {
-                dateFormat.parse(date).time
-            } catch (e: ParseException) {
-                0L
+        return when (date) {
+            "Oggi" -> {
+                Calendar.getInstance().timeInMillis
+            }
+            "Ieri" -> {
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, -1)
+                }.timeInMillis
+            }
+            else -> {
+                try {
+                    dateFormat.parse(date)?.time ?: 0L
+                } catch (e: ParseException) {
+                    0L
+                }
             }
         }
     }
@@ -167,7 +174,7 @@ class HentaiFantasy : ParsedHttpSource() {
     override fun pageListRequest(chapter: SChapter) = POST(baseUrl + chapter.url, headers)
 
     override fun pageListParse(response: Response): List<Page> {
-        val body = response.body()!!.string()
+        val body = response.body!!.string()
         val pages = mutableListOf<Page>()
 
         val p = pagesUrlPattern
@@ -175,7 +182,7 @@ class HentaiFantasy : ParsedHttpSource() {
 
         var i = 0
         while (m.find()) {
-            pages.add(Page(i++, "", m.group(1).replace("""\\""", "")))
+            pages.add(Page(i++, "", m.group(1)?.replace("""\\""", "")))
         }
         return pages
     }

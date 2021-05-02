@@ -40,13 +40,14 @@ class GunnerkriggCourt : ParsedHttpSource() {
         return Observable.just(MangasPage(arrayListOf(manga).reversed(), false))
     }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.empty()
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> = Observable.just(MangasPage(emptyList(), false))
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return Observable.just(manga)
     }
 
-    override fun chapterListSelector() = """div.chapters option[value~=\d*]"""
+    override fun chapterListSelector() =
+        """div.chapters option[value~=\d*]"""
 
     override fun chapterListParse(response: Response): List<SChapter> {
         return super.chapterListParse(response).reversed()

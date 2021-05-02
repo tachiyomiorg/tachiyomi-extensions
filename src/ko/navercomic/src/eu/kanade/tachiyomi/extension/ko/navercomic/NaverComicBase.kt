@@ -8,14 +8,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() {
     override val lang: String = "ko"
@@ -55,7 +55,7 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         while (document.select(paginationNextPageSelector).isNotEmpty()) {
             document.select(paginationNextPageSelector).let {
                 document = client.newCall(chapterListRequest(it.attr("href"), nextPage)).execute().asJsoup()
-                document.select(chapterListSelector()).map { chapters.add(chapterFromElement(it)) }
+                document.select(chapterListSelector()).map { element -> chapters.add(chapterFromElement(element)) }
                 nextPage++
             }
         }
@@ -91,10 +91,11 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
 
     @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
-        return if (date.contains(":")) { Calendar.getInstance().timeInMillis
+        return if (date.contains(":")) {
+            Calendar.getInstance().timeInMillis
         } else {
             return try {
-                SimpleDateFormat("yy.MM.dd", Locale.KOREA).parse(date).time
+                SimpleDateFormat("yy.MM.dd", Locale.KOREA).parse(date)?.time ?: 0L
             } catch (e: Exception) {
                 e.printStackTrace()
                 0
@@ -118,12 +119,12 @@ abstract class NaverComicBase(protected val mType: String) : ParsedHttpSource() 
         val pages = mutableListOf<Page>()
         try {
             document.select(".wt_viewer img")
-                    .map {
-                        it.attr("src")
-                    }
-                    .forEach {
-                        pages.add(Page(pages.size, "", it))
-                    }
+                .map {
+                    it.attr("src")
+                }
+                .forEach {
+                    pages.add(Page(pages.size, "", it))
+                }
         } catch (e: Exception) {
             e.printStackTrace()
         }

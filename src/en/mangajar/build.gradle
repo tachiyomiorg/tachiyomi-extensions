@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaJar'
+    extName = 'MangaJar'
     pkgNameSuffix = 'en.mangajar'
     extClass = '.MangaJar'
-    extVersionCode = 1
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

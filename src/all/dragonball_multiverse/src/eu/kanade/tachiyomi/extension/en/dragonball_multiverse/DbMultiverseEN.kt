@@ -1,3 +1,3 @@
 package eu.kanade.tachiyomi.extension.all.dragonball_multiverse
 
-class DbMultiverseEN : DbMultiverse("en")
+class DbMultiverseEN : DbMultiverse("en", "en")

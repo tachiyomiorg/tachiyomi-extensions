@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaDenizi'
+    extName = 'MangaDenizi'
     pkgNameSuffix = 'tr.mangadenizi'
     extClass = '.MangaDenizi'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

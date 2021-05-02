@@ -20,7 +20,7 @@ class Mangaku : ParsedHttpSource() {
     override val baseUrl = "https://mangaku.in/"
     override val lang = "id"
     override val supportsLatest = true
-    var searchQuery = ""
+    private var searchQuery = ""
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(baseUrl + "daftar-komik-bahasa-indonesia/", headers)
@@ -142,7 +142,7 @@ class Mangaku : ParsedHttpSource() {
             mainUrl = "https://mangaku.co"
         }
         if (imageUrl.startsWith("//")) {
-            imageUrl = "https:" + imageUrl
+            imageUrl = "https:$imageUrl"
         } else if (imageUrl.startsWith("/")) {
             imageUrl = mainUrl + imageUrl
         }

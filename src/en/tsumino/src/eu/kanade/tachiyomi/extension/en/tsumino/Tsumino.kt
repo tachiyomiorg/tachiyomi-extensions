@@ -4,6 +4,7 @@ import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getArtists
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getChapter
 import eu.kanade.tachiyomi.extension.en.tsumino.TsuminoUtils.Companion.getCollection
@@ -27,6 +28,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 
+@Nsfw
 class Tsumino : ParsedHttpSource() {
 
     override val name = "Tsumino"
@@ -46,8 +48,8 @@ class Tsumino : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/Search/Operate/?PageNumber=$page&Sort=Newest")
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-    val allManga = mutableListOf<SManga>()
-        val body = response.body()!!.string()
+        val allManga = mutableListOf<SManga>()
+        val body = response.body!!.string()
         val jsonManga = gson.fromJson<JsonObject>(body)["data"].asJsonArray
         for (i in 0 until jsonManga.size()) {
             val manga = SManga.create()
@@ -153,6 +155,7 @@ class Tsumino : ParsedHttpSource() {
         manga.status = SManga.COMPLETED
         manga.thumbnail_url = infoElement.select("img").attr("src")
         manga.description = getDesc(document)
+        manga.genre = document.select("#Tag a").joinToString { it.text() }
 
         return manga
     }
@@ -205,23 +208,23 @@ class Tsumino : ParsedHttpSource() {
     data class AdvSearchEntry(val type: Int, val text: String, val exclude: Boolean)
 
     override fun getFilterList() = FilterList(
-            Filter.Header("Separate tags with commas (,)"),
-            Filter.Header("Prepend with dash (-) to exclude"),
-            TagFilter(),
-            CategoryFilter(),
-            CollectionFilter(),
-            GroupFilter(),
-            ArtistFilter(),
-            ParodyFilter(),
-            CharactersFilter(),
-            UploaderFilter(),
+        Filter.Header("Separate tags with commas (,)"),
+        Filter.Header("Prepend with dash (-) to exclude"),
+        TagFilter(),
+        CategoryFilter(),
+        CollectionFilter(),
+        GroupFilter(),
+        ArtistFilter(),
+        ParodyFilter(),
+        CharactersFilter(),
+        UploaderFilter(),
 
-            Filter.Separator(),
+        Filter.Separator(),
 
-            SortFilter(),
-            LengthFilter(),
-            MinimumRatingFilter(),
-            ExcludeParodiesFilter()
+        SortFilter(),
+        LengthFilter(),
+        MinimumRatingFilter(),
+        ExcludeParodiesFilter()
     )
 
     class TagFilter : AdvSearchEntryFilter("Tags", 1)

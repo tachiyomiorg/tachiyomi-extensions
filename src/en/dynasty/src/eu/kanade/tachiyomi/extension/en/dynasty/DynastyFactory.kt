@@ -8,9 +8,10 @@ class DynastyFactory : SourceFactory {
 }
 
 fun getAllDynasty() =
-        listOf(
-                DynastyAnthologies(),
-                DynastyChapters(),
-                DynastyDoujins(),
-                DynastyIssues(),
-                DynastySeries())
+    listOf(
+        DynastyAnthologies(),
+        DynastyChapters(),
+        DynastyDoujins(),
+        DynastyIssues(),
+        DynastySeries()
+    )

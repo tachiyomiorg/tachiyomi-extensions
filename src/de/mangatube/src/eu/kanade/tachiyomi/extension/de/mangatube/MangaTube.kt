@@ -14,10 +14,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,6 +22,10 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaTube : ParsedHttpSource() {
 
@@ -66,7 +66,7 @@ class MangaTube : ParsedHttpSource() {
     // for future reference: if adding filters, advanced search might use a different key
     private fun parseMangaFromJson(response: Response, hasNextPage: Boolean): MangasPage {
         var titleKey = "manga_title"
-        val mangas = gson.fromJson<JsonObject>(response.body()!!.string())
+        val mangas = gson.fromJson<JsonObject>(response.body!!.string())
             .let { it["success"] ?: it["suggestions"].also { titleKey = "value" } }
             .asJsonArray
             .map { json ->
@@ -156,7 +156,7 @@ class MangaTube : ParsedHttpSource() {
             }
             date_upload = element.select("p.chapter-date").text().let {
                 try {
-                    SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it.substringAfter(" ")).time
+                    SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it.substringAfter(" "))?.time ?: 0L
                 } catch (_: ParseException) {
                     0L
                 }

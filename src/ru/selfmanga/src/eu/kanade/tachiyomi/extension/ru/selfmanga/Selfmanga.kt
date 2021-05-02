@@ -7,16 +7,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.regex.Pattern
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.regex.Pattern
 
 class Selfmanga : ParsedHttpSource() {
 
@@ -33,10 +33,10 @@ class Selfmanga : ParsedHttpSource() {
     override fun latestUpdatesSelector() = "div.tile"
 
     override fun popularMangaRequest(page: Int): Request =
-            GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-            GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -49,14 +49,14 @@ class Selfmanga : ParsedHttpSource() {
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga =
-            popularMangaFromElement(element)
+        popularMangaFromElement(element)
 
     override fun popularMangaNextPageSelector() = "a.nextLink"
 
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search/advanced")!!.newBuilder()
+        val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
@@ -71,7 +71,7 @@ class Selfmanga : ParsedHttpSource() {
                 }
             }
         }
-        if (!query.isEmpty()) {
+        if (query.isNotEmpty()) {
             url.addQueryParameter("q", query)
         }
         return GET(url.toString().replace("=%3D", "="), headers)
@@ -118,9 +118,9 @@ class Selfmanga : ParsedHttpSource() {
         }
         chapter.date_upload = element.select("td.hidden-xxs").last()?.text()?.let {
             try {
-                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it).time
+                SimpleDateFormat("dd/MM/yy", Locale.US).parse(it)?.time ?: 0L
             } catch (e: ParseException) {
-                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it).time
+                SimpleDateFormat("dd.MM.yy", Locale.US).parse(it)?.time ?: 0L
             }
         } ?: 0
         return chapter
@@ -145,9 +145,9 @@ class Selfmanga : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
+        val html = response.body!!.string()
         val beginIndex = html.indexOf("rm_h.init( [")
-        val endIndex = html.indexOf("], 0, false);", beginIndex)
+        val endIndex = html.indexOf(");", beginIndex)
         val trimmedHtml = html.substring(beginIndex, endIndex)
 
         val p = Pattern.compile("'.*?','.*?',\".*?\"")
@@ -196,53 +196,53 @@ class Selfmanga : ParsedHttpSource() {
     *  on https://selfmanga.ru/search/advanced
     */
     override fun getFilterList() = FilterList(
-            Category(getCategoryList()),
-            GenreList(getGenreList())
+        Category(getCategoryList()),
+        GenreList(getGenreList())
     )
 
     private fun getCategoryList() = listOf(
-            Genre("Артбук", "el_5894"),
-            Genre("Веб", "el_2160"),
-            Genre("Журнал", "el_4983"),
-            Genre("Ранобэ", "el_5215"),
-            Genre("Сборник", "el_2157")
+        Genre("Артбук", "el_5894"),
+        Genre("Веб", "el_2160"),
+        Genre("Журнал", "el_4983"),
+        Genre("Ранобэ", "el_5215"),
+        Genre("Сборник", "el_2157")
     )
 
     private fun getGenreList() = listOf(
-            Genre("боевик", "el_2155"),
-            Genre("боевые искусства", "el_2143"),
-            Genre("вампиры", "el_2148"),
-            Genre("гарем", "el_2142"),
-            Genre("гендерная интрига", "el_2156"),
-            Genre("героическое фэнтези", "el_2146"),
-            Genre("детектив", "el_2152"),
-            Genre("дзёсэй", "el_2158"),
-            Genre("додзинси", "el_2141"),
-            Genre("драма", "el_2118"),
-            Genre("ёнкома", "el_2161"),
-            Genre("история", "el_2119"),
-            Genre("комедия", "el_2136"),
-            Genre("махо-сёдзё", "el_2147"),
-            Genre("мистика", "el_2132"),
-            Genre("научная фантастика", "el_2133"),
-            Genre("повседневность", "el_2135"),
-            Genre("постапокалиптика", "el_2151"),
-            Genre("приключения", "el_2130"),
-            Genre("психология", "el_2144"),
-            Genre("романтика", "el_2121"),
-            Genre("сверхъестественное", "el_2159"),
-            Genre("сёдзё", "el_2122"),
-            Genre("сёдзё-ай", "el_2128"),
-            Genre("сёнэн", "el_2134"),
-            Genre("сёнэн-ай", "el_2139"),
-            Genre("спорт", "el_2129"),
-            Genre("сэйнэн", "el_5838"),
-            Genre("трагедия", "el_2153"),
-            Genre("триллер", "el_2150"),
-            Genre("ужасы", "el_2125"),
-            Genre("фантастика", "el_2140"),
-            Genre("фэнтези", "el_2131"),
-            Genre("школа", "el_2127"),
-            Genre("этти", "el_4982")
+        Genre("боевик", "el_2155"),
+        Genre("боевые искусства", "el_2143"),
+        Genre("вампиры", "el_2148"),
+        Genre("гарем", "el_2142"),
+        Genre("гендерная интрига", "el_2156"),
+        Genre("героическое фэнтези", "el_2146"),
+        Genre("детектив", "el_2152"),
+        Genre("дзёсэй", "el_2158"),
+        Genre("додзинси", "el_2141"),
+        Genre("драма", "el_2118"),
+        Genre("ёнкома", "el_2161"),
+        Genre("история", "el_2119"),
+        Genre("комедия", "el_2136"),
+        Genre("махо-сёдзё", "el_2147"),
+        Genre("мистика", "el_2132"),
+        Genre("научная фантастика", "el_2133"),
+        Genre("повседневность", "el_2135"),
+        Genre("постапокалиптика", "el_2151"),
+        Genre("приключения", "el_2130"),
+        Genre("психология", "el_2144"),
+        Genre("романтика", "el_2121"),
+        Genre("сверхъестественное", "el_2159"),
+        Genre("сёдзё", "el_2122"),
+        Genre("сёдзё-ай", "el_2128"),
+        Genre("сёнэн", "el_2134"),
+        Genre("сёнэн-ай", "el_2139"),
+        Genre("спорт", "el_2129"),
+        Genre("сэйнэн", "el_5838"),
+        Genre("трагедия", "el_2153"),
+        Genre("триллер", "el_2150"),
+        Genre("ужасы", "el_2125"),
+        Genre("фантастика", "el_2140"),
+        Genre("фэнтези", "el_2131"),
+        Genre("школа", "el_2127"),
+        Genre("этти", "el_4982")
     )
 }

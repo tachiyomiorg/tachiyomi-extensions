@@ -7,12 +7,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class SwordsComic : HttpSource() {
 
@@ -78,7 +78,7 @@ class SwordsComic : HttpSource() {
                     name = element.select("strong").text()
                     setUrlWithoutDomain(element.attr("href"))
                     date_upload = element.select("small").text()
-                        .let { SimpleDateFormat("dd MMM yyyy", Locale.US).parse(it).time }
+                        .let { SimpleDateFormat("dd MMM yyyy", Locale.US).parse(it)?.time ?: 0L }
                 }
             }
             .reversed()

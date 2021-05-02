@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: NOISE Manga'
+    extName = 'NOISE Manga'
     pkgNameSuffix = 'all.noisemanga'
     extClass = '.NoiseMangaFactory'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

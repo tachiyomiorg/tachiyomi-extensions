@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'WeComics'
+    pkgNameSuffix = 'en.wecomics'
+    extClass = '.WeComics'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+dependencies {
+    implementation 'org.xxtea:xxtea-java:1.0.5'
+}
+
+apply from: "$rootDir/common.gradle"

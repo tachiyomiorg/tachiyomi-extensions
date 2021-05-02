@@ -13,13 +13,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class BH3 : ParsedHttpSource() {
 
@@ -66,7 +66,7 @@ class BH3 : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsondata = response.body()!!.string()
+        val jsondata = response.body!!.string()
         val json = JsonParser().parse(jsondata).asJsonArray
         val chapters = mutableListOf<SChapter>()
         json.forEach {
@@ -83,7 +83,7 @@ class BH3 : ParsedHttpSource() {
     }
 
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(date).time
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(date)?.time ?: 0L
     }
 
     override fun mangaDetailsParse(document: Document): SManga {

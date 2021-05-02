@@ -7,15 +7,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 
 class Neumanga : ParsedHttpSource() {
 
@@ -44,8 +44,8 @@ class Neumanga : ParsedHttpSource() {
     }
 
     override val client = super.client.newBuilder()
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
-            .build()
+        .sslSocketFactory(sslContext.socketFactory, trustManager)
+        .build()
 
     override fun popularMangaSelector() = "div#gov-result div.bolx"
 
@@ -81,14 +81,14 @@ class Neumanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "div#gov-result ul.pagination li.active + li a"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/advanced_search")!!.newBuilder()
-                .addQueryParameter("advpage", page.toString())
-                .addQueryParameter("name_search_mode", "contain")
-                .addQueryParameter("artist_search_mode", "contain")
-                .addQueryParameter("author_search_mode", "contain")
-                .addQueryParameter("year_search_mode", "on")
-                .addQueryParameter("rating_search_mode", "is")
-                .addQueryParameter("name_search_query", query)
+        val url = "$baseUrl/advanced_search".toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("advpage", page.toString())
+            .addQueryParameter("name_search_mode", "contain")
+            .addQueryParameter("artist_search_mode", "contain")
+            .addQueryParameter("author_search_mode", "contain")
+            .addQueryParameter("year_search_mode", "on")
+            .addQueryParameter("rating_search_mode", "is")
+            .addQueryParameter("name_search_query", query)
 
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
@@ -127,7 +127,7 @@ class Neumanga : ParsedHttpSource() {
         val manga = SManga.create()
         manga.author = mangaInformationWrapper.select("span a[href*=author_search_mode]").first().text()
         manga.artist = mangaInformationWrapper.select("span a[href*=artist_search_mode]").first().text()
-        manga.genre = mangaInformationWrapper.select("a[href*=genre]").map { it.text() }.joinToString()
+        manga.genre = mangaInformationWrapper.select("a[href*=genre]").joinToString { it.text() }
         manga.thumbnail_url = mangaInformationWrapper.select("img.imagemg").first().attr("src")
         manga.description = document.select(".summary").first().textNodes()[1].toString()
         manga.status = parseStatus(mangaInformationWrapper.select("span a[href*=manga_status]").first().text())

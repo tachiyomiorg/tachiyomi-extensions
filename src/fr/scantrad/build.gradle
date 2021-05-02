@@ -2,11 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: Scantrad'
+    extName = 'Scantrad'
     pkgNameSuffix = 'fr.scantrad'
     extClass = '.Scantrad'
-    extVersionCode = 5
+    extVersionCode = 17
     libVersion = '1.2'
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

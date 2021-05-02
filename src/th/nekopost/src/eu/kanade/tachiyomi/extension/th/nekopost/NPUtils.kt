@@ -1,9 +1,9 @@
 package eu.kanade.tachiyomi.extension.th.nekopost
 
+import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Locale
-import org.jsoup.nodes.Element
 
 class NPArrayList<E>(c: Collection<E>, val mangaList: List<Element>) : ArrayList<E>(c) {
     override fun isEmpty(): Boolean = mangaList.isEmpty()
@@ -23,7 +23,7 @@ object NPUtils {
         return urlWithoutDomain
     }
 
-    fun convertDateStringToEpoch(dateStr: String, format: String = "yyyy-MM-dd"): Long = SimpleDateFormat(format, Locale("th")).parse(dateStr).time
+    fun convertDateStringToEpoch(dateStr: String, format: String = "yyyy-MM-dd"): Long = SimpleDateFormat(format, Locale("th")).parse(dateStr)?.time ?: 0L
 
     fun getSearchQuery(keyword: String = "", genreList: Array<String>, statusList: Array<String>): String {
         val keywordQuery = "ip_keyword=$keyword"

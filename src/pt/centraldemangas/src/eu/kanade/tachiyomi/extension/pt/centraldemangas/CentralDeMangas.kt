@@ -5,6 +5,7 @@ import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonArray
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -13,10 +14,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -24,6 +21,10 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class CentralDeMangas : ParsedHttpSource() {
 
@@ -38,13 +39,12 @@ class CentralDeMangas : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    // Sometimes the site is very slow.
-    override val client: OkHttpClient =
-        network.client.newBuilder()
-            .connectTimeout(3, TimeUnit.MINUTES)
-            .readTimeout(3, TimeUnit.MINUTES)
-            .writeTimeout(3, TimeUnit.MINUTES)
-            .build()
+    override val client: OkHttpClient = network.client.newBuilder()
+        .connectTimeout(3, TimeUnit.MINUTES)
+        .readTimeout(3, TimeUnit.MINUTES)
+        .writeTimeout(3, TimeUnit.MINUTES)
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", USER_AGENT)
@@ -79,10 +79,10 @@ class CentralDeMangas : ParsedHttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return client.newCall(searchMangaRequest(page, query, filters))
-                .asObservableSuccess()
-                .map { response ->
-                    searchMangaParse(response, query)
-                }
+            .asObservableSuccess()
+            .map { response ->
+                searchMangaParse(response, query)
+            }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -117,10 +117,10 @@ class CentralDeMangas : ParsedHttpSource() {
         author = elementList.select("div.item:eq(3) div.content div.description").text()
         artist = elementList.select("div.item:eq(2) div.content div.description").text()
         genre = elementList.select("div.item:eq(4) div.content div.description a")
-                .joinToString { it.text() }
+            .joinToString { it.text() }
 
         status = elementList.select("div.item:eq(6) div.content div.description")
-                .text().orEmpty().let { parseStatus(it) }
+            .text().orEmpty().let { parseStatus(it) }
 
         description = elementList.select("div.item:eq(0) div.content div.description").text()
         thumbnail_url = elementList.select("div.item:eq(0) div.content div.description img")
@@ -153,7 +153,7 @@ class CentralDeMangas : ParsedHttpSource() {
 
     private fun parseChapterDate(date: String): Long {
         return try {
-            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date).time
+            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(date)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
@@ -192,17 +192,16 @@ class CentralDeMangas : ParsedHttpSource() {
 
     private fun getCoverUrl(slug: String): String = "$COVER_CDN/150x200/$slug.jpg"
 
-    private fun Response.asJsonArray(): JsonArray = JSON_PARSER.parse(body()!!.string()).array
+    private fun Response.asJsonArray(): JsonArray = JsonParser.parseString(body!!.string()).array
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
         private const val COVER_CDN = "http://capas.centraldemangas.com.br"
 
         private const val SCRIPT_URL_BEGIN = "var urlSulfix = '"
         private const val SCRIPT_URL_END = "';"
         private const val SCRIPT_PAGES_BEGIN = "var pages = ["
         private const val SCRIPT_PAGES_END = ",];"
-
-        val JSON_PARSER by lazy { JsonParser() }
     }
 }

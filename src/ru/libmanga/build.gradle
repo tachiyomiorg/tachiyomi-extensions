@@ -2,18 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    appName = 'Tachiyomi: MangaLib'
+    extName = 'MangaLib'
     pkgNameSuffix = 'ru.libmanga'
     extClass = '.LibManga'
-    extVersionCode = 15
+    extVersionCode = 39
     libVersion = '1.2'
-}
-
-dependencies {
-    compileOnly project(':preference-stub')
-    compileOnly 'com.google.code.gson:gson:2.8.2'
-    compileOnly 'com.github.salomonbrys.kotson:kotson:2.5.0'
-    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
 }
 
 apply from: "$rootDir/common.gradle"

@@ -1,18 +1,28 @@
 package eu.kanade.tachiyomi.extension.es.tmohentai
 
+import android.app.Application
+import android.content.SharedPreferences
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class TMOHentai : ParsedHttpSource() {
+@Nsfw
+class TMOHentai : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "TMOHentai"
 
@@ -21,6 +31,10 @@ class TMOHentai : ParsedHttpSource() {
     override val lang = "es"
 
     override val supportsLatest = true
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/section/all?view=list&page=$page&order=popularity&order-dir=desc&search[searchText]=&search[searchBy]=name&type=all", headers)
 
@@ -48,6 +62,7 @@ class TMOHentai : ParsedHttpSource() {
         val parsedInformation = document.select("div.row > div.panel.panel-primary").text()
         val authorAndArtist = parsedInformation.substringAfter("Groups").substringBefore("Magazines").trim()
 
+        title = document.select("h3.truncate").text()
         thumbnail_url = document.select("img.content-thumbnail-cover").attr("src")
         author = authorAndArtist
         artist = authorAndArtist
@@ -65,35 +80,63 @@ class TMOHentai : ParsedHttpSource() {
 
         name = element.select("h3.truncate").text()
         scanlator = parsedInformation.substringAfter("By").substringBefore("Language").trim()
-        setUrlWithoutDomain(element.select("a.pull-right.btn.btn-primary").attr("href"))
+
+        var currentUrl = element.select("a.pull-right.btn.btn-primary").attr("href")
+
+        if (currentUrl.contains("/1")) {
+            currentUrl = currentUrl.substringBeforeLast("/")
+        }
+
+        setUrlWithoutDomain(currentUrl)
         // date_upload = no date in the web
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(baseUrl + chapter.url.substringBefore("/paginated") + "/cascade", headers) // "/cascade" to get all images
+    // "/cascade" to get all images
+    override fun pageListRequest(chapter: SChapter): Request {
+        val currentUrl = chapter.url
+        val newUrl = if (getPageMethodPref() == "cascade" && currentUrl.contains("paginated")) {
+            currentUrl.substringBefore("paginated") + "cascade"
+        } else if (getPageMethodPref() == "paginated" && currentUrl.contains("cascade")) {
+            currentUrl.substringBefore("cascade") + "paginated"
+        } else currentUrl
+
+        return GET("$baseUrl$newUrl", headers)
+    }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select("div#content-images > div.row > div.col-xs-12.text-center > img.content-image")?.forEach {
-            add(Page(size, "", baseUrl + it.attr("data-original")))
+        if (getPageMethodPref() == "cascade") {
+            document.select("div#content-images img.content-image")?.forEach {
+                add(Page(size, "", it.attr("data-original")))
+            }
+        } else {
+            val pageList = document.select("select#select-page").first().select("option").map { it.attr("value").toInt() }
+            val url = document.baseUri()
+
+            pageList.forEach {
+                add(Page(it, "$url/$it"))
+            }
         }
     }
 
-    override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document) = document.select("div#content-images img.content-image").attr("data-original")
+
+    override fun imageRequest(page: Page) = GET("$baseUrl${page.imageUrl!!}", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/section/all?view=list")!!.newBuilder()
+        val url = "$baseUrl/section/all?view=list".toHttpUrlOrNull()!!.newBuilder()
 
         url.addQueryParameter("search[searchText]", query)
         url.addQueryParameter("page", page.toString())
 
-        filters.forEach { filter ->
+        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is Types -> {
                     url.addQueryParameter("type", filter.toUriPart())
                 }
                 is GenreList -> {
                     filter.state
-                            .filter { genre -> genre.state }
-                            .forEach { genre -> url.addQueryParameter("genders[]", genre.id) }
+                        .filter { genre -> genre.state }
+                        .forEach { genre -> url.addQueryParameter("genders[]", genre.id) }
                 }
                 is FilterBy -> {
                     url.addQueryParameter("search[searchBy]", filter.toUriPart())
@@ -119,6 +162,28 @@ class TMOHentai : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/$PREFIX_CONTENTS/$id", headers)
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_ID_SEARCH)
+
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/$PREFIX_CONTENTS/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
+
     private class Genre(name: String, val id: String) : Filter.CheckBox(name)
 
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Géneros", genres)
@@ -133,25 +198,31 @@ class TMOHentai : ParsedHttpSource() {
     )
 
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-            Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
     }
 
-    private class Types : UriPartFilter("Filtrar por tipo", arrayOf(
+    private class Types : UriPartFilter(
+        "Filtrar por tipo",
+        arrayOf(
             Pair("Ver todos", "all"),
             Pair("Manga", "hentai"),
             Pair("Light Hentai", "light-hentai"),
             Pair("Doujinshi", "doujinshi"),
             Pair("One-shot", "one-shot"),
             Pair("Other", "otro")
-    ))
+        )
+    )
 
-    private class FilterBy : UriPartFilter("Campo de orden", arrayOf(
-        Pair("Nombre", "name"),
-        Pair("Artista", "artist"),
-        Pair("Revista", "magazine"),
-        Pair("Tag", "tag")
-    ))
+    private class FilterBy : UriPartFilter(
+        "Campo de orden",
+        arrayOf(
+            Pair("Nombre", "name"),
+            Pair("Artista", "artist"),
+            Pair("Revista", "magazine"),
+            Pair("Tag", "tag")
+        )
+    )
 
     class SortBy : Filter.Sort(
         "Ordenar por",
@@ -159,59 +230,98 @@ class TMOHentai : ParsedHttpSource() {
         Selection(2, false)
     )
 
-    // Array.from(document.querySelectorAll('#advancedSearch .list-group .list-group-item'))
-    // .map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
-    // https://tmohentai.com/section/hentai
+    /**
+     * Last check: 17/02/2021
+     * https://tmohentai.com/section/hentai
+     *
+     * Array.from(document.querySelectorAll('#advancedSearch .list-group .list-group-item'))
+     * .map(a => `Genre("${a.querySelector('span').innerText.replace(' ', '')}", "${a.querySelector('input').value}")`).join(',\n')
+     */
     private fun getGenreList() = listOf(
-            Genre("Romance", "1"),
-            Genre("Fantasy", "2"),
-            Genre("Comedy", "3"),
-            Genre("Parody", "4"),
-            Genre("Student", "5"),
-            Genre("Adventure", "6"),
-            Genre("Milf", "7"),
-            Genre("Orgy", "8"),
-            Genre("Big Breasts", "9"),
-            Genre("Bondage", "10"),
-            Genre("Tentacles", "11"),
-            Genre("Incest", "12"),
-            Genre("Ahegao", "13"),
-            Genre("Bestiality", "14"),
-            Genre("Futanari", "15"),
-            Genre("Rape", "16"),
-            Genre("Monsters", "17"),
-            Genre("Pregnant", "18"),
-            Genre("Small Breast", "19"),
-            Genre("Bukkake", "20"),
-            Genre("Femdom", "21"),
-            Genre("Fetish", "22"),
-            Genre("Forced", "23"),
-            Genre("3D", "24"),
-            Genre("Furry", "25"),
-            Genre("Adultery", "26"),
-            Genre("Anal", "27"),
-            Genre("FootJob", "28"),
-            Genre("BlowJob", "29"),
-            Genre("Toys", "30"),
-            Genre("Vanilla", "31"),
-            Genre("Colour", "32"),
-            Genre("Uncensored", "33"),
-            Genre("Netorare", "34"),
-            Genre("Virgin", "35"),
-            Genre("Cheating", "36"),
-            Genre("Harem", "37"),
-            Genre("Horror", "38"),
-            Genre("Lolicon", "39"),
-            Genre("Mature", "40"),
-            Genre("Nympho", "41"),
-            Genre("Public Sex", "42"),
-            Genre("Sport", "43"),
-            Genre("Domination", "44"),
-            Genre("Tsundere", "45"),
-            Genre("Yandere", "46")
+        Genre("Romance", "1"),
+        Genre("Fantasy", "2"),
+        Genre("Comedy", "3"),
+        Genre("Parody", "4"),
+        Genre("Student", "5"),
+        Genre("Adventure", "6"),
+        Genre("Milf", "7"),
+        Genre("Orgy", "8"),
+        Genre("Big Breasts", "9"),
+        Genre("Bondage", "10"),
+        Genre("Tentacles", "11"),
+        Genre("Incest", "12"),
+        Genre("Ahegao", "13"),
+        Genre("Bestiality", "14"),
+        Genre("Futanari", "15"),
+        Genre("Rape", "16"),
+        Genre("Monsters", "17"),
+        Genre("Pregnant", "18"),
+        Genre("Small Breast", "19"),
+        Genre("Bukkake", "20"),
+        Genre("Femdom", "21"),
+        Genre("Fetish", "22"),
+        Genre("Forced", "23"),
+        Genre("3D", "24"),
+        Genre("Furry", "25"),
+        Genre("Adultery", "26"),
+        Genre("Anal", "27"),
+        Genre("FootJob", "28"),
+        Genre("BlowJob", "29"),
+        Genre("Toys", "30"),
+        Genre("Vanilla", "31"),
+        Genre("Colour", "32"),
+        Genre("Uncensored", "33"),
+        Genre("Netorare", "34"),
+        Genre("Virgin", "35"),
+        Genre("Cheating", "36"),
+        Genre("Harem", "37"),
+        Genre("Horror", "38"),
+        Genre("Lolicon", "39"),
+        Genre("Mature", "40"),
+        Genre("Nympho", "41"),
+        Genre("Public Sex", "42"),
+        Genre("Sport", "43"),
+        Genre("Domination", "44"),
+        Genre("Tsundere", "45"),
+        Genre("Yandere", "46")
     )
 
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val pageMethodPref = androidx.preference.ListPreference(screen.context).apply {
+            key = PAGE_METHOD_PREF
+            title = PAGE_METHOD_PREF_TITLE
+            entries = arrayOf("Cascada", "Páginado")
+            entryValues = arrayOf("cascade", "paginated")
+            summary = PAGE_METHOD_PREF_SUMMARY
+            setDefaultValue(PAGE_METHOD_PREF_DEFAULT_VALUE)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(PAGE_METHOD_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        screen.addPreference(pageMethodPref)
+    }
+
+    private fun getPageMethodPref() = preferences.getString(PAGE_METHOD_PREF, PAGE_METHOD_PREF_DEFAULT_VALUE)
+
     companion object {
+        private const val PAGE_METHOD_PREF = "pageMethodPref"
+        private const val PAGE_METHOD_PREF_TITLE = "Método de descarga de imágenes"
+        private const val PAGE_METHOD_PREF_SUMMARY = "Puede corregir errores al cargar las imágenes.\nConfiguración actual: %s"
+        private const val PAGE_METHOD_PREF_CASCADE = "cascade"
+        private const val PAGE_METHOD_PREF_PAGINATED = "paginated"
+        private const val PAGE_METHOD_PREF_DEFAULT_VALUE = PAGE_METHOD_PREF_CASCADE
+
+        const val PREFIX_CONTENTS = "contents"
+        const val PREFIX_ID_SEARCH = "id:"
+
         private val SORTABLES = listOf(
             Pair("Alfabético", "alphabetic"),
             Pair("Creación", "publication_date"),

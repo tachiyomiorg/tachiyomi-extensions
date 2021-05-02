@@ -14,11 +14,11 @@ class MangaToonFactory : SourceFactory {
         TH()
     )
 
-class ZH : MangaToon("zh", "cn")
-class EN : MangaToon("en", "en")
-class ID : MangaToon("id", "id")
-class VI : MangaToon("vi", "vi")
-class ES : MangaToon("es", "es")
-class PT : MangaToon("pt", "pt")
-class TH : MangaToon("th", "th")
+    class ZH : MangaToon("zh", "cn")
+    class EN : MangaToon("en", "en")
+    class ID : MangaToon("id", "id")
+    class VI : MangaToon("vi", "vi")
+    class ES : MangaToon("es", "es")
+    class PT : MangaToon("pt", "pt")
+    class TH : MangaToon("th", "th")
 }
