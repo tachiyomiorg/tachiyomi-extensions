@@ -237,7 +237,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("WeScans", "https://wescans.xyz", "en"),
             SingleLang("WoopRead", "https://woopread.com", "en"),
             SingleLang("WuxiaWorld", "https://wuxiaworld.site", "en"),
-            SingleLang("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR", isNsfw = true, overrideVersionCode = 1),
+            SingleLang("Yaoi Toshokan", "https://yaoitoshokan.net", "pt-BR", isNsfw = true, overrideVersionCode = 2),
             SingleLang("Yokai Jump", "https://yokaijump.fr", "fr"),
             SingleLang("Yuri Verso", "https://yuri.live", "pt-BR"),
             SingleLang("Zin Translator", "https://zinmanga.com", "en"),
