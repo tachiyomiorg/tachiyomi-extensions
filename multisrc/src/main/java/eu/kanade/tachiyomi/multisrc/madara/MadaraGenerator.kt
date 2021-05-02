@@ -262,7 +262,12 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br", "pt-BR"),
             SingleLang("Wonderland", "https://landwebtoons.site", "pt-BR"),
             SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
-            SingleLang("Wakamics", "https://wakamics.net", "en")
+            SingleLang("Wakamics", "https://wakamics.net", "en"),
+            SingleLang("Manhwa18org", "https://manhwa18.org", "en"),
+            SingleLang("PaeanScans", "https://paeanscans.com", "en"),
+            SingleLang("ManhwaAe", "https://www.manhwa.ae", "ar"),
+            SingleLang("MangaFenix", "https://manga-fenix.com", "es"),
+            SingleLang("Piedpiperfb", "https://piedpiperfb.com", "tr")
     )
 
     companion object {
