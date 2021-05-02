@@ -303,12 +303,12 @@ abstract class MMRCMS(
         val detailArtist = setOf("artist(s)", "artiste(s)", "sanatçi(lar)", "artista(s)", "artist(s)/ilustrator", "الرسام", "seniman", "rysownik/rysownicy")
         val detailGenre = setOf("categories", "categorías", "catégories", "ジャンル", "kategoriler", "categorias", "kategorie", "التصنيفات", "жанр", "kategori", "tagi")
         val detailStatus = setOf("status", "statut", "estado", "状態", "durum", "الحالة", "статус")
-        val detailStatusComplete = setOf("complete", "مكتملة", "complet", "completo", "zakończone")
-        val detailStatusOngoing = setOf("ongoing", "مستمرة", "en cours", "em lançamento", "prace w toku", "ativo")
+        val detailStatusComplete = setOf("complete", "مكتملة", "complet", "completo", "zakończone", "concluído")
+        val detailStatusOngoing = setOf("ongoing", "مستمرة", "en cours", "em lançamento", "prace w toku", "ativo", "em andamento")
         val detailDescription = setOf("description", "resumen")
 
         for (element in document.select(".row .dl-horizontal dt")) {
-            when (element.text().trim().toLowerCase()) {
+            when (element.text().trim().toLowerCase().removeSuffix(":")) {
                 in detailAuthor -> author = element.nextElementSibling().text()
                 in detailArtist -> artist = element.nextElementSibling().text()
                 in detailGenre -> genre = element.nextElementSibling().select("a").joinToString {
