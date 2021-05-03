@@ -120,7 +120,7 @@ class TaoSect : ParsedHttpSource() {
         genre = header.select("table.tabela-projeto tr:eq(10) a").joinToString { it.text() }
         status = header.select("table.tabela-projeto tr:eq(4) td:eq(1)")!!.text().toStatus()
         description = header.select("table.tabela-projeto tr:eq(9) p")!!.text()
-        thumbnail_url = header.select("div.imagens-projeto img[alt]").first()!!.attr("src")
+        thumbnail_url = header.select("div.imagens-projeto img[alt]").first()!!.attr("data-src")
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -263,7 +263,7 @@ class TaoSect : ParsedHttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH) }
 

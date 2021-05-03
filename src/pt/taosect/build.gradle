@@ -5,7 +5,7 @@ ext {
     extName = 'Tao Sect'
     pkgNameSuffix = 'pt.taosect'
     extClass = '.TaoSect'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

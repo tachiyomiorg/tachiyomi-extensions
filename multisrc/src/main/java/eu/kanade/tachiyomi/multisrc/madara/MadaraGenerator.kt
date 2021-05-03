@@ -237,7 +237,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("WeScans", "https://wescans.xyz", "en"),
             SingleLang("WoopRead", "https://woopread.com", "en"),
             SingleLang("WuxiaWorld", "https://wuxiaworld.site", "en"),
-            SingleLang("Yaoi Toshokan", "https://yaoitoshokan.com.br", "pt-BR", isNsfw = true, overrideVersionCode = 1),
+            SingleLang("Yaoi Toshokan", "https://yaoitoshokan.net", "pt-BR", isNsfw = true, overrideVersionCode = 2),
             SingleLang("Yokai Jump", "https://yokaijump.fr", "fr"),
             SingleLang("Yuri Verso", "https://yuri.live", "pt-BR"),
             SingleLang("Zin Translator", "https://zinmanga.com", "en"),
@@ -262,7 +262,11 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br", "pt-BR"),
             SingleLang("Wonderland", "https://landwebtoons.site", "pt-BR"),
             SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
-            SingleLang("Wakamics", "https://wakamics.net", "en")
+            SingleLang("Wakamics", "https://wakamics.net", "en"),
+            SingleLang("Traducciones Amistosas", "https://nartag.com", "es"),
+            SingleLang("MangaYami", "https://www.mangayami.club", "en", overrideVersionCode = 1),
+            SingleLang("Manga Fenix", "https://manga-fenix.com", "es"),
+            SingleLang("Manga Mitsu", "https://mangamitsu.com", "en", isNsfw = true, overrideVersionCode = 1),
     )
 
     companion object {

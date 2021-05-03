@@ -2,9 +2,13 @@ package eu.kanade.tachiyomi.multisrc.mmrcms
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Base64
 import com.github.salomonbrys.kotson.array
+import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -21,27 +25,21 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLDecoder
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.bool
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import android.util.Base64
-import java.net.URLDecoder
 
-abstract class MMRCMS (
+abstract class MMRCMS(
     override val name: String,
     override val baseUrl: String,
     override val lang: String,
     private val sourceInfo: String = "",
 ) : HttpSource() {
-    open val jsonData = if(sourceInfo == "") {
+    open val jsonData = if (sourceInfo == "") {
         SourceData.giveMetaData(baseUrl)
-    } else{
+    } else {
         sourceInfo
     }
     /**
@@ -80,7 +78,7 @@ abstract class MMRCMS (
     override val supportsLatest = jsonObject["supports_latest"].bool
     open val itemUrl = jsonObject["item_url"].string
     open val categoryMappings = mapToPairs(jsonObject["categories"].array)
-    open var tagMappings =  if (jsonObject["tags"].isJsonArray) {
+    open var tagMappings = if (jsonObject["tags"].isJsonArray) {
         mapToPairs(jsonObject["tags"].asJsonArray)
     } else {
         emptyList<Pair<String, String>>()
@@ -102,11 +100,8 @@ abstract class MMRCMS (
         it["id"].string to it["name"].string
     }
 
-
-
     private val itemUrlPath = Uri.parse(itemUrl).pathSegments.firstOrNull()
     private val parsedBaseUrl = Uri.parse(baseUrl)
-
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
@@ -308,12 +303,12 @@ abstract class MMRCMS (
         val detailArtist = setOf("artist(s)", "artiste(s)", "sanatçi(lar)", "artista(s)", "artist(s)/ilustrator", "الرسام", "seniman", "rysownik/rysownicy")
         val detailGenre = setOf("categories", "categorías", "catégories", "ジャンル", "kategoriler", "categorias", "kategorie", "التصنيفات", "жанр", "kategori", "tagi")
         val detailStatus = setOf("status", "statut", "estado", "状態", "durum", "الحالة", "статус")
-        val detailStatusComplete = setOf("complete", "مكتملة", "complet", "completo", "zakończone")
-        val detailStatusOngoing = setOf("ongoing", "مستمرة", "en cours", "em lançamento", "prace w toku")
+        val detailStatusComplete = setOf("complete", "مكتملة", "complet", "completo", "zakończone", "concluído")
+        val detailStatusOngoing = setOf("ongoing", "مستمرة", "en cours", "em lançamento", "prace w toku", "ativo", "em andamento")
         val detailDescription = setOf("description", "resumen")
 
         for (element in document.select(".row .dl-horizontal dt")) {
-            when (element.text().trim().toLowerCase()) {
+            when (element.text().trim().toLowerCase().removeSuffix(":")) {
                 in detailAuthor -> author = element.nextElementSibling().text()
                 in detailArtist -> artist = element.nextElementSibling().text()
                 in detailGenre -> genre = element.nextElementSibling().select("a").joinToString {
@@ -359,7 +354,7 @@ abstract class MMRCMS (
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each chapter.
      */
-    private fun chapterListSelector() = "ul[class^=chapters] > li:not(.btn), table.table tr"
+    protected open fun chapterListSelector() = "ul[class^=chapters] > li:not(.btn), table.table tr"
     // Some websites add characters after "chapters" thus the need of checking classes that starts with "chapters"
 
     /**
@@ -432,9 +427,8 @@ abstract class MMRCMS (
                 url = URLDecoder.decode(url, "UTF-8")
             }
 
-            Page(i, "", url)
+            Page(i, response.request.url.toString(), url)
         }
-
 
     override fun imageUrlParse(response: Response) = throw UnsupportedOperationException("Unused method called!")
 
@@ -469,7 +463,7 @@ abstract class MMRCMS (
     override fun getFilterList(): FilterList {
         return when {
             name == "Mangas.pw" -> FilterList()
-            tagMappings != emptyList<Pair<String, String>>()-> {
+            tagMappings != emptyList<Pair<String, String>>() -> {
                 FilterList(
                     getInitialFilterList() + UriSelectFilter(
                         "Tag",
