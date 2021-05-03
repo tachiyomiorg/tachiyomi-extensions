@@ -39,7 +39,7 @@ class MMRCMSSources {
             SourceData.Single("Read Comics Online", "https://readcomicsonline.ru", "en"),
             SourceData.Single("Fallen Angels", "https://manga.fascans.com", "en"),
             SourceData.Single("Zahard", "https://zahard.top", "en"),
-            SourceData.Single("Manhwas Men", "https://manhwas.men", "en"),
+            SourceData.Single("Manhwas Men", "https://manhwas.men", "en", isNsfw = true),
             SourceData.Single("Scan FR", "https://www.scan-fr.cc", "fr"),
             SourceData.Single("Scan VF", "https://www.scan-vf.net", "fr"),
             SourceData.Single("Scan OP", "https://scan-op.cc", "fr"),
