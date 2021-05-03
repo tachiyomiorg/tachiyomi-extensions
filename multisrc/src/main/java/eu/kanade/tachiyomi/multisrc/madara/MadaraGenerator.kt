@@ -264,9 +264,9 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
             SingleLang("Wakamics", "https://wakamics.net", "en"),
             SingleLang("Traducciones Amistosas", "https://nartag.com", "es"),
-            SingleLang("MangaYami", "https://www.mangayami.club", "en"),
+            SingleLang("MangaYami", "https://www.mangayami.club", "en", overrideVersionCode = 1),
             SingleLang("Manga Fenix", "https://manga-fenix.com", "es"),
-            SingleLang("Manga Mitsu", "https://mangamitsu.com", "en", isNsfw = true),
+            SingleLang("Manga Mitsu", "https://mangamitsu.com", "en", isNsfw = true, overrideVersionCode = 1),
     )
 
     companion object {

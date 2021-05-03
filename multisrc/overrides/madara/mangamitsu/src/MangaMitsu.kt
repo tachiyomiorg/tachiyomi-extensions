@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.es.mangamitsu
+package eu.kanade.tachiyomi.extension.en.mangamitsu
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import eu.kanade.tachiyomi.annotations.Nsfw
