@@ -54,6 +54,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
+    //The mirror is used because the main site "mangalub.me" in application returns error 403
     override val baseUrl: String = "https://mangalib.org"
 
     override fun headersBuilder() = Headers.Builder().apply {
