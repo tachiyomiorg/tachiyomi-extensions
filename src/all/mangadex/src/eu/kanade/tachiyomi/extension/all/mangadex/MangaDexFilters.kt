@@ -5,12 +5,14 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.HttpUrl
 import java.util.Locale
 
-class MangaDexFilters() {
+class MangaDexFilters {
 
     internal fun getMDFilterList() = FilterList(
+        OriginalLanguageList(getOriginalLanguage()),
         ContentRatingList(getContentRating()),
         DemographicList(getDemographics()),
         StatusList(getStatus()),
+        SortFilter(sortableList.map { it.first }.toTypedArray()),
         TagList(getTags()),
         TagInclusionMode(),
         TagExclusionMode(),
@@ -48,6 +50,16 @@ class MangaDexFilters() {
         ContentRating("Suggestive"),
         ContentRating("Erotica"),
         ContentRating("Pornographic")
+    )
+
+    private class OriginalLanguage(name: String, val isoCode: String) : Filter.CheckBox(name)
+    private class OriginalLanguageList(originalLanguage: List<OriginalLanguage>) :
+        Filter.Group<OriginalLanguage>("Original language", originalLanguage)
+
+    private fun getOriginalLanguage() = listOf(
+        OriginalLanguage("Japanese (Manga)", "jp"),
+        OriginalLanguage("Chinese (Manhua)", "cn"),
+        OriginalLanguage("Korean (Manhwa)", "kr"),
     )
 
     internal class Tag(val id: String, name: String) : Filter.TriState(name)
@@ -139,11 +151,29 @@ class MangaDexFilters() {
     private class TagExclusionMode :
         Filter.Select<String>("Excluded tags mode", arrayOf("And", "Or"), 1)
 
+    val sortableList = listOf(
+        Pair("Default (Asc/Desc doesn't matter)", ""),
+        Pair("Created at", "createdAt"),
+        Pair("Updated at", "updatedAt"),
+    )
+
+    class SortFilter(sortables: Array<String>) : Filter.Sort("Sort", sortables, Selection(0, false))
+
     internal fun addFiltersToUrl(url: HttpUrl.Builder, filters: FilterList): String {
         url.apply {
             // add filters
             filters.forEach { filter ->
                 when (filter) {
+                    is OriginalLanguageList -> {
+                        filter.state.forEach { lang ->
+                            if (lang.state) {
+                                addQueryParameter(
+                                    "originalLanguage[]",
+                                    lang.isoCode
+                                )
+                            }
+                        }
+                    }
                     is ContentRatingList -> {
                         filter.state.forEach { rating ->
                             if (rating.state) {
@@ -178,6 +208,18 @@ class MangaDexFilters() {
                             }
                         }
                     }
+                    is SortFilter -> {
+                        if (filter.state != null) {
+                            if (filter.state!!.index != 0) {
+                                val query = sortableList[filter.state!!.index].second
+                                val value = when (filter.state!!.ascending) {
+                                    true -> "asc"
+                                    false -> "desc"
+                                }
+                                addQueryParameter("order[$query]", value)
+                            }
+                        }
+                    }
                     is TagList -> {
                         filter.state.forEach { tag ->
                             if (tag.isIncluded()) {
@@ -188,10 +230,16 @@ class MangaDexFilters() {
                         }
                     }
                     is TagInclusionMode -> {
-                        addQueryParameter("includedTagsMode", filter.name.toUpperCase(Locale.US))
+                        addQueryParameter(
+                            "includedTagsMode",
+                            filter.values[filter.state].toUpperCase(Locale.US)
+                        )
                     }
                     is TagExclusionMode -> {
-                        addQueryParameter("excludedTagsMode", filter.name.toUpperCase(Locale.US))
+                        addQueryParameter(
+                            "excludedTagsMode",
+                            filter.values[filter.state].toUpperCase(Locale.US)
+                        )
                     }
                 }
             }

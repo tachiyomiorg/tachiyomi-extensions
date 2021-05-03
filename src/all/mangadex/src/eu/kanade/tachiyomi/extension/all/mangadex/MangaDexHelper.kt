@@ -90,9 +90,9 @@ class MangaDexHelper() {
                     val tokenRequestUrl = data[1]
                     val cacheControl =
                         if (Date().time - (
-                                tokenTracker[tokenRequestUrl]
-                                    ?: 0
-                                ) > MDConstants.mdAtHomeTokenLifespan
+                            tokenTracker[tokenRequestUrl]
+                                ?: 0
+                            ) > MDConstants.mdAtHomeTokenLifespan
                         ) {
                             tokenTracker[tokenRequestUrl] = Date().time
                             CacheControl.FORCE_NETWORK
@@ -178,7 +178,7 @@ class MangaDexHelper() {
             )
             .filterNotNull()
 
-        return SManga.create().apply{
+        return SManga.create().apply {
             url = "/manga/$dexId"
             title = cleanString(attr["title"]["en"].string)
             description = cleanString(attr["description"]["??"].string)
@@ -200,22 +200,18 @@ class MangaDexHelper() {
 
         // ignore errors if request fails, there is no batch group search yet..
         return runCatching {
-            groupIds.mapNotNull { groupId ->
+            groupIds.chunked(100).map {
+                val ids = it.joinToString("&ids[]=", "?ids[]=")
                 val groupResponse =
-                    client.newCall(GET("${MDConstants.apiUrl}/group/$groupId")).execute()
-                val name = when (groupResponse.isSuccessful) {
-                    true -> {
-                        JsonParser.parseString(groupResponse.body!!.string())
-                            .obj["data"]["attributes"]["name"].nullString
-                    }
-                    false -> null
+                    client.newCall(GET("${MDConstants.apiUrl}/group$ids")).execute()
+                // map results to pair id and name
+                JsonParser.parseString(groupResponse.body!!.string())
+                    .obj["results"].array.map {
+                    val id = it["data"]["id"].string
+                    val name = it["data"]["attributes"]["name"].string
+                    Pair(id, cleanString(name))
                 }
-
-                when (name == null) {
-                    true -> null
-                    false -> Pair(groupId, cleanString(name))
-                }
-            }.toMap()
+            }.flatten().toMap()
         }.getOrNull() ?: emptyMap()
     }
 
