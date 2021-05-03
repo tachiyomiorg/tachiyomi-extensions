@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.patchfriday
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -29,7 +30,10 @@ class PatchFriday : HttpSource() {
         return SManga.create().apply {
             initialized = true
             title = "Patch Friday"
+            status = SManga.ONGOING
             url = ""
+            author = "Patch Friday"
+            artist = author
             thumbnail_url = "https://patchfriday.com/patches/68.png"
             description = "The IT security webcomic"
         }
@@ -69,23 +73,41 @@ class PatchFriday : HttpSource() {
 
     // Chapters
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val last = response.asJsoup().select("ul.strip_toolbar li a[rel=next]").attr("href")
-            .removeSurrounding("/").toInt()
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return client.newCall(GET("$baseUrl/search/?search=;", headers))
+            .asObservableSuccess()
+            .map { parseChapters(it) }
+    }
 
-        return listOf(1..last).flatten().reversed().map {
-            SChapter.create().apply {
-                name = "#$it - "
-                url = "/$it/"
+    private fun parseChapters (response: Response): List<SChapter>{
+        val chapters = mutableListOf<SChapter>()
+        var document = response.asJsoup()
+        var page = document.select("div > div:first-of-type > div:first-of-type > a").attr("abs:href").replace(baseUrl,"").replace("/","").trim().toInt()
+        while (page > 0) {
+            val element = document.select("div > div > div:first-of-type > a")
+            element.forEach {
+                val chapter = SChapter.create()
+                chapter.url = it.attr("abs:href").replace(baseUrl,"").trim()
+                chapter.chapter_number = chapter.url.replace("/", "").trim().toFloat()
+                chapter.name = "#${chapter.chapter_number.toInt()} - ${it.text()}"
+                chapter.date_upload = System.currentTimeMillis()
+                chapters.add(chapter)
             }
+            page -= 10
+            document = client.newCall(GET("$baseUrl/search/?search=;id=$page", headers)).execute().asJsoup()
         }
+        //Add First Chapter becouse for some reason it does not show up in chapter search
+        chapters.add(SChapter.create().apply {
+            url = "/1/"
+            chapter_number = url.replace("/", "").trim().toFloat()
+            name = "#${chapter_number.toInt()} - The One"
+            date_upload = System.currentTimeMillis()
+        })
+        return chapters
     }
 
-    override fun prepareNewChapter(chapter: SChapter, manga: SManga) {
-        val cName = client.newCall(GET(baseUrl + chapter.url)).execute().asJsoup().select("div#strip_title").text()
+    override fun chapterListParse(response: Response): List<SChapter> = throw UnsupportedOperationException("Not used")
 
-        chapter.apply { name += cName }
-    }
 
     // Pages
 
