@@ -3,8 +3,6 @@ package eu.kanade.tachiyomi.extension.en.tapastic
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
@@ -21,6 +19,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
@@ -43,8 +42,8 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
         val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
             key = SHOW_LOCKED_CHAPTERS_Title
             title = SHOW_LOCKED_CHAPTERS_Title
-            entries = prefsEntries
-            entryValues = prefsEntryValues
+            entries = prefsEntriesChapters
+            entryValues = prefsEntryValuesChapters
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -55,33 +54,37 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
             }
         }
         screen.addPreference(chapterListPref)
-    }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val chapterListPref = ListPreference(screen.context).apply {
-            key = SHOW_LOCKED_CHAPTERS_Title
-            title = SHOW_LOCKED_CHAPTERS_Title
-            entries = prefsEntries
-            entryValues = prefsEntryValues
+        val lockPref = androidx.preference.ListPreference(screen.context).apply {
+            key = SHOW_LOCK_Title
+            title = SHOW_LOCK_Title
+            entries = prefsEntriesLock
+            entryValues = prefsEntryValuesLock
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 val index = this.findIndexOfValue(selected)
                 val entry = entryValues[index] as String
-                preferences.edit().putString(SHOW_LOCKED_CHAPTERS, entry).commit()
+                preferences.edit().putString(SHOW_LOCK, entry).commit()
             }
         }
-        screen.addPreference(chapterListPref)
+        screen.addPreference(lockPref)
     }
 
     private fun chapterListPref() = preferences.getString(SHOW_LOCKED_CHAPTERS, "free")
+    private fun lockPref() = preferences.getString(SHOW_LOCK, "yes")
 
     companion object {
         private const val SHOW_LOCKED_CHAPTERS_Title = "Tapas requires login/payment for some chapters"
         private const val SHOW_LOCKED_CHAPTERS = "tapas_locked_chapters"
-        private val prefsEntries = arrayOf("Show all chapters (including pay-to-read)", "Only show free chapters")
-        private val prefsEntryValues = arrayOf("all", "free")
+        private val prefsEntriesChapters = arrayOf("Show all chapters (including pay-to-read)", "Only show free chapters")
+        private val prefsEntryValuesChapters = arrayOf("all", "free")
+
+        private const val SHOW_LOCK_Title = "Show \uD83D\uDD12 for locked chapters after login"
+        private const val SHOW_LOCK = "tapas_lock"
+        private val prefsEntriesLock = arrayOf("Yes", "No")
+        private val prefsEntryValuesLock = arrayOf("yes", "no")
     }
 
     // Info
@@ -91,10 +94,13 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     override val baseUrl = "https://tapas.io"
     override val id = 3825434541981130345
 
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("Referer", "https://m.tapas.io")
+
     // Popular
 
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/comics?b=POPULAR&g=&f=NONE&pageNumber=$page&pageSize=20&")
+        GET("$baseUrl/comics?b=POPULAR&g=0&f=NONE&pageNumber=$page&pageSize=20&")
 
     override fun popularMangaNextPageSelector() = "div[data-has-next=true]"
     override fun popularMangaSelector() = "li.js-list-item"
@@ -107,9 +113,9 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     // Latest
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/comics?b=FRESH&g=&f=NONE&pageNumber=$page&pageSize=20&")
+        GET("$baseUrl/comics?b=FRESH&g=0&f=NONE&pageNumber=$page&pageSize=20&")
 
-    override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector(): String = popularMangaNextPageSelector()
     override fun latestUpdatesSelector(): String = popularMangaSelector()
     override fun latestUpdatesFromElement(element: Element): SManga =
         popularMangaFromElement(element)
@@ -171,7 +177,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
     private val gson by lazy { Gson() }
 
     private fun Element.isLockedChapter(): Boolean {
-        return this.hasClass("js-have-to-sign")
+        return this.hasClass("js-have-to-sign") || (lockPref() == "yes" && this.hasClass("js-locked"))
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
@@ -182,7 +188,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
         // recursively build the chapter list
         fun parseChapters(page: Int) {
             val url = "$baseUrl/series/$mangaId/episodes?page=$page&sort=NEWEST&init_load=0&large=true&last_access=0&"
-            val json = gson.fromJson<JsonObject>(client.newCall(GET(url, headers)).execute().body()!!.string())["data"]
+            val json = gson.fromJson<JsonObject>(client.newCall(GET(url, headers)).execute().body!!.string())["data"]
 
             Jsoup.parse(json["body"].string).select(chapterListSelector())
                 .let { list ->
@@ -259,7 +265,7 @@ class Tapastic : ConfigurableSource, ParsedHttpSource() {
         "Genre",
         "g",
         arrayOf(
-            Pair("", "Any"),
+            Pair("0", "Any"),
             Pair("7", "Action"),
             Pair("22", "Boys Love"),
             Pair("2", "Comedy"),

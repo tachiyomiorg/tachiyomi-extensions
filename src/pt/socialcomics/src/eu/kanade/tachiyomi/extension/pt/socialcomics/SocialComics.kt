@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.pt.socialcomics
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.array
@@ -26,18 +24,18 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.IOException
-import java.lang.UnsupportedOperationException
 import java.util.concurrent.TimeUnit
 import androidx.preference.EditTextPreference as AndroidXEditTextPreference
 import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
@@ -118,7 +116,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
             .add("Referer", "$baseUrl/pesquisa")
             .build()
 
-        val endpointUrl = HttpUrl.parse("$SERVICE_URL/api/mobile/search/")!!.newBuilder()
+        val endpointUrl = "$SERVICE_URL/api/mobile/search/".toHttpUrlOrNull()!!.newBuilder()
             .addEncodedPathSegment(query)
             .toString()
 
@@ -225,46 +223,6 @@ class SocialComics : HttpSource(), ConfigurableSource {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val emailPref = EditTextPreference(screen.context).apply {
-            key = EMAIL_PREF_KEY
-            title = EMAIL_PREF_TITLE
-            setDefaultValue("")
-            summary = EMAIL_PREF_SUMMARY
-            dialogTitle = EMAIL_PREF_TITLE
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val res = preferences.edit()
-                    .putString(EMAIL_PREF_KEY, newValue as String)
-                    .putString(API_TOKEN_PREF_KEY, "")
-                    .commit()
-
-                Toast.makeText(screen.context, TOAST_RESTART_TO_APPLY, Toast.LENGTH_LONG).show()
-                res
-            }
-        }
-        val passwordPref = EditTextPreference(screen.context).apply {
-            key = PASSWORD_PREF_KEY
-            title = PASSWORD_PREF_TITLE
-            setDefaultValue("")
-            summary = PASSWORD_PREF_SUMMARY
-            dialogTitle = PASSWORD_PREF_TITLE
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val res = preferences.edit()
-                    .putString(PASSWORD_PREF_KEY, newValue as String)
-                    .putString(API_TOKEN_PREF_KEY, "")
-                    .commit()
-
-                Toast.makeText(screen.context, TOAST_RESTART_TO_APPLY, Toast.LENGTH_LONG).show()
-                res
-            }
-        }
-
-        screen.addPreference(emailPref)
-        screen.addPreference(passwordPref)
-    }
-
     override fun setupPreferenceScreen(screen: AndroidXPreferenceScreen) {
         val emailPref = AndroidXEditTextPreference(screen.context).apply {
             key = EMAIL_PREF_KEY
@@ -318,7 +276,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
     private fun authIntercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
 
-        if (request.url().toString().contains(THUMBNAIL_CDN)) {
+        if (request.url.toString().contains(THUMBNAIL_CDN)) {
             return chain.proceed(request)
         }
 
@@ -365,7 +323,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
         val loginRequest = POST("$SERVICE_URL/api/mobile/login", loginHeaders, loginBody)
         val response = chain.proceed(loginRequest)
 
-        if (response.code() != 200) {
+        if (response.code != 200) {
             throw IOException(ERROR_CANNOT_LOGIN)
         }
 
@@ -385,7 +343,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
             "hash_master" to userHash
         )
 
-        val logoutBody = RequestBody.create(JSON_MEDIA_TYPE, logoutPayload.toString())
+        val logoutBody = logoutPayload.toString().toRequestBody(JSON_MEDIA_TYPE)
 
         val logoutHeaders = sourceHeadersBuilder()
             .add("Content-Type", logoutBody.contentType().toString())
@@ -395,7 +353,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
         val logoutRequest = POST("$SERVICE_URL/api/mobile/logout", logoutHeaders, logoutBody)
         val response = chain.proceed(logoutRequest)
 
-        if (response.code() != 200) {
+        if (response.code != 200) {
             throw IOException(ERROR_CANNOT_RENEW_TOKEN)
         }
 
@@ -405,7 +363,7 @@ class SocialComics : HttpSource(), ConfigurableSource {
         response.close()
     }
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val SERVICE_URL = "https://service.socialcomics.com.br"
@@ -415,8 +373,6 @@ class SocialComics : HttpSource(), ConfigurableSource {
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
 
         private const val EMAIL_PREF_KEY = "email"
         private const val EMAIL_PREF_TITLE = "E-mail"
@@ -435,6 +391,6 @@ class SocialComics : HttpSource(), ConfigurableSource {
 
         private const val TOAST_RESTART_TO_APPLY = "Reinicie o Tachiyomi para aplicar as novas configurações."
 
-        private val JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaTypeOrNull()
     }
 }

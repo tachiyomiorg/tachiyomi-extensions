@@ -3,8 +3,6 @@ package eu.kanade.tachiyomi.extension.es.mangamx
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.PreferenceScreen
 import android.util.Base64
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.string
@@ -143,8 +141,8 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     override fun searchMangaParse(response: Response): MangasPage {
-        if (!response.isSuccessful) throw Exception("Búsqueda fallida ${response.code()}")
-        if ("directorio" in response.request().url().toString()) {
+        if (!response.isSuccessful) throw Exception("Búsqueda fallida ${response.code}")
+        if ("directorio" in response.request.url.toString()) {
             val document = response.asJsoup()
             val mangas = document.select(searchMangaSelector()).map { element ->
                 searchMangaFromElement(element)
@@ -156,7 +154,7 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
             return MangasPage(mangas, hasNextPage)
         } else {
-            val body = response.body()!!.string()
+            val body = response.body!!.string()
             if (body == "[]") throw Exception("Término de búsqueda demasiado corto")
             val json = JsonParser().parse(body)["mangas"].asJsonArray
 
@@ -316,23 +314,6 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
 
         val contentPref = androidx.preference.CheckBoxPreference(screen.context).apply {
-            key = CONTENT_PREF
-            title = CONTENT_PREF_TITLE
-            summary = CONTENT_PREF_SUMMARY
-            setDefaultValue(CONTENT_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean(CONTENT_PREF, checkValue).commit()
-            }
-        }
-
-        screen.addPreference(contentPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-
-        val contentPref = CheckBoxPreference(screen.context).apply {
             key = CONTENT_PREF
             title = CONTENT_PREF_TITLE
             summary = CONTENT_PREF_SUMMARY

@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -36,7 +37,7 @@ class Mangahere : ParsedHttpSource() {
     override val client: OkHttpClient = super.client.newBuilder()
         .cookieJar(
             object : CookieJar {
-                override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {}
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
                 override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
                     return ArrayList<Cookie>().apply {
                         add(
@@ -86,7 +87,7 @@ class Mangahere : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "div.pager-list-left a:last-child"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+        val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
 
         filters.forEach { filter ->
             when (filter) {
@@ -267,7 +268,7 @@ class Mangahere : ParsedHttpSource() {
                         .build()
 
                     val response = client.newCall(request).execute()
-                    responseText = response.body()!!.string()
+                    responseText = response.body!!.string()
 
                     if (responseText.isNotEmpty())
                         break

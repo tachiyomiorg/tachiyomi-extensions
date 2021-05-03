@@ -8,16 +8,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
-
-/**
- * Sen Manga source
- */
 
 class SenManga : ParsedHttpSource() {
     override val lang: String = "ja"
@@ -30,18 +26,18 @@ class SenManga : ParsedHttpSource() {
     override val client = super.client.newBuilder().addInterceptor {
         // Intercept any image requests and add a referer to them
         // Enables bandwidth stealing feature
-        val request = if (it.request().url().pathSegments().firstOrNull()?.trim()?.toLowerCase() == "viewer") {
+        val request = if (it.request().url.pathSegments.firstOrNull()?.trim()?.toLowerCase() == "viewer") {
             it.request().newBuilder()
                 .addHeader(
                     "Referer",
-                    it.request().url().newBuilder()
+                    it.request().url.newBuilder()
                         .removePathSegment(0)
                         .toString()
                 )
                 .build()
         } else it.request()
         it.proceed(request)
-    }.build()!!
+    }.build()
 
     override fun popularMangaSelector() = "div.item"
 
@@ -68,7 +64,7 @@ class SenManga : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+        val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("s", query)
             .addQueryParameter("page", page.toString())
 

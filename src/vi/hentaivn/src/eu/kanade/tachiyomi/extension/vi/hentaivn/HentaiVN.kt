@@ -12,7 +12,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CookieJar
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -25,7 +25,7 @@ import java.util.Locale
 @Nsfw
 class HentaiVN : ParsedHttpSource() {
 
-    override val baseUrl = "https://hentaivn.net"
+    override val baseUrl = "https://hentaivn.tv"
     override val lang = "vi"
     override val name = "HentaiVN"
     override val supportsLatest = true
@@ -38,7 +38,7 @@ class HentaiVN : ParsedHttpSource() {
         .addInterceptor { chain ->
             val originalRequest = chain.request()
             when {
-                originalRequest.url().toString().startsWith(searchUrl) -> {
+                originalRequest.url.toString().startsWith(searchUrl) -> {
                     searchClient.newCall(originalRequest).execute()
                 }
                 else -> chain.proceed(originalRequest)
@@ -157,7 +157,7 @@ class HentaiVN : ParsedHttpSource() {
     override fun searchMangaNextPageSelector() = "ul.pagination > li:contains(Cuối)"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$searchUrl?name=$query&page=$page&dou=&char=&group=0&search=")!!.newBuilder()
+        val url = "$searchUrl?name=$query&page=$page&dou=&char=&group=0&search=".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is TextField -> url.addQueryParameter(filter.key, filter.state)

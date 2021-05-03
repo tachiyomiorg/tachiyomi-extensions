@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -68,7 +68,7 @@ class Mintmanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = HttpUrl.parse("$baseUrl/search/advanced")!!.newBuilder()
+        var url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
@@ -98,10 +98,10 @@ class Mintmanga : ParsedHttpSource() {
                 }
                 is OrderBy -> {
                     if (filter.state == 0) {
-                        url = HttpUrl.parse("$baseUrl/search/advanced")!!.newBuilder()
+                        url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
                     } else {
                         val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
-                        url = HttpUrl.parse("$baseUrl/list?sortType=$ord")!!.newBuilder()
+                        url = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
                         return GET(url.toString(), headers)
                     }
                 }
@@ -231,7 +231,7 @@ class Mintmanga : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val html = response.body()!!.string()
+        val html = response.body!!.string()
         val beginIndex = html.indexOf("rm_h.init( [")
         val endIndex = html.indexOf(");", beginIndex)
         val trimmedHtml = html.substring(beginIndex, endIndex)

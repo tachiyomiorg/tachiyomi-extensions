@@ -34,7 +34,7 @@ class Honkaiimpact : ParsedHttpSource() {
         .readTimeout(1, TimeUnit.MINUTES)
         .retryOnConnectionFailure(true)
         .followRedirects(true)
-        .build()!!
+        .build()
 
     // Popular
     override fun popularMangaSelector() = "a[href*=book]"
@@ -80,7 +80,7 @@ class Honkaiimpact : ParsedHttpSource() {
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url + "/get_chapter", headers)
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsondata = response.body()!!.string()
+        val jsondata = response.body!!.string()
         val json = JsonParser().parse(jsondata).asJsonArray
         val chapters = mutableListOf<SChapter>()
         json.forEach {

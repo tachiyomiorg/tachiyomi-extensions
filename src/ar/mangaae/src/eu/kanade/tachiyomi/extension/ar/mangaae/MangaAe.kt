@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -90,7 +90,7 @@ class MangaAe : ParsedHttpSource() {
             }
         }
         url += "|arrange:minus"
-        return GET(HttpUrl.parse(url)!!.newBuilder().build().toString(), headers)
+        return GET(url.toHttpUrlOrNull()!!.newBuilder().build().toString(), headers)
     }
 
     override fun searchMangaSelector(): String = popularMangaSelector()

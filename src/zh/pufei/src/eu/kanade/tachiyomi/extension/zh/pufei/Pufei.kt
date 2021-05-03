@@ -13,23 +13,23 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 fun asJsoup(response: Response, html: String? = null): Document {
-    return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request().url().toString())
+    return Jsoup.parse(html ?: bodyWithAutoCharset(response), response.request.url.toString())
 }
 
 fun bodyWithAutoCharset(response: Response, _charset: String? = null): String {
-    val htmlBytes: ByteArray = response.body()!!.bytes()
+    val htmlBytes: ByteArray = response.body!!.bytes()
     var c = _charset
 
     if (c == null) {
@@ -60,9 +60,9 @@ class Pufei : ParsedHttpSource() {
 
     private val rewriteOctetStream: Interceptor = Interceptor { chain ->
         val originalResponse: Response = chain.proceed(chain.request())
-        if (originalResponse.headers("Content-Type").contains("application/octet-stream") && originalResponse.request().url().toString().contains(".jpg")) {
-            val orgBody = originalResponse.body()!!.bytes()
-            val newBody = ResponseBody.create(MediaType.parse("image/jpeg"), orgBody)
+        if (originalResponse.headers("Content-Type").contains("application/octet-stream") && originalResponse.request.url.toString().contains(".jpg")) {
+            val orgBody = originalResponse.body!!.bytes()
+            val newBody = orgBody.toResponseBody("image/jpeg".toMediaTypeOrNull())
             originalResponse.newBuilder()
                 .body(newBody)
                 .build()
@@ -115,7 +115,8 @@ class Pufei : ParsedHttpSource() {
     private fun encodeGBK(str: String) = "%" + str.toByteArray(charset("gb2312")).toHexString()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/e/search/?searchget=1&tbname=mh&show=title,player,playadmin,bieming,pinyin,playadmin&tempid=4&keyboard=" + encodeGBK(query))?.newBuilder()
+        val url = ("$baseUrl/e/search/?searchget=1&tbname=mh&show=title,player,playadmin,bieming,pinyin,playadmin&tempid=4&keyboard=" + encodeGBK(query)).toHttpUrlOrNull()
+            ?.newBuilder()
         return GET(url.toString(), headers)
     }
 

@@ -3,9 +3,6 @@ package eu.kanade.tachiyomi.extension.all.lanraragi
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.util.Base64
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -65,7 +62,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
 
         return client.newCall(GET(uri.toString(), headers))
             .asObservable().doOnNext {
-                if (!it.isSuccessful && it.code() == 404) error("Log in with WebView then try again.")
+                if (!it.isSuccessful && it.code == 404) error("Log in with WebView then try again.")
             }
             .map { mangaDetailsParse(it).apply { initialized = true } }
     }
@@ -78,7 +75,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val archive = gson.fromJson<Archive>(response.body()!!.string())
+        val archive = gson.fromJson<Archive>(response.body!!.string())
 
         return archiveToSManga(archive)
     }
@@ -91,7 +88,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val archive = gson.fromJson<Archive>(response.body()!!.string())
+        val archive = gson.fromJson<Archive>(response.body!!.string())
         val uri = getApiUriBuilder("/api/archives/${archive.arcid}/extract")
 
         // Replicate old behavior and unset "isnew" for the archive.
@@ -124,7 +121,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val archivePage = gson.fromJson<ArchivePage>(response.body()!!.string())
+        val archivePage = gson.fromJson<ArchivePage>(response.body!!.string())
 
         return archivePage.pages.mapIndexed { index, url ->
             val uri = Uri.parse("${baseUrl}${url.trimStart('.')}")
@@ -197,7 +194,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val jsonResult = gson.fromJson<ArchiveSearchResult>(response.body()!!.string())
+        val jsonResult = gson.fromJson<ArchiveSearchResult>(response.body!!.string())
         val currentStart = getStart(response)
         val archives = arrayListOf<SManga>()
 
@@ -231,7 +228,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
         return (
             totalRecords > 0 &&
                 getStart(response) == 0 &&
-                response.request().url().querySize() == 1 // ?start=
+                response.request.url.querySize == 1 // ?start=
             )
     }
 
@@ -274,84 +271,6 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     // Preferences
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val hostnamePref = EditTextPreference(screen.context).apply {
-            key = "Hostname"
-            title = "Hostname"
-            text = baseUrl
-            summary = baseUrl
-            dialogTitle = "Hostname"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                var hostname = newValue as String
-                if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
-                    hostname = "http://$hostname"
-                }
-
-                this.apply {
-                    text = hostname
-                    summary = hostname
-                }
-
-                preferences.edit().putString("hostname", hostname).commit()
-            }
-        }
-
-        val apiKeyPref = EditTextPreference(screen.context).apply {
-            key = "API Key"
-            title = "API Key"
-            text = apiKey
-            summary = "Required if No-Fun Mode is enabled."
-            dialogTitle = "API Key"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val apiKey = newValue as String
-
-                this.apply {
-                    text = apiKey
-                    summary = "Required if No-Fun Mode is enabled."
-                }
-
-                preferences.edit().putString("apiKey", newValue).commit()
-            }
-        }
-
-        val latestNewOnlyPref = CheckBoxPreference(screen.context).apply {
-            key = "latestNewOnly"
-            title = "Latest - New Only"
-            setDefaultValue(true)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("latestNewOnly", checkValue).commit()
-            }
-        }
-
-        val latestNamespacePref = EditTextPreference(screen.context).apply {
-            key = "latestNamespacePref"
-            title = "Latest - Sort by Namespace"
-            text = latestNamespacePref
-            summary = "Sort by the given namespace for Latest, such as date_added."
-            dialogTitle = "Latest - Sort by Namespace"
-            setDefaultValue(DEFAULT_SORT_BY_NS)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val latestNamespacePref = newValue as String
-
-                this.apply {
-                    text = latestNamespacePref
-                }
-
-                preferences.edit().putString("latestNamespacePref", newValue).commit()
-            }
-        }
-
-        screen.addPreference(hostnamePref)
-        screen.addPreference(apiKeyPref)
-        screen.addPreference(latestNewOnlyPref)
-        screen.addPreference(latestNamespacePref)
     }
 
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
@@ -457,7 +376,7 @@ open class LANraragi : ConfigurableSource, HttpSource() {
             .subscribe(
                 {
                     categories = try {
-                        gson.fromJson(it.body()?.charStream()!!)
+                        gson.fromJson(it.body?.charStream()!!)
                     } catch (e: Exception) {
                         emptyList()
                     }
@@ -505,15 +424,15 @@ open class LANraragi : ConfigurableSource, HttpSource() {
     }
 
     private fun getTopResponse(response: Response): Response {
-        return if (response.priorResponse() == null) response else getTopResponse(response.priorResponse()!!)
+        return if (response.priorResponse == null) response else getTopResponse(response.priorResponse!!)
     }
 
     private fun getId(response: Response): String {
-        return getTopResponse(response).request().url().queryParameter("id").toString()
+        return getTopResponse(response).request.url.queryParameter("id").toString()
     }
 
     private fun getStart(response: Response): Int {
-        return getTopResponse(response).request().url().queryParameter("start")!!.toInt()
+        return getTopResponse(response).request.url.queryParameter("start")!!.toInt()
     }
 
     private fun getReaderId(url: String): String {

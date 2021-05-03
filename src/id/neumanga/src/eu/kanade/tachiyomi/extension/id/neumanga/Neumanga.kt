@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.json.JSONArray
 import org.jsoup.nodes.Document
@@ -81,7 +81,7 @@ class Neumanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "div#gov-result ul.pagination li.active + li a"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/advanced_search")!!.newBuilder()
+        val url = "$baseUrl/advanced_search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("advpage", page.toString())
             .addQueryParameter("name_search_mode", "contain")
             .addQueryParameter("artist_search_mode", "contain")

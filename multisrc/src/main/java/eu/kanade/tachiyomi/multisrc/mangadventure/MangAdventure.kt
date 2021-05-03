@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.multisrc.mangadventure
 
 import android.net.Uri
 import android.os.Build.VERSION
-import eu.kanade.tachiyomi.extensions.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter

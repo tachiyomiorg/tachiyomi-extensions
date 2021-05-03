@@ -18,9 +18,9 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
 import java.text.ParseException
@@ -58,7 +58,7 @@ class RisensTeam : HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val mangas = gson.fromJson<JsonArray>(response.body()!!.string())
+        val mangas = gson.fromJson<JsonArray>(response.body!!.string())
             .map { json -> mangaFromJson(json) }
 
         return MangasPage(mangas, false)
@@ -72,7 +72,8 @@ class RisensTeam : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val rbody = RequestBody.create(MediaType.parse("application/json;charset=utf-8"), """{"queryString":"$query","limit":3}""")
+        val rbody =
+            """{"queryString":"$query","limit":3}""".toRequestBody("application/json;charset=utf-8".toMediaTypeOrNull())
         return POST("$baseUrl/api/title/search", headers, rbody)
     }
 
@@ -97,7 +98,7 @@ class RisensTeam : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        return mangaFromJson(gson.fromJson<JsonObject>(response.body()!!.string()))
+        return mangaFromJson(gson.fromJson<JsonObject>(response.body!!.string()))
     }
 
     // Chapters
@@ -105,7 +106,7 @@ class RisensTeam : HttpSource() {
     override fun chapterListRequest(manga: SManga): Request = apiMangaDetailsRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["entities"].asJsonArray.map { json ->
+        return gson.fromJson<JsonObject>(response.body!!.string())["entities"].asJsonArray.map { json ->
             SChapter.create().apply {
                 url = json["id"].int.toString()
                 name = listOfNotNull(json["label"].nullString, json["name"].nullString).joinToString(" - ")
@@ -134,7 +135,7 @@ class RisensTeam : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        return gson.fromJson<JsonArray>(response.body()!!.string())
+        return gson.fromJson<JsonArray>(response.body!!.string())
             .mapIndexed { i, json -> Page(i, "", json.string) }
     }
 

@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -49,6 +49,7 @@ abstract class FMReader(
             element.hasAttr("data-original") -> element.attr("abs:data-original")
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("data-bg") -> element.attr("abs:data-bg")
+            element.hasAttr("data-srcset") -> element.attr("abs:data-srcset")
             else -> element.attr("abs:src")
         }
     }
@@ -61,7 +62,7 @@ abstract class FMReader(
         GET("$baseUrl/$requestPath?listType=pagination&page=$page&$popularSort&sort_type=DESC", headers)
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/$requestPath?")!!.newBuilder()
+        val url = "$baseUrl/$requestPath?".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("name", query)
             .addQueryParameter("page", page.toString())
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->

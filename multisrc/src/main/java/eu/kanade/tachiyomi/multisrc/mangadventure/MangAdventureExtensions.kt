@@ -9,7 +9,7 @@ import org.json.JSONObject
 import java.text.DecimalFormat
 
 /** Returns the body of a response as a `String`. */
-fun Response.asString(): String = body()!!.string()
+fun Response.asString(): String = body!!.string()
 
 /**
  * Formats the number according to [fmt].

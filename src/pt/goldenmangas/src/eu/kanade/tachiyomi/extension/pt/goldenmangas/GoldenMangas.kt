@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
@@ -81,7 +81,7 @@ class GoldenMangas : ParsedHttpSource() {
             .set("Referer", "$baseUrl/mangas")
             .build()
 
-        val url = HttpUrl.parse("$baseUrl/mangas")!!.newBuilder()
+        val url = "$baseUrl/mangas".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("busca", query)
             .toString()
 

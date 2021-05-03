@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -36,7 +36,7 @@ class HanhanKuman : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/top/hotrating.aspx", headers)
     override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/top/newrating.aspx", headers)
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/comic/?act=search&st=$query")?.newBuilder()
+        val url = "$baseUrl/comic/?act=search&st=$query".toHttpUrlOrNull()?.newBuilder()
         return GET(url.toString(), headers)
     }
 
@@ -96,7 +96,7 @@ class HanhanKuman : ParsedHttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val url = response.request().url().url().toString()
+        val url = response.request.url.toString()
 
         val re = Regex(""".*\/(.*?)\/\d+\.html\?s=(\d+)""")
 

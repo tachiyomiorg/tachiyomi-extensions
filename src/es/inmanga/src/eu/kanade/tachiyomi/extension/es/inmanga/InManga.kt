@@ -17,7 +17,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -47,7 +47,10 @@ class InManga : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request {
         val skip = (page - 1) * 10
-        val body = RequestBody.create(null, "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=1&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=")
+        val body =
+            "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=1&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=".toRequestBody(
+                null
+            )
 
         return POST("$baseUrl/manga/getMangasConsultResult", postHeaders, body)
     }
@@ -63,7 +66,10 @@ class InManga : ParsedHttpSource() {
     // Search filtered by "Recién actualizado"
     override fun latestUpdatesRequest(page: Int): Request {
         val skip = (page - 1) * 10
-        val body = RequestBody.create(null, "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=3&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=")
+        val body =
+            "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=3&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=".toRequestBody(
+                null
+            )
 
         return POST("$baseUrl/manga/getMangasConsultResult", postHeaders, body)
     }
@@ -78,7 +84,10 @@ class InManga : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val skip = (page - 1) * 10
-        val body = RequestBody.create(null, "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=$query&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=1&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=")
+        val body =
+            "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=$query&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=1&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=".toRequestBody(
+                null
+            )
 
         return POST("$baseUrl/manga/getMangasConsultResult", postHeaders, body)
     }
@@ -138,7 +147,7 @@ class InManga : ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
-        val data = response.body()!!.string().substringAfter("{\"data\":\"").substringBeforeLast("\"}")
+        val data = response.body!!.string().substringAfter("{\"data\":\"").substringBeforeLast("\"}")
             .replace("\\", "")
 
         gson.fromJson<JsonObject>(data)["result"].asJsonArray.forEach { chapters.add(chapterFromJson(it)) }

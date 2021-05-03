@@ -1,5 +1,13 @@
 package eu.kanade.tachiyomi.extension.en.vizshonenjump
 
+import com.github.salomonbrys.kotson.bool
+import com.github.salomonbrys.kotson.get
+import com.github.salomonbrys.kotson.int
+import com.github.salomonbrys.kotson.nullInt
+import com.github.salomonbrys.kotson.nullObj
+import com.github.salomonbrys.kotson.nullString
+import com.github.salomonbrys.kotson.obj
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -10,7 +18,8 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -32,6 +41,8 @@ class VizShonenJump : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.client.newBuilder()
+        .addInterceptor(::authCheckIntercept)
+        .addInterceptor(::authChapterCheckIntercept)
         .addInterceptor(VizImageInterceptor())
         .build()
 
@@ -41,6 +52,8 @@ class VizShonenJump : ParsedHttpSource() {
         .add("Referer", "$baseUrl/shonenjump")
 
     private var mangaList: List<SManga>? = null
+
+    private var loggedIn: Boolean? = null
 
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
@@ -147,20 +160,12 @@ class VizShonenJump : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val allChapters = super.chapterListParse(response)
 
-        val newHeaders = headersBuilder()
-            .add("X-Requested-With", "XMLHttpRequest")
-            .set("Referer", response.request().url().toString())
-            .build()
+        checkIfIsLoggedIn()
 
-        val loginCheckRequest = GET(REFRESH_LOGIN_LINKS_URL, newHeaders)
-        val document = client.newCall(loginCheckRequest).execute().asJsoup()
-        val isLoggedIn = document.select("div#o_account-links-content").first()!!
-            .attr("logged_in")!!.toBoolean()
-
-        if (isLoggedIn) {
+        if (loggedIn == true) {
             return allChapters.map { oldChapter ->
                 oldChapter.apply {
-                    url = url.substringAfter("'").substringBeforeLast("'")
+                    url = url.substringAfter("'").substringBeforeLast("'") + "&locked=true"
                 }
             }
         }
@@ -212,9 +217,9 @@ class VizShonenJump : ParsedHttpSource() {
             .substringAfterLast("/")
             .substringBefore("?")
 
-        return IntRange(1, pageCount)
+        return IntRange(0, pageCount)
             .map {
-                val imageUrl = HttpUrl.parse("$baseUrl/manga/get_manga_url")!!.newBuilder()
+                val imageUrl = "$baseUrl/manga/get_manga_url".toHttpUrlOrNull()!!.newBuilder()
                     .addQueryParameter("device_id", "3")
                     .addQueryParameter("manga_id", mangaId)
                     .addQueryParameter("page", it.toString())
@@ -226,13 +231,14 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun imageUrlRequest(page: Page): Request {
-        val url = HttpUrl.parse(page.url)!!
+        val url = page.url.toHttpUrlOrNull()!!
         val referer = url.queryParameter("referer")!!
         val newUrl = url.newBuilder()
             .removeAllEncodedQueryParameters("referer")
             .toString()
 
         val newHeaders = headersBuilder()
+            .add("X-Client-Login", (loggedIn ?: false).toString())
             .add("X-Requested-With", "XMLHttpRequest")
             .set("Referer", referer)
             .build()
@@ -241,10 +247,10 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(response: Response): String {
-        val cdnUrl = response.body()!!.string()
-        val referer = response.request().header("Referer")!!
+        val cdnUrl = response.body!!.string()
+        val referer = response.request.header("Referer")!!
 
-        return HttpUrl.parse(cdnUrl)!!.newBuilder()
+        return cdnUrl.toHttpUrlOrNull()!!.newBuilder()
             .addEncodedQueryParameter("referer", referer)
             .toString()
     }
@@ -252,7 +258,7 @@ class VizShonenJump : ParsedHttpSource() {
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        val imageUrl = HttpUrl.parse(page.imageUrl!!)!!
+        val imageUrl = page.imageUrl!!.toHttpUrlOrNull()!!
         val referer = imageUrl.queryParameter("referer")!!
         val newImageUrl = imageUrl.newBuilder()
             .removeAllEncodedQueryParameters("referer")
@@ -265,6 +271,79 @@ class VizShonenJump : ParsedHttpSource() {
         return GET(newImageUrl, newHeaders)
     }
 
+    private fun checkIfIsLoggedIn(chain: Interceptor.Chain? = null) {
+        val refreshHeaders = headersBuilder()
+            .add("X-Requested-With", "XMLHttpRequest")
+            .build()
+
+        val loginCheckRequest = GET("$baseUrl/$REFRESH_LOGIN_LINKS_URL", refreshHeaders)
+        val loginCheckResponse = chain?.proceed(loginCheckRequest)
+            ?: client.newCall(loginCheckRequest).execute()
+        val document = loginCheckResponse.asJsoup()
+
+        loggedIn = document.select("div#o_account-links-content").first()!!
+            .attr("logged_in")!!.toBoolean()
+
+        loginCheckResponse.close()
+    }
+
+    private fun authCheckIntercept(chain: Interceptor.Chain): Response {
+        if (loggedIn == null) {
+           checkIfIsLoggedIn(chain)
+        }
+
+        return chain.proceed(chain.request())
+    }
+
+    private fun authChapterCheckIntercept(chain: Interceptor.Chain): Response {
+        val requestUrl = chain.request().url.toString()
+
+        if (!requestUrl.contains("/chapter/") || !requestUrl.contains("&locked=true")) {
+            return chain.proceed(chain.request())
+        }
+
+        val mangaId = requestUrl.substringAfterLast("/").substringBefore("?")
+
+        val authCheckHeaders = headersBuilder()
+            .add("Accept", ACCEPT_JSON)
+            .add("X-Client-Login", (loggedIn ?: false).toString())
+            .add("X-Requested-With", "XMLHttpRequest")
+            .build()
+
+        val authCheckUrl = "$baseUrl/$MANGA_AUTH_CHECK_URL".toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("device_id", "3")
+            .addQueryParameter("manga_id", mangaId)
+            .toString()
+        val authCheckRequest = GET(authCheckUrl, authCheckHeaders)
+        val authCheckResponse = chain.proceed(authCheckRequest)
+        val authCheckJson = JsonParser.parseString(authCheckResponse.body!!.string()).obj
+
+        authCheckResponse.close()
+
+        if (authCheckJson["ok"].int == 1 && authCheckJson["archive_info"]["ok"].int == 1) {
+            val newChapterUrl = chain.request().url.newBuilder()
+                .removeAllQueryParameters("locked")
+                .build()
+            val newChapterRequest = chain.request().newBuilder()
+                .url(newChapterUrl)
+                .build()
+
+            return chain.proceed(newChapterRequest)
+        }
+
+        if (
+            authCheckJson["archive_info"]["err"].isJsonObject &&
+            authCheckJson["archive_info"]["err"]["code"].nullInt == 4 &&
+            loggedIn == true
+        ) {
+            throw Exception(SESSION_EXPIRED)
+        }
+
+        val errorMessage = authCheckJson["archive_info"]["err"].nullObj?.get("msg")?.nullString
+
+        throw Exception(errorMessage ?: AUTH_CHECK_FAILED)
+    }
+
     private fun String.toDate(): Long {
         return try {
             DATE_FORMATTER.parse(this)!!.time
@@ -274,15 +353,19 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     companion object {
+        private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)
         }
 
         private const val COUNTRY_NOT_SUPPORTED = "Your country is not supported, try using a VPN."
+        private const val SESSION_EXPIRED = "Your session has expired, please log in through WebView again."
+        private const val AUTH_CHECK_FAILED = "Something went wrong in the auth check."
 
-        private const val REFRESH_LOGIN_LINKS_URL = "https://www.viz.com/account/refresh_login_links"
+        private const val REFRESH_LOGIN_LINKS_URL = "account/refresh_login_links"
+        private const val MANGA_AUTH_CHECK_URL = "manga/auth"
     }
 }

@@ -20,7 +20,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -51,7 +51,7 @@ class NHentaiCom : HttpSource() {
     private val gson = Gson()
 
     private fun parseMangaFromJson(response: Response): MangasPage {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         val mangas = jsonObject["data"].asJsonArray.map { json ->
             SManga.create().apply {
@@ -64,7 +64,7 @@ class NHentaiCom : HttpSource() {
         return MangasPage(mangas, jsonObject["current_page"].int < jsonObject["last_page"].int)
     }
     private fun getMangaUrl(url: String): String {
-        return HttpUrl.parse(url)!!.newBuilder()
+        return url.toHttpUrlOrNull()!!.newBuilder()
             .setQueryParameter("nsfw", "false").toString()
     }
 
@@ -87,7 +87,7 @@ class NHentaiCom : HttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/api/comics")!!.newBuilder()
+        val url = "$baseUrl/api/comics".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("per_page", "18")
             .addQueryParameter("page", page.toString())
             .addQueryParameter("order", "desc")
@@ -120,7 +120,7 @@ class NHentaiCom : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+        val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
         return SManga.create().apply {
             description = jsonObject["description"].nullString
@@ -163,7 +163,7 @@ class NHentaiCom : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        return gson.fromJson<JsonObject>(response.body()!!.string())["images"].asJsonArray.mapIndexed { i, json ->
+        return gson.fromJson<JsonObject>(response.body!!.string())["images"].asJsonArray.mapIndexed { i, json ->
             Page(i, "", json["source_url"].string)
         }
     }

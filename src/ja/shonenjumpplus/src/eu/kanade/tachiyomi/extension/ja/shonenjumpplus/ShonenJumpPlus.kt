@@ -19,13 +19,13 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -85,7 +85,7 @@ class ShonenJumpPlus : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotEmpty()) {
-            val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+            val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
                 .addQueryParameter("q", query)
 
             return GET(url.toString(), headers)
@@ -96,7 +96,7 @@ class ShonenJumpPlus : ParsedHttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        if (response.request().url().toString().contains("search"))
+        if (response.request.url.toString().contains("search"))
             return super.searchMangaParse(response)
 
         return popularMangaParse(response)
@@ -126,13 +126,15 @@ class ShonenJumpPlus : ParsedHttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val readableProductList = document.select("div.js-readable-product-list").first()!!
-        val latestListEndpoint = HttpUrl.parse(readableProductList.attr("data-latest-list-endpoint"))!!
-        val firstListEndpoint = HttpUrl.parse(readableProductList.attr("data-first-list-endpoint"))!!
+        val latestListEndpoint = readableProductList.attr("data-latest-list-endpoint")
+            .toHttpUrlOrNull()!!
+        val firstListEndpoint = readableProductList.attr("data-first-list-endpoint")
+            .toHttpUrlOrNull()!!
         val numberSince = latestListEndpoint.queryParameter("number_since")!!.toInt()
             .coerceAtLeast(firstListEndpoint.queryParameter("number_since")!!.toInt())
 
         val newHeaders = headers.newBuilder()
-            .set("Referer", response.request().url().toString())
+            .set("Referer", response.request.url.toString())
             .build()
         var readMoreEndpoint = firstListEndpoint.newBuilder()
             .setQueryParameter("number_since", numberSince.toString())
@@ -143,10 +145,10 @@ class ShonenJumpPlus : ParsedHttpSource() {
         var request = GET(readMoreEndpoint, newHeaders)
         var result = client.newCall(request).execute()
 
-        while (result.code() != 404) {
+        while (result.code != 404) {
             val json = result.asJsonObject()
             readMoreEndpoint = json["nextUrl"].string
-            val tempDocument = Jsoup.parse(json["html"].string, response.request().url().toString())
+            val tempDocument = Jsoup.parse(json["html"].string, response.request.url.toString())
 
             chapters += tempDocument
                 .select("ul.series-episode-list " + chapterListSelector())
@@ -178,12 +180,12 @@ class ShonenJumpPlus : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val episodeJson = document.select("script#episode-json")
             .attr("data-value")
-            .let { JSON_PARSER.parse(it).obj }
+            .let { JsonParser.parseString(it).obj }
 
         return episodeJson["readableProduct"]["pageStructure"]["pages"].asJsonArray
             .filter { it["type"].string == "main" }
             .mapIndexed { i, pageObj ->
-                val imageUrl = HttpUrl.parse(pageObj["src"].string)!!.newBuilder()
+                val imageUrl = pageObj["src"].string.toHttpUrlOrNull()!!.newBuilder()
                     .addQueryParameter("width", pageObj["width"].string)
                     .addQueryParameter("height", pageObj["height"].string)
                     .toString()
@@ -211,22 +213,22 @@ class ShonenJumpPlus : ParsedHttpSource() {
     private fun imageIntercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 
-        if (!request.url().toString().startsWith(CDN_URL)) {
+        if (!request.url.toString().startsWith(CDN_URL)) {
             return chain.proceed(request)
         }
 
-        val width = request.url().queryParameter("width")!!.toInt()
-        val height = request.url().queryParameter("height")!!.toInt()
+        val width = request.url.queryParameter("width")!!.toInt()
+        val height = request.url.queryParameter("height")!!.toInt()
 
-        val newUrl = request.url().newBuilder()
+        val newUrl = request.url.newBuilder()
             .removeAllQueryParameters("width")
             .removeAllQueryParameters("height")
             .build()
         request = request.newBuilder().url(newUrl).build()
 
         val response = chain.proceed(request)
-        val image = decodeImage(response.body()!!.byteStream(), width, height)
-        val body = ResponseBody.create(MediaType.parse("image/png"), image)
+        val image = decodeImage(response.body!!.byteStream(), width, height)
+        val body = image.toResponseBody("image/png".toMediaTypeOrNull())
         return response.newBuilder().body(body).build()
     }
 
@@ -267,11 +269,10 @@ class ShonenJumpPlus : ParsedHttpSource() {
         }
     }
 
-    private fun Response.asJsonObject(): JsonObject = JSON_PARSER.parse(body()!!.string()).obj
+    private fun Response.asJsonObject(): JsonObject = JsonParser.parseString(body!!.string()).obj
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
-        private val JSON_PARSER by lazy { JsonParser() }
         private val DATE_PARSER by lazy { SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH) }
 
         private val LIST_MODES = listOf(

@@ -5,7 +5,7 @@ ext {
     extName = 'Tapas'
     pkgNameSuffix = 'en.tapastic'
     extClass = '.Tapastic'
-    extVersionCode = 10
+    extVersionCode = 11
     libVersion = '1.2'
 }
 

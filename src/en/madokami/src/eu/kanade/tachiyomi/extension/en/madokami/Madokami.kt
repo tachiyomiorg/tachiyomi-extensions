@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.en.madokami
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
@@ -17,6 +15,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Credentials
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -52,7 +51,7 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
 
     override val client: OkHttpClient = super.client.newBuilder().addInterceptor { chain ->
         val response = chain.proceed(chain.request())
-        if (response.code() == 401) throw IOException("You are currently logged out.\nGo to Extensions > Details to input your credentials.")
+        if (response.code == 401) throw IOException("You are currently logged out.\nGo to Extensions > Details to input your credentials.")
         response
     }.build()
 
@@ -83,14 +82,14 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaNextPageSelector(): String? = null
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        val url = HttpUrl.parse(baseUrl + manga.url)!!
-        if (url.pathSize() > 5 && url.pathSegments()[0] == "Manga" && url.pathSegments()[1].length == 1) {
-            return authenticate(GET(url.newBuilder().removePathSegment(5).build().url().toExternalForm(), headers))
+        val url = (baseUrl + manga.url).toHttpUrlOrNull()!!
+        if (url.pathSize > 5 && url.pathSegments[0] == "Manga" && url.pathSegments[1].length == 1) {
+            return authenticate(GET(url.newBuilder().removePathSegment(5).build().toUrl().toExternalForm(), headers))
         }
-        if (url.pathSize() > 2 && url.pathSegments()[0] == "Raws") {
-            return authenticate(GET(url.newBuilder().removePathSegment(2).build().url().toExternalForm(), headers))
+        if (url.pathSize > 2 && url.pathSegments[0] == "Raws") {
+            return authenticate(GET(url.newBuilder().removePathSegment(2).build().toUrl().toExternalForm(), headers))
         }
-        return authenticate(GET(url.url().toExternalForm(), headers))
+        return authenticate(GET(url.toUrl().toExternalForm(), headers))
     }
 
     /**
@@ -164,7 +163,8 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
                 .addPathSegments("reader/image")
                 .addEncodedQueryParameter("path", URLEncoder.encode(path, "UTF-8"))
                 .addEncodedQueryParameter("file", URLEncoder.encode(file.asString, "UTF-8"))
-                .build().url()
+                .build()
+                .toUrl()
             pages.add(Page(index, url.toExternalForm(), url.toExternalForm()))
         }
         return pages
@@ -195,28 +195,6 @@ class Madokami : ConfigurableSource, ParsedHttpSource() {
             setOnBindEditTextListener {
                 it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             }
-
-            setOnPreferenceChangeListener { _, newValue ->
-                preferences.edit().putString(key, newValue as String).commit()
-            }
-        }
-
-        screen.addPreference(username)
-        screen.addPreference(password)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val username = EditTextPreference(screen.context).apply {
-            key = "username"
-            title = "Username"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                preferences.edit().putString(key, newValue as String).commit()
-            }
-        }
-        val password = EditTextPreference(screen.context).apply {
-            key = "password"
-            title = "Password"
 
             setOnPreferenceChangeListener { _, newValue ->
                 preferences.edit().putString(key, newValue as String).commit()

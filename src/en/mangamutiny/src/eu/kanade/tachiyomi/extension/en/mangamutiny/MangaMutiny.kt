@@ -17,11 +17,9 @@ import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.collections.ArrayList
 
 fun JsonObject.getNullable(key: String): JsonElement? {
     val value: JsonElement = this.get(key) ?: return null
@@ -81,7 +79,7 @@ class MangaMutiny : HttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapterList = mutableListOf<SChapter>()
-        val responseBody = response.body()
+        val responseBody = response.body
 
         if (responseBody != null) {
             val jsonChapters = JsonParser().parse(responseBody.charStream()).asJsonObject
@@ -165,7 +163,7 @@ class MangaMutiny : HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = SManga.create()
-        val responseBody = response.body()
+        val responseBody = response.body
 
         if (responseBody != null) {
             val rootNode = parser.parse(responseBody.charStream()).asJsonObject
@@ -203,7 +201,7 @@ class MangaMutiny : HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val pageList = ArrayList<Page>()
 
-        val responseBody = response.body()
+        val responseBody = response.body
 
         if (responseBody != null) {
             val rootNode = parser.parse(responseBody.charStream()).asJsonObject
@@ -237,7 +235,7 @@ class MangaMutiny : HttpSource() {
     // commonly used functions
     private fun mangaParse(response: Response): MangasPage {
         val mangasPage = ArrayList<SManga>()
-        val responseBody = response.body()
+        val responseBody = response.body
 
         var totalObjects = 0
 
@@ -267,7 +265,7 @@ class MangaMutiny : HttpSource() {
             responseBody.close()
         }
 
-        val skipped = response.request().url().queryParameter("skip")?.toInt() ?: 0
+        val skipped = response.request.url.queryParameter("skip")?.toInt() ?: 0
 
         val moreElementsToSkip = skipped + fetchAmount < totalObjects
 

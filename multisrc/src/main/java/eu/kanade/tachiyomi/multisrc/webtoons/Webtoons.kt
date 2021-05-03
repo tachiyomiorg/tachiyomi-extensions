@@ -5,12 +5,17 @@ import eu.kanade.tachiyomi.source.model.Filter.Header
 import eu.kanade.tachiyomi.source.model.Filter.Select
 import eu.kanade.tachiyomi.source.model.Filter.Separator
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.Page
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -18,12 +23,8 @@ import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.model.MangasPage
-import java.util.Locale
 import java.util.Calendar
+import java.util.Locale
 
 open class Webtoons(
     override val name: String,
@@ -129,7 +130,7 @@ open class Webtoons(
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/$langCode/search?keyword=$query")?.newBuilder()!!
+        val url = "$baseUrl/$langCode/search?keyword=$query".toHttpUrlOrNull()?.newBuilder()!!
         val uriPart = (filters.find { it is SearchType } as? SearchType)?.toUriPart() ?: ""
 
         url.addQueryParameter("searchType", uriPart)
@@ -232,7 +233,7 @@ open class Webtoons(
         val docUrl = docUrlRegex.find(docString)!!.destructured.toList()[0]
         val motiontoonPath = motiontoonPathRegex.find(docString)!!.destructured.toList()[0]
 
-        val motiontoonJson = JSONObject(client.newCall(GET(docUrl, headers)).execute().body()!!.string()).getJSONObject("assets").getJSONObject("image")
+        val motiontoonJson = JSONObject(client.newCall(GET(docUrl, headers)).execute().body!!.string()).getJSONObject("assets").getJSONObject("image")
 
         val keys = motiontoonJson.keys().asSequence().toList().filter { it.contains("layer") }
 

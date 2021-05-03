@@ -84,7 +84,7 @@ class SilentMangaAudition : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val chapterUrl = response.request().url().toString()
+        val chapterUrl = response.request.url.toString()
 
         return response.asJsoup()
             .select("div.swiper-wrapper div.swiper-slide img.swiper-lazy")

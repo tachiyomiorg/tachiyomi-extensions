@@ -19,7 +19,6 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.lang.UnsupportedOperationException
 import java.util.Calendar
 import java.util.regex.Pattern
 
@@ -248,7 +247,7 @@ class Hentai2Read : ParsedHttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
-        val m = pagesUrlPattern.matcher(response.body()!!.string())
+        val m = pagesUrlPattern.matcher(response.body!!.string())
         var i = 0
         while (m.find()) {
             m.group(1)?.split(",")?.forEach {

@@ -1,10 +1,8 @@
 package eu.kanade.tachiyomi.multisrc.wpmangastream
 
+//import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor // added to override
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
-//import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor // added to override
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -15,7 +13,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -67,23 +65,6 @@ abstract class WPMangaStream(
         screen.addPreference(thumbsPref)
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val thumbsPref = ListPreference(screen.context).apply {
-            key = SHOW_THUMBNAIL_PREF_Title
-            title = SHOW_THUMBNAIL_PREF_Title
-            entries = arrayOf("Show high quality", "Show mid quality", "Show low quality")
-            entryValues = arrayOf("0", "1", "2")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
-            }
-        }
-        screen.addPreference(thumbsPref)
-    }
-
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
 
     //private val rateLimitInterceptor = RateLimitInterceptor(4)
@@ -106,7 +87,7 @@ abstract class WPMangaStream(
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/manga/")!!.newBuilder()
+        val url = "$baseUrl/manga/".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
         filters.forEach { filter ->

@@ -127,7 +127,7 @@ class Pururin : ParsedHttpSource() {
             listOf(
                 SChapter.create().apply {
                     name = "Chapter"
-                    setUrlWithoutDomain(response.request().url().toString())
+                    setUrlWithoutDomain(response.request.url.toString())
 
                     if (mangaInfoElements.containsKey("Scanlator"))
                         scanlator = mangaInfoElements.getValue("Scanlator").select("li a")?.joinToString { s -> s.text() }
@@ -195,7 +195,7 @@ class Pururin : ParsedHttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (response.request().url().toString().contains("tag?")) {
+        return if (response.request.url.toString().contains("tag?")) {
             response.asJsoup().select("table.table tbody tr a:first-of-type").attr("abs:href").let {
                 if (it.isNotEmpty()) {
                     tagUrl = it

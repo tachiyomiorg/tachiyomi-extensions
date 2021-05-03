@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.bool
@@ -33,7 +31,7 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.CacheControl
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -230,7 +228,7 @@ abstract class MangaDex(
         val genresToExclude = mutableListOf<String>()
 
         // Do traditional search
-        val url = HttpUrl.parse("$baseUrl/?page=search")!!.newBuilder()
+        val url = "$baseUrl/?page=search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("p", page.toString())
             .addQueryParameter("title", query.replace(WHITESPACE_REGEX, " "))
 
@@ -346,7 +344,7 @@ abstract class MangaDex(
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (response.request().url().toString().contains("/groups/")) {
+        return if (response.request.url.toString().contains("/groups/")) {
             response.asJsoup()
                 .select(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2) > a")
                 .firstOrNull()?.attr("abs:href")
@@ -428,7 +426,7 @@ abstract class MangaDex(
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = SManga.create()
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject["data"]
         val mangaJson = json["manga"].asJsonObject
         val chapterJson = json["chapters"].asJsonArray
@@ -519,7 +517,7 @@ abstract class MangaDex(
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val now = Date().time
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject["data"]
         val mangaJson = json["manga"].asJsonObject
 
@@ -615,10 +613,10 @@ abstract class MangaDex(
             .asObservable().doOnNext { response ->
                 if (!response.isSuccessful) {
                     response.close()
-                    if (response.code() == 451) {
+                    if (response.code == 451) {
                         error("Error 451: Log in to view manga; contact MangaDex if error persists.")
                     } else {
-                        throw Exception("HTTP error ${response.code()}")
+                        throw Exception("HTTP error ${response.code}")
                     }
                 }
             }
@@ -645,7 +643,7 @@ abstract class MangaDex(
     override fun pageListParse(document: Document) = throw Exception("Not used")
 
     override fun pageListParse(response: Response): List<Page> {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val json = JsonParser().parse(jsonData).asJsonObject["data"]
 
         val hash = json["hash"].string
@@ -653,7 +651,7 @@ abstract class MangaDex(
 
         return json["pages"].asJsonArray.mapIndexed { idx, it ->
             val url = "$hash/${it.asString}"
-            val mdAtHomeMetadataUrl = "$server,${response.request().url()},${Date().time}"
+            val mdAtHomeMetadataUrl = "$server,${response.request.url},${Date().time}"
             Page(idx, mdAtHomeMetadataUrl, url)
         }
     }
@@ -682,7 +680,7 @@ abstract class MangaDex(
                         }
                     val jsonData =
                         client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
-                            .body()!!.string()
+                            .body!!.string()
                     tokenedServer =
                         JsonParser().parse(jsonData).asJsonObject["data"]["server"].string
                 }
@@ -747,69 +745,6 @@ abstract class MangaDex(
             }
         }
         val dataSaverPref = androidx.preference.ListPreference(screen.context).apply {
-            key = DATA_SAVER_PREF_Title
-            title = DATA_SAVER_PREF_Title
-            entries = arrayOf("Disable", "Enable")
-            entryValues = arrayOf("0", "1")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(DATA_SAVER_PREF, index).commit()
-            }
-        }
-
-        screen.addPreference(r18Pref)
-        screen.addPreference(thumbsPref)
-        screen.addPreference(serverPref)
-        screen.addPreference(dataSaverPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val r18Pref = ListPreference(screen.context).apply {
-            key = SHOW_R18_PREF_Title
-            title = SHOW_R18_PREF_Title
-
-            title = SHOW_R18_PREF_Title
-            entries = arrayOf("Show No R18+", "Show All", "Show Only R18+")
-            entryValues = arrayOf("0", "1", "2")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(SHOW_R18_PREF, index).commit()
-            }
-        }
-        val thumbsPref = ListPreference(screen.context).apply {
-            key = SHOW_THUMBNAIL_PREF_Title
-            title = SHOW_THUMBNAIL_PREF_Title
-            entries = arrayOf("Show high quality", "Show low quality")
-            entryValues = arrayOf("0", "1")
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(SHOW_THUMBNAIL_PREF, index).commit()
-            }
-        }
-        val serverPref = ListPreference(screen.context).apply {
-            key = SERVER_PREF_Title
-            title = SERVER_PREF_Title
-            entries = SERVER_PREF_ENTRIES
-            entryValues = SERVER_PREF_ENTRY_VALUES
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(SERVER_PREF, entry).commit()
-            }
-        }
-        val dataSaverPref = ListPreference(screen.context).apply {
             key = DATA_SAVER_PREF_Title
             title = DATA_SAVER_PREF_Title
             entries = arrayOf("Disable", "Enable")
@@ -1068,11 +1003,11 @@ class CoverInterceptor : Interceptor {
         val originalRequest = chain.request()
 
         return chain.proceed(chain.request()).let { response ->
-            if (response.code() == 404 && originalRequest.url().toString().contains(coverRegex)) {
+            if (response.code == 404 && originalRequest.url.toString().contains(coverRegex)) {
                 response.close()
                 chain.proceed(
                     originalRequest.newBuilder().url(
-                        originalRequest.url().toString().substringBeforeLast(".") + ".thumb.jpg"
+                        originalRequest.url.toString().substringBeforeLast(".") + ".thumb.jpg"
                     ).build()
                 )
             } else {
@@ -1087,7 +1022,7 @@ class MdRateLimitInterceptor : Interceptor {
     private val baseInterceptor = RateLimitInterceptor(2)
 
     override fun intercept(chain: Interceptor.Chain): Response =
-        if (chain.request().url().toString().contains(coverRegex))
+        if (chain.request().url.toString().contains(coverRegex))
             chain.proceed(chain.request())
         else
             baseInterceptor.intercept(chain)
@@ -1105,7 +1040,7 @@ class MdAtHomeReportInterceptor(
         val originalRequest = chain.request()
 
         return chain.proceed(chain.request()).let { response ->
-            val url = originalRequest.url().toString()
+            val url = originalRequest.url.toString()
             if (url.contains(mdAtHomeUrlRegex)) {
                 val jsonString = gson.toJson(
                     mapOf(

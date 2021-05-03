@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
@@ -70,7 +70,7 @@ open class BatoTo(
         return if (query.isNotBlank()) {
             GET("$baseUrl/search?word=$query&page=$page")
         } else {
-            val url = HttpUrl.parse("$baseUrl/browse")!!.newBuilder()
+            val url = "$baseUrl/browse".toHttpUrlOrNull()!!.newBuilder()
             url.addQueryParameter("page", page.toString())
             url.addQueryParameter("langs", siteLang)
             filters.forEach { filter ->
@@ -311,7 +311,7 @@ open class BatoTo(
                 "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js",
                 headers
             )
-        ).execute().body()!!.string()
+        ).execute().body!!.string()
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
@@ -330,6 +330,9 @@ open class BatoTo(
             Pair("200+", "200"),
             Pair("100+", "100"),
             Pair("50+", "50"),
+            Pair("40+", "40"),
+            Pair("30+", "30"),
+            Pair("20+", "20"),
             Pair("10+", "10"),
             Pair("1+", "1")
         )

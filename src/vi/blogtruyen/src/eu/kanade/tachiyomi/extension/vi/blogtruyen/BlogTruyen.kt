@@ -10,7 +10,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -109,7 +109,7 @@ class BlogTruyen : ParsedHttpSource() {
         else "$temp/-1"
         temp = if (genresEx.isNotEmpty()) temp + "/" + genresEx.joinToString(",")
         else "$temp/-1"
-        val url = HttpUrl.parse(temp)!!.newBuilder()
+        val url = temp.toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("txt", query)
         if (aut.isNotEmpty()) url.addQueryParameter("aut", aut)
         url.addQueryParameter("p", page.toString())

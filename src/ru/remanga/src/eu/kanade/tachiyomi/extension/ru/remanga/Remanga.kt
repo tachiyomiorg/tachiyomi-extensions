@@ -15,8 +15,6 @@ import android.annotation.TargetApi
 import android.app.Application
 import android.content.SharedPreferences
 import android.os.Build
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
@@ -37,12 +35,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -105,12 +103,12 @@ class Remanga : ConfigurableSource, HttpSource() {
         val jsonObject = JSONObject()
         jsonObject.put("user", username)
         jsonObject.put("password", password)
-        val body = RequestBody.create(MEDIA_TYPE, jsonObject.toString())
+        val body = jsonObject.toString().toRequestBody(MEDIA_TYPE)
         val response = chain.proceed(POST("$baseUrl/api/users/login/", headers, body))
-        if (response.code() == 400) {
+        if (response.code == 400) {
             throw Exception("Failed to login")
         }
-        val user = gson.fromJson<SeriesWrapperDto<UserDto>>(response.body()?.charStream()!!)
+        val user = gson.fromJson<SeriesWrapperDto<UserDto>>(response.body?.charStream()!!)
         return user.content.access_token
     }
 
@@ -123,7 +121,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val page = gson.fromJson<PageWrapperDto<LibraryDto>>(response.body()?.charStream()!!)
+        val page = gson.fromJson<PageWrapperDto<LibraryDto>>(response.body?.charStream()!!)
         val mangas = page.content.map {
             it.toSManga()
         }
@@ -152,9 +150,9 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = HttpUrl.parse("$baseUrl/api/search/catalog/?page=$page")!!.newBuilder()
+        var url = "$baseUrl/api/search/catalog/?page=$page".toHttpUrlOrNull()!!.newBuilder()
         if (query.isNotEmpty()) {
-            url = HttpUrl.parse("$baseUrl/api/search/?page=$page")!!.newBuilder()
+            url = "$baseUrl/api/search/?page=$page".toHttpUrlOrNull()!!.newBuilder()
             url.addQueryParameter("query", query)
         }
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
@@ -235,7 +233,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             .asObservable().doOnNext { response ->
                 if (!response.isSuccessful) {
                     response.close()
-                    if (response.code() == 401) warnLogin = true else throw Exception("HTTP error ${response.code()}")
+                    if (response.code == 401) warnLogin = true else throw Exception("HTTP error ${response.code}")
                 }
             }
             .map { response ->
@@ -249,13 +247,13 @@ class Remanga : ConfigurableSource, HttpSource() {
         return GET(baseUrl.replace("api.", "") + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
     }
     override fun mangaDetailsParse(response: Response): SManga {
-        val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body()?.charStream()!!)
+        val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body?.charStream()!!)
         branches[series.content.en_name] = series.content.branches
         return series.content.toSManga()
     }
 
     private fun mangaBranches(manga: SManga): List<BranchesDto> {
-        val responseString = client.newCall(GET("$baseUrl/${manga.url}")).execute().body()?.string() ?: return emptyList()
+        val responseString = client.newCall(GET("$baseUrl/${manga.url}")).execute().body?.string() ?: return emptyList()
         // manga requiring login return "content" as a JsonArray instead of the JsonObject we expect
         return if (gson.fromJson<JsonObject>(responseString)["content"].isJsonObject) {
             val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(responseString)
@@ -301,7 +299,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body()?.charStream()!!)
+        val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body?.charStream()!!)
         return chapters.content.filter { !it.is_paid or it.is_bought }.map { chapter ->
             SChapter.create().apply {
                 chapter_number = chapter.chapter.split(".").take(2).joinToString(".").toFloat()
@@ -317,19 +315,18 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     @TargetApi(Build.VERSION_CODES.N)
     override fun pageListParse(response: Response): List<Page> {
-        val body = response.body()?.string()!!
+        val body = response.body?.string()!!
         return try {
             val page = gson.fromJson<SeriesWrapperDto<PageDto>>(body)
-
-            page.content.pages.map {
+            page.content.pages.filter { it.height > 1 }.map {
                 Page(it.page, "", it.link)
             }
         } catch (e: JsonSyntaxException) {
             val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
             val result = mutableListOf<Page>()
             page.content.pages.forEach {
-                it.forEach {
-                    result.add(Page(result.size, "", it.link))
+                it.filter { page -> page.height > 1 }.forEach { page ->
+                    result.add(Page(result.size, "", page.link))
                 }
             }
             return result
@@ -567,32 +564,6 @@ class Remanga : ConfigurableSource, HttpSource() {
         }
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
-        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
-    }
-
-    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
-        return EditTextPreference(context).apply {
-            key = title
-            this.title = title
-            summary = value
-            this.setDefaultValue(default)
-            dialogTitle = title
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-    }
-
     private fun getPrefUsername(): String = preferences.getString(USERNAME_TITLE, USERNAME_DEFAULT)!!
     private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
 
@@ -601,7 +572,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     private val password by lazy { getPrefPassword() }
 
     companion object {
-        private val MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8")
+        private val MEDIA_TYPE = "application/json; charset=utf-8".toMediaTypeOrNull()
         private const val USERNAME_TITLE = "Username"
         private const val USERNAME_DEFAULT = ""
         private const val PASSWORD_TITLE = "Password"

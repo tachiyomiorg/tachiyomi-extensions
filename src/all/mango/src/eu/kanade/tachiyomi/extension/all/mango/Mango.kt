@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.all.mango
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.EditTextPreference
-import android.support.v7.preference.PreferenceScreen
 import android.text.InputType
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
@@ -11,7 +9,7 @@ import com.github.salomonbrys.kotson.get
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
-import eu.kanade.tachiyomi.extension.BuildConfig
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -44,7 +42,7 @@ class Mango : ConfigurableSource, HttpSource() {
     // Our popular manga are just our library of manga
     override fun popularMangaParse(response: Response): MangasPage {
         val result = try {
-            gson.fromJson<JsonObject>(response.body()!!.string())
+            gson.fromJson<JsonObject>(response.body!!.string())
         } catch (e: JsonSyntaxException) {
             apiCookies = ""
             throw Exception("Login Likely Failed. Try Refreshing.")
@@ -120,7 +118,7 @@ class Mango : ConfigurableSource, HttpSource() {
     // This will just return the same thing as the main library endpoint
     override fun mangaDetailsParse(response: Response): SManga {
         val result = try {
-            gson.fromJson<JsonObject>(response.body()!!.string())
+            gson.fromJson<JsonObject>(response.body!!.string())
         } catch (e: JsonSyntaxException) {
             apiCookies = ""
             throw Exception("Login Likely Failed. Try Refreshing.")
@@ -138,7 +136,7 @@ class Mango : ConfigurableSource, HttpSource() {
     // The chapter url will contain how many pages the chapter contains for our page list endpoint
     override fun chapterListParse(response: Response): List<SChapter> {
         val result = try {
-            gson.fromJson<JsonObject>(response.body()!!.string())
+            gson.fromJson<JsonObject>(response.body!!.string())
         } catch (e: JsonSyntaxException) {
             apiCookies = ""
             throw Exception("Login Likely Failed. Try Refreshing.")
@@ -235,7 +233,7 @@ class Mango : ConfigurableSource, HttpSource() {
             .build()
         val loginRequest = POST("$baseUrl/login", formHeaders, formBody)
         val response = chain.proceed(loginRequest)
-        if (response.code() != 200 || response.header("Set-Cookie") == null) {
+        if (response.code != 200 || response.header("Set-Cookie") == null) {
             throw Exception("Login Failed. Check Address and Credentials")
         }
         // Save the cookies from the response
@@ -262,33 +260,6 @@ class Mango : ConfigurableSource, HttpSource() {
                     it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
             }
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val res = preferences.edit().putString(title, newValue as String).commit()
-                    Toast.makeText(context, "Restart Tachiyomi to apply new setting.", Toast.LENGTH_LONG).show()
-                    apiCookies = ""
-                    res
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        screen.addPreference(screen.supportEditTextPreference(ADDRESS_TITLE, ADDRESS_DEFAULT, baseUrl))
-        screen.addPreference(screen.supportEditTextPreference(USERNAME_TITLE, USERNAME_DEFAULT, username))
-        screen.addPreference(screen.supportEditTextPreference(PASSWORD_TITLE, PASSWORD_DEFAULT, password))
-    }
-
-    private fun PreferenceScreen.supportEditTextPreference(title: String, default: String, value: String): EditTextPreference {
-        return EditTextPreference(context).apply {
-            key = title
-            this.title = title
-            summary = value
-            this.setDefaultValue(default)
-            dialogTitle = title
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(title, newValue as String).commit()

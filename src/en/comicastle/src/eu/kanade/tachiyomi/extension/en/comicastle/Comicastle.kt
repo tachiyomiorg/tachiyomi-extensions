@@ -8,11 +8,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -69,7 +70,7 @@ class Comicastle : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/library/search")!!.newBuilder()
+        val url = "$baseUrl/library/search".toHttpUrlOrNull()!!.newBuilder()
         var rBody: RequestBody? = null
 
         (filters.let { if (it.isEmpty()) getFilterList() else filters })
@@ -160,4 +161,5 @@ class Comicastle : ParsedHttpSource() {
     private fun getPublisherList() = arrayOf("<Select>", "Action Lab", "Aftershock", "AHOY", "American Mythology", "Aspen", "Avatar Press", "AWA Studios", "Black Mask", "BOOM! Studios", "Dark Horse", "DC", "Death Rattle", "Dynamite", "IDW", "Image", "Magnetic Press", "Marvel", "MAX", "Titan", "Ubiworkshop", "Valiant", "Vault", "Vertigo", "Wildstorm", "Zenescope")
 }
 
-private fun createRequestBody(value: String) = RequestBody.create(MediaType.parse("application/x-www-form-urlencoded"), "search=" + URLEncoder.encode(value, "UTF-8"))
+private fun createRequestBody(value: String) =
+    ("search=" + URLEncoder.encode(value, "UTF-8")).toRequestBody("application/x-www-form-urlencoded".toMediaTypeOrNull())

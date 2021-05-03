@@ -93,7 +93,7 @@ class Qimiaomh : ParsedHttpSource() {
         val did = script.substringAfter("var did = ").substringBefore(";")
         val sid = script.substringAfter("var sid = ").substringBefore(";")
         val url = "$baseUrl/Action/Play/AjaxLoadImgUrl?did=$did&sid=$sid&tmp=${Random().nextFloat()}"
-        val body = client.newCall(GET(url, headers)).execute().body()!!.string()
+        val body = client.newCall(GET(url, headers)).execute().body!!.string()
         val json = JsonParser().parse(body).asJsonObject
         val images = json["listImg"].asJsonArray
         images.forEachIndexed { index, jsonElement ->

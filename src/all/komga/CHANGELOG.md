@@ -1,5 +1,15 @@
 ## 1.2.23
 
+Minimum Komga version required: `0.87.4`
+
+### Fix
+
+* only show series tags in the filter panel
+* set URL properly on series and read lists, so restoring from a backup can work properly
+
+
+## 1.2.23
+
 Minimum Komga version required: `0.75.0`
 
 ### Features

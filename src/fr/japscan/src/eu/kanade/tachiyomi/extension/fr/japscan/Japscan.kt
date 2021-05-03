@@ -10,8 +10,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import android.util.Log
 import android.view.View
 import android.webkit.JavascriptInterface
@@ -39,11 +37,11 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
@@ -54,17 +52,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
-import kotlin.collections.ArrayList
-import kotlin.collections.List
-import kotlin.collections.distinctBy
-import kotlin.collections.filter
-import kotlin.collections.first
-import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
-import kotlin.collections.map
-import kotlin.collections.mapIndexed
-import kotlin.collections.mutableListOf
-import kotlin.collections.toTypedArray
+import java.util.concurrent.CyclicBarrier
 
 class Japscan : ConfigurableSource, ParsedHttpSource() {
 
@@ -97,7 +85,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         val indicator = "&wvsc"
         val cleanupjs = "var checkExist=setInterval(function(){if(document.getElementsByTagName('CNV-VV').length){clearInterval(checkExist);var e=document.body,a=e.children;for(e.appendChild(document.getElementsByTagName('CNV-VV')[0]);'CNV-VV'!=a[0].tagName;)e.removeChild(a[0]);for(var t of[].slice.call(a[0].all_canvas))t.style.maxWidth='100%';window.android.passSize(a[0].all_canvas[0].width,a[0].all_canvas[0].width/a[0].all_canvas[0].height)}},100);"
         val request = chain.request()
-        val url = request.url().toString()
+        val url = request.url.toString()
 
         val newRequest = request.newBuilder()
             .url(url.substringBefore(indicator))
@@ -145,13 +133,13 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         Thread.sleep(350)
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        var canvas = Canvas(bitmap)
+        val canvas = Canvas(bitmap)
         webView!!.draw(canvas)
 
         // val bitmap: Bitmap = webView!!.drawingCache
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-        val rb = ResponseBody.create(MediaType.parse("image/png"), output.toByteArray())
+        val rb = output.toByteArray().toResponseBody("image/png".toMediaTypeOrNull())
         handler.post { webView!!.destroy() }
         response.newBuilder().body(rb).build()
     }.build()
@@ -242,7 +230,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                 return client.newCall(POST("$baseUrl/live-search/", searchHeaders, formBody)).execute().use { response ->
                     if (!response.isSuccessful) throw Exception("Unexpected code $response")
 
-                    val jsonObject = gson.fromJson<JsonObject>(response.body()!!.string())
+                    val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
 
                     if (jsonObject.asJsonArray.size() === 0) {
                         Log.d("japscan", "Search not returning anything, using duckduckgo")
@@ -250,7 +238,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                         throw Exception("No data")
                     }
 
-                    return response.request()
+                    return response.request
                 }
             } finally {
                 // Fallback to duckduckgo if the search does not return any result
@@ -265,8 +253,8 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active),.next_form .navbutton"
     override fun searchMangaSelector(): String = "div.card div.p-2, a.result-link"
     override fun searchMangaParse(response: Response): MangasPage {
-        if ("live-search" in response.request().url().toString()) {
-            val body = response.body()!!.string()
+        if ("live-search" in response.request.url.toString()) {
+            val body = response.body!!.string()
             val json = JsonParser().parse(body).asJsonArray
             val mangas = json.map { jsonElement ->
                 searchMangaFromJson(jsonElement)
@@ -364,53 +352,66 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        return if (document.getElementsByTag("script").filter { it.attr("src").contains("ujs") }.size > 2) { // scrambled images, webview screenshotting
-            Log.d("japscan", "scrambled, loading in WVSC urls")
-            document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
-        } else {
-            // unscrambled images, check for single page
-            val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
-            Log.d("japscan", "ZJS at $zjsurl")
-            val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body()!!.string()
-            if ((zjs.toLowerCase().split("new image").size - 1) == 1) { // single page, webview request dumping
-                Log.d("japscan", "webtoon, netdumping initiated")
-                val pagecount = document.getElementsByTag("option").size
-                val pages = ArrayList<Page>()
-                val handler = Handler(Looper.getMainLooper())
-                val latch = CountDownLatch(1)
+        // no webview screenshot needed anymore :
+        // document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
 
-                val dummyimage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
-                val dummystream = ByteArrayOutputStream()
-                dummyimage.compress(Bitmap.CompressFormat.JPEG, 100, dummystream)
+        val zjsurl = document.getElementsByTag("script").first { it.attr("src").contains("zjs", ignoreCase = true) }.attr("src")
+        Log.d("japscan", "ZJS at $zjsurl")
+        val zjs = client.newCall(GET(baseUrl + zjsurl, headers)).execute().body!!.string()
+        Log.d("japscan", "webtoon, netdumping initiated")
+        val pagecount = document.getElementsByTag("option").size
+        val pages = ArrayList<Page>()
+        val handler = Handler(Looper.getMainLooper())
+        val checkNew = ArrayList<String>(pagecount)
+        var maxIter = document.getElementsByTag("option").size
+        var isSinglePage = false
+        if ((zjs.toLowerCase().split("new image").size - 1) == 1) {
+            isSinglePage = true
+            maxIter = 1
+        }
+        var webView: WebView? = null
+        val dummyimage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        val dummystream = ByteArrayOutputStream()
+        dummyimage.compress(Bitmap.CompressFormat.JPEG, 100, dummystream)
+        val barrier = CyclicBarrier(2)
 
-                handler.post {
+        for (i in 0 until maxIter) {
+            handler.post {
+                if (webView == null) {
                     val webview = WebView(Injekt.get<Application>())
+                    webView = webview
                     webview.settings.javaScriptEnabled = true
                     webview.settings.domStorageEnabled = true
+                    webview.settings.userAgentString = webview.settings.userAgentString.replace("Mobile", "eliboM").replace("Android", "diordnA")
                     webview.webViewClient = object : WebViewClient() {
                         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                         override fun shouldInterceptRequest(
                             view: WebView,
                             request: WebResourceRequest
                         ): WebResourceResponse? {
-                            if (request.url.toString().startsWith("https://c.")) {
+                            if (request.url.toString().startsWith("https://cdn.statically.io/img/c.japscan.se/") && !checkNew.contains(request.url.toString())) {
+                                checkNew.add(request.url.toString())
                                 pages.add(Page(pages.size, "", request.url.toString()))
                                 Log.d("japscan", "intercepted ${request.url}")
-                                if (pages.size == pagecount) { latch.countDown() }
+                                if (pages.size == pagecount || !isSinglePage) {
+                                    barrier.await()
+                                }
                                 return WebResourceResponse("image/jpeg", "UTF-8", ByteArrayInputStream(dummystream.toByteArray()))
                             }
                             return super.shouldInterceptRequest(view, request)
                         }
                     }
-                    webview.loadUrl(baseUrl + document.getElementsByTag("option").first().attr("value"))
                 }
-                latch.await()
-                return pages
-            } else { // page by page, just do webview screenshotting because it's easier
-                Log.d("japscan", "unscrambled, loading WVSC urls")
-                document.getElementsByTag("option").mapIndexed { i, it -> Page(i, "", baseUrl + it.attr("value") + "&wvsc") }
+                if (isSinglePage) {
+                    webView?.loadUrl(baseUrl + document.select("li[^data-]").first().dataset()["chapter-url"])
+                } else {
+                    webView?.loadUrl(baseUrl + document.getElementsByTag("option")[i].attr("value"))
+                }
             }
+            barrier.await()
         }
+        handler.post { webView!!.destroy() }
+        return pages
     }
 
     override fun imageUrlParse(document: Document): String = ""
@@ -443,24 +444,6 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     // Prefs
     override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
         val chapterListPref = androidx.preference.ListPreference(screen.context).apply {
-            key = SHOW_SPOILER_CHAPTERS_Title
-            title = SHOW_SPOILER_CHAPTERS_Title
-            entries = prefsEntries
-            entryValues = prefsEntryValues
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(SHOW_SPOILER_CHAPTERS, entry).commit()
-            }
-        }
-        screen.addPreference(chapterListPref)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val chapterListPref = ListPreference(screen.context).apply {
             key = SHOW_SPOILER_CHAPTERS_Title
             title = SHOW_SPOILER_CHAPTERS_Title
             entries = prefsEntries

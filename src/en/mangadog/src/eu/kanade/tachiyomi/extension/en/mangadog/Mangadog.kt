@@ -37,8 +37,8 @@ class Mangadog : HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        // val page = response.request().url().queryParameterValues("page").toString().toInt()
-        val jsonData = response.body()!!.string()
+        // val page = response.request.url.queryParameterValues("page").toString().toInt()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]["data"]
         val mangas = mutableListOf<SManga>()
@@ -61,7 +61,7 @@ class Mangadog : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]
         val mangas = mutableListOf<SManga>()
@@ -74,7 +74,7 @@ class Mangadog : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["suggestions"]
         val mangas = mutableListOf<SManga>()
@@ -100,7 +100,7 @@ class Mangadog : HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsonData = response.body()!!.string()
+        val jsonData = response.body!!.string()
         val results = JsonParser().parse(jsonData)
         val data = results["data"]["data"]
         val chapters = mutableListOf<SChapter>()

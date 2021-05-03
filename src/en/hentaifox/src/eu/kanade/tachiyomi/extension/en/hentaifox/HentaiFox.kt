@@ -113,7 +113,7 @@ class HentaiFox : ParsedHttpSource() {
             SChapter.create().apply {
                 name = "Chapter"
                 // page path with a marker at the end
-                url = "${response.request().url().toString().replace("/gallery/", "/g/")}#"
+                url = "${response.request.url.toString().replace("/gallery/", "/g/")}#"
                 // number of pages
                 url += response.asJsoup().select("[id=load_pages]").attr("value")
             }

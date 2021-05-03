@@ -135,7 +135,7 @@ abstract class Comico(
     override fun chapterListParse(response: Response): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
 
-        gson.fromJson<JsonObject>(response.body()!!.string())["result"]["list"].asJsonArray.forEach {
+        gson.fromJson<JsonObject>(response.body!!.string())["result"]["list"].asJsonArray.forEach {
             if (it["freeFlg"].asString == "Y") chapters.add(chapterFromJson(it))
         }
 

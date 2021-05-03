@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -25,7 +25,7 @@ import java.util.Locale
 class Mangaworld : ParsedHttpSource() {
 
     override val name = "Mangaworld"
-    override val baseUrl = "https://www.mangaworld.cc"
+    override val baseUrl = "https://www.mangaworld.io"
     override val lang = "it"
     override val supportsLatest = true
     override val client: OkHttpClient = network.cloudflareClient
@@ -82,10 +82,9 @@ class Mangaworld : ParsedHttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = HttpUrl.parse("$baseUrl/archive?page=$page")!!.newBuilder()
-        val pattern = "\\s+".toRegex()
+        val url = "$baseUrl/archive?page=$page".toHttpUrlOrNull()!!.newBuilder()
         val q = query
-        if (query.length > 0) {
+        if (query.isNotEmpty()) {
             url.addQueryParameter("keyword", q)
         } else {
             url.addQueryParameter("keyword", "")
@@ -151,8 +150,8 @@ class Mangaworld : ParsedHttpSource() {
         val metaData = document.select("div.comic-info").first()
 
         val manga = SManga.create()
-        manga.author = infoElement.select("a[href^=https://www.mangaworld.cc/archive?author=]").first()?.text()
-        manga.artist = infoElement.select("a[href^=https://www.mangaworld.cc/archive?artist=]")?.text()
+        manga.author = infoElement.select("a[href^=https://www.mangaworld.io/archive?author=]").first()?.text()
+        manga.artist = infoElement.select("a[href^=https://www.mangaworld.io/archive?artist=]")?.text()
 
         val genres = mutableListOf<String>()
         metaData.select("div.meta-data a.badge").forEach { element ->
@@ -160,7 +159,7 @@ class Mangaworld : ParsedHttpSource() {
             genres.add(genre)
         }
         manga.genre = genres.joinToString(", ")
-        manga.status = parseStatus(infoElement.select("a[href^=https://www.mangaworld.cc/archive?status=]").first().attr("href"))
+        manga.status = parseStatus(infoElement.select("a[href^=https://www.mangaworld.io/archive?status=]").first().attr("href"))
 
         manga.description = document.select("div#noidungm")?.text()
         manga.thumbnail_url = document.select(".comic-info .thumb > img").attr("src")

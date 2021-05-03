@@ -98,7 +98,7 @@ class Bruttal : HttpSource() {
     override fun mangaDetailsParse(response: Response): SManga {
         val json = response.asJson().array
 
-        val titleUrl = response.request().header("Referer")!!.substringAfter("/bruttal")
+        val titleUrl = response.request.header("Referer")!!.substringAfter("/bruttal")
         val titleObj = json.first { it.obj["url"].string == titleUrl }.obj
         val soonText = titleObj["soon_text"].string
 
@@ -120,7 +120,7 @@ class Bruttal : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val json = response.asJson().array
 
-        val titleUrl = response.request().header("Referer")!!.substringAfter("/bruttal")
+        val titleUrl = response.request.header("Referer")!!.substringAfter("/bruttal")
         val title = json.first { it.obj["url"].string == titleUrl }.obj
 
         return title["seasons"].array
@@ -147,7 +147,7 @@ class Bruttal : HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val json = response.asJson().array
 
-        val chapterUrl = response.request().header("Referer")!!
+        val chapterUrl = response.request.header("Referer")!!
         val titleSlug = chapterUrl.substringAfter("bruttal/").substringBefore("/")
         val season = chapterUrl.substringAfter("temporada-").substringBefore("/").toInt()
         val chapter = chapterUrl.substringAfter("capitulo-")
@@ -184,12 +184,10 @@ class Bruttal : HttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used")
 
-    private fun Response.asJson(): JsonElement = JSON_PARSER.parse(body()!!.string())
+    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
-
-        private val JSON_PARSER by lazy { JsonParser() }
     }
 }

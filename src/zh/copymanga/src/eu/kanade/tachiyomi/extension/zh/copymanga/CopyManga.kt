@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.extension.zh.copymanga
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.PreferenceScreen
 import com.luhuiguo.chinese.ChineseUtils
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -15,7 +13,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -23,13 +22,16 @@ import org.json.JSONObject
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.collections.ArrayList
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 
 class CopyManga : ConfigurableSource, HttpSource() {
 
@@ -42,6 +44,24 @@ class CopyManga : ConfigurableSource, HttpSource() {
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+    private val trustManager = object : X509TrustManager {
+        override fun getAcceptedIssuers(): Array<X509Certificate> {
+            return emptyArray()
+        }
+
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+        }
+
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+        }
+    }
+    private val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, arrayOf(trustManager), SecureRandom())
+    }
+
+    override val client: OkHttpClient = super.client.newBuilder()
+        .sslSocketFactory(sslContext.socketFactory, trustManager)
+        .build()
 
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/comics?ordering=-popular&offset=${(page - 1) * popularLatestPageSize}&limit=$popularLatestPageSize", headers)
     override fun popularMangaParse(response: Response): MangasPage = parseSearchMangaWithFilterOrPopularOrLatestResponse(response)
@@ -61,11 +81,11 @@ class CopyManga : ConfigurableSource, HttpSource() {
         }.filter { it != "" }.joinToString("&")
         // perform html search only when do have filter and not search anything
         if (params != "" && query == "") {
-            requestUrlString = htmlUrlString + "&$params"
+            requestUrlString = "$htmlUrlString&$params"
         } else {
             requestUrlString = apiUrlString
         }
-        val url = HttpUrl.parse(requestUrlString)?.newBuilder()
+        val url = requestUrlString.toHttpUrlOrNull()?.newBuilder()
         return GET(url.toString(), headers)
     }
     override fun searchMangaParse(response: Response): MangasPage {
@@ -285,7 +305,7 @@ class CopyManga : ConfigurableSource, HttpSource() {
     }
 
     private fun parseSearchMangaResponseAsJson(response: Response): MangasPage {
-        val body = response.body()!!.string()
+        val body = response.body!!.string()
         // results > comic > list []
         val res = JSONObject(body)
         val comicArray = res.optJSONObject("results")?.optJSONArray("list")
@@ -390,26 +410,6 @@ class CopyManga : ConfigurableSource, HttpSource() {
                 }
             }
         }
-        screen.addPreference(zhPreference)
-    }
-
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val zhPreference = CheckBoxPreference(screen.context).apply {
-            key = SHOW_Simplified_Chinese_TITLE_PREF
-            title = "将标题转换为简体中文"
-            summary = "需要重启软件以生效。已添加漫画需要迁移改变标题。"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                try {
-                    val setting = preferences.edit().putBoolean(SHOW_Simplified_Chinese_TITLE_PREF, newValue as Boolean).commit()
-                    setting
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
-                }
-            }
-        }
-
         screen.addPreference(zhPreference)
     }
 

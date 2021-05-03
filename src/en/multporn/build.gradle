@@ -5,7 +5,7 @@ ext {
     extName = 'Multporn'
     pkgNameSuffix = 'en.multporn'
     extClass = '.Multporn'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
     containsNsfw = true
 }

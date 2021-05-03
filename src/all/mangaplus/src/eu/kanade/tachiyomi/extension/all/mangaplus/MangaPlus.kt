@@ -3,9 +3,6 @@ package eu.kanade.tachiyomi.extension.all.mangaplus
 import android.app.Application
 import android.content.SharedPreferences
 import android.os.Build
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.PreferenceScreen
 import com.google.gson.Gson
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
@@ -17,11 +14,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 import okhttp3.Headers
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -59,7 +57,7 @@ abstract class MangaPlus(
 
     private val protobufJs: String by lazy {
         val request = GET(PROTOBUFJS_CDN, headers)
-        client.newCall(request).execute().body()!!.string()
+        client.newCall(request).execute().body!!.string()
     }
 
     private val gson: Gson by lazy { Gson() }
@@ -274,7 +272,7 @@ abstract class MangaPlus(
             .set("Referer", "$baseUrl/viewer/$chapterId")
             .build()
 
-        val url = HttpUrl.parse("$API_URL/manga_viewer")!!.newBuilder()
+        val url = "$API_URL/manga_viewer".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("chapter_id", chapterId)
             .addQueryParameter("split", splitImages)
             .addQueryParameter("img_quality", imageResolution)
@@ -289,7 +287,7 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
-        val referer = response.request().header("Referer")!!
+        val referer = response.request.header("Referer")!!
 
         return result.success.mangaViewer!!.pages
             .mapNotNull { it.page }
@@ -344,48 +342,16 @@ abstract class MangaPlus(
         screen.addPreference(splitPref)
     }
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val resolutionPref = ListPreference(screen.context).apply {
-            key = "${RESOLUTION_PREF_KEY}_$lang"
-            title = RESOLUTION_PREF_TITLE
-            entries = RESOLUTION_PREF_ENTRIES
-            entryValues = RESOLUTION_PREF_ENTRY_VALUES
-            setDefaultValue(RESOLUTION_PREF_DEFAULT_VALUE)
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString("${RESOLUTION_PREF_KEY}_$lang", entry).commit()
-            }
-        }
-        val splitPref = CheckBoxPreference(screen.context).apply {
-            key = "${SPLIT_PREF_KEY}_$lang"
-            title = SPLIT_PREF_TITLE
-            summary = SPLIT_PREF_SUMMARY
-            setDefaultValue(SPLIT_PREF_DEFAULT_VALUE)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${SPLIT_PREF_KEY}_$lang", checkValue).commit()
-            }
-        }
-
-        screen.addPreference(resolutionPref)
-        screen.addPreference(splitPref)
-    }
-
     private fun imageIntercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 
-        if (request.url().queryParameter("encryptionKey") == null)
+        if (request.url.queryParameter("encryptionKey") == null)
             return chain.proceed(request)
 
-        val encryptionKey = request.url().queryParameter("encryptionKey")!!
+        val encryptionKey = request.url.queryParameter("encryptionKey")!!
 
         // Change the url and remove the encryptionKey to avoid detection.
-        val newUrl = request.url().newBuilder()
+        val newUrl = request.url.newBuilder()
             .removeAllQueryParameters("encryptionKey")
             .build()
         request = request.newBuilder()
@@ -395,8 +361,8 @@ abstract class MangaPlus(
         val response = chain.proceed(request)
 
         val contentType = response.header("Content-Type", "image/jpeg")!!
-        val image = decodeImage(encryptionKey, response.body()!!.bytes())
-        val body = ResponseBody.create(MediaType.parse(contentType), image)
+        val image = decodeImage(encryptionKey, response.body!!.bytes())
+        val body = ResponseBody.create(contentType.toMediaTypeOrNull(), image)
 
         return response.newBuilder()
             .body(body)
@@ -427,17 +393,17 @@ abstract class MangaPlus(
         val response = chain.proceed(request)
 
         // Check if it is 404 to maintain compatibility when the extension used Weserv.
-        val isBadCode = (response.code() == 401 || response.code() == 404)
+        val isBadCode = (response.code == 401 || response.code == 404)
 
-        if (isBadCode && request.url().toString().contains(TITLE_THUMBNAIL_PATH)) {
-            val titleId = request.url().toString()
+        if (isBadCode && request.url.toString().contains(TITLE_THUMBNAIL_PATH)) {
+            val titleId = request.url.toString()
                 .substringBefore("/$TITLE_THUMBNAIL_PATH")
                 .substringAfterLast("/")
                 .toInt()
             val title = titleList?.find { it.titleId == titleId } ?: return response
 
             response.close()
-            val thumbnailRequest = GET(title.portraitImageUrl, request.headers())
+            val thumbnailRequest = GET(title.portraitImageUrl, request.headers)
             return chain.proceed(thumbnailRequest)
         }
 
@@ -457,13 +423,13 @@ abstract class MangaPlus(
 
     private fun Response.asProto(): MangaPlusResponse {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M)
-            return ProtoBuf.decodeFromByteArray(MangaPlusSerializer, body()!!.bytes())
+            return ProtoBuf.decodeFromByteArray(body!!.bytes())
 
         // The kotlinx.serialization library eventually always have some issues with
-        // devices with Android version below Nougat. So, if the device is running Marshmallow
-        // or lower, the deserialization is done using ProtobufJS + Duktape + Gson.
+        // devices with Android version below Nougat. So, if the device is running Android 6.x,
+        // the deserialization is done using ProtobufJS + Duktape + Gson.
 
-        val bytes = body()!!.bytes()
+        val bytes = body!!.bytes()
         val messageBytes = "var BYTE_ARR = new Uint8Array([${bytes.joinToString()}]);"
 
         val res = Duktape.create().use {
@@ -480,7 +446,7 @@ abstract class MangaPlus(
     companion object {
         private const val API_URL = "https://jumpg-webapi.tokyo-cdn.com/api"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 
         private val HEX_GROUP = "(.{1,2})".toRegex()
 

@@ -259,7 +259,7 @@ abstract class NepNep(
             val indexChapter = json["Chapter"].string
             SChapter.create().apply {
                 name = json["ChapterName"].nullString.let { if (it.isNullOrEmpty()) "${json["Type"].string} ${chapterImage(indexChapter, true)}" else it }
-                url = "/read-online/" + response.request().url().toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
+                url = "/read-online/" + response.request.url.toString().substringAfter("/manga/") + chapterURLEncode(indexChapter)
                 date_upload = try {
                     json["Date"].nullString?.let { dateFormat.parse("$it +0600")?.time } ?: 0
                 } catch (_: Exception) {

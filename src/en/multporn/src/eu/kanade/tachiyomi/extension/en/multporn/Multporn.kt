@@ -19,11 +19,11 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -67,12 +67,12 @@ class Multporn : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int) = buildPopularMangaRequest(page - 1)
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val html = gson.fromJson<JsonArray>(response.body()!!.string())
+        val html = gson.fromJson<JsonArray>(response.body!!.string())
             .last { it["command"].asString == "insert" }.asJsonObject["data"].asString
 
         return super.popularMangaParse(
             response.newBuilder()
-                .body(ResponseBody.create(MediaType.parse("text/html; charset=UTF-8"), html))
+                .body(html.toResponseBody("text/html; charset=UTF-8".toMediaTypeOrNull()))
                 .build()
         )
     }
@@ -88,7 +88,7 @@ class Multporn : ParsedHttpSource() {
     // Latest
 
     private fun buildLatestMangaRequest(page: Int, filters: FilterList = FilterList()): Request {
-        val url = HttpUrl.parse("$baseUrl/new")!!.newBuilder()
+        val url = "$baseUrl/new".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("page", page.toString())
 
         (if (filters.isEmpty()) getFilterList(LATEST_DEFAULT_SORT_BY_FILTER_STATE) else filters).forEach {
@@ -126,9 +126,9 @@ class Multporn : ParsedHttpSource() {
     }
 
     private fun buildSearchMangaRequest(page: Int, query: String, filtersArg: FilterList = FilterList()): Request {
-        val url = HttpUrl.parse("$baseUrl/search")!!.newBuilder()
+        val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("page", page.toString())
-            .addQueryParameter("search_api_views_fulltext", query)
+            .addQueryParameter("views_fulltext", query)
 
         (if (filtersArg.isEmpty()) getFilterList(SEARCH_DEFAULT_SORT_BY_FILTER_STATE) else filtersArg).forEach {
             when (it) {
@@ -176,7 +176,7 @@ class Multporn : ParsedHttpSource() {
                 squashMangasPageObservables(
                     requests.map {
                         client.newCall(it).asObservable().map { res ->
-                            if (res.code() == 200) textSearchFilterParse(res)
+                            if (res.code == 200) textSearchFilterParse(res)
                             else null
                         }
                     }
