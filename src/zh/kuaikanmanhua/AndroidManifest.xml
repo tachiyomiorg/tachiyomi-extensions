@@ -1,2 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="eu.kanade.tachiyomi.extension" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="eu.kanade.tachiyomi.extension">
+    <application>
+        <activity
+            android:name=".zh.kuaikanmanhua.KuaikanmanhuaUrlActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="m.kuaikanmanhua.com"
+                    android:pathPattern="/mobile/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="*kuaikanmanhua.com"
+                    android:pathPattern="/web/topic/..*"
+                    android:scheme="https" />
+
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

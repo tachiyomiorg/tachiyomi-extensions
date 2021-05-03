@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.zh.kuaikanmanhua
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -68,8 +69,23 @@ class Kuaikanmanhua : HttpSource() {
 
     // Search
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (query.startsWith(TOPIC_ID_SEARCH_PREFIX)) {
+            val new_query = query.removePrefix(TOPIC_ID_SEARCH_PREFIX)
+            return client.newCall(GET("$apiUrl/v1/topics/$new_query"))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/web/topic/$new_query"
+                    MangasPage(listOf(details), false)
+                }
+        }
+        return super.fetchSearchManga(page, query, filters)
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotEmpty()) {
+
             GET("$apiUrl/v1/search/topic?q=$query&size=18", headers)
         } else {
             lateinit var genre: String
@@ -112,6 +128,7 @@ class Kuaikanmanhua : HttpSource() {
         val data = JSONObject(response.body!!.string()).getJSONObject("data")
         val manga = SManga.create()
         manga.title = data.getString("title")
+        manga.thumbnail_url = data.getString("vertical_image_url")
         manga.author = data.getJSONObject("user").getString("nickname")
         manga.description = data.getString("description")
         manga.status = data.getInt("update_status_code")
@@ -226,5 +243,9 @@ class Kuaikanmanhua : HttpSource() {
     private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
         Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
         fun toUriPart() = vals[state].second
+    }
+
+    companion object {
+        const val TOPIC_ID_SEARCH_PREFIX = "topic:"
     }
 }
