@@ -54,9 +54,9 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun popularMangaRequest(page: Int): Request {
         return GET(
             url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${
-                helper.getMangaListOffset(
-                    page
-                )
+            helper.getMangaListOffset(
+                page
+            )
             }",
             headers = headers,
             cache = CacheControl.FORCE_NETWORK

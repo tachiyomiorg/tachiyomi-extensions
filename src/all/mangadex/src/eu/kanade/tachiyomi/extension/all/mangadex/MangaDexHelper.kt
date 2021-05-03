@@ -156,16 +156,12 @@ class MangaDexHelper() {
             .distinct()
 
         val authors = runCatching {
-            authorIds.mapNotNull { id ->
-                val response = client.newCall(GET("${MDConstants.apiUrl}/author/$id")).execute()
-                when (response.isSuccessful) {
-                    true -> {
-                        JsonParser.parseString(response.body!!.string())
-                            .obj["data"]["attributes"]["name"].nullString
-                    }
-                    false -> null
-                }
-            }.map { cleanString(it) }
+            val ids = "?ids[]=" + authorIds.joinToString { "&ids[]=$it" }
+            val response = client.newCall(GET("${MDConstants.apiUrl}/author$ids")).execute()
+            val json = JsonParser.parseString(response.body!!.string())
+            json.obj["results"].array.map { result ->
+                cleanString(result["data"]["attributes"]["name"].string)
+            }
         }.getOrNull() ?: emptyList()
 
         // get tag list
@@ -182,7 +178,7 @@ class MangaDexHelper() {
             )
             .filterNotNull()
 
-        return SManga.create().apply {
+        return SManga.create().apply{
             url = "/manga/$dexId"
             title = cleanString(attr["title"]["en"].string)
             description = cleanString(attr["description"]["??"].string)
