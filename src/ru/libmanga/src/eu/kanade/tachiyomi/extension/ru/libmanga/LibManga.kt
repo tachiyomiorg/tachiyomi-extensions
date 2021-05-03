@@ -54,7 +54,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override val baseUrl: String = "https://mangalib.me"
+    override val baseUrl: String = "https://mangalib.org"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
