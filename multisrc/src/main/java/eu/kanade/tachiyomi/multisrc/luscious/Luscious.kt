@@ -29,6 +29,8 @@ import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 abstract class Luscious(
     override val name: String,
@@ -486,56 +488,60 @@ abstract class Luscious(
     )
 
 
-    private fun getSortFilters() = listOf(
-        SelectFilterOption("Rating - All Time", "rating_all_time"),
-        SelectFilterOption("Rating - Last 7 Days", "rating_7_days"),
-        SelectFilterOption("Rating - Last 14 Days", "rating_14_days"),
-        SelectFilterOption("Rating - Last 30 Days", "rating_30_days"),
-        SelectFilterOption("Rating - Last 90 Days", "rating_90_days"),
-        SelectFilterOption("Rating - Last Year", "rating_1_year"),
-        SelectFilterOption("Date - Newest First", "date_newest"),
-        SelectFilterOption("Date - 2021", "date_2021"),
-        SelectFilterOption("Date - 2020", "date_2020"),
-        SelectFilterOption("Date - 2019", "date_2019"),
-        SelectFilterOption("Date - 2018", "date_2018"),
-        SelectFilterOption("Date - 2017", "date_2017"),
-        SelectFilterOption("Date - 2016", "date_2016"),
-        SelectFilterOption("Date - 2015", "date_2015"),
-        SelectFilterOption("Date - 2014", "date_2014"),
-        SelectFilterOption("Date - 2013", "date_2013"),
-        SelectFilterOption("Date - Oldest First", "date_oldest"),
-        SelectFilterOption("Date - Upcoming", "date_upcoming"),
-        SelectFilterOption("Date - Trending", "date_trending"),
-        SelectFilterOption("Date - Featured", "date_featured"),
-        SelectFilterOption("Date - Last Viewed", "date_last_interaction"),
-        SelectFilterOption("First Letter - Any", "alpha_any"),
-        SelectFilterOption("First Letter - A", "alpha_a"),
-        SelectFilterOption("First Letter - B", "alpha_b"),
-        SelectFilterOption("First Letter - C", "alpha_c"),
-        SelectFilterOption("First Letter - D", "alpha_d"),
-        SelectFilterOption("First Letter - E", "alpha_e"),
-        SelectFilterOption("First Letter - F", "alpha_f"),
-        SelectFilterOption("First Letter - G", "alpha_g"),
-        SelectFilterOption("First Letter - H", "alpha_h"),
-        SelectFilterOption("First Letter - I", "alpha_i"),
-        SelectFilterOption("First Letter - J", "alpha_j"),
-        SelectFilterOption("First Letter - K", "alpha_k"),
-        SelectFilterOption("First Letter - L", "alpha_l"),
-        SelectFilterOption("First Letter - M", "alpha_m"),
-        SelectFilterOption("First Letter - N", "alpha_n"),
-        SelectFilterOption("First Letter - O", "alpha_o"),
-        SelectFilterOption("First Letter - P", "alpha_p"),
-        SelectFilterOption("First Letter - Q", "alpha_q"),
-        SelectFilterOption("First Letter - R", "alpha_r"),
-        SelectFilterOption("First Letter - S", "alpha_s"),
-        SelectFilterOption("First Letter - T", "alpha_t"),
-        SelectFilterOption("First Letter - U", "alpha_u"),
-        SelectFilterOption("First Letter - V", "alpha_v"),
-        SelectFilterOption("First Letter - W", "alpha_w"),
-        SelectFilterOption("First Letter - X", "alpha_x"),
-        SelectFilterOption("First Letter - Y", "alpha_y"),
-        SelectFilterOption("First Letter - Z", "alpha_z"),
-    )
+    private fun getSortFilters(): List<SelectFilterOption> {
+        val sortOptions = mutableListOf<SelectFilterOption>()
+        listOf(
+            SelectFilterOption("Rating - All Time", "rating_all_time"),
+            SelectFilterOption("Rating - Last 7 Days", "rating_7_days"),
+            SelectFilterOption("Rating - Last 14 Days", "rating_14_days"),
+            SelectFilterOption("Rating - Last 30 Days", "rating_30_days"),
+            SelectFilterOption("Rating - Last 90 Days", "rating_90_days"),
+            SelectFilterOption("Rating - Last Year", "rating_1_year"),
+            SelectFilterOption("Date - Newest First", "date_newest"),
+            SelectFilterOption("Date - Oldest First", "date_oldest"),
+            SelectFilterOption("Date - Upcoming", "date_upcoming"),
+            SelectFilterOption("Date - Trending", "date_trending"),
+            SelectFilterOption("Date - Featured", "date_featured"),
+            SelectFilterOption("Date - Last Viewed", "date_last_interaction"),
+        ).forEach {
+            sortOptions.add(it)
+        }
+        validYears().map {
+            sortOptions.add(SelectFilterOption("Date - $it", "date_$it"))
+        }
+        listOf(
+            SelectFilterOption("First Letter - Any", "alpha_any"),
+            SelectFilterOption("First Letter - A", "alpha_a"),
+            SelectFilterOption("First Letter - B", "alpha_b"),
+            SelectFilterOption("First Letter - C", "alpha_c"),
+            SelectFilterOption("First Letter - D", "alpha_d"),
+            SelectFilterOption("First Letter - E", "alpha_e"),
+            SelectFilterOption("First Letter - F", "alpha_f"),
+            SelectFilterOption("First Letter - G", "alpha_g"),
+            SelectFilterOption("First Letter - H", "alpha_h"),
+            SelectFilterOption("First Letter - I", "alpha_i"),
+            SelectFilterOption("First Letter - J", "alpha_j"),
+            SelectFilterOption("First Letter - K", "alpha_k"),
+            SelectFilterOption("First Letter - L", "alpha_l"),
+            SelectFilterOption("First Letter - M", "alpha_m"),
+            SelectFilterOption("First Letter - N", "alpha_n"),
+            SelectFilterOption("First Letter - O", "alpha_o"),
+            SelectFilterOption("First Letter - P", "alpha_p"),
+            SelectFilterOption("First Letter - Q", "alpha_q"),
+            SelectFilterOption("First Letter - R", "alpha_r"),
+            SelectFilterOption("First Letter - S", "alpha_s"),
+            SelectFilterOption("First Letter - T", "alpha_t"),
+            SelectFilterOption("First Letter - U", "alpha_u"),
+            SelectFilterOption("First Letter - V", "alpha_v"),
+            SelectFilterOption("First Letter - W", "alpha_w"),
+            SelectFilterOption("First Letter - X", "alpha_x"),
+            SelectFilterOption("First Letter - Y", "alpha_y"),
+            SelectFilterOption("First Letter - Z", "alpha_z"),
+        ).forEach {
+            sortOptions.add(it)
+        }
+        return sortOptions
+    }
 
     private fun getAlbumTypeFilters() = listOf(
         SelectFilterOption("All", FILTER_VALUE_IGNORE),
@@ -639,6 +645,20 @@ abstract class Luscious(
     )
 
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
+
+    private fun validYears(): List<Int>{
+        val years = mutableListOf<Int>()
+        val current = LocalDateTime.now()
+        val formatter = DateTimeFormatter.ofPattern("yyyy")
+        val formatted = current.format(formatter)
+        val currentYear = formatted.toInt()
+        var firstYear = 2013
+        while (currentYear != firstYear -1) {
+            years.add(firstYear)
+            firstYear++
+        }
+        return years.reversed()
+    }
 
     companion object {
 
