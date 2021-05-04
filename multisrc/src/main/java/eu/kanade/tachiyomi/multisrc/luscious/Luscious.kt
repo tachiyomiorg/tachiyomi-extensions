@@ -42,18 +42,22 @@ abstract class Luscious(
     private val apiBaseUrl: String = "$baseUrl/graphql/nobatch/"
     private val gson = Gson()
     override val client: OkHttpClient = network.cloudflareClient
-    private val lusLang: String = when (lang) {
-        "en" -> "1"
-        "ja" -> "2"
-        "es" -> "3"
-        "it" -> "4"
-        "de" -> "5"
-        "fr" -> "6"
-        "zh" -> "8"
-        "ko" -> "9"
-        "pt" -> "100"
-        "th" -> "101"
-        else -> "99"
+    private val lusLang: String = toLusLang(lang)
+    private fun toLusLang (lang: String): String {
+        return when (lang) {
+            "all" -> FILTER_VALUE_IGNORE
+            "en" -> "1"
+            "ja" -> "2"
+            "es" -> "3"
+            "it" -> "4"
+            "de" -> "5"
+            "fr" -> "6"
+            "zh" -> "8"
+            "ko" -> "9"
+            "pt" -> "100"
+            "th" -> "101"
+            else -> "99"
+        }
     }
 
     private val preferences: SharedPreferences by lazy {
@@ -68,7 +72,7 @@ abstract class Luscious(
         val albumTypeFilter = filters.findInstance<AlbumTypeSelectFilter>()!!
         val interestsFilter = filters.findInstance<InterestGroupFilter>()!!
         val languagesFilter = filters.findInstance<LanguageGroupFilter>()!!
-        val tagsFilter = filters.findInstance<TagGroupFilter>()!!
+        val tagsFilter = filters.findInstance<TagTextFilters>()!!
         val genreFilter = filters.findInstance<GenreGroupFilter>()!!
         val contentTypeFilter = filters.findInstance<ContentTypeSelectFilter>()!!
         val albumSizeFilter = filters.findInstance<AlbumSizeSelectFilter>()!!
@@ -103,14 +107,22 @@ abstract class Luscious(
                                 add(this.toJsonObject("audience_ids"))
                             }
 
-                            add(
-                                languagesFilter.toJsonObject("language_ids").apply {
-                                    set("value", "+$lusLang${get("value").asString}")
-                                }
-                            )
+                            if (lusLang != FILTER_VALUE_IGNORE){
+                                add(
+                                    languagesFilter.toJsonObject("language_ids").apply {
+                                        set("value", "+$lusLang${get("value").asString}")
+                                    }
+                                )
+                            }
 
-                            if (tagsFilter.anyNotIgnored()) {
-                                add(tagsFilter.toJsonObject("tagged"))
+                            if (tagsFilter.state.isNotEmpty()) {
+                                val tags = "+${tagsFilter.state.toLowerCase()}".replace(" ", "_").replace("_,", "+").replace(",_", "+").replace(",", "+").replace("+-", "-").replace("-_", "-").trim()
+                                add(
+                                    JsonObject().apply {
+                                        addProperty("name", "tagged")
+                                        addProperty("value", tags)
+                                    }
+                                )
                             }
 
                             if (genreFilter.anyNotIgnored()) {
@@ -185,12 +197,12 @@ abstract class Luscious(
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         val id = manga.url.substringAfterLast("_").removeSuffix("/")
 
-        return client.newCall(GET(buildAlbumPicturesPageUrl(id, 1, "position")))
+        return client.newCall(GET(buildAlbumPicturesPageUrl(id, 1)))
             .asObservableSuccess()
-            .map { parseAlbumPicturesResponse(it, "position", manga.url) }
+            .map { parseAlbumPicturesResponse(it, manga.url) }
     }
 
-    private fun parseAlbumPicturesResponse(response: Response, sortPagesByOption: String, mangaUrl: String): List<SChapter> {
+    private fun parseAlbumPicturesResponse(response: Response, mangaUrl: String): List<SChapter> {
         val chapters = mutableListOf<SChapter>()
         when (getMergeChapterPref()){
             true -> {
@@ -226,7 +238,7 @@ abstract class Luscious(
                         chapters.add(chapter)
                     }
                     if (nextPage) {
-                        val newPage = client.newCall(GET(buildAlbumPicturesPageUrl(id, page, sortPagesByOption))).execute()
+                        val newPage = client.newCall(GET(buildAlbumPicturesPageUrl(id, page))).execute()
                         data = gson.fromJson<JsonObject>(newPage.body!!.string())
                             .let { it["data"]["picture"]["list"].asJsonObject }
                     }
@@ -243,7 +255,7 @@ abstract class Luscious(
 
     // Pages
 
-    private fun buildAlbumPicturesRequestInput(id: String, page: Int, sortPagesByOption: String): JsonObject {
+    private fun buildAlbumPicturesRequestInput(id: String, page: Int): JsonObject {
         return JsonObject().apply {
             addProperty(
                 "input",
@@ -259,15 +271,15 @@ abstract class Luscious(
                             )
                         }
                     )
-                    addProperty("display", sortPagesByOption)
+                    addProperty("display", getSortPref())
                     addProperty("page", page)
                 }
             )
         }
     }
 
-    private fun buildAlbumPicturesPageUrl(id: String, page: Int, sortPagesByOption: String): String {
-        val input = buildAlbumPicturesRequestInput(id, page, sortPagesByOption)
+    private fun buildAlbumPicturesPageUrl(id: String, page: Int): String {
+        val input = buildAlbumPicturesRequestInput(id, page)
         return apiBaseUrl.toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("operationName", "AlbumListOwnPictures")
             .addQueryParameter("query", ALBUM_PICTURES_REQUEST_GQL)
@@ -275,7 +287,7 @@ abstract class Luscious(
             .toString()
     }
 
-    private fun parseAlbumPicturesResponseMergeChapter(response: Response, sortPagesByOption: String): List<Page> {
+    private fun parseAlbumPicturesResponseMergeChapter(response: Response): List<Page> {
         val pages = mutableListOf<Page>()
         var nextPage = true
         var page = 2
@@ -300,7 +312,7 @@ abstract class Luscious(
                 pages.add(Page(index, url, url))
             }
             if (nextPage) {
-                val newPage = client.newCall(GET(buildAlbumPicturesPageUrl(id, page, sortPagesByOption))).execute()
+                val newPage = client.newCall(GET(buildAlbumPicturesPageUrl(id, page))).execute()
                 data = gson.fromJson<JsonObject>(newPage.body!!.string())
                     .let { it["data"]["picture"]["list"].asJsonObject }
             }
@@ -314,9 +326,9 @@ abstract class Luscious(
             true -> {
                 val id = chapter.url.substringAfterLast("_").removeSuffix("/")
 
-                client.newCall(GET(buildAlbumPicturesPageUrl(id, 1, "position")))
+                client.newCall(GET(buildAlbumPicturesPageUrl(id, 1)))
                     .asObservableSuccess()
-                    .map { parseAlbumPicturesResponseMergeChapter(it, "position") }
+                    .map { parseAlbumPicturesResponseMergeChapter(it) }
             }
             false -> {
                 Observable.just(listOf(Page(0, chapter.url, chapter.url)))
@@ -428,7 +440,8 @@ abstract class Luscious(
         }
     }
 
-    private class TagGroupFilter(filters: List<TriStateFilterOption>) : TriStateGroupFilter("Tags", filters)
+    open class TextFilter(name: String) : Filter.Text(name)
+
     private class GenreGroupFilter(filters: List<TriStateFilterOption>) : TriStateGroupFilter("Genres", filters)
 
     class CheckboxFilterOption(name: String, val value: String, default: Boolean = true) : Filter.CheckBox(name, default)
@@ -455,7 +468,7 @@ abstract class Luscious(
     class ContentTypeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Content Type", options)
     class RestrictGenresSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Restrict Genres", options)
     class AlbumSizeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Album Size", options)
-
+    class TagTextFilters : TextFilter("Tags")
     override fun getFilterList(): FilterList = getSortFilters(POPULAR_DEFAULT_SORT_STATE)
 
     private fun getSortFilters(sortState: Int) = FilterList(
@@ -466,11 +479,14 @@ abstract class Luscious(
         RestrictGenresSelectFilter(getRestrictGenresFilters()),
         InterestGroupFilter(getInterestFilters()),
         LanguageGroupFilter(getLanguageFilters()),
-        TagGroupFilter(getTagFilters()),
-        GenreGroupFilter(getGenreFilters())
+        GenreGroupFilter(getGenreFilters()),
+        Filter.Header("Separate tags with commas (,)"),
+        Filter.Header("Prepend with dash (-) to exclude"),
+        TagTextFilters(),
     )
 
-    fun getSortFilters() = listOf(
+
+    private fun getSortFilters() = listOf(
         SelectFilterOption("Rating - All Time", "rating_all_time"),
         SelectFilterOption("Rating - Last 7 Days", "rating_7_days"),
         SelectFilterOption("Rating - Last 14 Days", "rating_14_days"),
@@ -478,7 +494,7 @@ abstract class Luscious(
         SelectFilterOption("Rating - Last 90 Days", "rating_90_days"),
         SelectFilterOption("Rating - Last Year", "rating_1_year"),
         SelectFilterOption("Date - Newest First", "date_newest"),
-        SelectFilterOption("Date - 2020", "date_2021"),
+        SelectFilterOption("Date - 2021", "date_2021"),
         SelectFilterOption("Date - 2020", "date_2020"),
         SelectFilterOption("Date - 2019", "date_2019"),
         SelectFilterOption("Date - 2018", "date_2018"),
@@ -492,11 +508,6 @@ abstract class Luscious(
         SelectFilterOption("Date - Trending", "date_trending"),
         SelectFilterOption("Date - Featured", "date_featured"),
         SelectFilterOption("Date - Last Viewed", "date_last_interaction"),
-        SelectFilterOption("First Letter - Any", "alpha_any"),
-        SelectFilterOption("First Letter - A", "alpha_a"),
-        SelectFilterOption("First Letter - B", "alpha_b"),
-        SelectFilterOption("First Letter - C", "alpha_c"),
-        SelectFilterOption("First Letter - D", "alpha_d"),
         SelectFilterOption("First Letter - Any", "alpha_any"),
         SelectFilterOption("First Letter - A", "alpha_a"),
         SelectFilterOption("First Letter - B", "alpha_b"),
@@ -526,9 +537,9 @@ abstract class Luscious(
         SelectFilterOption("First Letter - Z", "alpha_z"),
     )
 
-    fun getAlbumTypeFilters() = listOf(
-        SelectFilterOption("Manga", "manga"),
+    private fun getAlbumTypeFilters() = listOf(
         SelectFilterOption("All", FILTER_VALUE_IGNORE),
+        SelectFilterOption("Manga", "manga"),
         SelectFilterOption("Pictures", "pictures")
     )
 
@@ -538,7 +549,7 @@ abstract class Luscious(
         SelectFilterOption("Strict", "strict")
     )
 
-    fun getContentTypeFilters() = listOf(
+    private fun getContentTypeFilters() = listOf(
         SelectFilterOption("All", FILTER_VALUE_IGNORE),
         SelectFilterOption("Hentai", "0"),
         SelectFilterOption("Non-Erotic", "5"),
@@ -556,9 +567,9 @@ abstract class Luscious(
         SelectFilterOption("3200-12800", "6"),
     )
 
-    fun getInterestFilters() = listOf(
+    private fun getInterestFilters() = listOf(
         CheckboxFilterOption("Straight Sex", "1"),
-        CheckboxFilterOption("Trans x Girl", "10", false),
+        CheckboxFilterOption("Trans x Girl", "10"),
         CheckboxFilterOption("Gay / Yaoi", "2"),
         CheckboxFilterOption("Lesbian / Yuri", "3"),
         CheckboxFilterOption("Trans", "5"),
@@ -567,63 +578,26 @@ abstract class Luscious(
         CheckboxFilterOption("Trans x Guy", "9")
     )
 
-    fun getLanguageFilters() = listOf(
-        CheckboxFilterOption("English", ENGLISH_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Japanese", JAPANESE_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Spanish", SPANISH_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Italian", ITALIAN_LUS_LANG_VAL, false),
-        CheckboxFilterOption("German", GERMAN_LUS_LANG_VAL, false),
-        CheckboxFilterOption("French", FRENCH_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Chinese", CHINESE_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Korean", KOREAN_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Others", OTHERS_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Portugese", PORTUGESE_LUS_LANG_VAL, false),
-        CheckboxFilterOption("Thai", THAI_LUS_LANG_VAL, false)
+    private fun getLanguageFilters() = listOf(
+        CheckboxFilterOption("English", toLusLang("en"), false),
+        CheckboxFilterOption("Japanese", toLusLang("ja"), false),
+        CheckboxFilterOption("Spanish", toLusLang("es"), false),
+        CheckboxFilterOption("Italian", toLusLang("it"), false),
+        CheckboxFilterOption("German", toLusLang("de"), false),
+        CheckboxFilterOption("French", toLusLang("fr"), false),
+        CheckboxFilterOption("Chinese", toLusLang("zh"), false),
+        CheckboxFilterOption("Korean", toLusLang("ko"), false),
+        CheckboxFilterOption("Others", toLusLang("other"), false),
+        CheckboxFilterOption("Portugese", toLusLang("pt"), false),
+        CheckboxFilterOption("Thai", toLusLang("th"), false)
     ).filterNot { it.value == lusLang }
 
-    fun getTagFilters() = listOf(
-        TriStateFilterOption("Big Breasts", "big_breasts"),
-        TriStateFilterOption("Blowjob", "blowjob"),
-        TriStateFilterOption("Anal", "anal"),
-        TriStateFilterOption("Group", "group"),
-        TriStateFilterOption("Big Ass", "big_ass"),
-        TriStateFilterOption("Full Color", "full_color"),
-        TriStateFilterOption("Schoolgirl", "schoolgirl"),
-        TriStateFilterOption("Rape", "rape"),
-        TriStateFilterOption("Glasses", "glasses"),
-        TriStateFilterOption("Nakadashi", "nakadashi"),
-        TriStateFilterOption("Yuri", "yuri"),
-        TriStateFilterOption("Paizuri", "paizuri"),
-        TriStateFilterOption("Ahegao", "ahegao"),
-        TriStateFilterOption("Group: metart", "group%3A_metart"),
-        TriStateFilterOption("Brunette", "brunette"),
-        TriStateFilterOption("Solo", "solo"),
-        TriStateFilterOption("Blonde", "blonde"),
-        TriStateFilterOption("Shaved Pussy", "shaved_pussy"),
-        TriStateFilterOption("Small Breasts", "small_breasts"),
-        TriStateFilterOption("Cum", "cum"),
-        TriStateFilterOption("Stockings", "stockings"),
-        TriStateFilterOption("Yuri", "yuri"),
-        TriStateFilterOption("Ass", "ass"),
-        TriStateFilterOption("Creampie", "creampie"),
-        TriStateFilterOption("Rape", "rape"),
-        TriStateFilterOption("Oral Sex", "oral_sex"),
-        TriStateFilterOption("Bondage", "bondage"),
-        TriStateFilterOption("Futanari", "futanari"),
-        TriStateFilterOption("Double Penetration", "double_penetration"),
-        TriStateFilterOption("Threesome", "threesome"),
-        TriStateFilterOption("Anal Sex", "anal_sex"),
-        TriStateFilterOption("Big Cock", "big_cock"),
-        TriStateFilterOption("Straight Sex", "straight_sex"),
-        TriStateFilterOption("Yaoi", "yaoi")
-    )
 
-    fun getGenreFilters() = listOf(
+    private fun getGenreFilters() = listOf(
         TriStateFilterOption("3D / Digital Art", "25"),
         TriStateFilterOption("Amateurs", "20"),
         TriStateFilterOption("Artist Collection", "19"),
         TriStateFilterOption("Asian Girls", "12"),
-        TriStateFilterOption("Cosplay", "22"),
         TriStateFilterOption("BDSM", "27"),
         TriStateFilterOption("Cross-Dressing", "30"),
         TriStateFilterOption("Defloration / First Time", "59"),
@@ -655,8 +629,8 @@ abstract class Luscious(
         TriStateFilterOption("Sex Workers", "47"),
         TriStateFilterOption("Softcore / Ecchi", "9"),
         TriStateFilterOption("Superheroes", "17"),
-        TriStateFilterOption("Tankobon", "45"),
         TriStateFilterOption("TV / Movies", "51"),
+        TriStateFilterOption("Tankōbon", "45"),
         TriStateFilterOption("Trans", "14"),
         TriStateFilterOption("Video Games", "15"),
         TriStateFilterOption("Vintage", "58"),
@@ -667,18 +641,6 @@ abstract class Luscious(
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
 
     companion object {
-
-        const val ENGLISH_LUS_LANG_VAL = "1"
-        const val JAPANESE_LUS_LANG_VAL = "2"
-        const val SPANISH_LUS_LANG_VAL = "3"
-        const val ITALIAN_LUS_LANG_VAL = "4"
-        const val GERMAN_LUS_LANG_VAL = "5"
-        const val FRENCH_LUS_LANG_VAL = "6"
-        const val CHINESE_LUS_LANG_VAL = "8"
-        const val KOREAN_LUS_LANG_VAL = "9"
-        const val OTHERS_LUS_LANG_VAL = "99"
-        const val PORTUGESE_LUS_LANG_VAL = "100"
-        const val THAI_LUS_LANG_VAL = "101"
 
         private const val POPULAR_DEFAULT_SORT_STATE = 0
         private const val LATEST_DEFAULT_SORT_STATE = 7
@@ -752,7 +714,13 @@ abstract class Luscious(
         private const val RESOLUTION_PREF_TITLE = "Image resolution"
         private val RESOLUTION_PREF_ENTRIES = arrayOf("Low", "Medium", "High", "Original")
         private val RESOLUTION_PREF_ENTRY_VALUES = arrayOf("2", "1", "0", "-1")
-        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[3]
+        private val RESOLUTION_PREF_DEFAULT_VALUE = RESOLUTION_PREF_ENTRY_VALUES[2]
+
+        private const val SORT_PREF_KEY = "SORT"
+        private const val SORT_PREF_TITLE = "Page Sort"
+        private val SORT_PREF_ENTRIES = arrayOf("Position", "Date", "Rating")
+        private val SORT_PREF_ENTRY_VALUES = arrayOf("position", "date_newest", "rating_all_time")
+        private val SORT_PREF_DEFAULT_VALUE = SORT_PREF_ENTRY_VALUES[0]
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
@@ -771,6 +739,21 @@ abstract class Luscious(
                 preferences.edit().putString("${RESOLUTION_PREF_KEY}_$lang", entry).commit()
             }
         }
+        val sortPref = ListPreference(screen.context).apply {
+            key = "${SORT_PREF_KEY}_$lang"
+            title = SORT_PREF_TITLE
+            entries = SORT_PREF_ENTRIES
+            entryValues = SORT_PREF_ENTRY_VALUES
+            setDefaultValue(SORT_PREF_DEFAULT_VALUE)
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString("${SORT_PREF_KEY}_$lang", entry).commit()
+            }
+        }
         val mergeChapterPref = CheckBoxPreference(screen.context).apply {
             key = "${MERGE_CHAPTER_PREF_KEY}_$lang"
             title = MERGE_CHAPTER_PREF_TITLE
@@ -783,9 +766,11 @@ abstract class Luscious(
             }
         }
         screen.addPreference(resolutionPref)
+        screen.addPreference(sortPref)
         screen.addPreference(mergeChapterPref)
     }
 
     private fun getMergeChapterPref(): Boolean = preferences.getBoolean("${MERGE_CHAPTER_PREF_KEY}_$lang", MERGE_CHAPTER_PREF_DEFAULT_VALUE)
     private fun getResolutionPref(): String? = preferences.getString("${RESOLUTION_PREF_KEY}_$lang", RESOLUTION_PREF_DEFAULT_VALUE)
+    private fun getSortPref(): String? = preferences.getString("${SORT_PREF_KEY}_$lang", SORT_PREF_DEFAULT_VALUE)
 }
