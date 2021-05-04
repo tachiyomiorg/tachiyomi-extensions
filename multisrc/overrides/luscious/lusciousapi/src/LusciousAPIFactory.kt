@@ -17,6 +17,7 @@ class LusciousAPIFactory : SourceFactory {
         LusciousAPIOTHER(),
         LusciousAPIPT(),
         LusciousAPITH(),
+        LusciousAPIALL(),
     )
 }
 class LusciousAPIEN : Luscious("Luscious (API)", "https://api.luscious.net", "en")
@@ -30,3 +31,4 @@ class LusciousAPIKO : Luscious("Luscious (API)", "https://api.luscious.net", "ko
 class LusciousAPIOTHER : Luscious("Luscious (API)", "https://api.luscious.net", "other")
 class LusciousAPIPT : Luscious("Luscious (API)", "https://api.luscious.net", "pt")
 class LusciousAPITH : Luscious("Luscious (API)", "https://api.luscious.net", "th")
+class LusciousAPIALL : Luscious("Luscious (API)", "https://api.luscious.net", "all")

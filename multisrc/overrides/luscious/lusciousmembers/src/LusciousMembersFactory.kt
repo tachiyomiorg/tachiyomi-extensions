@@ -17,6 +17,7 @@ class LusciousMembersFactory : SourceFactory {
         LusciousMembersOTHER(),
         LusciousMembersPT(),
         LusciousMembersTH(),
+        LusciousMembersALL(),
     )
 }
 class LusciousMembersEN : Luscious("Luscious (Members)", "https://members.luscious.net", "en")
@@ -30,3 +31,4 @@ class LusciousMembersKO : Luscious("Luscious (Members)", "https://members.luscio
 class LusciousMembersOTHER : Luscious("Luscious (Members)", "https://members.luscious.net", "other")
 class LusciousMembersPT : Luscious("Luscious (Members)", "https://members.luscious.net", "pt")
 class LusciousMembersTH : Luscious("Luscious (Members)", "https://members.luscious.net", "th")
+class LusciousMembersALL : Luscious("Luscious (Members)", "https://members.luscious.net", "all")
