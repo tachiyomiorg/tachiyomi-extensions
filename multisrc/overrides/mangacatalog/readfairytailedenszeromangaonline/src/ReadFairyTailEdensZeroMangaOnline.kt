@@ -18,5 +18,9 @@ class ReadFairyTailEdensZeroMangaOnline : MangaCatalog("Read Fairy Tail & Edens 
         Pair("Parasyte x FT", "$baseUrl/manga/parasyte-x-fairy-tail/"),
         Pair("Monster Hunter", "$baseUrl/manga/monster-hunter-orage/"),
         Pair("Rave Master", "$baseUrl/manga/rave-master/"),
+        Pair("Fairy Tail x Rave", "$baseUrl/manga/fairy-tail-x-rave/"),
+        Pair("Fairy Tail Gaiden – Raigo Issen", "$baseUrl/manga/fairy-tail-gaiden-raigo-issen/"),
+        Pair("Fairy Tail Gaiden – Kengami no Souryuu", "$baseUrl/manga/fairy-tail-gaiden-kengami-no-souryuu/"),
+        Pair("Fairy Tail Gaiden – Road Knight", "$baseUrl/manga/fairy-tail-gaiden-road-knight/"),
     ).sortedBy { it.first }.distinctBy { it.second }
 }
