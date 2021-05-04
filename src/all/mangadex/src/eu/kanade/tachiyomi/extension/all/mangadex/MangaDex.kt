@@ -151,7 +151,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
             if (response.isSuccessful.not()) {
                 throw Exception("Error getting chapter list http code: ${response.code}")
             }
-            val chapterListResponse = JsonParser().parse(response.body!!.string()).obj
+            val chapterListResponse = JsonParser.parseString(response.body!!.string()).obj
 
             val chapterListResults = chapterListResponse["results"].asJsonArray
 

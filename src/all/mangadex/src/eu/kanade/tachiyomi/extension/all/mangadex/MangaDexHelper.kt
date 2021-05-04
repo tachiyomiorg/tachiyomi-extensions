@@ -156,7 +156,7 @@ class MangaDexHelper() {
             .distinct()
 
         val authors = runCatching {
-            val ids = "?ids[]=" + authorIds.joinToString { "&ids[]=$it" }
+            val ids = authorIds.joinToString ("&ids[]=", "?ids[]")
             val response = client.newCall(GET("${MDConstants.apiUrl}/author$ids")).execute()
             val json = JsonParser.parseString(response.body!!.string())
             json.obj["results"].array.map { result ->
