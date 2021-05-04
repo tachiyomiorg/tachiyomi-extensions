@@ -15,6 +15,8 @@ class DynastyDoujins : DynastyScans() {
 
     override val name = "Dynasty-Doujins"
 
+    override val searchPrefix = "doujins"
+
     override fun popularMangaInitialUrl() = "$baseUrl/doujins?view=cover"
 
     override fun popularMangaFromElement(element: Element): SManga {

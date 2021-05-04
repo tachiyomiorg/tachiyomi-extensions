@@ -10,6 +10,8 @@ class DynastySeries : DynastyScans() {
 
     override val name = "Dynasty-Series"
 
+    override val searchPrefix = "series"
+
     override fun popularMangaInitialUrl() = "$baseUrl/series?view=cover"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {

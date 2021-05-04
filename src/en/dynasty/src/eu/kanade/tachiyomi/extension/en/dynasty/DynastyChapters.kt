@@ -12,6 +12,7 @@ import org.jsoup.nodes.Element
 
 class DynastyChapters : DynastyScans() {
     override val name = "Dynasty-Chapters"
+    override val searchPrefix = "chapters"
     override fun popularMangaInitialUrl() = ""
 
     private fun popularMangaInitialUrl(page: Int) = "$baseUrl/search?q=&classes%5B%5D=Chapter&page=$page=$&sort="

@@ -2,6 +2,8 @@ package eu.kanade.tachiyomi.extension.en.dynasty
 
 import android.net.Uri
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -16,6 +18,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.select.Elements
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Locale
@@ -29,6 +32,8 @@ abstract class DynastyScans : ParsedHttpSource() {
     override val lang = "en"
 
     override val supportsLatest = false
+
+    open val searchPrefix = ""
 
     private var parent: List<Node> = ArrayList()
 
@@ -56,6 +61,24 @@ abstract class DynastyScans : ParsedHttpSource() {
             popularMangaFromElement(element)
         }
         return MangasPage(mangas, false)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (query.startsWith("manga:")) {
+            return if (query.startsWith("manga:$searchPrefix:")) {
+                val newQuery = query.removePrefix("manga:$searchPrefix:")
+                client.newCall(GET("$baseUrl/$searchPrefix/$newQuery"))
+                    .asObservableSuccess()
+                    .map { response ->
+                        val details = mangaDetailsParse(response)
+                        details.url = "/$searchPrefix/$newQuery"
+                        MangasPage(listOf(details), false)
+                    }
+            } else {
+                return Observable.just(MangasPage(ArrayList<SManga>(0), false))
+            }
+        }
+        return super.fetchSearchManga(page, query, filters)
     }
 
     override fun searchMangaSelector() = "a.name"
