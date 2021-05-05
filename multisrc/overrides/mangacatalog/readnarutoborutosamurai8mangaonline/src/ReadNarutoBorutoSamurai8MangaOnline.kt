@@ -11,6 +11,5 @@ class ReadNarutoBorutoSamurai8MangaOnline : MangaCatalog("Read Naruto/Boruto/Sam
         Pair("Colored", "$baseUrl/manga/naruto-digital-colored-comics/"),
         Pair("Naruto Gaiden", "$baseUrl/manga/naruto-gaiden-the-seventh-hokage/"),
         Pair("Samurai 8", "$baseUrl/manga/samurai-8-hachimaru-den/"),
-        Pair("", "$baseUrl/manga//"),
     ).sortedBy { it.first }.distinctBy { it.second }
 }
