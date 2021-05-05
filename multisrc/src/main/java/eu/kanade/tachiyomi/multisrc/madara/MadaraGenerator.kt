@@ -10,7 +10,7 @@ class MadaraGenerator : ThemeSourceGenerator {
 
     override val themeClass = "Madara"
 
-    override val baseVersionCode: Int = 3
+    override val baseVersionCode: Int = 4
 
     override val sources = listOf(
             SingleLang("24hRomance", "https://24hromance.com", "en", className = "Romance24h"),

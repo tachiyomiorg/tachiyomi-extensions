@@ -1,8 +1,11 @@
 package eu.kanade.tachiyomi.multisrc.madara
 
+import android.app.Application
+import android.content.SharedPreferences
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservable
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -17,14 +20,17 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
@@ -35,9 +41,45 @@ abstract class Madara(
     override val baseUrl: String,
     override val lang: String,
     private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
-) : ParsedHttpSource() {
+) : ParsedHttpSource(), ConfigurableSource {
 
     override val supportsLatest = true
+
+    // Preferences Code
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chooseHostPref = androidx.preference.ListPreference(screen.context).apply {
+            key = CHOOSE_HOST_Title
+            title = CHOOSE_HOST_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                hostValues = mutableListOf("local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+                preferences.edit().putString(CHOOSE_HOST, entry).commit()
+            }
+        }
+        screen.addPreference(chooseHostPref)
+    }
+
+    private fun chooseHostPref() = preferences.getString(CHOOSE_HOST, "default")
+
+    companion object {
+        private const val CHOOSE_HOST_Title = "Choose a particular host/server for images"
+        private const val CHOOSE_HOST = "choose_host"
+        private val prefsEntries = arrayOf("Default", "Auto", "Local", "Amazon", "Imgur", "Flickr", "Picasa (Blogspot)", "Google Photos")
+        private val prefsEntryValues = arrayOf("default", "auto", "local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+
+        private var hostValues = mutableListOf("local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+    }
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -356,24 +398,24 @@ abstract class Madara(
                 }
             }
             val genres = select("div.genres-content a")
-                .map { element -> element.text().toLowerCase() }
+                .map { element -> element.text().toLowerCase(Locale.ROOT) }
                 .toMutableSet()
 
             // add tag(s) to genre
             select("div.tags-content a").forEach { element ->
                 if (genres.contains(element.text()).not()) {
-                    genres.add(element.text().toLowerCase())
+                    genres.add(element.text().toLowerCase(Locale.ROOT))
                 }
             }
 
             // add manga/manhwa/manhua thinggy to genre
             document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not() && it.notUpdating() && it != "-" && genres.contains(it).not()) {
-                    genres.add(it.toLowerCase())
+                    genres.add(it.toLowerCase(Locale.ROOT))
                 }
             }
 
-            manga.genre = genres.toList().map { it.capitalize() }.joinToString(", ")
+            manga.genre = genres.toList().joinToString(", ") { it.capitalize(Locale.ROOT) }
 
             // add alternative name to manga description
             document.select(altNameSelector).firstOrNull()?.ownText()?.let {
@@ -410,7 +452,7 @@ abstract class Madara(
         val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")
             .add("Referer", baseUrl)
             .build()
-        val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
+        val body = "action=manga_get_chapters&manga=$mangaId".toRequestBody(null)
         return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()
     }
 
@@ -438,9 +480,15 @@ abstract class Madara(
 
         with(element) {
             select(chapterUrlSelector).first()?.let { urlElement ->
-                chapter.url = urlElement.attr("abs:href").let {
+                val url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if (!it.endsWith(chapterUrlSuffix)) chapterUrlSuffix else ""
-                }
+                }.toHttpUrlOrNull()!!.newBuilder()
+
+                if (chooseHostPref() != "default" && chooseHostPref() != "auto")
+                    url.addQueryParameter("host", chooseHostPref())
+
+                chapter.url = url.toString()
+
                 chapter.name = urlElement.text()
             }
 
@@ -528,6 +576,36 @@ abstract class Madara(
             return GET(chapter.url, headers)
         }
         return super.pageListRequest(chapter)
+    }
+
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        var observable = super.fetchPageList(chapter)
+
+        // If default host doesn't work, will try each host
+        if (chooseHostPref() == "auto") {
+            var pages = emptyList<Page>()
+            var index = 0
+
+            while (pages.isEmpty() && index < hostValues.size) {
+                observable.subscribe {
+                    pages = it
+                }
+
+                if (pages.isNotEmpty()) {
+                    if (index > 1) Collections.swap(hostValues, 0, index - 1)
+                    return observable
+                }
+
+                val url = chapter.url.toHttpUrlOrNull()!!.newBuilder()
+                url.setQueryParameter("host", hostValues[index])
+                chapter.url = url.toString()
+
+                observable = super.fetchPageList(chapter)
+
+                index++
+            }
+        }
+        return observable
     }
 
     open val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
