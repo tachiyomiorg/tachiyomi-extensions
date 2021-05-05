@@ -10,6 +10,7 @@ import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -22,6 +23,7 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
+import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
@@ -109,13 +111,25 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
 
     // Manga Details section
+
+    // Shenanigans to allow "open in webview" to show a webpage instead of JSON
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(apiMangaDetailsRequest(manga))
+            .asObservableSuccess()
+            .map { response ->
+                mangaDetailsParse(response).apply { initialized = true }
+            }
+    }
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET("${baseUrl}${manga.url}", headers)
+    }
     /**
      * get manga details url throws exception if the url is the old format so people migrate
      */
-    override fun mangaDetailsRequest(manga: SManga): Request {
-        Log.e("ESCO", manga.url)
+    fun apiMangaDetailsRequest(manga: SManga): Request {
         if (!helper.containsUuid(manga.url.trim())) {
-            throw Exception("Old manga id format, please migrate entry to MangaDex")
+            throw Exception("Manga ID format has changed, migrate from MangaDex to MangaDex to continue reading")
         }
         return GET("${MDConstants.apiUrl}${manga.url}", headers, CacheControl.FORCE_NETWORK)
     }
@@ -131,7 +145,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
      */
     override fun chapterListRequest(manga: SManga): Request {
         if (!helper.containsUuid(manga.url)) {
-            throw Exception("Old manga id format, please migrate entry to MangaDex")
+            throw Exception("Manga ID format has changed, migrate from MangaDex to MangaDex to continue reading")
         }
         return actualChapterListRequest(helper.getUUIDFromUrl(manga.url), 0)
     }
@@ -147,13 +161,14 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
         )
 
     override fun chapterListParse(response: Response): List<SChapter> {
+
+        if (response.isSuccessful.not()) {
+            throw Exception("Error getting chapter list http code: ${response.code}")
+        }
         try {
-            if (response.isSuccessful.not()) {
-                throw Exception("Error getting chapter list http code: ${response.code}")
-            }
             val chapterListResponse = JsonParser.parseString(response.body!!.string()).obj
 
-            val chapterListResults = chapterListResponse["results"].asJsonArray
+            val chapterListResults = chapterListResponse["results"].array.map { it.obj }.toMutableList()
 
             val mangaId =
                 response.request.url.toString().substringBefore("/feed")
@@ -171,22 +186,26 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                 val newResponse =
                     client.newCall(actualChapterListRequest(mangaId, offset)).execute()
                 val newChapterListJson = JsonParser.parseString(newResponse.body!!.string()).obj
-                chapterListResults.addAll(newChapterListJson["results"].asJsonArray)
+                chapterListResults.addAll(newChapterListJson["results"].array.map { it.obj })
                 hasMoreResults = (limit + offset) < newChapterListJson["total"].int
             }
 
-            val groupMap = helper.createGroupMap(chapterListResults, client)
+            val groupMap = helper.createGroupMap(chapterListResults.toList(), client)
+
             val now = Date().time
 
             return chapterListResults.map { helper.createChapter(it, groupMap) }
                 .filter { it.date_upload <= now && "MangaPlus" != it.scanlator }
         } catch (e: Exception) {
-            Log.e("ESCO", "error", e)
+            Log.e("MangaDex", "error parsing chapter list", e)
             throw(e)
         }
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
+        if (!helper.containsUuid(chapter.url)) {
+            throw Exception("Chapter ID format has changed, migrate from MangaDex to MangaDex to continue reading")
+        }
         return GET(MDConstants.apiUrl + chapter.url, headers, CacheControl.FORCE_NETWORK)
     }
 

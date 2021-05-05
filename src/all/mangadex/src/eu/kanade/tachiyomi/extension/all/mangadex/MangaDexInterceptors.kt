@@ -9,6 +9,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.Response
+import okhttp3.internal.closeQuietly
 
 /**
  * Rate limit requests ignore covers though
@@ -58,7 +59,8 @@ class MdAtHomeReportInterceptor(
                     )
                 )
                 try {
-                    postResult.execute()
+                    val body = postResult.execute()
+                    body.closeQuietly()
                 } catch (e: Exception) {
                     Log.e("MangaDex", "Error trying to POST report to MD@Home: ${e.message}")
                 }
