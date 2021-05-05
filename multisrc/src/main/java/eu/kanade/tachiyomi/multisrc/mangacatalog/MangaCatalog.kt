@@ -30,7 +30,6 @@ abstract class MangaCatalog(
     override val supportsLatest: Boolean = false
 
     // Popular
-
     override fun fetchPopularManga(page: Int): Observable<MangasPage> {
         return Observable.just(MangasPage(sourceList.map { popularMangaFromPair(it.first, it.second) }, false))
     }
@@ -51,7 +50,17 @@ abstract class MangaCatalog(
 
     // Search
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("No Search Function")
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        val mangas = mutableListOf<SManga>()
+        sourceList.map {
+            if (it.first.contains(query)) {
+                mangas.add(popularMangaFromPair(it.first, it.second))
+            }
+        }
+        return Observable.just(MangasPage(mangas, false))
+    }
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("Not used")
     override fun searchMangaNextPageSelector() = throw Exception("Not used")
     override fun searchMangaSelector() = throw Exception("Not used")
     override fun searchMangaFromElement(element: Element) = throw Exception("Not used")
