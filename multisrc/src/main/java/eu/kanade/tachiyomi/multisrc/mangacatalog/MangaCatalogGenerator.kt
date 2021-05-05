@@ -9,7 +9,7 @@ class MangaCatalogGenerator : ThemeSourceGenerator {
 
     override val themeClass = "MangaCatalog"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         SingleLang("Read Boku no Hero Academia/My Hero Academia Manga", "https://ww6.readmha.com", "en", className = "ReadBokuNoHeroAcademiaMyHeroAcademiaManga", overrideVersionCode = 1),
