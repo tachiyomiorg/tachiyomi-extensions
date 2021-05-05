@@ -120,7 +120,7 @@ class Manhuadui : ParsedHttpSource() {
             if (imgStr.startsWith("http://images.dmzj.com")) {
                 Page(i, "", "https://img01.eshanyao.com/showImage.php?url=$imgStr")
             } else {
-                Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}/$imgStr" else imgStr)
+                Page(i, "", if (imgStr.indexOf("http") == -1) "${imageServer[0]}$imgStr" else imgStr)
             }
         }
     }
