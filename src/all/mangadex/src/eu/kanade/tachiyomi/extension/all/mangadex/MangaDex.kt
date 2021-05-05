@@ -129,7 +129,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
      */
     fun apiMangaDetailsRequest(manga: SManga): Request {
         if (!helper.containsUuid(manga.url.trim())) {
-            throw Exception("Manga ID format has changed, migrate from MangaDex to MangaDex to continue reading")
+            throw Exception("Migrate this manga from MangaDex to MangaDex to update it")
         }
         return GET("${MDConstants.apiUrl}${manga.url}", headers, CacheControl.FORCE_NETWORK)
     }
@@ -145,7 +145,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
      */
     override fun chapterListRequest(manga: SManga): Request {
         if (!helper.containsUuid(manga.url)) {
-            throw Exception("Manga ID format has changed, migrate from MangaDex to MangaDex to continue reading")
+            throw Exception("Migrate this manga from MangaDex to MangaDex to update it")
         }
         return actualChapterListRequest(helper.getUUIDFromUrl(manga.url), 0)
     }
@@ -204,7 +204,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun pageListRequest(chapter: SChapter): Request {
         if (!helper.containsUuid(chapter.url)) {
-            throw Exception("Chapter ID format has changed, migrate from MangaDex to MangaDex to continue reading")
+            throw Exception("Migrate this manga from MangaDex to MangaDex to update it")
         }
         return GET(MDConstants.apiUrl + chapter.url, headers, CacheControl.FORCE_NETWORK)
     }
