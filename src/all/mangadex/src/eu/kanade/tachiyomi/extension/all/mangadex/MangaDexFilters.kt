@@ -65,6 +65,7 @@ class MangaDexFilters {
     internal class Tag(val id: String, name: String) : Filter.TriState(name)
     private class TagList(tags: List<Tag>) : Filter.Group<Tag>("Tags", tags)
 
+    // to get all tags from dex https://api.mangadex.org/manga/tag
     internal fun getTags() = listOf(
         Tag("391b0423-d847-456f-aff0-8b0cfc03066b", "Action"),
         Tag("f4122d1c-3b44-44d0-9936-ff7502c39ad3", "Adaptation"),

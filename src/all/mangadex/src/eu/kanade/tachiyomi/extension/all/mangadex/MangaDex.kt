@@ -3,6 +3,8 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 import android.app.Application
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.preference.CheckBoxPreference
+import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
@@ -20,6 +22,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.CacheControl
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
@@ -54,12 +57,14 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     // POPULAR Manga Section
 
     override fun popularMangaRequest(page: Int): Request {
+        val url = MDConstants.apiMangaUrl.toHttpUrl().newBuilder()
+            .addQueryParameter("order[updatedAt]", "desc")
+            .addQueryParameter("limit", MDConstants.mangaLimit.toString())
+            .addQueryParameter("offset", helper.getMangaListOffset(page))
+            .build().toUrl().toString()
+
         return GET(
-            url = "${MDConstants.apiMangaUrl}?order[updatedAt]=desc&limit=${MDConstants.mangaLimit}&offset=${
-            helper.getMangaListOffset(
-                page
-            )
-            }",
+            url = url,
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
         )
@@ -67,7 +72,11 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun popularMangaParse(response: Response): MangasPage {
         if (response.isSuccessful.not()) {
-            throw Exception("Error getting popular manga http code: ${response.code}")
+            throw Exception("HTTP ${response.code}")
+        }
+
+        if (response.code == 204) {
+            return MangasPage(emptyList(), false)
         }
 
         val mangaListResponse = JsonParser.parseString(response.body!!.string()).obj
@@ -92,7 +101,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
             return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
         }
 
-        val tempUrl = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
+        val tempUrl = MDConstants.apiMangaUrl.toHttpUrl().newBuilder()
 
         tempUrl.apply {
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
@@ -124,6 +133,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun mangaDetailsRequest(manga: SManga): Request {
         return GET("${baseUrl}${manga.url}", headers)
     }
+
     /**
      * get manga details url throws exception if the url is the old format so people migrate
      */
@@ -163,16 +173,20 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun chapterListParse(response: Response): List<SChapter> {
 
         if (response.isSuccessful.not()) {
-            throw Exception("Error getting chapter list http code: ${response.code}")
+            throw Exception("HTTP ${response.code}")
+        }
+        if (response.code == 204) {
+            return emptyList()
         }
         try {
             val chapterListResponse = JsonParser.parseString(response.body!!.string()).obj
 
-            val chapterListResults = chapterListResponse["results"].array.map { it.obj }.toMutableList()
+            val chapterListResults =
+                chapterListResponse["results"].array.map { it.obj }.toMutableList()
 
             val mangaId =
                 response.request.url.toString().substringBefore("/feed")
-                    .substringAfter(MDConstants.apiMangaUrl)
+                    .substringAfter("${MDConstants.apiMangaUrl}/")
 
             val limit = chapterListResponse["limit"].int
 
@@ -216,7 +230,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
         val host =
             helper.getMdAtHomeUrl(atHomeRequestUrl, client, headers, CacheControl.FORCE_NETWORK)
 
-        val usingDataSaver = preferences.getInt(MDConstants.dataSaverPref, 0) == 1
+        val usingDataSaver = preferences.getBoolean("${MDConstants.dataSaverPref}_$lang", false)
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
@@ -240,22 +254,20 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun imageUrlParse(response: Response): String = ""
 
     // mangadex is mvp no settings yet
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val dataSaverPref = androidx.preference.ListPreference(screen.context).apply {
-            key = MDConstants.dataSaverPref
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+
+        val dataSaverPref = CheckBoxPreference(screen.context).apply {
+            key = "${MDConstants.dataSaverPref}_$lang"
             title = MDConstants.dataSaverPrefTitle
-            entries = arrayOf("Disable", "Enable")
-            entryValues = arrayOf("0", "1")
-            summary = "%s"
-            setDefaultValue("0")
+            summary = MDConstants.dataSaverPrefSummary
+            setDefaultValue(false)
 
             setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                preferences.edit().putInt(MDConstants.dataSaverPref, index).commit()
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean("${MDConstants.dataSaverPref}_$lang", checkValue)
+                    .commit()
             }
         }
-
         screen.addPreference(dataSaverPref)
     }
 

@@ -29,15 +29,15 @@ class MangaDexHelper() {
     fun getUUIDFromUrl(url: String) = url.substringAfterLast("/")
 
     /**
-     * get the manga feed url
+     * get chapters for manga (aka manga/$id/feed endpoint)
      */
     fun getChapterEndpoint(mangaId: String, offset: Int, langCode: String) =
         "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&locales[]=$langCode"
 
     /**
-     * Check if the manga id is a valid uuid
+     * Check if the manga url is a valid uuid
      */
-    fun containsUuid(id: String) = id.contains(MDConstants.uuidRegex)
+    fun containsUuid(url: String) = url.contains(MDConstants.uuidRegex)
 
     /**
      * Get the manga offset pages are 1 based, so subtract 1
@@ -145,9 +145,9 @@ class MangaDexHelper() {
 
             // things that will go with the genre tags but aren't actually genre
             val nonGenres = listOf(
-                attr["contentRating"].nullString,
-                attr["originalLanguage"]?.nullString,
-                attr["publicationDemographic"]?.nullString
+                attr["publicationDemographic"]?.nullString,
+                ("Content rating: " + (attr["contentRating"].nullString ?: "")),
+                attr["originalLanguage"].nullString
             )
 
             // get authors ignore if they error, artists are labelled as authors currently
