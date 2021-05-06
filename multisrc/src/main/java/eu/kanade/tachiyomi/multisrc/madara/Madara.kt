@@ -1,11 +1,8 @@
 package eu.kanade.tachiyomi.multisrc.madara
 
-import android.app.Application
-import android.content.SharedPreferences
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservable
-import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -25,12 +22,9 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
@@ -41,44 +35,12 @@ abstract class Madara(
     override val baseUrl: String,
     override val lang: String,
     private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
-) : ParsedHttpSource(), ConfigurableSource {
+) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    // Preferences Code
-
-    private val preferences: SharedPreferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
-    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
-        val chooseHostPref = androidx.preference.ListPreference(screen.context).apply {
-            key = CHOOSE_HOST_Title
-            title = CHOOSE_HOST_Title
-            entries = prefsEntries
-            entryValues = prefsEntryValues
-            summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = this.findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                hostValues = mutableListOf("local", "amazon", "imgur", "flickr", "picasa", "gphotos")
-                preferences.edit().putString(CHOOSE_HOST, entry).commit()
-            }
-        }
-        screen.addPreference(chooseHostPref)
-    }
-
-    private fun chooseHostPref() = preferences.getString(CHOOSE_HOST, "default")
-
     companion object {
-        private const val CHOOSE_HOST_Title = "Choose a particular host/server for images"
-        private const val CHOOSE_HOST = "choose_host"
-        private val prefsEntries = arrayOf("Default", "Auto", "Local", "Amazon", "Imgur", "Flickr", "Picasa (Blogspot)", "Google Photos")
-        private val prefsEntryValues = arrayOf("default", "auto", "local", "amazon", "imgur", "flickr", "picasa", "gphotos")
-
-        private var hostValues = mutableListOf("local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+        private var hostValues = mutableListOf("", "local", "amazon", "imgur", "flickr", "picasa", "gphotos")
     }
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -480,14 +442,9 @@ abstract class Madara(
 
         with(element) {
             select(chapterUrlSelector).first()?.let { urlElement ->
-                val url = urlElement.attr("abs:href").let {
+                chapter.url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if (!it.endsWith(chapterUrlSuffix)) chapterUrlSuffix else ""
-                }.toHttpUrlOrNull()!!.newBuilder()
-
-                if (chooseHostPref() != "default" && chooseHostPref() != "auto")
-                    url.addQueryParameter("host", chooseHostPref())
-
-                chapter.url = url.toString()
+                }
 
                 chapter.name = urlElement.text()
             }
@@ -579,32 +536,37 @@ abstract class Madara(
     }
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        val url = chapter.url.toHttpUrlOrNull()!!.newBuilder()
+        chapter.url = url.addQueryParameter("host", hostValues[0]).toString()
+
         var observable = super.fetchPageList(chapter)
 
-        // If default host doesn't work, will try each host
-        if (chooseHostPref() == "auto") {
-            var pages = emptyList<Page>()
-            var index = 0
+        var pages = emptyList<Page>()
+        var index = 0
 
-            while (pages.isEmpty() && index < hostValues.size) {
-                observable.subscribe {
-                    pages = it
-                }
-
-                if (pages.isNotEmpty()) {
-                    if (index > 1) Collections.swap(hostValues, 0, index - 1)
-                    return observable
-                }
-
-                val url = chapter.url.toHttpUrlOrNull()!!.newBuilder()
-                url.setQueryParameter("host", hostValues[index])
-                chapter.url = url.toString()
-
-                observable = super.fetchPageList(chapter)
-
-                index++
+        while (pages.isEmpty() && index < hostValues.size) {
+            observable.subscribe {
+                pages = it
             }
+
+            if (pages.isNotEmpty()) {
+                if (index > 0) {
+                    // put validHost in first position
+                    val validHost = hostValues[index]
+                    hostValues.removeAt(index)
+                    hostValues.add(0, validHost)
+                }
+                return observable
+            }
+
+            index++
+
+            url.setQueryParameter("host", hostValues[index])
+            chapter.url = url.toString()
+
+            observable = super.fetchPageList(chapter)
         }
+
         return observable
     }
 
