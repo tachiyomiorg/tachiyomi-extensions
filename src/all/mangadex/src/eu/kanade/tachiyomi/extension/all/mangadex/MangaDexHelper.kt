@@ -178,7 +178,7 @@ class MangaDexHelper() {
                     }.map { it?.name } +
                     nonGenres
                 )
-                .filterNotNull()
+                .filter { it.isNullOrBlank().not() }
 
             return SManga.create().apply {
                 url = "/manga/$dexId"
@@ -187,7 +187,7 @@ class MangaDexHelper() {
                 author = authors.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
                 thumbnail_url = MDConstants.tempCover
-                genre = genreList.joinToString(", ").replace(", , ", ", ")
+                genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {
             Log.e("MangaDex", "error parsing manga", e)
