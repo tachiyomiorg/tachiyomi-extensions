@@ -29,8 +29,7 @@ import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 abstract class Luscious(
     override val name: String,
@@ -648,10 +647,8 @@ abstract class Luscious(
 
     private fun validYears(): List<Int>{
         val years = mutableListOf<Int>()
-        val current = LocalDateTime.now()
-        val formatter = DateTimeFormatter.ofPattern("yyyy")
-        val formatted = current.format(formatter)
-        val currentYear = formatted.toInt()
+        val current = Calendar.getInstance()
+        val currentYear = current.get(Calendar.YEAR)
         var firstYear = 2013
         while (currentYear != firstYear -1) {
             years.add(firstYear)
