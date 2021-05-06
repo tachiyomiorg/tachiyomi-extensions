@@ -187,7 +187,7 @@ class MangaDexHelper() {
                 author = authors.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
                 thumbnail_url = MDConstants.tempCover
-                genre = genreList.joinToString(", ")
+                genre = genreList.joinToString(", ").replace(", , ", ", ")
             }
         } catch (e: Exception) {
             Log.e("MangaDex", "error parsing manga", e)
