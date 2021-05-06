@@ -9,7 +9,7 @@ class GuyaGenerator : ThemeSourceGenerator {
 
     override val themeClass = "Guya"
 
-    override val baseVersionCode: Int = 2
+    override val baseVersionCode: Int = 1
 
     override val sources = listOf(
         SingleLang("Guya", "https://guya.moe", "en", overrideVersionCode = 18),
