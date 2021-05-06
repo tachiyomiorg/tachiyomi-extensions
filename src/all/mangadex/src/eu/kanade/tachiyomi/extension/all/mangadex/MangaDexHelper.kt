@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.parser.Parser
 import java.util.Date
+import java.util.Locale
 
 class MangaDexHelper() {
 
@@ -145,9 +146,9 @@ class MangaDexHelper() {
 
             // things that will go with the genre tags but aren't actually genre
             val nonGenres = listOf(
-                attr["publicationDemographic"]?.nullString,
-                ("Content rating: " + (attr["contentRating"].nullString ?: "")),
-                attr["originalLanguage"].nullString
+                (attr["publicationDemographic"]?.nullString ?: "").capitalize(Locale.US),
+                ("Content rating: " + (attr["contentRating"].nullString ?: "").capitalize(Locale.US)),
+                Locale(attr["originalLanguage"].nullString ?: "").displayLanguage
             )
 
             // get authors ignore if they error, artists are labelled as authors currently
@@ -172,8 +173,8 @@ class MangaDexHelper() {
             val genreList = (
                 attr["tags"].array
                     .map { it["id"].string }
-                    .map { dexTag ->
-                        tags.firstOrNull { it.name.equals(dexTag, true) }
+                    .map { dexId ->
+                        tags.firstOrNull { it.id == dexId }
                     }.map { it?.name } +
                     nonGenres
                 )
