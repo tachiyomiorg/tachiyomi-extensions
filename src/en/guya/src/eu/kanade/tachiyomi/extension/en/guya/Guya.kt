@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.guya
+package eu.kanade.tachiyomi.multisrc.guya
 
 import android.app.Application
 import android.content.SharedPreferences
@@ -25,12 +25,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.HashMap
 
-open class Guya : ConfigurableSource, HttpSource() {
+abstract class Guya(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String) : ConfigurableSource, HttpSource() {
 
-    final override val name = "Guya"
-    final override val baseUrl = "https://guya.moe"
-    final override val supportsLatest = false
-    final override val lang = "en"
+    override val supportsLatest = false
 
     private val scanlatorCacheUrl = "$baseUrl/api/get_all_groups"
 
