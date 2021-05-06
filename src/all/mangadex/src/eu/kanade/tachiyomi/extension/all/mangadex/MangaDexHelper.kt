@@ -130,7 +130,7 @@ class MangaDexHelper() {
         return SManga.create().apply {
             url = "/manga/$dexId"
             title = cleanString(attr["title"]["en"].string)
-            thumbnail_url = ""
+            thumbnail_url = MDConstants.tempCover
         }
     }
 
@@ -185,7 +185,7 @@ class MangaDexHelper() {
                 description = cleanString(attr["description"]["en"].string)
                 author = authors.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
-                thumbnail_url = ""
+                thumbnail_url = MDConstants.tempCover
                 genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {

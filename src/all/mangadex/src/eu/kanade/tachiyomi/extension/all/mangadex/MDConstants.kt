@@ -15,6 +15,8 @@ object MDConstants {
     val atHomePostUrl = "https://api.mangadex.network/report"
     val whitespaceRegex = "\\s".toRegex()
 
+    val tempCover = "https://i.imgur.com/6TrIues.jpg"
+
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss+SSS", Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
