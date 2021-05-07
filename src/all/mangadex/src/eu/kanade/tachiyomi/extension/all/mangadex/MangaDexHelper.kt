@@ -183,7 +183,7 @@ class MangaDexHelper() {
                     }.map { it?.name } +
                     nonGenres
                 )
-                .filterNotNull()
+                .filter { it.isNullOrBlank().not() }
 
             return SManga.create().apply {
                 url = "/manga/$dexId"
