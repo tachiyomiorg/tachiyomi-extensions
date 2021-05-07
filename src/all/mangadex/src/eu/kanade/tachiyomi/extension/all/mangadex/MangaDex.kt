@@ -225,7 +225,13 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun pageListParse(response: Response): List<Page> {
         val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
-        val atHomeRequestUrl = "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+        val usingStandardHTTPS = preferences.getBoolean("${MDConstants.standardHTTPSPref}_$lang", false)
+        
+        val atHomeRequestUrl = if (usingStandardHTTPS) {
+            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?ssl=true"
+        } else {
+            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+        }
 
         val host =
             helper.getMdAtHomeUrl(atHomeRequestUrl, client, headers, CacheControl.FORCE_NETWORK)
@@ -268,7 +274,22 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
                     .commit()
             }
         }
+        
+        val standardHTTPSPref = CheckBoxPreference(screen.context).apply {
+            key = "${MDConstants.standardHTTPSPref}_$lang"
+            title = MDConstants.standardHTTPSTitle
+            summary = MDConstants.standardHTTPSSummary
+            setDefaultValue(false)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean("${MDConstants.standardHTTPSPref}_$lang", checkValue)
+                    .commit()
+            }
+        }
+        
         screen.addPreference(dataSaverPref)
+        screen.addPreference(standardHTTPSPref)
     }
 
     override fun getFilterList(): FilterList = helper.mdFilters.getMDFilterList()
