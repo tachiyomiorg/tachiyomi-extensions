@@ -42,7 +42,7 @@ class GloryScans : Madara(
         Genre("Mistério", "misterio"),
         Genre("Monstros", "monstros"),
         Genre("Psicologico", "psicologico"),
-        Genre("reencarnação", "reencarnacao"),
+        Genre("Reencarnação", "reencarnacao"),
         Genre("Romance", "romance"),
         Genre("Sci-fi", "sci-fi"),
         Genre("Seinen", "seinen"),
