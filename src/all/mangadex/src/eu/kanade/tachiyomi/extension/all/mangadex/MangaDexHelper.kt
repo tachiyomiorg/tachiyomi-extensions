@@ -156,15 +156,20 @@ class MangaDexHelper() {
                 relationship["type"].string.equals("author", true)
             }.map { relationship -> relationship["id"].string }
                 .distinct()
+            val artistIds = mangaJson["relationships"].array.filter { relationship ->
+                relationship["type"].string.equals("artist", true)
+            }.map { relationship -> relationship["id"].string }
+                .distinct()
 
-            val authors = runCatching {
-                val ids = authorIds.joinToString("&ids[]=", "?ids[]=")
+            val authorMap = runCatching {
+                val ids = listOf(authorIds, artistIds).flatten().distinct().joinToString("&ids[]=", "?ids[]=")
                 val response = client.newCall(GET("${MDConstants.apiUrl}/author$ids")).execute()
                 val json = JsonParser.parseString(response.body!!.string())
                 json.obj["results"].array.map { result ->
+                    result["data"]["attributes"]["id"].string to
                     cleanString(result["data"]["attributes"]["name"].string)
-                }
-            }.getOrNull() ?: emptyList()
+                }.toMap()
+            }.getOrNull() ?: emptyMap()
 
             // get tag list
             val tags = mdFilters.getTags()
@@ -184,7 +189,8 @@ class MangaDexHelper() {
                 url = "/manga/$dexId"
                 title = cleanString(attr["title"]["en"].string)
                 description = cleanString(attr["description"]["en"].string)
-                author = authors.joinToString(", ")
+                author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
+                artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
                 thumbnail_url = MDConstants.tempCover
                 genre = genreList.joinToString(", ")
