@@ -26,6 +26,7 @@ class NyaHentaiGenerator : ThemeSourceGenerator {
         MultiLang("BugHentai (en)", "https://en.bughentai.com", listOf("en","ja", "zh", "all"), isNsfw = true, className = "BugHentaiEnFactory", pkgName = "bughentaien"),
         MultiLang("QQHentai", "https://zhb.qqhentai.com", listOf("en","ja", "zh", "all"), isNsfw = true, className = "QQHentaiFactory"),
         MultiLang("FoxHentai", "https://ja.foxhentai.com", listOf("en","ja", "zh", "all"), isNsfw = true, className = "FoxHentaiFactory"),
+        MultiLang("DDHentai", "https://zh.ddhentai.com", listOf("en","ja", "zh", "all"), isNsfw = true, className = "DDHentaiFactory"),
     )
 
     companion object {
