@@ -5,7 +5,7 @@ ext {
     extName = 'Japanread'
     pkgNameSuffix = 'fr.japanread'
     extClass = '.Japanread'
-    extVersionCode = 5
+    extVersionCode = 7
     libVersion = '1.2'
     containsNsfw = true
 }
