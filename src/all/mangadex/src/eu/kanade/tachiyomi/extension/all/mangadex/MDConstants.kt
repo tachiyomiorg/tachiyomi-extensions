@@ -25,6 +25,10 @@ object MDConstants {
     const val dataSaverPrefTitle = "Data saver"
     const val dataSaverPrefSummary = "Enables smaller more compressed images"
     const val dataSaverPref = "dataSaverV5"
+    
+    const val standardHTTPSPrefTitle = "Standard HTTPS only"
+    const val standardHTTPSPrefSummary = "Enable only MD@H nodes with standard HTTPS. This enable users in some business and school networks to access MangaDex normally"
+    const val standardHTTPSPref = "standardHTTPSV5"
 
     const val mdAtHomeTokenLifespan = 10 * 60 * 1000
 }
