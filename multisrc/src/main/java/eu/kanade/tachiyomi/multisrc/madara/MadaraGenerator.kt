@@ -31,6 +31,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("ATM-Subs", "https://atm-subs.fr", "fr", className = "ATMSubs"),
             SingleLang("AYATOON", "https://ayatoon.com", "tr"),
             SingleLang("Azora", "https://azoramanga.com", "ar", overrideVersionCode = 1),
+            SingleLang("BL Manhwa Club", "https://blmanhwa.club", "pt-BR", isNsfw = true, className = "BlManhwaClub"),
             SingleLang("Bakaman", "https://bakaman.net", "th", overrideVersionCode = 1),
             SingleLang("BestManga", "https://bestmanga.club", "ru"),
             SingleLang("BestManhua", "https://bestmanhua.com", "en", overrideVersionCode = 1),
