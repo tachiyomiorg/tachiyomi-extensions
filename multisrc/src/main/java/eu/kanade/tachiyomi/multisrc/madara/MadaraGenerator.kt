@@ -234,7 +234,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("TruyenTranhAudio.com", "https://truyentranhaudio.com", "vi", className = "TruyenTranhAudioCom"),
             SingleLang("TruyenTranhAudio.online", "https://truyentranhaudio.online", "vi", className = "TruyenTranhAudioOnline"),
             SingleLang("Tsubaki No Scan", "https://tsubakinoscan.com", "fr"),
-            SingleLang("Tsundoku Traducoes", "https://tsundokutraducoes.com.br", "pt-br"),
+            SingleLang("Tsundoku Traduções", "https://tsundokutraducoes.com.br", "pt-BR", pkgName = "tsundokutraducoes", className = "TsundokuTraducoes", overrideVersionCode = 1),
             SingleLang("Türkçe Manga", "https://turkcemanga.com", "tr", className = "TurkceManga"),
             SingleLang("Twilight Scans", "https://twilightscans.com", "en", overrideVersionCode = 1),
             SingleLang("Unemployed Scans", "https://unemployedscans.com", "en"),

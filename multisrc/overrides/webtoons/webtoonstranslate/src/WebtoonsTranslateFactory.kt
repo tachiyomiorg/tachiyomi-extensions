@@ -41,10 +41,10 @@ class WebtoonsTranslateFactory : SourceFactory {
     )
 }
 class WebtoonsTranslateEN : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "en", "ENG")
-class WebtoonsTranslateZH_CMN : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "zh-hans", "CMN"){
+class WebtoonsTranslateZH_CMN : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "zh-hans", "CMN") {
     override val id: Long = 5196522547754842244
 }
-class WebtoonsTranslateZH_CMY : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "zh-hant", "CMT"){
+class WebtoonsTranslateZH_CMY : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "zh-hant", "CMT") {
     override val id: Long = 1016181401146312893
 }
 class WebtoonsTranslateTH : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "th", "THA")
@@ -58,8 +58,8 @@ class WebtoonsTranslateDE : WebtoonsTranslate("Webtoons.com Translations", "http
 class WebtoonsTranslateHI : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "hi", "HIN")
 class WebtoonsTranslateIT : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "it", "ITA")
 class WebtoonsTranslateJA : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "ja", "JPN")
-class WebtoonsTranslatePT_POR : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "pt-br", "POR"){
-    //Changed languge code from pt to pt-br
+class WebtoonsTranslatePT_POR : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "pt-BR", "POR") {
+    // Hardcode the id because the language code was wrong.
     override val id: Long = 275670196689829558
 }
 class WebtoonsTranslateTR : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "tr", "TUR")
@@ -81,5 +81,3 @@ class WebtoonsTranslateBN : WebtoonsTranslate("Webtoons.com Translations", "http
 class WebtoonsTranslateFA : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "fa", "PER")
 class WebtoonsTranslateUK : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "uk", "UKR")
 class WebtoonsTranslateES : WebtoonsTranslate("Webtoons.com Translations", "https://translate.webtoons.com", "es", "SPA")
-
-
