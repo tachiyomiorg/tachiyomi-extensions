@@ -236,6 +236,12 @@ abstract class MangaDex(override val lang: String, val dexLang: String) : Config
     }
 
     override fun pageListParse(response: Response): List<Page> {
+        if (response.isSuccessful.not()) {
+            throw Exception("HTTP ${response.code}")
+        }
+        if (response.code == 204) {
+            return emptyList()
+        }
         val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
         val usingStandardHTTPS =
             preferences.getBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), false)
