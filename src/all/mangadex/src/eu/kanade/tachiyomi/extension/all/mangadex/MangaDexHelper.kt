@@ -172,7 +172,7 @@ class MangaDexHelper() {
                 val response = client.newCall(GET("${MDConstants.apiUrl}/author$ids")).execute()
                 val json = JsonParser.parseString(response.body!!.string())
                 json.obj["results"].array.map { result ->
-                    result["data"]["attributes"]["id"].string to
+                    result["data"]["id"].string to
                         cleanString(result["data"]["attributes"]["name"].string)
                 }.toMap()
             }.getOrNull() ?: emptyMap()
