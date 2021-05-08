@@ -339,6 +339,29 @@ class Remanga : ConfigurableSource, HttpSource() {
 
     override fun imageUrlParse(response: Response): String = throw NotImplementedError("Unused")
 
+    private fun searchMangaByIdRequest(id: String): Request {
+        return GET("$baseUrl/api/titles/$id", headers)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_SLUG_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_SLUG_SEARCH)
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
+
     override fun imageRequest(page: Page): Request {
         val refererHeaders = headersBuilder().build()
         return GET(page.imageUrl!!, refererHeaders)
@@ -577,5 +600,6 @@ class Remanga : ConfigurableSource, HttpSource() {
         private const val USERNAME_DEFAULT = ""
         private const val PASSWORD_TITLE = "Password"
         private const val PASSWORD_DEFAULT = ""
+        const val PREFIX_SLUG_SEARCH = "slug:"
     }
 }
