@@ -1,5 +1,6 @@
-package eu.kanade.tachiyomi.extension.pt.tsundokutraducoes
+package eu.kanade.tachiyomi.extension.pt.gloryscans
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import okhttp3.OkHttpClient
@@ -7,21 +8,17 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-class TsundokuTraducoes : Madara(
-    "Tsundoku Traduções",
-    "https://tsundokutraducoes.com.br",
+@Nsfw
+class GloryScans : Madara(
+    "Glory Scans",
+    "https://gloryscan.com",
     "pt-BR",
-    SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+    SimpleDateFormat("MMMMM dd, yyyy", Locale("pt", "BR"))
 ) {
-
-    // Hardcode the id because the language code was wrong.
-    override val id: Long = 3941383635597527601
 
     override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
-
-    override fun popularMangaSelector() = "div.page-item-detail.manga"
 
     // [...document.querySelectorAll('input[name="genre[]"]')]
     //   .map(x => `Genre("${document.querySelector('label[for=' + x.id + ']').innerHTML.trim()}", "${x.value}")`)
@@ -34,35 +31,32 @@ class TsundokuTraducoes : Madara(
         Genre("Comédia", "comedia"),
         Genre("Drama", "drama"),
         Genre("Ecchi", "ecchi"),
+        Genre("Esporte", "esporte"),
         Genre("Fantasia", "fantasia"),
-        Genre("Feminismo", "feminismo"),
-        Genre("Gore", "gore"),
-        Genre("Guerra", "guerra"),
         Genre("Harém", "harem"),
         Genre("Hentai", "hentai"),
         Genre("Horror", "horror"),
-        Genre("Humor Negro", "humor-negro"),
+        Genre("Horror", "horror-horror"),
         Genre("Isekai", "isekai"),
-        Genre("Josei", "josei"),
-        Genre("Joshikousei", "joshikousei"),
-        Genre("Maduro", "maduro"),
+        Genre("Magia", "magia"),
         Genre("Mistério", "misterio"),
-        Genre("Otaku", "otaku"),
-        Genre("Psicológico", "psicologico"),
+        Genre("Monstros", "monstros"),
+        Genre("Psicologico", "psicologico"),
         Genre("Reencarnação", "reencarnacao"),
         Genre("Romance", "romance"),
-        Genre("RPG", "rpg"),
-        Genre("Sátira", "satira"),
+        Genre("Sci-fi", "sci-fi"),
         Genre("Seinen", "seinen"),
-        Genre("Sexo Explícito", "sexo-explicito"),
         Genre("Shoujo", "shoujo"),
         Genre("Shounen", "shounen"),
-        Genre("Slice-of-Life", "slice-of-life"),
+        Genre("Slice of life", "slice-of-life"),
         Genre("Sobrenatural", "sobrenatural"),
-        Genre("Terror", "terror"),
+        Genre("Sobrevivência", "sobrevivencia"),
+        Genre("superpoderes", "superpoderes"),
+        Genre("Suspense", "suspense"),
         Genre("Tragédia", "tragedia"),
         Genre("Vida Escolar", "vida-escolar"),
-        Genre("Xianxia", "xianxia"),
+        Genre("Vingança", "vinganca"),
+        Genre("Webtoon", "webtoon"),
         Genre("Yuri", "yuri")
     )
 }

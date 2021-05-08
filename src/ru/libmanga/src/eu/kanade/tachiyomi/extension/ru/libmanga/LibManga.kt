@@ -54,7 +54,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    //The mirror is used because the main site "mangalib.me" in application returns error 403
+    // The mirror is used because the main site "mangalib.me" in application returns error 403
     override val baseUrl: String = "https://mangalib.org"
 
     override fun headersBuilder() = Headers.Builder().apply {
@@ -184,7 +184,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             else -> SManga.UNKNOWN
         }
         manga.genre = genres.plusElement(category).joinToString { it.trim() }
-        manga.description = document.select(".media-description__text").text()
+        manga.description = "Русское название: " + document.select(".media-name__main").text() + "\n\n" + document.select(".media-description__text").text()
         return manga
     }
 

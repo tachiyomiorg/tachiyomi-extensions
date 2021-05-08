@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'MangaLib'
-    pkgNameSuffix = 'ru.libmanga'
-    extClass = '.LibManga'
-    extVersionCode = 41
+    extName = 'HentaiMimi'
+    pkgNameSuffix = 'en.hentaimimi'
+    extClass = '.HentaiMimi'
+    extVersionCode = 1
     libVersion = '1.2'
+    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"
