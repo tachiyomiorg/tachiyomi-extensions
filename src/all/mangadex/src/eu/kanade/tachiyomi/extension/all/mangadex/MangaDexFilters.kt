@@ -11,26 +11,32 @@ class MangaDexFilters {
     internal fun getMDFilterList(preferences: SharedPreferences, dexLang: String): FilterList {
         val contentRatings = listOf(
             ContentRating("Safe").apply {
-                state =
-                    preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), true)
+                state = preferences.getStringSet(
+                    MDConstants.getContentRatingPrefKey(dexLang),
+                    MDConstants.contentRatingPrefDefaults
+                )
+                    ?.contains(MDConstants.contentRatingPrefValSafe) ?: true
             },
             ContentRating("Suggestive").apply {
-                state = preferences.getBoolean(
-                    MDConstants.getContentRatingSuggestivePrefKey(dexLang),
-                    true
+                state = preferences.getStringSet(
+                    MDConstants.getContentRatingPrefKey(dexLang),
+                    MDConstants.contentRatingPrefDefaults
                 )
+                    ?.contains(MDConstants.contentRatingPrefValSuggestive) ?: true
             },
             ContentRating("Erotica").apply {
-                state = preferences.getBoolean(
-                    MDConstants.getContentRatingEroticaPrefKey(dexLang),
-                    false
+                state = preferences.getStringSet(
+                    MDConstants.getContentRatingPrefKey(dexLang),
+                    MDConstants.contentRatingPrefDefaults
                 )
+                    ?.contains(MDConstants.contentRatingPrefValErotica) ?: false
             },
             ContentRating("Pornographic").apply {
-                state = preferences.getBoolean(
-                    MDConstants.getContentRatingPornographicPrefKey(dexLang),
-                    false
+                state = preferences.getStringSet(
+                    MDConstants.getContentRatingPrefKey(dexLang),
+                    MDConstants.contentRatingPrefDefaults
                 )
+                    ?.contains(MDConstants.contentRatingPrefValPornographic) ?: false
             },
         )
 
