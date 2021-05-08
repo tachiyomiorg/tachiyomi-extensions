@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.neoxscanlator
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.Headers
@@ -17,18 +18,13 @@ class NeoxScanlator : Madara(
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
         .add("Origin", baseUrl)
 
     // Only status and order by filter work.
     override fun getFilterList(): FilterList = FilterList(super.getFilterList().slice(3..4))
-
-    companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
-    }
 }
