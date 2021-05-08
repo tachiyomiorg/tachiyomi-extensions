@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.opex
 
-import android.util.Log
 import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonParser
@@ -156,8 +155,6 @@ class OnePieceEx : ParsedHttpSource() {
             "sbs" -> "#volumes div.volume header:contains(SBS)"
             else -> "#post > div.volume:contains(" + mangaUrl.queryParameter("title")!!.substringAfter(" - ") + ")"
         }
-
-        Log.d("OPEX", selectorComplement)
 
         val chapterListSelector = selectorComplement + (if (mangaType == "sbs") "" else " " + chapterListSelector())
 
