@@ -14,7 +14,7 @@ import rx.Observable
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-class ReadAttackOnTitanShingekiNoKyojinManga : MangaCatalog("Read Attack on Titan/Shingeki no Kyojin Manga", "https://ww7.readsnk.com", "en") {
+class ReadAttackOnTitanShingekiNoKyojinManga : MangaCatalog("Read Attack on Titan Shingeki no Kyojin Manga", "https://ww7.readsnk.com", "en") {
     override val sourceList = listOf(
         Pair("Shingeki No Kyojin", "$baseUrl/manga/shingeki-no-kyojin/"),
         Pair("Colored", "$baseUrl/manga/shingeki-no-kyojin-colored/"),

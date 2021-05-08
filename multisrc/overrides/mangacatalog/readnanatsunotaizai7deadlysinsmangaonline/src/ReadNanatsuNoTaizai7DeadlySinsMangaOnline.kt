@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.multisrc.mangacatalog.MangaCatalog
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
 
-class ReadNanatsuNoTaizai7DeadlySinsMangaOnline : MangaCatalog("Read Nanatsu no Taizai/7 Deadly Sins Manga Online", "https://ww3.read7deadlysins.com", "en") {
+class ReadNanatsuNoTaizai7DeadlySinsMangaOnline : MangaCatalog("Read Nanatsu no Taizai 7 Deadly Sins Manga Online", "https://ww3.read7deadlysins.com", "en") {
     override val sourceList = listOf(
         Pair("Mokushiroku no Yonkishi", "$baseUrl/manga/four-horsemen-of-the-apocalypse/"),
         Pair("7DS: School", "$baseUrl/manga/mayoe-nanatsu-no-taizai-gakuen/"),

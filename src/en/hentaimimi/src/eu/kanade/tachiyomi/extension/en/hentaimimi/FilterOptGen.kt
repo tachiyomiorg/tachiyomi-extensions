@@ -34,13 +34,13 @@ class FilterOptGen {
         types.forEach {
             try {
                 val document = getDocument("https://hentaimimi.com/search")
-                val ids = parseIds(document!!, it)
+                val ids = parseIds(document!!, it).sortedBy { id -> id.first }
 
                 buffer.append("fun $it() = listOf(\n")
                 for (id in ids) {
                     when (it) {
-                        "tags" -> buffer.append("    HentaiMimi.TriStateFilterOption(\"${id.first}\",\"${id.second}\"),\n")
-                        else -> buffer.append("    HentaiMimi.CheckboxFilterOption(\"${id.first}\",\"${id.second}\"),\n")
+                        "tags" -> buffer.append("    HentaiMimi.TriStateFilterOption(\"${id.first}\", \"${id.second}\"),\n")
+                        else -> buffer.append("    HentaiMimi.CheckboxFilterOption(\"${id.first}\", \"${id.second}\"),\n")
                     }
                 }
                 buffer.append(")\n\n")
@@ -49,6 +49,7 @@ class FilterOptGen {
                 println("error generating source $it ${e.printStackTrace()}")
             }
         }
+        buffer.setLength(buffer.length - 1)
         println("Post-run types: ${number - 1}")
         val writer = PrintWriter(relativePath)
         writer.write(buffer.toString())

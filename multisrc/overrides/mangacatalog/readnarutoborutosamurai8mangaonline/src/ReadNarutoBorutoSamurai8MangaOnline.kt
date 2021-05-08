@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.multisrc.mangacatalog.MangaCatalog
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
 
-class ReadNarutoBorutoSamurai8MangaOnline : MangaCatalog("Read Naruto/Boruto/Samurai 8 Manga Online", "https://ww7.readnaruto.com", "en") {
+class ReadNarutoBorutoSamurai8MangaOnline : MangaCatalog("Read Naruto Boruto Samurai 8 Manga Online", "https://ww7.readnaruto.com", "en") {
     override val sourceList = listOf(
         Pair("Boruto", "$baseUrl/manga/boruto-naruto-next-generations/"),
         Pair("Naruto", "$baseUrl/manga/naruto/"),

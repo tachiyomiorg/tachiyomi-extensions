@@ -33,6 +33,7 @@ data class MangaDetDto(
     val id: Long,
     val en_name: String,
     val rus_name: String,
+    val another_name: String,
     val dir: String,
     val description: String,
     val issue_year: Int,

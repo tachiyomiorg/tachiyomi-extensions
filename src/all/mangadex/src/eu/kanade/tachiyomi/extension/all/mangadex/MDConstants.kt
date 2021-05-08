@@ -17,14 +17,48 @@ object MDConstants {
 
     val tempCover = "https://i.imgur.com/6TrIues.jpg"
 
+    const val mdAtHomeTokenLifespan = 5 * 60 * 1000
+
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss+SSS", Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
     const val prefixIdSearch = "id:"
 
-    const val dataSaverPrefTitle = "Data saver"
-    const val dataSaverPrefSummary = "Enables smaller more compressed images"
     const val dataSaverPref = "dataSaverV5"
 
-    const val mdAtHomeTokenLifespan = 10 * 60 * 1000
+    fun getDataSaverPreferenceKey(dexLang: String): String {
+        return "${dataSaverPref}_$dexLang"
+    }
+
+    private const val standardHttpsPortPref = "usePort443"
+
+    fun getStandardHttpsPreferenceKey(dexLang: String): String {
+        return "${standardHttpsPortPref}_$dexLang"
+    }
+
+    const val showByDefaultPrefTitle = "Show only by default"
+
+    private const val contentRatingSafePref = "contentRatingSafe"
+
+    fun getContentRatingSafePrefKey(dexLang: String): String {
+        return "${contentRatingSafePref}_$dexLang"
+    }
+
+    private const val contentRatingSuggestivePref = "contentRatingSuggestive"
+
+    fun getContentRatingSuggestivePrefKey(dexLang: String): String {
+        return "${contentRatingSuggestivePref}_$dexLang"
+    }
+
+    private const val contentRatingEroticaPref = "contentRatingErotica"
+
+    fun getContentRatingEroticaPrefKey(dexLang: String): String {
+        return "${contentRatingEroticaPref}_$dexLang"
+    }
+
+    private const val contentRatingPornographicPref = "contentRatingPornographic"
+
+    fun getContentRatingPornographicPrefKey(dexLang: String): String {
+        return "${contentRatingPornographicPref}_$dexLang"
+    }
 }
