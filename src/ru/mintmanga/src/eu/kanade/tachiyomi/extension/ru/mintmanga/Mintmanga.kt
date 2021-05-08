@@ -137,7 +137,11 @@ class Mintmanga : ParsedHttpSource() {
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
-        manga.description = infoElement.select("div.manga-description").text()
+        var altName = ""
+        if (infoElement.select(".another-names").isNotEmpty()) {
+            altName = "Альтернативные названия:\n" + infoElement.select(".another-names").text() + "\n\n"
+        }
+        manga.description =  altName +infoElement.select("div.manga-description").text()
         manga.status = parseStatus(infoElement.html())
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga

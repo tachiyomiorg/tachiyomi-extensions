@@ -213,7 +213,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = "Русское название: " + rus_name + "\n" + Jsoup.parse(o.description).text()
+            this.description = rus_name + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name }
             status = parseStatus(o.status.id)
         }
