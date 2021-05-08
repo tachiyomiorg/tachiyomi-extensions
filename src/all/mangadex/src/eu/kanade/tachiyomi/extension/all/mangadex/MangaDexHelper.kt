@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
+import android.content.SharedPreferences
 import android.util.Log
 import com.github.salomonbrys.kotson.array
 import com.github.salomonbrys.kotson.get
@@ -91,9 +92,9 @@ class MangaDexHelper() {
                     val tokenRequestUrl = data[1]
                     val cacheControl =
                         if (Date().time - (
-                            tokenTracker[tokenRequestUrl]
-                                ?: 0
-                            ) > MDConstants.mdAtHomeTokenLifespan
+                                tokenTracker[tokenRequestUrl]
+                                    ?: 0
+                                ) > MDConstants.mdAtHomeTokenLifespan
                         ) {
                             tokenTracker[tokenRequestUrl] = Date().time
                             CacheControl.FORCE_NETWORK
@@ -147,7 +148,8 @@ class MangaDexHelper() {
             // things that will go with the genre tags but aren't actually genre
             val nonGenres = listOf(
                 (attr["publicationDemographic"]?.nullString ?: "").capitalize(Locale.US),
-                ("Content rating: " + (attr["contentRating"].nullString ?: "").capitalize(Locale.US)),
+                ("Content rating: " + (attr["contentRating"].nullString
+                    ?: "").capitalize(Locale.US)),
                 Locale(attr["originalLanguage"].nullString ?: "").displayLanguage
             )
 
@@ -162,12 +164,13 @@ class MangaDexHelper() {
                 .distinct()
 
             val authorMap = runCatching {
-                val ids = listOf(authorIds, artistIds).flatten().distinct().joinToString("&ids[]=", "?ids[]=")
+                val ids = listOf(authorIds, artistIds).flatten().distinct()
+                    .joinToString("&ids[]=", "?ids[]=")
                 val response = client.newCall(GET("${MDConstants.apiUrl}/author$ids")).execute()
                 val json = JsonParser.parseString(response.body!!.string())
                 json.obj["results"].array.map { result ->
                     result["data"]["attributes"]["id"].string to
-                    cleanString(result["data"]["attributes"]["name"].string)
+                        cleanString(result["data"]["attributes"]["name"].string)
                 }.toMap()
             }.getOrNull() ?: emptyMap()
 
@@ -282,4 +285,5 @@ class MangaDexHelper() {
             throw(e)
         }
     }
+
 }

@@ -31,18 +31,20 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
 
-abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSource() {
+abstract class MangaDex(override val lang: String, val dexLang : String) : ConfigurableSource, HttpSource() {
     override val name = "MangaDex"
     override val baseUrl = "https://www.mangadex.org"
 
     // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
     override val supportsLatest = false
 
-    private val helper = MangaDexHelper()
-
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+
+    private val helper = MangaDexHelper()
+
+
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
@@ -165,7 +167,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
      */
     private fun actualChapterListRequest(mangaId: String, offset: Int) =
         GET(
-            url = helper.getChapterEndpoint(mangaId, offset, lang),
+            url = helper.getChapterEndpoint(mangaId, offset, dexLang),
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
         )
@@ -225,8 +227,9 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
 
     override fun pageListParse(response: Response): List<Page> {
         val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
-        val usingStandardHTTPS = preferences.getBoolean("${MDConstants.standardHTTPSPref}_$lang", false)
-        
+        val usingStandardHTTPS = preferences.getBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), false)
+
+
         val atHomeRequestUrl = if (usingStandardHTTPS) {
             "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?ssl=true"
         } else {
@@ -236,7 +239,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
         val host =
             helper.getMdAtHomeUrl(atHomeRequestUrl, client, headers, CacheControl.FORCE_NETWORK)
 
-        val usingDataSaver = preferences.getBoolean("${MDConstants.dataSaverPref}_$lang", false)
+        val usingDataSaver =preferences.getBoolean(MDConstants.getDataSaverPreferenceKey(dexLang), false)
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
@@ -263,31 +266,31 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
 
         val dataSaverPref = CheckBoxPreference(screen.context).apply {
-            key = "${MDConstants.dataSaverPref}_$lang"
+            key = MDConstants.getDataSaverPreferenceKey(dexLang)
             title = MDConstants.dataSaverPrefTitle
             summary = MDConstants.dataSaverPrefSummary
             setDefaultValue(false)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${MDConstants.dataSaverPref}_$lang", checkValue)
+                preferences.edit().putBoolean(MDConstants.getDataSaverPreferenceKey(dexLang), checkValue)
                     .commit()
             }
         }
-        
+
         val standardHTTPSPref = CheckBoxPreference(screen.context).apply {
-            key = "${MDConstants.standardHTTPSPref}_$lang"
-            title = MDConstants.standardHTTPSTitle
-            summary = MDConstants.standardHTTPSSummary
+            key = MDConstants.getStandardHttpsPreferenceKey(dexLang)
+            title = MDConstants.standardHttpsPortTitle
+            summary = MDConstants.standardHttpsPortSummary
             setDefaultValue(false)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${MDConstants.standardHTTPSPref}_$lang", checkValue)
+                preferences.edit().putBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), checkValue)
                     .commit()
             }
         }
-        
+
         screen.addPreference(dataSaverPref)
         screen.addPreference(standardHTTPSPref)
     }
