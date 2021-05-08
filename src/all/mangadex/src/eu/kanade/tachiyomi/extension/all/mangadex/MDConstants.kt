@@ -19,7 +19,6 @@ object MDConstants {
 
     const val mdAtHomeTokenLifespan = 5 * 60 * 1000
 
-
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss+SSS", Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
@@ -28,6 +27,10 @@ object MDConstants {
     const val dataSaverPrefTitle = "Data saver"
     const val dataSaverPrefSummary = "Enables smaller more compressed images"
     const val dataSaverPref = "dataSaverV5"
+
+    fun getDataSaverPreferenceKey(dexLang: String): String {
+        return "${dataSaverPref}_$dexLang"
+    }
 
     const val standardHttpsPortTitle = "Use HTTPS port 443 only"
     const val standardHttpsPortSummary =
@@ -38,11 +41,33 @@ object MDConstants {
         return "${standardHttpsPortPref}_$dexLang"
     }
 
-    fun getDataSaverPreferenceKey(dexLang: String): String {
-        return "${dataSaverPref}_$dexLang"
+    const val showByDefaultPrefTitle = "Show only by default"
+
+    const val contentRatingSafePrefSummary = "Content Rating: Safe"
+    private const val contentRatingSafePref = "contentRatingSafe"
+
+    fun getContentRatingSafePrefKey(dexLang: String): String {
+        return "${contentRatingSafePref}_$dexLang"
     }
 
+    const val contentRatingSuggestivePrefSummary = "Content Rating: Suggestive"
+    private const val contentRatingSuggestivePref = "contentRatingSuggestive"
 
+    fun getContentRatingSuggestivePrefKey(dexLang: String): String {
+        return "${contentRatingSuggestivePref}_$dexLang"
+    }
 
+    const val contentRatingEroticaPrefSummary = "Content Rating: Erotica"
+    private const val contentRatingEroticaPref = "contentRatingErotica"
 
+    fun getContentRatingEroticaPrefKey(dexLang: String): String {
+        return "${contentRatingEroticaPref}_$dexLang"
+    }
+
+    const val contentRatingPornographicPrefSummary = "Content Rating: Pornographic"
+    private const val contentRatingPornographicPref = "contentRatingPornographic"
+
+    fun getContentRatingPornographicPrefKey(dexLang: String): String {
+        return "${contentRatingPornographicPref}_$dexLang"
+    }
 }
