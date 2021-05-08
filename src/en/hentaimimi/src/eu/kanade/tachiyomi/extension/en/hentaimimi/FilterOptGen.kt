@@ -49,6 +49,7 @@ class FilterOptGen {
                 println("error generating source $it ${e.printStackTrace()}")
             }
         }
+        buffer.setLength(buffer.length - 1)
         println("Post-run types: ${number - 1}")
         val writer = PrintWriter(relativePath)
         writer.write(buffer.toString())

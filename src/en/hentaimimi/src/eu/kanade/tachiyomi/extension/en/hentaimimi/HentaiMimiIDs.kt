@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.hentaimimi
 
 // GENERATED FILE, DO NOT MODIFY!
-// Generated Sat, 8 May 2021 10:24:19 +0000
+// Generated Sat, 8 May 2021 10:29:07 +0000
 
 fun artists() = listOf(
     HentaiMimi.CheckboxFilterOption("108-go", "105"),
@@ -1382,4 +1382,3 @@ fun tags() = listOf(
     HentaiMimi.TriStateFilterOption("yuri", "65"),
     HentaiMimi.TriStateFilterOption("zero gravity", "163"),
 )
-
