@@ -31,18 +31,19 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
 
-abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSource() {
+abstract class MangaDex(override val lang: String, val dexLang: String) : ConfigurableSource,
+    HttpSource() {
     override val name = "MangaDex"
     override val baseUrl = "https://www.mangadex.org"
 
     // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
     override val supportsLatest = false
 
-    private val helper = MangaDexHelper()
-
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+
+    private val helper = MangaDexHelper()
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
@@ -57,12 +58,35 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     // POPULAR Manga Section
 
     override fun popularMangaRequest(page: Int): Request {
-        val url = MDConstants.apiMangaUrl.toHttpUrl().newBuilder()
-            .addQueryParameter("order[updatedAt]", "desc")
-            .addQueryParameter("limit", MDConstants.mangaLimit.toString())
-            .addQueryParameter("offset", helper.getMangaListOffset(page))
-            .build().toUrl().toString()
-
+        val url = MDConstants.apiMangaUrl.toHttpUrl().newBuilder().apply {
+            addQueryParameter("order[updatedAt]", "desc")
+            addQueryParameter("limit", MDConstants.mangaLimit.toString())
+            addQueryParameter("offset", helper.getMangaListOffset(page))
+            if (preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), false)) {
+                addQueryParameter("contentRating[]", "safe")
+            }
+            if (preferences.getBoolean(
+                    MDConstants.getContentRatingEroticaPrefKey(dexLang),
+                    false
+                )
+            ) {
+                addQueryParameter("contentRating[]", "suggestive")
+            }
+            if (preferences.getBoolean(
+                    MDConstants.getContentRatingSuggestivePrefKey(dexLang),
+                    false
+                )
+            ) {
+                addQueryParameter("contentRating[]", "erotica")
+            }
+            if (preferences.getBoolean(
+                    MDConstants.getContentRatingPornographicPrefKey(dexLang),
+                    false
+                )
+            ) {
+                addQueryParameter("contentRating[]", "pornographic")
+            }
+        }.build().toUrl().toString()
         return GET(
             url = url,
             headers = headers,
@@ -165,7 +189,7 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
      */
     private fun actualChapterListRequest(mangaId: String, offset: Int) =
         GET(
-            url = helper.getChapterEndpoint(mangaId, offset, lang),
+            url = helper.getChapterEndpoint(mangaId, offset, dexLang),
             headers = headers,
             cache = CacheControl.FORCE_NETWORK
         )
@@ -224,13 +248,27 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     }
 
     override fun pageListParse(response: Response): List<Page> {
+        if (response.isSuccessful.not()) {
+            throw Exception("HTTP ${response.code}")
+        }
+        if (response.code == 204) {
+            return emptyList()
+        }
         val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
-        val atHomeRequestUrl = "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+        val usingStandardHTTPS =
+            preferences.getBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), false)
+
+        val atHomeRequestUrl = if (usingStandardHTTPS) {
+            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?ssl=true"
+        } else {
+            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+        }
 
         val host =
             helper.getMdAtHomeUrl(atHomeRequestUrl, client, headers, CacheControl.FORCE_NETWORK)
 
-        val usingDataSaver = preferences.getBoolean("${MDConstants.dataSaverPref}_$lang", false)
+        val usingDataSaver =
+            preferences.getBoolean(MDConstants.getDataSaverPreferenceKey(dexLang), false)
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
@@ -257,19 +295,99 @@ abstract class MangaDex(override val lang: String) : ConfigurableSource, HttpSou
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
 
         val dataSaverPref = CheckBoxPreference(screen.context).apply {
-            key = "${MDConstants.dataSaverPref}_$lang"
+            key = MDConstants.getDataSaverPreferenceKey(dexLang)
             title = MDConstants.dataSaverPrefTitle
             summary = MDConstants.dataSaverPrefSummary
             setDefaultValue(false)
 
             setOnPreferenceChangeListener { _, newValue ->
                 val checkValue = newValue as Boolean
-                preferences.edit().putBoolean("${MDConstants.dataSaverPref}_$lang", checkValue)
+                preferences.edit()
+                    .putBoolean(MDConstants.getDataSaverPreferenceKey(dexLang), checkValue)
                     .commit()
             }
         }
+
+        val standardHTTPSPref = CheckBoxPreference(screen.context).apply {
+            key = MDConstants.getStandardHttpsPreferenceKey(dexLang)
+            title = MDConstants.standardHttpsPortTitle
+            summary = MDConstants.standardHttpsPortSummary
+            setDefaultValue(false)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit()
+                    .putBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), checkValue)
+                    .commit()
+            }
+        }
+
+        val contentRatingSafePref = CheckBoxPreference(screen.context).apply {
+            key = MDConstants.getContentRatingSafePrefKey(dexLang)
+            title = MDConstants.showByDefaultPrefTitle
+            summary = MDConstants.contentRatingSafePrefSummary
+            setDefaultValue(true)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit()
+                    .putBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), checkValue)
+                    .commit()
+            }
+        }
+
+        val contentRatingSuggestivePref = CheckBoxPreference(screen.context).apply {
+            key = MDConstants.getContentRatingSuggestivePrefKey(dexLang)
+            title = MDConstants.showByDefaultPrefTitle
+            summary = MDConstants.contentRatingSuggestivePrefSummary
+            setDefaultValue(true)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit()
+                    .putBoolean(MDConstants.getContentRatingSuggestivePrefKey(dexLang), checkValue)
+                    .commit()
+            }
+        }
+
+        val contentRatingEroticaPref = CheckBoxPreference(screen.context).apply {
+            key = MDConstants.getContentRatingEroticaPrefKey(dexLang)
+            title = MDConstants.showByDefaultPrefTitle
+            summary = MDConstants.contentRatingEroticaPrefSummary
+            setDefaultValue(false)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit()
+                    .putBoolean(MDConstants.getContentRatingEroticaPrefKey(dexLang), checkValue)
+                    .commit()
+            }
+        }
+
+        val contentRatingPornographicPref = CheckBoxPreference(screen.context).apply {
+            key = MDConstants.getContentRatingPornographicPrefKey(dexLang)
+            title = MDConstants.showByDefaultPrefTitle
+            summary = MDConstants.contentRatingPornographicPrefSummary
+            setDefaultValue(false)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val checkValue = newValue as Boolean
+                preferences.edit().putBoolean(
+                    MDConstants.getContentRatingPornographicPrefKey(dexLang),
+                    checkValue
+                )
+                    .commit()
+            }
+        }
+
         screen.addPreference(dataSaverPref)
+        screen.addPreference(standardHTTPSPref)
+        screen.addPreference(contentRatingSafePref)
+        screen.addPreference(contentRatingSuggestivePref)
+        screen.addPreference(contentRatingEroticaPref)
+        screen.addPreference(contentRatingPornographicPref)
     }
 
-    override fun getFilterList(): FilterList = helper.mdFilters.getMDFilterList()
+    override fun getFilterList(): FilterList =
+        helper.mdFilters.getMDFilterList(preferences, dexLang)
 }

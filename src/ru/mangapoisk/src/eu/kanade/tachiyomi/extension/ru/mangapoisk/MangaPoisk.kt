@@ -115,6 +115,7 @@ class MangaPoisk : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("article div.card-body").first()
         val manga = SManga.create()
+        manga.title = document.select(".post-name").text()
         manga.genre = infoElement.select(".post-info > span:eq(10) > a").joinToString { it.text() }
         manga.description = infoElement.select(".post-info > div .manga-description.entry").text()
         manga.status = parseStatus(infoElement.select(".post-info > span:eq(7)").text())

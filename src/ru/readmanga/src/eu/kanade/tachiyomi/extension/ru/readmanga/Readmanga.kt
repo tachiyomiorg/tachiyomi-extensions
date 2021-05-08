@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -137,7 +138,11 @@ class Readmanga : ParsedHttpSource() {
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
-        manga.description = infoElement.select("div.manga-description").text()
+        var altName = ""
+        if (infoElement.select(".another-names").isNotEmpty()) {
+            altName = "Альтернативные названия:\n" + infoElement.select(".another-names").text() + "\n\n"
+        }
+        manga.description = altName + infoElement.select("div.manga-description").text()
         manga.status = parseStatus(infoElement.html())
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga
@@ -270,6 +275,33 @@ class Readmanga : ParsedHttpSource() {
             add("Referer", baseUrl)
         }.build()
         return GET(page.imageUrl!!, imgHeader)
+    }
+
+    private fun searchMangaByIdRequest(id: String): Request {
+        return GET("$baseUrl/$id", headers)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_SLUG_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_SLUG_SEARCH)
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
+
+    companion object {
+        const val PREFIX_SLUG_SEARCH = "slug:"
     }
 
     private class OrderBy : Filter.Select<String>(

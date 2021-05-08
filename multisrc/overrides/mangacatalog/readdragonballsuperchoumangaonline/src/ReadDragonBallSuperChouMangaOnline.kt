@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.multisrc.mangacatalog.MangaCatalog
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
 
-class ReadDragonBallSuperChouMangaOnline : MangaCatalog("Read Dragon Ball Super/Chou Manga Online", "https://ww6.dbsmanga.com", "en") {
+class ReadDragonBallSuperChouMangaOnline : MangaCatalog("Read Dragon Ball Super Chou Manga Online", "https://ww6.dbsmanga.com", "en") {
     override val sourceList = listOf(
         Pair("Dragon Ball Super", "$baseUrl/manga/dragon-ball-super/"),
         Pair("Dragon Ball", "$baseUrl/manga/dragon-ball/"),

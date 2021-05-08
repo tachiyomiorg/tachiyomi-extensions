@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
+import android.content.SharedPreferences
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.HttpUrl
@@ -7,16 +8,43 @@ import java.util.Locale
 
 class MangaDexFilters {
 
-    internal fun getMDFilterList() = FilterList(
-        OriginalLanguageList(getOriginalLanguage()),
-        ContentRatingList(getContentRating()),
-        DemographicList(getDemographics()),
-        StatusList(getStatus()),
-        SortFilter(sortableList.map { it.first }.toTypedArray()),
-        TagList(getTags()),
-        TagInclusionMode(),
-        TagExclusionMode(),
-    )
+    internal fun getMDFilterList(preferences: SharedPreferences, dexLang: String): FilterList {
+        val contentRatings = listOf(
+            ContentRating("Safe").apply {
+                state =
+                    preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), true)
+            },
+            ContentRating("Suggestive").apply {
+                state = preferences.getBoolean(
+                    MDConstants.getContentRatingSuggestivePrefKey(dexLang),
+                    true
+                )
+            },
+            ContentRating("Erotica").apply {
+                state = preferences.getBoolean(
+                    MDConstants.getContentRatingEroticaPrefKey(dexLang),
+                    false
+                )
+            },
+            ContentRating("Pornographic").apply {
+                state = preferences.getBoolean(
+                    MDConstants.getContentRatingPornographicPrefKey(dexLang),
+                    false
+                )
+            },
+        )
+
+        return FilterList(
+            OriginalLanguageList(getOriginalLanguage()),
+            ContentRatingList(contentRatings),
+            DemographicList(getDemographics()),
+            StatusList(getStatus()),
+            SortFilter(sortableList.map { it.first }.toTypedArray()),
+            TagList(getTags()),
+            TagInclusionMode(),
+            TagExclusionMode(),
+        )
+    }
 
     private class Demographic(name: String) : Filter.CheckBox(name)
     private class DemographicList(demographics: List<Demographic>) :
@@ -44,13 +72,6 @@ class MangaDexFilters {
     private class ContentRating(name: String) : Filter.CheckBox(name)
     private class ContentRatingList(contentRating: List<ContentRating>) :
         Filter.Group<ContentRating>("Content Rating", contentRating)
-
-    private fun getContentRating() = listOf(
-        ContentRating("Safe"),
-        ContentRating("Suggestive"),
-        ContentRating("Erotica"),
-        ContentRating("Pornographic")
-    )
 
     private class OriginalLanguage(name: String, val isoCode: String) : Filter.CheckBox(name)
     private class OriginalLanguageList(originalLanguage: List<OriginalLanguage>) :
@@ -108,7 +129,7 @@ class MangaDexFilters {
         Tag("c8cbe35b-1b2b-4a3f-9c37-db84c4514856", "Medical"),
         Tag("ac72833b-c4e9-4878-b9db-6c8a4a99444a", "Military"),
         Tag("dd1f77c5-dea9-4e2b-97ae-224af09caf99", "Monster Girls"),
-        Tag("t36fd93ea-e8b8-445e-b836-358f02b3d33d", "Monsters"),
+        Tag("36fd93ea-e8b8-445e-b836-358f02b3d33d", "Monsters"),
         Tag("f42fbf9e-188a-447b-9fdc-f19dc1e4d685", "Music"),
         Tag("ee968100-4191-4968-93d3-f82d72be7e46", "Mystery"),
         Tag("489dd859-9b61-4c37-af75-5b18e88daafc", "Ninja"),

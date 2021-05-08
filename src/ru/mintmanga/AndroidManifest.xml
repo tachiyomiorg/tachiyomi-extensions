@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="eu.kanade.tachiyomi.extension" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="eu.kanade.tachiyomi.extension">
+
+    <application>
+        <activity
+            android:name=".ru.mintmanga.MintmangaActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- ReadmangaActivity sites can be added here. -->
+                <data
+                    android:host="mintmanga.live"
+                    android:pathPattern="/..*/vol..*"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -213,7 +213,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = "Русское название: " + rus_name + "\n" + Jsoup.parse(o.description).text()
+            this.description = rus_name + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name }
             status = parseStatus(o.status.id)
         }
@@ -338,6 +338,29 @@ class Remanga : ConfigurableSource, HttpSource() {
     override fun imageUrlRequest(page: Page): Request = throw NotImplementedError("Unused")
 
     override fun imageUrlParse(response: Response): String = throw NotImplementedError("Unused")
+
+    private fun searchMangaByIdRequest(id: String): Request {
+        return GET("$baseUrl/api/titles/$id", headers)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_SLUG_SEARCH)) {
+            val realQuery = query.removePrefix(PREFIX_SLUG_SEARCH)
+            client.newCall(searchMangaByIdRequest(realQuery))
+                .asObservableSuccess()
+                .map { response ->
+                    val details = mangaDetailsParse(response)
+                    details.url = "/$realQuery"
+                    MangasPage(listOf(details), false)
+                }
+        } else {
+            client.newCall(searchMangaRequest(page, query, filters))
+                .asObservableSuccess()
+                .map { response ->
+                    searchMangaParse(response)
+                }
+        }
+    }
 
     override fun imageRequest(page: Page): Request {
         val refererHeaders = headersBuilder().build()
@@ -577,5 +600,6 @@ class Remanga : ConfigurableSource, HttpSource() {
         private const val USERNAME_DEFAULT = ""
         private const val PASSWORD_TITLE = "Password"
         private const val PASSWORD_DEFAULT = ""
+        const val PREFIX_SLUG_SEARCH = "slug:"
     }
 }
