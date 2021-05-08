@@ -17,6 +17,9 @@ object MDConstants {
 
     val tempCover = "https://i.imgur.com/6TrIues.jpg"
 
+    const val mdAtHomeTokenLifespan = 5 * 60 * 1000
+
+
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss+SSS", Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
@@ -31,8 +34,6 @@ object MDConstants {
         "Enable to only request servers that use port 443. This allows users in some business and school networks to access MangaDex normally"
     private const val standardHttpsPortPref = "usePort443"
 
-    const val mdAtHomeTokenLifespan = 10 * 60 * 1000
-
     fun getStandardHttpsPreferenceKey(dexLang: String): String {
         return "${standardHttpsPortPref}_$dexLang"
     }
@@ -40,4 +41,8 @@ object MDConstants {
     fun getDataSaverPreferenceKey(dexLang: String): String {
         return "${dataSaverPref}_$dexLang"
     }
+
+
+
+
 }
