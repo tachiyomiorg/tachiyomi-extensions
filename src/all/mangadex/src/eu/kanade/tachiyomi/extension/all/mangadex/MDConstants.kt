@@ -34,7 +34,7 @@ object MDConstants {
 
     const val standardHttpsPortTitle = "Use HTTPS port 443 only"
     const val standardHttpsPortSummary =
-        "Enable to only request servers that use port 443. This allows users in some business and school networks to access MangaDex normally"
+        "Enable to only request image servers that use port 443. This allows users with stricter firewall restrictions to access MangaDex images"
     private const val standardHttpsPortPref = "usePort443"
 
     fun getStandardHttpsPreferenceKey(dexLang: String): String {

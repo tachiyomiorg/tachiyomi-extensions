@@ -65,13 +65,25 @@ abstract class MangaDex(override val lang: String, val dexLang: String) : Config
             if (preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), false)) {
                 addQueryParameter("contentRating[]", "safe")
             }
-            if (preferences.getBoolean(MDConstants.getContentRatingEroticaPrefKey(dexLang), false)) {
+            if (preferences.getBoolean(
+                    MDConstants.getContentRatingEroticaPrefKey(dexLang),
+                    false
+                )
+            ) {
                 addQueryParameter("contentRating[]", "suggestive")
             }
-            if (preferences.getBoolean(MDConstants.getContentRatingSuggestivePrefKey(dexLang), false)) {
+            if (preferences.getBoolean(
+                    MDConstants.getContentRatingSuggestivePrefKey(dexLang),
+                    false
+                )
+            ) {
                 addQueryParameter("contentRating[]", "erotica")
             }
-            if (preferences.getBoolean(MDConstants.getContentRatingPornographicPrefKey(dexLang), false)) {
+            if (preferences.getBoolean(
+                    MDConstants.getContentRatingPornographicPrefKey(dexLang),
+                    false
+                )
+            ) {
                 addQueryParameter("contentRating[]", "pornographic")
             }
         }.build().toUrl().toString()
