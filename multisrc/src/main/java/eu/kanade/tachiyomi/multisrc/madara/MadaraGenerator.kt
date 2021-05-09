@@ -193,7 +193,6 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Origami Orpheans", "https://origami-orpheans.com.br", "pt-BR", overrideVersionCode = 1),
             SingleLang("Paean Scans", "https://paeanscans.com", "en"),
             SingleLang("Painful Nightz Scan", "https://painfulnightzscan.com", "en"),
-            SingleLang("Pied Piper", "https://piedpiperfb.com", "tr"),
             SingleLang("Platinum Crown", "https://platinumscans.com", "en"),
             SingleLang("Pojok Manga", "https://pojokmanga.com", "id", overrideVersionCode = 1),
             SingleLang("PornComix", "https://www.porncomixonline.net", "en", isNsfw = true),
