@@ -34,7 +34,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("LupiTeam", "https://lupiteam.net", "it"),
         SingleLang("Zandy no Fansub", "https://zandynofansub.aishiteru.org", "en"),
         SingleLang("Kirishima Fansub", "https://www.kirishimafansub.net", "es"),
-        SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true, overrideVersionCode = 1),
+        SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true, overrideVersionCode = 2),
         MultiLang("HNI-Scantrad", "https://hni-scantrad.com", listOf("fr", "en"), className = "HNIScantradFactory", pkgName = "hniscantrad", overrideVersionCode = 1),
         SingleLang("The Phoenix Scans", "https://www.phoenixscans.com", "it", className = "PhoenixScans"),
         SingleLang("GTO The Great Site", "https://www.gtothegreatsite.net", "it", className = "GTO"),
