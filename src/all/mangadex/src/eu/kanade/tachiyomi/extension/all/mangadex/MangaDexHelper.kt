@@ -33,7 +33,7 @@ class MangaDexHelper() {
      * get chapters for manga (aka manga/$id/feed endpoint)
      */
     fun getChapterEndpoint(mangaId: String, offset: Int, langCode: String) =
-        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&locales[]=$langCode"
+        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&locales[]=$langCode&order[chapter]=desc"
 
     /**
      * Check if the manga url is a valid uuid
