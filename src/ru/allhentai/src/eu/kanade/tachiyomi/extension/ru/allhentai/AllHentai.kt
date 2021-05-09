@@ -66,12 +66,21 @@ class AllHentai : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
+        var url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
                     if (genre.state != Filter.TriState.STATE_IGNORE) {
                         url.addQueryParameter(genre.id, arrayOf("=", "=in", "=ex")[genre.state])
+                    }
+                }
+                is OrderBy -> {
+                    if (filter.state == 0) {
+                        url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
+                    } else {
+                        val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
+                        url = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
+                        return GET(url.toString(), headers)
                     }
                 }
             }
@@ -103,6 +112,7 @@ class AllHentai : ParsedHttpSource() {
         if (authorElement == null) {
             authorElement = infoElement.select("span.elem_screenwriter").first()?.text()
         }
+        manga.title = infoElement.select("h1.names .name").text()
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
@@ -243,7 +253,10 @@ class AllHentai : ParsedHttpSource() {
         }.build()
         return GET(page.imageUrl!!, imgHeader)
     }
-
+    private class OrderBy : Filter.Select<String>(
+        "Сортировать",
+        arrayOf("Без(фильтры)", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
+    )
     private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
@@ -253,6 +266,7 @@ class AllHentai : ParsedHttpSource() {
     *  on https://readmanga.me/search/advanced
     */
     override fun getFilterList() = FilterList(
+        OrderBy(),
         GenreList(getGenreList())
     )
 

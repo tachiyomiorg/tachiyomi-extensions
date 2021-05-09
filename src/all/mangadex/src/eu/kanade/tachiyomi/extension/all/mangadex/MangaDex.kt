@@ -260,7 +260,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
             preferences.getBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), false)
 
         val atHomeRequestUrl = if (usingStandardHTTPS) {
-            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?ssl=true"
+            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?forcePort443=true"
         } else {
             "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
         }
@@ -324,8 +324,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         val contentRatingSafePref = SwitchPreferenceCompat(screen.context).apply {
             key = MDConstants.getContentRatingSafePrefKey(dexLang)
-            title = MDConstants.showByDefaultPrefTitle
-            summary = "Content Rating: Safe"
+            title = "Safe"
+            summary = "If enabled, shows content with the rating of safe (manga without any sexual themes)"
             setDefaultValue(true)
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -338,8 +338,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         val contentRatingSuggestivePref = SwitchPreferenceCompat(screen.context).apply {
             key = MDConstants.getContentRatingSuggestivePrefKey(dexLang)
-            title = MDConstants.showByDefaultPrefTitle
-            summary = "Content Rating: Suggestive"
+            title = "Suggestive"
+            summary = "If enabled, shows content with the rating of suggestive (manga usually tagged as ecchi)"
             setDefaultValue(true)
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -352,8 +352,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         val contentRatingEroticaPref = SwitchPreferenceCompat(screen.context).apply {
             key = MDConstants.getContentRatingEroticaPrefKey(dexLang)
-            title = MDConstants.showByDefaultPrefTitle
-            summary = "Content Rating: Erotica"
+            title = "Erotica"
+            summary = "If enabled, shows content with the rating of erotica (manga usually tagged as smut)"
             setDefaultValue(false)
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -366,8 +366,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         val contentRatingPornographicPref = SwitchPreferenceCompat(screen.context).apply {
             key = MDConstants.getContentRatingPornographicPrefKey(dexLang)
-            title = MDConstants.showByDefaultPrefTitle
-            summary = "Content Rating: Pornographic"
+            title = "Pornographic"
+            summary = "If enabled, shows content with the rating of pornographic (manga usually tagged as hentai)"
             setDefaultValue(false)
 
             setOnPreferenceChangeListener { _, newValue ->

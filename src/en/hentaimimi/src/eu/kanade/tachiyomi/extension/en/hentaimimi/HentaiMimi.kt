@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.hentaimimi
 
 import eu.kanade.tachiyomi.annotations.Nsfw
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -9,10 +10,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.util.concurrent.TimeUnit
 
 /*
 * To Update Filter Values Run "FilterOptGen.kt"
@@ -26,6 +29,10 @@ class HentaiMimi : ParsedHttpSource() {
     override val lang = "en"
     override val name = "HentaiMimi"
     override val supportsLatest = true
+
+    override val client: OkHttpClient = network.client.newBuilder()
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .build()
 
     // Latest
 

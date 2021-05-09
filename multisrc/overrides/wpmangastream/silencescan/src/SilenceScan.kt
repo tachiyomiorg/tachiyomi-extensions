@@ -22,12 +22,11 @@ class SilenceScan : WPMangaStream(
     "pt-BR",
     SimpleDateFormat("MMMM dd, yyyy", Locale("pt", "BR"))
 ) {
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-        .addNetworkInterceptor(rateLimitInterceptor)
+        .addNetworkInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
@@ -79,7 +78,7 @@ class SilenceScan : WPMangaStream(
             .data()
             .substringAfter("run(")
             .substringBeforeLast(");")
-            .let { JSON_PARSER.parse(it) }
+            .let { JsonParser.parseString(it) }
             .obj
 
         if (chapterObj["sources"].array.size() == 0) {
@@ -127,8 +126,4 @@ class SilenceScan : WPMangaStream(
         Genre("Violência sexual", "violencia-sexual"),
         Genre("Yuri", "yuri")
     )
-
-    companion object {
-        private val JSON_PARSER by lazy { JsonParser() }
-    }
 }

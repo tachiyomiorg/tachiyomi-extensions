@@ -350,7 +350,7 @@ class Remanga : ConfigurableSource, HttpSource() {
                 .asObservableSuccess()
                 .map { response ->
                     val details = mangaDetailsParse(response)
-                    details.url = "/$realQuery"
+                    details.url = "/api/titles/$realQuery"
                     MangasPage(listOf(details), false)
                 }
         } else {

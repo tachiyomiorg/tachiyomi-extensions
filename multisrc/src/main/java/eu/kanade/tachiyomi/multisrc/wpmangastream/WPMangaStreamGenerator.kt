@@ -41,7 +41,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Manga Raw.org", "https://mangaraw.org", "ja", className = "MangaRawOrg", overrideVersionCode = 1),
             SingleLang("Matakomik", "https://matakomik.com", "id"),
             SingleLang("Manga Pro Z", "https://mangaproz.com", "ar"),
-            SingleLang("Silence Scan", "https://silencescan.net", "pt-BR"),
+            SingleLang("Silence Scan", "https://silencescan.net", "pt-BR", overrideVersionCode = 1),
             SingleLang("Kuma Scans (Kuma Translation)", "https://kumascans.com", "en", className = "KumaScans"),
             SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
             SingleLang("xCaliBR Scans", "https://xcalibrscans.com", "en", overrideVersionCode = 2),

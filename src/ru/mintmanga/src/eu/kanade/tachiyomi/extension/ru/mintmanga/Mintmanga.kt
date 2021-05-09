@@ -135,6 +135,7 @@ class Mintmanga : ParsedHttpSource() {
         if (authorElement == null) {
             authorElement = infoElement.select("span.elem_screenwriter").first()?.text()
         }
+        manga.title = infoElement.select("h1.names .name").text()
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
@@ -304,7 +305,7 @@ class Mintmanga : ParsedHttpSource() {
     }
 
     private class OrderBy : Filter.Select<String>(
-        "Сортировать\n(отдельно от фильтров)",
+        "Сортировать",
         arrayOf("Без(фильтры)", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
     )
 

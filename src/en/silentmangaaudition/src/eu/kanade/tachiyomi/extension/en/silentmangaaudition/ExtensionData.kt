@@ -9,6 +9,12 @@ data class SmaEntry(
 
 val SMA_ENTRIES = listOf(
     SmaEntry(
+        "SMA-15 “Moments of CRYING, SMILING or LOVE”",
+        "/sma15-silent-manga-audition-2021-award-winners",
+        "/v/sma15/blossom-by-enewald/?lang=en",
+        "https://www.manga-audition.com/wp/wp-content/themes/gridlove-child/assets/img/award-result/sma15/header_sp.png"
+    ),
+    SmaEntry(
         "SMA-14 “Creature, Spirits & Monsters”",
         "/sma14-silent-manga-audition-2020-award-winners",
         "/v/sma14/blooming-flower-by-blackwink/",

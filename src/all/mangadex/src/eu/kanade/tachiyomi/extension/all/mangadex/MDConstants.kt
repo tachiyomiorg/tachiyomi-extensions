@@ -36,7 +36,6 @@ object MDConstants {
         return "${standardHttpsPortPref}_$dexLang"
     }
 
-    const val showByDefaultPrefTitle = "Show only by default"
 
     private const val contentRatingSafePref = "contentRatingSafe"
 

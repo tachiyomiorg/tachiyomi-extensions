@@ -22,7 +22,7 @@ class Selfmanga : ParsedHttpSource() {
 
     override val name = "Selfmanga"
 
-    override val baseUrl = "https://selfmanga.ru"
+    override val baseUrl = "https://selfmanga.live"
 
     override val lang = "ru"
 
@@ -88,6 +88,7 @@ class Selfmanga : ParsedHttpSource() {
         val infoElement = document.select("div.leftContent").first()
 
         val manga = SManga.create()
+        manga.title = infoElement.select("h1.names .name").text()
         manga.author = infoElement.select("span.elem_author").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().replace(" ,", ",")
         manga.description = infoElement.select("div.manga-description").text()
