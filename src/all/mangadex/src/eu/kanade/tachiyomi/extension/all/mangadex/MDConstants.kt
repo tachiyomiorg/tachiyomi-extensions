@@ -36,7 +36,6 @@ object MDConstants {
         return "${standardHttpsPortPref}_$dexLang"
     }
 
-
     private const val contentRatingSafePref = "contentRatingSafe"
 
     fun getContentRatingSafePrefKey(dexLang: String): String {

@@ -63,7 +63,7 @@ class MangaDexFilters {
         Filter.Group<Status>("Status", status)
 
     private fun getStatus() = listOf(
-        Status("Onging"),
+        Status("Ongoing"),
         Status("Completed"),
         Status("Hiatus"),
         Status("Abandoned"),
@@ -78,9 +78,9 @@ class MangaDexFilters {
         Filter.Group<OriginalLanguage>("Original language", originalLanguage)
 
     private fun getOriginalLanguage() = listOf(
-        OriginalLanguage("Japanese (Manga)", "jp"),
-        OriginalLanguage("Chinese (Manhua)", "cn"),
-        OriginalLanguage("Korean (Manhwa)", "kr"),
+        OriginalLanguage("Japanese (Manga)", "ja"),
+        OriginalLanguage("Chinese (Manhua)", "zh"),
+        OriginalLanguage("Korean (Manhwa)", "ko"),
     )
 
     internal class Tag(val id: String, name: String) : Filter.TriState(name)
@@ -189,6 +189,13 @@ class MangaDexFilters {
                     is OriginalLanguageList -> {
                         filter.state.forEach { lang ->
                             if (lang.state) {
+                                // dex has zh and zh-hk for chinese manhua
+                                if (lang.isoCode == "zh") {
+                                    addQueryParameter(
+                                        "originalLanguage[]",
+                                        "zh-hk"
+                                    )
+                                }
                                 addQueryParameter(
                                     "originalLanguage[]",
                                     lang.isoCode
