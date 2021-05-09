@@ -266,11 +266,14 @@ class MangaDexHelper() {
             }
 
             attr["title"].nullString?.let {
-                if (chapterName.isNotEmpty() && it.isNotEmpty()) {
+                if(it.isNotEmpty()){
+                   if (chapterName.isNotEmpty()) {
                     chapterName.add("-")
-                    chapterName.add(it)
+                   }
+                chapterName.add(it)
                 }
             }
+          
             // if volume, chapter and title is empty its a oneshot
             if (chapterName.isEmpty()) {
                 chapterName.add("Oneshot")
