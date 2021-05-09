@@ -86,7 +86,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         element.select("a").first().let { link ->
             manga.setUrlWithoutDomain(link.attr("href"))
-            manga.title = element.select("h4").first().text()
+            manga.title = element.select(".updates__name_rus").first().text()
         }
         return manga
     }

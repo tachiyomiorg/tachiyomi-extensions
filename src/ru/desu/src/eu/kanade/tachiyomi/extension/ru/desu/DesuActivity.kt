@@ -28,10 +28,10 @@ class DesuActivity : Activity() {
             try {
                 startActivity(mainIntent)
             } catch (e: ActivityNotFoundException) {
-                Log.e("RemangaActivity", e.toString())
+                Log.e("DesuActivity", e.toString())
             }
         } else {
-            Log.e("RemangaActivity", "could not parse uri from intent $intent")
+            Log.e("DesuActivity", "could not parse uri from intent $intent")
         }
 
         finish()
