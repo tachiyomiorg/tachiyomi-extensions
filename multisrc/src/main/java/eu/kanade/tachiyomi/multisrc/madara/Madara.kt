@@ -397,7 +397,7 @@ abstract class Madara(
         return this.contains("Updating", true).not()
     }
 
-    protected fun imageFromElement(element: Element): String? {
+    protected open fun imageFromElement(element: Element): String? {
         return when {
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("data-lazy-src") -> element.attr("abs:data-lazy-src")
