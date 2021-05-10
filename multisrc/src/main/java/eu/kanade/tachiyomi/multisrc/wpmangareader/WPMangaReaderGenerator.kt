@@ -21,6 +21,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("Gecenin Lordu", "https://geceninlordu.com/", "tr", overrideVersionCode = 1),
             SingleLang("Flame Scans", "http://flamescans.org", "en", overrideVersionCode = 1),
             SingleLang("A Pair of 2+", "https://pairof2.com", "en", className = "APairOf2"),
+            SingleLang("Seafoam Scans", "https://seafoamscans.com", "en",
             SingleLang("PMScans", "https://reader.pmscans.com", "en"),
             SingleLang("GS Nation", "https://gs-nation.fr", "fr")
         )
