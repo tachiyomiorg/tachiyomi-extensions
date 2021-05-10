@@ -99,7 +99,7 @@ class MangaDexFilters {
         Tag("4d32cc48-9f00-4cca-9b5a-a839f0764984", "Comedy"),
         Tag("ea2bc92d-1c26-4930-9b7c-d5c0dc1b6869", "Cooking"),
         Tag("5ca48985-9a9d-4bd8-be29-80dc0303db72", "Crime"),
-        Tag("489dd859-9b61-4c37-af75-5b18e88daafc", "Crossdressing"),
+        Tag("9ab53f92-3eed-4e9b-903a-917c86035ee3", "Crossdressing"),
         Tag("da2d50ca-3018-4cc0-ac7a-6b7d472a29ea", "Delinquents"),
         Tag("39730448-9a5f-48a2-85b0-a70db87b1233", "Demons"),
         Tag("b13b2a48-c720-44a9-9c77-39c9979373fb", "Doujinshi"),
