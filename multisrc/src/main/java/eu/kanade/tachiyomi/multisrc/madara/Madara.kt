@@ -351,7 +351,7 @@ abstract class Madara(
                     // I don't know what's the corresponding for COMPLETED and LICENSED
                     // There's no support for "Canceled" or "On Hold"
                     "Completed", "Completo", "Concluído", "Concluido", "Terminé" -> SManga.COMPLETED
-                    "OnGoing", "Продолжается", "Updating", "Em Lançamento", "Em andamento", "Em Andamento", "En cours", "Ativo" -> SManga.ONGOING
+                    "OnGoing", "Продолжается", "Updating", "Em Lançamento", "Em andamento", "Em Andamento", "En cours", "Ativo", "Lançando" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
             }
