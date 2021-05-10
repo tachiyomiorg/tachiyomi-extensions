@@ -56,6 +56,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     // The mirror is used because the main site "mangalib.me" in application returns error 403
     override val baseUrl: String = "https://mangalib.org"
+    private val baseOrigUrl: String = "https://mangalib.me"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
@@ -86,7 +87,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         element.select("a").first().let { link ->
             manga.setUrlWithoutDomain(link.attr("href"))
-            manga.title = element.select(".updates__name_rus").first().text()
+            manga.title = if (element.select(".updates__name_rus").isNullOrEmpty()) { element.select("h4").first().text() } else element.select(".updates__name_rus").first().text()
         }
         return manga
     }
@@ -172,7 +173,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         val genres = document.select(".media-tags > a").map { it.text() }
         manga.title = document.select(".media-name__alt").text()
-        manga.thumbnail_url = document.select(".media-sidebar__cover > img").attr("src")
+        manga.thumbnail_url = baseUrl + document.select(".media-sidebar__cover > img").attr("src").substringAfter(baseOrigUrl)
         manga.author = body.select("div.media-info-list__title:contains(Автор) + div").text()
         manga.artist = body.select("div.media-info-list__title:contains(Художник) + div").text()
         manga.status = when (

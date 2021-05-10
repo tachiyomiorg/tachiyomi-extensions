@@ -5,7 +5,7 @@ ext {
     extName = 'MangaLib'
     pkgNameSuffix = 'ru.libmanga'
     extClass = '.LibManga'
-    extVersionCode = 43
+    extVersionCode = 44
     libVersion = '1.2'
 }
 
