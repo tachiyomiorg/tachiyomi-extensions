@@ -354,7 +354,7 @@ with open(f"{package}/src/{source}.kt", "w") as f:
 
 ## Running
 
-To aid in local development, you can use the following run configuration to launch an extension:
+To make local development more convenient, you can use the following run configuration to launch Tachiyomi directly at the Browse panel:
 
 ![](https://i.imgur.com/STy0UFY.png)
 
@@ -372,7 +372,21 @@ And for a release build of Tachiyomi:
 
 ## Debugging
 
-Directly debugging your extension (i.e stepping through the extension code) is not possible due to the way that extension code is loaded into the app. However, logs printed from extensions (via [`Logcat`](https://developer.android.com/studio/debug/am-logcat)) do work.
+### Android Debugger
+
+You can leverage the Android Debugger to step through your extension while debugging.
+
+You *cannot* simply use Android Studio's `Debug 'module.name'` -> this will most likely result in an error while launching.
+
+Instead, once you've built and installed your extension on the target device, use `Attach Debugger to Android Process` to start debugging Tachiyomi.
+
+![](https://i.imgur.com/muhXyfu.png)
+
+
+### Logs
+
+You can also elect to simply rely on logs printed from your extension, which
+show up in the [`Logcat`](https://developer.android.com/studio/debug/am-logcat) panel of Android Studio
 
 
 ## Building
