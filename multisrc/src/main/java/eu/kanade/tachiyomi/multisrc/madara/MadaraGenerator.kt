@@ -43,7 +43,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Chibi Manga", "https://www.cmreader.info", "en"),
             SingleLang("Clover Manga", "https://clover-manga.com", "tr", overrideVersionCode = 1),
             SingleLang("ComicKiba", "https://comickiba.com", "en"),
-            SingleLang("Comic Rush", "https://comicrush.org", "en"),
+            SingleLang("Comicdom", "https://comicdom.org", "en"),
             SingleLang("Comics Valley", "https://comicsvalley.com", "hi", isNsfw = true),
             SingleLang("CopyPasteScan", "https://copypastescan.xyz", "es"),
             SingleLang("Cutie Pie", "https://cutiepie.ga", "tr"),
