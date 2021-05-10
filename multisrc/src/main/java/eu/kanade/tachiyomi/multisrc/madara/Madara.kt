@@ -1,8 +1,16 @@
 package eu.kanade.tachiyomi.multisrc.madara
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.widget.TextView
+import android.widget.Toast
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservable
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -22,6 +30,8 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -35,13 +45,52 @@ abstract class Madara(
     override val baseUrl: String,
     override val lang: String,
     private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
-) : ParsedHttpSource() {
+) : ParsedHttpSource(), ConfigurableSource {
 
     override val supportsLatest = true
 
-    companion object {
-        private var hostValues = mutableListOf("", "local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+    // Preferences Code
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chooseHostPref = androidx.preference.ListPreference(screen.context).apply {
+            key = CHOOSE_HOST_Key
+            title = CHOOSE_HOST_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                hostValues = prefsEntryValues.toMutableList()
+                hostValues.removeAt(index)
+                preferences.edit().putString(CHOOSE_HOST_Key, entry).commit()
+            }
+        }
+        screen.addPreference(chooseHostPref)
+    }
+
+    private fun chooseHostPref() = preferences.getString(CHOOSE_HOST_Key, "")
+
+    private fun cleanHostValues(): MutableList<String> {
+        val hostsList = prefsEntryValues.toMutableList()
+        hostsList.remove(chooseHostPref())
+        return hostsList
+    }
+
+    companion object {
+        private const val CHOOSE_HOST_Title = "Choose the host/server you prefer for images"
+        private const val CHOOSE_HOST_Key = "choose_host"
+        private val prefsEntries = arrayOf("Default", "Local", "Amazon", "Imgur", "Flickr", "Picasa (Blogspot)", "Google Photos")
+        private val prefsEntryValues = arrayOf("", "local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+    }
+
+    private var hostValues = cleanHostValues()
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -442,9 +491,14 @@ abstract class Madara(
 
         with(element) {
             select(chapterUrlSelector).first()?.let { urlElement ->
-                chapter.url = urlElement.attr("abs:href").let {
+                val url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if (!it.endsWith(chapterUrlSuffix)) chapterUrlSuffix else ""
-                }
+                }.toHttpUrlOrNull()!!.newBuilder()
+
+                if (chooseHostPref() != "")
+                    url.addQueryParameter("host", chooseHostPref())
+
+                chapter.url = url.toString()
 
                 chapter.name = urlElement.text()
             }
@@ -536,9 +590,6 @@ abstract class Madara(
     }
 
     override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
-        val url = chapter.url.toHttpUrlOrNull()!!.newBuilder()
-        chapter.url = url.addQueryParameter("host", hostValues[0]).toString()
-
         var observable = super.fetchPageList(chapter)
 
         var pages = emptyList<Page>()
@@ -552,19 +603,28 @@ abstract class Madara(
             if (pages.isNotEmpty()) {
                 if (index > 0) {
                     // put validHost in first position
-                    val validHost = hostValues[index]
-                    hostValues.removeAt(index)
+                    val validHost = hostValues[index - 1]
+                    hostValues.removeAt(index - 1)
                     hostValues.add(0, validHost)
+                    val hostName = prefsEntries[prefsEntryValues.indexOf(validHost)]
+                    Handler(Looper.getMainLooper()).post {
+                        val toast = Toast.makeText(Injekt.get<Application>().applicationContext, "Host : $hostName\nYou may want to switch to this host to avoid unnecessary loading time", Toast.LENGTH_SHORT)
+                        val view = toast.view.findViewById<TextView>(android.R.id.message)
+                        view?.let {
+                            view.gravity = Gravity.CENTER_HORIZONTAL
+                        }
+                        toast.show()
+                    }
                 }
                 return observable
             }
 
-            index++
-
+            val url = chapter.url.toHttpUrlOrNull()!!.newBuilder()
             url.setQueryParameter("host", hostValues[index])
             chapter.url = url.toString()
 
             observable = super.fetchPageList(chapter)
+            index++
         }
 
         return observable
@@ -585,7 +645,17 @@ abstract class Madara(
     }
 
     override fun imageRequest(page: Page): Request {
-        return GET(page.imageUrl!!, headers.newBuilder().set("Referer", page.url).build())
+        val headers = headersBuilder()
+        headers.apply {
+            add("Referer", page.url)
+        }
+
+        if (page.imageUrl!!.contains("amazonaws.com")) {
+            headers.apply {
+                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+            }
+        }
+        return GET(page.imageUrl!!, headers.build())
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
