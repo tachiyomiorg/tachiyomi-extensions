@@ -11,8 +11,8 @@ import java.util.Locale
 class GSNation : WPMangaReader("GS Nation", "http://gs-nation.fr", "fr", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.FRANCE)) {
 
     // remove the novels from the response
-    override fun popularMangaParse(response: Response): MangasPage {
-        val mangasPage = super.popularMangaParse(response)
+    override fun searchMangaParse(response: Response): MangasPage {
+        val mangasPage = super.searchMangaParse(response)
 
         return MangasPage(
             mangasPage.mangas
@@ -22,9 +22,9 @@ class GSNation : WPMangaReader("GS Nation", "http://gs-nation.fr", "fr", dateFor
         )
     }
 
-    override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
+    override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
-    override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
+    override fun popularMangaParse(response: Response): MangasPage = searchMangaParse(response)
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         author = document.select(".imptdt:contains(auteur) i").text()

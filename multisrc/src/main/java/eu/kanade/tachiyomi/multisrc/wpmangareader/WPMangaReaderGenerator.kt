@@ -22,7 +22,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("Flame Scans", "http://flamescans.org", "en", overrideVersionCode = 1),
             SingleLang("A Pair of 2+", "https://pairof2.com", "en", className = "APairOf2"),
             SingleLang("PMScans", "https://reader.pmscans.com", "en"),
-            SingleLang("GS Nation", "https://gs-nation.fr", "fr")
+            SingleLang("GS Nation", "https://gs-nation.fr", "fr", overrideVersionCode = 1)
         )
 
     companion object {
