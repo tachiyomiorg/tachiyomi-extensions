@@ -66,6 +66,7 @@ open class BatoTo(
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         return if (query.isNotBlank()) {
             GET("$baseUrl/search?word=$query&page=$page")
@@ -186,9 +187,7 @@ open class BatoTo(
         val chapter = SChapter.create()
         val urlElement = element.select("a.chapt")
         val group = element.select("div.extra > a:not(.ps-3)").text()
-        val time = element.select("i").text()
-            .replace("a ", "1 ")
-            .replace("an ", "1 ")
+        val time = element.select("div.extra > i.ps-3").text()
         chapter.setUrlWithoutDomain(urlElement.attr("href"))
         chapter.name = urlElement.text()
         if (group != "") {
