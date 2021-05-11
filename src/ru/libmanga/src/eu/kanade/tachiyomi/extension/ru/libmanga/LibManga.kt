@@ -39,6 +39,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class LibManga : ConfigurableSource, HttpSource() {
 
@@ -48,15 +49,17 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override val name: String = "Mangalib"
 
+    override val baseUrl: String = "https://mangalib.me"
+
     override val lang = "ru"
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
 
-    // The mirror is used because the main site "mangalib.me" in application returns error 403
-    override val baseUrl: String = "https://mangalib.org"
-    private val baseOrigUrl: String = "https://mangalib.me"
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override fun headersBuilder() = Headers.Builder().apply {
         add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
@@ -173,7 +176,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         val genres = document.select(".media-tags > a").map { it.text() }
         manga.title = document.select(".media-name__alt").text()
-        manga.thumbnail_url = baseUrl + document.select(".media-sidebar__cover > img").attr("src").substringAfter(baseOrigUrl)
+        manga.thumbnail_url = document.select(".media-sidebar__cover > img").attr("src")
         manga.author = body.select("div.media-info-list__title:contains(Автор) + div").text()
         manga.artist = body.select("div.media-info-list__title:contains(Художник) + div").text()
         manga.status = when (
@@ -216,7 +219,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private fun sortChaptersByTranslator
-    (sortingList: String?, chaptersList: JsonArray?, slug: String, branches: List<JsonElement>): List<SChapter>? {
+        (sortingList: String?, chaptersList: JsonArray?, slug: String, branches: List<JsonElement>): List<SChapter>? {
         var chapters: List<SChapter>? = null
         when (sortingList) {
             "ms_combining" -> {
@@ -266,7 +269,7 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     private fun chapterFromElement
-    (chapterItem: JsonElement, sortingList: String?, slug: String, teamIdParam: Int? = null, branches: List<JsonElement>? = null): SChapter {
+        (chapterItem: JsonElement, sortingList: String?, slug: String, teamIdParam: Int? = null, branches: List<JsonElement>? = null): SChapter {
         val chapter = SChapter.create()
 
         val volume = chapterItem["chapter_volume"].int
