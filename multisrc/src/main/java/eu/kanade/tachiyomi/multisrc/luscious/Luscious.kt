@@ -674,7 +674,7 @@ abstract class Luscious(
     companion object {
 
         private const val POPULAR_DEFAULT_SORT_STATE = 0
-        private const val LATEST_DEFAULT_SORT_STATE = 7
+        private const val LATEST_DEFAULT_SORT_STATE = 6
         private const val SEARCH_DEFAULT_SORT_STATE = 0
 
         private const val FILTER_VALUE_IGNORE = "<ignore>"
