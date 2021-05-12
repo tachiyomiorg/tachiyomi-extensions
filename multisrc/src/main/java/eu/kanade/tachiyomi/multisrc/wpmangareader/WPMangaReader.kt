@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.multisrc.wpmangareader
 
 import android.util.Log
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -19,6 +20,7 @@ import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import rx.Single
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -62,33 +64,47 @@ abstract class WPMangaReader(
      *
      * @returns An identifier for a manga, or null if none could be found
      */
-    protected open fun mangaIdFromUrl(s: String): String? {
+    protected open fun mangaIdFromUrl(s: String): Single<String?> {
         var baseMangaUrl = "$baseUrl$mangaUrlDirectory".toHttpUrlOrNull()!!
         return s.toHttpUrlOrNull()?.let { url ->
+            fun pathLengthIs(url: HttpUrl, n: Int, strict: Boolean = false) = url.pathSegments.size == n && url.pathSegments[n - 1].isNotEmpty() || (!strict && url.pathSegments.size == n + 1 && url.pathSegments[n].isEmpty())
             val isMangaUrl = listOf(
                 baseMangaUrl.host == url.host,
-                url.pathSegments.size == 2 || (url.pathSegments.size == 3 && url.pathSegments[2] == ""),
+                pathLengthIs(url, 2),
                 url.pathSegments[0] == baseMangaUrl.pathSegments[0]).all { it }
+            val potentiallyChapterUrl = pathLengthIs(url, 1)
             if (isMangaUrl)
-                url.pathSegments[1]
+                Single.just(url.pathSegments[1])
+            else if (potentiallyChapterUrl)
+                client.newCall(GET(s, headers)).asObservableSuccess().map {
+                    val links = it.asJsoup().select("a[itemprop=item]")
+                    if (links.size == 3) //  near the top of page: home > manga > current chapter
+                        links[1].attr("href").toHttpUrlOrNull()?.pathSegments?.get(1)
+                    else
+                        null
+                }.toSingle()
             else
-                null
-        }
+                Single.just(null)
+        } ?: Single.just(null)
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         if (!query.startsWith(URL_SEARCH_PREFIX))
             return super.fetchSearchManga(page, query, filters)
 
-        val id = mangaIdFromUrl(query.substringAfter(URL_SEARCH_PREFIX))
-        if (id != null) {
-            return fetchMangaDetails(SManga.create().apply { this.url = "$mangaUrlDirectory/$id"})
-                .map {
-                    it.url = "$mangaUrlDirectory/$id"// isn't set in returned manga
-                    MangasPage(listOf(it), false)
-                }
-        }
-        return Observable.just(MangasPage(emptyList(), false))
+        return mangaIdFromUrl(query.substringAfter(URL_SEARCH_PREFIX))
+            .toObservable()
+            .concatMap { id ->
+                if (id == null)
+                    Observable.just(MangasPage(emptyList(), false))
+                else
+                    fetchMangaDetails(SManga.create().apply { this.url = "$mangaUrlDirectory/$id" })
+                        .map {
+                            it.url = "$mangaUrlDirectory/$id"// isn't set in returned manga
+                            MangasPage(listOf(it), false)
+                        }
+            }
+
     }
 
 
@@ -124,7 +140,8 @@ abstract class WPMangaReader(
         title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
     }
-    override fun searchMangaNextPageSelector() =  "div.pagination .next, div.hpage .r"
+
+    override fun searchMangaNextPageSelector() = "div.pagination .next, div.hpage .r"
 
     // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {

@@ -14,7 +14,7 @@ class WPMangaReaderUrlActivity : Activity() {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
 
-        if (pathSegments != null && pathSegments.size >= 2) {
+        if (pathSegments != null && pathSegments.size >= 1) {
 
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
