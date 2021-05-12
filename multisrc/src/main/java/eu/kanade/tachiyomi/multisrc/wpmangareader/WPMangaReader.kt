@@ -18,6 +18,7 @@ import okhttp3.Response
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -41,7 +42,6 @@ abstract class WPMangaReader(
     override fun popularMangaSelector() = throw UnsupportedOperationException("Not used")
     override fun popularMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
 
-
     // latest
     override fun latestUpdatesRequest(page: Int) = searchMangaRequest(page, "", FilterList(OrderByFilter(3)))
     override fun latestUpdatesParse(response: Response) = searchMangaParse(response)
@@ -52,6 +52,45 @@ abstract class WPMangaReader(
 
     // search
     override fun searchMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx, .listo .bs .bsx"
+
+
+    /**
+     * Given some string which represents an http url, returns a identifier (id) for a manga
+     * which can be used to fetch its details at "$baseUrl$mangaUrlDirectory/$id"
+     *
+     * @param s: String - url
+     *
+     * @returns An identifier for a manga, or null if none could be found
+     */
+    protected open fun mangaIdFromUrl(s: String): String? {
+        var baseMangaUrl = "$baseUrl$mangaUrlDirectory".toHttpUrlOrNull()!!
+        return s.toHttpUrlOrNull()?.let { url ->
+            val isMangaUrl = listOf(
+                baseMangaUrl.host == url.host,
+                url.pathSegments.size == 2 || (url.pathSegments.size == 3 && url.pathSegments[2] == ""),
+                url.pathSegments[0] == baseMangaUrl.pathSegments[0]).all { it }
+            if (isMangaUrl)
+                url.pathSegments[1]
+            else
+                null
+        }
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (!query.startsWith(URL_SEARCH_PREFIX))
+            return super.fetchSearchManga(page, query, filters)
+
+        val id = mangaIdFromUrl(query.substringAfter(URL_SEARCH_PREFIX))
+        if (id != null) {
+            return fetchMangaDetails(SManga.create().apply { this.url = "$mangaUrlDirectory/$id"})
+                .map {
+                    it.url = "$mangaUrlDirectory/$id"// isn't set in returned manga
+                    MangasPage(listOf(it), false)
+                }
+        }
+        return Observable.just(MangasPage(emptyList(), false))
+    }
+
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl".toHttpUrlOrNull()!!.newBuilder()
@@ -101,6 +140,7 @@ abstract class WPMangaReader(
                 .text()
         )
 
+        title = document.selectFirst("h1.entry-title").text()
         thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("abs:src")
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
 
@@ -278,4 +318,8 @@ abstract class WPMangaReader(
         LabeledValue("Added", "latest"),
         LabeledValue("Popular", "popular")
     )
+
+    companion object {
+        const val URL_SEARCH_PREFIX = "url:"
+    }
 }
