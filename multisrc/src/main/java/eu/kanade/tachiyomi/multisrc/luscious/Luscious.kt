@@ -74,6 +74,8 @@ abstract class Luscious(
         val interestsFilter = filters.findInstance<InterestGroupFilter>()!!
         val languagesFilter = filters.findInstance<LanguageGroupFilter>()!!
         val tagsFilter = filters.findInstance<TagTextFilters>()!!
+        val creatorFilter = filters.findInstance<CreatorTextFilters>()!!
+        val favoriteFilter = filters.findInstance<FavoriteTextFilters>()!!
         val genreFilter = filters.findInstance<GenreGroupFilter>()!!
         val contentTypeFilter = filters.findInstance<ContentTypeSelectFilter>()!!
         val albumSizeFilter = filters.findInstance<AlbumSizeSelectFilter>()!!
@@ -122,6 +124,24 @@ abstract class Luscious(
                                     JsonObject().apply {
                                         addProperty("name", "tagged")
                                         addProperty("value", tags)
+                                    }
+                                )
+                            }
+
+                            if (creatorFilter.state.isNotEmpty()) {
+                                add(
+                                    JsonObject().apply {
+                                        addProperty("name", "created_by_id")
+                                        addProperty("value", creatorFilter.state)
+                                    }
+                                )
+                            }
+
+                            if (favoriteFilter.state.isNotEmpty()) {
+                                add(
+                                    JsonObject().apply {
+                                        addProperty("name", "favorite_by_user_id")
+                                        addProperty("value", favoriteFilter.state)
                                     }
                                 )
                             }
@@ -364,11 +384,17 @@ abstract class Luscious(
     // Details
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        val id = manga.url.substringAfterLast("_").removeSuffix("/")
-        return buildAlbumInfoRequest(id)
+        return GET("$baseUrl${manga.url}", headers)
     }
 
-    override fun mangaDetailsParse(response: Response): SManga {
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        val id = manga.url.substringAfterLast("_").removeSuffix("/")
+        return client.newCall(buildAlbumInfoRequest(id))
+            .asObservableSuccess()
+            .map { detailsParse(it) }
+    }
+
+    private fun detailsParse(response: Response): SManga {
         val data = gson.fromJson<JsonObject>(response.body!!.string())
         with(data["data"]["album"]["get"]) {
             val manga = SManga.create()
@@ -400,6 +426,7 @@ abstract class Luscious(
             return manga
         }
     }
+    override fun mangaDetailsParse(response: Response): SManga = throw UnsupportedOperationException("Not used")
 
     // Popular
 
@@ -470,6 +497,8 @@ abstract class Luscious(
     class RestrictGenresSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Restrict Genres", options)
     class AlbumSizeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Album Size", options)
     class TagTextFilters : TextFilter("Tags")
+    class CreatorTextFilters : TextFilter("Uploader")
+    class FavoriteTextFilters : TextFilter("Favorite by User")
     override fun getFilterList(): FilterList = getSortFilters(POPULAR_DEFAULT_SORT_STATE)
 
     private fun getSortFilters(sortState: Int) = FilterList(
@@ -484,6 +513,9 @@ abstract class Luscious(
         Filter.Header("Separate tags with commas (,)"),
         Filter.Header("Prepend with dash (-) to exclude"),
         TagTextFilters(),
+        Filter.Header("The following require username or ID"),
+        CreatorTextFilters(),
+        FavoriteTextFilters(),
     )
 
 
