@@ -36,6 +36,7 @@ class GSNation : WPMangaReader("GS Nation", "http://gs-nation.fr", "fr", dateFor
 
         thumbnail_url = document.select("div.thumb img").attr("abs:src")
         description = document.select(".entry-content[itemprop=description]").joinToString("\n") { it.text() }
+        title = document.selectFirst("h1.entry-title").text()
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
         document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
