@@ -55,6 +55,12 @@ interface ThemeSourceGenerator {
 
             val defaultAdditionalGradleText = File(defaultAdditionalGradlePath).readTextOrEmptyString()
             val additionalGradleOverrideText = File(additionalGradleOverridePath).readTextOrEmptyString()
+            val placeholders = mapOf(
+                "SOURCEHOST" to source.baseUrl.toHttpUrlOrNull()?.host,
+                "SOURCESCHEME" to source.baseUrl.toHttpUrlOrNull()?.scheme,
+                "SOURCECLASSNAME" to source.className,
+                "SOURCEPKGNAME" to source.pkgName
+            ).filter { it.value != null }
             gradle.writeText("""
                 // THIS FILE IS AUTO-GENERATED; DO NOT EDIT
                 apply plugin: 'com.android.application'
@@ -76,10 +82,7 @@ interface ThemeSourceGenerator {
                 android {
                     defaultConfig {
                         manifestPlaceholders += [
-                            SOURCEHOST: "${source.baseUrl.toHttpUrlOrNull()!!.host}",
-                            SOURCESCHEME: "${source.baseUrl.toHttpUrlOrNull()!!.scheme}",
-                            SOURCECLASSNAME: "${source.className}",
-                            SOURCEPKGNAME: "${source.pkgName}"
+${placeholders.map { "${" ".repeat(28)}${it.key}: \"${it.value}\""}.joinToString(",\n")}
                         ]
                     }
                 }
