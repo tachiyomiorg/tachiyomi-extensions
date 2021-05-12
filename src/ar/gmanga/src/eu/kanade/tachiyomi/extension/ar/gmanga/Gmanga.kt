@@ -4,6 +4,7 @@ import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.nullString
+import com.github.salomonbrys.kotson.toJsonArray
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -65,12 +66,19 @@ class Gmanga : ConfigurableSource, HttpSource() {
         val data = decryptResponse(response)
 
         val chapters: List<JsonArray> = buildList {
-            val allChapters = data["rows"][0]["rows"].asJsonArray.map { it.asJsonArray }
+            val allChapters: ArrayList<JsonArray> = ArrayList()
+            data["rows"][0]["rows"].asJsonArray.forEach { release ->
+                val chapter = data["rows"][2]["rows"].asJsonArray.filter { it[0] == release[4] }.toJsonArray()
+                chapter.asJsonArray.forEach { release.asJsonArray.addAll(it.asJsonArray) }
+                val team = data["rows"][1]["rows"].asJsonArray.filter { it[0] == release[5] }.toJsonArray()
+                team.asJsonArray.forEach { release.asJsonArray.addAll(it.asJsonArray) }
+                allChapters.add(release.asJsonArray)
+            }
 
             when (preferences.getString(PREF_CHAPTER_LISTING)) {
                 PREF_CHAPTER_LISTING_SHOW_POPULAR -> addAll(
-                    allChapters.groupBy { it.asJsonArray[6].asFloat }
-                        .map { (_: Float, versions: List<JsonArray>) -> versions.maxByOrNull { it[4].asLong }!! }
+                    allChapters.groupBy { it.asJsonArray[4].asFloat }
+                        .map { (_: Float, versions: List<JsonArray>) -> versions.maxByOrNull { it[5].asLong }!! }
                 )
                 else -> addAll(allChapters)
             }
@@ -78,14 +86,14 @@ class Gmanga : ConfigurableSource, HttpSource() {
 
         return chapters.map {
             SChapter.create().apply {
-                chapter_number = it[6].asFloat
+                chapter_number = it[8].asFloat
 
-                val chapterName = it[8].asString.let { if (it.trim() != "") " - $it" else "" }
+                val chapterName = it[10].asString.let { if (it.trim() != "") " - $it" else "" }
 
                 url = "/r/${it[0]}"
                 name = "${chapter_number.let { if (it % 1 > 0) it else it.toInt() }}$chapterName"
-                date_upload = it[3].asLong * 1000
-                scanlator = it[10].asString
+                date_upload = it[2].asLong * 1000
+                scanlator = it[13].asString
             }
         }
     }
