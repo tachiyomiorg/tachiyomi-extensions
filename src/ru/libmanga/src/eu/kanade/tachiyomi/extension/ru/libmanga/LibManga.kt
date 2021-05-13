@@ -39,6 +39,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class LibManga : ConfigurableSource, HttpSource() {
 
@@ -52,7 +53,10 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     private val baseOrig: String = "https://mangalib.me"
     private val baseMirr: String = "https://mangalib.org"
