@@ -5,7 +5,7 @@ ext {
     extName = 'Home Hero Scans'
     pkgNameSuffix = "en.homeheroscans"
     extClass = '.HomeHeroScans'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '1.2'
 }
 
