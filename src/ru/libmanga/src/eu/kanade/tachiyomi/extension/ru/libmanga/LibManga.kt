@@ -761,7 +761,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             entries = arrayOf("Основной", "Второй (тестовый)", "Третий (эконом трафика)", "Авто")
             entryValues = arrayOf("secondary", "fourth", "compress", "auto")
             summary = "%s"
-
+            setDefaultValue("auto")
             setOnPreferenceChangeListener { _, newValue ->
                 server = newValue.toString()
                 true
@@ -777,7 +777,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             )
             entryValues = arrayOf("ms_mixing", "ms_combining", "ms_largest", "ms_active")
             summary = "%s"
-
+            setDefaultValue("ms_mixing")
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 preferences.edit().putString(SORTING_PREF, selected).commit()
@@ -788,8 +788,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             title = DOMAIN_PREF_Title
             entries = arrayOf("mangalib.me(Основной)", "mangalib.org(Зеркало)")
             entryValues = arrayOf(baseOrig, baseMirr)
-            summary = "%s"
-
+            summary = "Для смены домена необходимо перезапустить приложение с полной остановкой"
+            setDefaultValue(baseOrig)
             setOnPreferenceChangeListener { _, newValue ->
                 val selected = newValue as String
                 preferences.edit().putString(DOMAIN_PREF, selected).commit()
