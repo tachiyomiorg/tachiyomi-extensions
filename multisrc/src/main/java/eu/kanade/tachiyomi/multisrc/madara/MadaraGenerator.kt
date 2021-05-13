@@ -183,7 +183,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Nazarick Scans", "https://nazarickscans.com", "en"),
             SingleLang("NeatManga", "https://neatmanga.com", "en"),
             SingleLang("NekoScan", "https://nekoscan.com", "en", overrideVersionCode = 1),
-            SingleLang("Neox Scanlator", "https://neoxscans.net", "pt-BR", overrideVersionCode = 2),
+            SingleLang("Neox Scanlator", "https://neoxscans.net", "pt-BR", overrideVersionCode = 3),
             SingleLang("Night Comic", "https://www.nightcomic.com", "en"),
             SingleLang("Niji Translations", "https://niji-translations.com", "ar"),
             SingleLang("Ninjavi", "https://ninjavi.com", "ar", overrideVersionCode = 1),

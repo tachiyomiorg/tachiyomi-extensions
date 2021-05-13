@@ -392,12 +392,13 @@ abstract class Madara(
     open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
     open val altNameSelector = ".post-content_item:contains(Alt) .summary-content"
     open val altName = "Alternative Name" + ": "
+    open val updatingRegex = "Updating|Atualizando".toRegex(RegexOption.IGNORE_CASE)
 
     private fun String.notUpdating(): Boolean {
-        return this.contains("Updating", true).not()
+        return this.contains(updatingRegex).not()
     }
 
-    protected open fun imageFromElement(element: Element): String? {
+    protected fun imageFromElement(element: Element): String? {
         return when {
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("data-lazy-src") -> element.attr("abs:data-lazy-src")
