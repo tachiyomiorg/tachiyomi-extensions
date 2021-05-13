@@ -796,8 +796,8 @@ class LibManga : ConfigurableSource, HttpSource() {
             }
         }
 
-        screen.addPreference(sortingPref)
-        screen.addPreference(serverPref)
         screen.addPreference(domainPref)
+        screen.addPreference(serverPref)
+        screen.addPreference(sortingPref)
     }
 }
