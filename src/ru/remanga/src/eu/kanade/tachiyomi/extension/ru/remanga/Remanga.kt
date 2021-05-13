@@ -570,7 +570,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             dialogTitle = title
 
             if (isPassword) {
-                summary = "*****"
+                if (!value.isNullOrBlank()) { summary = "*****" }
                 setOnBindEditTextListener {
                     it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
