@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.ru.libmanga
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.widget.Toast
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import com.github.salomonbrys.kotson.array
@@ -786,13 +787,20 @@ class LibManga : ConfigurableSource, HttpSource() {
         val domainPref = ListPreference(screen.context).apply {
             key = DOMAIN_PREF
             title = DOMAIN_PREF_Title
-            entries = arrayOf("mangalib.me(Основной)", "mangalib.org(Зеркало)")
+            entries = arrayOf("Основной (mangalib.me)", "Зеркало (mangalib.org)")
             entryValues = arrayOf(baseOrig, baseMirr)
-            summary = "Для смены домена необходимо перезапустить приложение с полной остановкой"
+            summary = "%s"
             setDefaultValue(baseOrig)
             setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                preferences.edit().putString(DOMAIN_PREF, selected).commit()
+                try {
+                    val res = preferences.edit().putString(DOMAIN_PREF, newValue as String).commit()
+                    val warning = "Для смены домена необходимо перезапустить приложение с полной остановкой"
+                    Toast.makeText(screen.context, warning, Toast.LENGTH_LONG).show()
+                    res
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
             }
         }
 
