@@ -794,7 +794,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val res = preferences.edit().putString(DOMAIN_PREF, newValue as String).commit()
-                    val warning = "Для смены домена необходимо перезапустить приложение с полной остановкой"
+                    val warning = "Для смены домена необходимо перезапустить приложение с полной остановкой."
                     Toast.makeText(screen.context, warning, Toast.LENGTH_LONG).show()
                     res
                 } catch (e: Exception) {
