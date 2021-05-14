@@ -57,9 +57,7 @@ interface ThemeSourceGenerator {
             val additionalGradleOverrideText = File(additionalGradleOverridePath).readTextOrEmptyString()
             val placeholders = mapOf(
                 "SOURCEHOST" to source.baseUrl.toHttpUrlOrNull()?.host,
-                "SOURCESCHEME" to source.baseUrl.toHttpUrlOrNull()?.scheme,
-                "SOURCECLASSNAME" to source.className,
-                "SOURCEPKGNAME" to source.pkgName
+                "SOURCESCHEME" to source.baseUrl.toHttpUrlOrNull()?.scheme
             ).filter { it.value != null }
             gradle.writeText("""
                 // THIS FILE IS AUTO-GENERATED; DO NOT EDIT
