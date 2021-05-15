@@ -43,11 +43,14 @@ class MdAtHomeReportInterceptor(
         return chain.proceed(chain.request()).let { response ->
             val url = originalRequest.url.toString()
             if (url.contains(mdAtHomeUrlRegex)) {
+                val cachedImage = response.header("X-Cache", "") == "HIT"
                 val jsonString = gson.toJson(
                     mapOf(
                         "url" to url,
                         "success" to response.isSuccessful,
-                        "bytes" to response.peekBody(Long.MAX_VALUE).bytes().size
+                        "bytes" to response.peekBody(Long.MAX_VALUE).bytes().size,
+                        "duration" to response.receivedResponseAtMillis - response.sentRequestAtMillis,
+                        "cache" to cachedImage,
                     )
                 )
 
