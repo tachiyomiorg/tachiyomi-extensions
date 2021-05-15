@@ -196,6 +196,9 @@ class Hiveworks : ParsedHttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val url = response.request.url.toString()
+        when {
+            "witchycomic" in url -> return witchyChapterListParse(response)
+        }
         val document = response.asJsoup()
         val baseUrl = document.select("div script").html().substringAfter("href='").substringBefore("'")
         val elements = document.select(chapterListSelector())
@@ -390,6 +393,25 @@ class Hiveworks : ParsedHttpSource() {
     )
 
     // Other Code
+    // Gets the chapter list for witchycomic
+    private fun witchyChapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val elements = document.select(".cc-storyline-pagethumb a")
+        if (elements.isNullOrEmpty()) throw Exception("This comic has a unsupported chapter list")
+        val chapters = mutableListOf<SChapter>()
+        for (i in 1 until elements.size) {
+            val chapter = SChapter.create()
+            chapter.name = "Page " + i
+            chapter.url = elements[i].attr("href")
+            // Date upload isn't available for witchy, unfortunately. As a
+            // workaround to ensure notifications work, use system time.
+            chapter.date_upload = System.currentTimeMillis()
+            chapters.add(chapter)
+        }
+        chapters.retainAll { it.url.contains("page-") }
+        chapters.reverse()
+        return chapters
+    }
 
     // Builds Image from mouse tooltip text
     private fun smbcTextHandler(document: Document): String {
