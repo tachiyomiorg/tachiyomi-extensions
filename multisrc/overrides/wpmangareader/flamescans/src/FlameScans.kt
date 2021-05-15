@@ -5,7 +5,7 @@ import eu.kanade.tachiyomi.multisrc.wpmangareader.WPMangaReader
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-class FlameScans : WPMangaReader("Flame Scans", "http://flamescans.org", "en", "/series") {
+class FlameScans : WPMangaReader("Flame Scans", "https://flamescans.org", "en", "/series") {
     private val rateLimitInterceptor = RateLimitInterceptor(4)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()

@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.allhentai
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -23,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.regex.Pattern
 
+@Nsfw
 class AllHentai : ParsedHttpSource() {
 
     override val name = "AllHentai"
@@ -66,7 +68,7 @@ class AllHentai : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
+        val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
@@ -74,15 +76,31 @@ class AllHentai : ParsedHttpSource() {
                         url.addQueryParameter(genre.id, arrayOf("=", "=in", "=ex")[genre.state])
                     }
                 }
-                is OrderBy -> {
-                    if (filter.state == 0) {
-                        url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
-                    } else {
-                        val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
-                        url = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
-                        return GET(url.toString(), headers)
+                is Category -> filter.state.forEach { category ->
+                    if (category.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(category.id, arrayOf("=", "=in", "=ex")[category.state])
                     }
                 }
+                is FilList -> filter.state.forEach { fils ->
+                    if (fils.state != Filter.TriState.STATE_IGNORE) {
+                        url.addQueryParameter(fils.id, arrayOf("=", "=in", "=ex")[fils.state])
+                    }
+                }
+                is OrderBy -> {
+                    if (filter.state > 0) {
+                        val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
+                        val ordUrl = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
+                        return GET(ordUrl.toString(), headers)
+                    }
+                }
+                is Tags -> {
+                    if (filter.state > 0) {
+                        val tagName = getTagsList()[filter.state].name
+                        val tagUrl = "$baseUrl/list/tag/$tagName".toHttpUrlOrNull()!!.newBuilder()
+                        return GET(tagUrl.toString(), headers)
+                    }
+                }
+                else -> return@forEach
             }
         }
         if (query.isNotEmpty()) {
@@ -223,18 +241,22 @@ class AllHentai : ParsedHttpSource() {
         var i = 0
         while (m.find()) {
             val urlParts = m.group().replace("[\"\']+".toRegex(), "").split(',')
-            val url = if (urlParts[1].isEmpty() && urlParts[2].startsWith("/static/")) {
-                baseUrl + urlParts[2]
-            } else {
-                if (urlParts[1].endsWith("/manga/")) {
+            val url = when {
+                (urlParts[1].isEmpty() && urlParts[2].startsWith("/static/")) -> {
+                    baseUrl + urlParts[2]
+                }
+                urlParts[1].endsWith("/manga/") -> {
                     urlParts[0] + urlParts[2]
-                } else if (urlParts[1].isEmpty()) {
+                }
+                urlParts[1].isEmpty() -> {
                     val imageUrl = urlParts[2].split('?')
                     "https:" + urlParts[0] + imageUrl[0]
-                } else {
+                }
+                else -> {
                     urlParts[1] + urlParts[0] + urlParts[2]
                 }
             }
+
             pages.add(Page(i++, "", url))
         }
         return pages
@@ -253,181 +275,247 @@ class AllHentai : ParsedHttpSource() {
         }.build()
         return GET(page.imageUrl!!, imgHeader)
     }
-    private class OrderBy : Filter.Select<String>(
-        "Сортировать",
-        arrayOf("Без(фильтры)", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
-    )
-    private class Genre(name: String, val id: String) : Filter.TriState(name)
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
 
-    /* [...document.querySelectorAll("tr.advanced_option:nth-child(1) > td:nth-child(3) span.js-link")]
-    *  .map(el => `Genre("${el.textContent.trim()}", $"{el.getAttribute('onclick')
-    *  .substr(31,el.getAttribute('onclick').length-33)"})`).join(',\n')
-    *  on https://readmanga.me/search/advanced
-    */
+    private class OrderBy : Filter.Select<String>(
+        "Сортировка (only)",
+        arrayOf("Без сортировки", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
+    )
+
+    private class Genre(name: String, val id: String) : Filter.TriState(name)
+
+    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Жанры", genres)
+    private class Category(categories: List<Genre>) : Filter.Group<Genre>("Категории", categories)
+    private class FilList(fils: List<Genre>) : Filter.Group<Genre>("Фильтры", fils)
+    private class Tags(tags: Array<String>) : Filter.Select<String>("Тэг (only)", tags)
+
+    private data class Tag(val name: String, val url: String)
+
     override fun getFilterList() = FilterList(
         OrderBy(),
-        GenreList(getGenreList())
+        GenreList(getGenreList()),
+        Category(getCategoryList()),
+        FilList(getFilList()),
+        Tags(tagsName)
     )
 
+    /*
+    * [...document.querySelectorAll('.search-form > .form-group')[1].querySelectorAll('span.js-link')]
+    *   .map((el) =>
+    *      `Genre("${el.textContent.trim()}", "${el
+    *          .getAttribute('onclick')
+    *          .match(/el_\d+/)}")`
+    *  )
+    *  .join(',\n');
+    *  on allhen.live/search/advanced
+    */
     private fun getGenreList() = listOf(
-        Genre("3D", "el_626"),
         Genre("ahegao", "el_855"),
-        Genre("footfuck", "el_912"),
-        Genre("gender bender", "el_89"),
-        Genre("handjob", "el_1254"),
-        Genre("megane", "el_962"),
-        Genre("Mind break", "el_705"),
-        Genre("netori", "el_1356"),
-        Genre("paizuri (titsfuck)", "el_1027"),
-        Genre("scat", "el_1221"),
-        Genre("tomboy", "el_881"),
-        Genre("x-ray", "el_1992"),
-        Genre("алкоголь", "el_1000"),
         Genre("анал", "el_828"),
-        Genre("андроид", "el_1752"),
-        Genre("анилингус", "el_1037"),
-        Genre("арт", "el_1190"),
         Genre("бдсм", "el_78"),
-        Genre("Без текста", "el_3157"),
-        Genre("без трусиков", "el_993"),
         Genre("без цензуры", "el_888"),
-        Genre("беременность", "el_922"),
-        Genre("бикини", "el_1126"),
-        Genre("близнецы", "el_1092"),
-        Genre("боди-арт", "el_1130"),
-        Genre("Больница", "el_289"),
         Genre("большая грудь", "el_837"),
-        Genre("Большая попка", "el_3156"),
-        Genre("борьба", "el_72"),
-        Genre("буккакэ", "el_82"),
-        Genre("в бассейне", "el_3599"),
-        Genre("в ванной", "el_878"),
-        Genre("в государственном учреждении", "el_86"),
-        Genre("в общественном месте", "el_866"),
+        Genre("большая попка", "el_3156"),
+        Genre("большой член", "el_884"),
+        Genre("бондаж", "el_5754"),
         Genre("в первый раз", "el_811"),
-        Genre("в транспорте", "el_3246"),
         Genre("в цвете", "el_290"),
-        Genre("вампиры", "el_1250"),
-        Genre("веб", "el_1104"),
-        Genre("вибратор", "el_867"),
-        Genre("втроем", "el_3711"),
         Genre("гарем", "el_87"),
-        Genre("гипноз", "el_1423"),
-        Genre("глубокий минет", "el_3555"),
-        Genre("горячий источник", "el_1209"),
+        Genre("гендарная интрига", "el_89"),
         Genre("групповой секс", "el_88"),
-        Genre("гяру и гангуро", "el_844"),
-        Genre("двойное проникновение", "el_911"),
-        Genre("Девочки волшебницы", "el_292"),
-        Genre("девчонки", "el_875"),
-        Genre("демоны", "el_1139"),
-        Genre("дилдо", "el_868"),
-        Genre("додзинси", "el_92"),
-        Genre("Домохозяйка", "el_300"),
         Genre("драма", "el_95"),
-        Genre("дыра в стене", "el_1420"),
-        Genre("жестокость", "el_883"),
-        Genre("золотой дождь", "el_1007"),
-        Genre("зомби", "el_1099"),
-        Genre("зрелые женщины", "el_1441"),
-        Genre("Измена", "el_291"),
+        Genre("зрелые женщины", "el_5679"),
+        Genre("измена", "el_291"),
         Genre("изнасилование", "el_124"),
-        Genre("инопланетяне", "el_990"),
         Genre("инцест", "el_85"),
-        Genre("исполнение желаний", "el_909"),
         Genre("исторический", "el_93"),
-        Genre("камера", "el_869"),
-        Genre("колготки", "el_849"),
-        Genre("комикс", "el_1003"),
-        Genre("косплей", "el_1024"),
-        Genre("кремпай", "el_3709"),
-        Genre("куннилингус", "el_5383"),
-        Genre("купальники", "el_845"),
-        Genre("латекс и кожа", "el_1047"),
-        Genre("магия", "el_1128"),
+        Genre("комедия", "el_73"),
         Genre("маленькая грудь", "el_870"),
-        Genre("мастурбация", "el_882"),
-        Genre("медсестра", "el_5688"),
-        Genre("мейдочки", "el_994"),
-        Genre("Мерзкий дядька", "el_2145"),
-        Genre("милф", "el_5679"),
-        Genre("много девушек", "el_860"),
-        Genre("много спермы", "el_1020"),
-        Genre("молоко", "el_1029"),
-        Genre("монстрдевушки", "el_1022"),
-        Genre("монстры", "el_917"),
-        Genre("мочеиспускание", "el_1193"),
-        Genre("мужчина крепкого телосложения", "el_5715"),
-        Genre("на природе", "el_842"),
-        Genre("наблюдение", "el_928"),
         Genre("научная фантастика", "el_76"),
-        Genre("не бритая киска", "el_4237"),
-        Genre("не бритые подмышки", "el_4238"),
-        Genre("Нетораре", "el_303"),
-        Genre("обмен телами", "el_5120"),
-        Genre("обычный секс", "el_1012"),
-        Genre("огромная грудь", "el_1207"),
-        Genre("огромный член", "el_884"),
-        Genre("омораси", "el_81"),
+        Genre("нетораре", "el_303"),
         Genre("оральный секс", "el_853"),
-        Genre("орки", "el_3247"),
-        Genre("парень пассив", "el_861"),
-        Genre("парни", "el_874"),
-        Genre("переодевание", "el_1026"),
-        Genre("пляж", "el_846"),
-        Genre("повседневность", "el_90"),
-        Genre("подглядывание", "el_978"),
-        Genre("подчинение", "el_885"),
-        Genre("похищение", "el_1183"),
-        Genre("превозмогание", "el_71"),
-        Genre("принуждение", "el_929"),
-        Genre("прозрачная одежда", "el_924"),
-        Genre("проституция", "el_3563"),
-        Genre("психические отклонения", "el_886"),
-        Genre("публично", "el_1045"),
-        Genre("пьяные", "el_2055"),
-        Genre("рабыни", "el_1433"),
         Genre("романтика", "el_74"),
-        Genre("сверхъестественное", "el_634"),
-        Genre("секс игрушки", "el_871"),
-        Genre("сексуально возбужденная", "el_925"),
-        Genre("сибари", "el_80"),
-        Genre("сильный", "el_913"),
-        Genre("слабая", "el_455"),
-        Genre("спортивная форма", "el_891"),
-        Genre("спящие", "el_972"),
-        Genre("страпон", "el_872"),
-        Genre("Суккуб", "el_677"),
-        Genre("темнокожие", "el_611"),
         Genre("тентакли", "el_69"),
-        Genre("толстушки", "el_1036"),
         Genre("трагедия", "el_1321"),
-        Genre("трап", "el_859"),
         Genre("ужасы", "el_75"),
-        Genre("униформа", "el_1008"),
-        Genre("ушастые", "el_991"),
-        Genre("фантазии", "el_1124"),
-        Genre("фемдом", "el_873"),
-        Genre("Фестиваль", "el_1269"),
-        Genre("фетиш", "el_1137"),
-        Genre("фистинг", "el_821"),
-        Genre("фурри", "el_91"),
         Genre("футанари", "el_77"),
-        Genre("футанари имеет парня", "el_1426"),
         Genre("фэнтези", "el_70"),
-        Genre("цельный купальник", "el_1257"),
-        Genre("цундере", "el_850"),
         Genre("чикан", "el_1059"),
-        Genre("чулки", "el_889"),
-        Genre("шлюха", "el_763"),
-        Genre("эксгибиционизм", "el_813"),
-        Genre("Эльфы", "el_286"),
-        Genre("эччи", "el_798"),
-        Genre("юмор", "el_73"),
-        Genre("юные", "el_1162"),
+        Genre("этти", "el_798"),
         Genre("юри", "el_84"),
-        Genre("яндере", "el_823"),
         Genre("яой", "el_83")
     )
+
+    /*
+    * [...document.querySelectorAll('.search-form > .form-group')[2].querySelectorAll('span.js-link')]
+    *   .map((el) =>
+    *      `Genre("${el.textContent.trim()}", "${el
+    *          .getAttribute('onclick')
+    *          .match(/el_\d+/)}")`
+    *  )
+    *  .join(',\n');
+    *  on allhen.live/search/advanced
+    */
+    private fun getCategoryList() = listOf(
+        Genre("3D", "el_626"),
+        Genre("Анимация", "el_5777"),
+        Genre("Без текста", "el_3157"),
+        Genre("Порно комикс", "el_1003"),
+        Genre("Порно манхва", "el_1104")
+    )
+
+    /*
+    * [...document.querySelectorAll('.search-form > .form-group')[1].querySelectorAll('span.js-link')]
+    *   .map((el) =>
+    *      `Genre("${el.textContent.trim()}", "${el
+    *          .getAttribute('onclick')
+    *          .match(/s_\w+/)}")`
+    *  )
+    *  .join(',\n');
+    *  on allhen.live/search/advanced
+    */
+    private fun getFilList() = listOf(
+        Genre("Высокий рейтинг", "s_high_rate"),
+        Genre("Сингл", "s_single"),
+        Genre("Для взрослых", "s_mature"),
+        Genre("Завершенная", "s_completed"),
+        Genre("Переведено", "s_translated"),
+        Genre("Длинная", "s_many_chapters"),
+        Genre("Ожидает загрузки", "s_wait_upload"),
+        Genre("Продается", "s_sale")
+    )
+
+    /**
+     * [...document.querySelectorAll('tbody .element-link')]
+     *   .map((it) =>
+     *      `Tag("${it.textContent.trim()}", "${it
+     *          .getAttribute('href')
+     *          .split('tag/')
+     *          .pop()}")`
+     *  )
+     *  .join(',\n');
+     *  on allhen.live/list/tags/sort_NAME
+     */
+    private fun getTagsList() = listOf(
+        Tag("Без тега", "not"),
+        Tag("handjob", "handjob"),
+        Tag("inseki", "inseki"),
+        Tag("алкоголь", "alcohol"),
+        Tag("андроид", "android"),
+        Tag("анилингус", "anilingus"),
+        Tag("бассейн", "pool"),
+        Tag("без трусиков", "without_panties"),
+        Tag("беременность", "pregnancy"),
+        Tag("бикини", "bikini"),
+        Tag("близнецы", "twins"),
+        Tag("боди-арт", "body_art"),
+        Tag("больница", "hospital"),
+        Tag("буккакэ", "bukkake"),
+        Tag("в ванной", "in_bathroom"),
+        Tag("в общественном месте", "in_public_place"),
+        Tag("в транспорте", "in_vehicle"),
+        Tag("вампиры", "vampires"),
+        Tag("вибратор", "vibrator"),
+        Tag("втянутые соски", "inverted_nipples"),
+        Tag("гипноз", "hypnosis"),
+        Tag("глубокий минет", "deepthroat"),
+        Tag("горничные", "maids"),
+        Tag("горячий источник", "hot_spring"),
+        Tag("гэнгбэнг", "gangbang"),
+        Tag("гяру", "gyaru"),
+        Tag("двойное проникновение", "double_penetration"),
+        Tag("Девочки волшебницы", "magical_girl"),
+        Tag("демоны", "demons"),
+        Tag("дефекация", "scat"),
+        Tag("дилдо", "dildo"),
+        Tag("додзинси", "doujinshi"),
+        Tag("домохозяйки", "housewives"),
+        Tag("дыра в стене", "hole_in_the_wall"),
+        Tag("жестокость", "cruelty"),
+        Tag("загар", "tan_lines"),
+        Tag("зомби", "zombie"),
+        Tag("инопланетяне", "aliens"),
+        Tag("исполнение желаний", "granting_wish"),
+        Tag("камера", "camera"),
+        Tag("косплей", "cosplay"),
+        Tag("кремпай", "creampie"),
+        Tag("куннилингус", "cunnilingus"),
+        Tag("купальник", "swimsuit"),
+        Tag("лактация", "lactation"),
+        Tag("латекс и кожа", "latex"),
+        Tag("Ломка Психики", "mind_break"),
+        Tag("магия", "magic"),
+        Tag("мастурбация", "masturbation"),
+        Tag("медсестра", "nurse"),
+        Tag("мерзкий дядька", "terrible_oyaji"),
+        Tag("много девушек", "many_girls"),
+        Tag("много спермы", "a_lot_of_sperm"),
+        Tag("монстрдевушки", "monstergirl"),
+        Tag("монстры", "monsters"),
+        Tag("мужчина крепкого телосложения", "muscle_man"),
+        Tag("на природе", "outside"),
+        Tag("не бритая киска", "hairy_pussy"),
+        Tag("не бритые подмышки", "hairy_armpits"),
+        Tag("нетори", "netori"),
+        Tag("нижнее бельё", "lingerie"),
+        Tag("обмен партнерами", "swinging"),
+        Tag("обмен телами", "body_swap"),
+        Tag("обычный секс", "normal_sex"),
+        Tag("огромная грудь", "super_big_boobs"),
+        Tag("орки", "orcs"),
+        Tag("очки", "megane"),
+        Tag("пайзури", "titsfuck"),
+        Tag("парень пассив", "passive_guy"),
+        Tag("пацанка", "tomboy"),
+        Tag("пеггинг", "pegging"),
+        Tag("переодевание", "disguise"),
+        Tag("пирсинг", "piercing"),
+        Tag("писают", "peeing"),
+        Tag("пляж", "beach"),
+        Tag("повседневность", "slice_of_life"),
+        Tag("повязка на глаза", "blindfold"),
+        Tag("подглядывание", "peeping"),
+        Tag("подчинение", "submission"),
+        Tag("похищение", "kidnapping"),
+        Tag("принуждение", "forced"),
+        Tag("прозрачная одежда", "transparent_clothes"),
+        Tag("проституция", "prostitution"),
+        Tag("психические отклонения", "mental_illness"),
+        Tag("публичный секс", "public_sex"),
+        Tag("пьяные", "drunk"),
+        Tag("рабы", "slaves"),
+        Tag("рентген зрение", "x_ray"),
+        Tag("сверхъестественное", "supernatural"),
+        Tag("секс втроем", "threesome"),
+        Tag("секс игрушки", "sex_toys"),
+        Tag("сексуально возбужденная", "horny"),
+        Tag("спортивная форма", "sports_uniform"),
+        Tag("спящие", "sleeping"),
+        Tag("страпон", "strapon"),
+        Tag("Суккуб", "succubus"),
+        Tag("темнокожие", "dark_skin"),
+        Tag("толстушки", "fatties"),
+        Tag("трап", "trap"),
+        Tag("униформа", "uniform"),
+        Tag("ушастые", "eared"),
+        Tag("фантазии", "dreams"),
+        Tag("фемдом", "femdom"),
+        Tag("фестиваль", "festival"),
+        Tag("фетиш", "fetish"),
+        Tag("фистинг", "fisting"),
+        Tag("фурри", "furry"),
+        Tag("футанари имеет парня", "futanari_on_boy"),
+        Tag("футджаб", "footfuck"),
+        Tag("цельный купальник", "full_swimsuit"),
+        Tag("цундэрэ", "tsundere"),
+        Tag("чулки", "hose"),
+        Tag("шалава", "slut"),
+        Tag("шантаж", "blackmail"),
+        Tag("эксгибиционизм", "exhibitionism"),
+        Tag("эльфы", "elves"),
+        Tag("яндере", "yandere")
+    )
+
+    private val tagsName = getTagsList().map {
+        it.name
+    }.toTypedArray()
 }

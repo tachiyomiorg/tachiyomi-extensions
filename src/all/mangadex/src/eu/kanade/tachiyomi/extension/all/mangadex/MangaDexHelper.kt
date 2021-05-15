@@ -33,7 +33,7 @@ class MangaDexHelper() {
      * get chapters for manga (aka manga/$id/feed endpoint)
      */
     fun getChapterEndpoint(mangaId: String, offset: Int, langCode: String) =
-        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&locales[]=$langCode"
+        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&locales[]=$langCode&order[volume]=desc&order[chapter]=desc"
 
     /**
      * Check if the manga url is a valid uuid
@@ -266,11 +266,14 @@ class MangaDexHelper() {
             }
 
             attr["title"].nullString?.let {
-                if (chapterName.isNotEmpty() && it.isNotEmpty()) {
+                if(it.isNotEmpty()){
+                   if (chapterName.isNotEmpty()) {
                     chapterName.add("-")
-                    chapterName.add(it)
+                   }
+                chapterName.add(it)
                 }
             }
+          
             // if volume, chapter and title is empty its a oneshot
             if (chapterName.isEmpty()) {
                 chapterName.add("Oneshot")

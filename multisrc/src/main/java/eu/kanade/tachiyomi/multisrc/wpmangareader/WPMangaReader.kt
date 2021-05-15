@@ -1,19 +1,26 @@
 package eu.kanade.tachiyomi.multisrc.wpmangareader
 
+import android.util.Log
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
+import rx.Single
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -30,45 +37,111 @@ abstract class WPMangaReader(
     override val client: OkHttpClient = network.cloudflareClient
 
     // popular
-    override fun popularMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx, .listo .bs .bsx"
+    override fun popularMangaRequest(page: Int) = searchMangaRequest(page, "", FilterList(OrderByFilter(5)))
+    override fun popularMangaParse(response: Response) = searchMangaParse(response)
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page=$page&order=popular", headers)
+    override fun popularMangaFromElement(element: Element) = throw UnsupportedOperationException("Not used")
+    override fun popularMangaSelector() = throw UnsupportedOperationException("Not used")
+    override fun popularMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
 
-    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+    // latest
+    override fun latestUpdatesRequest(page: Int) = searchMangaRequest(page, "", FilterList(OrderByFilter(3)))
+    override fun latestUpdatesParse(response: Response) = searchMangaParse(response)
+
+    override fun latestUpdatesSelector() = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesFromElement(element: Element) = throw UnsupportedOperationException("Not used")
+    override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("Not used")
+
+    // search
+    override fun searchMangaSelector() = ".utao .uta .imgu, .listupd .bs .bsx, .listo .bs .bsx"
+
+
+    /**
+     * Given some string which represents an http url, returns a identifier (id) for a manga
+     * which can be used to fetch its details at "$baseUrl$mangaUrlDirectory/$id"
+     *
+     * @param s: String - url
+     *
+     * @returns An identifier for a manga, or null if none could be found
+     */
+    protected open fun mangaIdFromUrl(s: String): Single<String?> {
+        var baseMangaUrl = "$baseUrl$mangaUrlDirectory".toHttpUrlOrNull()!!
+        return s.toHttpUrlOrNull()?.let { url ->
+            fun pathLengthIs(url: HttpUrl, n: Int, strict: Boolean = false) = url.pathSegments.size == n && url.pathSegments[n - 1].isNotEmpty() || (!strict && url.pathSegments.size == n + 1 && url.pathSegments[n].isEmpty())
+            val isMangaUrl = listOf(
+                baseMangaUrl.host == url.host,
+                pathLengthIs(url, 2),
+                url.pathSegments[0] == baseMangaUrl.pathSegments[0]).all { it }
+            val potentiallyChapterUrl = pathLengthIs(url, 1)
+            if (isMangaUrl)
+                Single.just(url.pathSegments[1])
+            else if (potentiallyChapterUrl)
+                client.newCall(GET(s, headers)).asObservableSuccess().map {
+                    val links = it.asJsoup().select("a[itemprop=item]")
+                    if (links.size == 3) //  near the top of page: home > manga > current chapter
+                        links[1].attr("href").toHttpUrlOrNull()?.pathSegments?.get(1)
+                    else
+                        null
+                }.toSingle()
+            else
+                Single.just(null)
+        } ?: Single.just(null)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (!query.startsWith(URL_SEARCH_PREFIX))
+            return super.fetchSearchManga(page, query, filters)
+
+        return mangaIdFromUrl(query.substringAfter(URL_SEARCH_PREFIX))
+            .toObservable()
+            .concatMap { id ->
+                if (id == null)
+                    Observable.just(MangasPage(emptyList(), false))
+                else
+                    fetchMangaDetails(SManga.create().apply { this.url = "$mangaUrlDirectory/$id" })
+                        .map {
+                            it.url = "$mangaUrlDirectory/$id"// isn't set in returned manga
+                            MangasPage(listOf(it), false)
+                        }
+            }
+
+    }
+
+
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        val url = "$baseUrl".toHttpUrlOrNull()!!.newBuilder()
+        if (query.isNotEmpty()) {
+            url.addPathSegments("page/$page").addQueryParameter("s", query)
+        } else {
+            url.addPathSegment(mangaUrlDirectory.substring(1)).addQueryParameter("page", "$page")
+            filters.forEach { filter ->
+                when (filter) {
+                    is UrlEncoded -> filter.encode(url)
+                }
+            }
+        }
+        return GET("$url")
+    }
+
+    override fun searchMangaParse(response: Response): MangasPage {
+        if (genrelist == null)
+            genrelist = parseGenres(response.asJsoup(response.peekBody(Long.MAX_VALUE).string()))
+        return super.searchMangaParse(response)
+    }
+
+    private fun parseGenres(document: Document): List<LabeledValue>? {
+        return document.selectFirst("ul.c4")?.select("li")?.map { li ->
+            LabeledValue(li.selectFirst("label").text(), li.selectFirst("input[type=checkbox]").`val`())
+        }
+    }
+
+    override fun searchMangaFromElement(element: Element) = SManga.create().apply {
         thumbnail_url = element.select("img").attr("abs:src")
         title = element.select("a").attr("title")
         setUrlWithoutDomain(element.select("a").attr("href"))
     }
 
-    override fun popularMangaNextPageSelector() = "div.pagination .next, div.hpage .r"
-
-    // latest
-    override fun latestUpdatesSelector() = popularMangaSelector()
-
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl$mangaUrlDirectory/?page=$page&order=update", headers)
-
-    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
-
-    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
-
-    // search
-    override fun searchMangaSelector() = popularMangaSelector()
-
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val filters = if (filters.isEmpty()) getFilterList() else filters
-        val genre = filters.findInstance<GenreList>()?.toUriPart()
-        val order = filters.findInstance<OrderByFilter>()?.toUriPart()
-
-        return when {
-            order!!.isNotEmpty() -> GET("$baseUrl$mangaUrlDirectory/?page=$page&order=$order")
-            genre!!.isNotEmpty() -> GET("$baseUrl/genres/$genre/page/$page/?s=$query")
-            else -> GET("$baseUrl/page/$page/?s=$query")
-        }
-    }
-
-    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
-
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    override fun searchMangaNextPageSelector() = "div.pagination .next, div.hpage .r"
 
     // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
@@ -84,6 +157,7 @@ abstract class WPMangaReader(
                 .text()
         )
 
+        title = document.selectFirst("h1.entry-title").text()
         thumbnail_url = document.select(".infomanga > div[itemprop=image] img, .thumb img").attr("abs:src")
         description = document.select(".desc, .entry-content[itemprop=description]").joinToString("\n") { it.text() }
 
@@ -174,117 +248,95 @@ abstract class WPMangaReader(
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
-    // filters
-    override fun getFilterList() = FilterList(
-        Filter.Header("Order by filter cannot be used with others"),
-        OrderByFilter(),
-        Filter.Separator(),
-        GenreList()
-    )
-
-    private class OrderByFilter : UriPartFilter(
-        "Order By",
-        arrayOf(
-            Pair("", "<select>"),
-            Pair("title", "A-Z"),
-            Pair("update", "Latest Update"),
-            Pair("latest", "Latest Added")
-        )
-    )
-
-    private class GenreList : UriPartFilter(
-        "Select Genre",
-        arrayOf(
-            Pair("", "<select>"),
-            Pair("4-koma", "4-Koma"),
-            Pair("action", "Action"),
-            Pair("adaptation", "Adaptation"),
-            Pair("adult", "Adult"),
-            Pair("adventure", "Adventure"),
-            Pair("animal", "Animal"),
-            Pair("animals", "Animals"),
-            Pair("anthology", "Anthology"),
-            Pair("apocalypto", "Apocalypto"),
-            Pair("comedy", "Comedy"),
-            Pair("comic", "Comic"),
-            Pair("cooking", "Cooking"),
-            Pair("crime", "Crime"),
-            Pair("demons", "Demons"),
-            Pair("doujinshi", "Doujinshi"),
-            Pair("drama", "Drama"),
-            Pair("ecchi", "Ecchi"),
-            Pair("fantasi", "Fantasi"),
-            Pair("fantasy", "Fantasy"),
-            Pair("game", "Game"),
-            Pair("gender-bender", "Gender Bender"),
-            Pair("genderswap", "Genderswap"),
-            Pair("drama", "Drama"),
-            Pair("gore", "Gore"),
-            Pair("harem", "Harem"),
-            Pair("hentai", "Hentai"),
-            Pair("historical", "Historical"),
-            Pair("horor", "Horor"),
-            Pair("horror", "Horror"),
-            Pair("isekai", "Isekai"),
-            Pair("josei", "Josei"),
-            Pair("kingdom", "kingdom"),
-            Pair("magic", "Magic"),
-            Pair("manga", "Manga"),
-            Pair("manhua", "Manhua"),
-            Pair("manhwa", "Manhwa"),
-            Pair("martial-art", "Martial Art"),
-            Pair("martial-arts", "Martial Arts"),
-            Pair("mature", "Mature"),
-            Pair("mecha", "Mecha"),
-            Pair("medical", "Medical"),
-            Pair("military", "Military"),
-            Pair("modern", "Modern"),
-            Pair("monster", "Monster"),
-            Pair("monster-girls", "Monster Girls"),
-            Pair("music", "Music"),
-            Pair("mystery", "Mystery"),
-            Pair("oneshot", "Oneshot"),
-            Pair("post-apocalyptic", "Post-Apocalyptic"),
-            Pair("project", "Project"),
-            Pair("psychological", "Psychological"),
-            Pair("reincarnation", "Reincarnation"),
-            Pair("romance", "Romance"),
-            Pair("romancem", "Romancem"),
-            Pair("samurai", "Samurai"),
-            Pair("school", "School"),
-            Pair("school-life", "School Life"),
-            Pair("sci-fi", "Sci-Fi"),
-            Pair("seinen", "Seinen"),
-            Pair("shoujo", "Shoujo"),
-            Pair("shoujo-ai", "Shoujo Ai"),
-            Pair("shounen", "Shounen"),
-            Pair("shounen-ai", "Shounen Ai"),
-            Pair("slice-of-life", "Slice of Life"),
-            Pair("smut", "Smut"),
-            Pair("sports", "Sports"),
-            Pair("style-ancient", "Style ancient"),
-            Pair("super-power", "Super Power"),
-            Pair("superhero", "Superhero"),
-            Pair("supernatural", "Supernatural"),
-            Pair("survival", "Survival"),
-            Pair("survive", "Survive"),
-            Pair("thriller", "Thriller"),
-            Pair("time-travel", "Time Travel"),
-            Pair("tragedy", "Tragedy"),
-            Pair("urban", "Urban"),
-            Pair("vampire", "Vampire"),
-            Pair("video-games", "Video Games"),
-            Pair("virtual-reality", "Virtual Reality"),
-            Pair("webtoons", "Webtoons"),
-            Pair("yuri", "Yuri"),
-            Pair("zombies", "Zombies")
-        )
-    )
-
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-        Filter.Select<String>(displayName, vals.map { it.second }.toTypedArray()) {
-        fun toUriPart() = vals[state].first
+    private interface UrlEncoded {
+        fun encode(url: HttpUrl.Builder)
     }
 
-    private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
+    // essentially a named pair
+    protected class LabeledValue(val displayname: String, val _value: String?) {
+        val value: String get() = _value ?: displayname
+        override fun toString(): String = displayname
+    }
+
+    private open class Select<T>(header: String, values: Array<T>, state: Int = 0) : Filter.Select<T>(header, values, state) {
+        val selected: T
+            get() = this.values[this.state]
+    }
+
+    private open class MultiSelect<T>(header: String, val elems: List<T>) :
+        Filter.Group<Filter.CheckBox>(header, elems.map { object : Filter.CheckBox("$it") {} }) {
+        val selected: Sequence<T>
+            get() = this.elems.asSequence().filterIndexed { i, _ -> this.state[i].state }
+    }
+
+    // filters
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: Ignored if using text search!"),
+        GenreFilter(),
+        StatusFilter(),
+        TypesFilter(),
+        OrderByFilter(),
+    )
+
+    private fun GenreFilter() = object : MultiSelect<LabeledValue>("Genre", getGenreList()), UrlEncoded {
+        override fun encode(url: HttpUrl.Builder) {
+            selected.forEach { url.addQueryParameter("genre[]", it.value) }
+        }
+    }
+
+    private fun StatusFilter() = object : Select<LabeledValue>("Status", getPublicationStatus()), UrlEncoded {
+        override fun encode(url: HttpUrl.Builder) {
+            url.addQueryParameter("status", selected.value)
+        }
+    }
+
+    private fun TypesFilter() = object : Select<LabeledValue>("Type", getContentType()), UrlEncoded {
+        override fun encode(url: HttpUrl.Builder) {
+            url.addQueryParameter("type", selected.value)
+        }
+    }
+
+    private fun OrderByFilter(state: Int = 0) = object : Select<LabeledValue>("Order By", getOrderBy(), state), UrlEncoded {
+        override fun encode(url: HttpUrl.Builder) {
+            url.addQueryParameter("order", selected.value)
+        }
+    }
+
+    // overridable
+    // some sources have numeric values for filters
+    private var genrelist: List<LabeledValue>? = null
+    protected open fun getGenreList(): List<LabeledValue> {
+        // Filters are fetched immediately once an extension loads
+        // We're only able to get filters after a loading the manga directory, and resetting
+        // the filters is the only thing that seems to reinflate the view
+        return genrelist ?: listOf(LabeledValue("Press reset to attempt to fetch genres", ""))
+    }
+
+    private fun getPublicationStatus() = arrayOf(
+        LabeledValue("All", ""),
+        LabeledValue("Ongoing", "ongoing"),
+        LabeledValue("Completed", "completed"),
+        LabeledValue("Hiatus", "hiatus")
+    )
+
+    private fun getContentType() = arrayOf(
+        LabeledValue("All", ""),
+        LabeledValue("Manga", "manga"),
+        LabeledValue("Manhwa", "manhwa"),
+        LabeledValue("Manhua", "manhua"),
+        LabeledValue("Comic", "comic")
+    )
+
+    private fun getOrderBy() = arrayOf(
+        LabeledValue("Default", ""),
+        LabeledValue("A-Z", "title"),
+        LabeledValue("Z-A", "titlereverse"),
+        LabeledValue("Update", "update"),
+        LabeledValue("Added", "latest"),
+        LabeledValue("Popular", "popular")
+    )
+
+    companion object {
+        const val URL_SEARCH_PREFIX = "url:"
+    }
 }

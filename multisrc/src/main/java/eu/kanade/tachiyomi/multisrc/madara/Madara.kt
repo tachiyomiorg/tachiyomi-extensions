@@ -351,7 +351,7 @@ abstract class Madara(
                     // I don't know what's the corresponding for COMPLETED and LICENSED
                     // There's no support for "Canceled" or "On Hold"
                     "Completed", "Completo", "Concluído", "Concluido", "Terminé" -> SManga.COMPLETED
-                    "OnGoing", "Продолжается", "Updating", "Em Lançamento", "Em andamento", "Em Andamento", "En cours", "Ativo" -> SManga.ONGOING
+                    "OnGoing", "Продолжается", "Updating", "Em Lançamento", "Em andamento", "Em Andamento", "En cours", "Ativo", "Lançando" -> SManga.ONGOING
                     else -> SManga.UNKNOWN
                 }
             }
@@ -392,12 +392,13 @@ abstract class Madara(
     open val seriesTypeSelector = ".post-content_item:contains(Type) .summary-content"
     open val altNameSelector = ".post-content_item:contains(Alt) .summary-content"
     open val altName = "Alternative Name" + ": "
+    open val updatingRegex = "Updating|Atualizando".toRegex(RegexOption.IGNORE_CASE)
 
     private fun String.notUpdating(): Boolean {
-        return this.contains("Updating", true).not()
+        return this.contains(updatingRegex).not()
     }
 
-    protected fun imageFromElement(element: Element): String? {
+    protected open fun imageFromElement(element: Element): String? {
         return when {
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("data-lazy-src") -> element.attr("abs:data-lazy-src")

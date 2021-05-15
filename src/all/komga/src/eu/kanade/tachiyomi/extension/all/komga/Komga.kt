@@ -179,16 +179,16 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body?.charStream()!!).content
 
-        val r = page.map { book ->
+        val r = page.mapIndexed { index, book ->
             SChapter.create().apply {
-                chapter_number = book.metadata.numberSort
+                chapter_number = if (!response.fromReadList()) book.metadata.numberSort else index + 1F
                 name = "${if (!response.fromReadList()) "${book.metadata.number} - " else ""}${book.metadata.title} (${book.size})"
                 url = "$baseUrl/api/v1/books/${book.id}"
                 date_upload = book.metadata.releaseDate?.let { parseDate(it) }
                     ?: parseDateTime(book.fileLastModified)
             }
         }
-        return if (!response.fromReadList()) r.sortedByDescending { it.chapter_number } else r.reversed()
+        return r.sortedByDescending { it.chapter_number }
     }
 
     override fun pageListRequest(chapter: SChapter): Request =

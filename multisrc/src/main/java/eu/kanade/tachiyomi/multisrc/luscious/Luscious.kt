@@ -74,6 +74,8 @@ abstract class Luscious(
         val interestsFilter = filters.findInstance<InterestGroupFilter>()!!
         val languagesFilter = filters.findInstance<LanguageGroupFilter>()!!
         val tagsFilter = filters.findInstance<TagTextFilters>()!!
+        val creatorFilter = filters.findInstance<CreatorTextFilters>()!!
+        val favoriteFilter = filters.findInstance<FavoriteTextFilters>()!!
         val genreFilter = filters.findInstance<GenreGroupFilter>()!!
         val contentTypeFilter = filters.findInstance<ContentTypeSelectFilter>()!!
         val albumSizeFilter = filters.findInstance<AlbumSizeSelectFilter>()!!
@@ -122,6 +124,24 @@ abstract class Luscious(
                                     JsonObject().apply {
                                         addProperty("name", "tagged")
                                         addProperty("value", tags)
+                                    }
+                                )
+                            }
+
+                            if (creatorFilter.state.isNotEmpty()) {
+                                add(
+                                    JsonObject().apply {
+                                        addProperty("name", "created_by_id")
+                                        addProperty("value", creatorFilter.state)
+                                    }
+                                )
+                            }
+
+                            if (favoriteFilter.state.isNotEmpty()) {
+                                add(
+                                    JsonObject().apply {
+                                        addProperty("name", "favorite_by_user_id")
+                                        addProperty("value", favoriteFilter.state)
                                     }
                                 )
                             }
@@ -364,11 +384,17 @@ abstract class Luscious(
     // Details
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        val id = manga.url.substringAfterLast("_").removeSuffix("/")
-        return buildAlbumInfoRequest(id)
+        return GET("$baseUrl${manga.url}", headers)
     }
 
-    override fun mangaDetailsParse(response: Response): SManga {
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        val id = manga.url.substringAfterLast("_").removeSuffix("/")
+        return client.newCall(buildAlbumInfoRequest(id))
+            .asObservableSuccess()
+            .map { detailsParse(it) }
+    }
+
+    private fun detailsParse(response: Response): SManga {
         val data = gson.fromJson<JsonObject>(response.body!!.string())
         with(data["data"]["album"]["get"]) {
             val manga = SManga.create()
@@ -400,6 +426,7 @@ abstract class Luscious(
             return manga
         }
     }
+    override fun mangaDetailsParse(response: Response): SManga = throw UnsupportedOperationException("Not used")
 
     // Popular
 
@@ -470,6 +497,8 @@ abstract class Luscious(
     class RestrictGenresSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Restrict Genres", options)
     class AlbumSizeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Album Size", options)
     class TagTextFilters : TextFilter("Tags")
+    class CreatorTextFilters : TextFilter("Uploader")
+    class FavoriteTextFilters : TextFilter("Favorite by User")
     override fun getFilterList(): FilterList = getSortFilters(POPULAR_DEFAULT_SORT_STATE)
 
     private fun getSortFilters(sortState: Int) = FilterList(
@@ -484,6 +513,9 @@ abstract class Luscious(
         Filter.Header("Separate tags with commas (,)"),
         Filter.Header("Prepend with dash (-) to exclude"),
         TagTextFilters(),
+        Filter.Header("The following require username or ID"),
+        CreatorTextFilters(),
+        FavoriteTextFilters(),
     )
 
 
@@ -604,10 +636,17 @@ abstract class Luscious(
         TriStateFilterOption("Artist Collection", "19"),
         TriStateFilterOption("Asian Girls", "12"),
         TriStateFilterOption("BDSM", "27"),
+        TriStateFilterOption("Bestiality Hentai", "5"),
+        TriStateFilterOption("Casting", "44"),
+        TriStateFilterOption("Celebrity Fakes", "16"),
+        TriStateFilterOption("Cosplay", "22"),
         TriStateFilterOption("Cross-Dressing", "30"),
+        TriStateFilterOption("Cumshot", "26"),
         TriStateFilterOption("Defloration / First Time", "59"),
         TriStateFilterOption("Ebony Girls", "32"),
         TriStateFilterOption("European Girls", "46"),
+        TriStateFilterOption("Extreme Gore", "60"),
+        TriStateFilterOption("Extreme Scat", "61"),
         TriStateFilterOption("Fantasy / Monster Girls", "10"),
         TriStateFilterOption("Fetish", "2"),
         TriStateFilterOption("Furries", "8"),
@@ -615,28 +654,35 @@ abstract class Luscious(
         TriStateFilterOption("Group Sex", "36"),
         TriStateFilterOption("Harem", "56"),
         TriStateFilterOption("Humor", "41"),
+        TriStateFilterOption("Incest", "24"),
         TriStateFilterOption("Interracial", "28"),
         TriStateFilterOption("Kemonomimi / Animal Ears", "39"),
         TriStateFilterOption("Latina Girls", "33"),
+        TriStateFilterOption("Lolicon", "3"),
         TriStateFilterOption("Mature", "13"),
         TriStateFilterOption("Members: Original Art", "18"),
         TriStateFilterOption("Members: Verified Selfies", "21"),
         TriStateFilterOption("Military", "48"),
         TriStateFilterOption("Mind Control", "34"),
         TriStateFilterOption("Monsters & Tentacles", "38"),
+        TriStateFilterOption("Music", "45"),
         TriStateFilterOption("Netorare / Cheating", "40"),
         TriStateFilterOption("No Genre Given", "1"),
         TriStateFilterOption("Nonconsent / Reluctance", "37"),
         TriStateFilterOption("Other Ethnicity Girls", "57"),
+        TriStateFilterOption("Private to Luscious", "55"),
         TriStateFilterOption("Public Sex", "43"),
         TriStateFilterOption("Romance", "42"),
         TriStateFilterOption("School / College", "35"),
         TriStateFilterOption("Sex Workers", "47"),
+        TriStateFilterOption("SFW", "23"),
+        TriStateFilterOption("Shotacon", "4"),
         TriStateFilterOption("Softcore / Ecchi", "9"),
         TriStateFilterOption("Superheroes", "17"),
-        TriStateFilterOption("TV / Movies", "51"),
+        TriStateFilterOption("Swimsuit", "49"),
         TriStateFilterOption("Tankōbon", "45"),
         TriStateFilterOption("Trans", "14"),
+        TriStateFilterOption("TV / Movies", "51"),
         TriStateFilterOption("Video Games", "15"),
         TriStateFilterOption("Vintage", "58"),
         TriStateFilterOption("Western", "11"),
@@ -660,7 +706,7 @@ abstract class Luscious(
     companion object {
 
         private const val POPULAR_DEFAULT_SORT_STATE = 0
-        private const val LATEST_DEFAULT_SORT_STATE = 7
+        private const val LATEST_DEFAULT_SORT_STATE = 6
         private const val SEARCH_DEFAULT_SORT_STATE = 0
 
         private const val FILTER_VALUE_IGNORE = "<ignore>"

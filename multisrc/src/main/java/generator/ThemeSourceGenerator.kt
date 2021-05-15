@@ -1,5 +1,6 @@
 package generator
 
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -54,7 +55,10 @@ interface ThemeSourceGenerator {
 
             val defaultAdditionalGradleText = File(defaultAdditionalGradlePath).readTextOrEmptyString()
             val additionalGradleOverrideText = File(additionalGradleOverridePath).readTextOrEmptyString()
-
+            val placeholders = mapOf(
+                "SOURCEHOST" to source.baseUrl.toHttpUrlOrNull()?.host,
+                "SOURCESCHEME" to source.baseUrl.toHttpUrlOrNull()?.scheme
+            ).filter { it.value != null }
             gradle.writeText("""
                 // THIS FILE IS AUTO-GENERATED; DO NOT EDIT
                 apply plugin: 'com.android.application'
@@ -72,13 +76,24 @@ interface ThemeSourceGenerator {
                 $defaultAdditionalGradleText
                 $additionalGradleOverrideText
                 apply from: "${'$'}rootDir/common.gradle"
+
+                android {
+                    defaultConfig {
+                        manifestPlaceholders += [
+${placeholders.map { "${" ".repeat(28)}${it.key}: \"${it.value}\""}.joinToString(",\n")}
+                        ]
+                    }
+                }
             """.trimIndent())
         }
 
-        private fun writeAndroidManifest(androidManifestFile: File, manifestOverridesPath: String) {
+        private fun writeAndroidManifest(androidManifestFile: File, manifestOverridesPath: String, defaultAndroidManifestPath: String) {
             val androidManifestOverride = File(manifestOverridesPath)
+            val defaultAndroidManifest = File(defaultAndroidManifestPath)
             if (androidManifestOverride.exists())
                 androidManifestOverride.copyTo(androidManifestFile)
+            else if (defaultAndroidManifest.exists())
+                defaultAndroidManifest.copyTo(androidManifestFile)
             else
                 androidManifestFile.writeText("""
                 <?xml version="1.0" encoding="utf-8"?>
@@ -92,6 +107,7 @@ interface ThemeSourceGenerator {
             val projectSrcPath = "$projectRootPath/src/eu/kanade/tachiyomi/extension/${pkgNameSuffix(source, "/")}"
             val overridesPath = "$userDir/multisrc/overrides/$themePkg/${source.pkgName}" // userDir = tachiyomi-extensions project root path
             val defaultResPath = "$userDir/multisrc/overrides/$themePkg/default/res"
+            val defaultAndroidManifestPath = "$userDir/multisrc/overrides/$themePkg/default/AndroidManifest.xml"
             val defaultAdditionalGradlePath = "$userDir/multisrc/overrides/$themePkg/default/additional.gradle.kts"
             val resOverridePath = "$overridesPath/res"
             val srcOverridePath = "$overridesPath/src"
@@ -108,7 +124,7 @@ interface ThemeSourceGenerator {
                 cleanDirectory(projectRootFile)
 
                 writeGradle(projectGradleFile, source, themePkg, baseVersionCode, defaultAdditionalGradlePath, additionalGradleOverridePath)
-                writeAndroidManifest(projectAndroidManifestFile, manifestOverridePath)
+                writeAndroidManifest(projectAndroidManifestFile, manifestOverridePath, defaultAndroidManifestPath)
 
                 writeSourceClasses(projectSrcPath, srcOverridePath, source, themePkg, themeClass)
                 copyThemeClasses(userDir, themePkg, projectRootPath)

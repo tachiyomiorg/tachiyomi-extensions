@@ -129,11 +129,20 @@ class MangaPoisk : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        return client.newCall(chapterListRequest(manga))
-            .asObservableSuccess()
-            .map { response ->
-                chapterListParse(response, manga)
+        val pageItems = client.newCall(chapterListRequest(manga)).execute().asJsoup().select("li.page-item")
+        val pages = mutableListOf(1)
+        if (pageItems.lastIndex > 1) {
+            val lastPage = pageItems[pageItems.lastIndex - 1].text().toInt()
+            for (i in 2.rangeTo(lastPage)) {
+                pages.add(i)
             }
+        }
+
+        return Observable.just(
+            pages.flatMap { page ->
+                chapterListParse(client.newCall(chapterPageListRequest(manga, page)).execute(), manga)
+            }
+        )
     }
     private fun chapterListParse(response: Response, manga: SManga): List<SChapter> {
         val document = response.asJsoup()
@@ -142,6 +151,11 @@ class MangaPoisk : ParsedHttpSource() {
     override fun chapterListRequest(manga: SManga): Request {
         return GET("$baseUrl${manga.url}/chaptersList", headers)
     }
+
+    private fun chapterPageListRequest(manga: SManga, page: Int): Request {
+        return GET("$baseUrl${manga.url}/chaptersList?page=$page", headers)
+    }
+
     override fun chapterListSelector() = ".chapter-item"
 
     private fun chapterFromElement(element: Element, manga: SManga): SChapter {

@@ -63,7 +63,7 @@ class MangaDexFilters {
         Filter.Group<Status>("Status", status)
 
     private fun getStatus() = listOf(
-        Status("Onging"),
+        Status("Ongoing"),
         Status("Completed"),
         Status("Hiatus"),
         Status("Abandoned"),
@@ -78,9 +78,9 @@ class MangaDexFilters {
         Filter.Group<OriginalLanguage>("Original language", originalLanguage)
 
     private fun getOriginalLanguage() = listOf(
-        OriginalLanguage("Japanese (Manga)", "jp"),
-        OriginalLanguage("Chinese (Manhua)", "cn"),
-        OriginalLanguage("Korean (Manhwa)", "kr"),
+        OriginalLanguage("Japanese (Manga)", "ja"),
+        OriginalLanguage("Chinese (Manhua)", "zh"),
+        OriginalLanguage("Korean (Manhwa)", "ko"),
     )
 
     internal class Tag(val id: String, name: String) : Filter.TriState(name)
@@ -95,23 +95,22 @@ class MangaDexFilters {
         Tag("3de8c75d-8ee3-48ff-98ee-e20a65c86451", "Animals"),
         Tag("51d83883-4103-437c-b4b1-731cb73d786c", "Anthology"),
         Tag("0a39b5a1-b235-4886-a747-1d05d216532d", "Award Winning"),
-        Tag("5920b825-4181-4a17-beeb-9918b0ff7a30", "Boy Love"),
+        Tag("5920b825-4181-4a17-beeb-9918b0ff7a30", "Boy's Love"),
         Tag("4d32cc48-9f00-4cca-9b5a-a839f0764984", "Comedy"),
         Tag("ea2bc92d-1c26-4930-9b7c-d5c0dc1b6869", "Cooking"),
         Tag("5ca48985-9a9d-4bd8-be29-80dc0303db72", "Crime"),
-        Tag("489dd859-9b61-4c37-af75-5b18e88daafc", "Crossdressing"),
+        Tag("9ab53f92-3eed-4e9b-903a-917c86035ee3", "Crossdressing"),
         Tag("da2d50ca-3018-4cc0-ac7a-6b7d472a29ea", "Delinquents"),
         Tag("39730448-9a5f-48a2-85b0-a70db87b1233", "Demons"),
         Tag("b13b2a48-c720-44a9-9c77-39c9979373fb", "Doujinshi"),
         Tag("b9af3a63-f058-46de-a9a0-e0c13906197a", "Drama"),
-        Tag("fad12b5e-68ba-460e-b933-9ae8318f5b65", "Ecchi"),
         Tag("7b2ce280-79ef-4c09-9b58-12b7c23a9b78", "Fan Colored"),
         Tag("cdc58593-87dd-415e-bbc0-2ec27bf404cc", "Fantasy"),
-        Tag("b11fda93-8f1d-4bef-b2ed-8803d3733170", "4-koma"),
+        Tag("b11fda93-8f1d-4bef-b2ed-8803d3733170", "4-Koma"),
         Tag("f5ba408b-0e7a-484d-8d49-4e9125ac96de", "Full Color"),
         Tag("2bd2e8d0-f146-434a-9b51-fc9ff2c5fe6a", "Genderswap"),
         Tag("3bb26d85-09d5-4d2e-880c-c34b974339e9", "Ghosts"),
-        Tag("a3c67850-4684-404e-9b7f-c69850ee5da6", "Girl Love"),
+        Tag("a3c67850-4684-404e-9b7f-c69850ee5da6", "Girl's Love"),
         Tag("b29d6a3d-1569-4e7a-8caf-7557bc92cd5d", "Gore"),
         Tag("fad12b5e-68ba-460e-b933-9ae8318f5b65", "Gyaru"),
         Tag("aafb99c1-7f60-43fa-b75f-fc9502ce29c7", "Harem"),
@@ -189,6 +188,13 @@ class MangaDexFilters {
                     is OriginalLanguageList -> {
                         filter.state.forEach { lang ->
                             if (lang.state) {
+                                // dex has zh and zh-hk for chinese manhua
+                                if (lang.isoCode == "zh") {
+                                    addQueryParameter(
+                                        "originalLanguage[]",
+                                        "zh-hk"
+                                    )
+                                }
                                 addQueryParameter(
                                     "originalLanguage[]",
                                     lang.isoCode
