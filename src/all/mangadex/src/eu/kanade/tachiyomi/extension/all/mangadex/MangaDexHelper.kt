@@ -146,14 +146,16 @@ class MangaDexHelper() {
 
             // things that will go with the genre tags but aren't actually genre
 
-            val contentRating = (attr["contentRating"].nullString ?: "").replace("safe", "")
-
+            val tempContentRating = attr["contentRating"].nullString
+            val contentRating = if (tempContentRating == null || tempContentRating.equals("safe", true)) {
+                null
+            } else {
+                "Content rating: " + tempContentRating.capitalize(Locale.US)
+            }
 
             val nonGenres = listOf(
                 (attr["publicationDemographic"]?.nullString ?: "").capitalize(Locale.US),
-                (
-                    "Content rating: " + (contentRating).capitalize(Locale.US)
-                    ),
+                contentRating,
                 Locale(attr["originalLanguage"].nullString ?: "").displayLanguage
             )
 
@@ -267,11 +269,11 @@ class MangaDexHelper() {
             }
 
             attr["title"].nullString?.let {
-                if(it.isNotEmpty()){
-                   if (chapterName.isNotEmpty()) {
-                    chapterName.add("-")
-                   }
-                chapterName.add(it)
+                if (it.isNotEmpty()) {
+                    if (chapterName.isNotEmpty()) {
+                        chapterName.add("-")
+                    }
+                    chapterName.add(it)
                 }
             }
 
