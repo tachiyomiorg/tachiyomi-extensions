@@ -24,10 +24,10 @@ class FMReaderGenerator : ThemeSourceGenerator {
         SingleLang("ManhuaScan", "https://manhuascan.com", "en", isNsfw = true, overrideVersionCode = 2),
         SingleLang("Manhwa18", "https://manhwa18.com", "en", isNsfw = true),
         MultiLang("Manhwa18.net", "https://manhwa18.net", listOf("en", "ko"), className = "Manhwa18NetFactory", isNsfw = true),
-        SingleLang("ManhwaSmut", "https://manhwasmut.com", "en", isNsfw = true, overrideVersionCode = 2),
         SingleLang("RawLH", "https://lovehug.net", "ja"),
         SingleLang("Say Truyen", "https://saytruyen.com", "vi"),
         SingleLang("KSGroupScans", "https://ksgroupscans.com", "en"),
+        SingleLang("ManhwaHot", "https://manhwahot.com", "en", isNsfw = true),
         // Sites that went down
         //SingleLang("18LHPlus", "https://18lhplus.com", "en", className = "EighteenLHPlus"),
         //SingleLang("HanaScan (RawQQ)", "https://hanascan.com", "ja", className = "HanaScanRawQQ"),
