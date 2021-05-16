@@ -209,7 +209,7 @@ abstract class FMReader(
 
     open val chapterUrlSelector = "a"
 
-    open val chapterTimeSelector = "time, .chapter-time"
+    open val chapterTimeSelector = "time, .chapter-time, .publishedDate"
 
     open val chapterNameAttrSelector = "title"
 
