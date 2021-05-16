@@ -1,7 +1,10 @@
 package eu.kanade.tachiyomi.multisrc.fmreader
 
 import android.util.Base64
+import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -12,14 +15,24 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import okio.ByteString
+import okio.ByteString.Companion.decodeBase64
+import okio.ByteString.Companion.decodeHex
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import rx.Observable
 import java.nio.charset.Charset
+import java.security.MessageDigest
 import java.util.Calendar
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * For sites based on the Flat-Manga CMS
@@ -314,6 +327,36 @@ abstract class FMReader(
         }
     }
 
+        /**
+     * fetches the pageList by decrypting and parsing the json response of a "chapter server"
+     * Meant to be used by relevant subclasses to replace their implementation of fetchPageList as needed
+     * e.g ManhuaScan, HeroScan
+     */
+    protected fun fetchPageListEncrypted(chapter: SChapter): Observable<List<Page>> {
+        fun stringAssignment(varname: String, script: String) = Regex("""var\s+$varname\s*=\s*"([^"]*)"""").find(script)?.groups?.get(1)?.value
+        fun pageList(s: String) = Regex("https.+?(?=https|\"$)").findAll(s).map { it.groups[0]!!.value.replace("\\/", "/") }
+        fun pageListRequest(id: String, server: Int = 1) = POST("$baseUrl/app/manga/controllers/cont.chapterServer$server.php", headers, "id=$id".toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaTypeOrNull()))
+        return client.newCall(GET("$baseUrl${chapter.url}", headers)).asObservableSuccess().concatMap { htmlResponse ->
+            val soup = htmlResponse.asJsoup()
+            soup.selectFirst("head > script[type='text/javascript']")?.data()?.let { params ->
+                val chapterId = stringAssignment("chapter_id", params)
+                val csrfToken = stringAssignment("csrf_token", params)
+                if (chapterId == null || csrfToken == null)
+                    null
+                else
+                    client.newCall(pageListRequest(chapterId)).asObservableSuccess()
+                        .map { jsonResponse ->
+                            pageList(
+                                crypto.aes_decrypt(
+                                    jsonResponse.body!!.string(),
+                                    crypto.md5("$csrfToken$csrfToken").toByteArray()
+                                )
+                            ).mapIndexed { i, imgUrl -> Page(i, "", imgUrl) }.toList()
+                        }
+            } ?: Observable.just(emptyList())
+        }
+    }
+
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     private class TextField(name: String, val key: String) : Filter.Text(name)
@@ -471,4 +514,75 @@ abstract class FMReader(
         Genre("Western"),
         Genre("Zombies")
     )
+
+    companion object {
+        interface Crypto {
+            fun md5(s: String): String;
+            fun aes_decrypt(context: String, key: ByteArray): String;
+        }
+
+        /* cryptography utilities leveraged by fetchPageListEncrypted */
+        val crypto = object : Crypto {
+            private fun parseCryptoCT(s: String): Map<String, ByteString> {
+                // https://cryptojs.gitbook.io/docs/
+                val jsonObj = JsonParser.parseString(s).asJsonObject
+                val cipherParams = mutableMapOf("ciphertext" to jsonObj["ct"].asString.decodeBase64()!!)
+                jsonObj["iv"]?.let { cipherParams.put("iv", it.asString.decodeHex()) }
+                jsonObj["s"]?.let { cipherParams.put("salt", it.asString.decodeHex()) }
+                return cipherParams
+            }
+
+            private fun decryptAES(encrypted: ByteString, password: ByteArray, iv: ByteString, salt: ByteString): String {
+                // https://stackoverflow.com/questions/29151211/29152379#29152379
+                val (key, _iv) = EvpKDF(password, 256, 128, salt.toByteArray(), 1, "MD5")
+                val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+                cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(_iv))
+                return String(cipher.doFinal(encrypted.toByteArray()), Charset.forName("UTF-8"))
+            }
+
+            private fun EvpKDF(password: ByteArray, _keySize: Int, _ivSize: Int, salt: ByteArray, iterations: Int, hashAlgorithm: String): Pair<ByteArray, ByteArray> {
+                // Key Derivation Function
+                val keySize = _keySize / 32
+                val ivSize = _ivSize / 32
+                val targetKeySize = keySize + ivSize
+                val derivedBytes = ByteArray(targetKeySize * 4)
+                var numberOfDerivedWords = 0
+                var block = ByteArray(0)
+                val hasher = MessageDigest.getInstance(hashAlgorithm)
+                val key = ByteArray(keySize * 4)
+                val iv = ByteArray(ivSize * 4)
+                while (numberOfDerivedWords < targetKeySize) {
+                    if (block != null) {
+                        hasher.update(block)
+                    }
+                    hasher.update(password)
+                    block = hasher.digest(salt)
+                    hasher.reset()
+
+                    // Iterations
+                    for (i in 1 until iterations) {
+                        block = hasher.digest(block)
+                        hasher.reset()
+                    }
+
+                    System.arraycopy(block, 0, derivedBytes, numberOfDerivedWords * 4,
+                        block.size.coerceAtMost((targetKeySize - numberOfDerivedWords) * 4))
+
+                    numberOfDerivedWords += block.size / 4
+                }
+
+                System.arraycopy(derivedBytes, 0, key, 0, key.size)
+                System.arraycopy(derivedBytes, key.size, iv, 0, iv.size)
+
+                return key to iv // key + iv
+            }
+
+            override fun md5(s: String): String = MessageDigest.getInstance("MD5").digest(s.toByteArray()).joinToString("") { String.format("%02x", it) }
+
+            override fun aes_decrypt(context: String, key: ByteArray): String {
+                val cipherParams = parseCryptoCT(JsonParser.parseString(context).asJsonObject["content"].asString)
+                return decryptAES(cipherParams["ciphertext"]!!, key, cipherParams["iv"]!!, cipherParams["salt"]!!)
+            }
+        }
+    }
 }

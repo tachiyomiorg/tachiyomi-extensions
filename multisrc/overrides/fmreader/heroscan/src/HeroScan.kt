@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.heroscan
 
 import eu.kanade.tachiyomi.multisrc.fmreader.FMReader
+import eu.kanade.tachiyomi.source.model.SChapter
 import okhttp3.OkHttpClient
 
 class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
@@ -17,4 +18,5 @@ class HeroScan : FMReader("HeroScan", "https://heroscan.com", "en") {
                 }
             }
             .build()
+    override fun fetchPageList(chapter: SChapter) = fetchPageListEncrypted(chapter)
 }
