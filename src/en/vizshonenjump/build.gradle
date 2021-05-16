@@ -5,12 +5,13 @@ ext {
     extName = 'VIZ Shonen Jump'
     pkgNameSuffix = 'en.vizshonenjump'
     extClass = '.VizShonenJump'
-    extVersionCode = 8
+    extVersionCode = 9
     libVersion = '1.2'
 }
 
 dependencies {
     implementation 'com.drewnoakes:metadata-extractor:2.14.0'
+    implementation project(':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

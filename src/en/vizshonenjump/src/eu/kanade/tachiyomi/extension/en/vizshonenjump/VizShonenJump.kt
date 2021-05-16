@@ -8,6 +8,7 @@ import com.github.salomonbrys.kotson.nullObj
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -29,6 +30,7 @@ import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class VizShonenJump : ParsedHttpSource() {
 
@@ -44,6 +46,7 @@ class VizShonenJump : ParsedHttpSource() {
         .addInterceptor(::authCheckIntercept)
         .addInterceptor(::authChapterCheckIntercept)
         .addInterceptor(VizImageInterceptor())
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -355,7 +358,7 @@ class VizShonenJump : ParsedHttpSource() {
     companion object {
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
 
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)
