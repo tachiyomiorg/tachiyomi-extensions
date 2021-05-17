@@ -9,6 +9,7 @@ import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -30,6 +31,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+@Nsfw
 class TsukiMangas : HttpSource() {
 
     override val name = "Tsuki Mangás"
@@ -51,16 +53,17 @@ class TsukiMangas : HttpSource() {
         .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/v2/home", headers)
+        return GET("$baseUrl/api/v2/mangas?page=$page&title=&filter=0", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
         val result = response.asJson().obj
 
-        val popularMangas = result["topviewsmonth"].array
+        val popularMangas = result["data"].array
             .map { popularMangaItemParse(it.obj) }
 
-        return MangasPage(popularMangas, false)
+        val hasNextPage = result["page"].int < result["lastPage"].int
+        return MangasPage(popularMangas, hasNextPage)
     }
 
     private fun popularMangaItemParse(obj: JsonObject) = SManga.create().apply {
@@ -97,17 +100,38 @@ class TsukiMangas : HttpSource() {
         val url = "$baseUrl/api/v2/mangas?page=$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
 
+        // Genre filter must be the first.
+        filters.filterIsInstance<GenreFilter>().firstOrNull()?.state
+            ?.filter { it.state }
+            ?.forEach { url.addQueryParameter("genres[]", it.name) }
+
+        // Sort by filter must also be the first.
+        filters.filterIsInstance<SortByFilter>().firstOrNull()
+            ?.let { filter ->
+                if (filter.state!!.index == 0) {
+                    url.addQueryParameter("filter", if (filter.state!!.ascending) "1" else "0")
+                } else {
+                    url.addQueryParameter("filter", if (filter.state!!.ascending) "3" else "2")
+                }
+            }
+
         filters.forEach { filter ->
             when (filter) {
-                is GenreFilter -> {
-                    filter.state
-                        .filter { it.state }
-                        .forEach { url.addQueryParameter("genres", it.name) }
+                is DemographyFilter -> {
+                    if (filter.state > 0) {
+                        url.addQueryParameter("demography", filter.state.toString())
+                    }
                 }
 
-                is TypeFilter -> {
+                is FormatFilter -> {
                     if (filter.state > 0) {
                         url.addQueryParameter("format", filter.state.toString())
+                    }
+                }
+
+                is StatusFilter -> {
+                    if (filter.state > 0) {
+                        url.addQueryParameter("status", (filter.state - 1).toString())
                     }
                 }
 
@@ -259,78 +283,133 @@ class TsukiMangas : HttpSource() {
 
     private class Genre(name: String) : Filter.CheckBox(name)
 
-    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Gêneros", genres)
+    private class DemographyFilter(demographies: List<String>) : Filter.Select<String>("Demografia", demographies.toTypedArray())
 
-    private class TypeFilter(types: List<String>) : Filter.Select<String>("Formato", types.toTypedArray())
+    private class FormatFilter(types: List<String>) : Filter.Select<String>("Formato", types.toTypedArray())
+
+    private class StatusFilter(statusList: List<String>) : Filter.Select<String>("Status", statusList.toTypedArray())
 
     private class AdultFilter : Filter.TriState("Conteúdo adulto")
 
+    private class SortByFilter : Filter.Sort("Ordenar por", arrayOf("Visualizações", "Nota"), Selection(0, false))
+
+    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Gêneros", genres)
+
     override fun getFilterList(): FilterList = FilterList(
+        DemographyFilter(getDemographiesList()),
+        FormatFilter(getSerieFormats()),
+        StatusFilter(getStatusList()),
+        AdultFilter(),
+        SortByFilter(),
         GenreFilter(getGenreList()),
-        TypeFilter(getSerieTypes()),
-        AdultFilter()
     )
 
-    // [...document.querySelectorAll(".multiselect:first-of-type .multiselect__element span span")]
-    //     .map(i => `Genre("${i.innerHTML}")`).join(",\n")
-    private fun getGenreList(): List<Genre> = listOf(
-        Genre("4-koma"),
-        Genre("Adulto"),
-        Genre("Artes Marciais"),
-        Genre("Aventura"),
-        Genre("Ação"),
-        Genre("Bender"),
-        Genre("Comédia"),
-        Genre("Drama"),
-        Genre("Ecchi"),
-        Genre("Esporte"),
-        Genre("Fantasia"),
-        Genre("Ficção"),
-        Genre("Gastronomia"),
-        Genre("Gender"),
-        Genre("Guerra"),
-        Genre("Harém"),
-        Genre("Histórico"),
-        Genre("Horror"),
-        Genre("Isekai"),
-        Genre("Josei"),
-        Genre("Magia"),
-        Genre("Manhua"),
-        Genre("Manhwa"),
-        Genre("Mecha"),
-        Genre("Medicina"),
-        Genre("Militar"),
-        Genre("Mistério"),
-        Genre("Musical"),
-        Genre("One-Shot"),
-        Genre("Psicológico"),
-        Genre("Romance"),
-        Genre("Sci-fi"),
-        Genre("Seinen"),
-        Genre("Shoujo"),
-        Genre("Shoujo Ai"),
-        Genre("Shounen"),
-        Genre("Shounen Ai"),
-        Genre("Slice of Life"),
-        Genre("Sobrenatural"),
-        Genre("Super Poderes"),
-        Genre("Suspense"),
-        Genre("Terror"),
-        Genre("Thriller"),
-        Genre("Tragédia"),
-        Genre("Vida Escolar"),
-        Genre("Webtoon"),
-        Genre("Yaoi"),
-        Genre("Yuri"),
-        Genre("Zumbi")
+    private fun getDemographiesList(): List<String> = listOf(
+        "Todas",
+        "Shounen",
+        "Shoujo",
+        "Seinen",
+        "Josei"
     )
 
-    private fun getSerieTypes(): List<String> = listOf(
+    private fun getSerieFormats(): List<String> = listOf(
         "Todos",
         "Mangá",
         "Manhwa",
         "Manhua",
         "Novel"
+    )
+
+    private fun getStatusList(): List<String> = listOf(
+        "Todos",
+        "Ativo",
+        "Completo",
+        "Cancelado",
+        "Hiato"
+    )
+
+    // [...document.querySelectorAll(".multiselect:first-of-type .multiselect__element span span")]
+    //     .map(i => `Genre("${i.innerHTML}")`).join(",\n")
+    private fun getGenreList(): List<Genre> = listOf(
+        Genre("4-Koma"),
+        Genre("Adaptação"),
+        Genre("Aliens"),
+        Genre("Animais"),
+        Genre("Antologia"),
+        Genre("Artes Marciais"),
+        Genre("Aventura"),
+        Genre("Ação"),
+        Genre("Colorido por fã"),
+        Genre("Comédia"),
+        Genre("Crime"),
+        Genre("Cross-dressing"),
+        Genre("Deliquentes"),
+        Genre("Demônios"),
+        Genre("Doujinshi"),
+        Genre("Drama"),
+        Genre("Ecchi"),
+        Genre("Esportes"),
+        Genre("Fantasia"),
+        Genre("Fantasmas"),
+        Genre("Filosófico"),
+        Genre("Gals"),
+        Genre("Ganhador de Prêmio"),
+        Genre("Garotas Monstro"),
+        Genre("Garotas Mágicas"),
+        Genre("Gastronomia"),
+        Genre("Gore"),
+        Genre("Harém"),
+        Genre("Harém Reverso"),
+        Genre("Hentai"),
+        Genre("Histórico"),
+        Genre("Horror"),
+        Genre("Incesto"),
+        Genre("Isekai"),
+        Genre("Jogos Tradicionais"),
+        Genre("Lolis"),
+        Genre("Long Strip"),
+        Genre("Mafia"),
+        Genre("Magia"),
+        Genre("Mecha"),
+        Genre("Medicina"),
+        Genre("Militar"),
+        Genre("Mistério"),
+        Genre("Monstros"),
+        Genre("Música"),
+        Genre("Ninjas"),
+        Genre("Obscenidade"),
+        Genre("Oficialmente Colorido"),
+        Genre("One-shot"),
+        Genre("Policial"),
+        Genre("Psicológico"),
+        Genre("Pós-apocalíptico"),
+        Genre("Realidade Virtual"),
+        Genre("Reencarnação"),
+        Genre("Romance"),
+        Genre("Samurais"),
+        Genre("Sci-Fi"),
+        Genre("Shotas"),
+        Genre("Shoujo Ai"),
+        Genre("Shounen Ai"),
+        Genre("Slice of Life"),
+        Genre("Sobrenatural"),
+        Genre("Sobrevivência"),
+        Genre("Super Herói"),
+        Genre("Thriller"),
+        Genre("Todo Colorido"),
+        Genre("Trabalho de Escritório"),
+        Genre("Tragédia"),
+        Genre("Troca de Gênero"),
+        Genre("Vampiros"),
+        Genre("Viagem no Tempo"),
+        Genre("Vida Escolar"),
+        Genre("Violência Sexual"),
+        Genre("Vídeo Games"),
+        Genre("Webcomic"),
+        Genre("Wuxia"),
+        Genre("Yaoi"),
+        Genre("Yuri"),
+        Genre("Zumbis")
     )
 
     private fun String.toDate(): Long {
