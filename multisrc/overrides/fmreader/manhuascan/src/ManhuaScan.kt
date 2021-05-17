@@ -9,7 +9,7 @@ import okhttp3.OkHttpClient
 @Nsfw
 class ManhuaScan : FMReader("ManhuaScan", "https://manhuascan.com", "en") {
     override val client: OkHttpClient = super.client.newBuilder()
-        .addInterceptor(RateLimitInterceptor(1, period=1))
+        .addInterceptor(RateLimitInterceptor(1))
         .build()
     override fun fetchPageList(chapter: SChapter) = fetchPageListEncrypted(chapter)
 }
