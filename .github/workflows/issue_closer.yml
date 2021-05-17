@@ -13,7 +13,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           rules: |
-            [
+            [  
               {
                 "type": "title",
                 "regex": ".*<(Source Name|short description)>*",
@@ -28,5 +28,15 @@ jobs:
                 "type": "body",
                 "regex": ".*\\* (Tachiyomi version|Android version|Device|Name|Link|Extension version): \\?.*",
                 "message": "The requested information was not filled out"
+              },
+              {
+                "type": "both",
+                "regex": ".*(mangago|mangafox|hq\s*dragon|manga\s*host|supermangas|superhentais|union\s*mangas|yes\s*mangas).*"
+                "message": "{match} will not be added back as it is too difficult to maintain"
+              },
+              {
+                "type": "both",
+                "regex": ".*(teamx|tqneplus|manga\s*disk|asura\s*scans|komiktap|gourmet\s*scans|manga\s*crimson|mangawow|voidscans|hikari\s*scans|mangagegecesi|piedpiperfb).*"
+                "message": "{match} will not be added back as the Scanlator team has requested it to be removed"
               }
             ]
