@@ -30,6 +30,7 @@ import rx.Observable
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.util.Calendar
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -333,26 +334,23 @@ abstract class FMReader(
      * e.g ManhuaScan, HeroScan
      */
     protected fun fetchPageListEncrypted(chapter: SChapter): Observable<List<Page>> {
-        fun stringAssignment(varname: String, script: String) = Regex("""var\s+$varname\s*=\s*"([^"]*)"""").find(script)?.groups?.get(1)?.value
+        fun stringAssignment(varname: String, script: String) = Regex("""(?:let|var)\s+$varname\s*=\s*"([^"]*)"""").find(script)?.groups?.get(1)?.value
         fun pageList(s: String) = Regex("https.+?(?=https|\"$)").findAll(s).map { it.groups[0]!!.value.replace("\\/", "/") }
         fun pageListRequest(id: String, server: Int = 1) = POST("$baseUrl/app/manga/controllers/cont.chapterServer$server.php", headers, "id=$id".toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaTypeOrNull()))
         return client.newCall(GET("$baseUrl${chapter.url}", headers)).asObservableSuccess().concatMap { htmlResponse ->
             val soup = htmlResponse.asJsoup()
             soup.selectFirst("head > script[type='text/javascript']")?.data()?.let { params ->
-                val chapterId = stringAssignment("chapter_id", params)
-                val csrfToken = stringAssignment("csrf_token", params)
-                if (chapterId == null || csrfToken == null)
-                    null
-                else
+                stringAssignment("chapter_id", params)?.let { chapterId ->
                     client.newCall(pageListRequest(chapterId)).asObservableSuccess()
                         .map { jsonResponse ->
-                            pageList(
-                                crypto.aes_decrypt(
-                                    jsonResponse.body!!.string(),
-                                    crypto.md5("$csrfToken$csrfToken").toByteArray()
-                                )
-                            ).mapIndexed { i, imgUrl -> Page(i, "", imgUrl) }.toList()
+                            try {
+                                pageList(crypto.aes_decrypt(jsonResponse.body!!.string(), "4xje8fvkub2d3mb5cy9rv661zyjakbcn".toByteArray()))
+                                    .mapIndexed { i, imgUrl -> Page(i, "", imgUrl) }.toList()
+                            } catch (_: BadPaddingException) {
+                                throw RuntimeException("Decryption Failed")
+                            }
                         }
+                }
             } ?: Observable.just(emptyList())
         }
     }
