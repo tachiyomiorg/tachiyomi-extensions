@@ -17,17 +17,17 @@ class FMReaderGenerator : ThemeSourceGenerator {
 
     override val sources = listOf(
         SingleLang("Epik Manga", "https://www.epikmanga.com", "tr"),
-        SingleLang("HeroScan", "https://heroscan.com", "en", overrideVersionCode = 1),
+        SingleLang("HeroScan", "https://heroscan.com", "en", overrideVersionCode = 2),
         SingleLang("KissLove", "https://kissaway.net", "ja"),
         SingleLang("LHTranslation", "https://lhtranslation.net", "en", overrideVersionCode = 1),
         SingleLang("Manga-TR", "https://manga-tr.com", "tr", className = "MangaTR"),
-        SingleLang("ManhuaScan", "https://manhuascan.com", "en", isNsfw = true, overrideVersionCode = 2),
+        SingleLang("ManhuaScan", "https://manhuascan.com", "en", isNsfw = true, overrideVersionCode = 3),
         SingleLang("Manhwa18", "https://manhwa18.com", "en", isNsfw = true),
         MultiLang("Manhwa18.net", "https://manhwa18.net", listOf("en", "ko"), className = "Manhwa18NetFactory", isNsfw = true),
         SingleLang("RawLH", "https://lovehug.net", "ja"),
         SingleLang("Say Truyen", "https://saytruyen.com", "vi"),
         SingleLang("KSGroupScans", "https://ksgroupscans.com", "en"),
-        SingleLang("ManhwaHot", "https://manhwahot.com", "en", isNsfw = true),
+        SingleLang("ManhwaHot", "https://manhwahot.com", "en", isNsfw = true, overrideVersionCode=1),
         // Sites that went down
         //SingleLang("18LHPlus", "https://18lhplus.com", "en", className = "EighteenLHPlus"),
         //SingleLang("HanaScan (RawQQ)", "https://hanascan.com", "ja", className = "HanaScanRawQQ"),
