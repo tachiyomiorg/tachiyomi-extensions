@@ -50,7 +50,7 @@ class MdAtHomeReportInterceptor(
                         "success" to response.isSuccessful,
                         "bytes" to response.peekBody(Long.MAX_VALUE).bytes().size,
                         "duration" to response.receivedResponseAtMillis - response.sentRequestAtMillis,
-                        "cache" to cachedImage,
+                        "cached" to cachedImage,
                     )
                 )
 
