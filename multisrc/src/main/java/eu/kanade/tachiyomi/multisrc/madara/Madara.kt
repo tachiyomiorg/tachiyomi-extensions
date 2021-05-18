@@ -170,6 +170,9 @@ abstract class Madara(
                         url.addQueryParameter("m_orderby", filter.toUriPart())
                     }
                 }
+                is AdultContentFilter -> {
+                    url.addQueryParameter("adult", filter.toUriPart())
+                }
                 is GenreConditionFilter -> {
                     url.addQueryParameter("op", filter.toUriPart())
                 }
@@ -206,6 +209,14 @@ abstract class Madara(
         arrayOf(
             Pair("or", ""),
             Pair("and", "1")
+        )
+    )
+    private class AdultContentFilter : UriPartFilter(
+        "Adult Content",
+        arrayOf(
+            Pair("All", ""),
+            Pair("None", "0"),
+            Pair("Only", "1")
         )
     )
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
@@ -279,6 +290,7 @@ abstract class Madara(
         YearFilter(),
         StatusFilter(getStatusList()),
         OrderByFilter(),
+        AdultContentFilter(),
         Filter.Separator(),
         Filter.Header("Genres may not work for all sources"),
         GenreConditionFilter(),
