@@ -36,7 +36,7 @@ jobs:
               },
               {
                 "type": "both",
-                "regex": ".*(teamx|tqneplus|manga\\s*disk|asura\\s*scans|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb).*",
+                "regex": ".*(teamx|tqneplus|manga\\s*disk|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb).*",
                 "message": "{match} will not be added back as the Scanlator team has requested it to be removed. Read #3475 for more information"
               }
             ]
