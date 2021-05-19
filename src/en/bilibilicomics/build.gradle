@@ -1,0 +1,17 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Bilibili Comics'
+    pkgNameSuffix = 'en.bilibilicomics'
+    extClass = '.BilibiliComics'
+    extVersionCode = 1
+    libVersion = '1.2'
+    containsNsfw = true
+}
+
+dependencies {
+    implementation project(':lib-ratelimit')
+}
+
+apply from: "$rootDir/common.gradle"
