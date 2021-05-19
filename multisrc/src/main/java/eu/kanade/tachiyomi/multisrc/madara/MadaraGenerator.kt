@@ -88,6 +88,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("KlikManga", "https://klikmanga.com", "id"),
             SingleLang("Kombatch", "https://kombatch.com", "id"),
             SingleLang("Kun Manga", "https://kunmanga.com", "en"),
+            SingleLang("Levelerscans", "https://levelerscans.xyz", "en"),
             SingleLang("Lily Manga", "https://lilymanga.com", "en"),
             SingleLang("LovableSubs", "https://lovablesubs.com", "tr"),
             SingleLang("Manga18 Fun", "https://manga18.fun", "en"),
