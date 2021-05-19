@@ -77,7 +77,7 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun popularMangaSelector(): String =
-        "section.section_chapters div.o_sort_container div.o_sortable > a"
+        "section.section_chapters div.o_sort_container div.o_sortable > a.o_chapters-link"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.pad-x-rg").first().text()
