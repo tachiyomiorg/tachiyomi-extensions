@@ -96,26 +96,18 @@ class BilibiliComics : HttpSource() {
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return if (comicList.isEmpty()) {
-            super.fetchSearchManga(page, query, filters)
-                .map { result ->
-                    val filteredComics = result.mangas.filter { it.title.contains(query, true) }
-                    MangasPage(filteredComics, result.hasNextPage)
-                }
-        } else {
-            val filteredComics = comicList.filter { it.title.contains(query, true) }
-            Observable.just(MangasPage(filteredComics, hasNextPage = false))
-        }
+        return super.fetchSearchManga(page, query, filters)
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val jsonPayload = jsonObject(
             "area_id" to -1,
             "is_finish" to -1,
-            "is_free" to 1,
-            "order" to 0,
+            "is_free" to -1,
+            "key_word" to query,
+            "order" to -1,
             "page_num" to page,
-            "page_size" to 18,
+            "page_size" to 9,
             "style_id" to -1
         )
         val requestBody = jsonPayload.toString().toRequestBody(JSON_CONTENT_TYPE)
@@ -124,42 +116,34 @@ class BilibiliComics : HttpSource() {
             .add("Content-Length", requestBody.contentLength().toString())
             .add("Content-Type", requestBody.contentType().toString())
             .add("X-Page", page.toString())
-            .set("Referer", "$baseUrl/genre")
+            .set("Referer", "$baseUrl/search?keyword=$query")
             .build()
 
         return POST(
-            "$baseUrl/$BASE_API_ENDPOINT/ClassPage?device=pc&platform=web",
+            "$baseUrl/$BASE_API_ENDPOINT/Search?device=pc&platform=web",
             headers = newHeaders,
             body = requestBody
         )
     }
 
-    // Site does not have search in the API, so we need to fetch all the pages
-    // and then filter to find the query provided by the user.
     override fun searchMangaParse(response: Response): MangasPage {
-        var request = response.request
-        var currentPage = request.headers["X-Page"]!!.toInt()
-        var jsonResponse = response.asJson().obj
+        val jsonResponse = response.asJson().obj
 
         if (jsonResponse["code"].int != 0) {
             return MangasPage(emptyList(), hasNextPage = false)
         }
 
-        while (jsonResponse["data"].array.size() > 0) {
-            comicList += jsonResponse["data"].array
-                .map(::searchMangaFromObject)
-
-            request = searchMangaRequest(++currentPage, "", FilterList())
-            jsonResponse = client.newCall(request).execute().asJson().obj
-        }
+        val comicList = jsonResponse["data"]["list"].array
+            .map(::searchMangaFromObject)
 
         return MangasPage(comicList, hasNextPage = false)
     }
 
     private fun searchMangaFromObject(obj: JsonElement): SManga = SManga.create().apply {
-        title = obj["title"].string
+        //Results to "Me and <em class=\"keyword\">My</em> Zoo" (to highlight search query) I have 0 knowledge what to do here + on phone.
+        title = obj["title"].string.text() //.text() should fix it.
         thumbnail_url = obj["vertical_cover"].string
-        url = "/detail/mc" + obj["season_id"].int
+        url = "/detail/mc" + obj["id"].int
     }
 
     // Workaround to allow "Open in browser" use the real URL.
@@ -225,9 +209,9 @@ class BilibiliComics : HttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val comicId = chapter.url.substringAfterLast("/").toInt()
+        val chapterId = chapter.url.substringAfterLast("/").toInt()
 
-        val jsonPayload = jsonObject("ep_id" to comicId)
+        val jsonPayload = jsonObject("ep_id" to chapterId)
         val requestBody = jsonPayload.toString().toRequestBody(JSON_CONTENT_TYPE)
 
         val newHeaders = headersBuilder()
