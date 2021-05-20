@@ -14,6 +14,7 @@ class GigaViewerGenerator : ThemeSourceGenerator {
     override val sources = listOf(
         SingleLang("Comic Gardo", "https://comic-gardo.com", "ja"),
         SingleLang("Kurage Bunch", "https://kuragebunch.com", "ja"),
+        SingleLang("MAGCOMI", "https://magcomi.com", "ja", className = "MagComi"),
         SingleLang("Magazine Pocket", "https://pocket.shonenmagazine.com", "ja"),
         SingleLang("Shonen Jump+", "https://shonenjumpplus.com", "ja", pkgName = "shonenjumpplus", className = "ShonenJumpPlus", overrideVersionCode = 2),
         SingleLang("Tonari no Young Jump", "https://tonarinoyj.jp", "ja", className = "TonariNoYoungJump")

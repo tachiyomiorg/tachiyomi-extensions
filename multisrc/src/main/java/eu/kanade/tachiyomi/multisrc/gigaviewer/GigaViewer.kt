@@ -127,8 +127,8 @@ abstract class GigaViewer(
             .toHttpUrlOrNull()!!
         val firstListEndpoint = readableProductList.attr("data-first-list-endpoint")
             .toHttpUrlOrNull()!!
-        val numberSince = latestListEndpoint.queryParameter("number_since")!!.toInt()
-            .coerceAtLeast(firstListEndpoint.queryParameter("number_since")!!.toInt())
+        val numberSince = latestListEndpoint.queryParameter("number_since")!!.toFloat()
+            .coerceAtLeast(firstListEndpoint.queryParameter("number_since")!!.toFloat())
 
         val newHeaders = headers.newBuilder()
             .set("Referer", response.request.url.toString())
