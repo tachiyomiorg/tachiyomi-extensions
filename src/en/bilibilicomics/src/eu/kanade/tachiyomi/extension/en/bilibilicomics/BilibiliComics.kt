@@ -22,11 +22,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import org.jsoup.Jsoup
 import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -47,8 +49,6 @@ class BilibiliComics : HttpSource() {
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
-
-    private val comicList: MutableList<SManga> = mutableListOf()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept", ACCEPT_JSON)
@@ -95,28 +95,27 @@ class BilibiliComics : HttpSource() {
         url = "/detail/mc" + obj["comic_id"].int
     }
 
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        return super.fetchSearchManga(page, query, filters)
-    }
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val jsonPayload = jsonObject(
             "area_id" to -1,
             "is_finish" to -1,
-            "is_free" to -1,
+            "is_free" to 1,
             "key_word" to query,
-            "order" to -1,
+            "order" to 0,
             "page_num" to page,
             "page_size" to 9,
             "style_id" to -1
         )
         val requestBody = jsonPayload.toString().toRequestBody(JSON_CONTENT_TYPE)
 
+        val refererUrl = "$baseUrl/search".toHttpUrl().newBuilder()
+            .addQueryParameter("keyword", query)
+            .toString()
         val newHeaders = headersBuilder()
             .add("Content-Length", requestBody.contentLength().toString())
             .add("Content-Type", requestBody.contentType().toString())
             .add("X-Page", page.toString())
-            .set("Referer", "$baseUrl/search?keyword=$query")
+            .set("Referer", refererUrl)
             .build()
 
         return POST(
@@ -140,8 +139,7 @@ class BilibiliComics : HttpSource() {
     }
 
     private fun searchMangaFromObject(obj: JsonElement): SManga = SManga.create().apply {
-        //Results to "Me and <em class=\"keyword\">My</em> Zoo" (to highlight search query) I have 0 knowledge what to do here + on phone.
-        title = obj["title"].string.text() //.text() should fix it.
+        title = Jsoup.parse(obj["title"].string).text()
         thumbnail_url = obj["vertical_cover"].string
         url = "/detail/mc" + obj["id"].int
     }
