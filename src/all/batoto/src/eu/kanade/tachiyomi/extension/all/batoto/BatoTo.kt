@@ -76,25 +76,18 @@ open class BatoTo(
         return when {
             query.startsWith("ID:") -> {
                 val id = query.substringAfter("ID:")
-                client.newCall(GET("https://bato.to/series/$id", headers)).asObservableSuccess()
+                client.newCall(GET("$baseUrl/series/$id", headers)).asObservableSuccess()
                     .map { response ->
                         queryIDParse(response, id)
                     }
             }
             query.isNotBlank() -> {
-                val url = "$baseUrl/search".toHttpUrlOrNull()!!.newBuilder()
-                val letterFilter = filters.findInstance<LetterFilter>()!!
-                url.addQueryParameter("word", query)
-                url.addQueryParameter("page", "$page")
-                if (letterFilter.state){
-                    url.addQueryParameter("mode", "letter")
-                }
-                client.newCall(GET(url.build().toString(), headers)).asObservableSuccess()
+                val url = "$baseUrl/search?word=$query&page=$page"
+                client.newCall(GET(url, headers)).asObservableSuccess()
                     .map { response ->
                         queryParse(response)
                     }
             }
-
             else -> {
                 val sortFilter = filters.findInstance<SortFilter>()!!
                 val reverseSortFilter = filters.findInstance<ReverseSortFilter>()!!
@@ -353,7 +346,7 @@ open class BatoTo(
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList(
-        LetterFilter(),
+        //LetterFilter(),
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
         SortFilter(getSortFilter(), 5),
@@ -747,6 +740,4 @@ open class BatoTo(
     ).filterNot { it.value == siteLang }
 
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
-    // Old Filters
-
 }
