@@ -33,11 +33,13 @@ jobs:
               {
                 "type": "both",
                 "regex": ".*(mangago|mangafox|hq\\s*dragon|manga\\s*host|supermangas|superhentais|union\\s*mangas|yes\\s*mangas).*",
+                "caseIgnore": true,
                 "message": "{match} will not be added back as it is too difficult to maintain. Read #3475 for more information"
               },
               {
                 "type": "both",
                 "regex": ".*(teamx|tqneplus|manga\\s*disk|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb).*",
+                "caseIgnore": true,
                 "message": "{match} will not be added back as the Scanlator team has requested it to be removed. Read #3475 for more information"
               }
             ]
