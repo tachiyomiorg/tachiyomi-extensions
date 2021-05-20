@@ -29,12 +29,13 @@ import org.jsoup.select.Elements
 import rx.Observable
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import java.security.Provider
 import java.util.Calendar
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-
+import java.security.Security
 /**
  * For sites based on the Flat-Manga CMS
  */
@@ -335,8 +336,9 @@ abstract class FMReader(
      */
     protected fun fetchPageListEncrypted(chapter: SChapter): Observable<List<Page>> {
         fun stringAssignment(varname: String, script: String) = Regex("""(?:let|var)\s+$varname\s*=\s*"([^"]*)"""").find(script)?.groups?.get(1)?.value
-        fun pageList(s: String) = Regex("https.+?(?=https|\"$)").findAll(s).map { it.groups[0]!!.value.replace("\\/", "/") }
+        fun pageList(s: String) = s.trim().split(",")
         fun pageListRequest(id: String, server: Int = 1) = POST("$baseUrl/app/manga/controllers/cont.chapterServer$server.php", headers, "id=$id".toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaTypeOrNull()))
+
         return client.newCall(GET("$baseUrl${chapter.url}", headers)).asObservableSuccess().concatMap { htmlResponse ->
             val soup = htmlResponse.asJsoup()
             soup.selectFirst("head > script[type='text/javascript']")?.data()?.let { params ->
@@ -344,7 +346,7 @@ abstract class FMReader(
                     client.newCall(pageListRequest(chapterId)).asObservableSuccess()
                         .map { jsonResponse ->
                             try {
-                                pageList(crypto.aes_decrypt(jsonResponse.body!!.string(), "4xje8fvkub2d3mb5cy9rv661zyjakbcn".toByteArray()))
+                                pageList(crypto.aes_decrypt(jsonResponse.body!!.string(), "e11adc3949ba59abbe56e057f20f131e".toByteArray(), "1234567890abcdef1234567890abcdef".decodeHex()!!.toByteArray()))
                                     .mapIndexed { i, imgUrl -> Page(i, "", imgUrl) }.toList()
                             } catch (_: BadPaddingException) {
                                 throw RuntimeException("Decryption Failed")
@@ -516,26 +518,25 @@ abstract class FMReader(
     companion object {
         interface Crypto {
             fun md5(s: String): String;
-            fun aes_decrypt(context: String, key: ByteArray): String;
+            fun aes_decrypt(context: String, key: ByteArray, iv: ByteArray): String;
         }
 
         /* cryptography utilities leveraged by fetchPageListEncrypted */
         val crypto = object : Crypto {
-            private fun parseCryptoCT(s: String): Map<String, ByteString> {
+            private fun parseCryptoCT(s: String): Map<String, ByteArray> {
                 // https://cryptojs.gitbook.io/docs/
-                val jsonObj = JsonParser.parseString(s).asJsonObject
-                val cipherParams = mutableMapOf("ciphertext" to jsonObj["ct"].asString.decodeBase64()!!)
-                jsonObj["iv"]?.let { cipherParams.put("iv", it.asString.decodeHex()) }
-                jsonObj["s"]?.let { cipherParams.put("salt", it.asString.decodeHex()) }
-                return cipherParams
+                val r = s.decodeBase64()
+                val i = r!!.toByteArray()
+
+                return mutableMapOf(
+                    "ciphertext" to i.sliceArray(16 until i.size),
+                )
             }
 
-            private fun decryptAES(encrypted: ByteString, password: ByteArray, iv: ByteString, salt: ByteString): String {
-                // https://stackoverflow.com/questions/29151211/29152379#29152379
-                val (key, _iv) = EvpKDF(password, 256, 128, salt.toByteArray(), 1, "MD5")
-                val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-                cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(_iv))
-                return String(cipher.doFinal(encrypted.toByteArray()), Charset.forName("UTF-8"))
+            private fun decryptAES(encrypted: ByteArray, key: ByteArray, iv: ByteArray): String {
+                val cipher = Cipher.getInstance("AES/CBC/ZeroBytePadding")
+                cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(iv))
+                return String(cipher.doFinal(encrypted), Charset.forName("UTF-8"))
             }
 
             private fun EvpKDF(password: ByteArray, _keySize: Int, _ivSize: Int, salt: ByteArray, iterations: Int, hashAlgorithm: String): Pair<ByteArray, ByteArray> {
@@ -577,9 +578,9 @@ abstract class FMReader(
 
             override fun md5(s: String): String = MessageDigest.getInstance("MD5").digest(s.toByteArray()).joinToString("") { String.format("%02x", it) }
 
-            override fun aes_decrypt(context: String, key: ByteArray): String {
-                val cipherParams = parseCryptoCT(JsonParser.parseString(context).asJsonObject["content"].asString)
-                return decryptAES(cipherParams["ciphertext"]!!, key, cipherParams["iv"]!!, cipherParams["salt"]!!)
+            override fun aes_decrypt(context: String, key: ByteArray, iv: ByteArray): String {
+                val cipherParams = parseCryptoCT(context)
+                return decryptAES(cipherParams["ciphertext"]!!, key, iv)
             }
         }
     }
