@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.ja.shonenjumpplus
+package eu.kanade.tachiyomi.multisrc.gigaviewer
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -22,7 +22,6 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -37,28 +36,24 @@ import java.util.Calendar
 import java.util.Locale
 import kotlin.math.floor
 
-class ShonenJumpPlus : ParsedHttpSource() {
-
-    override val name = "Shonen Jump+"
-
-    override val baseUrl = "https://shonenjumpplus.com"
-
-    override val lang = "ja"
+abstract class GigaViewer(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String,
+    private val cdnUrl: String = ""
+) : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.client.newBuilder()
-        .addInterceptor { imageIntercept(it) }
-        .build()
-
-    private val dayOfWeek: String by lazy {
+    protected val dayOfWeek: String by lazy {
         Calendar.getInstance()
             .getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.US)!!
             .toLowerCase(Locale.US)
     }
 
+    protected open val publisher: String = ""
+
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
         .add("Referer", baseUrl)
 
@@ -91,8 +86,8 @@ class ShonenJumpPlus : ParsedHttpSource() {
             return GET(url.toString(), headers)
         }
 
-        val listMode = (filters[0] as SeriesListModeFilter).state
-        return GET("$baseUrl/series/${LIST_MODES[listMode].second}", headers)
+        val collectionSelected = (filters[0] as CollectionFilter).selected
+        return GET("$baseUrl/series/${collectionSelected.path}", headers)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
@@ -102,7 +97,7 @@ class ShonenJumpPlus : ParsedHttpSource() {
         return popularMangaParse(response)
     }
 
-    override fun searchMangaSelector() = "ul.search-series-list li"
+    override fun searchMangaSelector() = "ul.search-series-list li, ul.series-list li"
 
     override fun searchMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.title-box p.series-title").text()
@@ -112,8 +107,10 @@ class ShonenJumpPlus : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector(): String? = null
 
+    protected open fun mangaDetailsInfoSelector(): String = "section.series-information div.series-header"
+
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
-        val infoElement = document.select("section.series-information div.series-header")
+        val infoElement = document.select(mangaDetailsInfoSelector()).first()!!
 
         title = infoElement.select("h1.series-header-title").text()
         author = infoElement.select("h2.series-header-author").text()
@@ -158,6 +155,8 @@ class ShonenJumpPlus : ParsedHttpSource() {
             result = client.newCall(request).execute()
         }
 
+        result.close()
+
         return chapters
     }
 
@@ -171,8 +170,8 @@ class ShonenJumpPlus : ParsedHttpSource() {
             name = info.select("h4.series-episode-list-title").text()
             date_upload = info.select("span.series-episode-list-date").first()
                 ?.text().orEmpty()
-                .tryParseDate()
-            scanlator = "集英社"
+                .toDate()
+            scanlator = publisher
             setUrlWithoutDomain(if (info.tagName() == "a") info.attr("href") else mangaUrl)
         }
     }
@@ -203,17 +202,26 @@ class ShonenJumpPlus : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private class SeriesListModeFilter : Filter.Select<String>(
-        "一覧",
-        LIST_MODES.map { it.first }.toTypedArray()
-    )
+    protected data class Collection(val name: String, val path: String) {
+        override fun toString(): String = name
+    }
 
-    override fun getFilterList(): FilterList = FilterList(SeriesListModeFilter())
+    private class CollectionFilter(val collections: List<Collection>) : Filter.Select<Collection>(
+        "コレクション",
+        collections.toTypedArray()
+    ) {
+        val selected: Collection
+            get() = collections[state]
+    }
 
-    private fun imageIntercept(chain: Interceptor.Chain): Response {
+    override fun getFilterList(): FilterList = FilterList(CollectionFilter(getCollections()))
+
+    protected open fun getCollections(): List<Collection> = emptyList()
+
+    protected open fun imageIntercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 
-        if (!request.url.toString().startsWith(CDN_URL)) {
+        if (!request.url.toString().startsWith(cdnUrl)) {
             return chain.proceed(request)
         }
 
@@ -229,10 +237,13 @@ class ShonenJumpPlus : ParsedHttpSource() {
         val response = chain.proceed(request)
         val image = decodeImage(response.body!!.byteStream(), width, height)
         val body = image.toResponseBody("image/png".toMediaTypeOrNull())
+
+        response.close()
+
         return response.newBuilder().body(body).build()
     }
 
-    private fun decodeImage(image: InputStream, width: Int, height: Int): ByteArray {
+    protected open fun decodeImage(image: InputStream, width: Int, height: Int): ByteArray {
         val input = BitmapFactory.decodeStream(image)
         val cWidth = (floor(width.toDouble() / (DIVIDE_NUM * MULTIPLE)) * MULTIPLE).toInt()
         val cHeight = (floor(height.toDouble() / (DIVIDE_NUM * MULTIPLE)) * MULTIPLE).toInt()
@@ -261,9 +272,9 @@ class ShonenJumpPlus : ParsedHttpSource() {
         return output.toByteArray()
     }
 
-    private fun String.tryParseDate(): Long {
+    private fun String.toDate(): Long {
         return try {
-            DATE_PARSER.parse(this)!!.time
+            DATE_PARSER.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
@@ -272,16 +283,8 @@ class ShonenJumpPlus : ParsedHttpSource() {
     private fun Response.asJsonObject(): JsonObject = JsonParser.parseString(body!!.string()).obj
 
     companion object {
-        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
         private val DATE_PARSER by lazy { SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH) }
 
-        private val LIST_MODES = listOf(
-            Pair("ジャンプ＋連載一覧", ""),
-            Pair("ジャンプ＋読切シリーズ", "oneshot"),
-            Pair("連載終了作品", "finished")
-        )
-
-        private const val CDN_URL = "https://cdn-ak-img.shonenjumpplus.com"
         private const val DIVIDE_NUM = 4
         private const val MULTIPLE = 8
     }
