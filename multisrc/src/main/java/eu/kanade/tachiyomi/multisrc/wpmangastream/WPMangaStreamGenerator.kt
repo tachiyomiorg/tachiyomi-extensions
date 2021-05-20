@@ -32,7 +32,6 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("KomikRu", "https://komikru.com", "id"),
             SingleLang("GURU Komik", "https://gurukomik.com", "id"),
             SingleLang("Shea Manga", "https://sheamanga.my.id", "id"),
-            SingleLang("Kiryuu", "https://kiryuu.co", "id"),
             SingleLang("Komik AV", "https://komikav.com", "id"),
             SingleLang("Komik Cast", "https://komikcast.com", "id", overrideVersionCode = 3), // make it from v0 to v3 to force update user who still use old standalone ext, they will need to migrate
             SingleLang("West Manga", "https://westmanga.info", "id"),
