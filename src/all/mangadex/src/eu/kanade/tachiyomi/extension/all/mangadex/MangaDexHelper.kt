@@ -197,7 +197,7 @@ class MangaDexHelper() {
             return SManga.create().apply {
                 url = "/manga/$dexId"
                 title = cleanString(attr["title"]["en"].string)
-                description = cleanString(attr["description"]["en"].string)
+                description = cleanString(attr["description"]["en"].string).string + "\n\n\nManga UUID: $dexId"
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
