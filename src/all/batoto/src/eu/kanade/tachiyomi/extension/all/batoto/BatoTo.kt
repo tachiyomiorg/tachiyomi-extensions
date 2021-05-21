@@ -60,7 +60,7 @@ open class BatoTo(
         return manga
     }
 
-    override fun latestUpdatesNextPageSelector() = "div#mainer .pagination .page-item:not(.disabled) a.page-link:contains(»)"
+    override fun latestUpdatesNextPageSelector() = "div#mainer nav.d-none .pagination .page-item:last-of-type:not(.disabled)"
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/browse?langs=$siteLang&sort=views_w&page=$page")
@@ -159,7 +159,7 @@ open class BatoTo(
         document.select(latestUpdatesSelector()).forEach { element ->
             mangas.add(latestUpdatesFromElement(element))
         }
-        val nextPage = document.select(latestUpdatesNextPageSelector()) != null
+        val nextPage = document.select(latestUpdatesNextPageSelector()).first() != null
         return MangasPage(mangas, nextPage)
     }
 
