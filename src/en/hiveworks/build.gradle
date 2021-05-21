@@ -5,7 +5,7 @@ ext {
     extName = 'Hiveworks Comics'
     pkgNameSuffix = 'en.hiveworks'
     extClass = '.Hiveworks'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
 }
 

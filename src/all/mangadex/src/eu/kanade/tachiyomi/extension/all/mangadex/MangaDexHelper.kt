@@ -145,14 +145,17 @@ class MangaDexHelper() {
             val attr = data["attributes"].obj
 
             // things that will go with the genre tags but aren't actually genre
+
+            val tempContentRating = attr["contentRating"].nullString
+            val contentRating = if (tempContentRating == null || tempContentRating.equals("safe", true)) {
+                null
+            } else {
+                "Content rating: " + tempContentRating.capitalize(Locale.US)
+            }
+
             val nonGenres = listOf(
                 (attr["publicationDemographic"]?.nullString ?: "").capitalize(Locale.US),
-                (
-                    "Content rating: " + (
-                        attr["contentRating"].nullString
-                            ?: ""
-                        ).capitalize(Locale.US)
-                    ),
+                contentRating,
                 Locale(attr["originalLanguage"].nullString ?: "").displayLanguage
             )
 
@@ -266,14 +269,14 @@ class MangaDexHelper() {
             }
 
             attr["title"].nullString?.let {
-                if(it.isNotEmpty()){
-                   if (chapterName.isNotEmpty()) {
-                    chapterName.add("-")
-                   }
-                chapterName.add(it)
+                if (it.isNotEmpty()) {
+                    if (chapterName.isNotEmpty()) {
+                        chapterName.add("-")
+                    }
+                    chapterName.add(it)
                 }
             }
-          
+
             // if volume, chapter and title is empty its a oneshot
             if (chapterName.isEmpty()) {
                 chapterName.add("Oneshot")

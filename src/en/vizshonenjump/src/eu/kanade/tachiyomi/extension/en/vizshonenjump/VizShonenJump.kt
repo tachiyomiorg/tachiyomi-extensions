@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.vizshonenjump
 
-import com.github.salomonbrys.kotson.bool
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.int
 import com.github.salomonbrys.kotson.nullInt
@@ -8,6 +7,7 @@ import com.github.salomonbrys.kotson.nullObj
 import com.github.salomonbrys.kotson.nullString
 import com.github.salomonbrys.kotson.obj
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -29,6 +29,7 @@ import rx.Observable
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class VizShonenJump : ParsedHttpSource() {
 
@@ -44,6 +45,7 @@ class VizShonenJump : ParsedHttpSource() {
         .addInterceptor(::authCheckIntercept)
         .addInterceptor(::authChapterCheckIntercept)
         .addInterceptor(VizImageInterceptor())
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -75,7 +77,7 @@ class VizShonenJump : ParsedHttpSource() {
     }
 
     override fun popularMangaSelector(): String =
-        "section.section_chapters div.o_sort_container div.o_sortable > a"
+        "section.section_chapters div.o_sort_container div.o_sortable > a.o_chapters-link"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("div.pad-x-rg").first().text()
@@ -281,15 +283,15 @@ class VizShonenJump : ParsedHttpSource() {
             ?: client.newCall(loginCheckRequest).execute()
         val document = loginCheckResponse.asJsoup()
 
-        loggedIn = document.select("div#o_account-links-content").first()!!
-            .attr("logged_in")!!.toBoolean()
+        loggedIn = document.select("div#o_account-links-content").firstOrNull()
+            ?.attr("logged_in")?.toBoolean() ?: false
 
         loginCheckResponse.close()
     }
 
     private fun authCheckIntercept(chain: Interceptor.Chain): Response {
         if (loggedIn == null) {
-           checkIfIsLoggedIn(chain)
+            checkIfIsLoggedIn(chain)
         }
 
         return chain.proceed(chain.request())
@@ -355,7 +357,7 @@ class VizShonenJump : ParsedHttpSource() {
     companion object {
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
 
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)

@@ -230,7 +230,7 @@ class LibManga : ConfigurableSource, HttpSource() {
                 for (currentBranch in branches.withIndex()) {
                     val teamId = branches[currentBranch.index]["id"].int
                     chapters = chaptersList
-                        ?.filter { it["branch_id"].int == teamId && it["status"].nullInt != 2 }
+                        ?.filter { it["branch_id"].nullInt == teamId && it["status"].nullInt != 2 }
                         ?.map { chapterFromElement(it, sortingList, slug, teamId, branches) }
                     chapters?.let { tempChaptersList.addAll(it) }
                 }
@@ -241,14 +241,14 @@ class LibManga : ConfigurableSource, HttpSource() {
                 for (currentBranch in branches.withIndex()) {
                     val teamId = branches[currentBranch.index]["id"].int
                     val chapterSize = chaptersList
-                        ?.filter { it["branch_id"].int == teamId }!!.size
+                        ?.filter { it["branch_id"].nullInt == teamId }!!.size
                     sizesChaptersLists.add(chapterSize)
                 }
                 val max = sizesChaptersLists.indexOfFirst { it == sizesChaptersLists.maxOrNull() ?: 0 }
                 val teamId = branches[max]["id"].int
 
                 chapters = chaptersList
-                    ?.filter { it["branch_id"].int == teamId && it["status"].nullInt != 2 }
+                    ?.filter { it["branch_id"].nullInt == teamId && it["status"].nullInt != 2 }
                     ?.map { chapterFromElement(it, sortingList, slug, teamId, branches) }
             }
             "ms_active" -> {
@@ -258,7 +258,7 @@ class LibManga : ConfigurableSource, HttpSource() {
                         if (teams[currentTeam.index]["is_active"].int == 1) {
                             val teamId = branches[currentBranch.index]["id"].int
                             chapters = chaptersList
-                                ?.filter { it["branch_id"].int == teamId && it["status"].nullInt != 2 }
+                                ?.filter { it["branch_id"].nullInt == teamId && it["status"].nullInt != 2 }
                                 ?.map { chapterFromElement(it, sortingList, slug, teamId, branches) }
                             break
                         }

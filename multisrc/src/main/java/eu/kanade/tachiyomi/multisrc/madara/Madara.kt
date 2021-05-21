@@ -1,8 +1,16 @@
 package eu.kanade.tachiyomi.multisrc.madara
 
+import android.app.Application
+import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.widget.TextView
+import android.widget.Toast
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservable
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -17,11 +25,13 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -35,9 +45,52 @@ abstract class Madara(
     override val baseUrl: String,
     override val lang: String,
     private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
-) : ParsedHttpSource() {
+) : ParsedHttpSource(), ConfigurableSource {
 
     override val supportsLatest = true
+
+    // Preferences Code
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    override fun setupPreferenceScreen(screen: androidx.preference.PreferenceScreen) {
+        val chooseHostPref = androidx.preference.ListPreference(screen.context).apply {
+            key = CHOOSE_HOST_Key
+            title = CHOOSE_HOST_Title
+            entries = prefsEntries
+            entryValues = prefsEntryValues
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                hostValues = prefsEntryValues.toMutableList()
+                hostValues.removeAt(index)
+                preferences.edit().putString(CHOOSE_HOST_Key, entry).commit()
+            }
+        }
+        screen.addPreference(chooseHostPref)
+    }
+
+    private fun chooseHostPref() = preferences.getString(CHOOSE_HOST_Key, "")
+
+    private fun cleanHostValues(): MutableList<String> {
+        val hostsList = prefsEntryValues.toMutableList()
+        hostsList.remove(chooseHostPref())
+        return hostsList
+    }
+
+    companion object {
+        private const val CHOOSE_HOST_Title = "Choose the host/server you prefer for images"
+        private const val CHOOSE_HOST_Key = "choose_host"
+        private val prefsEntries = arrayOf("Default", "Local", "Amazon", "Imgur", "Flickr", "Picasa (Blogspot)", "Google Photos")
+        private val prefsEntryValues = arrayOf("", "local", "amazon", "imgur", "flickr", "picasa", "gphotos")
+    }
+
+    private var hostValues = cleanHostValues()
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -170,6 +223,9 @@ abstract class Madara(
                         url.addQueryParameter("m_orderby", filter.toUriPart())
                     }
                 }
+                is AdultContentFilter -> {
+                    url.addQueryParameter("adult", filter.toUriPart())
+                }
                 is GenreConditionFilter -> {
                     url.addQueryParameter("op", filter.toUriPart())
                 }
@@ -189,6 +245,7 @@ abstract class Madara(
     private class ArtistFilter : Filter.Text("Artist")
     private class YearFilter : Filter.Text("Year of Released")
     private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
+    
     private class OrderByFilter : UriPartFilter(
         "Order By",
         arrayOf(
@@ -201,6 +258,7 @@ abstract class Madara(
             Pair("New", "new-manga")
         )
     )
+    
     private class GenreConditionFilter : UriPartFilter(
         "Genre condition",
         arrayOf(
@@ -208,6 +266,16 @@ abstract class Madara(
             Pair("and", "1")
         )
     )
+    
+    private class AdultContentFilter : UriPartFilter(
+        "Adult Content",
+        arrayOf(
+            Pair("All", ""),
+            Pair("None", "0"),
+            Pair("Only", "1")
+        )
+    )
+    
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
 
@@ -279,6 +347,7 @@ abstract class Madara(
         YearFilter(),
         StatusFilter(getStatusList()),
         OrderByFilter(),
+        AdultContentFilter(),
         Filter.Separator(),
         Filter.Header("Genres may not work for all sources"),
         GenreConditionFilter(),
@@ -356,24 +425,24 @@ abstract class Madara(
                 }
             }
             val genres = select("div.genres-content a")
-                .map { element -> element.text().toLowerCase() }
+                .map { element -> element.text().toLowerCase(Locale.ROOT) }
                 .toMutableSet()
 
             // add tag(s) to genre
             select("div.tags-content a").forEach { element ->
                 if (genres.contains(element.text()).not()) {
-                    genres.add(element.text().toLowerCase())
+                    genres.add(element.text().toLowerCase(Locale.ROOT))
                 }
             }
 
             // add manga/manhwa/manhua thinggy to genre
             document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
                 if (it.isEmpty().not() && it.notUpdating() && it != "-" && genres.contains(it).not()) {
-                    genres.add(it.toLowerCase())
+                    genres.add(it.toLowerCase(Locale.ROOT))
                 }
             }
 
-            manga.genre = genres.toList().map { it.capitalize() }.joinToString(", ")
+            manga.genre = genres.toList().joinToString(", ") { it.capitalize(Locale.ROOT) }
 
             // add alternative name to manga description
             document.select(altNameSelector).firstOrNull()?.ownText()?.let {
@@ -411,7 +480,7 @@ abstract class Madara(
         val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")
             .add("Referer", baseUrl)
             .build()
-        val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
+        val body = "action=manga_get_chapters&manga=$mangaId".toRequestBody(null)
         return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()
     }
 
@@ -439,9 +508,15 @@ abstract class Madara(
 
         with(element) {
             select(chapterUrlSelector).first()?.let { urlElement ->
-                chapter.url = urlElement.attr("abs:href").let {
+                val url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if (!it.endsWith(chapterUrlSuffix)) chapterUrlSuffix else ""
-                }
+                }.toHttpUrlOrNull()!!.newBuilder()
+
+                if (chooseHostPref() != "")
+                    url.addQueryParameter("host", chooseHostPref())
+
+                chapter.url = url.toString()
+
                 chapter.name = urlElement.text()
             }
 
@@ -531,6 +606,47 @@ abstract class Madara(
         return super.pageListRequest(chapter)
     }
 
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        var observable = super.fetchPageList(chapter)
+
+        var pages = emptyList<Page>()
+        var index = 0
+
+        while (pages.isEmpty() && index < hostValues.size) {
+            observable.subscribe {
+                pages = it
+            }
+
+            if (pages.isNotEmpty()) {
+                if (index > 0) {
+                    // put validHost in first position
+                    val validHost = hostValues[index - 1]
+                    hostValues.removeAt(index - 1)
+                    hostValues.add(0, validHost)
+                    val hostName = prefsEntries[prefsEntryValues.indexOf(validHost)]
+                    Handler(Looper.getMainLooper()).post {
+                        val toast = Toast.makeText(Injekt.get<Application>().applicationContext, "Host : $hostName\nYou may want to switch to this host to avoid unnecessary loading time", Toast.LENGTH_SHORT)
+                        val view = toast.view.findViewById<TextView>(android.R.id.message)
+                        view?.let {
+                            view.gravity = Gravity.CENTER_HORIZONTAL
+                        }
+                        toast.show()
+                    }
+                }
+                return observable
+            }
+
+            val url = chapter.url.toHttpUrlOrNull()!!.newBuilder()
+            url.setQueryParameter("host", hostValues[index])
+            chapter.url = url.toString()
+
+            observable = super.fetchPageList(chapter)
+            index++
+        }
+
+        return observable
+    }
+
     open val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
 
     override fun pageListParse(document: Document): List<Page> {
@@ -546,7 +662,17 @@ abstract class Madara(
     }
 
     override fun imageRequest(page: Page): Request {
-        return GET(page.imageUrl!!, headers.newBuilder().set("Referer", page.url).build())
+        val headers = headersBuilder()
+        headers.apply {
+            add("Referer", page.url)
+        }
+
+        if (page.imageUrl!!.contains("amazonaws.com")) {
+            headers.apply {
+                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+            }
+        }
+        return GET(page.imageUrl!!, headers.build())
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")

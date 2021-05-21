@@ -22,6 +22,7 @@ import okhttp3.Response
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -129,6 +130,35 @@ open class Webtoons(
 
     override fun latestUpdatesNextPageSelector(): String? = null
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (!query.startsWith(URL_SEARCH_PREFIX))
+            return super.fetchSearchManga(page, query, filters)
+
+        val emptyResult = Observable.just(MangasPage(emptyList(), false))
+
+        // given a url to either a webtoon or an episode, returns a url path to corresponding webtoon
+        fun webtoonPath(u: HttpUrl) = when {
+            langCode == u.pathSegments[0] -> "/${u.pathSegments[0]}/${u.pathSegments[1]}/${u.pathSegments[2]}/list"
+            else -> "/${u.pathSegments[0]}/${u.pathSegments[1]}/list" // dongmanmanhua doesn't include langCode
+        }
+
+        return query.substringAfter(URL_SEARCH_PREFIX).toHttpUrlOrNull()?.let { url ->
+            val title_no = url.queryParameter("title_no")
+            val couldBeWebtoonOrEpisode = title_no != null && (url.pathSegments.size >= 3 && url.pathSegments.last().isNotEmpty())
+            val isThisLang = "$url".startsWith("$baseUrl/$langCode")
+            if (! (couldBeWebtoonOrEpisode && isThisLang))
+                emptyResult
+            else{
+                val potentialUrl = "${webtoonPath(url)}?title_no=$title_no"
+                fetchMangaDetails(SManga.create().apply { this.url = potentialUrl }).map {
+                    it.url = potentialUrl
+                    MangasPage(listOf(it), false)
+                }
+            }
+        } ?: emptyResult
+    }
+
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/$langCode/search?keyword=$query".toHttpUrlOrNull()?.newBuilder()!!
         val uriPart = (filters.find { it is SearchType } as? SearchType)?.toUriPart() ?: ""
@@ -156,6 +186,7 @@ open class Webtoons(
         val infoElement = document.select("#_asideDetail")
 
         val manga = SManga.create()
+        manga.title = document.selectFirst("h1.subj").text()
         manga.author = detailElement.select(".author:nth-of-type(1)").first()?.ownText()
         manga.artist = detailElement.select(".author:nth-of-type(2)").first()?.ownText() ?: manga.author
         manga.genre = detailElement.select(".genre").joinToString(", ") { it.text() }
@@ -240,5 +271,9 @@ open class Webtoons(
         return keys.mapIndexed { i, key ->
             Page(i, "", motiontoonPath + motiontoonJson.getString(key))
         }
+    }
+
+    companion object {
+        const val URL_SEARCH_PREFIX = "url:"
     }
 }

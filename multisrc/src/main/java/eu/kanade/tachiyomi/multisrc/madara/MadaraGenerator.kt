@@ -10,7 +10,7 @@ class MadaraGenerator : ThemeSourceGenerator {
 
     override val themeClass = "Madara"
 
-    override val baseVersionCode: Int = 3
+    override val baseVersionCode: Int = 4
 
     override val sources = listOf(
             SingleLang("24hRomance", "https://24hromance.com", "en", className = "Romance24h"),
@@ -48,7 +48,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Comics Valley", "https://comicsvalley.com", "hi", isNsfw = true),
             SingleLang("CopyPasteScan", "https://copypastescan.xyz", "es"),
             SingleLang("Cutie Pie", "https://cutiepie.ga", "tr"),
-            SingleLang("Darkyu Realm", "https://darkyuerealm.site", "pt-BR", overrideVersionCode = 1),
+            SingleLang("DarkYue Realm", "https://darkyuerealm.site/web", "pt-BR", pkgName = "darkyurealm", overrideVersionCode = 2),
             SingleLang("Decadence Scans", "https://reader.decadencescans.com", "en", overrideVersionCode = 1),
             SingleLang("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar", className = "DetectiveConanAr", overrideVersionCode = 1),
             SingleLang("DiamondFansub", "https://diamondfansub.com", "tr"),
@@ -63,6 +63,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("1st Kiss Manhua", "https://1stkissmanhua.com", "en", className = "FirstKissManhua"),
             SingleLang("Fênix Scanlator", "https://fenixscanlator.xyz", "pt-BR", pkgName = "fenixscanlator", className = "FenixScanlator"),
             SingleLang("FreeWebtoonCoins", "https://freewebtooncoins.com", "en"),
+            SingleLang("TheFluffyHangoutGroup", "https://www.fluffyhangout.club", "en"),
             SingleLang("Furio Scans", "https://furioscans.com", "pt-BR", overrideVersionCode = 1),
             SingleLang("موقع لترجمة المانجا", "https://golden-manga.com", "ar", className = "GoldenManga"),
         	SingleLang("GalaxyDegenScans", "https://gdegenscans.xyz/", "en"),
@@ -88,6 +89,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("KlikManga", "https://klikmanga.com", "id"),
             SingleLang("Kombatch", "https://kombatch.com", "id"),
             SingleLang("Kun Manga", "https://kunmanga.com", "en"),
+            SingleLang("Levelerscans", "https://levelerscans.xyz", "en"),
             SingleLang("Lily Manga", "https://lilymanga.com", "en"),
             SingleLang("LovableSubs", "https://lovablesubs.com", "tr"),
             SingleLang("Manga18 Fun", "https://manga18.fun", "en"),
@@ -243,6 +245,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Unemployed Scans", "https://unemployedscans.com", "en"),
             SingleLang("Uyuyan Balik", "https://uyuyanbalik.com/", "tr"),
             SingleLang("Vanguard Bun", "https://vanguardbun.com/", "en"),
+            SingleLang("Volkan Scans", "https://volkanscans.com", "en"),
             SingleLang("Wakascan", "https://wakascan.com", "fr"),
             SingleLang("War Queen Scan", "https://wqscan.com", "pt-BR", overrideVersionCode = 1),
             SingleLang("WebNovel", "https://webnovel.live", "en", className = "WebNovelLive", overrideVersionCode = 1),

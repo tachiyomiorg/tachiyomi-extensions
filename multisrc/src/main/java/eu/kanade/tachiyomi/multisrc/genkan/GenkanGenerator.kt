@@ -17,7 +17,6 @@ class GenkanGenerator : ThemeSourceGenerator {
         SingleLang("ZeroScans", "https://zeroscans.com", "en"),
         SingleLang("The Nonames Scans", "https://the-nonames.com", "en"),
         SingleLang("Edelgarde Scans", "https://edelgardescans.com", "en"),
-        SingleLang("Method Scans", "https://methodscans.com", "en"),
         SingleLang("LynxScans", "https://lynxscans.com", "en", overrideVersionCode = 1),
     )
 
