@@ -72,6 +72,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
                 is UnreadOnly -> {
                     if (filter.state) {
                         url.addQueryParameter("read_status", "UNREAD")
+                        url.addQueryParameter("read_status", "IN_PROGRESS")
                     }
                 }
                 is LibraryGroup -> {
