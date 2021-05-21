@@ -129,7 +129,22 @@ class Mintmanga : ParsedHttpSource() {
         } else {
             "манга"
         }
-
+        val ratingValue = infoElement.select(".col-sm-7 .rating-block").attr("data-score").toFloat() * 2
+        val ratingValueOver = infoElement.select(".info-icon").attr("data-content").substringAfter("Относительно остальных произведений: <b>").substringBefore("/5</b>").replace(",", ".").toFloat() * 2
+        val ratingVotes = infoElement.select(".col-sm-7 .user-rating meta[itemprop=\"ratingCount\"]").attr("content")
+        val ratingStar = when {
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 9.0 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 7.0 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 5.0 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 3.0 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 1.0 -> "✬☆☆☆☆"
+            else -> "☆☆☆☆☆"
+        }
         val manga = SManga.create()
         var authorElement = infoElement.select("span.elem_author").first()?.text()
         if (authorElement == null) {
@@ -143,7 +158,7 @@ class Mintmanga : ParsedHttpSource() {
         if (infoElement.select(".another-names").isNotEmpty()) {
             altName = "Альтернативные названия:\n" + infoElement.select(".another-names").text() + "\n\n"
         }
-        manga.description = altName + infoElement.select("div.manga-description").text()
+        manga.description = ratingStar + " " + ratingValue + "[ⓘ" + ratingValueOver + "]" + " (голосов: " + ratingVotes + ")\n" + altName + infoElement.select("div.manga-description").text()
         manga.status = parseStatus(infoElement.html())
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga
