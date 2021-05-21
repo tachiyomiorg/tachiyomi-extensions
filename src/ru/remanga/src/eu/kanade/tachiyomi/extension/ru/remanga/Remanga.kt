@@ -207,13 +207,28 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     private fun MangaDetDto.toSManga(): SManga {
+
+        val ratingValue = avg_rating.toFloat()
+        val ratingStar = when {
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 9.0 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 7.0 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 5.0 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 3.0 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 1.0 -> "✬☆☆☆☆"
+            else -> "☆☆☆☆☆"
+        }
         val o = this
         return SManga.create().apply {
             // Do not change the title name to ensure work with a multilingual catalog!
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = rus_name + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
+            this.description = rus_name + "\n" + ratingStar + " " + ratingValue + " (голосов: " + count_rating + ")" + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name }
             status = parseStatus(o.status.id)
         }

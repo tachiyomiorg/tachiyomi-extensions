@@ -177,6 +177,21 @@ class LibManga : ConfigurableSource, HttpSource() {
             else -> "манга"
         }
 
+        val ratingValue = document.select(".media-rating.media-rating_lg div.media-rating__value").text().toFloat() * 2
+        val ratingVotes = document.select(".media-rating.media-rating_lg div.media-rating__votes").text()
+        val ratingStar = when {
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 9.0 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 7.0 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 5.0 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 3.0 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 1.0 -> "✬☆☆☆☆"
+            else -> "☆☆☆☆☆"
+        }
         val genres = document.select(".media-tags > a").map { it.text() }
         manga.title = document.select(".media-name__alt").text()
         manga.thumbnail_url = baseUrl + document.select(".media-sidebar__cover > img").attr("src").substringAfter(baseOrig)
@@ -192,7 +207,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             else -> SManga.UNKNOWN
         }
         manga.genre = genres.plusElement(category).joinToString { it.trim() }
-        manga.description = document.select(".media-name__main").text() + "\nАльтернативные названия:\n" + document.select(".media-info-list__item_alt-names .media-info-list__value div").map { it.text() }.joinToString(" / ") + "\n\n" + document.select(".media-description__text").text()
+        manga.description = document.select(".media-name__main").text() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")" + "\nАльтернативные названия:\n" + document.select(".media-info-list__item_alt-names .media-info-list__value div").map { it.text() }.joinToString(" / ") + "\n\n" + document.select(".media-description__text").text()
         return manga
     }
 
