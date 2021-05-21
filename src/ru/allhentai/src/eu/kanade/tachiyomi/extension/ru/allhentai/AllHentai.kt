@@ -88,7 +88,7 @@ class AllHentai : ParsedHttpSource() {
                 }
                 is OrderBy -> {
                     if (filter.state > 0) {
-                        val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
+                        val ord = arrayOf("not", "year", "rate", "popularity", "votes", "created", "updated")[filter.state]
                         val ordUrl = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
                         return GET(ordUrl.toString(), headers)
                     }
@@ -278,7 +278,7 @@ class AllHentai : ParsedHttpSource() {
 
     private class OrderBy : Filter.Select<String>(
         "Сортировка (только)",
-        arrayOf("Без сортировки", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
+        arrayOf("Без сортировки", "По году", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
     )
 
     private class Genre(name: String, val id: String) : Filter.TriState(name)
