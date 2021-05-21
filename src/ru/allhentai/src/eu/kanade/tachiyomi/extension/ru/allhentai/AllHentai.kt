@@ -277,7 +277,7 @@ class AllHentai : ParsedHttpSource() {
     }
 
     private class OrderBy : Filter.Select<String>(
-        "Сортировка (only)",
+        "Сортировка (только)",
         arrayOf("Без сортировки", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
     )
 
@@ -286,16 +286,16 @@ class AllHentai : ParsedHttpSource() {
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Жанры", genres)
     private class Category(categories: List<Genre>) : Filter.Group<Genre>("Категории", categories)
     private class FilList(fils: List<Genre>) : Filter.Group<Genre>("Фильтры", fils)
-    private class Tags(tags: Array<String>) : Filter.Select<String>("Тэг (only)", tags)
+    private class Tags(tags: Array<String>) : Filter.Select<String>("Тэг (только)", tags)
 
     private data class Tag(val name: String, val url: String)
 
     override fun getFilterList() = FilterList(
         OrderBy(),
+        Tags(tagsName),
         GenreList(getGenreList()),
         Category(getCategoryList()),
-        FilList(getFilList()),
-        Tags(tagsName)
+        FilList(getFilList())
     )
 
     /*

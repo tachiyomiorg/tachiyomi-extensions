@@ -69,7 +69,7 @@ class Mintmanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
+        val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
@@ -98,12 +98,10 @@ class Mintmanga : ParsedHttpSource() {
                     }
                 }
                 is OrderBy -> {
-                    if (filter.state == 0) {
-                        url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
-                    } else {
+                    if (filter.state > 0)  {
                         val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
-                        url = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
-                        return GET(url.toString(), headers)
+                        val ordUrl = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
+                        return GET(ordUrl.toString(), headers)
                     }
                 }
             }
@@ -320,8 +318,8 @@ class Mintmanga : ParsedHttpSource() {
     }
 
     private class OrderBy : Filter.Select<String>(
-        "Сортировать",
-        arrayOf("Без(фильтры)", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
+        "Сортировка (только)",
+        arrayOf("Без сортировки", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
     )
 
     private class Genre(name: String, val id: String) : Filter.TriState(name)
