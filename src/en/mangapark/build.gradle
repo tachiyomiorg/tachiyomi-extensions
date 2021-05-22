@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'MangaPark'
+    extName = 'MangaPark v2'
     pkgNameSuffix = 'en.mangapark'
     extClass = '.MangaPark'
-    extVersionCode = 19
+    extVersionCode = 20
     libVersion = '1.2'
 }
 
