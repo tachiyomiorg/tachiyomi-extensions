@@ -8,6 +8,7 @@ import com.github.salomonbrys.kotson.obj
 import com.github.salomonbrys.kotson.string
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -201,7 +202,7 @@ class MangaDexHelper() {
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
-                thumbnail_url = MDConstants.tempCover
+                thumbnail_url = getAltcover(attr["links"])
                 genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {
@@ -210,6 +211,45 @@ class MangaDexHelper() {
         }
     }
 
+
+    /**
+     * Get Cover from site in related links (MAL, AL, A-P etc.)
+     */
+    fun getAltcover(links: JsonElement): String {
+
+        if links.has("kt") {
+
+            var ktId = links.getString("kt")
+            var coverLink = "https://media.kitsu.io/manga/poster_images/$ktId/large.jpg"
+
+        } else if links.has("mal") {
+
+            var malId = links.getString("mal")
+            val response = client.newCall(GET("https://myanimelist.net/manga/$malId")).execute()
+            val coverLink = response.asJsoup.select("div#content img.lazyloaded[itemprop]").attr("abs:href")
+
+        } else if links.has("al") {
+
+            var alId = links.getString("al")
+            val response = client.newCall(GET("https://anilist.co/manga/$alId")).execute()
+            val coverLink = response.asJsoup.select("img.cover").attr("abs:href")
+
+        } else if links.has("ap") {
+
+            var apId = links.getString("ap")
+            val response = client.newCall(GET("https://www.anime-planet.com/manga/$apId")).execute()
+            val coverLink = "https://www.anime-planet.com" + response.asJsoup.select("img.screenshots[itemprop]").attr("abs:href").string()
+
+        } else {
+
+            val coverLink = MDConstants.tempCover
+
+        }
+
+        return coverLink
+    }
+
+    
     /**
      * This makes an api call per a unique group id found in the chapters hopefully Dex will eventually support
      * batch ids
