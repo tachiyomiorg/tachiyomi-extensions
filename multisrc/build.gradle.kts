@@ -7,12 +7,12 @@ plugins {
 }
 
 android {
-    compileSdkVersion(Config.compileSdk)
-    buildToolsVersion(Config.buildTools)
+    compileSdkVersion(AndroidConfig.compileSdk)
+    buildToolsVersion(AndroidConfig.buildTools)
 
     defaultConfig {
         minSdkVersion(29)
-        targetSdkVersion(Config.targetSdk)
+        targetSdkVersion(AndroidConfig.targetSdk)
     }
 }
 

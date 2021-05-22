@@ -245,7 +245,7 @@ abstract class Madara(
     private class ArtistFilter : Filter.Text("Artist")
     private class YearFilter : Filter.Text("Year of Released")
     private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
-    
+
     private class OrderByFilter : UriPartFilter(
         "Order By",
         arrayOf(
@@ -258,7 +258,7 @@ abstract class Madara(
             Pair("New", "new-manga")
         )
     )
-    
+
     private class GenreConditionFilter : UriPartFilter(
         "Genre condition",
         arrayOf(
@@ -266,7 +266,7 @@ abstract class Madara(
             Pair("and", "1")
         )
     )
-    
+
     private class AdultContentFilter : UriPartFilter(
         "Adult Content",
         arrayOf(
@@ -275,7 +275,7 @@ abstract class Madara(
             Pair("Only", "1")
         )
     )
-    
+
     private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
 
@@ -626,10 +626,8 @@ abstract class Madara(
                     val hostName = prefsEntries[prefsEntryValues.indexOf(validHost)]
                     Handler(Looper.getMainLooper()).post {
                         val toast = Toast.makeText(Injekt.get<Application>().applicationContext, "Host : $hostName\nYou may want to switch to this host to avoid unnecessary loading time", Toast.LENGTH_SHORT)
-                        val view = toast.view.findViewById<TextView>(android.R.id.message)
-                        view?.let {
-                            view.gravity = Gravity.CENTER_HORIZONTAL
-                        }
+                        val view = toast.view?.findViewById<TextView>(android.R.id.message)
+                        view?.let { it.gravity = Gravity.CENTER_HORIZONTAL }
                         toast.show()
                     }
                 }
