@@ -71,6 +71,7 @@ abstract class Luscious(
     private fun buildAlbumListRequestInput(page: Int, filters: FilterList, query: String = ""): JsonObject {
         val sortByFilter = filters.findInstance<SortBySelectFilter>()!!
         val albumTypeFilter = filters.findInstance<AlbumTypeSelectFilter>()!!
+        val selectionFilter = filters.findInstance<SelectionSelectFilter>()!!
         val interestsFilter = filters.findInstance<InterestGroupFilter>()!!
         val languagesFilter = filters.findInstance<LanguageGroupFilter>()!!
         val tagsFilter = filters.findInstance<TagTextFilters>()!!
@@ -80,7 +81,6 @@ abstract class Luscious(
         val contentTypeFilter = filters.findInstance<ContentTypeSelectFilter>()!!
         val albumSizeFilter = filters.findInstance<AlbumSizeSelectFilter>()!!
         val restrictGenresFilter = filters.findInstance<RestrictGenresSelectFilter>()!!
-
         return JsonObject().apply {
             add(
                 "input",
@@ -96,6 +96,9 @@ abstract class Luscious(
 
                             if (albumTypeFilter.selected != FILTER_VALUE_IGNORE)
                                 add(albumTypeFilter.toJsonObject("album_type"))
+
+                            if (selectionFilter.selected != FILTER_VALUE_IGNORE)
+                                add(selectionFilter.toJsonObject("selection"))
 
                             if (albumSizeFilter.selected != FILTER_VALUE_IGNORE)
                                 add(albumSizeFilter.toJsonObject("picture_count_rank"))
@@ -254,7 +257,7 @@ abstract class Luscious(
                             else -> it["thumbnails"][getResolutionPref()?.toInt()!!]["url"].asString
                         }
                         chapter.name = it["title"].asString
-                        //chapter.date_upload = it["created"].asLong // not parsing correctly for some reason
+                        chapter.date_upload = "${it["created"].asLong}000".toLong()
                         chapter.chapter_number = it["position"].asInt.toFloat()
                         chapters.add(chapter)
                     }
@@ -447,6 +450,17 @@ abstract class Luscious(
         query
     )
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith("ID:")){
+            val id = query.substringAfterLast("ID:")
+            client.newCall(buildAlbumInfoRequest(id))
+                .asObservableSuccess()
+                .map { MangasPage(listOf(detailsParse(it)), false) }
+        } else {
+            super.fetchSearchManga(page, query, filters)
+        }
+    }
+
     class TriStateFilterOption(name: String, val value: String) : Filter.TriState(name)
     abstract class TriStateGroupFilter(name: String, options: List<TriStateFilterOption>) : Filter.Group<TriStateFilterOption>(name, options) {
         val included: List<String>
@@ -495,6 +509,7 @@ abstract class Luscious(
     class AlbumTypeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Album Type", options)
     class ContentTypeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Content Type", options)
     class RestrictGenresSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Restrict Genres", options)
+    class SelectionSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Selection", options)
     class AlbumSizeSelectFilter(options: List<SelectFilterOption>) : SelectFilter("Album Size", options)
     class TagTextFilters : TextFilter("Tags")
     class CreatorTextFilters : TextFilter("Uploader")
@@ -506,6 +521,7 @@ abstract class Luscious(
         AlbumTypeSelectFilter(getAlbumTypeFilters()),
         ContentTypeSelectFilter(getContentTypeFilters()),
         AlbumSizeSelectFilter(getAlbumSizeFilters()),
+        SelectionSelectFilter(getSelectionFilters()),
         RestrictGenresSelectFilter(getRestrictGenresFilters()),
         InterestGroupFilter(getInterestFilters()),
         LanguageGroupFilter(getLanguageFilters()),
@@ -584,6 +600,17 @@ abstract class Luscious(
         SelectFilterOption("None", FILTER_VALUE_IGNORE),
         SelectFilterOption("Loose", "loose"),
         SelectFilterOption("Strict", "strict")
+    )
+
+    private fun getSelectionFilters() = listOf(
+        SelectFilterOption("All", "all"),
+        SelectFilterOption("No Votes", "not_voted"),
+        SelectFilterOption("Downvoted", "downvoted"),
+        SelectFilterOption("Animated", "animated"),
+        SelectFilterOption("Banned", "banned"),
+        SelectFilterOption("Made by People You Follow", "made_by_following"),
+        SelectFilterOption("Faved by People You Follow", "faved_by_following"),
+
     )
 
     private fun getContentTypeFilters() = listOf(

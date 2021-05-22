@@ -1,3 +1,11 @@
+## 1.2.26
+
+Minimum Komga version required: `0.87.4`
+
+### Fix
+
+* show series with only in progress books when searching for unread only
+
 ## 1.2.25
 
 Minimum Komga version required: `0.87.4`
@@ -5,7 +13,6 @@ Minimum Komga version required: `0.87.4`
 ### Fix
 
 * sort order for read list books
-
 
 ## 1.2.24
 

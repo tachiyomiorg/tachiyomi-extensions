@@ -69,7 +69,7 @@ class Mintmanga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = "a.nextLink"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        var url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
+        val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
                 is GenreList -> filter.state.forEach { genre ->
@@ -98,12 +98,10 @@ class Mintmanga : ParsedHttpSource() {
                     }
                 }
                 is OrderBy -> {
-                    if (filter.state == 0) {
-                        url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
-                    } else {
-                        val ord = arrayOf("not", "year", "name", "rate", "popularity", "votes", "created", "updated")[filter.state]
-                        url = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
-                        return GET(url.toString(), headers)
+                    if (filter.state > 0) {
+                        val ord = arrayOf("not", "year", "rate", "popularity", "votes", "created", "updated")[filter.state]
+                        val ordUrl = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
+                        return GET(ordUrl.toString(), headers)
                     }
                 }
             }
@@ -129,7 +127,22 @@ class Mintmanga : ParsedHttpSource() {
         } else {
             "манга"
         }
-
+        val ratingValue = infoElement.select(".col-sm-7 .rating-block").attr("data-score").toFloat() * 2
+        val ratingValueOver = infoElement.select(".info-icon").attr("data-content").substringAfter("Относительно остальных произведений: <b>").substringBefore("/5</b>").replace(",", ".").toFloat() * 2
+        val ratingVotes = infoElement.select(".col-sm-7 .user-rating meta[itemprop=\"ratingCount\"]").attr("content")
+        val ratingStar = when {
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 8.5 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 6.5 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 4.5 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 2.5 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 0.5 -> "✬☆☆☆☆"
+            else -> "☆☆☆☆☆"
+        }
         val manga = SManga.create()
         var authorElement = infoElement.select("span.elem_author").first()?.text()
         if (authorElement == null) {
@@ -143,7 +156,7 @@ class Mintmanga : ParsedHttpSource() {
         if (infoElement.select(".another-names").isNotEmpty()) {
             altName = "Альтернативные названия:\n" + infoElement.select(".another-names").text() + "\n\n"
         }
-        manga.description = altName + infoElement.select("div.manga-description").text()
+        manga.description = ratingStar + " " + ratingValue + "[ⓘ" + ratingValueOver + "]" + " (голосов: " + ratingVotes + ")\n" + altName + infoElement.select("div.manga-description").text()
         manga.status = parseStatus(infoElement.html())
         manga.thumbnail_url = infoElement.select("img").attr("data-full")
         return manga
@@ -305,8 +318,8 @@ class Mintmanga : ParsedHttpSource() {
     }
 
     private class OrderBy : Filter.Select<String>(
-        "Сортировать",
-        arrayOf("Без(фильтры)", "По году", "По алфавиту", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
+        "Сортировка (только)",
+        arrayOf("Без сортировки", "По году", "По популярности", "Популярно сейчас", "По рейтингу", "Новинки", "По дате обновления")
     )
 
     private class Genre(name: String, val id: String) : Filter.TriState(name)

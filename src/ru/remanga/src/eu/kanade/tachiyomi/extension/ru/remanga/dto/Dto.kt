@@ -41,7 +41,9 @@ data class MangaDetDto(
     val type: GenresDto,
     val genres: List<GenresDto>,
     val branches: List<BranchesDto>,
-    val status: StatusDto
+    val status: StatusDto,
+    val avg_rating: String,
+    val count_rating: Int
 )
 
 data class PropsDto(
