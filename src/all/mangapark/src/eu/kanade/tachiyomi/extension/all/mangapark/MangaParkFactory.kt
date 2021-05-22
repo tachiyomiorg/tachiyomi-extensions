@@ -11,7 +11,6 @@ class MangaParkFactory : SourceFactory {
 
 class LanguageOption(val lang: String, val siteLang: String = lang)
 private val languages = listOf(
-    LanguageOption("all", ""),
     //LanguageOption("<Language Format>","<Language Format used in site.>"),
     LanguageOption("en", "en"),
     //LanguageOption("ar"),
