@@ -180,16 +180,16 @@ class LibManga : ConfigurableSource, HttpSource() {
         val ratingValue = document.select(".media-rating.media-rating_lg div.media-rating__value").text().toFloat() * 2
         val ratingVotes = document.select(".media-rating.media-rating_lg div.media-rating__votes").text()
         val ratingStar = when {
-            ratingValue > 9.6 -> "★★★★★"
-            ratingValue > 8.6 -> "★★★★✬"
-            ratingValue > 7.6 -> "★★★★☆"
-            ratingValue > 6.6 -> "★★★✬☆"
-            ratingValue > 5.6 -> "★★★☆☆"
-            ratingValue > 4.6 -> "★★✬☆☆"
-            ratingValue > 3.6 -> "★★☆☆☆"
-            ratingValue > 2.6 -> "★✬☆☆☆"
-            ratingValue > 1.6 -> "★☆☆☆☆"
-            ratingValue > 0.6 -> "✬☆☆☆☆"
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 8.5 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 6.5 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 4.5 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 2.5 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 0.5 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
         val genres = document.select(".media-tags > a").map { it.text() }
