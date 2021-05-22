@@ -133,7 +133,7 @@ class MangaDexHelper() {
         }.map { relationship -> relationship["id"].string }.firstOrNull()
 
         return SManga.create().apply {
-            url = "/title/$dexId"
+            url = "/manga/$dexId"
             title = cleanString(attr["title"]["en"].string)
             thumbnail_url = createCoverUrl(dexId, coverId, client)
         }
