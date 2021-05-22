@@ -15,7 +15,9 @@ object MDConstants {
     val atHomePostUrl = "https://api.mangadex.network/report"
     val whitespaceRegex = "\\s".toRegex()
 
-    val tempCover = "https://i.imgur.com/6TrIues.jpg"
+    //val tempCover = "https://i.imgur.com/6TrIues.jpg"
+
+    val coverApi = "coverapi.orell.dev/api/v1/mdaltimage/manga/{uuid}/cover"
 
     const val mdAtHomeTokenLifespan = 5 * 60 * 1000
 
