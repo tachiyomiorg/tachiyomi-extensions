@@ -10,12 +10,14 @@ object MDConstants {
         Regex("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")
 
     val mangaLimit = 25
+    val cdnUrl = "https://uploads.mangadex.org"
+
     val apiUrl = "https://api.mangadex.org"
     val apiMangaUrl = "$apiUrl/manga"
     val atHomePostUrl = "https://api.mangadex.network/report"
     val whitespaceRegex = "\\s".toRegex()
 
-    val tempCover = "https://i.imgur.com/6TrIues.jpg"
+    const val coverApi = "https://coverapi.orell.dev/api/v1/mdaltimage/manga/{uuid}/cover"
 
     const val mdAtHomeTokenLifespan = 5 * 60 * 1000
 

@@ -108,7 +108,10 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         val hasMoreResults =
             (mangaListResponse["limit"].int + mangaListResponse["offset"].int) < mangaListResponse["total"].int
 
-        val mangaList = mangaListResponse["results"].array.map { helper.createManga(it) }
+        val mangaList = mangaListResponse["results"].array.map {
+            helper.createBasicManga(it, client)
+        }
+
         return MangasPage(mangaList, hasMoreResults)
     }
 
