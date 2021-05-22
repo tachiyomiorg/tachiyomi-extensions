@@ -50,7 +50,25 @@ class Desu : HttpSource() {
         url = "/$id"
         title = obj.getString("name")
         thumbnail_url = obj.getJSONObject("image").getString("original")
-        description = obj.getString("description")
+        val ratingValue = obj.getString("score").toFloat()
+        val ratingStar = when {
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 8.5 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 6.5 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 4.5 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 2.5 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 0.5 -> "✬☆☆☆☆"
+            else -> "☆☆☆☆☆"
+        }
+        var altName = ""
+        if (obj.getString("synonyms").isNotEmpty() && obj.getString("synonyms") != "null") {
+            altName = "Альтернативные названия:\n" + obj.getString("synonyms").replace("|", " / ") + "\n\n"
+        }
+        description = obj.getString("russian") + "\n" + ratingStar + " " + ratingValue + " (голосов: " + obj.getString("score_users") + ")\n" + altName + obj.getString("description")
         genre = if (chapter) {
             val jsonArray = obj.getJSONArray("genres")
             val genreList = mutableListOf<String>()
