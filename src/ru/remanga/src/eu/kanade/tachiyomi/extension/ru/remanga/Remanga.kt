@@ -210,16 +210,16 @@ class Remanga : ConfigurableSource, HttpSource() {
 
         val ratingValue = avg_rating.toFloat()
         val ratingStar = when {
-            ratingValue > 9.5 -> "★★★★★"
-            ratingValue > 9.0 -> "★★★★✬"
-            ratingValue > 7.5 -> "★★★★☆"
-            ratingValue > 7.0 -> "★★★✬☆"
-            ratingValue > 5.5 -> "★★★☆☆"
-            ratingValue > 5.0 -> "★★✬☆☆"
-            ratingValue > 3.5 -> "★★☆☆☆"
-            ratingValue > 3.0 -> "★✬☆☆☆"
-            ratingValue > 1.5 -> "★☆☆☆☆"
-            ratingValue > 1.0 -> "✬☆☆☆☆"
+            ratingValue > 9.6 -> "★★★★★"
+            ratingValue > 8.6 -> "★★★★✬"
+            ratingValue > 7.6 -> "★★★★☆"
+            ratingValue > 6.6 -> "★★★✬☆"
+            ratingValue > 5.6 -> "★★★☆☆"
+            ratingValue > 4.6 -> "★★✬☆☆"
+            ratingValue > 3.6 -> "★★☆☆☆"
+            ratingValue > 2.6 -> "★✬☆☆☆"
+            ratingValue > 1.6 -> "★☆☆☆☆"
+            ratingValue > 0.6 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
         val o = this
