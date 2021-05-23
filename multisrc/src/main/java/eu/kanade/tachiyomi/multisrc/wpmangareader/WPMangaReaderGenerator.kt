@@ -18,6 +18,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("Ngomik", "https://ngomik.net", "id"),
             SingleLang("Sekaikomik", "https://www.sekaikomik.fun", "id", isNsfw = true, overrideVersionCode = 4),
             SingleLang("Davey Scans", "https://daveyscans.com/", "id"),
+            SingleLang("Mangasusu", "https://mangasusu.co.in", "id", isNsfw = true),
             SingleLang("TurkToon", "https://turktoon.com", "tr"),
             SingleLang("Gecenin Lordu", "https://geceninlordu.com/", "tr", overrideVersionCode = 1),
             SingleLang("Flame Scans", "https://flamescans.org", "en", overrideVersionCode = 2),
@@ -25,6 +26,8 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
             SingleLang("PMScans", "https://reader.pmscans.com", "en"),
             SingleLang("Skull Scans", "https://www.skullscans.com", "en"),
             SingleLang("Luminous Scans", "https://www.luminousscans.com", "en"),
+            SingleLang("Azure Scans", "https://azuremanga.com", "en"),
+            SingleLang("Seafoam Scans", "https://seafoamscans.com", "en"),
             SingleLang("GS Nation", "https://gs-nation.fr", "fr", overrideVersionCode = 1),
             SingleLang("YugenMangas", "https://yugenmangas.com", "es"),
             SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true)
