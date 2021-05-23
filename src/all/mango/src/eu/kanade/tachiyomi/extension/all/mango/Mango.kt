@@ -144,7 +144,7 @@ class Mango : ConfigurableSource, HttpSource() {
         return result["entries"].asJsonArray.mapIndexed { index, obj ->
             SChapter.create().apply {
                 chapter_number = index + 1F
-                name = obj["display_name"].asString
+                name = "${chapter_number.toInt()} - ${obj["display_name"].asString}"
                 url = "/page/${obj["title_id"].asString}/${obj["id"].asString}/${obj["pages"].asString}/"
                 date_upload = 1000L * obj["mtime"].asLong
             }
