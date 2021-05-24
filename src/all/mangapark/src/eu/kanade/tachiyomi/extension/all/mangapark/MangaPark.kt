@@ -25,7 +25,7 @@ import rx.Observable
 
 open class MangaPark(
     override val lang: String,
-    override val siteLang: String
+    private val siteLang: String
 ) : ParsedHttpSource() {
 
     override val name: String = "MangaPark v3"
