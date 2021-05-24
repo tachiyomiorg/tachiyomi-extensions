@@ -85,7 +85,7 @@ open class MangaPark(
                         queryParse(response)
                     }
             }
-    
+
             else -> {
                 val sortFilter = filters.findInstance<SortFilter>()!!
                 val reverseSortFilter = filters.findInstance<ReverseSortFilter>()!!
@@ -177,7 +177,7 @@ open class MangaPark(
         manga.description = infoElement.select("div.limit-height-body").text() //Needs to put new line before extra and notice and stuff.
         manga.thumbnail_url = document.select("div.attr-cover img")
             .attr("abs:src")
-        return mangas
+        return manga
     }
 
     private fun parseStatus(status: String?) = when {
@@ -279,7 +279,7 @@ open class MangaPark(
             val imageUrl = i.select("img").attr("abs:src")
             pages.add(Page(index, "", imageUrl))
         }
-        
+
         return pages
     }
 
@@ -295,7 +295,7 @@ open class MangaPark(
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     // Done Down
-    
+
     override fun getFilterList() = FilterList(
         //LetterFilter(),
         Filter.Header("NOTE: Ignored if using text search!"),
@@ -346,7 +346,7 @@ open class MangaPark(
         SelectFilterOption("Total Views", "d000"),
         SelectFilterOption("Most Views 360 days", "d360"),
         SelectFilterOption("Most Views 180 days", "d180"),
-        SelectFilterOption("Most Views 90 days", "d090"),
+        SelectFilterOption("Most Views 90 days", "d090")
         SelectFilterOption("Most Views 30 days", "d030"),
         SelectFilterOption("Most Views 7 days", "d007"),
         SelectFilterOption("Most Views 24 hours", "h024"),
