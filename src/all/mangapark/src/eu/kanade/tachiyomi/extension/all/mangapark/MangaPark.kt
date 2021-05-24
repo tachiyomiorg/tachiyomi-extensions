@@ -283,15 +283,6 @@ open class MangaPark(
         return pages
     }
 
-    private val cryptoJS by lazy {
-        client.newCall(
-            GET(
-                "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js",
-                headers
-            )
-        ).execute().body!!.string()
-    }
-
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     // Done Down
