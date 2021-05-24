@@ -72,7 +72,7 @@ open class MangaPark(
         return when {
             query.startsWith("ID:") -> {
                 val id = query.substringAfter("ID:")
-                client.newCall(GET("$baseUrl/series/$id", headers)).asObservableSuccess()
+                client.newCall(GET("$baseUrl/comic/$id", headers)).asObservableSuccess()
                     .map { response ->
                         queryIDParse(response, id)
                     }
@@ -195,7 +195,7 @@ open class MangaPark(
         return super.chapterListRequest(manga)
     }
 
-    override fun chapterListSelector() = "div#mainer div.container-fluid div.episode-list div#episodes-lang-$siteLang"
+    override fun chapterListSelector() = "div#mainer div.container-fluid div.episode-list div#episodes-lang-$siteLang div.p-2"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
