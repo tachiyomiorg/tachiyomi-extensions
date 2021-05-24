@@ -86,7 +86,7 @@ abstract class MangaPlus(
         100082 to Language.THAI,
         100120 to Language.THAI,
         100121 to Language.THAI,
-        100158 to Language.THAI
+        100158 to Language.THAI,
 
         // Brazilian Portuguese
         100149 to Language.PORTUGUESE_BR,
