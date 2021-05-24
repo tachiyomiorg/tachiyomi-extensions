@@ -141,9 +141,10 @@ class Mango : ConfigurableSource, HttpSource() {
             apiCookies = ""
             throw Exception("Login Likely Failed. Try Refreshing.")
         }
-        return result["entries"].asJsonArray.map { obj ->
+        return result["entries"].asJsonArray.mapIndexed { index, obj ->
             SChapter.create().apply {
-                name = obj["display_name"].asString
+                chapter_number = index + 1F
+                name = "${chapter_number.toInt()} - ${obj["display_name"].asString}"
                 url = "/page/${obj["title_id"].asString}/${obj["id"].asString}/${obj["pages"].asString}/"
                 date_upload = 1000L * obj["mtime"].asLong
             }

@@ -2,12 +2,15 @@ package eu.kanade.tachiyomi.extension.all.batoto
 
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -17,6 +20,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import okhttp3.Response
+import rx.Observable
 
 open class BatoTo(
     override val lang: String,
@@ -55,7 +60,7 @@ open class BatoTo(
         return manga
     }
 
-    override fun latestUpdatesNextPageSelector() = "div#mainer .pagination .page-item:not(.disabled) a.page-link:contains(»)"
+    override fun latestUpdatesNextPageSelector() = "div#mainer nav.d-none .pagination .page-item:last-of-type:not(.disabled)"
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/browse?langs=$siteLang&sort=views_w&page=$page")
@@ -67,76 +72,101 @@ open class BatoTo(
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return if (query.isNotBlank()) {
-            GET("$baseUrl/search?word=$query&page=$page")
-        } else {
-            val url = "$baseUrl/browse".toHttpUrlOrNull()!!.newBuilder()
-            url.addQueryParameter("page", page.toString())
-            url.addQueryParameter("langs", siteLang)
-            filters.forEach { filter ->
-                when (filter) {
-                    is OriginFilter -> {
-                        val originToInclude = mutableListOf<String>()
-                        filter.state.forEach { content ->
-                            if (content.state) {
-                                originToInclude.add(content.name)
-                            }
-                        }
-                        if (originToInclude.isNotEmpty()) {
-                            url.addQueryParameter(
-                                "origs",
-                                originToInclude
-                                    .joinToString(",")
-                            )
-                        }
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return when {
+            query.startsWith("ID:") -> {
+                val id = query.substringAfter("ID:")
+                client.newCall(GET("$baseUrl/series/$id", headers)).asObservableSuccess()
+                    .map { response ->
+                        queryIDParse(response, id)
                     }
-                    is StatusFilter -> {
-                        if (filter.state != 0) {
-                            url.addQueryParameter("release", filter.toUriPart())
-                        }
+            }
+            query.isNotBlank() -> {
+                val url = "$baseUrl/search?word=$query&page=$page"
+                client.newCall(GET(url, headers)).asObservableSuccess()
+                    .map { response ->
+                        queryParse(response)
                     }
-                    is GenreFilter -> {
-                        val genreToInclude = filter.state
-                            .filter { it.isIncluded() }
-                            .map { it.name }
+            }
+            else -> {
+                val sortFilter = filters.findInstance<SortFilter>()!!
+                val reverseSortFilter = filters.findInstance<ReverseSortFilter>()!!
+                val statusFilter = filters.findInstance<StatusFilter>()!!
+                val langFilter = filters.findInstance<LangGroupFilter>()!!
+                val originFilter = filters.findInstance<OriginGroupFilter>()!!
+                val genreFilter = filters.findInstance<GenreGroupFilter>()!!
+                val minChapterFilter = filters.findInstance<MinChapterTextFilter>()!!
+                val maxChapterFilter = filters.findInstance<MaxChapterTextFilter>()!!
+                val url = "$baseUrl/browse".toHttpUrlOrNull()!!.newBuilder()
+                url.addQueryParameter("page", page.toString())
 
-                        val genreToExclude = filter.state
-                            .filter { it.isExcluded() }
-                            .map { it.name }
-
-                        if (genreToInclude.isNotEmpty() || genreToExclude.isNotEmpty()) {
-                            url.addQueryParameter(
-                                "genres",
-                                genreToInclude
-                                    .joinToString(",") +
-                                    "|" +
-                                    genreToExclude
-                                        .joinToString(",")
-                            )
-                        }
-                    }
-                    is ChapterFilter -> {
-                        if (filter.state != 0) {
-                            url.addQueryParameter("chapters", filter.toUriPart())
-                        }
-                    }
-                    is SortBy -> {
-                        if (filter.state != 0) {
-                            url.addQueryParameter("sort", filter.toUriPart())
-                        }
+                with (langFilter) {
+                    if (this.selected.isEmpty()) {
+                        url.addQueryParameter("langs", siteLang)
+                    } else {
+                        val selection = "${this.selected.joinToString(",")},$siteLang"
+                        url.addQueryParameter("langs", selection)
                     }
                 }
+
+                with (genreFilter) {
+                    url.addQueryParameter("genres", included.joinToString(",") + "|" + excluded.joinToString(",")
+                    )
+                }
+
+                with (statusFilter) {
+                    url.addQueryParameter("release", this.selected)
+                }
+
+                with (sortFilter) {
+                    if (reverseSortFilter.state) {
+                        url.addQueryParameter("sort","${this.selected}.az")
+                    } else {
+                        url.addQueryParameter("sort","${this.selected}.za")
+                    }
+                }
+
+                if (originFilter.selected.isNotEmpty()) {
+                    url.addQueryParameter("origs", originFilter.selected.joinToString(","))
+                }
+
+                if (maxChapterFilter.state.isNotEmpty() or minChapterFilter.state.isNotEmpty()) {
+                    url.addQueryParameter("chapters", minChapterFilter.state + "-" + maxChapterFilter.state)
+                }
+
+                client.newCall(GET(url.build().toString(), headers)).asObservableSuccess()
+                    .map { response ->
+                        queryParse(response)
+                    }
             }
-            GET(url.build().toString(), headers)
         }
     }
 
-    override fun searchMangaSelector() = latestUpdatesSelector()
+    private fun queryIDParse(response: Response, id: String): MangasPage {
+        val document = response.asJsoup()
+        val infoElement = document.select("div#mainer div.container-fluid")
+        val manga = SManga.create()
+        manga.title = infoElement.select("h3").text()
+        manga.thumbnail_url = document.select("div.attr-cover img")
+            .attr("abs:src")
+        manga.url = infoElement.select("h3 a").attr("abs:href")
+        return MangasPage(listOf(manga), false)
+    }
 
-    override fun searchMangaFromElement(element: Element) = latestUpdatesFromElement(element)
+    private fun queryParse(response: Response): MangasPage {
+        val mangas = mutableListOf<SManga>()
+        val document = response.asJsoup()
+        document.select(latestUpdatesSelector()).forEach { element ->
+            mangas.add(latestUpdatesFromElement(element))
+        }
+        val nextPage = document.select(latestUpdatesNextPageSelector()).first() != null
+        return MangasPage(mangas, nextPage)
+    }
 
-    override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException("Not used")
+    override fun searchMangaSelector() = throw UnsupportedOperationException("Not used")
+    override fun searchMangaFromElement(element: Element) = throw UnsupportedOperationException("Not used")
+    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
 
     override fun mangaDetailsRequest(manga: SManga): Request {
         if (manga.url.startsWith("http")) {
@@ -315,206 +345,399 @@ open class BatoTo(
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
-    private class OriginFilter(genres: List<Tag>) : Filter.Group<Tag>("Origin", genres)
-    private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
-
-    private class ChapterFilter : UriPartFilter(
-        "Chapters",
-        arrayOf(
-            Pair("<select>", ""),
-            Pair("1 ~ 9", "1-9"),
-            Pair("10 ~ 29", "10-29"),
-            Pair("30 ~ 99", "30-99"),
-            Pair("100 ~ 199", "100-199"),
-            Pair("200+", "200"),
-            Pair("100+", "100"),
-            Pair("50+", "50"),
-            Pair("40+", "40"),
-            Pair("30+", "30"),
-            Pair("20+", "20"),
-            Pair("10+", "10"),
-            Pair("1+", "1")
-        )
-    )
-
-    private class SortBy : UriPartFilter(
-        "Sorts By",
-        arrayOf(
-            Pair("<select>", ""),
-            Pair("A-Z", "title.az"),
-            Pair("Z-A", "title"),
-            Pair("Last Updated", "update"),
-            Pair("Oldest Updated", "updated.az"),
-            Pair("Newest Added", "create"),
-            Pair("Oldest Added", "create.az"),
-            Pair("Most Views Totally", "views_a"),
-            Pair("Most Views 365 days", "views_y"),
-            Pair("Most Views 30 days", "views_m"),
-            Pair("Most Views 7 days", "views_w"),
-            Pair("Most Views 24 hours", "views_d"),
-            Pair("Most Views 60 minutes", "views_h"),
-            Pair("Least Views Totally", "views_a.az"),
-            Pair("Least Views 365 days", "views_y.az"),
-            Pair("Least Views 30 days", "views_m.az"),
-            Pair("Least Views 7 days", "views_w.az"),
-            Pair("Least Views 24 hours", "views_d.az"),
-            Pair("Least Views 60 minutes", "views_h.az")
-        )
-    )
-
-    private class StatusFilter : UriPartFilter(
-        "Status",
-        arrayOf(
-            Pair("<select>", ""),
-            Pair("Pending", "pending"),
-            Pair("Ongoing", "ongoing"),
-            Pair("Completed", "completed"),
-            Pair("Hiatus", "hiatus"),
-            Pair("Cancelled", "cancelled")
-        )
-    )
-
     override fun getFilterList() = FilterList(
+        //LetterFilter(),
         Filter.Header("NOTE: Ignored if using text search!"),
         Filter.Separator(),
-        ChapterFilter(),
-        SortBy(),
-        StatusFilter(),
-        OriginFilter(getOriginList()),
-        GenreFilter(getGenreList())
+        SortFilter(getSortFilter(), 5),
+        StatusFilter(getStatusFilter(), 0),
+        GenreGroupFilter(getGenreFilter()),
+        OriginGroupFilter(getOrginFilter()),
+        LangGroupFilter(getLangFilter()),
+        MinChapterTextFilter(),
+        MaxChapterTextFilter(),
+        ReverseSortFilter(),
     )
 
-    private fun getOriginList() = listOf(
-        Tag("my"),
-        Tag("ceb"),
-        Tag("zh"),
-        Tag("zh_hk"),
-        Tag("en"),
-        Tag("en_us"),
-        Tag("fil"),
-        Tag("id"),
-        Tag("it"),
-        Tag("ja"),
-        Tag("ko"),
-        Tag("ms"),
-        Tag("pt_br"),
-        Tag("th"),
-        Tag("vi")
-    )
+    class SelectFilterOption(val name: String, val value: String)
+    class CheckboxFilterOption(val value: String, name: String, default: Boolean = false) : Filter.CheckBox(name, default)
+    class TriStateFilterOption(val value: String, name: String, default: Int = 0) : Filter.TriState(name, default)
 
-    private fun getGenreList() = listOf(
-        Genre("Artbook"),
-        Genre("Cartoon"),
-        Genre("Comic"),
-        Genre("Doujinshi"),
-        Genre("Imageset"),
-        Genre("Manga"),
-        Genre("Manhua"),
-        Genre("Manhwa"),
-        Genre("Webtoon"),
-        Genre("Western"),
-        Genre("Josei"),
-        Genre("Seinen"),
-        Genre("Shoujo"),
-        Genre("Shoujo_Ai"),
-        Genre("Shounen"),
-        Genre("Shounen_Ai"),
-        Genre("Yaoi"),
-        Genre("Yuri"),
-        Genre("Ecchi"),
-        Genre("Mature"),
-        Genre("Adult"),
-        Genre("Gore"),
-        Genre("Violence"),
-        Genre("Smut"),
-        Genre("Hentai"),
-        Genre("4_Koma"),
-        Genre("Action"),
-        Genre("Adaptation"),
-        Genre("Adventure"),
-        Genre("Aliens"),
-        Genre("Animals"),
-        Genre("Anthology"),
-        Genre("Comedy"),
-        Genre("Cooking"),
-        Genre("Crime"),
-        Genre("Crossdressing"),
-        Genre("Delinquents"),
-        Genre("Dementia"),
-        Genre("Demons"),
-        Genre("Drama"),
-        Genre("Fantasy"),
-        Genre("Fan_Colored"),
-        Genre("Full_Color"),
-        Genre("Game"),
-        Genre("Gender_Bender"),
-        Genre("Genderswap"),
-        Genre("Ghosts"),
-        Genre("Gyaru"),
-        Genre("Harem"),
-        Genre("Harlequin"),
-        Genre("Historical"),
-        Genre("Horror"),
-        Genre("Incest"),
-        Genre("Isekai"),
-        Genre("Kids"),
-        Genre("Loli"),
-        Genre("Lolicon"),
-        Genre("Magic"),
-        Genre("Magical_Girls"),
-        Genre("Martial_Arts"),
-        Genre("Mecha"),
-        Genre("Medical"),
-        Genre("Military"),
-        Genre("Monster_Girls"),
-        Genre("Monsters"),
-        Genre("Music"),
-        Genre("Mystery"),
-        Genre("Netorare"),
-        Genre("Ninja"),
-        Genre("Office_Workers"),
-        Genre("Oneshot"),
-        Genre("Parody"),
-        Genre("Philosophical"),
-        Genre("Police"),
-        Genre("Post_Apocalyptic"),
-        Genre("Psychological"),
-        Genre("Reincarnation"),
-        Genre("Reverse_Harem"),
-        Genre("Romance"),
-        Genre("Samurai"),
-        Genre("School_Life"),
-        Genre("Sci_Fi"),
-        Genre("Shota"),
-        Genre("Shotacon"),
-        Genre("Slice_Of_Life"),
-        Genre("SM_BDSM"),
-        Genre("Space"),
-        Genre("Sports"),
-        Genre("Super_Power"),
-        Genre("Superhero"),
-        Genre("Supernatural"),
-        Genre("Survival"),
-        Genre("Thriller"),
-        Genre("Time_Travel"),
-        Genre("Tragedy"),
-        Genre("Vampires"),
-        Genre("Video_Games"),
-        Genre("Virtual_Reality"),
-        Genre("Wuxia"),
-        Genre("Xianxia"),
-        Genre("Xuanhuan"),
-        Genre("Zombies"),
-        Genre("award_winning"),
-        Genre("youkai"),
-        Genre("uncategorized")
-    )
-
-    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
-        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
-        fun toUriPart() = vals[state].second
+    abstract class SelectFilter(name: String, private val options: List<SelectFilterOption>, default: Int = 0) : Filter.Select<String>(name, options.map { it.name }.toTypedArray(), default) {
+        val selected: String
+            get() = options[state].value
     }
+    abstract class CheckboxGroupFilter(name: String, options: List<CheckboxFilterOption>) : Filter.Group<CheckboxFilterOption>(name, options) {
+        val selected: List<String>
+            get() = state.filter { it.state }.map { it.value }
+    }
+    abstract class TriStateGroupFilter(name: String, options: List<TriStateFilterOption>) : Filter.Group<TriStateFilterOption>(name, options) {
+        val included: List<String>
+            get() = state.filter { it.isIncluded() }.map { it.value }
 
-    private class Tag(name: String) : Filter.CheckBox(name)
-    private class Genre(name: String) : Filter.TriState(name)
+        val excluded: List<String>
+            get() = state.filter { it.isExcluded() }.map { it.value }
+    }
+    abstract class TextFilter(name: String) : Filter.Text(name)
+
+    class SortFilter(options: List<SelectFilterOption>, default: Int) : SelectFilter("Sort By", options, default)
+    class ReverseSortFilter(default: Boolean = false) : Filter.CheckBox("Revers Sort", default)
+    class StatusFilter(options: List<SelectFilterOption>, default: Int) : SelectFilter("Status", options, default)
+    class OriginGroupFilter(options: List<CheckboxFilterOption>) : CheckboxGroupFilter("Origin", options)
+    class GenreGroupFilter(options: List<TriStateFilterOption>) : TriStateGroupFilter("Genre", options)
+    class MinChapterTextFilter : TextFilter("Min. Chapters")
+    class MaxChapterTextFilter : TextFilter("Max. Chapters")
+    class LangGroupFilter(options: List<CheckboxFilterOption>) : CheckboxGroupFilter("Languages", options)
+    class LetterFilter(default: Boolean = false) : Filter.CheckBox("Letter matching mode (Slow)", default)
+
+    private fun getSortFilter() = listOf(
+        SelectFilterOption("Z-A", "title"),
+        SelectFilterOption("Last Updated", "update"),
+        SelectFilterOption("Newest Added", "create"),
+        SelectFilterOption("Most Views Totally", "views_a"),
+        SelectFilterOption("Most Views 365 days", "views_y"),
+        SelectFilterOption("Most Views 30 days", "views_m"),
+        SelectFilterOption("Most Views 7 days", "views_w"),
+        SelectFilterOption("Most Views 24 hours", "views_d"),
+        SelectFilterOption("Most Views 60 minutes", "views_h"),
+    )
+
+    private fun getStatusFilter() = listOf(
+        SelectFilterOption("All", ""),
+        SelectFilterOption("Pending", "pending"),
+        SelectFilterOption("Ongoing", "ongoing"),
+        SelectFilterOption("Completed", "completed"),
+        SelectFilterOption("Hiatus", "hiatus"),
+        SelectFilterOption("Cancelled", "cancelled"),
+    )
+
+    private fun getOrginFilter() = listOf(
+        // Values exported from publish.bato.to
+        CheckboxFilterOption("zh","Chinese"),
+        CheckboxFilterOption("en","English"),
+        CheckboxFilterOption("ja","Japanese"),
+        CheckboxFilterOption("ko","Korean"),
+        CheckboxFilterOption("af","Afrikaans"),
+        CheckboxFilterOption("sq","Albanian"),
+        CheckboxFilterOption("am","Amharic"),
+        CheckboxFilterOption("ar","Arabic"),
+        CheckboxFilterOption("hy","Armenian"),
+        CheckboxFilterOption("az","Azerbaijani"),
+        CheckboxFilterOption("be","Belarusian"),
+        CheckboxFilterOption("bn","Bengali"),
+        CheckboxFilterOption("bs","Bosnian"),
+        CheckboxFilterOption("bg","Bulgarian"),
+        CheckboxFilterOption("my","Burmese"),
+        CheckboxFilterOption("km","Cambodian"),
+        CheckboxFilterOption("ca","Catalan"),
+        CheckboxFilterOption("ceb","Cebuano"),
+        CheckboxFilterOption("zh_hk","Chinese (Cantonese)"),
+        CheckboxFilterOption("zh_tw","Chinese (Traditional)"),
+        CheckboxFilterOption("hr","Croatian"),
+        CheckboxFilterOption("cs","Czech"),
+        CheckboxFilterOption("da","Danish"),
+        CheckboxFilterOption("nl","Dutch"),
+        CheckboxFilterOption("en_us","English (United States)"),
+        CheckboxFilterOption("eo","Esperanto"),
+        CheckboxFilterOption("et","Estonian"),
+        CheckboxFilterOption("fo","Faroese"),
+        CheckboxFilterOption("fil","Filipino"),
+        CheckboxFilterOption("fi","Finnish"),
+        CheckboxFilterOption("fr","French"),
+        CheckboxFilterOption("ka","Georgian"),
+        CheckboxFilterOption("de","German"),
+        CheckboxFilterOption("el","Greek"),
+        CheckboxFilterOption("gn","Guarani"),
+        CheckboxFilterOption("gu","Gujarati"),
+        CheckboxFilterOption("ht","Haitian Creole"),
+        CheckboxFilterOption("ha","Hausa"),
+        CheckboxFilterOption("he","Hebrew"),
+        CheckboxFilterOption("hi","Hindi"),
+        CheckboxFilterOption("hu","Hungarian"),
+        CheckboxFilterOption("is","Icelandic"),
+        CheckboxFilterOption("ig","Igbo"),
+        CheckboxFilterOption("id","Indonesian"),
+        CheckboxFilterOption("ga","Irish"),
+        CheckboxFilterOption("it","Italian"),
+        CheckboxFilterOption("jv","Javanese"),
+        CheckboxFilterOption("kn","Kannada"),
+        CheckboxFilterOption("kk","Kazakh"),
+        CheckboxFilterOption("ku","Kurdish"),
+        CheckboxFilterOption("ky","Kyrgyz"),
+        CheckboxFilterOption("lo","Laothian"),
+        CheckboxFilterOption("lv","Latvian"),
+        CheckboxFilterOption("lt","Lithuanian"),
+        CheckboxFilterOption("lb","Luxembourgish"),
+        CheckboxFilterOption("mk","Macedonian"),
+        CheckboxFilterOption("mg","Malagasy"),
+        CheckboxFilterOption("ms","Malay"),
+        CheckboxFilterOption("ml","Malayalam"),
+        CheckboxFilterOption("mt","Maltese"),
+        CheckboxFilterOption("mi","Maori"),
+        CheckboxFilterOption("mr","Marathi"),
+        CheckboxFilterOption("mo","Moldavian"),
+        CheckboxFilterOption("mn","Mongolian"),
+        CheckboxFilterOption("ne","Nepali"),
+        CheckboxFilterOption("no","Norwegian"),
+        CheckboxFilterOption("ny","Nyanja"),
+        CheckboxFilterOption("ps","Pashto"),
+        CheckboxFilterOption("fa","Persian"),
+        CheckboxFilterOption("pl","Polish"),
+        CheckboxFilterOption("pt","Portuguese"),
+        CheckboxFilterOption("pt_br","Portuguese (Brazil)"),
+        CheckboxFilterOption("ro","Romanian"),
+        CheckboxFilterOption("rm","Romansh"),
+        CheckboxFilterOption("ru","Russian"),
+        CheckboxFilterOption("sm","Samoan"),
+        CheckboxFilterOption("sr","Serbian"),
+        CheckboxFilterOption("sh","Serbo-Croatian"),
+        CheckboxFilterOption("st","Sesotho"),
+        CheckboxFilterOption("sn","Shona"),
+        CheckboxFilterOption("sd","Sindhi"),
+        CheckboxFilterOption("si","Sinhalese"),
+        CheckboxFilterOption("sk","Slovak"),
+        CheckboxFilterOption("sl","Slovenian"),
+        CheckboxFilterOption("so","Somali"),
+        CheckboxFilterOption("es","Spanish"),
+        CheckboxFilterOption("es_419","Spanish (Latin America)"),
+        CheckboxFilterOption("sw","Swahili"),
+        CheckboxFilterOption("sv","Swedish"),
+        CheckboxFilterOption("tg","Tajik"),
+        CheckboxFilterOption("ta","Tamil"),
+        CheckboxFilterOption("th","Thai"),
+        CheckboxFilterOption("ti","Tigrinya"),
+        CheckboxFilterOption("to","Tonga"),
+        CheckboxFilterOption("tr","Turkish"),
+        CheckboxFilterOption("tk","Turkmen"),
+        CheckboxFilterOption("uk","Ukrainian"),
+        CheckboxFilterOption("ur","Urdu"),
+        CheckboxFilterOption("uz","Uzbek"),
+        CheckboxFilterOption("vi","Vietnamese"),
+        CheckboxFilterOption("yo","Yoruba"),
+        CheckboxFilterOption("zu","Zulu"),
+        CheckboxFilterOption("_t","Other"),
+    )
+
+    private fun getGenreFilter() = listOf(
+        TriStateFilterOption("artbook","Artbook"),
+        TriStateFilterOption("cartoon","Cartoon"),
+        TriStateFilterOption("comic","Comic"),
+        TriStateFilterOption("doujinshi","Doujinshi"),
+        TriStateFilterOption("imageset","Imageset"),
+        TriStateFilterOption("manga","Manga"),
+        TriStateFilterOption("manhua","Manhua"),
+        TriStateFilterOption("manhwa","Manhwa"),
+        TriStateFilterOption("webtoon","Webtoon"),
+        TriStateFilterOption("western","Western"),
+        TriStateFilterOption("josei","Josei"),
+        TriStateFilterOption("seinen","Seinen"),
+        TriStateFilterOption("shoujo","Shoujo"),
+        TriStateFilterOption("shoujo_ai","Shoujo ai"),
+        TriStateFilterOption("shounen","Shounen"),
+        TriStateFilterOption("shounen_ai","Shounen ai"),
+        TriStateFilterOption("yaoi","Yaoi"),
+        TriStateFilterOption("yuri","Yuri"),
+        TriStateFilterOption("ecchi","Ecchi"),
+        TriStateFilterOption("mature","Mature"),
+        TriStateFilterOption("adult","Adult"),
+        TriStateFilterOption("gore","Gore"),
+        TriStateFilterOption("violence","Violence"),
+        TriStateFilterOption("smut","Smut"),
+        TriStateFilterOption("hentai","Hentai"),
+        TriStateFilterOption("_4_koma","4-Koma"),
+        TriStateFilterOption("action","Action"),
+        TriStateFilterOption("adaptation","Adaptation"),
+        TriStateFilterOption("adventure","Adventure"),
+        TriStateFilterOption("aliens","Aliens"),
+        TriStateFilterOption("animals","Animals"),
+        TriStateFilterOption("anthology","Anthology"),
+        TriStateFilterOption("cars","cars"),
+        TriStateFilterOption("comedy","Comedy"),
+        TriStateFilterOption("cooking","Cooking"),
+        TriStateFilterOption("crime","crime"),
+        TriStateFilterOption("crossdressing","Crossdressing"),
+        TriStateFilterOption("delinquents","Delinquents"),
+        TriStateFilterOption("dementia","Dementia"),
+        TriStateFilterOption("demons","Demons"),
+        TriStateFilterOption("drama","Drama"),
+        TriStateFilterOption("fantasy","Fantasy"),
+        TriStateFilterOption("fan_colored","Fan-Colored"),
+        TriStateFilterOption("full_color","Full Color"),
+        TriStateFilterOption("game","Game"),
+        TriStateFilterOption("gender_bender","Gender Bender"),
+        TriStateFilterOption("genderswap","Genderswap"),
+        TriStateFilterOption("ghosts","Ghosts"),
+        TriStateFilterOption("gyaru","Gyaru"),
+        TriStateFilterOption("harem","Harem"),
+        TriStateFilterOption("harlequin","Harlequin"),
+        TriStateFilterOption("historical","Historical"),
+        TriStateFilterOption("horror","Horror"),
+        TriStateFilterOption("incest","Incest"),
+        TriStateFilterOption("isekai","Isekai"),
+        TriStateFilterOption("kids","Kids"),
+        TriStateFilterOption("loli","Loli"),
+        TriStateFilterOption("lolicon","lolicon"),
+        TriStateFilterOption("magic","Magic"),
+        TriStateFilterOption("magical_girls","Magical Girls"),
+        TriStateFilterOption("martial_arts","Martial Arts"),
+        TriStateFilterOption("mecha","Mecha"),
+        TriStateFilterOption("medical","Medical"),
+        TriStateFilterOption("military","Military"),
+        TriStateFilterOption("monster_girls","Monster Girls"),
+        TriStateFilterOption("monsters","Monsters"),
+        TriStateFilterOption("music","Music"),
+        TriStateFilterOption("mystery","Mystery"),
+        TriStateFilterOption("netorare","Netorare/NTR"),
+        TriStateFilterOption("ninja","Ninja"),
+        TriStateFilterOption("office_workers","Office Workers"),
+        TriStateFilterOption("oneshot","Oneshot"),
+        TriStateFilterOption("parody","parody"),
+        TriStateFilterOption("philosophical","Philosophical"),
+        TriStateFilterOption("police","Police"),
+        TriStateFilterOption("post_apocalyptic","Post-Apocalyptic"),
+        TriStateFilterOption("psychological","Psychological"),
+        TriStateFilterOption("reincarnation","Reincarnation"),
+        TriStateFilterOption("reverse_harem","Reverse Harem"),
+        TriStateFilterOption("romance","Romance"),
+        TriStateFilterOption("samurai","Samurai"),
+        TriStateFilterOption("school_life","School Life"),
+        TriStateFilterOption("sci_fi","Sci-Fi"),
+        TriStateFilterOption("shota","Shota"),
+        TriStateFilterOption("shotacon","shotacon"),
+        TriStateFilterOption("slice_of_life","Slice of Life"),
+        TriStateFilterOption("sm_bdsm","SM/BDSM"),
+        TriStateFilterOption("space","Space"),
+        TriStateFilterOption("sports","Sports"),
+        TriStateFilterOption("super_power","Super Power"),
+        TriStateFilterOption("superhero","Superhero"),
+        TriStateFilterOption("supernatural","Supernatural"),
+        TriStateFilterOption("survival","Survival"),
+        TriStateFilterOption("thriller","Thriller"),
+        TriStateFilterOption("time_travel","Time Travel"),
+        TriStateFilterOption("traditional_games","Traditional Games"),
+        TriStateFilterOption("tragedy","Tragedy"),
+        TriStateFilterOption("vampires","Vampires"),
+        TriStateFilterOption("video_games","Video Games"),
+        TriStateFilterOption("virtual_reality","Virtual Reality"),
+        TriStateFilterOption("wuxia","Wuxia"),
+        TriStateFilterOption("xianxia","Xianxia"),
+        TriStateFilterOption("xuanhuan","Xuanhuan"),
+        TriStateFilterOption("zombies","Zombies"),
+        // Hidden Genres
+        TriStateFilterOption("award_winning", "Award Winning"),
+        TriStateFilterOption("youkai", "Youkai"),
+        TriStateFilterOption("uncategorized", "Uncategorized")
+    )
+
+    private fun getLangFilter() = listOf(
+        // Values exported from publish.bato.to
+        CheckboxFilterOption("en","English"),
+        CheckboxFilterOption("ar","Arabic"),
+        CheckboxFilterOption("bg","Bulgarian"),
+        CheckboxFilterOption("zh","Chinese"),
+        CheckboxFilterOption("cs","Czech"),
+        CheckboxFilterOption("da","Danish"),
+        CheckboxFilterOption("nl","Dutch"),
+        CheckboxFilterOption("fil","Filipino"),
+        CheckboxFilterOption("fi","Finnish"),
+        CheckboxFilterOption("fr","French"),
+        CheckboxFilterOption("de","German"),
+        CheckboxFilterOption("el","Greek"),
+        CheckboxFilterOption("he","Hebrew"),
+        CheckboxFilterOption("hi","Hindi"),
+        CheckboxFilterOption("hu","Hungarian"),
+        CheckboxFilterOption("id","Indonesian"),
+        CheckboxFilterOption("it","Italian"),
+        CheckboxFilterOption("ja","Japanese"),
+        CheckboxFilterOption("ko","Korean"),
+        CheckboxFilterOption("ms","Malay"),
+        CheckboxFilterOption("pl","Polish"),
+        CheckboxFilterOption("pt","Portuguese"),
+        CheckboxFilterOption("pt_br","Portuguese (Brazil)"),
+        CheckboxFilterOption("ro","Romanian"),
+        CheckboxFilterOption("ru","Russian"),
+        CheckboxFilterOption("es","Spanish"),
+        CheckboxFilterOption("es_419","Spanish (Latin America)"),
+        CheckboxFilterOption("sv","Swedish"),
+        CheckboxFilterOption("th","Thai"),
+        CheckboxFilterOption("tr","Turkish"),
+        CheckboxFilterOption("uk","Ukrainian"),
+        CheckboxFilterOption("vi","Vietnamese"),
+        CheckboxFilterOption("af","Afrikaans"),
+        CheckboxFilterOption("sq","Albanian"),
+        CheckboxFilterOption("am","Amharic"),
+        CheckboxFilterOption("hy","Armenian"),
+        CheckboxFilterOption("az","Azerbaijani"),
+        CheckboxFilterOption("be","Belarusian"),
+        CheckboxFilterOption("bn","Bengali"),
+        CheckboxFilterOption("bs","Bosnian"),
+        CheckboxFilterOption("my","Burmese"),
+        CheckboxFilterOption("km","Cambodian"),
+        CheckboxFilterOption("ca","Catalan"),
+        CheckboxFilterOption("ceb","Cebuano"),
+        CheckboxFilterOption("zh_hk","Chinese (Cantonese)"),
+        CheckboxFilterOption("zh_tw","Chinese (Traditional)"),
+        CheckboxFilterOption("hr","Croatian"),
+        CheckboxFilterOption("en_us","English (United States)"),
+        CheckboxFilterOption("eo","Esperanto"),
+        CheckboxFilterOption("et","Estonian"),
+        CheckboxFilterOption("fo","Faroese"),
+        CheckboxFilterOption("ka","Georgian"),
+        CheckboxFilterOption("gn","Guarani"),
+        CheckboxFilterOption("gu","Gujarati"),
+        CheckboxFilterOption("ht","Haitian Creole"),
+        CheckboxFilterOption("ha","Hausa"),
+        CheckboxFilterOption("is","Icelandic"),
+        CheckboxFilterOption("ig","Igbo"),
+        CheckboxFilterOption("ga","Irish"),
+        CheckboxFilterOption("jv","Javanese"),
+        CheckboxFilterOption("kn","Kannada"),
+        CheckboxFilterOption("kk","Kazakh"),
+        CheckboxFilterOption("ku","Kurdish"),
+        CheckboxFilterOption("ky","Kyrgyz"),
+        CheckboxFilterOption("lo","Laothian"),
+        CheckboxFilterOption("lv","Latvian"),
+        CheckboxFilterOption("lt","Lithuanian"),
+        CheckboxFilterOption("lb","Luxembourgish"),
+        CheckboxFilterOption("mk","Macedonian"),
+        CheckboxFilterOption("mg","Malagasy"),
+        CheckboxFilterOption("ml","Malayalam"),
+        CheckboxFilterOption("mt","Maltese"),
+        CheckboxFilterOption("mi","Maori"),
+        CheckboxFilterOption("mr","Marathi"),
+        CheckboxFilterOption("mo","Moldavian"),
+        CheckboxFilterOption("mn","Mongolian"),
+        CheckboxFilterOption("ne","Nepali"),
+        CheckboxFilterOption("no","Norwegian"),
+        CheckboxFilterOption("ny","Nyanja"),
+        CheckboxFilterOption("ps","Pashto"),
+        CheckboxFilterOption("fa","Persian"),
+        CheckboxFilterOption("rm","Romansh"),
+        CheckboxFilterOption("sm","Samoan"),
+        CheckboxFilterOption("sr","Serbian"),
+        CheckboxFilterOption("sh","Serbo-Croatian"),
+        CheckboxFilterOption("st","Sesotho"),
+        CheckboxFilterOption("sn","Shona"),
+        CheckboxFilterOption("sd","Sindhi"),
+        CheckboxFilterOption("si","Sinhalese"),
+        CheckboxFilterOption("sk","Slovak"),
+        CheckboxFilterOption("sl","Slovenian"),
+        CheckboxFilterOption("so","Somali"),
+        CheckboxFilterOption("sw","Swahili"),
+        CheckboxFilterOption("tg","Tajik"),
+        CheckboxFilterOption("ta","Tamil"),
+        CheckboxFilterOption("ti","Tigrinya"),
+        CheckboxFilterOption("to","Tonga"),
+        CheckboxFilterOption("tk","Turkmen"),
+        CheckboxFilterOption("ur","Urdu"),
+        CheckboxFilterOption("uz","Uzbek"),
+        CheckboxFilterOption("yo","Yoruba"),
+        CheckboxFilterOption("zu","Zulu"),
+        CheckboxFilterOption("_t","Other"),
+        // Lang options from bato.to brows not in publish.bato.to
+        CheckboxFilterOption("eu", "Basque"),
+        CheckboxFilterOption("pt-PT","Portuguese (Portugal)"),
+    ).filterNot { it.value == siteLang }
+
+    private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
 }

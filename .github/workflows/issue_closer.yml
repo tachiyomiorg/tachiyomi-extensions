@@ -9,11 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Autoclose issues
-        uses: arkon/issue-closer-action@v3.3
+        uses: arkon/issue-closer-action@v3.4
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+          ignoreLabel: do-not-autoclose
           rules: |
-            [  
+            [
               {
                 "type": "title",
                 "regex": ".*<(Source Name|short description)>*",
@@ -31,12 +32,14 @@ jobs:
               },
               {
                 "type": "both",
-                "regex": ".*(mangago|mangafox|hq\\s*dragon|manga\\s*host|supermangas|superhentais|union\\s*mangas|yes\\s*mangas).*"
+                "regex": ".*(mangago|mangafox|hq\\s*dragon|manga\\s*host|supermangas|superhentais|union\\s*mangas|yes\\s*mangas|manhuascan|heroscan|manhwahot).*",
+                "ignoreCase": true,
                 "message": "{match} will not be added back as it is too difficult to maintain. Read #3475 for more information"
               },
               {
                 "type": "both",
-                "regex": ".*(teamx|tqneplus|manga\\s*disk|asura\\s*scans|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb).*"
+                "regex": ".*(teamx|tqneplus|manga\\s*disk|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb).*",
+                "ignoreCase": true,
                 "message": "{match} will not be added back as the Scanlator team has requested it to be removed. Read #3475 for more information"
               }
             ]

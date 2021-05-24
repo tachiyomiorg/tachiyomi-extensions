@@ -2,10 +2,10 @@ package eu.kanade.tachiyomi.lib.dataimage
 
 import android.util.Base64
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Protocol
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Element
 
 /**
@@ -43,7 +43,7 @@ class DataImageInterceptor : Interceptor {
     private val mediaTypePattern = Regex("""(^[^;,]*)[;,]""")
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val url = chain.request().url().toString()
+        val url = chain.request().url.toString()
         return if (url.startsWith("https://127.0.0.1/?image")) {
             val dataString = url.substringAfter("?")
             val byteArray = if (dataString.contains("base64")) {
@@ -51,8 +51,8 @@ class DataImageInterceptor : Interceptor {
             } else {
                 dataString.substringAfter(",").toByteArray()
             }
-            val mediaType = MediaType.parse(mediaTypePattern.find(dataString)!!.value)
-            Response.Builder().body(ResponseBody.create(mediaType, byteArray))
+            val mediaType = mediaTypePattern.find(dataString)!!.value.toMediaTypeOrNull()
+            Response.Builder().body(byteArray.toResponseBody(mediaType))
                 .request(chain.request())
                 .protocol(Protocol.HTTP_1_0)
                 .code(200)

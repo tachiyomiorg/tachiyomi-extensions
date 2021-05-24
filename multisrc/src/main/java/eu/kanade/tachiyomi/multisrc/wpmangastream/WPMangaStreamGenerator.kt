@@ -12,6 +12,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 4
 
     override val sources = listOf(
+            SingleLang("Asura Scans", "override url", "en", overrideVersionCode = 1),
             SingleLang("KlanKomik", "https://klankomik.com", "id"),
             SingleLang("ChiOtaku", "https://chiotaku.com", "id"),
             SingleLang("MangaShiro", "https://mangashiro.co", "id"),
@@ -48,7 +49,8 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("World Romance Translation", "https://wrt.my.id/", "id", overrideVersionCode = 1),
             SingleLang("The Apollo Team", "https://theapollo.team", "en"),
             SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true),
-            SingleLang("Lemon Juice Scan", "https://lemonjuicescan.com", "pt-BR", isNsfw = true)
+            SingleLang("Lemon Juice Scan", "https://lemonjuicescan.com", "pt-BR", isNsfw = true),
+            SingleLang("Phoenix Fansub", "https://phoenixfansub.com", "es")
     )
 
     companion object {

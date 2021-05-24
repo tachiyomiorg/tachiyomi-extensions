@@ -33,7 +33,7 @@ class MangaDexHelper() {
      * get chapters for manga (aka manga/$id/feed endpoint)
      */
     fun getChapterEndpoint(mangaId: String, offset: Int, langCode: String) =
-        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&locales[]=$langCode&order[volume]=desc&order[chapter]=desc"
+        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&translatedLanguage[]=$langCode&order[volume]=desc&order[chapter]=desc"
 
     /**
      * Check if the manga url is a valid uuid
@@ -123,15 +123,19 @@ class MangaDexHelper() {
     /**
      * create an SManga from json element only basic elements
      */
-    fun createManga(mangaJson: JsonElement): SManga {
+    fun createBasicManga(mangaJson: JsonElement, client: OkHttpClient): SManga {
         val data = mangaJson["data"].obj
         val dexId = data["id"].string
         val attr = data["attributes"].obj
 
+        val coverId = mangaJson["relationships"].array.filter { relationship ->
+            relationship["type"].string.equals("cover_art", true)
+        }.map { relationship -> relationship["id"].string }.firstOrNull()
+
         return SManga.create().apply {
             url = "/manga/$dexId"
             title = cleanString(attr["title"]["en"].string)
-            thumbnail_url = MDConstants.tempCover
+            thumbnail_url = createCoverUrl(dexId, coverId, client)
         }
     }
 
@@ -147,11 +151,12 @@ class MangaDexHelper() {
             // things that will go with the genre tags but aren't actually genre
 
             val tempContentRating = attr["contentRating"].nullString
-            val contentRating = if (tempContentRating == null || tempContentRating.equals("safe", true)) {
-                null
-            } else {
-                "Content rating: " + tempContentRating.capitalize(Locale.US)
-            }
+            val contentRating =
+                if (tempContentRating == null || tempContentRating.equals("safe", true)) {
+                    null
+                } else {
+                    "Content rating: " + tempContentRating.capitalize(Locale.US)
+                }
 
             val nonGenres = listOf(
                 (attr["publicationDemographic"]?.nullString ?: "").capitalize(Locale.US),
@@ -180,6 +185,10 @@ class MangaDexHelper() {
                 }.toMap()
             }.getOrNull() ?: emptyMap()
 
+            val coverId = mangaJson["relationships"].array.filter { relationship ->
+                relationship["type"].string.equals("cover_art", true)
+            }.map { relationship -> relationship["id"].string }.firstOrNull()
+
             // get tag list
             val tags = mdFilters.getTags()
 
@@ -201,7 +210,7 @@ class MangaDexHelper() {
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
-                thumbnail_url = MDConstants.tempCover
+                thumbnail_url = createCoverUrl(dexId, coverId, client)
                 genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {
@@ -293,5 +302,21 @@ class MangaDexHelper() {
             Log.e("MangaDex", "error parsing chapter", e)
             throw(e)
         }
+    }
+
+    fun createCoverUrl(dexId: String, coverId: String?, client: OkHttpClient): String {
+        var coverUrl = MDConstants.coverApi.replace("{uuid}", dexId)
+        /*     try {
+                 if (coverId != null) {
+                     val response =
+                         client.newCall(GET("${MDConstants.apiMangaUrl}/$dexId/cover?ids[]=$coverId"))
+                             .execute()
+                     val coverJson = JsonParser.parseString(response.body!!.string()).obj
+                     val firstRelationship =
+                         coverJson.obj["results"].array.firstOrNull()!!.obj["data"]
+                             .obj["attributes"].obj["fileName"]?.nullString?.let { fileName ->
+                             coverUrl = "${MDConstants.cdnUrl}/covers/$dexId/$fileName"
+                     */
+        return coverUrl
     }
 }

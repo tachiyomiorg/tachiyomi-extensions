@@ -38,7 +38,7 @@ if (System.getenv("CI") == null || System.getenv("CI_PUSH") == "true") {
      * comment out the parts above and uncomment below.
      */
     // val lang = "all"
-    // val name = "mmrcms"
+    // val name = "mangadex"
     // include(":${lang}-${name}")
     // project(":${lang}-${name}").projectDir = File("src/${lang}/${name}")
 } else {

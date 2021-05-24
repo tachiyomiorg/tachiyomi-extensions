@@ -28,10 +28,10 @@ class SpecificHostRateLimitInterceptor(
 
     private val requestQueue = ArrayList<Long>(permits)
     private val rateLimitMillis = unit.toMillis(period)
-    private val host = httpUrl.host()
+    private val host = httpUrl.host
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        if (chain.request().url().host() != host) {
+        if (chain.request().url.host != host) {
             return chain.proceed(chain.request())
         }
         synchronized(requestQueue) {

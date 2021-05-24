@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.en.rainofsnow
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -49,9 +50,21 @@ open class RainOfSnow() : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = ".page-numbers .next"
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/".toHttpUrlOrNull()!!.newBuilder()
-        url.addQueryParameter("serchfor", "comics")
-        url.addQueryParameter("s", query)
+        if (query.isNotEmpty()) {
+            val url = "$baseUrl/".toHttpUrlOrNull()!!.newBuilder()
+            url.addQueryParameter("s", query)
+            return GET(url.build().toString(), headers)
+        }
+        val url = "$baseUrl/comics/".toHttpUrlOrNull()!!.newBuilder()
+        filters.forEach { filter ->
+            when (filter) {
+                is AlbumTypeSelectFilter -> {
+                    if (filter.state != 0) {
+                        url.addQueryParameter("n_orderby", filter.toUriPart())
+                    }
+                }
+            }
+        }
         return GET(url.build().toString(), headers)
     }
 
@@ -117,8 +130,30 @@ open class RainOfSnow() : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select("[style=display: block;] img").forEachIndexed { index, element ->
-            add(Page(index, "", element.attr("abs:src")))
+            add(Page(index, "", element.attr("abs:data-src")))
         }
+    }
+
+    // Filters
+    override fun getFilterList(): FilterList = FilterList(
+        Filter.Header("NOTE: Ignored if using text search!"),
+        Filter.Separator(),
+        AlbumTypeSelectFilter(),
+    )
+    private class AlbumTypeSelectFilter() : UriPartFilter(
+        "Type",
+        arrayOf(
+            Pair("All", ""),
+            Pair("Manga", "95"),
+            Pair("Manhua", "115"),
+            Pair("Manhwa", "105"),
+            Pair("Vietnamese Comic", "306"),
+        )
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
     }
 
     override fun latestUpdatesFromElement(element: Element) = throw Exception("Not used")

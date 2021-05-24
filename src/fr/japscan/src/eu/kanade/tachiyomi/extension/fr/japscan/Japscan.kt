@@ -60,7 +60,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
 
     override val name = "Japscan"
 
-    override val baseUrl = "https://www.japscan.se"
+    override val baseUrl = "https://www.japscan.ws"
 
     override val lang = "fr"
 
@@ -389,7 +389,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                             view: WebView,
                             request: WebResourceRequest
                         ): WebResourceResponse? {
-                            if (request.url.toString().startsWith("https://cdn.statically.io/img/c.japscan.se/") && !checkNew.contains(request.url.toString())) {
+                            if (request.url.toString().startsWith("https://cdn.statically.io/img/c.japscan.ws/") && !checkNew.contains(request.url.toString())) {
                                 checkNew.add(request.url.toString())
                                 pages.add(Page(pages.size, "", request.url.toString()))
                                 Log.d("japscan", "intercepted ${request.url}")
