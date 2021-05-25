@@ -205,9 +205,15 @@ class Remanga : ConfigurableSource, HttpSource() {
             else -> type
         }
     }
+    private fun parseAge(age_limit: Int): String {
+        return when (age_limit) {
+            2 -> "18+"
+            1 -> "16+"
+            else -> "0+"
+        }
+    }
 
     private fun MangaDetDto.toSManga(): SManga {
-
         val ratingValue = avg_rating.toFloat()
         val ratingStar = when {
             ratingValue > 9.5 -> "★★★★★"
@@ -229,7 +235,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
             this.description = rus_name + "\n" + ratingStar + " " + ratingValue + " (голосов: " + count_rating + ")" + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
-            genre = (genres + parseType(type)).joinToString { it.name }
+            genre = (genres + parseType(type)).joinToString { it.name } + ", " + parseAge(age_limit)
             status = parseStatus(o.status.id)
         }
     }
