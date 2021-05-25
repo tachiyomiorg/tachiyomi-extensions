@@ -5,9 +5,13 @@ ext {
     extName = 'Rain Of Snow'
     pkgNameSuffix = 'en.rainofsnow'
     extClass = '.RainOfSnow'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
     containsNsfw = false
+}
+
+dependencies {
+    implementation project(path: ':lib-ratelimit')
 }
 
 apply from: "$rootDir/common.gradle"

@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,6 +27,10 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36 Edg/90.0.818.62")
+        .add("Referer", "https://www.google.com")
 
     override fun popularMangaSelector() = "div.list-update_item"
 

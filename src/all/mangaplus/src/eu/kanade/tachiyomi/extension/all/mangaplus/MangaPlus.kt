@@ -86,11 +86,19 @@ abstract class MangaPlus(
         100082 to Language.THAI,
         100120 to Language.THAI,
         100121 to Language.THAI,
+        100158 to Language.THAI,
 
         // Brazilian Portuguese
         100149 to Language.PORTUGUESE_BR,
         100150 to Language.PORTUGUESE_BR,
-        100151 to Language.PORTUGUESE_BR
+        100151 to Language.PORTUGUESE_BR,
+        100163 to Language.PORTUGUESE_BR,
+
+        // Indonesian
+        100140 to Language.INDONESIAN,
+        100142 to Language.INDONESIAN,
+        100143 to Language.INDONESIAN,
+        100162 to Language.INDONESIAN
     )
 
     override fun popularMangaRequest(page: Int): Request {

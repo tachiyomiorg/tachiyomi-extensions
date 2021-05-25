@@ -93,7 +93,11 @@ enum class Language(val id: Int) {
 
     // @ProtoNumber(3)
     // @SerializedName("3")
-    PORTUGUESE_BR(3)
+    PORTUGUESE_BR(3),
+
+    // @ProtoNumber(4)
+    // @SerializedName("4")
+    INDONESIAN(4)
 }
 
 @Serializable

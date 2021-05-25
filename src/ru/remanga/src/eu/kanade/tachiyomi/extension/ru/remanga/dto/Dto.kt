@@ -43,7 +43,8 @@ data class MangaDetDto(
     val branches: List<BranchesDto>,
     val status: StatusDto,
     val avg_rating: String,
-    val count_rating: Int
+    val count_rating: Int,
+    val age_limit: Int
 )
 
 data class PropsDto(

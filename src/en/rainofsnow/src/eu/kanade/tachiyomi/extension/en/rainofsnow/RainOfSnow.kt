@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.rainofsnow
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -28,9 +29,12 @@ open class RainOfSnow() : ParsedHttpSource() {
 
     override val supportsLatest = false
 
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
     override fun popularMangaRequest(page: Int): Request {

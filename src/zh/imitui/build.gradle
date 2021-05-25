@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Imitui Manhua'
+    pkgNameSuffix = 'zh.imitui'
+    extClass = '.Imitui'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+
+apply from: "$rootDir/common.gradle"

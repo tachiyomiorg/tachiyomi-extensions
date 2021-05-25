@@ -170,11 +170,14 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         val body = document.select("div.media-info-list").first()
         val rawCategory = body.select("div.media-info-list__title:contains(Тип) + div").text()
-
         val category = when {
             rawCategory == "Комикс западный" -> "комикс"
             rawCategory.isNotBlank() -> rawCategory.toLowerCase(Locale.ROOT)
             else -> "манга"
+        }
+        var rawAgeStop = body.select("div.media-info-list__title:contains(Возрастной рейтинг) + div").text()
+        if (rawAgeStop.isEmpty()) {
+            rawAgeStop = "0+"
         }
 
         val ratingValue = document.select(".media-rating.media-rating_lg div.media-rating__value").text().toFloat() * 2
@@ -206,7 +209,7 @@ class LibManga : ConfigurableSource, HttpSource() {
             "завершен" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        manga.genre = genres.plusElement(category).joinToString { it.trim() }
+        manga.genre = genres.plusElement(category).plusElement(rawAgeStop).joinToString { it.trim() }
         manga.description = document.select(".media-name__main").text() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")" + "\nАльтернативные названия:\n" + document.select(".media-info-list__item_alt-names .media-info-list__value div").map { it.text() }.joinToString(" / ") + "\n\n" + document.select(".media-description__text").text()
         return manga
     }
