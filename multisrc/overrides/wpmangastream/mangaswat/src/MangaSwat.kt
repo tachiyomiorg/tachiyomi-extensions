@@ -1,37 +1,20 @@
 package eu.kanade.tachiyomi.extension.ar.mangaswat
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.Headers
+import eu.kanade.tachiyomi.source.model.Page
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
-import okhttp3.Interceptor
-import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
-    /**
-     * Use IOException or the app crashes!
-     * x-sucuri-cache header is never present on images; specify webpages or glide won't load images!
-     */
-    private class Sucuri : Interceptor {
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val response = chain.proceed(chain.request())
-            if (response.header("x-sucuri-cache").isNullOrEmpty() && response.request.url.toString().contains("//mangaswat.com"))
-                throw IOException("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
-            return response
-        }
-    }
-    override val client: OkHttpClient = super.client.newBuilder().addInterceptor(Sucuri()).build()
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
 
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("Referer", baseUrl)
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0")
-        .add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
     override fun mangaDetailsParse(document: Document): SManga {
         return SManga.create().apply {
