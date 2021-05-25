@@ -105,7 +105,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         jsonObject.put("password", password)
         val body = jsonObject.toString().toRequestBody(MEDIA_TYPE)
         val response = chain.proceed(POST("$baseUrl/api/users/login/", headers, body))
-        if (response.code == 400) {
+        if (response.code >= 400) {
             throw Exception("Failed to login")
         }
         val user = gson.fromJson<SeriesWrapperDto<UserDto>>(response.body?.charStream()!!)
