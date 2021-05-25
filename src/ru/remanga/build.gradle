@@ -5,7 +5,7 @@ ext {
     extName = 'Remanga'
     pkgNameSuffix = 'ru.remanga'
     extClass = '.Remanga'
-    extVersionCode = 25
+    extVersionCode = 26
     libVersion = '1.2'
 }
 
