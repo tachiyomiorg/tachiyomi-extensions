@@ -161,7 +161,7 @@ class Mango : ConfigurableSource, HttpSource() {
         val numPages = splitUrl.removeAt(splitUrl.size - 2).toInt()
         val baseUrlChapter = splitUrl.joinToString("/")
         val pages = mutableListOf<Page>()
-        for (i in 0..numPages) {
+        for (i in 1..numPages) {
             pages.add(
                 Page(
                     index = i,
