@@ -1,53 +1,22 @@
 package eu.kanade.tachiyomi.extension.ar.mangaswat
 
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
-import okhttp3.Headers
+import org.jsoup.nodes.Element
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.nodes.Document
-import okhttp3.Interceptor
-import java.io.IOException
 
 class MangaSwat : WPMangaStream("MangaSwat", "https://mangaswat.com", "ar") {
-    /**
-     * Use IOException or the app crashes!
-     * x-sucuri-cache header is never present on images; specify webpages or glide won't load images!
-     */
-    private class Sucuri : Interceptor {
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val response = chain.proceed(chain.request())
-            if (response.header("x-sucuri-cache").isNullOrEmpty() && response.request.url.toString().contains("//mangaswat.com"))
-                throw IOException("Site protected, open webview | موقع محمي ، عرض ويب مفتوح")
-            return response
-        }
-    }
-    override val client: OkHttpClient = super.client.newBuilder().addInterceptor(Sucuri()).build()
+    private val rateLimitInterceptor = RateLimitInterceptor(4)
 
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("Referer", baseUrl)
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0")
-        .add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .addNetworkInterceptor(rateLimitInterceptor)
+        .build()
 
-    override fun mangaDetailsParse(document: Document): SManga {
-        return SManga.create().apply {
-            document.select("div.bigcontent").firstOrNull()?.let { infoElement ->
-                genre = infoElement.select("span:contains(التصنيف) a").joinToString { it.text() }
-                status = parseStatus(infoElement.select("span:contains(الحالة)").firstOrNull()?.ownText())
-                author = infoElement.select("span:contains(المؤلف) i").firstOrNull()?.ownText()
-                artist = author
-                description = infoElement.select("div.desc").text()
-                thumbnail_url = infoElement.select("img").imgAttr()
-            }
-        }
-    }
-    override fun pageListRequest(chapter: SChapter): Request {
-        return GET(baseUrl + chapter.url + "?/", headers) // Bypass "linkvertise" ads
-    }
+    override fun chapterFromElement(element: Element): SChapter = super.chapterFromElement(element).apply { name = name.removeSuffix(" free") }
 
     override fun getFilterList() = FilterList(
         StatusFilter(),
