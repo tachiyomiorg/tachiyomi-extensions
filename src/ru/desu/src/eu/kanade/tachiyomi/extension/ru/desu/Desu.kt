@@ -64,6 +64,22 @@ class Desu : HttpSource() {
             ratingValue > 0.5 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
+        val rawAgeValue = obj.getString("adult")
+        val rawAgeStop = when (rawAgeValue) {
+            "1" -> "18+"
+            else -> "0+"
+        }
+
+        val rawTypeValue = obj.getString("kind")
+        val rawTypeStr = when (rawTypeValue) {
+            "manga" -> "Манга"
+            "manhwa" -> "Манхва"
+            "manhua" -> "Маньхуа"
+            "comics" -> "Комикс"
+            "one_shot" -> "Ваншот"
+            else -> "Манга"
+        }
+
         var altName = ""
         if (obj.getString("synonyms").isNotEmpty() && obj.getString("synonyms") != "null") {
             altName = "Альтернативные названия:\n" + obj.getString("synonyms").replace("|", " / ") + "\n\n"
@@ -75,9 +91,9 @@ class Desu : HttpSource() {
             for (i in 0 until jsonArray.length()) {
                 genreList.add(jsonArray.getJSONObject(i).getString("russian"))
             }
-            genreList.joinToString()
+            genreList.plusElement(rawTypeStr).plusElement(rawAgeStop).joinToString()
         } else {
-            obj.getString("genres")
+            obj.getString("genres") + ", " + rawTypeStr + ", " + rawAgeStop
         }
         status = when (obj.getString("status")) {
             "ongoing" -> SManga.ONGOING
