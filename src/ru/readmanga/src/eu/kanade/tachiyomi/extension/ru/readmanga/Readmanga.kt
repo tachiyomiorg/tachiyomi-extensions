@@ -144,7 +144,12 @@ class Readmanga : ParsedHttpSource() {
             ratingValue > 0.5 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
-
+        val rawAgeValue = infoElement.select(".elem_limitation .element-link").first()?.text()
+        val rawAgeStop = when (rawAgeValue) {
+            "PG" -> "16+"
+            "PG-13" -> "12+"
+            else -> "0+"
+        }
         val manga = SManga.create()
         var authorElement = infoElement.select("span.elem_author").first()?.text()
         if (authorElement == null) {
@@ -153,7 +158,7 @@ class Readmanga : ParsedHttpSource() {
         manga.title = infoElement.select("h1.names .name").text()
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
-        manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
+        manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).plusElement(rawAgeStop).joinToString { it.trim() }
         var altName = ""
         if (infoElement.select(".another-names").isNotEmpty()) {
             altName = "Альтернативные названия:\n" + infoElement.select(".another-names").text() + "\n\n"
@@ -366,9 +371,9 @@ class Readmanga : ParsedHttpSource() {
     )
 
     private fun getAgeList() = listOf(
-        Genre("G", "el_6180"),
-        Genre("PG", "el_6179"),
-        Genre("PG-13", "el_6181")
+        Genre("G(0+)", "el_6180"),
+        Genre("PG-13(12+)", "el_6181"),
+        Genre("PG(16+)", "el_6179")
     )
 
     private fun getCategoryList() = listOf(

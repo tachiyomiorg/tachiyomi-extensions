@@ -143,6 +143,12 @@ class Mintmanga : ParsedHttpSource() {
             ratingValue > 0.5 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
+        val rawAgeValue = infoElement.select(".elem_limitation .element-link").first()?.text()
+        val rawAgeStop = when (rawAgeValue) {
+            "NC-17" -> "18+"
+            "R18+" -> "18+"
+            else -> "16+"
+        }
         val manga = SManga.create()
         var authorElement = infoElement.select("span.elem_author").first()?.text()
         if (authorElement == null) {
@@ -151,7 +157,7 @@ class Mintmanga : ParsedHttpSource() {
         manga.title = infoElement.select("h1.names .name").text()
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
-        manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
+        manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).plusElement(rawAgeStop).joinToString { it.trim() }
         var altName = ""
         if (infoElement.select(".another-names").isNotEmpty()) {
             altName = "Альтернативные названия:\n" + infoElement.select(".another-names").text() + "\n\n"
@@ -361,9 +367,9 @@ class Mintmanga : ParsedHttpSource() {
     )
 
     private fun getAgeList() = listOf(
-        Genre("NC-17", "el_3969"),
-        Genre("R", "el_3968"),
-        Genre("R18+", "el_3990")
+        Genre("R(16+)", "el_3968"),
+        Genre("NC-17(18+)", "el_3969"),
+        Genre("R18+(18+)", "el_3990")
     )
 
     private fun getCategoryList() = listOf(
