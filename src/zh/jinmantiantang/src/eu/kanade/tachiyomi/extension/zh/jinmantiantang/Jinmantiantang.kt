@@ -9,6 +9,7 @@ import android.graphics.Rect
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.annotations.Nsfw
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
@@ -18,6 +19,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -38,10 +40,19 @@ import kotlin.math.floor
 @Nsfw
 class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
-    override val baseUrl: String = "https://18comic.bet"
+    override val baseUrl: String = "https://18comic.vip"
     override val lang: String = "zh"
     override val name: String = "禁漫天堂"
     override val supportsLatest: Boolean = true
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val baseHttpUrl: HttpUrl = baseUrl.toHttpUrlOrNull()!!
+
+    // Add rate limit to fix manga thumbnail load failure
+    private val mainSiteRateLimitInterceptor = SpecificHostRateLimitInterceptor(baseHttpUrl, preferences.getString(MAINSITE_RATELIMIT_PREF, "1")!!.toInt(), preferences.getString(MAINSITE_RATELIMIT_PERIOD, "3")!!.toLong())
 
     // 220980
     // 算法 html页面 1800 行左右
@@ -52,21 +63,25 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
     private var chapterArea = "a[class=col btn btn-primary dropdown-toggle reading]"
 
     // 处理URL请求
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder().addInterceptor(
-        fun(chain): Response {
-            val url = chain.request().url.toString()
-            val response = chain.proceed(chain.request())
-            if (!url.contains("media/photos", ignoreCase = true)) return response // 对非漫画图片连接直接放行
-            if (url.substring(url.indexOf("photos/") + 7, url.lastIndexOf("/")).toInt() < scrambleId) return response // 对在漫画章节ID为220980之前的图片未进行图片分割,直接放行
+    override val client: OkHttpClient = network.cloudflareClient
+        .newBuilder()
+        .addNetworkInterceptor(mainSiteRateLimitInterceptor)
+//        .addNetworkInterceptor(RateLimitInterceptor(1, 3))
+        .addInterceptor(
+            fun(chain): Response {
+                val url = chain.request().url.toString()
+                val response = chain.proceed(chain.request())
+                if (!url.contains("media/photos", ignoreCase = true)) return response // 对非漫画图片连接直接放行
+                if (url.substring(url.indexOf("photos/") + 7, url.lastIndexOf("/")).toInt() < scrambleId) return response // 对在漫画章节ID为220980之前的图片未进行图片分割,直接放行
 // 章节ID:220980(包含)之后的漫画(2020.10.27之后)图片进行了分割倒序处理
-            val res = response.body!!.byteStream().use {
-                decodeImage(it)
+                val res = response.body!!.byteStream().use {
+                    decodeImage(it)
+                }
+                val mediaType = "image/avif,image/webp,image/apng,image/*,*/*".toMediaTypeOrNull()
+                val outputBytes = res.toResponseBody(mediaType)
+                return response.newBuilder().body(outputBytes).build()
             }
-            val mediaType = "image/avif,image/webp,image/apng,image/*,*/*".toMediaTypeOrNull()
-            val outputBytes = res.toResponseBody(mediaType)
-            return response.newBuilder().body(outputBytes).build()
-        }
-    ).build()
+        ).build()
 
     // 对被分割的图片进行分割,排序处理
     private fun decodeImage(img: InputStream): ByteArray {
@@ -122,6 +137,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         else
             baseSelector
     }
+
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         title = element.select("span.video-title").text()
         setUrlWithoutDomain(element.select("a").first().attr("href"))
@@ -243,7 +259,8 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         if (chapterArea == "body") {
             name = "Ch. 1"
             url = element.select("a[class=col btn btn-primary dropdown-toggle reading]").attr("href")
-            date_upload = sdf.parse(element.select("div[itemprop='datePublished']").attr("content"))?.time ?: 0
+            date_upload = sdf.parse(element.select("div[itemprop='datePublished']").attr("content"))?.time
+                ?: 0
         } else {
             url = element.select("a").attr("href")
             name = element.select("a li").first().ownText()
@@ -277,7 +294,8 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
                 }
             }
             return document.select("a.prevnext").firstOrNull()
-                ?.let { internalParse(client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup(), pages) } ?: pages
+                ?.let { internalParse(client.newCall(GET(it.attr("abs:href"), headers)).execute().asJsoup(), pages) }
+                ?: pages
         }
 
         return internalParse(document, mutableListOf())
@@ -408,16 +426,45 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         open fun toUriPart() = vals[state].second
     }
 
-    private val preferences: SharedPreferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
-    private val BLOCK_PREF_TITLE = "屏蔽词列表"
-    private val BLOCK_PREF_DEFAULT = "// 例如 \"YAOI cos 扶他 毛絨絨 獵奇 韩漫 韓漫\", " +
-        "关键词之间用空格分离, 大小写不敏感, \"//\"后的字符会被忽略"
-    private val BLOCK_PREF_DIALOGTITLE = "关键词列表"
-
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val mainSiteRateLimitPreference = androidx.preference.ListPreference(screen.context).apply {
+            key = MAINSITE_RATELIMIT_PREF
+            title = MAINSITE_RATELIMIT_PREF_TITLE
+            entries = PREF_ENTRIES_ARRAY
+            entryValues = PREF_ENTRIES_ARRAY
+            summary = MAINSITE_RATELIMIT_PREF_SUMMARY
+
+            setDefaultValue("1")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(MAINSITE_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
+        val mainSiteRateLimitPeriodPreference = androidx.preference.ListPreference(screen.context).apply {
+            key = MAINSITE_RATELIMIT_PERIOD
+            title = MAINSITE_RATELIMIT_PERIOD_TITLE
+            entries = PERIOD_ENTRIES_ARRAY
+            entryValues = PERIOD_ENTRIES_ARRAY
+            summary = MAINSITE_RATELIMIT_PERIOD_SUMMARY
+
+            setDefaultValue("3")
+            setOnPreferenceChangeListener { _, newValue ->
+                try {
+                    val setting = preferences.edit().putString(MAINSITE_RATELIMIT_PREF, newValue as String).commit()
+                    setting
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            }
+        }
+
         EditTextPreference(screen.context).apply {
             key = "BLOCK_GENRES_LIST"
             title = BLOCK_PREF_TITLE
@@ -429,5 +476,27 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
         }.let {
             screen.addPreference(it)
         }
+
+        screen.addPreference(mainSiteRateLimitPreference)
+        screen.addPreference(mainSiteRateLimitPeriodPreference)
+    }
+
+    companion object {
+
+        private const val BLOCK_PREF_TITLE = "屏蔽词列表"
+        private const val BLOCK_PREF_DEFAULT = "// 例如 \"YAOI cos 扶他 毛絨絨 獵奇 韩漫 韓漫\", " +
+            "关键词之间用空格分离, 大小写不敏感, \"//\"后的字符会被忽略"
+        private const val BLOCK_PREF_DIALOGTITLE = "关键词列表"
+
+        private const val MAINSITE_RATELIMIT_PREF = "mainSiteRateLimitPreference"
+        private const val MAINSITE_RATELIMIT_PREF_TITLE = "在限制时间内（下个设置项）允许的请求数量。" //  Number of requests allowed within a period of units.
+        private const val MAINSITE_RATELIMIT_PREF_SUMMARY = "此值影响更新书架时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s"
+
+        private const val MAINSITE_RATELIMIT_PERIOD = "mainSiteRateLimitPeriodPreference"
+        private const val MAINSITE_RATELIMIT_PERIOD_TITLE = "限制持续时间。单位秒" // The limiting duration. Defaults to 3.
+        private const val MAINSITE_RATELIMIT_PERIOD_SUMMARY = "此值影响更新书架时请求的间隔时间。调大此值可能减小IP被屏蔽的几率，但更新时间也会变慢。需要重启软件以生效。\n当前值：%s"
+
+        private val PREF_ENTRIES_ARRAY = (1..10).map { i -> i.toString() }.toTypedArray()
+        private val PERIOD_ENTRIES_ARRAY = (1..60).map { i -> i.toString() }.toTypedArray()
     }
 }
