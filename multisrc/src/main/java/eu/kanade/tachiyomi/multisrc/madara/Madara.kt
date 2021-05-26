@@ -17,7 +17,7 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -427,7 +427,7 @@ abstract class Madara(
         val xhrHeaders = headersBuilder().add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")
             .add("Referer", baseUrl)
             .build()
-        val body = RequestBody.create(null, "action=manga_get_chapters&manga=$mangaId")
+        val body = "action=manga_get_chapters&manga=$mangaId".toRequestBody(null)
         return client.newCall(POST("$baseUrl/wp-admin/admin-ajax.php", xhrHeaders, body)).execute().asJsoup()
     }
 
@@ -458,6 +458,7 @@ abstract class Madara(
                 chapter.url = urlElement.attr("abs:href").let {
                     it.substringBefore("?style=paged") + if (!it.endsWith(chapterUrlSuffix)) chapterUrlSuffix else ""
                 }
+                chapter.name = urlElement.text()
             }
             // Dates can be part of a "new" graphic or plain text
             chapter.date_upload = select("img").firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
