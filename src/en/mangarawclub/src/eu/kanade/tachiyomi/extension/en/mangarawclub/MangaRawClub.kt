@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.mangarawclub
 
-import android.annotation.SuppressLint
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+@Nsfw
 class MangaRawClub : ParsedHttpSource() {
 
     override val name = "manga-raw.club"
@@ -111,7 +112,6 @@ class MangaRawClub : ParsedHttpSource() {
         return chapter
     }
 
-    @SuppressLint("SimpleDateFormat")
     private fun parseChapterDate(date: String): Long {
         // "April 21, 2021, 4:05 p.m."
         val fdate = date.replace(".", "").replace("Sept", "Sep")
@@ -127,8 +127,6 @@ class MangaRawClub : ParsedHttpSource() {
             val value = sdfF.parse(fdate)
             value!!.time
         }
-
-        return 0
     }
 
     override fun pageListParse(document: Document): List<Page> {
