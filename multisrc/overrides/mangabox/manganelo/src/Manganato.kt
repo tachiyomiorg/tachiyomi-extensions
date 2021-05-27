@@ -3,6 +3,8 @@ package eu.kanade.tachiyomi.extension.en.manganelo
 import eu.kanade.tachiyomi.multisrc.mangabox.MangaBox
 import eu.kanade.tachiyomi.network.GET
 import okhttp3.Request
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class Manganato : MangaBox("Manganato", "https://manganato.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
     override val id: Long = 1024627298672457456
