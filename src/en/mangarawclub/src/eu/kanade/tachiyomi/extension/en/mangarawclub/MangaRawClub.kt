@@ -86,6 +86,7 @@ class MangaRawClub : ParsedHttpSource() {
         manga.genre = genres.joinToString(", ")
         manga.status = parseStatus(document.select("h5:contains(Status) + div").text())
         manga.description = document.getElementsByClass("description").first().text()
+        manga.description = document.select("div.summary > div.content").first().text()
         val coverElement = document.getElementsByClass("cover")
         manga.thumbnail_url = baseUrl + coverElement.select("img").attr("data-src")
 
@@ -118,14 +119,17 @@ class MangaRawClub : ParsedHttpSource() {
         val format = "MMMMM dd, yyyy, h:mm a"
         val format2 = "MMMMM dd, yyyy, h a" // because sometimes if it is exact hour it wont have minutes because why not
         val sdf = SimpleDateFormat(format)
-
-        return try {
-            val value = sdf.parse(fdate)
-            value!!.time
+        try {
+            return try {
+                val value = sdf.parse(fdate)
+                value!!.time
+            } catch (e: ParseException) {
+                val sdfF = SimpleDateFormat(format2)
+                val value = sdfF.parse(fdate)
+                value!!.time
+            }
         } catch (e: ParseException) {
-            val sdfF = SimpleDateFormat(format2)
-            val value = sdfF.parse(fdate)
-            value!!.time
+            return 0
         }
     }
 
