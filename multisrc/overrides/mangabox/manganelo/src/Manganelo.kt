@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.manganato
+package eu.kanade.tachiyomi.extension.en.manganelo
 
 import eu.kanade.tachiyomi.multisrc.mangabox.MangaBox
 import eu.kanade.tachiyomi.network.GET
