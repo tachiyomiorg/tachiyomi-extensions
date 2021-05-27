@@ -4,7 +4,9 @@ import eu.kanade.tachiyomi.multisrc.mangabox.MangaBox
 import eu.kanade.tachiyomi.network.GET
 import okhttp3.Request
 
-class Manganelo : MangaBox("Manganelo", "https://manganelo.com", "en") {
+class Manganato : MangaBox("Manganato", "https://manganato.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH) {
+    override val id: Long = 1024627298672457456
+
     // Nelo's date format is part of the base class
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/genre-all/$page?type=topview", headers)
     override fun popularMangaSelector() = "div.content-genres-item"
