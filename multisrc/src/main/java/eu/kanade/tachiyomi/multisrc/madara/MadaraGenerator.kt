@@ -110,6 +110,8 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaDods", "https://www.mangadods.com", "en"),
             SingleLang("Manga Drop Out", "https://www.mangadropout.xyz", "id", isNsfw = true),
             SingleLang("MangaEffect", "https://mangaeffect.com", "en"),
+            SingleLang("MangaForFree.com", "https://mangaforfree.com", "en", isNsfw = true),
+            SingleLang("MangaForFree.net", "https://mangaforfree.net", "en", isNsfw = true),
             SingleLang("MangaGreat", "https://mangagreat.com", "en"),
             SingleLang("Manga Hentai", "https://mangahentai.me", "en", isNsfw = true),
             SingleLang("Mangakik", "https://mangakik.com", "en"),
@@ -171,6 +173,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manhwatop", "https://manhwatop.com", "en", overrideVersionCode = 1),
             SingleLang("Manwahentai.me", "https://manhwahentai.me", "en", className = "ManwahentaiMe", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Manhwa.club", "https://manhwa.club", "en", className="ManwhaClub", overrideVersionCode = 2), // wrong class name for backward compatibility
+            SingleLang("Manycomic.com", "https://manycomic.com", "en", isNsfw = true),
             SingleLang("ManyToon", "https://manytoon.com", "en", overrideVersionCode = 1),
             SingleLang("ManyToonClub", "https://manytoon.club", "ko"),
             SingleLang("ManyToon.me", "https://manytoon.me", "en", className = "ManyToonMe", overrideVersionCode = 1),
