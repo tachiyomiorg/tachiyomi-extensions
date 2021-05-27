@@ -118,13 +118,13 @@ class MangaRawClub : ParsedHttpSource() {
         val fdate = date.replace(".", "").replace("Sept", "Sep")
         val format = "MMMMM dd, yyyy, h:mm a"
         val format2 = "MMMMM dd, yyyy, h a" // because sometimes if it is exact hour it wont have minutes because why not
-        val sdf = SimpleDateFormat(format)
+        val sdf = SimpleDateFormat(format, Locale.ENGLISH)
         try {
             return try {
                 val value = sdf.parse(fdate)
                 value!!.time
             } catch (e: ParseException) {
-                val sdfF = SimpleDateFormat(format2)
+                val sdfF = SimpleDateFormat(format2, Locale.ENGLISH)
                 val value = sdfF.parse(fdate)
                 value!!.time
             }
