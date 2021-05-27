@@ -288,7 +288,10 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MangaYami", "https://www.mangayami.club", "en", overrideVersionCode = 1),
             SingleLang("Manga Fenix", "https://manga-fenix.com", "es"),
             SingleLang("Manga Mitsu", "https://mangamitsu.com", "en", isNsfw = true, overrideVersionCode = 1),
-            SingleLang("Fudido Scanlator", "https://fudidoscan.com", "pt-BR", isNsfw = true)
+            SingleLang("Fudido Scanlator", "https://fudidoscan.com", "pt-BR", isNsfw = true),
+            SingleLang("MangaForFree.com", "https://mangaforfree.com", "en", isNsfw = true),
+            SingleLang("MangaForFree.net", "https://mangaforfree.net", "en", isNsfw = true),
+            SingleLang("Manycomic.com", "https://manycomic.com", "en", isNsfw = true),
     )
 
     companion object {
