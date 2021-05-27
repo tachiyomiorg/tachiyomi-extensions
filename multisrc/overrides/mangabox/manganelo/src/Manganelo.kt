@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.multisrc.mangabox.MangaBox
 import eu.kanade.tachiyomi.network.GET
 import okhttp3.Request
 
-class Manganato : MangaBox("Manganato", "https://manganato.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH) {
+class Manganato : MangaBox("Manganato", "https://manganato.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
     override val id: Long = 1024627298672457456
 
     // Nelo's date format is part of the base class
