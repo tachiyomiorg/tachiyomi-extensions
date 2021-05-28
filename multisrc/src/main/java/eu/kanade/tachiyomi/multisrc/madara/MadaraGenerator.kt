@@ -290,7 +290,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manga Mitsu", "https://mangamitsu.com", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Fudido Scanlator", "https://fudidoscan.com", "pt-BR", isNsfw = true),
             SingleLang("Yaoi Manga", "https://yaoi.mobi", "en", isNsfw = true, overrideVersionCode = 1),
-            SingleLang("FreeManga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 1),
+            SingleLang("Free Manga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("MangaTuli", "https://mangatuli.com", "en", isNsfw = true, overrideVersionCode = 1)
     )
 
