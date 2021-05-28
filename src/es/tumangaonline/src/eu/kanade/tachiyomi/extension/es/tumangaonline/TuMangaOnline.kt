@@ -62,7 +62,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
     // Marks erotic content as false and excludes: Ecchi(6), GirlsLove(17), BoysLove(18) and Harem(19) genders
     private val getSFWUrlPart = if (getSFWModePref()) "&exclude_genders%5B%5D=6&exclude_genders%5B%5D=17&exclude_genders%5B%5D=18&exclude_genders%5B%5D=19&erotic=false" else ""
 
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&filter_by=title$getSFWUrlPart&_page=1&page=$page", headers)
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/library?order_item=likes_count&order_dir=desc&filter_by=title$getSFWUrlPart&_pg=1&page=$page", headers)
 
     override fun popularMangaNextPageSelector() = "a.page-link"
 
@@ -76,7 +76,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&filter_by=title$getSFWUrlPart&_page=1&page=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/library?order_item=creation&order_dir=desc&filter_by=title$getSFWUrlPart&_pg=1&page=$page", headers)
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -94,7 +94,7 @@ class TuMangaOnline : ConfigurableSource, ParsedHttpSource() {
             url.addQueryParameter("erotic", "false")
         }
         url.addQueryParameter("page", page.toString())
-        url.addQueryParameter("_page", "1") // Extra Query to Prevent Scrapping aka without it = 403
+        url.addQueryParameter("_pg", "1") // Extra Query to Prevent Scrapping aka without it = 403
         filters.forEach { filter ->
             when (filter) {
                 is Types -> {
