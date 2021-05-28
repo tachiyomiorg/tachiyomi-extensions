@@ -47,6 +47,7 @@ class YaoiManga : Madara("Yaoi Manga", "https://yaoi.mobi", "en") {
         Genre("Mature", "mature"),
         Genre("Mecha", "mecha"),
         Genre("Medical", "medical"),
+        Genre("Mystery", "mystery"),
         Genre("One shot", "one-shot"),
         Genre("Premium", "premium"),
         Genre("Psychological", "psychological"),
