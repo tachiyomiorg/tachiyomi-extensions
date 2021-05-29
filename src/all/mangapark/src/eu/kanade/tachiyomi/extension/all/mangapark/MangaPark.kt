@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.all.mangapark
 
 import com.squareup.duktape.Duktape
+import com.github.salomonbrys.kotson.jsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -12,11 +13,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
@@ -191,8 +192,10 @@ open class MangaPark(
 
     override fun chapterListRequest(manga: SManga): Request {
         if (manga.url.startsWith("http")) {
-            url = a.substringAfter(baseUrl)
-        }
+            url = manga.url.substringAfter(baseUrl)
+        } else {
+            url = manga.url
+        }        
         val sid = url.split("/")[2]
         
         val jsonPayload = jsonObject(
@@ -201,9 +204,7 @@ open class MangaPark(
         )
         val requestBody = jsonPayload.toString().toRequestBody("application/json;charset=UTF-8".toMediaType())
 
-        val refererUrl = "$baseUrl/$url".toHttpUrl().newBuilder()
-            .addQueryParameter("keyword", query)
-            .toString()
+        val refererUrl = "$baseUrl/$url".toHttpUrl().newBuilder().toString()
         val newHeaders = headersBuilder()
             .add("Content-Length", requestBody.contentLength().toString())
             .add("Content-Type", requestBody.contentType().toString())
@@ -211,7 +212,7 @@ open class MangaPark(
             .build()
 
         return POST(
-            "$baseUrl//ajax.reader.subject.episodes.lang",
+            "$baseUrl/ajax.reader.subject.episodes.lang",
             headers = newHeaders,
             body = requestBody
         )
