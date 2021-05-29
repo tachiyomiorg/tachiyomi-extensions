@@ -22,7 +22,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("MangaP", "https://mangap.me", "ar"),
             SingleLang("Boosei", "https://boosei.com", "id"),
             SingleLang("Mangakyo", "https://www.mangakyo.me", "id"),
-            SingleLang("Sekte Komik", "https://sektekomik.com", "id"),
+            SingleLang("Sekte Komik", "https://sektekomik.com", "id", overrideVersionCode = 1),
             SingleLang("Komik Station", "https://komikstation.com", "id"),
             SingleLang("Komik Indo", "https://www.komikindo.web.id", "id", className = "KomikIndoWPMS"),
             SingleLang("Non-Stop Scans", "https://www.nonstopscans.com", "en", className = "NonStopScans"),
