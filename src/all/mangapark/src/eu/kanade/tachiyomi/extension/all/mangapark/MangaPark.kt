@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.all.mangapark
 
 import com.squareup.duktape.Duktape
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -190,12 +191,33 @@ open class MangaPark(
 
     override fun chapterListRequest(manga: SManga): Request {
         if (manga.url.startsWith("http")) {
-            return GET(manga.url, headers)
+            url = a.substringAfter(baseUrl)
         }
-        return super.chapterListRequest(manga)
+        val sid = url.split("/")[2]
+        
+        val jsonPayload = jsonObject(
+            "lang" to siteLang,
+            "sid" to sid
+        )
+        val requestBody = jsonPayload.toString().toRequestBody("application/json;charset=UTF-8".toMediaType())
+
+        val refererUrl = "$baseUrl/$url".toHttpUrl().newBuilder()
+            .addQueryParameter("keyword", query)
+            .toString()
+        val newHeaders = headersBuilder()
+            .add("Content-Length", requestBody.contentLength().toString())
+            .add("Content-Type", requestBody.contentType().toString())
+            .set("Referer", refererUrl)
+            .build()
+
+        return POST(
+            "$baseUrl//ajax.reader.subject.episodes.lang",
+            headers = newHeaders,
+            body = requestBody
+        )
     }
 
-    override fun chapterListSelector() = "div#mainer div.container-fluid div.episode-list div#episodes-lang-$siteLang div.p-2"
+    override fun chapterListSelector() = "div.p-2"
 
     override fun chapterFromElement(element: Element): SChapter {
         val chapter = SChapter.create()
