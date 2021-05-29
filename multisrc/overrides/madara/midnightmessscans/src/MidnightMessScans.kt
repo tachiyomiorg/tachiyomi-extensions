@@ -5,7 +5,7 @@ import eu.kanade.tachiyomi.multisrc.madara.Madara
 import okhttp3.OkHttpClient
 
 @Nsfw
-class MidnessMessScans : Madara("Midnight Mess Scans", "https://midnightmess.org, "en") {
+class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.org, "en") {
     override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor { chain ->
             val originalRequest = chain.request()
