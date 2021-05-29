@@ -121,8 +121,8 @@ open class HomeHeroScans : HttpSource() {
 
     override fun chapterListRequest(manga: SManga): Request {
         val series = "$baseUrl${manga.url}".toHttpUrlOrNull()!!.queryParameter("series")
-        return POST(
-            "$baseUrl/api/chapters", headers, """{"series":"$series"}""".toRequestBody("text/plain;charset=utf-8".toMediaTypeOrNull())
+        return GET(
+            "$baseUrl/api/chapters?series=$series", headers
         )
     }
 
