@@ -23,15 +23,15 @@ class ArthurScan : Madara(
     override val altName: String = "Nome alternativo: "
 
     // [...document.querySelectorAll('div.genres li a')]
-    //     .map(x => `Genre("${x.innerText.slice(1, -4)}", "${x.href.replace(/.*-genre\/(.*)\//, '$1')}")`)
+    //     .map(x => `Genre("${x.innerText.slice(1, -4).trim()}", "${x.href.replace(/.*-genre\/(.*)\//, '$1')}")`)
     //     .join(',\n')
     override fun getGenreList(): List<Genre> = listOf(
-        Genre("Ação ", "acao"),
-        Genre("Artes Marciais ", "artes-marciais"),
-        Genre("Aventura ", "aventura"),
+        Genre("Ação", "acao"),
+        Genre("Artes Marciais", "artes-marciais"),
+        Genre("Aventura", "aventura"),
         Genre("Comédia", "comedia"),
         Genre("Drama", "drama"),
-        Genre("Fantasia ", "fantasia"),
+        Genre("Fantasia", "fantasia"),
         Genre("Harém", "harem"),
         Genre("Histórico", "historico"),
         Genre("Manhua", "manhua"),
