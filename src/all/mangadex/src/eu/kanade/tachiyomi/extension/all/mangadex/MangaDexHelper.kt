@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import okhttp3.CacheControl
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.parser.Parser
@@ -128,14 +129,9 @@ class MangaDexHelper() {
         val dexId = data["id"].string
         val attr = data["attributes"].obj
 
-        val coverId = mangaJson["relationships"].array.filter { relationship ->
-            relationship["type"].string.equals("cover_art", true)
-        }.map { relationship -> relationship["id"].string }.firstOrNull()
-
         return SManga.create().apply {
             url = "/manga/$dexId"
             title = cleanString(attr["title"]["en"].string)
-            thumbnail_url = createCoverUrl(dexId, coverId, client)
         }
     }
 
@@ -187,7 +183,7 @@ class MangaDexHelper() {
 
             val coverId = mangaJson["relationships"].array.filter { relationship ->
                 relationship["type"].string.equals("cover_art", true)
-            }.map { relationship -> relationship["id"].string }.firstOrNull()
+            }.map { relationship -> relationship["id"].string }.firstOrNull()!!
 
             // get tag list
             val tags = mdFilters.getTags()
@@ -210,7 +206,7 @@ class MangaDexHelper() {
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 status = getPublicationStatus(attr["publicationDemographic"].nullString)
-                thumbnail_url = createCoverUrl(dexId, coverId, client)
+                thumbnail_url = getCoverUrl(dexId, coverId, client)
                 genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {
@@ -304,19 +300,33 @@ class MangaDexHelper() {
         }
     }
 
-    fun createCoverUrl(dexId: String, coverId: String?, client: OkHttpClient): String {
-        var coverUrl = MDConstants.coverApi.replace("{uuid}", dexId)
-        /*     try {
-                 if (coverId != null) {
-                     val response =
-                         client.newCall(GET("${MDConstants.apiMangaUrl}/$dexId/cover?ids[]=$coverId"))
-                             .execute()
-                     val coverJson = JsonParser.parseString(response.body!!.string()).obj
-                     val firstRelationship =
-                         coverJson.obj["results"].array.firstOrNull()!!.obj["data"]
-                             .obj["attributes"].obj["fileName"]?.nullString?.let { fileName ->
-                             coverUrl = "${MDConstants.cdnUrl}/covers/$dexId/$fileName"
-                     */
-        return coverUrl
+    private fun getCoverUrl(dexId: String, coverId: String, client: OkHttpClient): String {
+        val response =
+            client.newCall(GET("${MDConstants.apiCoverUrl}/$coverId"))
+                .execute()
+        val coverJson = JsonParser.parseString(response.body!!.string()).obj
+        val fileName =
+            coverJson.obj["data"].obj["attributes"].obj["fileName"]?.nullString!!
+        return "${MDConstants.cdnUrl}/covers/$dexId/$fileName"
+    }
+
+    fun getBatchCoversUrl(ids: Map<String, String>, client: OkHttpClient): Map<String, String> {
+
+        val url = MDConstants.apiCoverUrl.toHttpUrl().newBuilder().apply {
+            ids.values.forEach { coverArtId ->
+                addQueryParameter("ids[]", coverArtId)
+            }
+            addQueryParameter("limit", ids.size.toString())
+        }.build().toString()
+
+        val response = client.newCall(GET(url)).execute()
+        val coverJson = JsonParser.parseString(response.body!!.string()).obj
+
+        return coverJson.obj["results"].array.map { coverResult ->
+            val fileName = coverResult.obj["data"].obj["attributes"].obj["fileName"].string
+            val mangaId = coverResult.obj["relationships"].array.first { it["type"].string.equals("manga", true) }["id"].string
+            val url = "${MDConstants.cdnUrl}/covers/$mangaId/$fileName"
+            Pair(mangaId, url)
+        }.toMap()
     }
 }

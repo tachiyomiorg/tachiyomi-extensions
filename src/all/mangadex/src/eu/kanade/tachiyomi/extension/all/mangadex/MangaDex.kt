@@ -108,8 +108,22 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         val hasMoreResults =
             (mangaListResponse["limit"].int + mangaListResponse["offset"].int) < mangaListResponse["total"].int
 
+        val idsAndCoverIds = mangaListResponse["results"].array.map { mangaJson ->
+            val mangaId = mangaJson["data"].obj["id"].string
+            val coverId = mangaJson["relationships"].array.filter { relationship ->
+                relationship["type"].string.equals("cover_art", true)
+            }.map { relationship -> relationship["id"].string }.first()
+            Pair(mangaId, coverId)
+        }.toMap()
+
+        val results = runCatching {
+            helper.getBatchCoversUrl(idsAndCoverIds, client)
+        }.getOrNull()!!
+
         val mangaList = mangaListResponse["results"].array.map {
-            helper.createBasicManga(it, client)
+            helper.createBasicManga(it, client).apply {
+                thumbnail_url = results[url.substringAfter("/manga/")]
+            }
         }
 
         return MangasPage(mangaList, hasMoreResults)
