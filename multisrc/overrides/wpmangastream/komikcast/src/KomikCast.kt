@@ -33,6 +33,14 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         .add("Accept-language", "en-US,en;q=0.9")
         .add("Referer", baseUrl)
 
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+            .set("Referer", baseUrl)
+            .build()
+
+        return GET(page.imageUrl!!, newHeaders)
+    }
     override fun popularMangaSelector() = "div.list-update_item"
 
     override fun popularMangaRequest(page: Int): Request {
