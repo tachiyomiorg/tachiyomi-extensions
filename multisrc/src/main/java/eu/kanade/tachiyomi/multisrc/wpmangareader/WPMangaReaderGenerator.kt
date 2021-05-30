@@ -17,7 +17,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
         SingleLang("KomikMama", "https://komikmama.net", "id"),
         SingleLang("MangaKita", "https://mangakita.net", "id"),
         SingleLang("Ngomik", "https://ngomik.net", "id"),
-        SingleLang("Sekaikomik", "https://www.sekaikomik.fun", "id", isNsfw = true, overrideVersionCode = 4),
+        SingleLang("Sekaikomik", "https://www.sekaikomik.xyz", "id", isNsfw = true, overrideVersionCode = 5),
         SingleLang("Davey Scans", "https://daveyscans.com/", "id"),
         SingleLang("Mangasusu", "https://mangasusu.co.in", "id", isNsfw = true),
         SingleLang("TurkToon", "https://turktoon.com", "tr"),
