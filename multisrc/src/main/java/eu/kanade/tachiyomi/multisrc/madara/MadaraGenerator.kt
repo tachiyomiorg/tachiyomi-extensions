@@ -108,14 +108,14 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manga Chill", "https://mangachill.com/", "en"),
             SingleLang("Manga Clash", "https://mangaclash.com", "en"),
             SingleLang("MangaCultivator", "https://mangacultivator.com", "en"),
-            SingleLang("MangaDods", "https://www.mangadods.com", "en", ),
+            SingleLang("MangaDods", "https://www.mangadods.com", "en"),
             SingleLang("Manga Drop Out", "https://www.mangadropout.xyz", "id", isNsfw = true),
             SingleLang("MangaEffect", "https://mangaeffect.com", "en"),
             SingleLang("MangaGreat", "https://mangagreat.com", "en"),
             SingleLang("Manga Hentai", "https://mangahentai.me", "en", isNsfw = true),
             SingleLang("Mangakik", "https://mangakik.com", "en"),
             SingleLang("Manga Kiss", "https://mangakiss.org", "en"),
-            SingleLang("MangaKomi", "https://mangakomi.com", "en"),
+            SingleLang("MangaKomi", "https://mangakomi.com", "en", overrideVersionCode = 1),
             SingleLang("Manga Land Arabic", "https://mangalandarabic.com", "ar"),
             SingleLang("مانجا ليك", "https://mangalek.com", "ar", className = "Mangalek"),
             SingleLang("MangaLionz", "https://mangalionz.com", "ar"),
@@ -179,7 +179,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("MG Komik", "https://mgkomik.my.id", "id"),
             SingleLang("Midnight Mess Scans", "https://midnightmess.org", "en"),
             SingleLang("Milftoon", "https://milftoon.xxx", "en", isNsfw = true, overrideVersionCode = 2),
-            SingleLang("Miracle Scans", "https://miraclescans.com", "en"),
+            SingleLang("Miracle Scans", "https://miraclescans.com", "en", is Nsfw = true, overrideVersionCode = 1),
             SingleLang("Mixed Manga", "https://mixedmanga.com", "en"),
             SingleLang("MMScans", "https://mm-scans.com/", "en", overrideVersionCode = 1),
             SingleLang("Mundo Wuxia", "https://mundowuxia.com", "es"),
@@ -292,7 +292,8 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Fudido Scanlator", "https://fudidoscan.com", "pt-BR", isNsfw = true),
             SingleLang("Yaoi Manga", "https://yaoi.mobi", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Free Manga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 1),
-            SingleLang("MangaTuli", "https://mangatuli.com", "en", isNsfw = true, overrideVersionCode = 1)
+            SingleLang("MangaTuli", "https://mangatuli.com", "en", isNsfw = true, overrideVersionCode = 1),
+            SingleLang("ManhuaPro", "https://manhuapro.com", "en")
 
     )
 
