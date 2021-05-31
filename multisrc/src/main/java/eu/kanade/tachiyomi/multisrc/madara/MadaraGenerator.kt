@@ -42,6 +42,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Café com Yaoi", "http://cafecomyaoi.com.br", "pt-BR", pkgName = "cafecomyaoi", className = "CafeComYaoi", isNsfw = true),
             SingleLang("CatOnHeadTranslations", "https://catonhead.com", "en", overrideVersionCode = 1),
             SingleLang("CAT-translator", "https://cat-translator.com", "th", className = "CatTranslator"),
+            SingleLang("Cerise Scans", "https://cerisescans.com", "pt-BR"),
             SingleLang("Chibi Manga", "https://www.cmreader.info", "en"),
             SingleLang("Clover Manga", "https://clover-manga.com", "tr", overrideVersionCode = 1),
             SingleLang("ComicKiba", "https://comickiba.com", "en"),
