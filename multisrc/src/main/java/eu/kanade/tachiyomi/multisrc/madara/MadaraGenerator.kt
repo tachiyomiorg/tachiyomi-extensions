@@ -22,7 +22,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("AniMangaEs", "https://animangaes.com", "en", overrideVersionCode = 1),
             SingleLang("Agent of Change Translations", "https://aoc.moe", "en", overrideVersionCode = 1),
             SingleLang("ApollComics", "https://apollcomics.xyz", "es"),
-            SingleLang("Arang Scans", "https://arangscans.com", "en", overrideVersionCode = 2),
+            SingleLang("Arang Scans", "https://arangscans.com", "en", overrideVersionCode = 3), // removed override
             SingleLang("ArazNovel", "https://www.araznovel.com", "tr"),
             SingleLang("Argos Scan", "https://argosscan.com", "pt-BR", overrideVersionCode = 1),
             SingleLang("Asgard Team", "https://www.asgard1team.com", "ar", overrideVersionCode = 1),
