@@ -148,7 +148,7 @@ open class Webtoons(
             val isThisLang = "$url".startsWith("$baseUrl/$langCode")
             if (! (couldBeWebtoonOrEpisode && isThisLang))
                 emptyResult
-            else{
+            else {
                 val potentialUrl = "${webtoonPath(url)}?title_no=$title_no"
                 fetchMangaDetails(SManga.create().apply { this.url = potentialUrl }).map {
                     it.url = potentialUrl
@@ -157,7 +157,6 @@ open class Webtoons(
             }
         } ?: emptyResult
     }
-
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/$langCode/search?keyword=$query".toHttpUrlOrNull()?.newBuilder()!!
@@ -186,19 +185,19 @@ open class Webtoons(
         val infoElement = document.select("#_asideDetail")
 
         val manga = SManga.create()
-        manga.title = document.selectFirst("h1.subj").text()
+        manga.title = document.selectFirst("h1.subj, h3.subj").text()
         manga.author = detailElement.select(".author:nth-of-type(1)").first()?.ownText()
         manga.artist = detailElement.select(".author:nth-of-type(2)").first()?.ownText() ?: manga.author
         manga.genre = detailElement.select(".genre").joinToString(", ") { it.text() }
         manga.description = infoElement.select("p.summary").text()
-        manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
+        manga.status = infoElement.select("p.day_info").firstOrNull()?.text().orEmpty().toStatus()
         manga.thumbnail_url = parseDetailsThumbnail(document)
         return manga
     }
 
-    private fun parseStatus(status: String) = when {
-        status.contains("UP") -> SManga.ONGOING
-        status.contains("COMPLETED") -> SManga.COMPLETED
+    private fun String.toStatus(): Int = when {
+        contains("UP") -> SManga.ONGOING
+        contains("COMPLETED") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
