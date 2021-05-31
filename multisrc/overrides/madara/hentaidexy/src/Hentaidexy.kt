@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 @Nsfw
 class Hentaidexy : Madara(
     "Hentaidexy",
-    "https://hentaidoxy.com",
+    "https://hentaidexy.com",
     "en"
 ) {
     private val rateLimitInterceptor = RateLimitInterceptor(1)
