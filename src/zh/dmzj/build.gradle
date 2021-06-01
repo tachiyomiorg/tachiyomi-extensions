@@ -1,16 +1,28 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'Dmzj'
     pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
-    extVersionCode = 16
+    extVersionCode = 17
     libVersion = '1.2'
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.2.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+}
+
+android {
+    defaultConfig {
+        multiDexEnabled true
+    }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+    }
 }
 
 apply from: "$rootDir/common.gradle"
