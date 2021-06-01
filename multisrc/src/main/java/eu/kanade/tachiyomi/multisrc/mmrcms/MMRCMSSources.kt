@@ -44,7 +44,6 @@ class MMRCMSSources {
             SourceData.Single("Scan VF", "https://www.scan-vf.net", "fr"),
             SourceData.Single("Scan OP", "https://scan-op.cc", "fr"),
             SourceData.Single("Komikid", "https://www.komikid.com", "id"),
-            SourceData.Single("Nikushima", "http://azbivo.webd.pro", "pl"),
             SourceData.Single("MangaHanta", "http://mangahanta.com", "tr", overrideVersionCode = 1),
             SourceData.Single("Fallen Angels Scans", "https://truyen.fascans.com", "vi"),
             SourceData.Single("LeoManga", "https://leomanga.me", "es", overrideVersionCode = 1),
@@ -88,6 +87,7 @@ class MMRCMSSources {
 // SourceData("tr", "Epikmanga", "https://www.epikmanga.com"),
 // SourceData("en", "Hatigarm Scans", "https://hatigarmscans.net"),
 // Went offline
+// SourceData.Single("Nikushima", "http://azbivo.webd.pro", "pl"),
 // SourceData("ru", "Japit Comics", "https://j-comics.ru"),
 // SourceData("es", "Universo Yuri", "https://universoyuri.com"),
 // SourceData("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),
