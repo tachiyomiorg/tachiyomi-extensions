@@ -16,6 +16,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.TimeUnit
 
 class Bruttal : HttpSource() {
@@ -36,6 +37,8 @@ class Bruttal : HttpSource() {
         .add("Referer", "$baseUrl/bruttal/")
         .add("User-Agent", USER_AGENT)
 
+    private val json: Json by injectLazy()
+
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
             .add("Accept", "application/json, text/plain, */*")
@@ -45,7 +48,7 @@ class Bruttal : HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val homeDto = JSON.decodeFromString<BruttalHomeDto>(response.body!!.string())
+        val homeDto = json.decodeFromString<BruttalHomeDto>(response.body!!.string())
 
         val titles = homeDto.list.map(::popularMangaFromObject)
 
@@ -89,7 +92,7 @@ class Bruttal : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val comicBooks = JSON.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
+        val comicBooks = json.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
 
         val comicBookUrl = response.request.header("Referer")!!
             .substringAfter("/bruttal")
@@ -111,7 +114,7 @@ class Bruttal : HttpSource() {
     override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val comicBooks = JSON.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
+        val comicBooks = json.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
 
         val comicBookUrl = response.request.header("Referer")!!
             .substringAfter("/bruttal")
@@ -141,7 +144,7 @@ class Bruttal : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val comicBooks = JSON.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
+        val comicBooks = json.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
 
         val chapterUrl = response.request.header("Referer")!!
         val comicBookSlug = chapterUrl
@@ -189,7 +192,5 @@ class Bruttal : HttpSource() {
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
-
-        private val JSON = Json { ignoreUnknownKeys = true }
     }
 }

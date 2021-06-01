@@ -25,6 +25,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -53,8 +54,10 @@ class Hipercool : HttpSource() {
         .add("Referer", baseUrl)
         .add("X-Requested-With", "XMLHttpRequest")
 
+    private val json: Json by injectLazy()
+
     private fun genericMangaListParse(response: Response): MangasPage {
-        val chapters = JSON.decodeFromString<List<HipercoolChapterDto>>(response.body!!.string())
+        val chapters = json.decodeFromString<List<HipercoolChapterDto>>(response.body!!.string())
 
         if (chapters.isEmpty())
             return MangasPage(emptyList(), false)
@@ -120,7 +123,7 @@ class Hipercool : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val book = JSON.decodeFromString<HipercoolBookDto>(response.body!!.string())
+        val book = json.decodeFromString<HipercoolBookDto>(response.body!!.string())
 
         val artists = book.tags
             .filter { it.label == "Artista" }
@@ -151,12 +154,12 @@ class Hipercool : HttpSource() {
     override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val book = JSON.decodeFromString<HipercoolBookDto>(response.body!!.string())
+        val book = json.decodeFromString<HipercoolBookDto>(response.body!!.string())
 
         if (book.chapters is JsonPrimitive)
             return emptyList()
 
-        return JSON.decodeFromString<List<HipercoolChapterDto>>(book.chapters.toString())
+        return json.decodeFromString<List<HipercoolChapterDto>>(book.chapters.toString())
             .map { chapterListItemParse(book, it) }
             .reversed()
     }
@@ -240,8 +243,6 @@ class Hipercool : HttpSource() {
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
 
         private const val DEFAULT_COUNT = 40
-
-        private val JSON = Json { ignoreUnknownKeys = true }
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }

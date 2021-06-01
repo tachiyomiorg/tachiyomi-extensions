@@ -6,13 +6,12 @@ ext {
     extName = 'Dmzj'
     pkgNameSuffix = 'zh.dmzj'
     extClass = '.Dmzj'
-    extVersionCode = 17
+    extVersionCode = 18
     libVersion = '1.2'
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.2.0'
 }
 
 apply from: "$rootDir/common.gradle"

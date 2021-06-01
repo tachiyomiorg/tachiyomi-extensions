@@ -12,7 +12,6 @@ ext {
 
 dependencies {
     implementation project(':lib-ratelimit')
-    compileOnly 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.0'
 }
 
 apply from: "$rootDir/common.gradle"
