@@ -35,7 +35,6 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.net.URLDecoder
 import java.net.URLEncoder
-import java.time.Instant
 
 /**
  * Dmzj source
@@ -143,11 +142,11 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     private fun customUrlBuilder(baseUrl: String): HttpUrl.Builder {
-        val rightNow = Instant.now()
+        val rightNow = System.currentTimeMillis() / 1000
         return baseUrl.toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("channel", "android")
             .addQueryParameter("version", "3.0.0")
-            .addQueryParameter("timestamp", rightNow.epochSecond.toString())
+            .addQueryParameter("timestamp", rightNow.toInt().toString())
     }
 
     private fun decryptProtobufData(rawData: String): ByteArray {
