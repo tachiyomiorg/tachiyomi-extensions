@@ -14,11 +14,9 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
     override val sources = listOf(
             SingleLang("Asura Scans", "override url", "en", overrideVersionCode = 1),
             SingleLang("KlanKomik", "https://klankomik.com", "id"),
-            SingleLang("ChiOtaku", "https://chiotaku.com", "id"),
             SingleLang("MasterKomik", "https://masterkomik.com", "id"),
             SingleLang("Kaisar Komik", "https://kaisarkomik.com", "id"),
             SingleLang("Rawkuma", "https://rawkuma.com/", "ja"),
-            SingleLang("MangaP", "https://mangap.me", "ar"),
             SingleLang("Boosei", "https://boosei.com", "id"),
             SingleLang("Mangakyo", "https://www.mangakyo.me", "id"),
             SingleLang("Sekte Komik", "https://sektekomik.com", "id", overrideVersionCode = 2),
