@@ -49,7 +49,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Comicdom", "https://comicdom.org", "en"),
             SingleLang("Comics Valley", "https://comicsvalley.com", "hi", isNsfw = true),
             SingleLang("CopyPasteScan", "https://copypastescan.xyz", "es"),
-            SingleLang("Cutie Pie", "https://cutiepie.ga", "tr"),
+            SingleLang("Cutie Pie", "https://cutiepie.moe", "tr", overrideVersionCode = 1),
             SingleLang("DarkYue Realm", "https://darkyuerealm.site/web", "pt-BR", pkgName = "darkyurealm", overrideVersionCode = 2),
             SingleLang("Decadence Scans", "https://reader.decadencescans.com", "en", overrideVersionCode = 1),
             SingleLang("شبكة كونان العربية", "https://www.manga.detectiveconanar.com", "ar", className = "DetectiveConanAr", overrideVersionCode = 1),
