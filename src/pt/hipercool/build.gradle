@@ -1,17 +1,19 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'HipercooL'
     pkgNameSuffix = 'pt.hipercool'
     extClass = '.Hipercool'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
     containsNsfw = true
 }
 
 dependencies {
     implementation project(':lib-ratelimit')
+    compileOnly 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.0'
 }
 
 apply from: "$rootDir/common.gradle"
