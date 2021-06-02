@@ -457,5 +457,4 @@ class CopyManga : ConfigurableSource, HttpSource() {
         private const val SHOW_Simplified_Chinese_TITLE_PREF = "showSCTitle"
         private const val change_cdn_tomainland = "changeCDN"
     }
-    }
 }
