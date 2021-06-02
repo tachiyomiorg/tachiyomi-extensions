@@ -323,6 +323,9 @@ class Dmzj : ConfigurableSource, HttpSource() {
             val pb = ProtoBuf.decodeFromByteArray<ComicDetailResponse>(decryptProtobufData(responseBody))
             val mangaPBData = pb.Data
             // v4api can contain multiple series of chapters.
+            if (mangaPBData.Chapters.isEmpty()) {
+                throw Exception("empty chapter list")
+            }
             mangaPBData.Chapters.forEach { chapterList ->
                 for (i in chapterList.Data.indices) {
                     val chapter = chapterList.Data[i]
