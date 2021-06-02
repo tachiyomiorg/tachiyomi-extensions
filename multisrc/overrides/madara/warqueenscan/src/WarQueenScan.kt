@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 class WarQueenScan : Madara(
     "War Queen Scan",
-    "https://wqscan.com",
+    "https://wqscan.com.br",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 ) {
