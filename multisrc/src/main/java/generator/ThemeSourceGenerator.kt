@@ -63,6 +63,7 @@ interface ThemeSourceGenerator {
                 // THIS FILE IS AUTO-GENERATED; DO NOT EDIT
                 apply plugin: 'com.android.application'
                 apply plugin: 'kotlin-android'
+                apply plugin: 'kotlinx-serialization'
 
                 ext {
                     extName = '${source.name}'

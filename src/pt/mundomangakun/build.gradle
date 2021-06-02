@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'Mundo Mangá-Kun'
     pkgNameSuffix = 'pt.mundomangakun'
     extClass = '.MundoMangaKun'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '1.2'
 }
 

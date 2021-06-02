@@ -2,14 +2,14 @@ package eu.kanade.tachiyomi.extension.pt.toonei
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.mangasproject.MangasProject
-import org.jsoup.nodes.Document
 import okhttp3.OkHttpClient
+import org.jsoup.nodes.Document
 import java.util.concurrent.TimeUnit
 
-class Toonei : MangasProject("Toonei", "https://toonei.com", "pt-BR") {
+class Toonei : MangasProject("Toonei", "https://toonei.net", "pt-BR") {
 
     override val client: OkHttpClient = super.client.newBuilder()
-        .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
+        .addInterceptor(RateLimitInterceptor(2, 1, TimeUnit.SECONDS))
         .build()
 
     override fun getReaderToken(document: Document): String? {

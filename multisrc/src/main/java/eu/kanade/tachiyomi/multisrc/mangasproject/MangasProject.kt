@@ -1,10 +1,5 @@
 package eu.kanade.tachiyomi.multisrc.mangasproject
 
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -14,6 +9,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -23,6 +23,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -54,25 +55,26 @@ abstract class MangasProject(
 
     protected val sourceHeaders: Headers by lazy { sourceHeadersBuilder().build() }
 
+    private val json: Json by injectLazy()
+
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/home/most_read?page=$page&type=", sourceHeaders)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val result = response.asJsonObject()
+        val result = json.decodeFromString<MangasProjectMostReadDto>(response.body!!.string())
 
-        val popularMangas = result["most_read"].array
-            .map { popularMangaItemParse(it.obj) }
+        val popularMangas = result.mostRead.map(::popularMangaFromObject)
 
         val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < 10
 
         return MangasPage(popularMangas, hasNextPage)
     }
 
-    private fun popularMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["serie_name"].string
-        thumbnail_url = obj["cover"].string
-        url = obj["link"].string
+    private fun popularMangaFromObject(serie: MangasProjectSerieDto) = SManga.create().apply {
+        title = serie.serieName
+        thumbnail_url = serie.cover
+        url = serie.link
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -80,20 +82,19 @@ abstract class MangasProject(
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val result = response.asJsonObject()
+        val result = json.decodeFromString<MangasProjectReleasesDto>(response.body!!.string())
 
-        val latestMangas = result["releases"].array
-            .map { latestMangaItemParse(it.obj) }
+        val latestMangas = result.releases.map(::latestMangaFromObject)
 
         val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < 5
 
         return MangasPage(latestMangas, hasNextPage)
     }
 
-    private fun latestMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["name"].string
-        thumbnail_url = obj["image"].string
-        url = obj["link"].string
+    private fun latestMangaFromObject(serie: MangasProjectSerieDto) = SManga.create().apply {
+        title = serie.name
+        thumbnail_url = serie.image
+        url = serie.link
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -110,22 +111,22 @@ abstract class MangasProject(
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val result = response.asJsonObject()
+        val result = json.decodeFromString<MangasProjectSearchDto>(response.body!!.string())
 
         // If "series" have boolean false value, then it doesn't have results.
-        if (!result["series"]!!.isJsonArray)
+        if (result.series is JsonPrimitive)
             return MangasPage(emptyList(), false)
 
-        val searchMangas = result["series"].array
-            .map { searchMangaItemParse(it.obj) }
+        val searchMangas = json.decodeFromJsonElement<List<MangasProjectSerieDto>>(result.series)
+            .map(::searchMangaFromObject)
 
         return MangasPage(searchMangas, false)
     }
 
-    private fun searchMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["name"].string
-        thumbnail_url = obj["cover"].string
-        url = obj["link"].string
+    private fun searchMangaFromObject(serie: MangasProjectSerieDto) = SManga.create().apply {
+        title = serie.name
+        thumbnail_url = serie.cover
+        url = serie.link
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -202,41 +203,41 @@ abstract class MangasProject(
         var page = 1
 
         var chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, page)
-        var result = client.newCall(chapterListRequest).execute().asJsonObject()
+        var result = client.newCall(chapterListRequest).execute().let {
+            json.decodeFromString<MangasProjectChapterListDto>(it.body!!.string())
+        }
 
-        if (!result["chapters"]!!.isJsonArray)
+        if (result.chapters is JsonPrimitive)
             return emptyList()
 
         val chapters = mutableListOf<SChapter>()
 
-        while (result["chapters"]!!.isJsonArray) {
-            chapters += result["chapters"].array
-                .flatMap { chapterListItemParse(it.obj) }
+        while (result.chapters is JsonArray) {
+            chapters += json.decodeFromJsonElement<List<MangasProjectChapterDto>>(result.chapters)
+                .flatMap(::chaptersFromObject)
                 .toMutableList()
 
             chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, ++page)
-            result = client.newCall(chapterListRequest).execute().asJsonObject()
+            result = client.newCall(chapterListRequest).execute().let {
+                json.decodeFromString(it.body!!.string())
+            }
         }
 
         return chapters
     }
 
-    private fun chapterListItemParse(obj: JsonObject): List<SChapter> {
-        val chapterName = obj["chapter_name"]!!.string
-
-        return obj["releases"].obj.entrySet().map {
-            val release = it.value.obj
-
+    private fun chaptersFromObject(chapter: MangasProjectChapterDto): List<SChapter> {
+        return chapter.releases.values.map { release ->
             SChapter.create().apply {
-                name = "Cap. ${obj["number"].string}" +
-                    (if (chapterName == "") "" else " - $chapterName")
-                date_upload = obj["date_created"].string.substringBefore("T").toDate()
-                scanlator = release["scanlators"]!!.array
-                    .mapNotNull { scanObj -> scanObj.obj["name"].string.ifEmpty { null } }
+                name = "Cap. ${chapter.number}" +
+                    (if (chapter.name.isEmpty()) "" else " - ${chapter.name}")
+                date_upload = chapter.dateCreated.substringBefore("T").toDate()
+                scanlator = release.scanlators
+                    .mapNotNull { scan -> scan.name.ifEmpty { null } }
                     .sorted()
                     .joinToString()
-                url = release["link"].string
-                chapter_number = obj["number"].string.toFloatOrNull() ?: -1f
+                url = release.link
+                chapter_number = chapter.number.toFloatOrNull() ?: -1f
             }
         }
     }
@@ -269,11 +270,13 @@ abstract class MangasProject(
         val chapterUrl = getChapterUrl(response)
 
         val apiRequest = pageListApiRequest(chapterUrl, readerToken)
-        val apiResponse = client.newCall(apiRequest).execute().asJsonObject()
+        val apiResponse = client.newCall(apiRequest).execute().let {
+            json.decodeFromString<MangasProjectReaderDto>(it.body!!.string())
+        }
 
-        return apiResponse["images"].array
-            .filter { it.string.startsWith("http") }
-            .mapIndexed { i, obj -> Page(i, chapterUrl, obj.string) }
+        return apiResponse.images
+            .filter { it.startsWith("http") }
+            .mapIndexed { i, imageUrl -> Page(i, chapterUrl, imageUrl) }
     }
 
     open fun getChapterUrl(response: Response): String {
@@ -299,14 +302,6 @@ abstract class MangasProject(
         return GET(page.imageUrl!!, newHeaders)
     }
 
-    private fun Response.asJsonObject(): JsonObject {
-        if (!isSuccessful) {
-            throw Exception("HTTP error $code")
-        }
-
-        return JsonParser.parseString(body!!.string()).obj
-    }
-
     private fun String.toDate(): Long {
         return try {
             DATE_FORMATTER.parse(this)?.time ?: 0L
@@ -321,7 +316,7 @@ abstract class MangasProject(
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
 

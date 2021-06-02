@@ -1,14 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.tsukimangas
 
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
@@ -20,12 +11,15 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -52,24 +46,26 @@ class TsukiMangas : HttpSource() {
         .add("User-Agent", USER_AGENT)
         .add("Referer", baseUrl)
 
+    private val json: Json by injectLazy()
+
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/api/v2/mangas?page=$page&title=&filter=0", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
 
-        val popularMangas = result["data"].array
-            .map { popularMangaItemParse(it.obj) }
+        val popularMangas = result.data.map(::popularMangaItemParse)
 
-        val hasNextPage = result["page"].int < result["lastPage"].int
+        val hasNextPage = result.page < result.lastPage
+
         return MangasPage(popularMangas, hasNextPage)
     }
 
-    private fun popularMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = baseUrl + "/imgs/" + obj["poster"].string.substringBefore("?")
-        url = "/obra/${obj["id"].int}/${obj["url"].string}"
+    private fun popularMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        title = manga.title
+        thumbnail_url = baseUrl + "/imgs/" + manga.poster.substringBefore("?")
+        url = "/obra/${manga.id}/${manga.url}"
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -77,19 +73,19 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
 
-        val latestMangas = result["data"].array
-            .map { latestMangaItemParse(it.obj) }
+        val latestMangas = result.data.map(::latestMangaItemParse)
 
-        val hasNextPage = result["page"].int < result["lastPage"].int
+        val hasNextPage = result.page < result.lastPage
+
         return MangasPage(latestMangas, hasNextPage)
     }
 
-    private fun latestMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = baseUrl + "/imgs/" + obj["poster"].string.substringBefore("?")
-        url = "/obra/${obj["id"].int}/${obj["url"].string}"
+    private fun latestMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        title = manga.title
+        thumbnail_url = baseUrl + "/imgs/" + manga.poster.substringBefore("?")
+        url = "/obra/${manga.id}/${manga.url}"
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -149,20 +145,19 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
 
-        val searchResults = result["data"].array
-            .map { searchMangaItemParse(it.obj) }
+        val searchResults = result.data.map(::searchMangaItemParse)
 
-        val hasNextPage = result["page"].int < result["lastPage"].int
+        val hasNextPage = result.page < result.lastPage
 
         return MangasPage(searchResults, hasNextPage)
     }
 
-    private fun searchMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = baseUrl + "/imgs/" + obj["poster"].string.substringBefore("?")
-        url = "/obra/${obj["id"].int}/${obj["url"].string}"
+    private fun searchMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        title = manga.title
+        thumbnail_url = baseUrl + "/imgs/" + manga.poster.substringBefore("?")
+        url = "/obra/${manga.id}/${manga.url}"
     }
 
     // Workaround to allow "Open in browser" use the real URL.
@@ -192,18 +187,16 @@ class TsukiMangas : HttpSource() {
         return GET(baseUrl + manga.url, newHeaders)
     }
 
-    override fun mangaDetailsParse(response: Response): SManga {
-        val result = response.asJson().obj
+    override fun mangaDetailsParse(response: Response): SManga = SManga.create().apply {
+        val mangaDto = json.decodeFromString<TsukiMangaDto>(response.body!!.string())
 
-        return SManga.create().apply {
-            title = result["title"].string
-            thumbnail_url = baseUrl + "/imgs/" + result["poster"].string.substringBefore("?")
-            description = result["synopsis"].nullString.orEmpty()
-            status = result["status"].nullString.orEmpty().toStatus()
-            author = result["author"].nullString.orEmpty()
-            artist = result["artist"].nullString.orEmpty()
-            genre = result["genres"].array.joinToString { it.obj["genre"].string }
-        }
+        title = mangaDto.title
+        thumbnail_url = baseUrl + "/imgs/" + mangaDto.poster.substringBefore("?")
+        description = mangaDto.synopsis.orEmpty()
+        status = mangaDto.status.orEmpty().toStatus()
+        author = mangaDto.author.orEmpty()
+        artist = mangaDto.artist.orEmpty()
+        genre = mangaDto.genres.joinToString { it.genre }
     }
 
     override fun chapterListRequest(manga: SManga): Request {
@@ -219,25 +212,26 @@ class TsukiMangas : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val mangaUrl = response.request.header("Referer")!!.substringAfter(baseUrl)
 
-        return response.asJson().array
-            .flatMap { chapterListItemParse(it.obj, mangaUrl) }
+        return json
+            .decodeFromString<List<TsukiChapterDto>>(response.body!!.string())
+            .flatMap { chapterListItemParse(it, mangaUrl) }
             .reversed()
     }
 
-    private fun chapterListItemParse(obj: JsonObject, mangaUrl: String): List<SChapter> {
+    private fun chapterListItemParse(chapter: TsukiChapterDto, mangaUrl: String): List<SChapter> {
         val mangaId = mangaUrl.substringAfter("obra/").substringBefore("/")
         val mangaSlug = mangaUrl.substringAfterLast("/")
 
-        return obj["versions"].array.map { version ->
+        return chapter.versions.map { version ->
             SChapter.create().apply {
-                name = "Cap. " + obj["number"].string +
-                    (if (!obj["title"].nullString.isNullOrEmpty()) " - " + obj["title"].string else "")
-                chapter_number = obj["number"].string.toFloatOrNull() ?: -1f
-                scanlator = version.obj["scans"].array
-                    .sortedBy { it.obj["scan"].obj["name"].string }
-                    .joinToString { it.obj["scan"].obj["name"].string }
-                date_upload = version.obj["created_at"].string.substringBefore(" ").toDate()
-                url = "/leitor/$mangaId/${version.obj["id"].int}/$mangaSlug/${obj["number"].string}"
+                name = "Cap. " + chapter.number +
+                    (if (!chapter.title.isNullOrEmpty()) " - " + chapter.title else "")
+                chapter_number = chapter.number.toFloatOrNull() ?: -1f
+                scanlator = version.scans
+                    .sortedBy { it.scan.name }
+                    .joinToString { it.scan.name }
+                date_upload = version.createdAt.substringBefore(" ").toDate()
+                url = "/leitor/$mangaId/${version.id}/$mangaSlug/${chapter.number}"
             }
         }
     }
@@ -258,12 +252,11 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiReaderDto>(response.body!!.string())
 
-        return result["pages"].array.mapIndexed { i, page ->
-            val server = page["server"].string
-            val cdnUrl = "https://cdn$server.tsukimangas.com"
-            Page(i, "$baseUrl/", cdnUrl + page.obj["url"].string)
+        return result.pages.mapIndexed { i, page ->
+            val cdnUrl = "https://cdn${page.server}.tsukimangas.com"
+            Page(i, "$baseUrl/", cdnUrl + page.url)
         }
     }
 
@@ -425,8 +418,6 @@ class TsukiMangas : HttpSource() {
         contains("Completo") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
-
-    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"

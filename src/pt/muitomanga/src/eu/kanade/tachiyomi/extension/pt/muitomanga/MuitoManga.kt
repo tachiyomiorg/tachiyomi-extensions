@@ -1,11 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.muitomanga
 
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
@@ -15,6 +9,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
@@ -26,6 +22,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -53,6 +50,8 @@ class MuitoManga : ParsedHttpSource() {
         .add("Accept-Language", ACCEPT_LANGUAGE)
         .add("Referer", "$baseUrl/")
 
+    private val json: Json by injectLazy()
+
     private val directoryCache: MutableMap<Int, String> = mutableMapOf()
 
     override fun popularMangaRequest(page: Int): Request {
@@ -67,11 +66,11 @@ class MuitoManga : ParsedHttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val result = response.asJson().obj
-        val totalPages = ceil(result["encontrado"].array.size().toDouble() / ITEMS_PER_PAGE)
+        val directory = json.decodeFromString<MuitoMangaDirectoryDto>(response.body!!.string())
+        val totalPages = ceil(directory.results.size.toDouble() / ITEMS_PER_PAGE)
         val currentPage = response.request.header("X-Page")!!.toInt()
 
-        val mangaList = result["encontrado"].array
+        val mangaList = directory.results
             .drop(ITEMS_PER_PAGE * (currentPage - 1))
             .take(ITEMS_PER_PAGE)
             .map(::popularMangaFromObject)
@@ -79,10 +78,10 @@ class MuitoManga : ParsedHttpSource() {
         return MangasPage(mangaList, hasNextPage = currentPage < totalPages)
     }
 
-    private fun popularMangaFromObject(obj: JsonElement): SManga = SManga.create().apply {
-        title = obj["titulo"].string
-        thumbnail_url = obj["imagem"].string
-        url = "/manga/" + obj["url"].string
+    private fun popularMangaFromObject(manga: MuitoMangaTitleDto): SManga = SManga.create().apply {
+        title = manga.title
+        thumbnail_url = manga.image
+        url = "/manga/" + manga.url
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -209,8 +208,6 @@ class MuitoManga : ParsedHttpSource() {
             0L
         }
     }
-
-    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +

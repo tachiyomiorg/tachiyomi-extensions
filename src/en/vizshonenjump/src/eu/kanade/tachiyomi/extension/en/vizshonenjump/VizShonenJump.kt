@@ -1,12 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.vizshonenjump
 
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.nullInt
-import com.github.salomonbrys.kotson.nullObj
-import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -16,6 +9,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -26,6 +26,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -52,6 +53,8 @@ class VizShonenJump : ParsedHttpSource() {
         .add("User-Agent", USER_AGENT)
         .add("Origin", baseUrl)
         .add("Referer", "$baseUrl/shonenjump")
+
+    private val json: Json by injectLazy()
 
     private var mangaList: List<SManga>? = null
 
@@ -318,11 +321,14 @@ class VizShonenJump : ParsedHttpSource() {
             .toString()
         val authCheckRequest = GET(authCheckUrl, authCheckHeaders)
         val authCheckResponse = chain.proceed(authCheckRequest)
-        val authCheckJson = JsonParser.parseString(authCheckResponse.body!!.string()).obj
+        val authCheckJson = Json.parseToJsonElement(authCheckResponse.body!!.string()).jsonObject
 
         authCheckResponse.close()
 
-        if (authCheckJson["ok"].int == 1 && authCheckJson["archive_info"]["ok"].int == 1) {
+        if (
+            authCheckJson["ok"]!!.jsonPrimitive.int == 1 &&
+            authCheckJson["archive_info"]!!.jsonObject["ok"]!!.jsonPrimitive.int == 1
+        ) {
             val newChapterUrl = chain.request().url.newBuilder()
                 .removeAllQueryParameters("locked")
                 .build()
@@ -334,16 +340,17 @@ class VizShonenJump : ParsedHttpSource() {
         }
 
         if (
-            authCheckJson["archive_info"]["err"].isJsonObject &&
-            authCheckJson["archive_info"]["err"]["code"].nullInt == 4 &&
+            authCheckJson["archive_info"]!!.jsonObject["err"] is JsonObject &&
+            authCheckJson["archive_info"]!!.jsonObject["err"]!!.jsonObject["code"]?.jsonPrimitive?.intOrNull == 4 &&
             loggedIn == true
         ) {
             throw Exception(SESSION_EXPIRED)
         }
 
-        val errorMessage = authCheckJson["archive_info"]["err"].nullObj?.get("msg")?.nullString
+        val errorMessage = authCheckJson["archive_info"]!!.jsonObject["err"]?.jsonObject
+            ?.get("msg")?.jsonPrimitive?.contentOrNull ?: AUTH_CHECK_FAILED
 
-        throw Exception(errorMessage ?: AUTH_CHECK_FAILED)
+        throw Exception(errorMessage)
     }
 
     private fun String.toDate(): Long {
@@ -363,7 +370,7 @@ class VizShonenJump : ParsedHttpSource() {
             SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)
         }
 
-        private const val COUNTRY_NOT_SUPPORTED = "Your country is not supported, try using a VPN."
+        private const val COUNTRY_NOT_SUPPORTED = "Your country is not supported by the service."
         private const val SESSION_EXPIRED = "Your session has expired, please log in through WebView again."
         private const val AUTH_CHECK_FAILED = "Something went wrong in the auth check."
 

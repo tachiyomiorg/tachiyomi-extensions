@@ -1,8 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.opex
 
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -12,6 +9,9 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
@@ -20,6 +20,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -41,6 +42,8 @@ class OnePieceEx : ParsedHttpSource() {
         .add("Accept", ACCEPT)
         .add("Accept-Language", ACCEPT_LANGUAGE)
         .add("Referer", "$baseUrl/mangas")
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/mangas", headers)
 
@@ -195,10 +198,9 @@ class OnePieceEx : ParsedHttpSource() {
             .replace("\\\"", "\"")
             .replace("\\\\\\/", "/")
             .replace("//", "/")
-            .let { JsonParser.parseString(it).obj }
-            .entrySet()
+            .let { json.parseToJsonElement(it).jsonObject.entries }
             .mapIndexed { i, entry ->
-                Page(i, document.location(), "$baseUrl/${entry.value.string}")
+                Page(i, document.location(), "$baseUrl/${entry.value.jsonPrimitive.content}")
             }
     }
 
