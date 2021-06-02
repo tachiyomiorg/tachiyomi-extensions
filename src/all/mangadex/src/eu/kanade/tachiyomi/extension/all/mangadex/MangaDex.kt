@@ -47,7 +47,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     private val helper = MangaDexHelper()
 
     override fun headersBuilder() = Headers.Builder()
-        .add("Referer", "$baseUrl/")
+        .add("Referer", "https://mangadex.org/")
         .add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
 
     override val client = network.client.newBuilder()
