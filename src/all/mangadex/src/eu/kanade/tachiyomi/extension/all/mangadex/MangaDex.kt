@@ -46,15 +46,15 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
     private val helper = MangaDexHelper()
 
-    override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
-    }
+    override fun headersBuilder() = Headers.Builder()
+        .add("Referer", "$baseUrl/")
+        .add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
 
-    override val client =
-        network.client.newBuilder().addNetworkInterceptor(mdRateLimitInterceptor).addInterceptor(
-            coverInterceptor
-        ).addInterceptor(MdAtHomeReportInterceptor(network.client, headersBuilder().build()))
-            .build()
+    override val client = network.client.newBuilder()
+        .addNetworkInterceptor(mdRateLimitInterceptor)
+        .addInterceptor(coverInterceptor)
+        .addInterceptor(MdAtHomeReportInterceptor(network.client, headersBuilder().build()))
+        .build()
 
     // POPULAR Manga Section
 
