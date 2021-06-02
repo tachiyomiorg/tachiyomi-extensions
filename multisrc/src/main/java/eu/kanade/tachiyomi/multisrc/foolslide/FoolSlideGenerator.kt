@@ -10,7 +10,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
 
     override val themeClass = "FoolSlide"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         SingleLang("The Cat Scans", "https://reader2.thecatscans.com/", "en"),

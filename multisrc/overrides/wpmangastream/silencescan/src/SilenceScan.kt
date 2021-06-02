@@ -1,20 +1,17 @@
 package eu.kanade.tachiyomi.extension.pt.silencescan
 
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.wpmangastream.WPMangaStream
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import java.util.concurrent.TimeUnit
-import okhttp3.OkHttpClient
 
 class SilenceScan : WPMangaStream(
     "Silence Scan",
@@ -29,31 +26,33 @@ class SilenceScan : WPMangaStream(
         .addNetworkInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
-    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
-        val infoEl = document.select("div.bigcontent, div.animefull").first()
+    private val json: Json by injectLazy()
 
-        author = infoEl.select("b:contains(Autor) + span").text()
-        artist = infoEl.select("b:contains(Artista) + span").text()
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
+        val infoEl = document.select("div.bigcontent, div.animefull, div.main-info").first()
+
+        author = infoEl.select("div.imptdt:contains(Autor) i").text()
+        artist = infoEl.select("div.imptdt:contains(Artista) + i").text()
         status = parseStatus(infoEl.select("div.imptdt:contains(Status) i").text())
-        description = infoEl.select("h2:contains(Sinopse) + div p").joinToString("\n") { it.text() }
+        description = infoEl.select("h2:contains(Sinopse) + div p:not([class])").joinToString("\n") { it.text() }
         thumbnail_url = infoEl.select("div.thumb img").imgAttr()
 
-        val genres = infoEl.select("b:contains(Gêneros) + span a")
-            .map { element -> element.text().toLowerCase() }
+        val genres = infoEl.select("span.mgen a[rel]")
+            .map { element -> element.text() }
             .toMutableSet()
 
         // add series type(manga/manhwa/manhua/other) thinggy to genre
         document.select(seriesTypeSelector).firstOrNull()?.ownText()?.let {
             if (it.isEmpty().not() && genres.contains(it).not()) {
-                genres.add(it.toLowerCase())
+                genres.add(it)
             }
         }
 
-        genre = genres.toList().map { it.capitalize() }.joinToString(", ")
+        genre = genres.toList().joinToString()
 
         // add alternative name to manga description
         document.select(altNameSelector).firstOrNull()?.ownText()?.let {
-            if (it.isEmpty().not() && it !="N/A" && it != "-") {
+            if (it.isEmpty().not() && it != "N/A" && it != "-") {
                 description += when {
                     description!!.isEmpty() -> altName + it
                     else -> "\n\n$altName" + it
@@ -63,7 +62,14 @@ class SilenceScan : WPMangaStream(
     }
 
     override val seriesTypeSelector = ".imptdt:contains(Tipo) a, a[href*=type\\=]"
-    override val altNameSelector = ".wd-full:contains(Alt) span"
+    override val altName: String = "Nome alternativo: "
+
+    override fun parseStatus(element: String?): Int = when {
+        element == null -> SManga.UNKNOWN
+        element.contains("em andamento", true) -> SManga.ONGOING
+        element.contains("completo", true) -> SManga.COMPLETED
+        else -> SManga.UNKNOWN
+    }
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("span.chapternum").text()
@@ -71,24 +77,6 @@ class SilenceScan : WPMangaStream(
         date_upload = element.select("span.chapterdate").firstOrNull()?.text()
             ?.let { parseChapterDate(it) } ?: 0
         setUrlWithoutDomain(element.select("div.eph-num > a").attr("href"))
-    }
-
-    override fun pageListParse(document: Document): List<Page> {
-        val chapterObj = document.select("script:containsData(ts_reader)").first()
-            .data()
-            .substringAfter("run(")
-            .substringBeforeLast(");")
-            .let { JsonParser.parseString(it) }
-            .obj
-
-        if (chapterObj["sources"].array.size() == 0) {
-            return emptyList()
-        }
-
-        val firstServerAvailable = chapterObj["sources"].array[0].obj
-
-        return firstServerAvailable["images"].array
-            .mapIndexed { i, pageUrl -> Page(i, "", pageUrl.string) }
     }
 
     override fun getGenreList(): List<Genre> = listOf(
@@ -126,4 +114,8 @@ class SilenceScan : WPMangaStream(
         Genre("Violência sexual", "violencia-sexual"),
         Genre("Yuri", "yuri")
     )
+
+    companion object {
+        private val PORTUGUESE_LOCALE = Locale("pt", "BR")
+    }
 }

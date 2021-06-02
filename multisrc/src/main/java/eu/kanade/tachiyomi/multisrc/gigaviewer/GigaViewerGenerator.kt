@@ -9,7 +9,7 @@ class GigaViewerGenerator : ThemeSourceGenerator {
 
     override val themeClass = "GigaViewer"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         SingleLang("Comic Gardo", "https://comic-gardo.com", "ja"),

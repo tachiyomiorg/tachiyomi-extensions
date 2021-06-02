@@ -4,11 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -18,6 +13,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
@@ -28,6 +27,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.text.ParseException
@@ -56,6 +56,8 @@ abstract class GigaViewer(
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Origin", baseUrl)
         .add("Referer", baseUrl)
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/series", headers)
 
@@ -143,9 +145,12 @@ abstract class GigaViewer(
         var result = client.newCall(request).execute()
 
         while (result.code != 404) {
-            val json = result.asJsonObject()
-            readMoreEndpoint = json["nextUrl"].string
-            val tempDocument = Jsoup.parse(json["html"].string, response.request.url.toString())
+            val jsonResult = json.parseToJsonElement(result.body!!.string()).jsonObject
+            readMoreEndpoint = jsonResult["nextUrl"]!!.jsonPrimitive.content
+            val tempDocument = Jsoup.parse(
+                jsonResult["html"]!!.jsonPrimitive.content,
+                response.request.url.toString()
+            )
 
             chapters += tempDocument
                 .select("ul.series-episode-list " + chapterListSelector())
@@ -177,16 +182,16 @@ abstract class GigaViewer(
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val episodeJson = document.select("script#episode-json")
+        val episode = document.select("script#episode-json")
             .attr("data-value")
-            .let { JsonParser.parseString(it).obj }
+            .let { json.decodeFromString<GigaViewerEpisodeDto>(it) }
 
-        return episodeJson["readableProduct"]["pageStructure"]["pages"].asJsonArray
-            .filter { it["type"].string == "main" }
-            .mapIndexed { i, pageObj ->
-                val imageUrl = pageObj["src"].string.toHttpUrlOrNull()!!.newBuilder()
-                    .addQueryParameter("width", pageObj["width"].string)
-                    .addQueryParameter("height", pageObj["height"].string)
+        return episode.readableProduct.pageStructure.pages
+            .filter { it.type == "main" }
+            .mapIndexed { i, page ->
+                val imageUrl = page.src.toHttpUrlOrNull()!!.newBuilder()
+                    .addQueryParameter("width", page.width.toString())
+                    .addQueryParameter("height", page.height.toString())
                     .toString()
                 Page(i, document.location(), imageUrl)
             }
@@ -279,8 +284,6 @@ abstract class GigaViewer(
             0L
         }
     }
-
-    private fun Response.asJsonObject(): JsonObject = JsonParser.parseString(body!!.string()).obj
 
     companion object {
         private val DATE_PARSER by lazy { SimpleDateFormat("yyyy/MM/dd", Locale.ENGLISH) }

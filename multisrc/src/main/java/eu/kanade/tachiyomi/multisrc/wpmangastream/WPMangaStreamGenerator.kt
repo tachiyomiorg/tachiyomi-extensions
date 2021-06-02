@@ -9,7 +9,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
 
     override val themeClass = "WPMangaStream"
 
-    override val baseVersionCode: Int = 4
+    override val baseVersionCode: Int = 5
 
     override val sources = listOf(
             SingleLang("Asura Scans", "override url", "en", overrideVersionCode = 1),
@@ -34,7 +34,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("MangaSwat", "https://mangaswat.com", "ar"),
             SingleLang("Manga Raw.org", "https://mangaraw.org", "ja", className = "MangaRawOrg", overrideVersionCode = 1),
             SingleLang("Manga Pro Z", "https://mangaproz.com", "ar"),
-            SingleLang("Silence Scan", "https://silencescan.net", "pt-BR", overrideVersionCode = 1),
+            SingleLang("Silence Scan", "https://silencescan.net", "pt-BR", overrideVersionCode = 2),
             SingleLang("Kuma Scans (Kuma Translation)", "https://kumascans.com", "en", className = "KumaScans"),
             SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
             SingleLang("xCaliBR Scans", "https://xcalibrscans.com", "en", overrideVersionCode = 2),
