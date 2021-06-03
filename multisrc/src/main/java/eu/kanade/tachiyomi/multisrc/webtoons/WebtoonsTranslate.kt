@@ -7,22 +7,32 @@ import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
-import java.util.ArrayList
+import uy.kohesive.injekt.injectLazy
 
-open class WebtoonsTranslate (
+open class WebtoonsTranslate(
     override val name: String,
     override val baseUrl: String,
     override val lang: String,
     private val translateLangCode: String
-    ) : Webtoons(name, baseUrl, lang) {
+) : Webtoons(name, baseUrl, lang) {
+
     // popularMangaRequest already returns manga sorted by latest update
     override val supportsLatest = false
 
@@ -30,10 +40,9 @@ open class WebtoonsTranslate (
     private val mobileBaseUrl = "https://m.webtoons.com".toHttpUrlOrNull()!!
     private val thumbnailBaseUrl = "https://mwebtoon-phinf.pstatic.net"
 
-    private val pageListUrlPattern = "/lineWebtoon/ctrans/translatedEpisodeDetail_jsonp.json?titleNo=%s&episodeNo=%d&languageCode=%s&teamVersion=%d"
-
     private val pageSize = 24
 
+    private val json: Json by injectLazy()
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .removeAll("Referer")
@@ -57,44 +66,38 @@ open class WebtoonsTranslate (
 
     override fun popularMangaParse(response: Response): MangasPage {
         val offset = response.request.url.queryParameter("offset")!!.toInt()
-        var totalCount: Int
-        val mangas = mutableListOf<SManga>()
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+        val responseCode = result["code"]!!.jsonPrimitive.content
 
-        JSONObject(response.body!!.string()).let { json ->
-            json.getString("code").let { code ->
-                if (code != "000") throw Exception("Error getting popular manga: error code $code")
-            }
-
-            json.getJSONObject("result").let { results ->
-                totalCount = results.getInt("totalCount")
-
-                results.getJSONArray("titleList").let { array ->
-                    for (i in 0 until array.length()) {
-                        mangas.add(mangaFromJson(array[i] as JSONObject))
-                    }
-                }
-            }
+        if (responseCode != "000") {
+            throw Exception("Error getting popular manga: error code $responseCode")
         }
 
-        return MangasPage(mangas, totalCount > pageSize + offset)
+        val titles = result["result"]!!.jsonObject
+        val totalCount = titles["totalCount"]!!.jsonPrimitive.int
+
+        val mangaList = titles["titleList"]!!.jsonArray
+            .map { mangaFromJson(it.jsonObject) }
+
+        return MangasPage(mangaList, hasNextPage = totalCount > pageSize + offset)
     }
 
-    private fun mangaFromJson(json: JSONObject): SManga {
-        val relativeThumnailURL = json.getString("thumbnailIPadUrl")
-            ?: json.getString("thumbnailMobileUrl")
+    private fun mangaFromJson(manga: JsonObject): SManga {
+        val relativeThumnailURL = manga["thumbnailIPadUrl"]?.jsonPrimitive?.contentOrNull
+            ?: manga["thumbnailMobileUrl"]?.jsonPrimitive?.contentOrNull
 
         return SManga.create().apply {
-            title = json.getString("representTitle")
-            author = json.getString("writeAuthorName")
-            artist = json.getString("pictureAuthorName") ?: author
+            title = manga["representTitle"]!!.jsonPrimitive.content
+            author = manga["writeAuthorName"]!!.jsonPrimitive.content
+            artist = manga["pictureAuthorName"]?.jsonPrimitive?.contentOrNull ?: author
             thumbnail_url = if (relativeThumnailURL != null) "$thumbnailBaseUrl$relativeThumnailURL" else null
             status = SManga.UNKNOWN
             url = mobileBaseUrl
                 .resolve("/translate/episodeList")!!
                 .newBuilder()
-                .addQueryParameter("titleNo", json.getInt("titleNo").toString())
+                .addQueryParameter("titleNo", manga["titleNo"]!!.jsonPrimitive.int.toString())
                 .addQueryParameter("languageCode", translateLangCode)
-                .addQueryParameter("teamVersion", json.optInt("teamVersion", 0).toString())
+                .addQueryParameter("teamVersion", (manga["teamVersion"]?.jsonPrimitive?.intOrNull ?: 0).toString())
                 .build()
                 .toString()
         }
@@ -116,24 +119,18 @@ open class WebtoonsTranslate (
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = mangaRequest(page, 200)
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
-        val mangas = mutableListOf<SManga>()
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+        val responseCode = result["code"]!!.jsonPrimitive.content
 
-        JSONObject(response.body!!.string()).let { json ->
-            json.getString("code").let { code ->
-                if (code != "000") throw Exception("Error getting manga: error code $code")
-            }
-
-            json.getJSONObject("result").getJSONArray("titleList").let { array ->
-                for (i in 0 until array.length()) {
-                    (array[i] as JSONObject).let { jsonManga ->
-                        if (jsonManga.getString("representTitle").contains(query, ignoreCase = true))
-                            mangas.add(mangaFromJson(jsonManga))
-                    }
-                }
-            }
+        if (responseCode != "000") {
+            throw Exception("Error getting manga: error code $responseCode")
         }
 
-        return MangasPage(mangas, false)
+        val mangaList = result["result"]!!.jsonObject["titleList"]!!.jsonArray
+            .map { mangaFromJson(it.jsonObject) }
+            .filter { it.title.contains(query, ignoreCase = true) }
+
+        return MangasPage(mangaList, false)
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
@@ -170,7 +167,7 @@ open class WebtoonsTranslate (
     override fun chapterListRequest(manga: SManga): Request {
         val titleNo = manga.url.toHttpUrlOrNull()!!
             .queryParameter("titleNo")
-        val chapterUrl = apiBaseUrl
+        val chapterListUrl = apiBaseUrl
             .resolve("/lineWebtoon/ctrans/translatedEpisodes_jsonp.json")!!
             .newBuilder()
             .addQueryParameter("titleNo", titleNo)
@@ -178,38 +175,40 @@ open class WebtoonsTranslate (
             .addQueryParameter("offset", "0")
             .addQueryParameter("limit", "10000")
             .toString()
-        return GET(chapterUrl, mobileHeaders)
+        return GET(chapterListUrl, mobileHeaders)
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterData = response.body!!.string()
-        val chapterJson = JSONObject(chapterData)
-        val responseCode = chapterJson.getString("code")
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+        val responseCode = result["code"]!!.jsonPrimitive.content
+
         if (responseCode != "000") {
-            val message = chapterJson.optString("message", "error code $responseCode")
+            val message = result["message"]?.jsonPrimitive?.content ?: "error code $responseCode"
             throw Exception("Error getting chapter list: $message")
         }
-        val results = chapterJson.getJSONObject("result").getJSONArray("episodes")
-        val ret = ArrayList<SChapter>()
-        for (i in 0 until results.length()) {
-            val result = results.getJSONObject(i)
-            if (result.getBoolean("translateCompleted")) {
-                ret.add(parseChapterJson(result))
-            }
-        }
-        ret.reverse()
-        return ret
+
+        return result["result"]!!.jsonObject["episodes"]!!.jsonArray
+            .filter { it.jsonObject["translateCompleted"]!!.jsonPrimitive.boolean }
+            .map { parseChapterJson(it.jsonObject) }
+            .reversed()
     }
 
-    private fun parseChapterJson(obj: JSONObject) = SChapter.create().apply {
-        name = obj.getString("title") + " #" + obj.getString("episodeSeq")
-        chapter_number = obj.getInt("episodeSeq").toFloat()
-        date_upload = obj.getLong("updateYmdt")
-        scanlator = obj.getString("teamVersion")
-        if (scanlator == "0") {
-            scanlator = "(wiki)"
-        }
-        url = String.format(pageListUrlPattern, obj.getInt("titleNo"), obj.getInt("episodeNo"), obj.getString("languageCode"), obj.getInt("teamVersion"))
+    private fun parseChapterJson(obj: JsonObject): SChapter = SChapter.create().apply {
+        name = obj["title"]!!.jsonPrimitive.content + " #" + obj["episodeSeq"]!!.jsonPrimitive.int
+        chapter_number = obj["episodeSeq"]!!.jsonPrimitive.int.toFloat()
+        date_upload = obj["updateYmdt"]!!.jsonPrimitive.long
+        scanlator = obj["teamVersion"]!!.jsonPrimitive.int.takeIf { it != 0 }?.toString() ?: "(wiki)"
+
+        val chapterUrl = apiBaseUrl
+            .resolve("/lineWebtoon/ctrans/translatedEpisodeDetail_jsonp.json")!!
+            .newBuilder()
+            .addQueryParameter("titleNo", obj["titleNo"]!!.jsonPrimitive.int.toString())
+            .addQueryParameter("episodeNo", obj["episodeNo"]!!.jsonPrimitive.int.toString())
+            .addQueryParameter("languageCode", obj["languageCode"]!!.jsonPrimitive.content)
+            .addQueryParameter("teamVersion", obj["teamVersion"]!!.jsonPrimitive.int.toString())
+            .toString()
+
+        setUrlWithoutDomain(chapterUrl)
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -217,14 +216,12 @@ open class WebtoonsTranslate (
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val pageJson = JSONObject(response.body!!.string())
-        val results = pageJson.getJSONObject("result").getJSONArray("imageInfo")
-        val ret = ArrayList<Page>()
-        for (i in 0 until results.length()) {
-            val result = results.getJSONObject(i)
-            ret.add(Page(i, "", result.getString("imageUrl")))
-        }
-        return ret
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+
+        return result["result"]!!.jsonObject["imageInfo"]!!.jsonArray
+            .mapIndexed { i, jsonEl ->
+                Page(i, "", jsonEl.jsonObject["imageUrl"]!!.jsonPrimitive.content)
+            }
     }
 
     override fun getFilterList(): FilterList = FilterList()

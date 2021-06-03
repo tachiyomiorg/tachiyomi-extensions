@@ -10,7 +10,7 @@ class WebtoonsGenerator : ThemeSourceGenerator {
 
     override val themeClass = "Webtoons"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         MultiLang("Webtoons.com", "https://www.webtoons.com", listOf("en", "fr", "es", "id", "th", "zh"), className = "WebtoonsFactory", pkgName = "webtoons", overrideVersionCode = 29),

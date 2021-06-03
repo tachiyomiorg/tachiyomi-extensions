@@ -11,6 +11,9 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Headers
@@ -19,10 +22,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -75,6 +78,8 @@ open class Webtoons(
                 }
             }
         }
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaSelector() = "not using"
 
@@ -262,14 +267,16 @@ open class Webtoons(
 
         val docUrl = docUrlRegex.find(docString)!!.destructured.toList()[0]
         val motiontoonPath = motiontoonPathRegex.find(docString)!!.destructured.toList()[0]
+        val motiontoonResponse = client.newCall(GET(docUrl, headers)).execute()
 
-        val motiontoonJson = JSONObject(client.newCall(GET(docUrl, headers)).execute().body!!.string()).getJSONObject("assets").getJSONObject("image")
+        val motiontoonJson = json.parseToJsonElement(motiontoonResponse.body!!.string()).jsonObject
+        val motiontoonImages = motiontoonJson["assets"]!!.jsonObject["image"]!!.jsonObject
 
-        val keys = motiontoonJson.keys().asSequence().toList().filter { it.contains("layer") }
-
-        return keys.mapIndexed { i, key ->
-            Page(i, "", motiontoonPath + motiontoonJson.getString(key))
-        }
+        return motiontoonImages.entries
+            .filter { it.key.contains("layer") }
+            .mapIndexed { i, entry ->
+                Page(i, "", motiontoonPath + entry.value.jsonPrimitive.content)
+            }
     }
 
     companion object {
