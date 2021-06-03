@@ -12,12 +12,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -54,6 +59,8 @@ abstract class MangAdventure(
         add("User-Agent", userAgent)
         add("Referer", baseUrl)
     }
+
+    private val json: Json by injectLazy()
 
     override fun latestUpdatesRequest(page: Int) =
         GET("$apiUrl/releases/", headers)
@@ -100,58 +107,57 @@ abstract class MangAdventure(
     }
 
     override fun latestUpdatesParse(response: Response) =
-        JSONArray(response.asString()).run {
+        json.parseToJsonElement(response.asString()).jsonArray.run {
             MangasPage(
-                (0 until length()).map {
-                    val obj = getJSONObject(it)
+                map {
+                    val obj = it.jsonObject
                     SManga.create().apply {
-                        url = obj.getString("url")
-                        title = obj.getString("title")
-                        thumbnail_url = obj.getString("cover")
-                        // A bit of a hack to sort by date
+                        url = obj["url"]!!.jsonPrimitive.content
+                        title = obj["title"]!!.jsonPrimitive.content
+                        thumbnail_url = obj["cover"]!!.jsonPrimitive.content
                         description = httpDateToTimestamp(
-                            obj.getJSONObject("latest_chapter").getString("date")
+                            obj["latest_chapter"]!!.jsonObject["date"]!!.jsonPrimitive.content
                         ).toString()
                     }
-                }.sortedByDescending(SManga::description),
+                }
+                .sortedByDescending(SManga::description),
                 false
             )
         }
 
     override fun chapterListParse(response: Response) =
-        JSONObject(response.asString()).getJSONObject("volumes").run {
-            keys().asSequence().flatMap { vol ->
-                val chapters = getJSONObject(vol)
-                chapters.keys().asSequence().map { ch ->
+        json.parseToJsonElement(response.asString()).jsonObject["volumes"]!!.jsonObject.entries
+            .reversed()
+            .flatMap { vol ->
+                vol.value.jsonObject.entries.map { ch ->
                     SChapter.create().fromJSON(
-                        chapters.getJSONObject(ch).also {
-                            it.put("volume", vol)
-                            it.put("chapter", ch)
+                        ch.value.jsonObject.toMutableMap().let {
+                            it["volume"] = JsonPrimitive(vol.key)
+                            it["chapter"] = JsonPrimitive(ch.key)
+
+                            JsonObject(it)
                         }
                     )
                 }
-            }.toList().reversed()
-        }
+            }
 
     override fun mangaDetailsParse(response: Response) =
-        SManga.create().fromJSON(JSONObject(response.asString()))
+        SManga.create().fromJSON(json.parseToJsonElement(response.asString()).jsonObject)
 
     override fun pageListParse(response: Response) =
-        JSONObject(response.asString()).run {
-            val url = getString("url")
-            val root = getString("pages_root")
-            val arr = getJSONArray("pages_list")
-            (0 until arr.length()).map {
-                Page(it, "$url${it + 1}", "$root${arr.getString(it)}")
+        json.parseToJsonElement(response.asString()).jsonObject.run {
+            val url = get("url")!!.jsonPrimitive.content
+            val root = get("pages_root")!!.jsonPrimitive.content
+
+            get("pages_list")!!.jsonArray.mapIndexed { i, jsonEl ->
+                Page(i, "$url${i + 1}", "$root${jsonEl.jsonPrimitive.content}")
             }
         }
 
     override fun searchMangaParse(response: Response) =
-        JSONArray(response.asString()).run {
+        json.parseToJsonElement(response.asString()).jsonArray.run {
             MangasPage(
-                (0 until length()).map {
-                    SManga.create().fromJSON(getJSONObject(it))
-                }.sortedBy(SManga::title),
+                map { SManga.create().fromJSON(it.jsonObject) },
                 false
             )
         }
