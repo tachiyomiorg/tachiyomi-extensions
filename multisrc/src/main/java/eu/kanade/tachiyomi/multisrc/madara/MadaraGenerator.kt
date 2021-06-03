@@ -75,7 +75,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Hiperdex", "https://hiperdex.com", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Hscans", "https://hscans.com", "en", overrideVersionCode = 1),
             SingleLang("Hunter Fansub", "https://hunterfansub.com", "es"),
-            SingleLang("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR", overrideVersionCode = 1),
+            SingleLang("Ichirin No Hana Yuri", "https://ichirinnohanayuri.com.br", "pt-BR", overrideVersionCode = 2),
             SingleLang("Immortal Updates", "https://immortalupdates.com", "en", overrideVersionCode = 1),
             SingleLang("Império dos Otakus", "https://imperiodosotakus.tk", "pt-BR", className = "ImperioDosOtakus"),
             SingleLang("IsekaiScan.com", "https://isekaiscan.com", "en", className = "IsekaiScanCom", overrideVersionCode = 2),
