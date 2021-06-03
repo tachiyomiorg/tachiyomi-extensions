@@ -25,21 +25,21 @@ class FallenAngels : MMRCMS("Fallen Angels", "https://manga.fascans.com", "en") 
         val chapter = SChapter.create()
 
         try {
-            val titleWrapper = if (name == "Mangas.pw") element.select("i a").first() else element.select("[class^=chapter-title-rtl]").first()
-            // Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
-            val url = titleWrapper.getElementsByTag("a")
+            val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
+            val chapterElement = titleWrapper.getElementsByTag("a")
                 .first { it.attr("href").contains(urlRegex) }
-                .attr("href")
-
-            // Ensure chapter actually links to a manga
-            // Some websites use the chapters box to link to post announcements
-            // The check is skipped if mangas are stored in the root of the website (ex '/one-piece' without a segment like '/manga/one-piece')
-            if (itemUrlPath != null && !Uri.parse(url).pathSegments.firstOrNull().equals(itemUrlPath, true)) {
-                return null
-            }
+            val url = chapterElement.attr("href")
 
             chapter.url = getUrlWithoutBaseUrl(url)
-            chapter.name = titleWrapper.text()
+
+            // Construct chapter names
+            // before -> <mangaName> <chapterNumber> : <chapterTitle>
+            // after  -> Chapter     <chapterNumber> : <chapterTitle>
+            val chapterText = chapterElement.text()
+            val numberRegex = Regex("""\d+""")
+            val chapterNumber = numberRegex.find(chapterText)
+            val chapterTitle = chapterText.substringAfter(":")
+            chapter.name = "Chapter $chapterNumber : $chapterTitle"// titleWrapper.text()
 
             // Parse date
             val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
