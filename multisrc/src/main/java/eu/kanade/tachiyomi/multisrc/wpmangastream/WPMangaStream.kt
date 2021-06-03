@@ -266,13 +266,10 @@ abstract class WPMangaStream(
     open val pageSelector = "div#readerarea img"
 
     override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
-        document.select(pageSelector)
+        val htmlPages = document.select(pageSelector)
             .filterNot { it.attr("src").isNullOrEmpty() }
-            .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
-
-        // Some wpmangastream sites now load pages via javascript
-        if (pages.isNotEmpty()) { return pages }
+            .mapIndexed { i, img -> Page(i, "", img.attr("abs:src")) }
+            .toMutableList()
 
         val docString = document.toString()
         val imageListRegex = Regex("\\\"images.*?:.*?(\\[.*?\\])")
@@ -280,11 +277,15 @@ abstract class WPMangaStream(
 
         val imageList = json.parseToJsonElement(imageListJson).jsonArray
 
-        pages += imageList.mapIndexed { i, jsonEl ->
+        val scriptPages = imageList.mapIndexed { i, jsonEl ->
             Page(i, "", jsonEl.jsonPrimitive.content)
         }
 
-        return pages
+        if (htmlPages.size < scriptPages.size) {
+            htmlPages += scriptPages
+        }
+
+        return htmlPages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
