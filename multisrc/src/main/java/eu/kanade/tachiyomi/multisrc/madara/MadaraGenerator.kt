@@ -19,6 +19,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("AllPornComic", "https://allporncomic.com", "en", isNsfw = true),
             SingleLang("Aloalivn", "https://aloalivn.com", "en", overrideVersionCode = 2),
             SingleLang("AniMangaEs", "https://animangaes.com", "en", overrideVersionCode = 1),
+            SingleLang("Anisa Manga", "https://anisamanga.com", "tr"),
             SingleLang("Agent of Change Translations", "https://aoc.moe", "en", overrideVersionCode = 1),
             SingleLang("ApollComics", "https://apollcomics.xyz", "es"),
             SingleLang("Arang Scans", "https://arangscans.com", "en", overrideVersionCode = 3), // removed override
