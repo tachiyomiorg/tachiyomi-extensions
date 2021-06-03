@@ -15,10 +15,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import rx.Observable
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 
 class CatManga : HttpSource() {
+
+    private val application: Application by injectLazy()
 
     override val name = "CatManga"
     override val baseUrl = "https://catmanga.org"
@@ -50,6 +51,69 @@ class CatManga : HttpSource() {
             }
     }
 
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
+        return client.newCall(popularMangaRequest(0))
+            .asObservableSuccess()
+            .map { response ->
+                manga.also {
+                    getSeriesObject(response.asJsoup().getDataJsonObject(), it)?.let { series ->
+                        it.title = series.getString("title")
+                        it.author = series.getJSONArray("authors").joinToString(", ")
+                        it.description = series.getString("description")
+                        it.genre = series.getJSONArray("genres").joinToString(", ")
+                        it.status = when (series.getString("status")) {
+                            "ongoing" -> SManga.ONGOING
+                            "completed" -> SManga.COMPLETED
+                            else -> SManga.UNKNOWN
+                        }
+                        it.thumbnail_url = series.getJSONObject("cover_art").getString("source")
+                    }
+                }
+            }
+    }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        val seriesId = manga.url.substringAfter("/series/")
+        return client.newCall(popularMangaRequest(0))
+            .asObservableSuccess()
+            .map { response ->
+                var returnChapter = emptyList<SChapter>()
+
+                val series = getSeriesObject(response.asJsoup().getDataJsonObject(), manga)
+                if (series != null) {
+                    val seriesPrefs = application.getSharedPreferences("source_${id}_time_found:$seriesId", 0)
+                    val seriesPrefsEditor = seriesPrefs.edit()
+
+                    val chapters = series.getJSONArray("chapters")
+                    returnChapter = (0 until chapters.length()).reversed().map { i ->
+                        val chapter = chapters.getJSONObject(i)
+                        val title = chapter.optString("title")
+                        val groups = chapter.getJSONArray("groups").joinToString()
+                        val number = chapter.getString("number")
+                        val displayNumber = chapter.optString("display_number", number)
+                        SChapter.create().apply {
+                            url = "${manga.url}/$number"
+                            chapter_number = number.toFloat()
+                            name = "Chapter $displayNumber" + if (title.isNotBlank()) " - $title" else ""
+                            scanlator = groups
+
+                            // Save current time when a chapter is found for the first time, and reuse it on future
+                            // checks to prevent manga entry without any new chapter bumped to the top of
+                            // "Latest chapter" list when the library is updated.
+                            val currentTimeMillis = System.currentTimeMillis()
+                            if (!seriesPrefs.contains(number)) {
+                                seriesPrefsEditor.putLong(number, currentTimeMillis)
+                            }
+                            date_upload = seriesPrefs.getLong(number, currentTimeMillis)
+                        }
+                    }
+                    seriesPrefsEditor.apply()
+                }
+
+                returnChapter
+            }
+    }
+
     override fun popularMangaParse(response: Response): MangasPage {
         val mangas = getFilteredSeriesList(response.asJsoup().getDataJsonObject())
         return MangasPage(mangas, false)
@@ -71,61 +135,6 @@ class CatManga : HttpSource() {
         return MangasPage(mangas, false)
     }
 
-    override fun mangaDetailsParse(response: Response): SManga {
-        return SManga.create().apply {
-            val series = response.asJsoup().getDataJsonObject()
-                .getJSONObject("props")
-                .getJSONObject("pageProps")
-                .getJSONObject("series")
-            title = series.getString("title")
-            author = series.getJSONArray("authors").joinToString(", ")
-            description = series.getString("description")
-            genre = series.getJSONArray("genres").joinToString(", ")
-            status = when (series.getString("status")) {
-                "ongoing" -> SManga.ONGOING
-                "completed" -> SManga.COMPLETED
-                else -> SManga.UNKNOWN
-            }
-            thumbnail_url = series.getJSONObject("cover_art").getString("source")
-        }
-    }
-
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val jsonObject = response.asJsoup().getDataJsonObject()
-
-        val querySeries = jsonObject.getJSONObject("query").getString("series")
-        val seriesUrl = jsonObject.getString("page").replace("[series]", querySeries)
-        val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_time_found:$querySeries", 0)
-        val seriesPrefsEditor = seriesPrefs.edit()
-
-        val series = jsonObject.getJSONObject("props").getJSONObject("pageProps").getJSONObject("series")
-        val chapters = series.getJSONArray("chapters")
-        val list = (0 until chapters.length()).reversed().map { i ->
-            val chapter = chapters.getJSONObject(i)
-            val title = chapter.optString("title")
-            val groups = chapter.getJSONArray("groups").joinToString()
-            val number = chapter.getString("number")
-            val displayNumber = chapter.optString("display_number", number)
-            SChapter.create().apply {
-                url = "$seriesUrl/$number"
-                chapter_number = number.toFloat()
-                name = "Chapter $displayNumber" + if (title.isNotBlank()) " - $title" else ""
-                scanlator = groups
-
-                // Save current time when a chapter is found for the first time, and reuse it on future checks to
-                // prevent manga entry without any new chapter bumped to the top of "Latest chapter" list
-                // when the library is updated.
-                val currentTimeMillis = System.currentTimeMillis()
-                if (!seriesPrefs.contains(number)) {
-                    seriesPrefsEditor.putLong(number, currentTimeMillis)
-                }
-                date_upload = seriesPrefs.getLong(number, currentTimeMillis)
-            }
-        }
-        seriesPrefsEditor.apply()
-        return list
-    }
-
     override fun pageListParse(response: Response): List<Page> {
         val pages = response.asJsoup().getDataJsonObject()
             .getJSONObject("props")
@@ -139,6 +148,21 @@ class CatManga : HttpSource() {
      */
     private fun Document.getDataJsonObject(): JSONObject {
         return JSONObject(getElementById("__NEXT_DATA__").html())
+    }
+
+    /**
+     * Returns JSONObject for [manga] from site data
+     */
+    private fun getSeriesObject(jsonObject: JSONObject, manga: SManga): JSONObject? {
+        val seriesId = manga.url.substringAfter("/series/")
+        val seriesArray = jsonObject
+            .getJSONObject("props")
+            .getJSONObject("pageProps")
+            .getJSONArray("series")
+        val seriesIndex = (0 until seriesArray.length()).firstOrNull { i ->
+            seriesArray.getJSONObject(i).optString("series_id").takeIf { it.isNotBlank() } == seriesId
+        }
+        return if (seriesIndex != null) seriesArray.getJSONObject(seriesIndex) else null
     }
 
     /**
@@ -200,6 +224,14 @@ class CatManga : HttpSource() {
             }
         }
         return false
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        throw UnsupportedOperationException("Not used.")
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        throw UnsupportedOperationException("Not used.")
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
