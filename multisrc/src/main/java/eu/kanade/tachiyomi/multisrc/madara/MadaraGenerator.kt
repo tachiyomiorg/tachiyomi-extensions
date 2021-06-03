@@ -235,6 +235,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Wakascan", "https://wakascan.com", "fr"),
             SingleLang("War Queen Scan", "https://wqscan.com.br", "pt-BR", overrideVersionCode = 2),
             SingleLang("WebNovel", "https://webnovel.live", "en", className = "WebNovelLive", overrideVersionCode = 1),
+            SingleLang("Webtoon Hatti", "https://webtoonhatti.com/", "tr"),
             SingleLang("WebToonily", "https://webtoonily.com", "en"),
             SingleLang("WebtoonUK", "https://webtoon.uk", "en"),
             SingleLang("WebtoonXYZ", "https://www.webtoon.xyz", "en"),
