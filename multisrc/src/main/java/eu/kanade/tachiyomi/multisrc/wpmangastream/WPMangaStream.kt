@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.multisrc.wpmangastream
 
-//import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor // added to override
 import android.app.Application
 import android.content.SharedPreferences
 import eu.kanade.tachiyomi.network.GET
@@ -12,17 +11,20 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -67,16 +69,15 @@ abstract class WPMangaStream(
 
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
 
-    //private val rateLimitInterceptor = RateLimitInterceptor(4)
-
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-        //.addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
     protected fun Element.imgAttr(): String = if (this.hasAttr("data-src")) this.attr("abs:data-src") else this.attr("abs:src")
     protected fun Elements.imgAttr(): String = this.first().imgAttr()
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga/?page=$page&order=popular", headers)
@@ -167,7 +168,7 @@ abstract class WPMangaStream(
 
                 // add alternative name to manga description
                 document.select(altNameSelector).firstOrNull()?.ownText()?.let {
-                    if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                    if (it.isEmpty().not() && it != "N/A" && it != "-") {
                         description += when {
                             description!!.isEmpty() -> altName + it
                             else -> "\n\n$altName" + it
@@ -182,7 +183,7 @@ abstract class WPMangaStream(
     open val altNameSelector = ".alternative, .wd-full:contains(Alt) span, .alter, .seriestualt"
     open val altName = "Alternative Name" + ": "
 
-    protected fun parseStatus(element: String?): Int = when {
+    protected open fun parseStatus(element: String?): Int = when {
         element == null -> SManga.UNKNOWN
         listOf("ongoing", "publishing").any { it.contains(element, ignoreCase = true) } -> SManga.ONGOING
         listOf("completed").any { it.contains(element, ignoreCase = true) } -> SManga.COMPLETED
@@ -265,7 +266,7 @@ abstract class WPMangaStream(
     open val pageSelector = "div#readerarea img"
 
     override fun pageListParse(document: Document): List<Page> {
-        var pages = mutableListOf<Page>()
+        val pages = mutableListOf<Page>()
         document.select(pageSelector)
             .filterNot { it.attr("src").isNullOrEmpty() }
             .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
@@ -275,11 +276,12 @@ abstract class WPMangaStream(
 
         val docString = document.toString()
         val imageListRegex = Regex("\\\"images.*?:.*?(\\[.*?\\])")
+        val imageListJson = imageListRegex.find(docString)!!.destructured.toList()[0]
 
-        val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
+        val imageList = json.parseToJsonElement(imageListJson).jsonArray
 
-        for (i in 0 until imageList.length()) {
-            pages.add(Page(i, "", imageList.getString(i)))
+        pages += imageList.mapIndexed { i, jsonEl ->
+            Page(i, "", jsonEl.jsonPrimitive.content)
         }
 
         return pages

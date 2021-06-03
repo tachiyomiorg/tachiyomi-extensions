@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.multisrc.wpmangareader
 
-import android.util.Log
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -11,16 +10,19 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
 import rx.Single
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -35,6 +37,8 @@ abstract class WPMangaReader(
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    private val json: Json by injectLazy()
 
     // popular
     override fun popularMangaRequest(page: Int) = searchMangaRequest(page, "", FilterList(OrderByFilter(5)))
@@ -65,7 +69,7 @@ abstract class WPMangaReader(
      * @returns An identifier for a manga, or null if none could be found
      */
     protected open fun mangaIdFromUrl(s: String): Single<String?> {
-        var baseMangaUrl = "$baseUrl$mangaUrlDirectory".toHttpUrlOrNull()!!
+        val baseMangaUrl = "$baseUrl$mangaUrlDirectory".toHttpUrlOrNull()!!
         return s.toHttpUrlOrNull()?.let { url ->
             fun pathLengthIs(url: HttpUrl, n: Int, strict: Boolean = false) = url.pathSegments.size == n && url.pathSegments[n - 1].isNotEmpty() || (!strict && url.pathSegments.size == n + 1 && url.pathSegments[n].isEmpty())
             val isMangaUrl = listOf(
@@ -226,7 +230,7 @@ abstract class WPMangaReader(
     open val pageSelector = "div#readerarea img"
 
     override fun pageListParse(document: Document): List<Page> {
-        var pages = mutableListOf<Page>()
+        val pages = mutableListOf<Page>()
         document.select(pageSelector)
             .filterNot { it.attr("src").isNullOrEmpty() }
             .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
@@ -236,11 +240,12 @@ abstract class WPMangaReader(
 
         val docString = document.toString()
         val imageListRegex = Regex("\\\"images.*?:.*?(\\[.*?\\])")
+        val imageListJson = imageListRegex.find(docString)!!.destructured.toList()[0]
 
-        val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
+        val imageList = json.parseToJsonElement(imageListJson).jsonArray
 
-        for (i in 0 until imageList.length()) {
-            pages.add(Page(i, "", imageList.getString(i)))
+        pages += imageList.mapIndexed { i, jsonEl ->
+            Page(i, "", jsonEl.jsonPrimitive.content)
         }
 
         return pages
