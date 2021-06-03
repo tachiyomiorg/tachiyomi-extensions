@@ -293,13 +293,14 @@ abstract class WPMangaStream(
     override fun imageRequest(page: Page): Request {
         val headers = Headers.Builder()
         headers.apply {
+            add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
             add("Referer", baseUrl)
             add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")
         }
 
         if (page.imageUrl!!.contains(".wp.com")) {
             headers.apply {
-                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+                set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
             }
         }
 
