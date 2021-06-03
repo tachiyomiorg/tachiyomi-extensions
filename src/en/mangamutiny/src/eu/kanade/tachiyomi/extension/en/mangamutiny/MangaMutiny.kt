@@ -10,13 +10,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
-import java.lang.IllegalStateException
+import uy.kohesive.injekt.injectLazy
 
 class MangaMutiny : HttpSource() {
 
@@ -27,7 +26,7 @@ class MangaMutiny : HttpSource() {
 
     override val lang = "en"
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json: Json by injectLazy()
 
     private val baseUrlAPI = "https://api.mangamutiny.org"
 
@@ -62,13 +61,11 @@ class MangaMutiny : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val responseBody = response.body
 
-        return if (responseBody != null) {
-            val result = json.decodeFromString<MangaMutinyItem>(responseBody.string())
-            responseBody.close()
-            result.chapters?.map { it.toSChapter() } ?: listOf()
-        } else {
-            listOf()
-        }
+        return responseBody?.use {
+            json.decodeFromString(ListChapterDS, it.string()).also {
+                responseBody.close()
+            }
+        } ?: listOf()
     }
 
     // latest
@@ -100,9 +97,9 @@ class MangaMutiny : HttpSource() {
         val responseBody = response.body
 
         if (responseBody != null) {
-            val result = json.decodeFromString<MangaMutinyItem>(responseBody.string()).toSManga()
-            responseBody.close()
-            return result
+            return responseBody.use {
+                json.decodeFromString(SMangaDS, it.string())
+            }
         } else {
             throw IllegalStateException("Response code ${response.code}")
         }
@@ -119,13 +116,9 @@ class MangaMutiny : HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val responseBody = response.body
 
-        return if (responseBody != null) {
-            val result = json.decodeFromString<MangaMutinyPageResponse>(responseBody.string())
-            responseBody.close()
-            result.toPageList()
-        } else {
-            listOf()
-        }
+        return responseBody?.use {
+            json.decodeFromString(ListPageDS, it.string())
+        } ?: listOf()
     }
 
     // Search
@@ -138,22 +131,17 @@ class MangaMutiny : HttpSource() {
     private fun mangaParse(response: Response): MangasPage {
         val responseBody = response.body
 
-        if (responseBody != null) {
-            val result = json.decodeFromString<MangaMutinyMangasPageResponse>(responseBody.string())
-
-            responseBody.close()
-
-            val mangasPage = result.items.map { it.toSManga() }
-
-            val totalObjects = result.total
+        return if (responseBody != null) {
+            val deserializationResult = json.decodeFromString(PageInfoDS, responseBody.string())
+            val totalObjects = deserializationResult.second
             val skipped = response.request.url.queryParameter("skip")?.toInt() ?: 0
             val moreElementsToSkip = skipped + fetchAmount < totalObjects
-            val pageSizeEqualsFetchAmount = mangasPage.size == fetchAmount
+            val pageSizeEqualsFetchAmount = deserializationResult.first.size == fetchAmount
             val hasMorePages = pageSizeEqualsFetchAmount && moreElementsToSkip
 
-            return MangasPage(mangasPage, hasMorePages)
+            MangasPage(deserializationResult.first, hasMorePages)
         } else {
-            return MangasPage(listOf(), false)
+            MangasPage(listOf(), false)
         }
     }
 
