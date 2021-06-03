@@ -285,7 +285,7 @@ abstract class WPMangaStream(
             htmlPages += scriptPages
         }
 
-        return htmlPages
+        return htmlPages.distinctBy { it.imageUrl }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
