@@ -6,7 +6,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 class FlameScans : WPMangaReader("Flame Scans", "https://flamescans.org", "en", "/series") {
-    private val rateLimitInterceptor = RateLimitInterceptor(4)
+    private val rateLimitInterceptor = RateLimitInterceptor(2)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
