@@ -1,6 +1,12 @@
-package eu.kanade.tachiyomi.extension.pt.gekkouscan
+package eu.kanade.tachiyomi.extension.en.fallenangels
 
 import eu.kanade.tachiyomi.multisrc.mmrcms.MMRCMS
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Response
+import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class FallenAngels : MMRCMS("Fallen Angels", "https://manga.fascans.com", "en") {
 
@@ -21,46 +27,30 @@ class FallenAngels : MMRCMS("Fallen Angels", "https://manga.fascans.com", "en") 
      *
      * @param element an element obtained from [chapterListSelector].
      */
-    override fun nullableChapterFromElement(element: Element): SChapter? {
+    private fun nullableChapterFromElement(element: Element): SChapter? {
         val chapter = SChapter.create()
 
-        try {
-            val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
-            val chapterElement = titleWrapper.getElementsByTag("a")
-                .first { it.attr("href").contains(urlRegex) }
-            val url = chapterElement.attr("href")
+        val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
+        val urlRegex = Regex("""[a-zA-z]""")
+        val chapterElement = titleWrapper.getElementsByTag("a")
+        val url = chapterElement.attr("href")
 
-            chapter.url = getUrlWithoutBaseUrl(url)
+        chapter.url = getUrlWithoutBaseUrl(url)
 
-            // Construct chapter names
-            // before -> <mangaName> <chapterNumber> : <chapterTitle>
-            // after  -> Chapter     <chapterNumber> : <chapterTitle>
-            val chapterText = chapterElement.text()
-            val numberRegex = Regex("""\d+""")
-            val chapterNumber = numberRegex.find(chapterText)
-            val chapterTitle = chapterText.substringAfter(":")
-            chapter.name = "Chapter $chapterNumber : $chapterTitle"// titleWrapper.text()
+        // Construct chapter names
+        // before -> <mangaName> <chapterNumber> : <chapterTitle>
+        // after  -> Chapter     <chapterNumber> : <chapterTitle>
+        val chapterText = chapterElement.text()
+        val numberRegex = Regex("""\d+""")
+        val chapterNumber = numberRegex.find(chapterText)?.value.orEmpty()
+        val chapterTitle = titleWrapper.getElementsByTag("em").text()
+        chapter.name = "Chapter $chapterNumber : $chapterTitle"// titleWrapper.text()
 
-            // Parse date
-            val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
-            chapter.date_upload = parseDate(dateText)
+        // Parse date
+        val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
+        val dateFormat = SimpleDateFormat("d MMM. yyyy", Locale.US)
+        chapter.date_upload = dateFormat.parse(dateText)?.time ?: 0L
 
-            return chapter
-        } catch (e: NullPointerException) {
-            // For chapter list in a table
-            if (element.select("td").hasText()) {
-                element.select("td a").let {
-                    chapter.setUrlWithoutDomain(it.attr("href"))
-                    chapter.name = it.text()
-                }
-                val tableDateText = element.select("td + td").text()
-                chapter.date_upload = parseDate(tableDateText)
-
-                return chapter
-            }
-        }
-
-        return null
+        return chapter
     }
-
 }
