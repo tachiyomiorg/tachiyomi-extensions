@@ -36,6 +36,6 @@ class MangaPL : Madara("MangaPL", "https://mangapl.com", "en") {
         Genre("Slice of Life", "slice-of-life"),
         Genre("Smut", "smut"),
         Genre("Supernatural", "supernatural"),
-        Genre("Tragedy", "tragedy")
+        Genre("Tragedy", "tragedy"),
     )
 }
