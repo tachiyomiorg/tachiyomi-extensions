@@ -10,8 +10,7 @@ import java.util.concurrent.TimeUnit
 class ManhuaPro : Madara(
     "ManhuaPro",
     "https://manhuapro.com",
-    "en",
-    dateFormat = SimpleDateFormat("MM/dd/yy", Locale.US)
+    "en"
 ) {
     private val rateLimitInterceptor = RateLimitInterceptor(1)
 
