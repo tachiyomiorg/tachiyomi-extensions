@@ -143,7 +143,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manga Turf", "https://mangaturf.com", "en"),
             SingleLang("MangaTX", "https://mangatx.com", "en", overrideVersionCode = 1),
             SingleLang("Mangauptocats", "https://mangauptocats.online", "th"),
-            SingleLang("MangaUS", "https://mangaus.xyz", "en", overrideVersionCode = 2,
+            SingleLang("MangaUS", "https://mangaus.xyz", "en", overrideVersionCode = 2),
             SingleLang("Manga Weebs", "https://mangaweebs.in", "en", overrideVersionCode = 1),
             SingleLang("MangaWT", "https://mangawt.com", "tr"),
             SingleLang("MangaYaku", "https://mangayaku.com", "id", overrideVersionCode = 1),
@@ -208,7 +208,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Shield Manga", "https://shieldmanga.club", "en", overrideVersionCode = 2),
             SingleLang("Shinzoo Scan", "https://shinzooscan.xyz", "pt-BR", overrideVersionCode = 2),
             SingleLang("Shooting Star Scans", "https://shootingstarscans.xyz", "en", overrideVersionCode = 1),
-            SingleLang("ShoujoHearts", "https://shoujohearts.com", "en", overrideVersionCode = 2,
+            SingleLang("ShoujoHearts", "https://shoujohearts.com", "en", overrideVersionCode = 2),
             SingleLang("SISI GELAP", "https://sisigelap.club/", "id"),
             SingleLang("SiXiang Scans", "http://www.sixiangscans.com", "en", overrideVersionCode = 1),
             SingleLang("Siyahmelek", "https://siyahmelek.com", "tr", isNsfw = true, overrideVersionCode = 1),
@@ -260,7 +260,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Mortals Groove", "https://mortalsgroove.com", "en"),
             SingleLang("Cervo Scanlator", "https://cervoscan.xyz", "pt-BR", overrideVersionCode = 1),
             SingleLang("Comic Star", "https://comicstar.org", "en"),
-            SingleLang("Reset Scans", "https://reset-scans.com", "en", overrideVersionCode = 3,
+            SingleLang("Reset Scans", "https://reset-scans.com", "en", overrideVersionCode = 3),
             SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en"),
             SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo"),
             SingleLang("Random Scan", "https://randomscan.online", "pt-BR", overrideVersionCode = 2),
@@ -272,15 +272,14 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Pornwha", "https://pornwha.com", "en", isNsfw = true),
             SingleLang("Wakamics", "https://wakamics.net", "en"),
             SingleLang("Traducciones Amistosas", "https://nartag.com", "es"),
-            SingleLang("MangaYami", "https://www.mangayami.club", "en", overrideVersionCode = 2,
+            SingleLang("MangaYami", "https://www.mangayami.club", "en", overrideVersionCode = 2),
             SingleLang("Manga Fenix", "https://manga-fenix.com", "es"),
             SingleLang("Manga Mitsu", "https://mangamitsu.com", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Fudido Scanlator", "https://fudidoscan.com", "pt-BR", isNsfw = true),
             SingleLang("Yaoi Manga", "https://yaoi.mobi", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Free Manga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("MangaTuli", "https://mangatuli.com", "en", isNsfw = true, overrideVersionCode = 1),
-            SingleLang("ManhuaPro", "https://manhuapro.com", "en")
-
+            SingleLang("ManhuaPro", "https://manhuapro.com", "en"),
     )
 
     companion object {
