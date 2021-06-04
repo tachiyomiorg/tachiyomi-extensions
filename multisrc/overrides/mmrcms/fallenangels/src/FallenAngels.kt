@@ -31,7 +31,6 @@ class FallenAngels : MMRCMS("Fallen Angels", "https://manga.fascans.com", "en") 
         val chapter = SChapter.create()
 
         val titleWrapper = element.select("[class^=chapter-title-rtl]").first()
-        val urlRegex = Regex("""[a-zA-z]""")
         val chapterElement = titleWrapper.getElementsByTag("a")
         val url = chapterElement.attr("href")
 
