@@ -59,11 +59,11 @@ class Xkcd : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val titleWords: Sequence<String>
         val altTextWords: Sequence<String>
-        val interactiveText = listOf(
-            "To experience the", "interactive version of this comic,",
-            "open it in WebView/browser."
-        )
-            .joinToString(separator = "%0A")
+        val interactiveText = """
+            |To experience the interactive version of this comic,
+            |open it in WebView/browser.
+        """.trimMargin("|")
+            .replace("\n", "%0A")
             .replace(" ", "%20")
 
         // transforming filename from info.0.json isn't guaranteed to work, stick to html
