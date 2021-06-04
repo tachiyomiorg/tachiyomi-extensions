@@ -6,7 +6,7 @@ ext {
     extName = 'Cubari'
     pkgNameSuffix = "all.cubari"
     extClass = '.CubariFactory'
-    extVersionCode = 6
+    extVersionCode = 7
     libVersion = '1.2'
 }
 

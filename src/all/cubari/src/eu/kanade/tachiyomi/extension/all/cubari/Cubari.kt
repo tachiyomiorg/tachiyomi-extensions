@@ -268,6 +268,7 @@ open class Cubari(override val lang: String) : HttpSource() {
             val chapterNum = chapterEntry.key
             val chapterObj = chapterEntry.value.jsonObject
             val chapterGroups = chapterObj["groups"]!!.jsonObject
+            val volume = chapterObj["volume"]!!.jsonPrimitive.content
 
             chapterGroups.entries.map { groupEntry ->
                 val groupNum = groupEntry.key
@@ -288,7 +289,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                         seriesPrefs.getLong(chapterNum, currentTimeMillis)
                     }
 
-                    name = if (chapterObj["volume"]!!.jsonPrimitive.content != "Uncategorized") {
+                    name = if (volume.isNotEmpty() && volume != "Uncategorized") {
                         // Output "Vol. 1 Ch. 1 - Chapter Name"
                         "Vol. " + chapterObj["volume"]!!.jsonPrimitive.content + " Ch. " +
                             chapterNum + " - " + chapterObj["title"]!!.jsonPrimitive.content
@@ -297,7 +298,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                         "Ch. " + chapterNum + " - " + chapterObj["title"]!!.jsonPrimitive.content
                     }
 
-                    url = if (chapterGroups[groupNum] != null) {
+                    url = if (chapterGroups[groupNum] is JsonArray) {
                         "${manga.url}/$chapterNum/$groupNum"
                     } else {
                         chapterGroups[groupNum]!!.jsonPrimitive.content
