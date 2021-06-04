@@ -69,9 +69,9 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
     private val baseHttpUrl: HttpUrl = baseUrl.toHttpUrlOrNull()!!
 
     // Add rate limit to fix manga thumbnail load failure
-    private val mainSiteRateLimitInterceptor = SpecificHostRateLimitInterceptor(baseHttpUrl, preferences.getString(MAINSITE_RATELIMIT_PREF, "2")!!.toInt())
-    private val imageCDNRateLimitInterceptor1 = SpecificHostRateLimitInterceptor(imageServer[0].toHttpUrlOrNull()!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt())
-    private val imageCDNRateLimitInterceptor2 = SpecificHostRateLimitInterceptor(imageServer[1].toHttpUrlOrNull()!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, "4")!!.toInt())
+    private val mainSiteRateLimitInterceptor = SpecificHostRateLimitInterceptor(baseHttpUrl, preferences.getString(MAINSITE_RATELIMIT_PREF, MAINSITE_RATELIMIT_DEFAULT_VALUE)!!.toInt(), 10)
+    private val imageCDNRateLimitInterceptor1 = SpecificHostRateLimitInterceptor(imageServer[0].toHttpUrlOrNull()!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, IMAGE_CDN_RATELIMIT_DEFAULT_VALUE)!!.toInt())
+    private val imageCDNRateLimitInterceptor2 = SpecificHostRateLimitInterceptor(imageServer[1].toHttpUrlOrNull()!!, preferences.getString(IMAGE_CDN_RATELIMIT_PREF, IMAGE_CDN_RATELIMIT_DEFAULT_VALUE)!!.toInt())
 
     override val client: OkHttpClient =
         if (getShowR18())
@@ -406,7 +406,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             entryValues = ENTRIES_ARRAY
             summary = MAINSITE_RATELIMIT_PREF_SUMMARY
 
-            setDefaultValue("2")
+            setDefaultValue(MAINSITE_RATELIMIT_DEFAULT_VALUE)
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val setting = preferences.edit().putString(MAINSITE_RATELIMIT_PREF, newValue as String).commit()
@@ -425,7 +425,7 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
             entryValues = ENTRIES_ARRAY
             summary = IMAGE_CDN_RATELIMIT_PREF_SUMMARY
 
-            setDefaultValue("4")
+            setDefaultValue(IMAGE_CDN_RATELIMIT_DEFAULT_VALUE)
             setOnPreferenceChangeListener { _, newValue ->
                 try {
                     val setting = preferences.edit().putString(IMAGE_CDN_RATELIMIT_PREF, newValue as String).commit()
@@ -674,12 +674,14 @@ class Manhuagui : ConfigurableSource, ParsedHttpSource() {
         private const val USE_MIRROR_URL_PREF_SUMMARY = "使用镜像网址: mhgui.com，部分漫画可能无法观看。" // "Use mirror url. Some manga may be hidden."
 
         private const val MAINSITE_RATELIMIT_PREF = "mainSiteRatelimitPreference"
-        private const val MAINSITE_RATELIMIT_PREF_TITLE = "主站每秒连接数限制" // "Ratelimit permits per second for main website"
+        private const val MAINSITE_RATELIMIT_PREF_TITLE = "主站每十秒连接数限制" // "Ratelimit permits per 10 seconds for main website"
         private const val MAINSITE_RATELIMIT_PREF_SUMMARY = "此值影响更新书架时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount for updating library. Lower this value may reduce the chance to get IP Ban, but loading speed will be slower too. Tachiyomi restart required."
+        private const val MAINSITE_RATELIMIT_DEFAULT_VALUE = "10"
 
         private const val IMAGE_CDN_RATELIMIT_PREF = "imgCDNRatelimitPreference"
         private const val IMAGE_CDN_RATELIMIT_PREF_TITLE = "图片CDN每秒连接数限制" // "Ratelimit permits per second for image CDN"
         private const val IMAGE_CDN_RATELIMIT_PREF_SUMMARY = "此值影响加载图片时发起连接请求的数量。调低此值可能减小IP被屏蔽的几率，但加载速度也会变慢。需要重启软件以生效。\n当前值：%s" // "This value affects network request amount for loading image. Lower this value may reduce the chance to get IP Ban, but loading speed will be slower too. Tachiyomi restart required."
+        private const val IMAGE_CDN_RATELIMIT_DEFAULT_VALUE = "4"
 
         private val ENTRIES_ARRAY = (1..10).map { i -> i.toString() }.toTypedArray()
         const val PREFIX_ID_SEARCH = "id:"
