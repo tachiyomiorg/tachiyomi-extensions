@@ -93,6 +93,6 @@ class Hentaidexy : Madara("Hentaidexy", "https://hentaidexy.com", "en") {
         Genre("Webtoon", "webtoon"),
         Genre("Webtoons", "webtoons"),
         Genre("Yaoi", "yaoi"),
-        Genre("Yuri", "yuri"),
+        Genre("Yuri", "yuri")
     )
 }
