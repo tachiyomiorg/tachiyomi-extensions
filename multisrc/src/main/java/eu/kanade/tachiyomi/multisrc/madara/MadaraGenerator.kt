@@ -280,7 +280,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Free Manga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("MangaTuli", "https://mangatuli.com", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("ManhuaPro", "https://manhuapro.com", "en"),
-            SingleLang("Hentaidexy", "https://hentaidexy.com", "en")
+            SingleLang("Hentaidexy", "https://hentaidexy.com", "en", isNsfw = true)
 
     )
 
