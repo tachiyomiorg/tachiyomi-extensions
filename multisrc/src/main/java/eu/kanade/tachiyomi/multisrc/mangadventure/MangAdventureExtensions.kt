@@ -11,11 +11,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.Response
 import java.text.DecimalFormat
-
-/** Returns the body of a response as a `String`. */
-fun Response.asString(): String = body!!.string()
 
 /**
  * Formats the number according to [fmt].
@@ -29,7 +25,6 @@ fun Number.format(fmt: String): String = DecimalFormat(fmt).format(this)
  * Joins each value of a given [field] of the array using [sep].
  *
  * @param field The index of a [JsonArray].
- * When its type is [String], it is treated as the key of a [JsonObject].
  * @param sep The separator used to join the array.
  * @return The joined string, or `null` if the array is empty.
  */
@@ -41,7 +36,7 @@ fun JsonArray.joinField(field: Int, sep: String = ", ") =
 /**
  * Joins each value of a given [field] of the array using [sep].
  *
- * @param field The key of a [JSONObject].
+ * @param field The key of a [JsonObject].
  * @param sep The separator used to join the array.
  * @return The joined string, or `null` if the array is empty.
  */
@@ -76,20 +71,23 @@ val SChapter.path: String
     get() = url.substringAfter("/reader/")
 
 /**
- * Creates a [SChapter] by parsing a [JSONObject].
+ * Creates a [SChapter] by parsing a [JsonObject].
  *
  * @param obj The object containing the chapter info.
  */
 fun SChapter.fromJSON(obj: JsonObject) = apply {
     url = obj["url"]!!.jsonPrimitive.content
-    chapter_number =  obj["chapter"]?.jsonPrimitive?.content?.toFloatOrNull() ?: -1f
-    date_upload = MangAdventure.httpDateToTimestamp(obj["date"]!!.jsonPrimitive.content)
+    chapter_number = obj["chapter"]?.jsonPrimitive?.content?.toFloat() ?: -1f
+    date_upload = MangAdventure.httpDateToTimestamp(
+        obj["date"]!!.jsonPrimitive.content
+    )
     scanlator = obj["groups"]!!.jsonArray.joinField("name", " & ")
-    name = obj["full_title"]?.jsonPrimitive?.contentOrNull
-        ?: buildString {
-            obj["volume"]?.jsonPrimitive?.intOrNull?.let { if (it != 0) append("Vol. $it, ") }
-            append("Ch. ${chapter_number.format("#.#")}: ")
-            append(obj["title"]!!.jsonPrimitive.content)
+    name = obj["full_title"]?.jsonPrimitive?.contentOrNull ?: buildString {
+        obj["volume"]?.jsonPrimitive?.intOrNull?.let {
+            if (it != 0) append("Vol. $it, ")
         }
+        append("Ch. ${chapter_number.format("#.#")}: ")
+        append(obj["title"]!!.jsonPrimitive.content)
+    }
     if (obj["final"]!!.jsonPrimitive.boolean) name += " [END]"
 }
