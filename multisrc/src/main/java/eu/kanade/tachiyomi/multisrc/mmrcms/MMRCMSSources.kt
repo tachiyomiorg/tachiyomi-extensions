@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.multisrc.mmrcms
 
 import java.util.Locale
 
-
 class MMRCMSSources {
     companion object {
         sealed class SourceData {
@@ -37,7 +36,7 @@ class MMRCMSSources {
         val sourceList: List<SourceData.Single> = listOf(
             SourceData.Single("مانجا اون لاين", "https://onma.me", "ar", className = "onma"),
             SourceData.Single("Read Comics Online", "https://readcomicsonline.ru", "en"),
-            SourceData.Single("Fallen Angels", "https://manga.fascans.com", "en"),
+            SourceData.Single("Fallen Angels", "https://manga.fascans.com", "en", overrideVersionCode = 1),
             SourceData.Single("Zahard", "https://zahard.top", "en", overrideVersionCode = 1),
             SourceData.Single("Manhwas Men", "https://manhwas.men", "en", isNsfw = true, overrideVersionCode = 1),
             SourceData.Single("Scan FR", "https://www.scan-fr.cc", "fr"),
@@ -73,8 +72,6 @@ class MMRCMSSources {
         )
     }
 }
-
-
 
 //SingleLang("Mangás Yuri", "https://mangasyuri.net", "pt-BR", className = "MangasYuri"), override val id: Long = 6456162511058446409
 //SingleLang("FR Scan", "https://www.frscan.me", "fr"),
