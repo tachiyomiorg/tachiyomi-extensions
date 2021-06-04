@@ -279,7 +279,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Yaoi Manga", "https://yaoi.mobi", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Free Manga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("MangaTuli", "https://mangatuli.com", "en", isNsfw = true, overrideVersionCode = 1),
-            SingleLang("ManhuaPro", "https://manhuapro.com", "en")
+            SingleLang("ManhuaPro", "https://manhuapro.com", "en", overrideVersionCode = 1)
 
     )
 
