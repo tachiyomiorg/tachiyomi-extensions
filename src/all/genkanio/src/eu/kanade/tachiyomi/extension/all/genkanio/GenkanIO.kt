@@ -244,15 +244,15 @@ open class GenkanIO : ParsedHttpSource() {
         return if (manga.status != SManga.LICENSED) {
             // Returns an observable which emits the list of chapters found on a page,
             // for every page starting from specified page
-            fun getAllPagesFrom(page: Int): Observable<List<SChapter>> =
+            fun getAllPagesFrom(page: Int, pred: Observable<List<SChapter>> = Observable.just(emptyList())): Observable<List<SChapter>> =
                 client.newCall(chapterListRequest(manga, page))
                     .asObservableSuccess()
                     .concatMap { response ->
                         val cp = chapterPageParse(response)
                         if (cp.hasnext)
-                            Observable.just(cp.chapters).concatWith(getAllPagesFrom(page + 1))
+                            getAllPagesFrom(page + 1, pred = pred.concatWith(Observable.just(cp.chapters))) // tail call to avoid blowing the stack
                         else
-                            Observable.just(cp.chapters)
+                            pred.concatWith(Observable.just(cp.chapters))
                     }
             getAllPagesFrom(1).reduce(List<SChapter>::plus)
         } else {
