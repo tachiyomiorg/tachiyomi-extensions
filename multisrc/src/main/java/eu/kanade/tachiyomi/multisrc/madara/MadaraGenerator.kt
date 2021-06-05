@@ -251,7 +251,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Zin Translator", "https://zinmanga.com", "en", overrideVersionCode = 1),
             SingleLang("Sleeping Knight Scans", "https://skscans.com", "en", overrideVersionCode = 2),
             MultiLang("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"),
-                className = "LeviatanScansFactory", overrideVersionCode = 3),
+                className = "LeviatanScansFactory", overrideVersionCode = 4),
             SingleLang("Leviatan Scans X", "https://xxx.leviatanscans.com", "en", isNsfw = true),
             SingleLang("Manga1st", "https://manga1st.com", "en", overrideVersionCode = 1),
             SingleLang("Manga1st.online", "https://manga1st.online", "en", className = "MangaFirstOnline", overrideVersionCode = 1),
