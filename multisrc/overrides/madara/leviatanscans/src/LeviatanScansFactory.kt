@@ -11,4 +11,4 @@ class LeviatanScansFactory : SourceFactory {
     )
 }
 class LeviatanScansEN : Madara("Leviatan Scans", "https://leviatanscans.com", "en")
-class LeviatanScansES : Madara("Leviatan Scans", "https://leviatanscans.com", "es")
+class LeviatanScansES : Madara("Leviatan Scans", "https://es.leviatanscans.com", "es")
