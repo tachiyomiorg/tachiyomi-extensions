@@ -40,10 +40,10 @@ class FallenAngels : MMRCMS("Fallen Angels", "https://manga.fascans.com", "en") 
         // before -> <mangaName> <chapterNumber> : <chapterTitle>
         // after  -> Chapter     <chapterNumber> : <chapterTitle>
         val chapterText = chapterElement.text()
-        val numberRegex = Regex("""\d+""")
+        val numberRegex = Regex("""[1-9]\d*(\.\d+)*""")
         val chapterNumber = numberRegex.find(chapterText)?.value.orEmpty()
         val chapterTitle = titleWrapper.getElementsByTag("em").text()
-        chapter.name = "Chapter $chapterNumber : $chapterTitle"// titleWrapper.text()
+        chapter.name = "Chapter $chapterNumber : $chapterTitle"
 
         // Parse date
         val dateText = element.getElementsByClass("date-chapter-title-rtl").text().trim()
