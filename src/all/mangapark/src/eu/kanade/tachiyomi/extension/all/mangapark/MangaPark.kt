@@ -491,7 +491,7 @@ open class MangaPark(
         const val PREFIX_ID_SEARCH = "id:"
         
         const val CryptoJSUrl = "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"
-
-	}
-	
+        
+    }
+    
 }
