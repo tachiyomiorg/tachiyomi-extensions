@@ -234,7 +234,11 @@ class Remanga : ConfigurableSource, HttpSource() {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = rus_name + "\n" + ratingStar + " " + ratingValue + " (голосов: " + count_rating + ")" + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
+            var altName = ""
+            if (another_name.isNotEmpty()) {
+                altName = "Альтернативные названия:\n" + another_name + "\n\n"
+            }
+            this.description = rus_name + "\n" + ratingStar + " " + ratingValue + " (голосов: " + count_rating + ")\n" + altName + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name } + ", " + parseAge(age_limit)
             status = parseStatus(o.status.id)
         }
@@ -346,7 +350,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
             val result = mutableListOf<Page>()
             page.content.pages.forEach {
-                it.filter { page -> page.height > 1 }.forEach { page ->
+                it.filter { page -> page.height > 10 }.forEach { page ->
                     result.add(Page(result.size, "", page.link))
                 }
             }
