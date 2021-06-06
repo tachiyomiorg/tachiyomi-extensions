@@ -32,49 +32,48 @@ open class MangaPark(
     override val lang: String,
     private val siteLang: String
 ) : ParsedHttpSource() {
-
-    override val name: String = "MangaPark v3"
-	
-    override val baseUrl: String = "https://mangapark.net"
-
-    override val supportsLatest = true
     
-    private val json: Json by injectLazy()
-
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
+    override val name : String = "MangaPark v3"
+    
+    override val baseUrl : String = "https://mangapark.net"
+    
+    override val supportsLatest = true 
+    
+    private val json : Json by injectLazy() 
+    
+    override val client : OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
-
+        
     override fun latestUpdatesRequest(page: Int): Request {
         return GET("$baseUrl/browse?sort=update&page=$page")
     }
-
+    
     override fun latestUpdatesSelector(): String {
         return "div#subject-list div.col"
     }
-
+    
     override fun latestUpdatesFromElement(element: Element): SManga {
         return SManga.create().apply {
-			setUrlWithoutDomain(element.select("a.fw-bold").attr("href"))
+            setUrlWithoutDomain(element.select("a.fw-bold").attr("href"))
             title = element.select("a.fw-bold").text()
             thumbnail_url = element.select("a.position-relative img").attr("abs:src")
         }
-		
     }
-
+    
     override fun latestUpdatesNextPageSelector() = "div#mainer nav.d-none .pagination .page-item:last-of-type:not(.disabled)"
-
+    
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/browse?sort=d007&page=$page")
     }
-
+    
     override fun popularMangaSelector() = latestUpdatesSelector()
-
+    
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
-
+    
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
-
+    
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return when {
             query.startsWith(PREFIX_ID_SEARCH) -> {
@@ -84,7 +83,7 @@ open class MangaPark(
                         mangaFromID(response, id)
                     }
             }
-
+            
             query.isNotBlank() -> {
                 val url = "$baseUrl/search?word=$query&page=$page"
                 client.newCall(GET(url, headers)).asObservableSuccess()
@@ -92,7 +91,7 @@ open class MangaPark(
                         searchParse(response)
                     }
             }
-
+            
             else -> {
                 val sortFilter = filters.findInstance<SortFilter>()!!
                 val reverseSortFilter = filters.findInstance<ReverseSortFilter>()!!
@@ -102,8 +101,7 @@ open class MangaPark(
                 val maxChapterFilter = filters.findInstance<MaxChapterTextFilter>()!!
                 val url = "$baseUrl/browse".toHttpUrlOrNull()!!.newBuilder()
                 url.addQueryParameter("page", page.toString())
-
-
+                
                 with (sortFilter) {
                     if (reverseSortFilter.state) {
                         url.addQueryParameter("sort","${this.selected}.az")
@@ -111,7 +109,7 @@ open class MangaPark(
                         url.addQueryParameter("sort","${this.selected}.za")
                     }
                 }
-
+                
                 with (genreFilter) {
                     url.addQueryParameter("genres", included.joinToString(",") + "|" + excluded.joinToString(",")
                     )
@@ -132,7 +130,7 @@ open class MangaPark(
             }
         }
     }
-
+    
     private fun mangaFromID(response: Response, id: String): MangasPage {
         val infoElement = response.asJsoup().select("div#mainer div.container-fluid")
         val manga = SManga.create().apply {
