@@ -213,8 +213,8 @@ open class MangaPark(
             body = requestBody
         )
     }
-
-	override fun chapterListSelector() = "div.episode-item"
+    
+    override fun chapterListSelector() = "div.episode-item"
 
     override fun chapterFromElement(element: Element): SChapter {
 	
@@ -234,7 +234,7 @@ open class MangaPark(
     
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[0].toInt()
-		val timeStr = date.split(' ')[1].removeSuffix("s")
+        val timeStr = date.split(' ')[1].removeSuffix("s")
 
         return when (timeStr) {
             "sec" -> Calendar.getInstance().apply {
@@ -485,12 +485,12 @@ open class MangaPark(
     )
     
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
-	
-	companion object {
+    
+    companion object {
         
         const val PREFIX_ID_SEARCH = "id:"
-		
-		const val CryptoJSUrl = "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"
+        
+        const val CryptoJSUrl = "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"
 
 	}
 	
