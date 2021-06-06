@@ -13,7 +13,7 @@ class MangaBoxGenerator : ThemeSourceGenerator {
 
     override val sources = listOf(
         SingleLang("Mangakakalot", "https://mangakakalot.com", "en", overrideVersionCode = 2),
-        SingleLang("Manganato", "https://manganato.com", "en", overrideVersionCode = 1, pkgName = "manganelo"),
+        SingleLang("Manganato", "https://manganato.com", "en", overrideVersionCode = 2, pkgName = "manganelo"),
         SingleLang("Mangabat", "https://m.mangabat.com", "en", overrideVersionCode = 4),
         SingleLang("Mangakakalots (unoriginal)", "https://mangakakalots.com", "en", className = "Mangakakalots", pkgName = "mangakakalots"),
         SingleLang("Mangairo", "https://h.mangairo.com", "en", overrideVersionCode = 3),
