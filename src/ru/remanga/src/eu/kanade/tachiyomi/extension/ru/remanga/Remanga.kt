@@ -195,6 +195,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         return when (status) {
             0 -> SManga.COMPLETED
             1 -> SManga.ONGOING
+            5 -> SManga.LICENSED
             else -> SManga.UNKNOWN
         }
     }
