@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -37,8 +38,8 @@ open class MangaPark(
     override val baseUrl: String = "https://mangapark.net"
 
     override val supportsLatest = true
-	
-	private val json: Json by injectLazy()
+    
+    private val json: Json by injectLazy()
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -54,7 +55,6 @@ open class MangaPark(
     }
 
     override fun latestUpdatesFromElement(element: Element): SManga {
-		
         return SManga.create().apply {
 			setUrlWithoutDomain(element.select("a.fw-bold").attr("href"))
             title = element.select("a.fw-bold").text()
@@ -172,11 +172,11 @@ open class MangaPark(
 			
         return SManga.create().apply {
             title = infoElement.select("h3.item-title").text()
-			description = infoElement.select("div.limit-height-body").select("h5.text-muted, div.limit-html").joinToString("\n\n").text()
-			author = infoElement.select("div.attr-item:contains(author)").text().split("/").joinToString(", ")  { it.trim() }
-			status = parseStatus(statusStr)
+            description = infoElement.select("div.limit-height-body").select("h5.text-muted, div.limit-html").joinToString("\n\n").text()
+            author = infoElement.select("div.attr-item:contains(author)").text().split("/").joinToString(", ")  { it.trim() }
+            status = parseStatus(statusStr)
             thumbnail_url = infoElement.select("div.detail-set div.attr-cover img").attr("abs:src")
-			genre = genreList.joinToString(", ")  { it.trim() }
+            genre = genreList.joinToString(", ")  { it.trim() }
         }
 		
     }
@@ -193,10 +193,10 @@ open class MangaPark(
 
         val sid = url.split("/")[2]
 
-        val jsonPayload = jsonObject(
-            "lang" to siteLang,
-            "sid" to sid
-        )
+        val jsonPayload = buildJsonObject {
+            put("lang", siteLang),
+            put("sid", sid)
+        }
 		
         val requestBody = jsonPayload.toString().toRequestBody("application/json;charset=UTF-8".toMediaType())
 
@@ -233,7 +233,7 @@ open class MangaPark(
                 setUrlWithoutDomain(urlElement.attr("href"))
         }
     }
-
+    
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[0].toInt()
 		val timeStr = date.split(' ')[1].removeSuffix("s")
@@ -267,28 +267,28 @@ open class MangaPark(
     }
 
     override fun pageListParse(document: Document): List<Page> {
-	
+        
         val pages = mutableListOf<Page>()
-		
-		val duktape = Duktape.create()
-		val script = document.select("script").html()
-		val imgCdnHost = script.substringAfter("const imgCdnHost = ").substringBefore(";")
-		val imgPathLisRaw = script.substringAfter("const imgPathLis = ").substringBefore(";")
-		val imgPathLis = json.parseToJsonElement(imgPathLisRaw).jsonArray
-		val amPass = duktape.evaluate(script.substringAfter("const amPass = ").substringBefore(";")).toString()
-		val amWord = script.substringAfter("const amWord = ").substringBefore(";")
-
-		val decryptScript = cryptoJS + "CryptoJS.AES.decrypt($amWord, \"$amPass\").toString(CryptoJS.enc.Utf8);"
-		
-		val imgWordLisRaw = duktape.evaluate(decryptScript).toString()
-		val imgWordLis = json.parseToJsonElement(imgWordLisRaw).jsonArray
-		
+        
+        val duktape = Duktape.create()
+        val script = document.select("script").html()
+        val imgCdnHost = script.substringAfter("const imgCdnHost = ").substringBefore(";")
+        val imgPathLisRaw = script.substringAfter("const imgPathLis = ").substringBefore(";")
+        val imgPathLis = json.parseToJsonElement(imgPathLisRaw).jsonArray
+        val amPass = duktape.evaluate(script.substringAfter("const amPass = ").substringBefore(";")).toString()
+        val amWord = script.substringAfter("const amWord = ").substringBefore(";")
+        
+        val decryptScript = cryptoJS + "CryptoJS.AES.decrypt($amWord, \"$amPass\").toString(CryptoJS.enc.Utf8);"
+        
+        val imgWordLisRaw = duktape.evaluate(decryptScript).toString()
+        val imgWordLis = json.parseToJsonElement(imgWordLisRaw).jsonArray
+        
         imgPathLis.mapIndexed { i, imgPathE ->
-			val imgPath = imgPathE.jsonPrimitive.content
-			val imgWordE = imgWordLis.elementAt(i)
-			val imgWord = imgWordE.jsonPrimitive.content
-		
-            val page = "$imgCdnHost$imgPath?$imgWord"  
+            val imgPath = imgPathE.jsonPrimitive.content
+            val imgWordE = imgWordLis.elementAt(i)
+            val imgWord = imgWordE.jsonPrimitive.content
+            
+            val page = "$imgCdnHost$imgPath?$imgWord"
             pages.add(Page(i, "", "$page"))
         }
 
@@ -485,11 +485,11 @@ open class MangaPark(
         TriStateFilterOption("youkai", "Youkai"),
         TriStateFilterOption("uncategorized", "Uncategorized")
     )
-
+    
     private inline fun <reified T> Iterable<*>.findInstance() = find { it is T } as? T
 	
 	companion object {
-	
+        
         const val PREFIX_ID_SEARCH = "id:"
 		
 		const val CryptoJSUrl = "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"
