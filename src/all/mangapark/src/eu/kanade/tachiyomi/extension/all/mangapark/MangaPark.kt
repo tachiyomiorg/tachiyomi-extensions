@@ -16,7 +16,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Request
@@ -149,7 +150,7 @@ open class MangaPark(
             mangas.add(latestUpdatesFromElement(element))
         }
 		
-        val nextPage = document.select(latestUpdatesNextPageSelector()).first() != null
+        val nextPage = response.asJsoup().select(latestUpdatesNextPageSelector()).first() != null
 		
         return MangasPage(mangas, nextPage)
     }
@@ -164,13 +165,13 @@ open class MangaPark(
         val infoElement = document.select("div#mainer div.container-fluid")
         val genreList = mutableListOf<String>()
         val statusStr = infoElement.select("div.attr-item:contains(status) span").text()
-        infoElement.select("div.attr-item:contains(genres) span span").text().forEach { element ->
-            genreList.add(element)
+        infoElement.select("div.attr-item:contains(genres) span span").forEach { element ->
+            genreList.add(element.text())
         }
 			
         return SManga.create().apply {
             title = infoElement.select("h3.item-title").text()
-            description = infoElement.select("div.limit-height-body").select("h5.text-muted, div.limit-html").joinToString("\n\n").text()
+            description = infoElement.select("div.limit-height-body").select("h5.text-muted, div.limit-html").joinToString("\n\n") { it.text() }
             author = infoElement.select("div.attr-item:contains(author)").text().split("/").joinToString(", ")  { it.trim() }
             status = parseStatus(statusStr)
             thumbnail_url = infoElement.select("div.detail-set div.attr-cover img").attr("abs:src")
@@ -189,17 +190,17 @@ open class MangaPark(
 
     override fun chapterListRequest(manga: SManga): Request {
 
+        val url = manga.url
         val sid = url.split("/")[2]
 
         val jsonPayload = buildJsonObject {
             put("lang", siteLang)
             put("sid", sid)
         }
-		
+        
         val requestBody = jsonPayload.toString().toRequestBody("application/json;charset=UTF-8".toMediaType())
 
         val refererUrl = "$baseUrl/$url".toHttpUrl().newBuilder()
-            .addQueryParameter("keyword", query)
             .toString()
         val newHeaders = headersBuilder()
             .add("Content-Length", requestBody.contentLength().toString())
@@ -223,7 +224,6 @@ open class MangaPark(
 		
         return SChapter.create().apply {
                 name = urlElement.text()
-                scanlator = getGroups(document)
                 chapter_number = urlElement.attr("href").substringAfterLast("/").toFloat()
 				if (time != "") {
 					date_upload = parseChapterDate(time)
