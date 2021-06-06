@@ -16,7 +16,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import kotlinx.serialization.json.put
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -200,7 +201,7 @@ open class MangaPark(
         
         val requestBody = jsonPayload.toString().toRequestBody("application/json;charset=UTF-8".toMediaType())
 
-        val refererUrl = "$baseUrl/$url".toHttpUrl().newBuilder()
+        val refererUrl = "$baseUrl/$url".toHttpUrlOrNull().newBuilder()
             .toString()
         val newHeaders = headersBuilder()
             .add("Content-Length", requestBody.contentLength().toString())
