@@ -134,7 +134,7 @@ open class MangaPark(
     private fun mangaFromID(response: Response, id: String): MangasPage {
         val infoElement = response.asJsoup().select("div#mainer div.container-fluid")
         val manga = SManga.create().apply {
-			url = "/comic/$id"
+            url = "/comic/$id"
             title = infoElement.select("h3.item-title").text()
             thumbnail_url = infoElement.select("div.detail-set div.attr-cover img").attr("abs:src")
         }
