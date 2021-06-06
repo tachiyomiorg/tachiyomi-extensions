@@ -42,7 +42,7 @@ class MangaParkUrlActivity : Activity() {
     private fun fromGuya(pathSegments: MutableList<String>): String? {
         return if (pathSegments.size >= 2) {
             val id = pathSegments[1]
-            "ID:$id"
+            "id:$id"
         } else {
             null
         }
