@@ -29,7 +29,7 @@ import uy.kohesive.injekt.injectLazy
 
 open class MangaPark(
     override val lang: String,
-    val siteLang: String
+    private val siteLang: String
 ) : ParsedHttpSource() {
 
     override val name: String = "MangaPark v3"
@@ -357,7 +357,7 @@ open class MangaPark(
         SelectFilterOption("Total Views", "d000"),
         SelectFilterOption("Most Views 360 days", "d360"),
         SelectFilterOption("Most Views 180 days", "d180"),
-        SelectFilterOption("Most Views 90 days", "d090")
+        SelectFilterOption("Most Views 90 days", "d090"),
         SelectFilterOption("Most Views 30 days", "d030"),
         SelectFilterOption("Most Views 7 days", "d007"),
         SelectFilterOption("Most Views 24 hours", "h024"),
