@@ -201,7 +201,7 @@ open class MangaPark(
         
         val requestBody = jsonPayload.toString().toRequestBody("application/json;charset=UTF-8".toMediaType())
 
-        val refererUrl = "$baseUrl/$url".toHttpUrlOrNull().newBuilder()
+        val refererUrl = "$baseUrl/$url".toHttpUrlOrNull()!!.newBuilder()
             .toString()
         val newHeaders = headersBuilder()
             .add("Content-Length", requestBody.contentLength().toString())
