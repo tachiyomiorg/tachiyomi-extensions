@@ -194,7 +194,7 @@ open class MangaPark(
         val sid = url.split("/")[2]
 
         val jsonPayload = buildJsonObject {
-            put("lang", siteLang),
+            put("lang", siteLang)
             put("sid", sid)
         }
 		
