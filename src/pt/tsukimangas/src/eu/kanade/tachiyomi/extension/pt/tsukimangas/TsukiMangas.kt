@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.pt.tsukimangas
 
 import eu.kanade.tachiyomi.annotations.Nsfw
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -23,7 +24,6 @@ import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 @Nsfw
 class TsukiMangas : HttpSource() {
@@ -37,7 +37,9 @@ class TsukiMangas : HttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .addInterceptor(SpecificHostRateLimitInterceptor(baseUrl.toHttpUrl(), 1))
+        .addInterceptor(SpecificHostRateLimitInterceptor(CDN_1_URL, 1, period = 2))
+        .addInterceptor(SpecificHostRateLimitInterceptor(CDN_2_URL, 1, period = 2))
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -49,7 +51,7 @@ class TsukiMangas : HttpSource() {
     private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/v2/mangas?page=$page&title=&filter=0", headers)
+        return GET("$baseUrl/api/v2/mangas?page=$page&title=&adult_content=false&filter=0", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
@@ -282,7 +284,7 @@ class TsukiMangas : HttpSource() {
 
     private class StatusFilter(statusList: List<String>) : Filter.Select<String>("Status", statusList.toTypedArray())
 
-    private class AdultFilter : Filter.TriState("Conteúdo adulto")
+    private class AdultFilter : Filter.TriState("Conteúdo adulto", STATE_EXCLUDE)
 
     private class SortByFilter : Filter.Sort("Ordenar por", arrayOf("Visualizações", "Nota"), Selection(0, false))
 
@@ -424,7 +426,10 @@ class TsukiMangas : HttpSource() {
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         // By request of site owner. Detailed at Issue #4912 (in Portuguese).
-        private val USER_AGENT = "Tachiyomi " + System.getProperty("http.agent")
+        private val USER_AGENT = "Tachiyomi " + System.getProperty("http.agent")!!
+
+        private val CDN_1_URL = "https://cdn1.tsukimangas.com".toHttpUrl()
+        private val CDN_2_URL = "https://cdn2.tsukimangas.com".toHttpUrl()
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }
