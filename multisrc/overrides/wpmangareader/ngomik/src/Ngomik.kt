@@ -9,4 +9,8 @@ class Ngomik : WPMangaReader("Ngomik", "https://ngomik.net", "id", "/all-komik")
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
         .add("Referer", baseUrl)
+
+    override val projectPageString = "/pj"
+
+    override val hasProjectPage = true
 }
