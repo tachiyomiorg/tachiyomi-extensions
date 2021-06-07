@@ -16,4 +16,6 @@ class KomikindoCo : WPMangaStream("KomikIndo.co", "https://komikindo.co", "id") 
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override val hasProjectPage = true
 }

@@ -13,4 +13,8 @@ class MasterKomik : WPMangaStream("MasterKomik", "https://masterkomik.com", "id"
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override val projectPageString = "/project-list"
+
+    override val hasProjectPage = true
 }

@@ -88,7 +88,7 @@ abstract class WPMangaStream(
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/manga/".toHttpUrlOrNull()!!.newBuilder()
+        var url = "$baseUrl/manga/".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
         filters.forEach { filter ->
@@ -113,6 +113,10 @@ abstract class WPMangaStream(
                 is SortByFilter -> {
                     url.addQueryParameter("order", filter.toUriPart())
                 }
+                // if site has project page, default value "hasProjectPage" = false
+                is ProjectFilter -> {
+                    url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                }
                 is GenreListFilter -> {
                     filter.state
                         .filter { it.state != Filter.TriState.STATE_IGNORE }
@@ -122,6 +126,8 @@ abstract class WPMangaStream(
         }
         return GET(url.build().toString(), headers)
     }
+
+    open val projectPageString = "/project"
 
     override fun popularMangaSelector() = "div.bs"
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -352,20 +358,48 @@ abstract class WPMangaStream(
         )
     )
 
+    protected class ProjectFilter : UriPartFilter(
+        "Filter Project",
+        arrayOf(
+            Pair("Show all manga", ""),
+            Pair("Show only project manga", "")
+        )
+    )
+    
     protected class Genre(name: String, val id: String = name) : Filter.TriState(name)
     protected class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
 
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
-        Filter.Header("Genre exclusion not available for all sources"),
-        Filter.Separator(),
-        AuthorFilter(),
-        YearFilter(),
-        StatusFilter(),
-        TypeFilter(),
-        SortByFilter(),
-        GenreListFilter(getGenreList())
-    )
+    open val hasProjectPage = false
+
+    override fun getFilterList() =
+        if (hasProjectPage.not()) {
+            FilterList(
+                Filter.Header("NOTE: Ignored if using text search!"),
+                Filter.Header("Genre exclusion not available for all sources"),
+                Filter.Separator(),
+                AuthorFilter(),
+                YearFilter(),
+                StatusFilter(),
+                TypeFilter(),
+                SortByFilter(),
+                GenreListFilter(getGenreList()),
+            )
+        } else {
+            FilterList(
+                Filter.Header("NOTE: Ignored if using text search!"),
+                Filter.Header("Genre exclusion not available for all sources"),
+                Filter.Separator(),
+                AuthorFilter(),
+                YearFilter(),
+                StatusFilter(),
+                TypeFilter(),
+                SortByFilter(),
+                GenreListFilter(getGenreList()),
+                Filter.Header("NOTE: cant be used with other filter!"),
+                Filter.Header("$name Project List page"),
+                ProjectFilter(),
+            )
+        }
 
     protected open fun getGenreList(): List<Genre> = listOf(
         Genre("4 Koma", "4-koma"),

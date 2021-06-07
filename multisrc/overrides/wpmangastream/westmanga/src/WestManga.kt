@@ -119,4 +119,6 @@ class WestManga : WPMangaStream("West Manga", "https://westmanga.info", "id") {
         Genre("Yaoi", "yaoi"),
         Genre("Zombies", "377")
     )
+
+    override val hasProjectPage = true
 }
