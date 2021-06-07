@@ -1,23 +1,16 @@
 package eu.kanade.tachiyomi.extension.id.pojokmanga
 
 import eu.kanade.tachiyomi.multisrc.madara.Madara
+import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.FilterList
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Request
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 class PojokManga : Madara("Pojok Manga", "https://pojokmanga.com", "id", SimpleDateFormat("MMM dd, yyyy", Locale.US)) {
-    package eu.kanade.tachiyomi.extension.id.pojokmanga
-
-    import eu.kanade.tachiyomi.multisrc.madara.Madara
-    import eu.kanade.tachiyomi.network.GET
-    import eu.kanade.tachiyomi.source.model.Filter
-    import eu.kanade.tachiyomi.source.model.FilterList
-    import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-    import okhttp3.Request
-    import java.text.SimpleDateFormat
-    import java.util.Locale
-
-    class PojokManga : Madara("Pojok Manga", "https://pojokmanga.com", "id", SimpleDateFormat("MMM dd, yyyy", Locale.US)) {
-        override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
             var url = "$baseUrl/${searchPage(page)}".toHttpUrlOrNull()!!.newBuilder()
             url.addQueryParameter("s", query)
             url.addQueryParameter("post_type", "wp-manga")
