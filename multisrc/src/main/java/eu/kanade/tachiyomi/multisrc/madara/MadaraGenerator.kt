@@ -112,7 +112,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manga Hentai", "https://mangahentai.me", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Mangakik", "https://mangakik.com", "en"),
             SingleLang("Manga Kiss", "https://mangakiss.org", "en", overrideVersionCode = 1),
-            SingleLang("MangaKitsune", "https://mangakitsune.com", "en", isNsfw = true, overrideVersionCode = 1),
+            SingleLang("MangaKitsune", "https://mangakitsune.com", "en", isNsfw = true),
             SingleLang("MangaKomi", "https://mangakomi.com", "en", overrideVersionCode = 2),
             SingleLang("Manga Land Arabic", "https://mangalandarabic.com", "ar"),
             SingleLang("مانجا ليك", "https://mangalek.com", "ar", className = "Mangalek"),
