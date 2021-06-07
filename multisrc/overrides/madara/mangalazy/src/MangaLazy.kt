@@ -16,7 +16,7 @@ class MangaLazy : Madara("MangaLazy", "https://mangalazy.com", "en") {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
         
-    override val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
+    override val pageListParseSelector = ".reading-content div.text-left :has(>img)"
         
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
