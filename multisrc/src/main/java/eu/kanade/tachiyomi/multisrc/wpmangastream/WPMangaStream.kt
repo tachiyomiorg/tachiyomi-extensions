@@ -365,7 +365,7 @@ abstract class WPMangaStream(
             Pair("Show only project manga", "")
         )
     )
-    
+
     protected class Genre(name: String, val id: String = name) : Filter.TriState(name)
     protected class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
 
