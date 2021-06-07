@@ -23,6 +23,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Request
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.Calendar
@@ -218,7 +219,7 @@ open class MangaPark(
     }
     
     override fun chapterListParse(response: Response): List<SChapter> {
-        val document = json.parseToJsonElement(response).jsonObject["html"]!!.asJsoup()
+        val document = Jsoup.parse(json.parseToJsonElement(response).jsonObject["html"]!!)
         return document.select(chapterListSelector()).map { chapterFromElement(it) }
     }
     
