@@ -299,6 +299,7 @@ abstract class WPMangaReader(
                 StatusFilter(),
                 TypesFilter(),
                 OrderByFilter(),
+                Filter.Separator(),
                 Filter.Header("NOTE: cant be used with other filter!"),
                 Filter.Header("$name Project List page"),
                 ProjectFilter(),

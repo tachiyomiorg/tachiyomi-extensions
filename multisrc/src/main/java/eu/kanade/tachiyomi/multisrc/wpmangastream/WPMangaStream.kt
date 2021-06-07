@@ -113,14 +113,14 @@ abstract class WPMangaStream(
                 is SortByFilter -> {
                     url.addQueryParameter("order", filter.toUriPart())
                 }
-                // if site has project page, default value "hasProjectPage" = false
-                is ProjectFilter -> {
-                    url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
-                }
                 is GenreListFilter -> {
                     filter.state
                         .filter { it.state != Filter.TriState.STATE_IGNORE }
                         .forEach { url.addQueryParameter("genre[]", it.id) }
+                }
+                // if site has project page, default value "hasProjectPage" = false
+                is ProjectFilter -> {
+                    url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
                 }
             }
         }
@@ -395,6 +395,7 @@ abstract class WPMangaStream(
                 TypeFilter(),
                 SortByFilter(),
                 GenreListFilter(getGenreList()),
+                Filter.Separator(),
                 Filter.Header("NOTE: cant be used with other filter!"),
                 Filter.Header("$name Project List page"),
                 ProjectFilter(),
