@@ -14,7 +14,8 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonArray 
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -214,6 +215,11 @@ open class MangaPark(
             headers = newHeaders,
             body = requestBody
         )
+    }
+    
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = json.parseToJsonElement(response).jsonObject["html"]!!.asJsoup()
+        return document.select(chapterListSelector()).map { chapterFromElement(it) }
     }
     
     override fun chapterListSelector() = "div.episode-item"
