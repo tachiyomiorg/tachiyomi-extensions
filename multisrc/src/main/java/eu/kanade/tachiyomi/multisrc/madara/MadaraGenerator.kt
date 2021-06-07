@@ -112,7 +112,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manga Hentai", "https://mangahentai.me", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Mangakik", "https://mangakik.com", "en"),
             SingleLang("Manga Kiss", "https://mangakiss.org", "en", overrideVersionCode = 1),
-            SingleLang("MangaKitsune", "https://mangakitsune.com", "en", isNsfw = true, overrideVersionCode = 1),
+            SingleLang("MangaKitsune", "https://mangakitsune.com", "en", isNsfw = true, overrideVersionCode = 2),
             SingleLang("MangaKomi", "https://mangakomi.com", "en", overrideVersionCode = 2),
             SingleLang("Manga Land Arabic", "https://mangalandarabic.com", "ar"),
             SingleLang("مانجا ليك", "https://mangalek.com", "ar", className = "Mangalek"),
@@ -169,7 +169,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Manhwa.club", "https://manhwa.club", "en", className="ManwhaClub", overrideVersionCode = 2), // wrong class name for backward compatibility
             SingleLang("ManyToon", "https://manytoon.com", "en", overrideVersionCode = 1),
             SingleLang("ManyToonClub", "https://manytoon.club", "ko"),
-            SingleLang("ManyToon.me", "https://manytoon.me", "en", className = "ManyToonMe", overrideVersionCode = 1),
+            SingleLang("ManyToon.me", "https://manytoon.me", "en", isNsfw = true, className = "ManyToonMe", overrideVersionCode = 2),
             SingleLang("Mark Scans", "https://markscans.online", "pt-BR", overrideVersionCode = 2),
             SingleLang("MG Komik", "https://mgkomik.my.id", "id", overrideVersionCode = 1),
             SingleLang("Midnight Mess Scans", "https://midnightmess.org", "en", isNsfw = true, overrideVersionCode = 1),
