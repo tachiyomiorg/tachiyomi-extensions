@@ -3,11 +3,13 @@ package eu.kanade.tachiyomi.extension.en.mangakitsune
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.multisrc.madara.Madara
+import java.text.SimpleDateFormat
+import java.util.Locale
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 @Nsfw
-class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en") {
+class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en", dateFormat = SimpleDateFormat("MM/dd/yy", Locale.US)) {
     private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -16,6 +18,8 @@ class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en") {
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
         
+    override val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
+    
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
         Genre("Adult", "adult"),
