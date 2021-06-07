@@ -18,7 +18,7 @@ class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en", da
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
         
-    override val pageListParseSelector = "div.page-break, li.blocks-gallery-item"
+    override val pageListParseSelector = ".reading-content div.text-left :has(>img)"
     
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
