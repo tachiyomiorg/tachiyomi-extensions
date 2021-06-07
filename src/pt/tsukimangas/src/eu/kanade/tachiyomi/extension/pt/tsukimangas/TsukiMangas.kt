@@ -16,11 +16,13 @@ import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.injectLazy
+import java.io.IOException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -40,6 +42,7 @@ class TsukiMangas : HttpSource() {
         .addInterceptor(SpecificHostRateLimitInterceptor(baseUrl.toHttpUrl(), 1))
         .addInterceptor(SpecificHostRateLimitInterceptor(CDN_1_URL, 1, period = 2))
         .addInterceptor(SpecificHostRateLimitInterceptor(CDN_2_URL, 1, period = 2))
+        .addInterceptor(::tsukiPermissionIntercept)
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
@@ -276,6 +279,17 @@ class TsukiMangas : HttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private fun tsukiPermissionIntercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+
+        if (response.code == 403) {
+            response.close()
+            throw IOException(UA_DISABLED_MESSAGE)
+        }
+
+        return response
+    }
+
     private class Genre(name: String) : Filter.CheckBox(name)
 
     private class DemographyFilter(demographies: List<String>) : Filter.Select<String>("Demografia", demographies.toTypedArray())
@@ -430,6 +444,9 @@ class TsukiMangas : HttpSource() {
 
         private val CDN_1_URL = "https://cdn1.tsukimangas.com".toHttpUrl()
         private val CDN_2_URL = "https://cdn2.tsukimangas.com".toHttpUrl()
+
+        private const val UA_DISABLED_MESSAGE = "Permissão de acesso da extensão desativada. " +
+            "Aguarde a reativação pelo site para continuar utilizando."
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }
