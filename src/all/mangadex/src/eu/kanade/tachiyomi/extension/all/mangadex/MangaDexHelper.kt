@@ -130,7 +130,7 @@ class MangaDexHelper() {
         val attr = data["attributes"].obj
 
         return SManga.create().apply {
-            url = "/manga/$dexId"
+            url = "/title/$dexId"
             title = cleanString(attr["title"]["en"].string)
         }
     }
@@ -200,7 +200,7 @@ class MangaDexHelper() {
                 .filter { it.isNullOrBlank().not() }
 
             return SManga.create().apply {
-                url = "/manga/$dexId"
+                url = "/title/$dexId"
                 title = cleanString(attr["title"]["en"].string)
                 description = cleanString(attr["description"]["en"].string)
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
