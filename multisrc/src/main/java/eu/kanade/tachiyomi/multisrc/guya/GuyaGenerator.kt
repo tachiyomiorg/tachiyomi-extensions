@@ -14,6 +14,7 @@ class GuyaGenerator : ThemeSourceGenerator {
     override val sources = listOf(
         SingleLang("Guya", "https://guya.moe", "en", overrideVersionCode = 18),
         SingleLang("Danke fürs Lesen", "https://danke.moe", "en", className = "DankeFursLesen"),
+        SingleLang("Colored Council", "https://coloredcouncil.moe", "en", className = "ColoredCouncil"),
     )
     companion object {
         @JvmStatic
