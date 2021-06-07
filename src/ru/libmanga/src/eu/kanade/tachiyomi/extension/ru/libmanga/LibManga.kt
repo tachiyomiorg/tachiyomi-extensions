@@ -403,7 +403,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     private fun checkImage(url: String): Boolean {
         val response = client.newCall(Request.Builder().url(url).head().headers(headers).build()).execute()
-        return response.isSuccessful && (response.header("Content-Length")?.toInt()!! > 320)
+        return response.isSuccessful && (response.header("content-length", "0")?.toInt()!! > 320)
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> {
