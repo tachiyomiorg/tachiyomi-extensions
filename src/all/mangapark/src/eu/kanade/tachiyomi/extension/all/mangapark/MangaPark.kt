@@ -219,7 +219,7 @@ open class MangaPark(
     }
     
     override fun chapterListParse(response: Response): List<SChapter> {
-        val resTojson = json.parseToJsonElement(response.body!!.string()).jsonObject
+        val resToJson = json.parseToJsonElement(response.body!!.string()).jsonObject
         val document = Jsoup.parse(resToJson["html"]!!.jsonPrimitive.content)
         return document.select(chapterListSelector()).map { chapterFromElement(it) }
     }
