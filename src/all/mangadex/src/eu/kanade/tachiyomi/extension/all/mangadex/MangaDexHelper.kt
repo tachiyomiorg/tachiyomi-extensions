@@ -211,7 +211,7 @@ class MangaDexHelper() {
                 description = cleanString(attr.description["en"] ?: "")
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
-                status = getPublicationStatus(attr.publicationDemographic)
+                status = getPublicationStatus(attr.status)
                 thumbnail_url = getCoverUrl(data.id, coverId, client)
                 genre = genreList.joinToString(", ")
             }
