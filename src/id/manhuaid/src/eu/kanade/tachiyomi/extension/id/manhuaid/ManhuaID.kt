@@ -60,7 +60,9 @@ class ManhuaID : ParsedHttpSource() {
         filters.forEach { filter ->
             when (filter) {
                 is ProjectFilter -> {
-                    url = "$baseUrl/project?page_project=$page".toHttpUrlOrNull()!!.newBuilder()
+                    if (filter.toUriPart() == "project-filter-on") {
+                        url = "$baseUrl/project?page_project=$page".toHttpUrlOrNull()!!.newBuilder()
+                    }
                 }
             }
         }
@@ -129,7 +131,7 @@ class ManhuaID : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
 
     override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: cant be used with search!"),
+        Filter.Header("NOTE: cant be used with search or other filter!"),
         Filter.Header("$name Project List page"),
         ProjectFilter(),
     )
@@ -138,7 +140,7 @@ class ManhuaID : ParsedHttpSource() {
         "Filter Project",
         arrayOf(
             Pair("Show all manga", ""),
-            Pair("Show only project manga", "")
+            Pair("Show only project manga", "project-filter-on")
         )
     )
 

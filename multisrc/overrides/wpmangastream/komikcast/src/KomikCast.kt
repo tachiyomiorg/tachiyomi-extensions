@@ -86,7 +86,9 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                         url.addQueryParameter("order", orderBy)
                     }
                     is ProjectFilter -> {
-                        url = "$baseUrl/project-list/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        if (filter.toUriPart() == "project-filter-on") {
+                            url = "$baseUrl/project-list/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        }
                     }
                 }
             }

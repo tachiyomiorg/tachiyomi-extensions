@@ -123,7 +123,9 @@ abstract class WPMangaReader(
                     is UrlEncoded -> filter.encode(url)
                     // if site has project page, default value "hasProjectPage" = false
                     is ProjectFilter -> {
-                        url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        if (filter.toUriPart() == "project-filter-on") {
+                            url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        }
                     }
                 }
             }
@@ -308,7 +310,7 @@ abstract class WPMangaReader(
         "Filter Project",
         arrayOf(
             Pair("Show all manga", ""),
-            Pair("Show only project manga", "")
+            Pair("Show only project manga", "project-filter-on")
         )
     )
 

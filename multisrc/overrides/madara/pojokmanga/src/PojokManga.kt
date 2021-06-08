@@ -57,8 +57,9 @@ class PojokManga : Madara("Pojok Manga", "https://pojokmanga.com", "id", SimpleD
                         }
                 }
                 is ProjectFilter -> {
-                    url = "$baseUrl/project/page/$page".toHttpUrlOrNull()!!.newBuilder()
-                    return GET(url.toString(), headers)
+                    if (filter.toUriPart() == "project-filter-on") {
+                        url = "$baseUrl/project/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                    }
                 }
             }
         }
@@ -71,7 +72,7 @@ class PojokManga : Madara("Pojok Manga", "https://pojokmanga.com", "id", SimpleD
         "Filter Project",
         arrayOf(
             Pair("Show all manga", ""),
-            Pair("Show only project manga", "")
+            Pair("Show only project manga", "project-filter-on")
         )
     )
 
