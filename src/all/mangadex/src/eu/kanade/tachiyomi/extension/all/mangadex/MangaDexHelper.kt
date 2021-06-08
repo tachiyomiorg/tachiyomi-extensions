@@ -144,7 +144,7 @@ class MangaDexHelper() {
     /**
      * Create an SManga from json element with all details
      */
-    fun createManga(mangaDto: MangaDto, client: OkHttpClient): SManga {
+    fun createManga(mangaDto: MangaDto, client: OkHttpClient, lang: String): SManga {
         try {
             val data = mangaDto.data
             val attr = data.attributes
@@ -208,7 +208,7 @@ class MangaDexHelper() {
             return SManga.create().apply {
                 url = "/manga/${data.id}"
                 title = cleanString(attr.title["en"] ?: "")
-                description = cleanString(attr.description["en"] ?: "")
+                description = cleanString(attr.description[lang] ?: attr.description["en"] ?: "")
                 author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
                 status = getPublicationStatus(attr.status)

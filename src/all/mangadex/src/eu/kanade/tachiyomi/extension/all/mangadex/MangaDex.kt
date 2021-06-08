@@ -189,7 +189,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = helper.json.decodeFromString<MangaDto>(response.body!!.string())
-        return helper.createManga(manga, client)
+        return helper.createManga(manga, client, lang.substringBefore("-"))
     }
 
     // Chapter list section
