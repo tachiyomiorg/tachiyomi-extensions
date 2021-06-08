@@ -18,7 +18,7 @@ data class TsukiMangaDto(
     val author: String? = "",
     val genres: List<TsukiGenreDto> = emptyList(),
     val id: Int,
-    val poster: String,
+    val poster: String? = "",
     val status: String? = "",
     val synopsis: String? = "",
     val title: String,

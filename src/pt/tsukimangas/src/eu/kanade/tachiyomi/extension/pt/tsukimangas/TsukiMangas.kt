@@ -68,8 +68,10 @@ class TsukiMangas : HttpSource() {
     }
 
     private fun popularMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        val poster = manga.poster?.substringBefore("?")
+
         title = manga.title
-        thumbnail_url = baseUrl + "/imgs/" + manga.poster.substringBefore("?")
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         url = "/obra/${manga.id}/${manga.url}"
     }
 
@@ -88,8 +90,10 @@ class TsukiMangas : HttpSource() {
     }
 
     private fun latestMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        val poster = manga.poster?.substringBefore("?")
+
         title = manga.title
-        thumbnail_url = baseUrl + "/imgs/" + manga.poster.substringBefore("?")
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         url = "/obra/${manga.id}/${manga.url}"
     }
 
@@ -101,12 +105,22 @@ class TsukiMangas : HttpSource() {
         val url = "$baseUrl/api/v2/mangas?page=$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
 
-        // Genre filter must be the first.
+        // Some filters have to follow an order in the URL.
         filters.filterIsInstance<GenreFilter>().firstOrNull()?.state
             ?.filter { it.state }
             ?.forEach { url.addQueryParameter("genres[]", it.name) }
 
-        // Sort by filter must also be the first.
+        filters.filterIsInstance<AdultFilter>().firstOrNull()
+            ?.let {
+                if (it.state == Filter.TriState.STATE_INCLUDE) {
+                    url.addQueryParameter("adult_content", "1")
+                } else if (it.state == Filter.TriState.STATE_EXCLUDE) {
+                    url.addQueryParameter("adult_content", "false")
+                }
+
+                return@let null
+            }
+
         filters.filterIsInstance<SortByFilter>().firstOrNull()
             ?.let { filter ->
                 if (filter.state!!.index == 0) {
@@ -135,14 +149,6 @@ class TsukiMangas : HttpSource() {
                         url.addQueryParameter("status", (filter.state - 1).toString())
                     }
                 }
-
-                is AdultFilter -> {
-                    if (filter.state == Filter.TriState.STATE_INCLUDE) {
-                        url.addQueryParameter("adult_content", "1")
-                    } else if (filter.state == Filter.TriState.STATE_EXCLUDE) {
-                        url.addQueryParameter("adult_content", "false")
-                    }
-                }
             }
         }
 
@@ -160,8 +166,10 @@ class TsukiMangas : HttpSource() {
     }
 
     private fun searchMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        val poster = manga.poster?.substringBefore("?")
+
         title = manga.title
-        thumbnail_url = baseUrl + "/imgs/" + manga.poster.substringBefore("?")
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         url = "/obra/${manga.id}/${manga.url}"
     }
 
@@ -194,9 +202,10 @@ class TsukiMangas : HttpSource() {
 
     override fun mangaDetailsParse(response: Response): SManga = SManga.create().apply {
         val mangaDto = json.decodeFromString<TsukiMangaDto>(response.body!!.string())
+        val poster = mangaDto.poster?.substringBefore("?")
 
         title = mangaDto.title
-        thumbnail_url = baseUrl + "/imgs/" + mangaDto.poster.substringBefore("?")
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
         description = mangaDto.synopsis.orEmpty()
         status = mangaDto.status.orEmpty().toStatus()
         author = mangaDto.author.orEmpty()
@@ -447,6 +456,8 @@ class TsukiMangas : HttpSource() {
 
         private const val UA_DISABLED_MESSAGE = "Permissão de acesso da extensão desativada. " +
             "Aguarde a reativação pelo site para continuar utilizando."
+
+        private const val EMPTY_COVER = "/ext/errorcapa.jpg"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }
