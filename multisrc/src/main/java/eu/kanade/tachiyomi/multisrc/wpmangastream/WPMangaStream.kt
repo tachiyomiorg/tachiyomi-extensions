@@ -371,36 +371,30 @@ abstract class WPMangaStream(
 
     open val hasProjectPage = false
 
-    override fun getFilterList() =
-        if (hasProjectPage.not()) {
-            FilterList(
-                Filter.Header("NOTE: Ignored if using text search!"),
-                Filter.Header("Genre exclusion not available for all sources"),
-                Filter.Separator(),
-                AuthorFilter(),
-                YearFilter(),
-                StatusFilter(),
-                TypeFilter(),
-                SortByFilter(),
-                GenreListFilter(getGenreList()),
-            )
-        } else {
-            FilterList(
-                Filter.Header("NOTE: Ignored if using text search!"),
-                Filter.Header("Genre exclusion not available for all sources"),
-                Filter.Separator(),
-                AuthorFilter(),
-                YearFilter(),
-                StatusFilter(),
-                TypeFilter(),
-                SortByFilter(),
-                GenreListFilter(getGenreList()),
-                Filter.Separator(),
-                Filter.Header("NOTE: cant be used with other filter!"),
-                Filter.Header("$name Project List page"),
-                ProjectFilter(),
+    override fun getFilterList(): FilterList {
+        val filters = mutableListOf<Filter<*>>(
+            Filter.Header("NOTE: Ignored if using text search!"),
+            Filter.Header("Genre exclusion not available for all sources"),
+            Filter.Separator(),
+            AuthorFilter(),
+            YearFilter(),
+            StatusFilter(),
+            TypeFilter(),
+            SortByFilter(),
+            GenreListFilter(getGenreList()),
+        )
+        if (hasProjectPage) {
+            filters.addAll(
+                mutableListOf<Filter<*>>(
+                    Filter.Separator(),
+                    Filter.Header("NOTE: cant be used with other filter!"),
+                    Filter.Header("$name Project List page"),
+                    ProjectFilter(),
+                )
             )
         }
+        return FilterList(filters)
+    }
 
     protected open fun getGenreList(): List<Genre> = listOf(
         Genre("4 Koma", "4-koma"),

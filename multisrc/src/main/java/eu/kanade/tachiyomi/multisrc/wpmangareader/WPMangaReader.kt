@@ -283,28 +283,26 @@ abstract class WPMangaReader(
     open val hasProjectPage = false
 
     // filters
-    override fun getFilterList() =
-        if (hasProjectPage.not()) {
-            FilterList(
-                Filter.Header("NOTE: Ignored if using text search!"),
-                GenreFilter(),
-                StatusFilter(),
-                TypesFilter(),
-                OrderByFilter(),
-            )
-        } else {
-            FilterList(
-                Filter.Header("NOTE: Ignored if using text search!"),
-                GenreFilter(),
-                StatusFilter(),
-                TypesFilter(),
-                OrderByFilter(),
-                Filter.Separator(),
-                Filter.Header("NOTE: cant be used with other filter!"),
-                Filter.Header("$name Project List page"),
-                ProjectFilter(),
+    override fun getFilterList(): FilterList {
+        val filters = mutableListOf<Filter<*>>(
+            Filter.Header("NOTE: Ignored if using text search!"),
+            GenreFilter(),
+            StatusFilter(),
+            TypesFilter(),
+            OrderByFilter(),
+        )
+        if (hasProjectPage) {
+            filters.addAll(
+                mutableListOf<Filter<*>>(
+                    Filter.Separator(),
+                    Filter.Header("NOTE: cant be used with other filter!"),
+                    Filter.Header("$name Project List page"),
+                    ProjectFilter(),
+                )
             )
         }
+        return FilterList(filters)
+    }
 
     protected class ProjectFilter : UriPartFilter(
         "Filter Project",
