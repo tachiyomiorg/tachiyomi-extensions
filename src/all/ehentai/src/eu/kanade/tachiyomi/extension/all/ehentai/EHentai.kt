@@ -33,7 +33,10 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.net.URLEncoder
 
-open class EHentai(override val lang: String, private val ehLang: String) : ConfigurableSource, HttpSource() {
+abstract class EHentai(
+    override val lang: String,
+    private val ehLang: String
+) : ConfigurableSource, HttpSource() {
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)

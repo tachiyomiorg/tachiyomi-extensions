@@ -182,7 +182,11 @@ class NineMangaEs : NineManga("NineMangaEs", "https://es.ninemanga.com", "es") {
     )
 }
 
-class NineMangaBr : NineManga("NineMangaBr", "https://br.ninemanga.com", "pt") {
+class NineMangaBr : NineManga("NineMangaBr", "https://br.ninemanga.com", "pt-BR") {
+
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 7162569729467394726
+
     override fun parseStatus(status: String) = when {
         status.contains("Em tradução") -> SManga.ONGOING
         status.contains("Completo") -> SManga.COMPLETED
