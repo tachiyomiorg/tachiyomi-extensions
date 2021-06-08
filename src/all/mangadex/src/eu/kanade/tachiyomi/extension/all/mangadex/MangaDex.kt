@@ -35,7 +35,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     ConfigurableSource,
     HttpSource() {
     override val name = "MangaDex"
-    override val baseUrl = "https://www.mangadex.org"
+    override val baseUrl = "https://mangadex.org"
 
     // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
     override val supportsLatest = false
@@ -47,7 +47,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     private val helper = MangaDexHelper()
 
     override fun headersBuilder() = Headers.Builder()
-        .add("Referer", "https://mangadex.org/")
+        .add("Referer", "$baseUrl/")
         .add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
 
     override val client = network.client.newBuilder()
@@ -173,7 +173,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET("${baseUrl}${manga.url}", headers)
+        return GET("${baseUrl}${manga.url.replace("/manga/", "/title/")}", headers)
     }
 
     /**
