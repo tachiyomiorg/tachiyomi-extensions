@@ -95,6 +95,7 @@ class MangaDexHelper() {
     // Check the token map to see if the md@home host is still valid
     fun getValidImageUrlForPage(page: Page, headers: Headers, client: OkHttpClient): Request {
         val data = page.url.split(",")
+
         val mdAtHomeServerUrl =
             when (Date().time - data[2].toLong() > MDConstants.mdAtHomeTokenLifespan) {
                 false -> data[0]
@@ -106,7 +107,6 @@ class MangaDexHelper() {
                                 ?: 0
                             ) > MDConstants.mdAtHomeTokenLifespan
                         ) {
-                            tokenTracker[tokenRequestUrl] = Date().time
                             CacheControl.FORCE_NETWORK
                         } else {
                             CacheControl.FORCE_CACHE
@@ -126,6 +126,9 @@ class MangaDexHelper() {
         headers: Headers,
         cacheControl: CacheControl
     ): String {
+        if (cacheControl == CacheControl.FORCE_NETWORK) {
+            tokenTracker[tokenRequestUrl] = Date().time
+        }
         val response =
             client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
         return json.decodeFromString<AtHomeDto>(response.body!!.string()).baseUrl
