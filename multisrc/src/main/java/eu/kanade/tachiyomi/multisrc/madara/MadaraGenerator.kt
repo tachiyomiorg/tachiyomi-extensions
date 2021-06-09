@@ -10,7 +10,7 @@ class MadaraGenerator : ThemeSourceGenerator {
 
     override val themeClass = "Madara"
 
-    override val baseVersionCode: Int = 6
+    override val baseVersionCode: Int = 7
 
     override val sources = listOf(
         MultiLang("Leviatan Scans", "https://leviatanscans.com", listOf("en", "es"), className = "LeviatanScansFactory", overrideVersionCode = 4),
@@ -26,8 +26,6 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Agent of Change Translations", "https://aoc.moe", "en", overrideVersionCode = 1),
         SingleLang("AkuManga", "https://akumanga.com", "ar"),
         SingleLang("AllPornComic", "https://allporncomic.com", "en", isNsfw = true),
-        SingleLang("Aloalivn", "https://aloalivn.com", "en", overrideVersionCode = 2),
-        SingleLang("AniMangaEs", "https://animangaes.com", "en", overrideVersionCode = 1),
         SingleLang("Anisa Manga", "https://anisamanga.com", "tr"),
         SingleLang("ApollComics", "https://apollcomics.xyz", "es", overrideVersionCode = 1),
         SingleLang("Arang Scans", "https://arangscans.com", "en", overrideVersionCode = 3), // removed override
