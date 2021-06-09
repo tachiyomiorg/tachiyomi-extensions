@@ -1,13 +1,34 @@
-package eu.kanade.tachiyomi.extension.en.mangaforfree
+package eu.kanade.tachiyomi.extension.all.mangaforfree
 
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
-import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.multisrc.madara.Madara
-import okhttp3.OkHttpClient
+import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.SourceFactory
 import java.util.concurrent.TimeUnit
+import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import okhttp3.OkHttpClient
+import eu.kanade.tachiyomi.annotations.Nsfw
+
+class MangaForFreeFactory : SourceFactory {
+    override fun createSources(): List<Source> = listOf(
+        MangaForFreeEN(),
+        MangaForFretKO(),
+        MangaForFreeALL(),
+    )
+}
+class MangaForFreeEN : MangaForFree("MangaForFree.net", "https://mangaforfree.net", "en") {
+    override fun chapterListSelector() = "li.wp-manga-chapter:not(:contains(Raw))"
+}
+class MangaForFreeKO : MangaForFree("MangaForFree.net", "https://mangaforfree.net", "ko") {
+    override fun chapterListSelector() = "li.wp-manga-chapter:contains(Raw)"
+}
+class MangaForFreeALL : MangaForFree("MangaForFree.net", "https://mangaforfree.net", "all")
 
 @Nsfw
-class Mangaforfree : Madara("Mangaforfree", "https://mangaforfree.net", "en") {
+abstract class MangaForFree(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String
+) : Madara(name, baseUrl, lang) {
     private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -15,7 +36,7 @@ class Mangaforfree : Madara("Mangaforfree", "https://mangaforfree.net", "en") {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
-        
+
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
         Genre("Adult", "adult"),
