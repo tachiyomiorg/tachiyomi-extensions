@@ -11,7 +11,7 @@ class MangaParkFactory : SourceFactory {
 
 class LanguageOption(val lang: String, val siteLang: String = lang)
 private val languages = listOf(
-    //LanguageOption("<Language Format>","<Language Format used in site.>"),
+    // LanguageOption("<Language Format>","<Language Format used in site.>"),
     LanguageOption("en"),
     LanguageOption("ar"),
     LanguageOption("bg"),
@@ -34,11 +34,11 @@ private val languages = listOf(
     LanguageOption("ms"),
     LanguageOption("pl"),
     LanguageOption("pt"),
-    LanguageOption("pt-BR","pt_br"),
+    LanguageOption("pt-BR", "pt_br"),
     LanguageOption("ro"),
     LanguageOption("ru"),
     LanguageOption("es"),
-    LanguageOption("es-419","es_419"),
+    LanguageOption("es-419", "es_419"),
     LanguageOption("sv"),
     LanguageOption("th"),
     LanguageOption("tr"),
@@ -56,10 +56,10 @@ private val languages = listOf(
     LanguageOption("km"),
     LanguageOption("ca"),
     LanguageOption("ceb"),
-    LanguageOption("zh-rHK","zh_hk"),
-    LanguageOption("zh-rTW","zh_tw"),
+    LanguageOption("zh-rHK", "zh_hk"),
+    LanguageOption("zh-rTW", "zh_tw"),
     LanguageOption("hr"),
-    LanguageOption("en-US","en_us"),
+    LanguageOption("en-US", "en_us"),
     LanguageOption("eo"),
     LanguageOption("et"),
     LanguageOption("fo"),
@@ -116,5 +116,5 @@ private val languages = listOf(
     LanguageOption("zu"),
     LanguageOption("other", "_t"),
     LanguageOption("eu"),
-    LanguageOption("pt-PT","pt_pt")
+    LanguageOption("pt-PT", "pt_pt")
 )
