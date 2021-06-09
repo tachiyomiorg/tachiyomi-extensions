@@ -46,6 +46,7 @@ class Mangaforfree : Madara("Mangaforfree", "https://mangaforfree.net", "en") {
         Genre("Mystery", "mystery"),
         Genre("One shot", "one-shot"),
         Genre("Psychological", "psychological"),
+        Genre("Raw", "raw"),
         Genre("Romance", "romance"),
         Genre("School Life", "school-life"),
         Genre("Sci-fi", "sci-fi"),
