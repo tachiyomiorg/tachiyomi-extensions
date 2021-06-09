@@ -70,6 +70,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Glory Scans", "https://gloryscan.com", "pt-BR", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Graze Scans", "https://grazescans.com/", "en", overrideVersionCode = 1),
             SingleLang("GuncelManga", "https://guncelmanga.com", "tr"),
+            SingleLang("Hentai20", "https://hentai20.com", "en", isNsfw = true)
             SingleLang("Hero Manhua", "https://heromanhua.com", "en"),
             SingleLang("Heroz Scanlation", "https://herozscans.com", "en", overrideVersionCode = 1),
             SingleLang("Himera Fansub", "https://himera-fansub.com", "tr"),
