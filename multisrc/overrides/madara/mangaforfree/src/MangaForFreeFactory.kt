@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.annotations.Nsfw
 class MangaForFreeFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
         MangaForFreeEN(),
-        MangaForFretKO(),
+        MangaForFreeKO(),
         MangaForFreeALL(),
     )
 }
