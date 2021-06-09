@@ -173,6 +173,7 @@ class MangaDexFilters {
         Filter.Select<String>("Excluded tags mode", arrayOf("And", "Or"), 1)
 
     val sortableList = listOf(
+        Pair("Number of follows", ""),
         Pair("Created at", "createdAt"),
         Pair("Updated at", "updatedAt"),
     )
