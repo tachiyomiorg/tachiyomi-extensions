@@ -16,4 +16,5 @@ class xCaliBRScans : WPMangaStream("xCaliBR Scans", "https://xcalibrscans.com", 
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
+    override val hasProjectPage = true
 }

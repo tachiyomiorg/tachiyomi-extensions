@@ -21,4 +21,5 @@ class SheaManga : WPMangaStream(
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
+    override val hasProjectPage = true
 }

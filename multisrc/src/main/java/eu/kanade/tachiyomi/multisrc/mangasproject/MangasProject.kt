@@ -296,7 +296,8 @@ abstract class MangasProject(
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
-            .set("Referer", page.url)
+            .removeAll("Referer")
+            .set("Accept", ACCEPT_IMAGE)
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
@@ -314,6 +315,7 @@ abstract class MangasProject(
         private const val ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9," +
             "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         private const val ACCEPT_JSON = "application/json, text/javascript, */*; q=0.01"
+        private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"

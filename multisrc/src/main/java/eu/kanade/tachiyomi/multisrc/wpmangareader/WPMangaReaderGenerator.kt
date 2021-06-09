@@ -12,11 +12,11 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 7
 
     override val sources = listOf(
-        SingleLang("Kiryuu", "https://kiryuu.id", "id"),
+        SingleLang("Kiryuu", "https://kiryuu.id", "id", overrideVersionCode = 1),
         SingleLang("KomikMama", "https://komikmama.net", "id"),
-        SingleLang("MangaKita", "https://mangakita.net", "id"),
+        SingleLang("MangaKita", "https://mangakita.net", "id", overrideVersionCode = 1),
         SingleLang("Martial Manga", "https://martialmanga.com/", "es"),
-        SingleLang("Ngomik", "https://ngomik.net", "id"),
+        SingleLang("Ngomik", "https://ngomik.net", "id", overrideVersionCode = 1),
         SingleLang("Sekaikomik", "https://www.sekaikomik.xyz", "id", isNsfw = true, overrideVersionCode = 5),
         SingleLang("Davey Scans", "https://daveyscans.com/", "id"),
         SingleLang("Mangasusu", "https://mangasusu.co.in", "id", isNsfw = true),

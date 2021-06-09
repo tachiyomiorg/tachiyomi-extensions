@@ -46,4 +46,8 @@ class KomikStation : WPMangaStream("Komik Station", "https://komikstation.com", 
 
         return pages
     }
+
+    override val projectPageString = "/project-list"
+
+    override val hasProjectPage = true
 }

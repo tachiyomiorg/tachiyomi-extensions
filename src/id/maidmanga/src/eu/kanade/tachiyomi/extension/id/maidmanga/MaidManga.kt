@@ -50,7 +50,7 @@ class MaidManga : ParsedHttpSource() {
     override fun popularMangaNextPageSelector() = searchMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/advanced-search/${pagePathSegment(page)}".toHttpUrlOrNull()!!.newBuilder()
+        var url = "$baseUrl/advanced-search/${pagePathSegment(page)}".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
             when (filter) {
@@ -78,6 +78,11 @@ class MaidManga : ParsedHttpSource() {
                     filter.state
                         .filter { it.state }
                         .forEach { url.addQueryParameter("genre[]", it.id) }
+                }
+                is ProjectFilter -> {
+                    if (filter.toUriPart() == "project-filter-on") {
+                        url = "$baseUrl/project-list/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                    }
                 }
             }
         }
@@ -162,7 +167,19 @@ class MaidManga : ParsedHttpSource() {
         StatusFilter(),
         TypeFilter(),
         OrderByFilter(),
-        GenreList(getGenreList())
+        GenreList(getGenreList()),
+        Filter.Separator(),
+        Filter.Header("NOTE: cant be used with other filter!"),
+        Filter.Header("$name Project List page"),
+        ProjectFilter(),
+    )
+
+    private class ProjectFilter : UriPartFilter(
+        "Filter Project",
+        arrayOf(
+            Pair("Show all manga", ""),
+            Pair("Show only project manga", "project-filter-on")
+        )
     )
 
     private class AuthorFilter : Filter.Text("Author")

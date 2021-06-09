@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'MangaDex'
     pkgNameSuffix = 'all.mangadex'
     extClass = '.MangaDexFactory'
-    extVersionCode = 117
+    extVersionCode = 118
     libVersion = '1.2'
     containsNsfw = true
 }

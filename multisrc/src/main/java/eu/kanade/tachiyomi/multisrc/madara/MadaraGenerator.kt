@@ -193,7 +193,7 @@ class MadaraGenerator : ThemeSourceGenerator {
             SingleLang("Paean Scans", "https://paeanscans.com", "en", overrideVersionCode = 1),
             SingleLang("Painful Nightz Scan", "https://painfulnightzscan.com", "en"),
             SingleLang("Platinum Crown", "https://platinumscans.com", "en", overrideVersionCode = 1),
-            SingleLang("Pojok Manga", "https://pojokmanga.com", "id", overrideVersionCode = 1),
+            SingleLang("Pojok Manga", "https://pojokmanga.com", "id", overrideVersionCode = 2),
             SingleLang("PornComix", "https://www.porncomixonline.net", "en", isNsfw = true, overrideVersionCode = 1),
             SingleLang("Projeto Scanlator", "https://projetoscanlator.com", "pt-BR", overrideVersionCode = 2),
             SingleLang("QueensManga ملكات المانجا", "https://queensmanga.com", "ar", className = "QueensManga"),

@@ -5,12 +5,10 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.preference.PreferenceScreen
 import androidx.preference.SwitchPreferenceCompat
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterListDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaListDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -20,6 +18,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.decodeFromString
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -35,7 +34,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     ConfigurableSource,
     HttpSource() {
     override val name = "MangaDex"
-    override val baseUrl = "https://www.mangadex.org"
+    override val baseUrl = "https://mangadex.org"
 
     // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
     override val supportsLatest = false
@@ -47,7 +46,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     private val helper = MangaDexHelper()
 
     override fun headersBuilder() = Headers.Builder()
-        .add("Referer", "https://mangadex.org/")
+        .add("Referer", "$baseUrl/")
         .add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
 
     override val client = network.client.newBuilder()
@@ -103,25 +102,27 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         if (response.code == 204) {
             return MangasPage(emptyList(), false)
         }
+        val mangaListDto = helper.json.decodeFromString<MangaListDto>(response.body!!.string())
+        val hasMoreResults = mangaListDto.limit + mangaListDto.offset < mangaListDto.total
 
-        val mangaListResponse = JsonParser.parseString(response.body!!.string()).obj
-        val hasMoreResults =
-            (mangaListResponse["limit"].int + mangaListResponse["offset"].int) < mangaListResponse["total"].int
-
-        val idsAndCoverIds = mangaListResponse["results"].array.map { mangaJson ->
-            val mangaId = mangaJson["data"].obj["id"].string
-            val coverId = mangaJson["relationships"].array.filter { relationship ->
-                relationship["type"].string.equals("cover_art", true)
-            }.map { relationship -> relationship["id"].string }.first()
-            Pair(mangaId, coverId)
+        val idsAndCoverIds = mangaListDto.results.mapNotNull { mangaDto ->
+            val mangaId = mangaDto.data.id
+            val coverId = mangaDto.relationships.firstOrNull { relationshipDto ->
+                relationshipDto.type.equals("cover_art", true)
+            }?.id
+            if (coverId == null) {
+                null
+            } else {
+                Pair(mangaId, coverId)
+            }
         }.toMap()
 
         val results = runCatching {
             helper.getBatchCoversUrl(idsAndCoverIds, client)
         }.getOrNull()!!
 
-        val mangaList = mangaListResponse["results"].array.map {
-            helper.createBasicManga(it, client).apply {
+        val mangaList = mangaListDto.results.map {
+            helper.createBasicManga(it).apply {
                 thumbnail_url = results[url.substringAfter("/manga/")]
             }
         }
@@ -173,7 +174,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET("${baseUrl}${manga.url}", headers)
+        //remove once redirect for /manga is fixed
+        return GET("${baseUrl}${manga.url.replace("manga", "title")}", headers)
     }
 
     /**
@@ -187,8 +189,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val manga = JsonParser.parseString(response.body!!.string()).obj
-        return helper.createManga(manga, client)
+        val manga = helper.json.decodeFromString<MangaDto>(response.body!!.string())
+        return helper.createManga(manga, client, lang.substringBefore("-"))
     }
 
     // Chapter list section
@@ -221,29 +223,28 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
             return emptyList()
         }
         try {
-            val chapterListResponse = JsonParser.parseString(response.body!!.string()).obj
+            val chapterListResponse = helper.json.decodeFromString<ChapterListDto>(response.body!!.string())
 
-            val chapterListResults =
-                chapterListResponse["results"].array.map { it.obj }.toMutableList()
+            val chapterListResults = chapterListResponse.results.toMutableList()
 
             val mangaId =
                 response.request.url.toString().substringBefore("/feed")
                     .substringAfter("${MDConstants.apiMangaUrl}/")
 
-            val limit = chapterListResponse["limit"].int
+            val limit = chapterListResponse.limit
 
-            var offset = chapterListResponse["offset"].int
+            var offset = chapterListResponse.offset
 
-            var hasMoreResults = (limit + offset) < chapterListResponse["total"].int
+            var hasMoreResults = (limit + offset) < chapterListResponse.total
 
             // max results that can be returned is 500 so need to make more api calls if limit+offset > total chapters
             while (hasMoreResults) {
                 offset += limit
                 val newResponse =
                     client.newCall(actualChapterListRequest(mangaId, offset)).execute()
-                val newChapterListJson = JsonParser.parseString(newResponse.body!!.string()).obj
-                chapterListResults.addAll(newChapterListJson["results"].array.map { it.obj })
-                hasMoreResults = (limit + offset) < newChapterListJson["total"].int
+                val newChapterList = helper.json.decodeFromString<ChapterListDto>(newResponse.body!!.string())
+                chapterListResults.addAll(newChapterList.results)
+                hasMoreResults = (limit + offset) < newChapterList.total
             }
 
             val groupMap = helper.createGroupMap(chapterListResults.toList(), client)
@@ -272,14 +273,14 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         if (response.code == 204) {
             return emptyList()
         }
-        val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
+        val chapterDto = helper.json.decodeFromString<ChapterDto>(response.body!!.string()).data
         val usingStandardHTTPS =
             preferences.getBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), false)
 
         val atHomeRequestUrl = if (usingStandardHTTPS) {
-            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?forcePort443=true"
+            "${MDConstants.apiUrl}/at-home/server/${chapterDto.id}?forcePort443=true"
         } else {
-            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+            "${MDConstants.apiUrl}/at-home/server/${chapterDto.id}"
         }
 
         val host =
@@ -290,11 +291,12 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
-        val hash = chapterJson["attributes"]["hash"].string
+
+        val hash = chapterDto.attributes.hash
         val pageSuffix = if (usingDataSaver) {
-            chapterJson["attributes"]["dataSaver"].array.map { "/data-saver/$hash/${it.string}" }
+            chapterDto.attributes.dataSaver.map { "/data-saver/$hash/$it" }
         } else {
-            chapterJson["attributes"]["data"].array.map { "/data/$hash/${it.string}" }
+            chapterDto.attributes.data.map { "/data/$hash/$it" }
         }
 
         return pageSuffix.mapIndexed { index, imgUrl ->

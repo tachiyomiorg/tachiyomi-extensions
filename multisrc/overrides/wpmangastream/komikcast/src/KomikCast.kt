@@ -63,7 +63,7 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
             }
             url.toString()
         } else {
-            val url = "$baseUrl/daftar-komik/page/$page".toHttpUrlOrNull()!!.newBuilder()
+            var url = "$baseUrl/daftar-komik/page/$page".toHttpUrlOrNull()!!.newBuilder()
             var orderBy: String
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
@@ -84,6 +84,11 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                     is SortByFilter -> {
                         orderBy = filter.toUriPart()
                         url.addQueryParameter("order", orderBy)
+                    }
+                    is ProjectFilter -> {
+                        if (filter.toUriPart() == "project-filter-on") {
+                            url = "$baseUrl/project-list/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        }
                     }
                 }
             }
@@ -158,6 +163,9 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         Filter.Separator(),
         StatusFilter(),
         Filter.Separator(),
-        GenreListFilter(getGenreList())
+        GenreListFilter(getGenreList()),
+        Filter.Header("NOTE: cant be used with other filter!"),
+        Filter.Header("$name Project List page"),
+        ProjectFilter()
     )
 }

@@ -188,12 +188,12 @@ abstract class Madara(
         return GET(url.toString(), headers)
     }
 
-    private class AuthorFilter : Filter.Text("Author")
-    private class ArtistFilter : Filter.Text("Artist")
-    private class YearFilter : Filter.Text("Year of Released")
-    private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
+    protected class AuthorFilter : Filter.Text("Author")
+    protected class ArtistFilter : Filter.Text("Artist")
+    protected class YearFilter : Filter.Text("Year of Released")
+    protected class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
 
-    private class OrderByFilter : UriPartFilter(
+    protected class OrderByFilter : UriPartFilter(
         "Order By",
         arrayOf(
             Pair("<select>", ""),
@@ -206,7 +206,7 @@ abstract class Madara(
         )
     )
 
-    private class GenreConditionFilter : UriPartFilter(
+    protected class GenreConditionFilter : UriPartFilter(
         "Genre condition",
         arrayOf(
             Pair("or", ""),
@@ -214,7 +214,7 @@ abstract class Madara(
         )
     )
 
-    private class AdultContentFilter : UriPartFilter(
+    protected class AdultContentFilter : UriPartFilter(
         "Adult Content",
         arrayOf(
             Pair("All", ""),
@@ -223,7 +223,7 @@ abstract class Madara(
         )
     )
 
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    protected class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
 
     open fun getGenreList() = listOf(
@@ -301,7 +301,7 @@ abstract class Madara(
         GenreList(getGenreList())
     )
 
-    private fun getStatusList() = listOf(
+    protected fun getStatusList() = listOf(
         Tag("end", "Completed"),
         Tag("on-going", "Ongoing"),
         Tag("canceled", "Canceled"),

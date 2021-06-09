@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.id.mangakane
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -29,9 +30,18 @@ class MangaKane : ParsedHttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/page/$page/?".toHttpUrlOrNull()!!.newBuilder()
-            .addQueryParameter("s", query)
-        return GET(url.toString(), headers)
+        var url = "$baseUrl/page/$page/".toHttpUrlOrNull()!!.newBuilder()
+        url.addQueryParameter("s", query)
+        filters.forEach { filter ->
+            when (filter) {
+                is ProjectFilter -> {
+                    if (filter.toUriPart() == "project-filter-on") {
+                        url = "$baseUrl/project-list/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                    }
+                }
+            }
+        }
+        return GET(url.build().toString(), headers)
     }
 
     override fun popularMangaSelector() = ".container .flexbox2 .flexbox2-item"
@@ -99,4 +109,23 @@ class MangaKane : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document) = ""
+
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: cant be used with search or other filter!"),
+        Filter.Header("$name Project List page"),
+        ProjectFilter(),
+    )
+
+    private class ProjectFilter : UriPartFilter(
+        "Filter Project",
+        arrayOf(
+            Pair("Show all manga", ""),
+            Pair("Show only project manga", "project-filter-on")
+        )
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 }

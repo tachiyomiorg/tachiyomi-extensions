@@ -16,4 +16,6 @@ class Kiryuu : WPMangaReader("Kiryuu", "https://kiryuu.id", "id") {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override val hasProjectPage = true
 }

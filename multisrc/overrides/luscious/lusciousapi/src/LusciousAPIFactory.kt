@@ -29,6 +29,9 @@ class LusciousAPIFR : Luscious("Luscious (API)", "https://api.luscious.net", "fr
 class LusciousAPIZH : Luscious("Luscious (API)", "https://api.luscious.net", "zh")
 class LusciousAPIKO : Luscious("Luscious (API)", "https://api.luscious.net", "ko")
 class LusciousAPIOTHER : Luscious("Luscious (API)", "https://api.luscious.net", "other")
-class LusciousAPIPT : Luscious("Luscious (API)", "https://api.luscious.net", "pt")
+class LusciousAPIPT : Luscious("Luscious (API)", "https://api.luscious.net", "pt-BR") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 7982365826055835382
+}
 class LusciousAPITH : Luscious("Luscious (API)", "https://api.luscious.net", "th")
 class LusciousAPIALL : Luscious("Luscious (API)", "https://api.luscious.net", "all")

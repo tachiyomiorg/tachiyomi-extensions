@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.SourceFactory
 
 val toISO639 = mapOf(
     "gb" to "en", // English
-    "br" to "pt-BR", // Brazillian Portugese
+    "br" to "pt-BR", // Brazilian Portuguese
     "mx" to "es-419", // Latin-American Spanish
     "vn" to "vi", // Vietnemese
     "hk" to "zh-Hant", // Traditional Chinese,

@@ -113,7 +113,7 @@ abstract class WPMangaReader(
 
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl".toHttpUrlOrNull()!!.newBuilder()
+        var url = "$baseUrl".toHttpUrlOrNull()!!.newBuilder()
         if (query.isNotEmpty()) {
             url.addPathSegments("page/$page").addQueryParameter("s", query)
         } else {
@@ -121,11 +121,19 @@ abstract class WPMangaReader(
             filters.forEach { filter ->
                 when (filter) {
                     is UrlEncoded -> filter.encode(url)
+                    // if site has project page, default value "hasProjectPage" = false
+                    is ProjectFilter -> {
+                        if (filter.toUriPart() == "project-filter-on") {
+                            url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        }
+                    }
                 }
             }
         }
         return GET("$url")
     }
+
+    open val projectPageString = "/project"
 
     override fun searchMangaParse(response: Response): MangasPage {
         if (genrelist == null)
@@ -274,14 +282,42 @@ abstract class WPMangaReader(
             get() = this.elems.asSequence().filterIndexed { i, _ -> this.state[i].state }
     }
 
+    open val hasProjectPage = false
+
     // filters
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
-        GenreFilter(),
-        StatusFilter(),
-        TypesFilter(),
-        OrderByFilter(),
+    override fun getFilterList(): FilterList {
+        val filters = mutableListOf<Filter<*>>(
+            Filter.Header("NOTE: Ignored if using text search!"),
+            GenreFilter(),
+            StatusFilter(),
+            TypesFilter(),
+            OrderByFilter(),
+        )
+        if (hasProjectPage) {
+            filters.addAll(
+                mutableListOf<Filter<*>>(
+                    Filter.Separator(),
+                    Filter.Header("NOTE: cant be used with other filter!"),
+                    Filter.Header("$name Project List page"),
+                    ProjectFilter(),
+                )
+            )
+        }
+        return FilterList(filters)
+    }
+
+    protected class ProjectFilter : UriPartFilter(
+        "Filter Project",
+        arrayOf(
+            Pair("Show all manga", ""),
+            Pair("Show only project manga", "project-filter-on")
+        )
     )
+
+    open class UriPartFilter(displayName: String, private val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 
     private fun GenreFilter() = object : MultiSelect<LabeledValue>("Genre", getGenreList()), UrlEncoded {
         override fun encode(url: HttpUrl.Builder) {

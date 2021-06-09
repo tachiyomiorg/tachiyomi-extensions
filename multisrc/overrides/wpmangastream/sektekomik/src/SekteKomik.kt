@@ -34,4 +34,6 @@ class SekteKomik : WPMangaStream("Sekte Komik", "https://sektekomik.com", "id") 
 
         return GET(page.imageUrl!!, newHeaders)
     }
+
+    override val hasProjectPage = true
 }

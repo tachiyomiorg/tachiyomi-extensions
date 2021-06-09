@@ -30,4 +30,6 @@ class KomikAV : WPMangaStream(
     override fun imageRequest(page: Page): Request {
         return GET(page.imageUrl!!, headers)
     }
+
+    override val hasProjectPage = true
 }

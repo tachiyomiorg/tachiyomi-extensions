@@ -29,6 +29,9 @@ class LusciousMembersFR : Luscious("Luscious (Members)", "https://members.luscio
 class LusciousMembersZH : Luscious("Luscious (Members)", "https://members.luscious.net", "zh")
 class LusciousMembersKO : Luscious("Luscious (Members)", "https://members.luscious.net", "ko")
 class LusciousMembersOTHER : Luscious("Luscious (Members)", "https://members.luscious.net", "other")
-class LusciousMembersPT : Luscious("Luscious (Members)", "https://members.luscious.net", "pt")
+class LusciousMembersPT : Luscious("Luscious (Members)", "https://members.luscious.net", "pt-BR") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 6917849530594229844
+}
 class LusciousMembersTH : Luscious("Luscious (Members)", "https://members.luscious.net", "th")
 class LusciousMembersALL : Luscious("Luscious (Members)", "https://members.luscious.net", "all")
