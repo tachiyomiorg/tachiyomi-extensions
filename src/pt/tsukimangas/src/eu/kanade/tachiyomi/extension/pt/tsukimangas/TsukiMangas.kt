@@ -98,6 +98,10 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (query.startsWith(PREFIX_ID_SEARCH) && query.matches(ID_SEARCH_PATTERN)) {
+            return mangaDetailsApiRequest(query.removePrefix(PREFIX_ID_SEARCH))
+        }
+
         val newHeaders = headersBuilder()
             .set("Referer", "$baseUrl/lista-completa")
             .build()
@@ -156,6 +160,12 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
+        if (response.request.url.toString().contains("/mangas/")) {
+            val manga = mangaDetailsParse(response)
+
+            return MangasPage(listOf(manga), hasNextPage = false)
+        }
+
         val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
 
         val searchResults = result.data.map(::searchMangaItemParse)
@@ -175,21 +185,17 @@ class TsukiMangas : HttpSource() {
 
     // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return client.newCall(mangaDetailsApiRequest(manga))
+        return client.newCall(mangaDetailsApiRequest(manga.url))
             .asObservableSuccess()
             .map { response ->
                 mangaDetailsParse(response).apply { initialized = true }
             }
     }
 
-    private fun mangaDetailsApiRequest(manga: SManga): Request {
-        val newHeaders = headersBuilder()
-            .set("Referer", baseUrl + manga.url)
-            .build()
+    private fun mangaDetailsApiRequest(mangaUrl: String): Request {
+        val mangaId = mangaUrl.substringAfter("obra/").substringBefore("/")
 
-        val mangaId = manga.url.substringAfter("obra/").substringBefore("/")
-
-        return GET("$baseUrl/api/v2/mangas/$mangaId", newHeaders)
+        return GET("$baseUrl/api/v2/mangas/$mangaId", headers)
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
@@ -211,6 +217,7 @@ class TsukiMangas : HttpSource() {
         author = mangaDto.author.orEmpty()
         artist = mangaDto.artist.orEmpty()
         genre = mangaDto.genres.joinToString { it.genre }
+        url = "/obra/${mangaDto.id}/${mangaDto.url}"
     }
 
     override fun chapterListRequest(manga: SManga): Request {
@@ -460,5 +467,8 @@ class TsukiMangas : HttpSource() {
         private const val EMPTY_COVER = "/ext/errorcapa.jpg"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
+
+        const val PREFIX_ID_SEARCH = "id:"
+        private val ID_SEARCH_PATTERN = "^id:(\\d+)$".toRegex()
     }
 }
