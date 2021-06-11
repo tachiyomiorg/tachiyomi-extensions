@@ -62,6 +62,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
             addQueryParameter("order[updatedAt]", "desc")
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
             addQueryParameter("offset", helper.getMangaListOffset(page))
+            addQueryParameter("includes[]", MDConstants.coverArt)
             if (preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), false)) {
                 addQueryParameter("contentRating[]", "safe")
             }
@@ -105,26 +106,11 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         val mangaListDto = helper.json.decodeFromString<MangaListDto>(response.body!!.string())
         val hasMoreResults = mangaListDto.limit + mangaListDto.offset < mangaListDto.total
 
-        val idsAndCoverIds = mangaListDto.results.mapNotNull { mangaDto ->
-            val mangaId = mangaDto.data.id
-            val coverId = mangaDto.relationships.firstOrNull { relationshipDto ->
-                relationshipDto.type.equals("cover_art", true)
-            }?.id
-            if (coverId == null) {
-                null
-            } else {
-                Pair(mangaId, coverId)
-            }
-        }.toMap()
-
-        val results = runCatching {
-            helper.getBatchCoversUrl(idsAndCoverIds, client)
-        }.getOrNull()!!
-
-        val mangaList = mangaListDto.results.map {
-            helper.createBasicManga(it).apply {
-                thumbnail_url = results[url.substringAfter("/manga/")]
-            }
+        val mangaList = mangaListDto.results.map { mangaDto ->
+            val fileName = mangaDto.relationships.firstOrNull { relationshipDto ->
+                relationshipDto.type.equals(MDConstants.coverArt, true)
+            }?.attributes?.fileName
+            helper.createBasicManga(mangaDto, fileName)
         }
 
         return MangasPage(mangaList, hasMoreResults)
@@ -141,6 +127,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         if (query.startsWith(MDConstants.prefixIdSearch)) {
             val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
                 .addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
+                .addQueryParameter("includes[]", MDConstants.coverArt)
             return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
         }
 
@@ -149,6 +136,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         tempUrl.apply {
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
             addQueryParameter("offset", (helper.getMangaListOffset(page)))
+            addQueryParameter("includes[]", MDConstants.coverArt)
             val actualQuery = query.replace(MDConstants.whitespaceRegex, " ")
             if (actualQuery.isNotBlank()) {
                 addQueryParameter("title", actualQuery)
@@ -174,23 +162,28 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        //remove once redirect for /manga is fixed
+        // remove once redirect for /manga is fixed
         return GET("${baseUrl}${manga.url.replace("manga", "title")}", headers)
     }
 
     /**
      * get manga details url throws exception if the url is the old format so people migrate
      */
-    fun apiMangaDetailsRequest(manga: SManga): Request {
+    private fun apiMangaDetailsRequest(manga: SManga): Request {
         if (!helper.containsUuid(manga.url.trim())) {
             throw Exception("Migrate this manga from MangaDex to MangaDex to update it")
         }
-        return GET("${MDConstants.apiUrl}${manga.url}", headers, CacheControl.FORCE_NETWORK)
+        val url = (MDConstants.apiUrl + manga.url).toHttpUrl().newBuilder().apply {
+            addQueryParameter("includes[]", MDConstants.coverArt)
+            addQueryParameter("includes[]", MDConstants.author)
+            addQueryParameter("includes[]", MDConstants.artist)
+        }.build().toString()
+        return GET(url, headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = helper.json.decodeFromString<MangaDto>(response.body!!.string())
-        return helper.createManga(manga, client, lang.substringBefore("-"))
+        return helper.createManga(manga, lang.substringBefore("-"))
     }
 
     // Chapter list section
@@ -247,11 +240,9 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
                 hasMoreResults = (limit + offset) < newChapterList.total
             }
 
-            val groupMap = helper.createGroupMap(chapterListResults.toList(), client)
-
             val now = Date().time
 
-            return chapterListResults.map { helper.createChapter(it, groupMap) }
+            return chapterListResults.map { helper.createChapter(it) }
                 .filter { it.date_upload <= now && "MangaPlus" != it.scanlator }
         } catch (e: Exception) {
             Log.e("MangaDex", "error parsing chapter list", e)
