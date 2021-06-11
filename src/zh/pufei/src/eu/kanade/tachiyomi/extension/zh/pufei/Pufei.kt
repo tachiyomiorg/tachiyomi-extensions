@@ -99,7 +99,7 @@ class Pufei : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.book-detail div.cont-list")
+        val infoElement = document.select("div.book-detail")
 
         val manga = SManga.create()
         manga.description = infoElement.select("div#bookIntro > p").text().trim()
