@@ -516,7 +516,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
 
     companion object {
         private const val DEFAULT_SITE = "18comic.vip"
-        const val PREFIX_ID_SEARCH = "id:"
+        const val PREFIX_ID_SEARCH = "JM:"
 
         private const val BLOCK_PREF_TITLE = "屏蔽词列表"
         private const val BLOCK_PREF_DEFAULT = "// 例如 \"YAOI cos 扶他 毛絨絨 獵奇 韩漫 韓漫\", " +
@@ -542,7 +542,7 @@ class Jinmantiantang : ConfigurableSource, ParsedHttpSource() {
             "中国大陆总站", "中国大陆分流1", "中国大陆分流2"
         )
         private val SITE_ENTRIES_ARRAY_VALUE = (0..4).map { i -> i.toString() }.toTypedArray()
-        // List is based on https://cm365.club/7MJX9t
+        // List is based on http://jmcomic.xyz
         // Please also update AndroidManifest
         private val SITE_ENTRIES_ARRAY = arrayOf(
             DEFAULT_SITE, "18comic.org",
