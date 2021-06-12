@@ -17,7 +17,7 @@ import okhttp3.Response
 import rx.Observable
 import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 open class HomeHeroScans : HttpSource() {
 
