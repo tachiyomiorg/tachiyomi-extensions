@@ -171,7 +171,7 @@ abstract class NyaHentai(
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.isNotBlank()) {
             // Normal search
-            return GET("$baseUrl/s/${query}_p$page.html", headers)
+            return GET("$baseUrl/search/q_$query $nyaLang/page/$page", headers)
         } else {
             val type = filters.filterIsInstance<TypeFilter>()
                 .joinToString("") {
