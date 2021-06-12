@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.ru.mangahub
 
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -8,11 +7,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -26,12 +30,11 @@ open class Mangahub : ParsedHttpSource() {
 
     override val supportsLatest = true
 
-    private val rateLimitInterceptor = RateLimitInterceptor(2)
-
-    private val jsonParser = JsonParser()
-
     override val client: OkHttpClient = network.client.newBuilder()
-        .addNetworkInterceptor(rateLimitInterceptor).build()
+        .addNetworkInterceptor(RateLimitInterceptor(2))
+        .build()
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/explore?filter[sort]=rating&filter[dateStart][left_number]=1900&filter[dateStart][right_number]=2099&page=$page", headers)
@@ -114,25 +117,25 @@ open class Mangahub : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-        val chapInfo = document.select("reader").attr("data-store").replace("&quot;", "\"").replace("\\/", "/")
-        val chapter = jsonParser.parse(chapInfo).asJsonObject
-        val scans = chapter["scans"].asJsonArray
+        val chapInfo = document.select("reader")
+            .attr("data-store")
+            .replace("&quot;", "\"")
+            .replace("\\/", "/")
+        val chapter = json.parseToJsonElement(chapInfo).jsonObject
 
-        val pages = mutableListOf<Page>()
-        scans.mapIndexed { i, page ->
-            pages.add(Page(i, "", "https:${page.asJsonObject.get("src").asString}"))
+        return chapter["scans"]!!.jsonArray.mapIndexed { i, jsonEl ->
+            Page(i, "", "https:" + jsonEl.jsonObject["src"]!!.jsonPrimitive.content)
         }
-
-        return pages
     }
 
     override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
-        val imgHeader = Headers.Builder().apply {
-            add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
-            add("Referer", baseUrl)
-        }.build()
+        val imgHeader = Headers.Builder()
+            .add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64)")
+            .add("Referer", baseUrl)
+            .build()
+
         return GET(page.imageUrl!!, imgHeader)
     }
 }

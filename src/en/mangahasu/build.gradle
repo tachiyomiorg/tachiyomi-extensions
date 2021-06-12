@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'Mangahasu'
     pkgNameSuffix = 'en.mangahasu'
     extClass = '.Mangahasu'
-    extVersionCode = 11
+    extVersionCode = 12
     libVersion = '1.2'
 }
 
