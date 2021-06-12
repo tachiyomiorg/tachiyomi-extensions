@@ -256,7 +256,7 @@ abstract class NyaHentai(
         "Type",
         arrayOf(
             Pair("Tag", "tag"),
-            Pair("Parody", "a"),
+            Pair("Parody", "parody"),
             Pair("Character", "character"),
             Pair("Artist", "artist"),
             Pair("Group", "group")
