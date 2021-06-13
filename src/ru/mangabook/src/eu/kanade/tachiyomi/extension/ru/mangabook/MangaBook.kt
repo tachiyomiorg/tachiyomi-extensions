@@ -125,7 +125,8 @@ class MangaBook : ParsedHttpSource() {
         val rawCategory = infoElement.select(".vis:contains(Жанр (вид)) span.label").text()
         val category = when {
             rawCategory == "Веб-Манхва" -> "Манхва"
-            else -> rawCategory
+            rawCategory.isNotBlank() -> rawCategory
+            else -> "Манхва"
         }
         manga.genre = infoElement.select(".vis:contains(Категории) > a").map { it.text() }.plusElement(category).joinToString { it.trim() }
         manga.description = infoElement.select(".fdesc.slice-this").text()
