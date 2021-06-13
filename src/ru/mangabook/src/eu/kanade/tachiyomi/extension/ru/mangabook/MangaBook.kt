@@ -117,11 +117,15 @@ class MangaBook : ParsedHttpSource() {
         manga.thumbnail_url = infoElement.select("img.img-responsive").first().attr("src")
         manga.author = infoElement.select(".vis:contains(Автор) > a").text()
         manga.artist = infoElement.select(".vis:contains(Художник) > a").text()
-        manga.status = when (infoElement.select(".vis:contains(Статус) span.label").text()) {
-            "Сейчас издаётся" -> SManga.ONGOING
-            "Изданное" -> SManga.COMPLETED
-            else -> SManga.UNKNOWN
-        }
+        manga.status = if (document.select(".fheader h2").text() == "Чтение заблокировано") {
+            SManga.LICENSED
+        } else
+            when (infoElement.select(".vis:contains(Статус) span.label").text()) {
+                "Сейчас издаётся" -> SManga.ONGOING
+                "Изданное" -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
+
         val rawCategory = infoElement.select(".vis:contains(Жанр (вид)) span.label").text()
         val category = when {
             rawCategory == "Веб-Манхва" -> "Манхва"
