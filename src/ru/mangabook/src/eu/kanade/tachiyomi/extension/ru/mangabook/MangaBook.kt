@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.ru.mangabook
 
-import com.github.salomonbrys.kotson.forEach
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -10,6 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -18,25 +18,37 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class MangaBook : ParsedHttpSource() {
+    // Info
     override val name = "MangaBook"
-
     override val baseUrl = "https://mangabook.org"
-
     override val lang = "ru"
-
     override val supportsLatest = true
-
+    override val client: OkHttpClient = network.cloudflareClient
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
-
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
+        .add("Accept", "image/webp,*/*;q=0.8")
         .add("Referer", baseUrl)
 
+    // Popular
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/filterList?page=$page&ftype[]=0&status[]=0&sortBy=rate", headers)
-
+    override fun popularMangaNextPageSelector() = "a.page-link[rel=next]"
+    override fun popularMangaSelector() = "article.short .short-in"
+    override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
+        element.select(".sh-desc a").first().let {
+            setUrlWithoutDomain(it.attr("href"))
+            title = it.select("div.sh-title").text().split(" / ").last()
+        }
+        thumbnail_url = element.select(".short-poster.img-box > img").attr("src")
+    }
+    // Latest
     override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
+    // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = if (query.isNotBlank()) {
             "$baseUrl/search-ajax/?query=$query"
@@ -54,31 +66,12 @@ class MangaBook : ParsedHttpSource() {
         return GET(url, headers)
     }
 
-    override fun popularMangaSelector() = "article.short .short-in"
-
-    override fun latestUpdatesSelector() = popularMangaSelector()
-
+    override fun searchMangaNextPageSelector() = throw Exception("Not Used")
+    override fun searchMangaSelector(): String = throw Exception("Not Used")
+    override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not Used")
     override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not Used")
 
-    override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        element.select(".sh-desc a").first().let {
-            setUrlWithoutDomain(it.attr("href"))
-            title = it.select("div.sh-title").text().split(" / ").last()
-        }
-        thumbnail_url = element.select(".short-poster.img-box > img").attr("abs:src")
-    }
-
-    override fun latestUpdatesFromElement(element: Element): SManga =
-        popularMangaFromElement(element)
-
-    override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not Used")
-
-    override fun popularMangaNextPageSelector() = "a.page-link[rel=next]"
-
-    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
-
-    override fun searchMangaNextPageSelector() = throw Exception("Not Used")
-
+    // Details
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("article.full .fmid").first()
         val manga = SManga.create()
@@ -89,24 +82,25 @@ class MangaBook : ParsedHttpSource() {
         return manga
     }
 
+    // Chapters
     override fun chapterListSelector(): String = ".chapters li:not(.volume )"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val link = element.select("h5 a")
         name = link.text().trim()
         chapter_number = name.substringAfter("Глава №").substringBefore(":").trim().toFloat()
-        setUrlWithoutDomain(link.attr("abs:href") + "/1")
+        setUrlWithoutDomain(link.attr("href") + "/1")
         date_upload = parseDate(element.select(".date-chapter-title-rtl").text().trim())
     }
     private fun parseDate(date: String): Long {
         return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
     }
-
+    // Pages
     override fun pageListParse(document: Document): List<Page> {
         return document.select(".reader-images img.img-responsive").mapIndexed { i, img ->
-            Page(i, "", img.attr("abs:data-src").replace(" ", ""))
+            Page(i, "", img.attr("data-src"))
         }
     }
-
+    // Filters
     private class Genre(name: String, val id: String) : Filter.CheckBox(name) {
         override fun toString(): String {
             return name
@@ -119,10 +113,6 @@ class MangaBook : ParsedHttpSource() {
         GenreList(getGenreList())
     )
 
-    /*  [...document.querySelectorAll(".categories .item")]
-    *     .map(el => `Genre("${el.textContent.trim()}", "${el.getAttribute('href')}")`).join(',\n')
-    *   on https://manga-online.biz/genre/all/
-    */
     private fun getGenreList() = arrayOf(
         Genre("Все", "all"),
         Genre("Боевик", "boevik"),
@@ -172,6 +162,4 @@ class MangaBook : ParsedHttpSource() {
     )
 
     override fun imageUrlParse(document: Document) = throw Exception("Not Used")
-
-    override fun searchMangaSelector(): String = throw Exception("Not Used")
 }
