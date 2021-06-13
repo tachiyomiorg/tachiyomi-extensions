@@ -18,13 +18,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.github.salomonbrys.kotson.fromJson
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
-import com.google.gson.Gson
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -36,6 +29,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -46,6 +44,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.text.ParseException
@@ -65,6 +64,8 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     override val lang = "fr"
 
     override val supportsLatest = true
+
+    private val json: Json by injectLazy()
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -173,7 +174,9 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun popularMangaNextPageSelector(): String? = null
+
     override fun popularMangaSelector() = "#top_mangas_week li > span"
+
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         element.select("a").first().let {
@@ -201,10 +204,10 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun latestUpdatesNextPageSelector(): String? = null
-    override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
-    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    private val gson = Gson()
+    override fun latestUpdatesSelector() = "#chapters > div > h3.text-truncate"
+
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -227,20 +230,22 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
                 .build()
 
             try {
-                return client.newCall(POST("$baseUrl/live-search/", searchHeaders, formBody)).execute().use { response ->
-                    if (!response.isSuccessful) throw Exception("Unexpected code $response")
+                val searchRequest = POST("$baseUrl/live-search/", searchHeaders, formBody)
+                val searchResponse = client.newCall(searchRequest).execute()
 
-                    val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
-
-                    if (jsonObject.asJsonArray.size() === 0) {
-                        Log.d("japscan", "Search not returning anything, using duckduckgo")
-
-                        throw Exception("No data")
-                    }
-
-                    return response.request
+                if (!searchResponse.isSuccessful) {
+                    throw Exception("Unexpected code ${searchResponse.code}")
                 }
-            } finally {
+
+                val jsonResult = json.parseToJsonElement(searchResponse.body!!.string()).jsonArray
+
+                if (jsonResult.isEmpty()) {
+                    Log.d("japscan", "Search not returning anything, using duckduckgo")
+                    throw Exception("No data")
+                }
+
+                return searchRequest
+            } catch (e: Exception) {
                 // Fallback to duckduckgo if the search does not return any result
                 val uri = Uri.parse("https://duckduckgo.com/lite/").buildUpon()
                     .appendQueryParameter("q", "$query site:$baseUrl/manga/")
@@ -250,42 +255,30 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    override fun searchMangaNextPageSelector(): String? = "li.page-item:last-child:not(li.active),.next_form .navbutton"
+    override fun searchMangaNextPageSelector(): String = "li.page-item:last-child:not(li.active),.next_form .navbutton"
+
     override fun searchMangaSelector(): String = "div.card div.p-2, a.result-link"
+
     override fun searchMangaParse(response: Response): MangasPage {
         if ("live-search" in response.request.url.toString()) {
-            val body = response.body!!.string()
-            val json = JsonParser().parse(body).asJsonArray
-            val mangas = json.map { jsonElement ->
-                searchMangaFromJson(jsonElement)
-            }
+            val jsonResult = json.parseToJsonElement(response.body!!.string()).jsonArray
 
-            val hasNextPage = false
+            val mangaList = jsonResult.map { jsonEl -> searchMangaFromJson(jsonEl.jsonObject) }
 
-            return MangasPage(mangas, hasNextPage)
-        } else {
-            val document = response.asJsoup()
-
-            val mangas = document.select(searchMangaSelector()).map { element ->
-                searchMangaFromElement(element)
-            }
-
-            val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
-                document.select(selector).first()
-            } != null
-
-            return MangasPage(mangas, hasNextPage)
+            return MangasPage(mangaList, hasNextPage = false)
         }
+
+        return super.searchMangaParse(response)
     }
 
     override fun searchMangaFromElement(element: Element): SManga {
-        if (element.attr("class") == "result-link") {
-            return SManga.create().apply {
+        return if (element.attr("class") == "result-link") {
+            SManga.create().apply {
                 title = element.text().substringAfter(" ").substringBefore(" | JapScan")
                 setUrlWithoutDomain(element.attr("abs:href"))
             }
         } else {
-            return SManga.create().apply {
+            SManga.create().apply {
                 thumbnail_url = element.select("img").attr("abs:src")
                 element.select("p a").let {
                     title = it.text()
@@ -295,9 +288,9 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         }
     }
 
-    private fun searchMangaFromJson(jsonElement: JsonElement): SManga = SManga.create().apply {
-        title = jsonElement["name"].string
-        url = jsonElement["url"].string
+    private fun searchMangaFromJson(jsonObj: JsonObject): SManga = SManga.create().apply {
+        title = jsonObj["name"]!!.jsonPrimitive.content
+        url = jsonObj["url"]!!.jsonPrimitive.content
     }
 
     override fun mangaDetailsParse(document: Document): SManga {
@@ -365,7 +358,7 @@ class Japscan : ConfigurableSource, ParsedHttpSource() {
         val checkNew = ArrayList<String>(pagecount)
         var maxIter = document.getElementsByTag("option").size
         var isSinglePage = false
-        if ((zjs.toLowerCase().split("new image").size - 1) == 1) {
+        if ((zjs.toLowerCase(Locale.ROOT).split("new image").size - 1) == 1) {
             isSinglePage = true
             maxIter = 1
         }

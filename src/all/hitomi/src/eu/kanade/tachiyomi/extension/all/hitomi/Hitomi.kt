@@ -2,10 +2,6 @@ package eu.kanade.tachiyomi.extension.all.hitomi
 
 import android.app.Application
 import android.content.SharedPreferences
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -16,6 +12,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -24,6 +24,7 @@ import rx.Single
 import rx.schedulers.Schedulers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.util.Locale
 import androidx.preference.CheckBoxPreference as AndroidXCheckBoxPreference
 import androidx.preference.PreferenceScreen as AndroidXPreferenceScreen
@@ -40,6 +41,8 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
     override val name = if (nozomiLang == "all") "Hitomi.la unfiltered" else "Hitomi.la"
 
     override val baseUrl = BASE_URL
+
+    private val json: Json by injectLazy()
 
     // Popular
 
@@ -271,21 +274,25 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
         return GET("$LTN_BASE_URL/galleries/${hlIdFromUrl(chapter.url)}.js")
     }
 
-    private val jsonParser = JsonParser()
-
     override fun pageListParse(response: Response): List<Page> {
-        val str = response.body!!.string()
-        val json = jsonParser.parse(str.removePrefix("var galleryinfo = "))
-        return json["files"].array.mapIndexed { i, jsonElement ->
-            val hash = jsonElement["hash"].string
-            val ext = if (jsonElement["haswebp"].string == "0" || !hitomiAlwaysWebp()) jsonElement["name"].string.split('.').last() else "webp"
-            val path = if (jsonElement["haswebp"].string == "0" || !hitomiAlwaysWebp()) "images" else "webp"
+        val jsonRaw = response.body!!.string().removePrefix("var galleryinfo = ")
+        val jsonResult = json.parseToJsonElement(jsonRaw).jsonObject
+
+        return jsonResult["files"]!!.jsonArray.mapIndexed { i, jsonEl ->
+            val jsonObj = jsonEl.jsonObject
+            val hash = jsonObj["hash"]!!.jsonPrimitive.content
+            val hasWebp = jsonObj["haswebp"]!!.jsonPrimitive.content == "0"
+            val hasAvif = jsonObj["hasavif"]!!.jsonPrimitive.content == "0"
+            val ext = if (hasWebp || !hitomiAlwaysWebp())
+                jsonObj["name"]!!.jsonPrimitive.content.substringAfterLast(".") else "webp"
+            val path = if (hasWebp || !hitomiAlwaysWebp())
+                "images" else "webp"
             val hashPath1 = hash.takeLast(1)
             val hashPath2 = hash.takeLast(3).take(2)
 
             // https://ltn.hitomi.la/reader.js
             // function make_image_element()
-            val secondSubdomain = if (jsonElement["haswebp"].string == "0" && jsonElement["hasavif"].string == "0") "b" else "a"
+            val secondSubdomain = if (hasWebp && hasAvif) "b" else "a"
 
             Page(i, "", "https://${firstSubdomainFromGalleryId(hashPath2)}$secondSubdomain.hitomi.la/$path/$hashPath1/$hashPath2/$hash.$ext")
         }
