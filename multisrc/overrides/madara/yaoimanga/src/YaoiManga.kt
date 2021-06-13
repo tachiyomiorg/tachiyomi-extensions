@@ -7,7 +7,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 @Nsfw
-class YaoiManga : Madara("Yaoi Manga", "https://yaoi.mobi", "en") {
+class YaoiManga : Madara("Yaoi.mobi", "https://yaoi.mobi", "en") {
     private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
