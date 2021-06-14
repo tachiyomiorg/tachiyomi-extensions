@@ -74,7 +74,7 @@ class SaikaiScan : HttpSource() {
     private fun popularMangaFromObject(obj: SaikaiScanStoryDto): SManga = SManga.create().apply {
         title = obj.title
         thumbnail_url = "$IMAGE_SERVER_URL/${obj.image}"
-        url = "/comics/${obj.slug}/"
+        url = "/comics/${obj.slug}"
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -153,10 +153,7 @@ class SaikaiScan : HttpSource() {
     }
 
     private fun storyDetailsRequest(manga: SManga): Request {
-        // Maintain compatibility with the old URL for backup.
-        val storySlug = manga.url
-            .substringBeforeLast("/")
-            .substringAfterLast("/")
+        val storySlug = manga.url.substringAfterLast("/")
 
         val apiHeaders = headersBuilder()
             .add("Accept", ACCEPT_JSON)
@@ -170,15 +167,6 @@ class SaikaiScan : HttpSource() {
             .toString()
 
         return GET(apiEndpointUrl, apiHeaders)
-    }
-
-    override fun mangaDetailsRequest(manga: SManga): Request {
-        // Maintain compatibility with the old URL for backup.
-        val storyUrl = manga.url
-            .replace("/manhuas/", "/comics/")
-            .substringBeforeLast("/")
-
-        return GET(baseUrl + storyUrl, headers)
     }
 
     override fun mangaDetailsParse(response: Response): SManga = SManga.create().apply {
@@ -197,9 +185,7 @@ class SaikaiScan : HttpSource() {
     }
 
     override fun chapterListRequest(manga: SManga): Request {
-        val storySlug = manga.url
-            .substringBeforeLast("/")
-            .substringAfterLast("/")
+        val storySlug = manga.url.substringAfterLast("/")
 
         val apiHeaders = headersBuilder()
             .add("Accept", ACCEPT_JSON)
