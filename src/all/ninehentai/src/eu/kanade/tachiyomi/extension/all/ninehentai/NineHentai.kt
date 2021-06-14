@@ -25,7 +25,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import rx.Observable
-import java.util.Date
+import java.util.Calendar
 
 @Nsfw
 class NineHentai : HttpSource() {
@@ -104,7 +104,7 @@ class NineHentai : HttpSource() {
         return listOf(
             SChapter.create().apply {
                 name = "Chapter"
-                date_upload = if (time != "") { date_upload = parseChapterDate(time) } else Date().time
+                date_upload = parseChapterDate(time)
                 setUrlWithoutDomain(response.request.url.encodedPath)
             }
         )
