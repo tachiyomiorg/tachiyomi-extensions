@@ -15,7 +15,19 @@
 
                 <data
                     android:host="hitomi.la"
+                    android:pathPattern="/manga/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="hitomi.la"
+                    android:pathPattern="/doujinshi/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="hitomi.la"
                     android:pathPattern="/cg/..*"
+                    android:scheme="https" />
+                <data
+                    android:host="hitomi.la"
+                    android:pathPattern="/gamecg/..*"
                     android:scheme="https" />
             </intent-filter>
         </activity>
