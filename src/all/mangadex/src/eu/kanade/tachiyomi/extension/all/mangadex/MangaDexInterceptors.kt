@@ -1,13 +1,14 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.util.Log
-import com.google.gson.Gson
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.POST
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.internal.closeQuietly
 
@@ -33,7 +34,6 @@ class MdAtHomeReportInterceptor(
     private val headers: Headers
 ) : Interceptor {
 
-    private val gson: Gson by lazy { Gson() }
     private val mdAtHomeUrlRegex =
         Regex("""^https://[\w\d]+\.[\w\d]+\.mangadex(\b-test\b)?\.network.*${'$'}""")
 
@@ -44,21 +44,19 @@ class MdAtHomeReportInterceptor(
             val url = originalRequest.url.toString()
             if (url.contains(mdAtHomeUrlRegex)) {
                 val cachedImage = response.header("X-Cache", "") == "HIT"
-                val jsonString = gson.toJson(
-                    mapOf(
-                        "url" to url,
-                        "success" to response.isSuccessful,
-                        "bytes" to response.peekBody(Long.MAX_VALUE).bytes().size,
-                        "duration" to response.receivedResponseAtMillis - response.sentRequestAtMillis,
-                        "cached" to cachedImage,
-                    )
-                )
+                val jsonObj = buildJsonObject {
+                    put("url", url)
+                    put("success", response.isSuccessful)
+                    put("bytes", response.peekBody(Long.MAX_VALUE).bytes().size)
+                    put("duration", response.receivedResponseAtMillis - response.sentRequestAtMillis)
+                    put("cached", cachedImage)
+                }
 
                 val postResult = client.newCall(
                     POST(
                         MDConstants.atHomePostUrl,
                         headers,
-                        RequestBody.create(null, jsonString)
+                        jsonObj.toString().toRequestBody(null)
                     )
                 )
                 try {
