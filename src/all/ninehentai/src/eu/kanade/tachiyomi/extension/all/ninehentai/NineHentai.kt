@@ -236,8 +236,6 @@ class NineHentai : HttpSource() {
 
     override fun imageUrlParse(response: Response): String = throw Exception("Not Used")
 
-    override fun chapterListRequest(manga: SManga): Request = throw Exception("Not Used")
-
     override fun popularMangaParse(response: Response): MangasPage = throw Exception("Not Used")
 
     override fun latestUpdatesParse(response: Response): MangasPage = throw Exception("Not Used")
