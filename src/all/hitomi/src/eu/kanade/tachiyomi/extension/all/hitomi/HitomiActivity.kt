@@ -19,7 +19,7 @@ class HitomiActivity : Activity() {
             val id = pathSegments[1]
             val mainIntent = Intent().apply {
                 action = "eu.kanade.tachiyomi.SEARCH"
-                putExtra("query", "${Hitomi.PREFIX_ID_SEARCH}:$id")
+                putExtra("query", "${Hitomi.PREFIX_ID_SEARCH}$id")
                 putExtra("filter", packageName)
             }
 
