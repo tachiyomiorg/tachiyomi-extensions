@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.extension.all.mangadex
 import android.util.Log
 import eu.kanade.tachiyomi.extension.all.mangadex.dto.AtHomeDto
 import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaAttributesDto
 import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Page
@@ -69,16 +70,29 @@ class MangaDexHelper() {
         return Parser.unescapeEntities(intermediate, false)
     }
 
-    /**Maps dex status to tachi status
-     * abandoned and completed statuses's need addition checks with chapter info if we are to be accurate
+    /**
+     * Maps dex status to tachi status
      */
-    fun getPublicationStatus(dexStatus: String?): Int {
-        return when (dexStatus) {
+    fun getPublicationStatus(attr: MangaAttributesDto, chapters: List<String>): Int {
+        return when (attr.status) {
             null -> SManga.UNKNOWN
             "ongoing" -> SManga.ONGOING
+            "completed" -> doubleCheckChapters(attr, chapters)
             "hiatus" -> SManga.ONGOING
+            "cancelled" -> doubleCheckChapters(attr, chapters)
             else -> SManga.UNKNOWN
         }
+    }
+
+    /**
+     * if the manga is 'completed' or 'cancelled' then it'll have a lastChapter in the manga obj.
+     * if the simple list of chapters contains that lastChapter, then we can consider it completed.
+     */
+    private fun doubleCheckChapters(attr: MangaAttributesDto, chapters: List<String>): Int {
+        return if (chapters.contains(attr.lastChapter))
+            SManga.COMPLETED
+        else
+            SManga.UNKNOWN
     }
 
     fun parseDate(dateAsString: String): Long =
@@ -145,7 +159,7 @@ class MangaDexHelper() {
     /**
      * Create an SManga from json element with all details
      */
-    fun createManga(mangaDto: MangaDto, lang: String): SManga {
+    fun createManga(mangaDto: MangaDto, chapters: List<String>, lang: String): SManga {
         try {
             val data = mangaDto.data
             val attr = data.attributes
@@ -197,7 +211,7 @@ class MangaDexHelper() {
                 description = cleanString(attr.description[lang] ?: attr.description["en"] ?: "")
                 author = authors.joinToString(", ")
                 artist = artists.joinToString(", ")
-                status = getPublicationStatus(attr.status)
+                status = getPublicationStatus(attr, chapters)
                 genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {
