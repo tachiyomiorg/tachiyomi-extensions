@@ -184,7 +184,8 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
     override fun mangaDetailsParse(response: Response): SManga {
         val manga = helper.json.decodeFromString<MangaDto>(response.body!!.string())
-        return helper.createManga(manga, fetchSimpleChapterList(manga), lang.substringBefore("-"))
+        val shortLang = lang.substringBefore("-")
+        return helper.createManga(manga, fetchSimpleChapterList(manga, shortLang), shortLang)
     }
 
     /**
@@ -194,8 +195,9 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
      * @see MangaDexHelper.doubleCheckChapters
      * @see AggregateDto
      */
-    private fun fetchSimpleChapterList(manga: MangaDto): List<String> {
-        val response = client.newCall(GET("${MDConstants.apiMangaUrl}/${manga.data.id}/aggregate", headers)).execute()
+    private fun fetchSimpleChapterList(manga: MangaDto, langCode: String): List<String> {
+        val url = "${MDConstants.apiMangaUrl}/${manga.data.id}/aggregate?translatedLanguage[]=${langCode}"
+        val response = client.newCall(GET(url, headers)).execute()
         val chapters = helper.json.decodeFromString<AggregateDto>(response.body!!.string())
         return chapters.volumes.values.flatMap { it.chapters.values }.map { it.chapter }
     }
