@@ -34,7 +34,7 @@ class MangaBook : ParsedHttpSource() {
 
     // Popular
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/filterList?page=$page&ftype[]=0&status[]=0&sortBy=rate", headers)
+        GET("$baseUrl/filterList?page=$page&ftype[]=0&status[]=0&sortBy=views", headers)
     override fun popularMangaNextPageSelector() = "a.page-link[rel=next]"
     override fun popularMangaSelector() = "article.short .short-in"
     override fun popularMangaFromElement(element: Element): SManga {
@@ -57,16 +57,17 @@ class MangaBook : ParsedHttpSource() {
         val url = if (query.isNotBlank()) {
             "$baseUrl/dosearch?&query=$query"
         } else {
-            val url = "$baseUrl/filterList?page=$page&ftype[]=0&status[]=0&sortBy=rate".toHttpUrlOrNull()!!.newBuilder()
+            val url = "$baseUrl/filterList?page=$page&ftype[]=0&status[]=0".toHttpUrlOrNull()!!.newBuilder()
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is OrderBy -> {
-                        val ord = arrayOf("rate", "name", "views", "created_at")[filter.state]
+                        val ord = arrayOf("views", "rate", "name", "created_at")[filter.state]
                         url.addQueryParameter("sortBy", "$ord")
                     }
-                    is CategoryList -> filter.state.forEach { category ->
-                        if (category.state) {
-                            url.addQueryParameter("cat", category.id)
+                    is CategoryList -> {
+                        if (filter.state > 0) {
+                            val CatQ = getCategoryList()[filter.state].query
+                            url.addQueryParameter("cat", CatQ)
                         }
                     }
                     is StatusList -> filter.state.forEach { status ->
@@ -151,7 +152,7 @@ class MangaBook : ParsedHttpSource() {
     }
     // Pages
     override fun pageListParse(document: Document): List<Page> {
-        return document.select(".reader-images img.img-responsive").mapIndexed { i, img ->
+        return document.select(".reader-images img.img-responsive:not(.scan-page)").mapIndexed { i, img ->
             Page(i, "", img.attr("data-src").trim())
         }
     }
@@ -163,17 +164,17 @@ class MangaBook : ParsedHttpSource() {
 
     private class FormatList(formas: List<CheckFilter>) : Filter.Group<CheckFilter>("Тип", formas)
     private class StatusList(statuses: List<CheckFilter>) : Filter.Group<CheckFilter>("Статус", statuses)
-    private class CategoryList(categories: List<CheckFilter>) : Filter.Group<CheckFilter>("Категории", categories)
+
     override fun getFilterList() = FilterList(
         OrderBy(),
-        CategoryList(getCategoryList()),
+        CategoryList(categoriesName),
         StatusList(getStatusList()),
         FormatList(getFormatList())
     )
 
     private class OrderBy : Filter.Select<String>(
         "Сортировка",
-        arrayOf("По рейтингу", "По алфавиту", "По популярности", "По дате выхода")
+        arrayOf("По популярности", "По рейтингу", "По алфавиту", "По дате выхода")
     )
     private fun getFormatList() = listOf(
         CheckFilter("Манга", "1"),
@@ -188,77 +189,84 @@ class MangaBook : ParsedHttpSource() {
         CheckFilter("Изданное", "2")
     )
 
+    private class CategoryList(categories: Array<String>) : Filter.Select<String>("Категории", categories)
+    private data class CatUnit(val name: String, val query: String)
+    private val categoriesName = getCategoryList().map {
+        it.name
+    }.toTypedArray()
+
     private fun getCategoryList() = listOf(
-        CheckFilter("16+", "16+"),
-        CheckFilter("Арт", "art"),
-        CheckFilter("Бара", "bara"),
-        CheckFilter("Боевик", "action"),
-        CheckFilter("Боевые искусства", "combatskill"),
-        CheckFilter("В цвете", "vcvete"),
-        CheckFilter("Вампиры", "vampaires"),
-        CheckFilter("Веб", "web"),
-        CheckFilter("Вестерн", "western"),
-        CheckFilter("Гарем", "harem"),
-        CheckFilter("Гендерная интрига", "genderintrigue"),
-        CheckFilter("Героическое фэнтези", "heroic_fantasy"),
-        CheckFilter("Детектив", "detective"),
-        CheckFilter("Дзёсэй", "josei"),
-        CheckFilter("Додзинси", "doujinshi"),
-        CheckFilter("Драма", "drama"),
-        CheckFilter("Ёнкома", "yonkoma"),
-        CheckFilter("Есси", "18+"),
-        CheckFilter("Зомби", "zombie"),
-        CheckFilter("Игра", "games"),
-        CheckFilter("Инцест", "incest"),
-        CheckFilter("Исекай", "isekai"),
-        CheckFilter("Искусство", "iskusstvo"),
-        CheckFilter("Исторический", "historical"),
-        CheckFilter("Киберпанк", "cyberpunk"),
-        CheckFilter("Кодомо", "kodomo"),
-        CheckFilter("Комедия", "comedy"),
-        CheckFilter("Культовое", "iconic"),
-        CheckFilter("литРПГ", "litrpg"),
-        CheckFilter("Любовь", "love"),
-        CheckFilter("Махо-сёдзё", "maho-shojo"),
-        CheckFilter("Меха", "robots"),
-        CheckFilter("Мистика", "mystery"),
-        CheckFilter("Мужская беременность", "male-pregnancy"),
-        CheckFilter("Музыка", "music"),
-        CheckFilter("Научная фантастика", "sciencefiction"),
-        CheckFilter("Новинки", "new"),
-        CheckFilter("Омегаверс", "omegavers"),
-        CheckFilter("Перерождение", "newlife"),
-        CheckFilter("Повседневность", "humdrum"),
-        CheckFilter("Постапокалиптика", "postapocalyptic"),
-        CheckFilter("Приключения", "adventure"),
-        CheckFilter("Психология", "psychology"),
-        CheckFilter("Романтика", "romance"),
-        CheckFilter("Самураи", "samurai"),
-        CheckFilter("Сборник", "compilation"),
-        CheckFilter("Сверхъестественное", "supernatural"),
-        CheckFilter("Сёдзё", "shojo"),
-        CheckFilter("Сёдзё-ай", "maho-shojo"),
-        CheckFilter("Сёнэн", "senen"),
-        CheckFilter("Сёнэн-ай", "shonen-ai"),
-        CheckFilter("Сетакон", "setakon"),
-        CheckFilter("Сингл", "singl"),
-        CheckFilter("Сказка", "fable"),
-        CheckFilter("Сорс", "bdsm"),
-        CheckFilter("Спорт", "sport"),
-        CheckFilter("Супергерои", "superheroes"),
-        CheckFilter("Сэйнэн", "seinen"),
-        CheckFilter("Танцы", "dancing"),
-        CheckFilter("Трагедия", "tragedy"),
-        CheckFilter("Триллер", "thriller"),
-        CheckFilter("Ужасы", "horror"),
-        CheckFilter("Фантастика", "fantastic"),
-        CheckFilter("Фурри", "furri"),
-        CheckFilter("Фэнтези", "fantasy"),
-        CheckFilter("Школа", "school"),
-        CheckFilter("Эротика", "erotica"),
-        CheckFilter("Этти", "etty"),
-        CheckFilter("Юмор", "humor"),
-        CheckFilter("Юри", "yuri"),
-        CheckFilter("Яой", "yaoi")
+        CatUnit("Без категории", "not"),
+        CatUnit("16+", "16+"),
+        CatUnit("Арт", "art"),
+        CatUnit("Бара", "bara"),
+        CatUnit("Боевик", "action"),
+        CatUnit("Боевые искусства", "combatskill"),
+        CatUnit("В цвете", "vcvete"),
+        CatUnit("Вампиры", "vampaires"),
+        CatUnit("Веб", "web"),
+        CatUnit("Вестерн", "western"),
+        CatUnit("Гарем", "harem"),
+        CatUnit("Гендерная интрига", "genderintrigue"),
+        CatUnit("Героическое фэнтези", "heroic_fantasy"),
+        CatUnit("Детектив", "detective"),
+        CatUnit("Дзёсэй", "josei"),
+        CatUnit("Додзинси", "doujinshi"),
+        CatUnit("Драма", "drama"),
+        CatUnit("Ёнкома", "yonkoma"),
+        CatUnit("Есси", "18+"),
+        CatUnit("Зомби", "zombie"),
+        CatUnit("Игра", "games"),
+        CatUnit("Инцест", "incest"),
+        CatUnit("Исекай", "isekai"),
+        CatUnit("Искусство", "iskusstvo"),
+        CatUnit("Исторический", "historical"),
+        CatUnit("Киберпанк", "cyberpunk"),
+        CatUnit("Кодомо", "kodomo"),
+        CatUnit("Комедия", "comedy"),
+        CatUnit("Культовое", "iconic"),
+        CatUnit("литРПГ", "litrpg"),
+        CatUnit("Любовь", "love"),
+        CatUnit("Махо-сёдзё", "maho-shojo"),
+        CatUnit("Меха", "robots"),
+        CatUnit("Мистика", "mystery"),
+        CatUnit("Мужская беременность", "male-pregnancy"),
+        CatUnit("Музыка", "music"),
+        CatUnit("Научная фантастика", "sciencefiction"),
+        CatUnit("Новинки", "new"),
+        CatUnit("Омегаверс", "omegavers"),
+        CatUnit("Перерождение", "newlife"),
+        CatUnit("Повседневность", "humdrum"),
+        CatUnit("Постапокалиптика", "postapocalyptic"),
+        CatUnit("Приключения", "adventure"),
+        CatUnit("Психология", "psychology"),
+        CatUnit("Романтика", "romance"),
+        CatUnit("Самураи", "samurai"),
+        CatUnit("Сборник", "compilation"),
+        CatUnit("Сверхъестественное", "supernatural"),
+        CatUnit("Сёдзё", "shojo"),
+        CatUnit("Сёдзё-ай", "maho-shojo"),
+        CatUnit("Сёнэн", "senen"),
+        CatUnit("Сёнэн-ай", "shonen-ai"),
+        CatUnit("Сетакон", "setakon"),
+        CatUnit("Сингл", "singl"),
+        CatUnit("Сказка", "fable"),
+        CatUnit("Сорс", "bdsm"),
+        CatUnit("Спорт", "sport"),
+        CatUnit("Супергерои", "superheroes"),
+        CatUnit("Сэйнэн", "seinen"),
+        CatUnit("Танцы", "dancing"),
+        CatUnit("Трагедия", "tragedy"),
+        CatUnit("Триллер", "thriller"),
+        CatUnit("Ужасы", "horror"),
+        CatUnit("Фантастика", "fantastic"),
+        CatUnit("Фурри", "furri"),
+        CatUnit("Фэнтези", "fantasy"),
+        CatUnit("Школа", "school"),
+        CatUnit("Эротика", "erotica"),
+        CatUnit("Этти", "etty"),
+        CatUnit("Юмор", "humor"),
+        CatUnit("Юри", "yuri"),
+        CatUnit("Яой", "yaoi")
     )
 }
