@@ -77,9 +77,8 @@ class MangaDexHelper() {
         return when (attr.status) {
             null -> SManga.UNKNOWN
             "ongoing" -> SManga.ONGOING
-            "completed" -> doubleCheckChapters(attr, chapters)
+            "completed", "cancelled" -> doubleCheckChapters(attr, chapters)
             "hiatus" -> SManga.ONGOING
-            "cancelled" -> doubleCheckChapters(attr, chapters)
             else -> SManga.UNKNOWN
         }
     }
