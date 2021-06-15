@@ -44,15 +44,15 @@ class Dmzj : ConfigurableSource, HttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "动漫之家"
-    override val baseUrl = "https://m.dmzj1.com"
-    private val v3apiUrl = "https://v3api.dmzj1.com"
-    private val v3ChapterApiUrl = "https://nnv3api.dmzj1.com"
+    override val baseUrl = "https://m.dmzj.com"
+    private val v3apiUrl = "https://v3api.dmzj.com"
+    private val v3ChapterApiUrl = "https://nnv3api.dmzj.com"
     // v3api now shutdown the functionality to fetch manga detail and chapter list, so move these logic to v4api
-    private val v4apiUrl = "https://nnv4api.dmzj1.com" // https://v4api.dmzj1.com
+    private val v4apiUrl = "https://nnv4api.dmzj.com" // https://v4api.dmzj.com
     private val apiUrl = "https://api.dmzj.com"
-    private val oldPageListApiUrl = "https://api.m.dmzj1.com"
-    private val webviewPageListApiUrl = "https://m.dmzj1.com/chapinfo"
-    private val imageCDNUrl = "https://images.dmzj1.com"
+    private val oldPageListApiUrl = "https://api.m.dmzj.com"
+    private val webviewPageListApiUrl = "https://m.dmzj.com/chapinfo"
+    private val imageCDNUrl = "https://images.dmzj.com"
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
         "https:$url"
@@ -87,7 +87,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
         .build()
 
     override fun headersBuilder() = Headers.Builder().apply {
-        set("Referer", "https://www.dmzj1.com/")
+        set("Referer", "https://www.dmzj.com/")
         set(
             "User-Agent",
             "Mozilla/5.0 (Linux; Android 10) " +
@@ -203,7 +203,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query != "") {
-            val uri = Uri.parse("http://s.acg.dmzj1.com/comicsum/search.php").buildUpon()
+            val uri = Uri.parse("http://s.acg.dmzj.com/comicsum/search.php").buildUpon()
             uri.appendQueryParameter("s", query)
             return GET(uri.toString())
         } else {
@@ -365,7 +365,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
             val response = client.newCall(GET("$webviewPageListApiUrl/${chapter.url}.html", headers)).execute()
             Observable.just(pageListParse(response))
         } catch (e: Exception) {
-            // api.m.dmzj1.com
+            // api.m.dmzj.com
             val response = client.newCall(GET("$oldPageListApiUrl/comic/chapter/${chapter.url}.html", headers)).execute()
             Observable.just(pageListParse(response))
         } catch (e: Exception) {
@@ -396,7 +396,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
                 val obj = JSONObject(responseBody)
                 obj.getJSONObject("chapter").getJSONArray("page_url")
             } catch (e: org.json.JSONException) {
-                // JSON data from api.m.dmzj1.com may be incomplete, extract page_url list using regex
+                // JSON data from api.m.dmzj.com may be incomplete, extract page_url list using regex
                 val extractPageList = extractPageListRegex.find(responseBody)!!.value
                 JSONObject("{$extractPageList}").getJSONArray("page_url")
             }
@@ -405,10 +405,10 @@ class Dmzj : ConfigurableSource, HttpSource() {
         }
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
-            // Seems image urls from webpage api and api.m.dmzj1.com may be URL encoded multiple times
+            // Seems image urls from webpage api and api.m.dmzj.com may be URL encoded multiple times
             val url = URLDecoder.decode(URLDecoder.decode(arr.getString(i), "UTF-8"), "UTF-8")
                 .replace("http:", "https:")
-                .replace("dmzj.com", "dmzj1.com")
+                .replace("dmzj1.com", "dmzj.com")
             ret.add(Page(i, "", url))
         }
         return ret
