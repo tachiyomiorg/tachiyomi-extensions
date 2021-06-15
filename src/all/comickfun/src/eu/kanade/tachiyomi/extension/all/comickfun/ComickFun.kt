@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -117,7 +118,7 @@ abstract class ComickFun(override val lang: String, private val comickFunLang: S
         if (response.code == 204)
             return noResults
         return json.decodeFromString(
-            deserializer = deepSelectDeserializer<List<SManga>>("data"),
+            deserializer = deepSelectDeserializer<List<SManga>>("data", tDeserializer = ListSerializer(deepSelectDeserializer("md_comics"))),
             response.body!!.string()
         ).let { MangasPage(it, true) }
     }
