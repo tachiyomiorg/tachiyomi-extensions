@@ -68,7 +68,7 @@ open class HomeHeroScans : HttpSource() {
                 genre = jsonObj["genre"]!!.jsonPrimitive.content
                 title = jsonObj["title"]!!.jsonPrimitive.content
                 thumbnail_url = baseUrl + jsonObj["cover"]!!.jsonPrimitive.content
-                url =  "/series?series=" + entry.key
+                url = "/series?series=" + entry.key
                 status = SManga.ONGOING
             }
         }
@@ -173,7 +173,7 @@ open class HomeHeroScans : HttpSource() {
             }
         }.map { numpages ->
             (0 until numpages).toList().map {
-                Page(it, "", "https://raw.githubusercontent.com/kbhuynh/mhh-chapters/master/$series/$chapternum/$it.png")
+                Page(it, "", "$baseUrl/api/image?key=$series/$chapternum/webp/$it.webp")
             }
         }
     }
