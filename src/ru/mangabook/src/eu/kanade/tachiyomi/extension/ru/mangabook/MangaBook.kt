@@ -142,7 +142,7 @@ class MangaBook : ParsedHttpSource() {
     override fun chapterListSelector(): String = ".chapters li:not(.volume )"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val link = element.select("h5 a")
-        name = link.text()
+        name = element.attr("class").substringAfter("volume-") + ". " + link.text()
         chapter_number = name.substringAfter("Глава №").substringBefore(":").toFloat()
         setUrlWithoutDomain(link.attr("href") + "/1")
         date_upload = parseDate(element.select(".date-chapter-title-rtl").text().trim())
