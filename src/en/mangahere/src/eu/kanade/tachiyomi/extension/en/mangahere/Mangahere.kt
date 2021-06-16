@@ -329,7 +329,11 @@ class Mangahere : ParsedHttpSource() {
     private val types = hashMapOf(
         "Japanese Manga" to 1,
         "Korean Manhwa" to 2,
-        "Other Manga" to 4,
+        "Chinese Manhua" to 3,
+        "European Manga" to 4,
+        "American Manga" to 5,
+        "Hong Kong Manga" to 6,
+        "Other Manga" to 7,
         "Any" to 0
     )
 
@@ -371,6 +375,7 @@ class Mangahere : ParsedHttpSource() {
         Genre("Smut", 33),
         Genre("Mecha", 34),
         Genre("Shotacon", 35),
-        Genre("Lolicon", 36)
+        Genre("Lolicon", 36),
+        Genre("Webtoons", 37)
     )
 }
