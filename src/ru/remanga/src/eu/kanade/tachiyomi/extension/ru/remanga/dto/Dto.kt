@@ -25,8 +25,8 @@ data class LibraryDto(
     val en_name: String,
     val rus_name: String,
     val dir: String,
-    val issue_year: Int,
-    val genres: List<GenresDto>,
+//    val issue_year: Int,
+    val genres: List<GenresDto> = emptyList(),
     val img: ImgDto
 )
 
