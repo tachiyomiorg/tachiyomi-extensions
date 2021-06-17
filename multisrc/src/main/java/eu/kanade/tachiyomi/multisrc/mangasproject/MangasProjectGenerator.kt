@@ -9,12 +9,12 @@ class MangasProjectGenerator : ThemeSourceGenerator {
 
     override val themeClass = "MangasProject"
 
-    override val baseVersionCode: Int = 4
+    override val baseVersionCode: Int = 6
 
     override val sources = listOf(
-        SingleLang("Leitor.net", "https://leitor.net", "pt-BR", className = "LeitorNet", isNsfw = true, overrideVersionCode = 1),
-        SingleLang("Mangá Livre", "https://mangalivre.net", "pt-BR", className = "MangaLivre", isNsfw = true, overrideVersionCode = 1),
-        SingleLang("Toonei", "https://toonei.net", "pt-BR", isNsfw = true, overrideVersionCode = 1),
+        SingleLang("Leitor.net", "https://leitor.net", "pt-BR", className = "LeitorNet", isNsfw = true),
+        SingleLang("Mangá Livre", "https://mangalivre.net", "pt-BR", className = "MangaLivre", isNsfw = true),
+        SingleLang("Toonei", "https://toonei.net", "pt-BR", isNsfw = true),
     )
 
     companion object {

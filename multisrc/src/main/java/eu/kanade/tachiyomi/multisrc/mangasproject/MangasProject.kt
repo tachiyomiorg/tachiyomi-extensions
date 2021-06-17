@@ -62,7 +62,7 @@ abstract class MangasProject(
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val result = json.decodeFromString<MangasProjectMostReadDto>(response.body!!.string())
+        val result = response.parseAs<MangasProjectMostReadDto>()
 
         val popularMangas = result.mostRead.map(::popularMangaFromObject)
 
@@ -82,7 +82,7 @@ abstract class MangasProject(
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val result = json.decodeFromString<MangasProjectReleasesDto>(response.body!!.string())
+        val result = response.parseAs<MangasProjectReleasesDto>()
 
         val latestMangas = result.releases.map(::latestMangaFromObject)
 
@@ -111,7 +111,7 @@ abstract class MangasProject(
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val result = json.decodeFromString<MangasProjectSearchDto>(response.body!!.string())
+        val result = response.parseAs<MangasProjectSearchDto>()
 
         // If "series" have boolean false value, then it doesn't have results.
         if (result.series is JsonPrimitive)
@@ -203,24 +203,33 @@ abstract class MangasProject(
         var page = 1
 
         var chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, page)
-        var result = client.newCall(chapterListRequest).execute().let {
-            json.decodeFromString<MangasProjectChapterListDto>(it.body!!.string())
-        }
+        var chapterListResult = client.newCall(chapterListRequest).execute()
+            .parseAs<MangasProjectChapterListDto>()
 
-        if (result.chapters is JsonPrimitive)
+        if (chapterListResult.chapters is JsonPrimitive)
             return emptyList()
 
-        val chapters = mutableListOf<SChapter>()
+        val chapters = json.decodeFromJsonElement<List<MangasProjectChapterDto>>(chapterListResult.chapters)
+            .flatMap(::chaptersFromObject)
+            .toMutableList()
 
-        while (result.chapters is JsonArray) {
-            chapters += json.decodeFromJsonElement<List<MangasProjectChapterDto>>(result.chapters)
+        // If the result has less than the default per page, return right away
+        // to prevent extra API calls to get the chapters that does not exist.
+        if (chapters.size < 30) {
+            return chapters
+        }
+
+        // Otherwise, call the next pages of the API endpoint.
+        chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, ++page)
+        chapterListResult = client.newCall(chapterListRequest).execute().parseAs()
+
+        while (chapterListResult.chapters is JsonArray) {
+            chapters += json.decodeFromJsonElement<List<MangasProjectChapterDto>>(chapterListResult.chapters)
                 .flatMap(::chaptersFromObject)
                 .toMutableList()
 
             chapterListRequest = chapterListRequestPaginated(mangaUrl, mangaId, ++page)
-            result = client.newCall(chapterListRequest).execute().let {
-                json.decodeFromString(it.body!!.string())
-            }
+            chapterListResult = client.newCall(chapterListRequest).execute().parseAs()
         }
 
         return chapters
@@ -270,9 +279,8 @@ abstract class MangasProject(
         val chapterUrl = getChapterUrl(response)
 
         val apiRequest = pageListApiRequest(chapterUrl, readerToken)
-        val apiResponse = client.newCall(apiRequest).execute().let {
-            json.decodeFromString<MangasProjectReaderDto>(it.body!!.string())
-        }
+        val apiResponse = client.newCall(apiRequest).execute()
+            .parseAs<MangasProjectReaderDto>()
 
         return apiResponse.images
             .filter { it.startsWith("http") }
@@ -301,6 +309,18 @@ abstract class MangasProject(
             .build()
 
         return GET(page.imageUrl!!, newHeaders)
+    }
+
+    private inline fun <reified T> Response.parseAs(): T {
+        val responseBody = body?.string().orEmpty()
+
+        val errorResult = json.decodeFromString<MangasProjectErrorDto>(responseBody)
+
+        if (errorResult.message.isNullOrEmpty().not()) {
+            throw Exception(errorResult.message)
+        }
+
+        return json.decodeFromString(responseBody)
     }
 
     private fun String.toDate(): Long {
