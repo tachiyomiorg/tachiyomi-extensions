@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import okhttp3.CacheControl
 import okhttp3.Headers
@@ -196,9 +197,15 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
      * @see AggregateDto
      */
     private fun fetchSimpleChapterList(manga: MangaDto, langCode: String): List<String> {
-        val url = "${MDConstants.apiMangaUrl}/${manga.data.id}/aggregate?translatedLanguage[]=${langCode}"
+        val url = "${MDConstants.apiMangaUrl}/${manga.data.id}/aggregate?translatedLanguage[]=$langCode"
         val response = client.newCall(GET(url, headers)).execute()
-        val chapters = helper.json.decodeFromString<AggregateDto>(response.body!!.string())
+        val chapters: AggregateDto
+        try {
+            chapters = helper.json.decodeFromString(response.body!!.string())
+        } catch (e: SerializationException) {
+            return emptyList()
+        }
+        if (chapters.volumes.isNullOrEmpty()) return emptyList()
         return chapters.volumes.values.flatMap { it.chapters.values }.map { it.chapter }
     }
 
