@@ -48,7 +48,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
     private val v3apiUrl = "https://v3api.dmzj.com"
     private val v3ChapterApiUrl = "https://nnv3api.dmzj.com"
     // v3api now shutdown the functionality to fetch manga detail and chapter list, so move these logic to v4api
-    private val v4apiUrl = "https://nnv4api.dmzj.com" // https://v4api.dmzj.com
+    private val v4apiUrl = "https://nnv4api.dmzj1.com" // https://v4api.dmzj1.com
     private val apiUrl = "https://api.dmzj.com"
     private val oldPageListApiUrl = "https://api.m.dmzj.com"
     private val webviewPageListApiUrl = "https://m.dmzj.com/chapinfo"
