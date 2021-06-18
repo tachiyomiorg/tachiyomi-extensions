@@ -36,7 +36,7 @@ class MangaBook : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/filterList?page=$page&ftype[]=0&status[]=0&sortBy=views", headers)
     override fun popularMangaNextPageSelector() = "a.page-link[rel=next]"
-    override fun popularMangaSelector() = "article.short .short-in"
+    override fun popularMangaSelector() = "article.short:not(.shnews) .short-in"
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             element.select(".sh-desc a").first().let {
