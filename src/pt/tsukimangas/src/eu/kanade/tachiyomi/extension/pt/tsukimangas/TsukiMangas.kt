@@ -588,12 +588,12 @@ class TsukiMangas : HttpSource(), ConfigurableSource {
         private const val PASSWORD_PREF_SUMMARY = "Defina aqui a sua senha para o login."
 
         private const val ERROR_CANNOT_LOGIN = "Não foi possível realizar o login. " +
-            "Revise suas informações nas configurações."
-        private const val ERROR_CREDENTIALS_MISSING = "Login necessário. " +
-            "Defina suas credenciais de acesso nas configurações."
+            "Revise suas informações nas configurações da extensão."
+        private const val ERROR_CREDENTIALS_MISSING = "Acesso restrito a usuários cadastrados " +
+            "no site. Defina suas credenciais de acesso nas configurações da extensão."
         private const val ERROR_LOGIN_FAILED = "Não foi possível realizar o login devido " +
             "a um erro inesperado. Tente novamente mais tarde."
         private const val ERROR_INVALID_TOKEN = "Token inválido. " +
-            "Revise suas informações nas configurações."
+            "Revise suas credenciais nas configurações da extensão."
     }
 }
