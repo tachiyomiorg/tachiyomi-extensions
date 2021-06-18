@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.multisrc.madara.Madara
 import eu.kanade.tachiyomi.annotations.Nsfw
 
 @Nsfw
-class Hiperdex : Madara("Hiperdex", "https://hiperdex2.com", "en") {
+class Hiperdex : Madara("Hiperdex", "https://hiperdex.com", "en") {
     override fun getGenreList() = listOf(
         Genre("Adult", "adult"),
         Genre("Action", "action"),

@@ -85,7 +85,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Hero Manhua", "https://heromanhua.com", "en"),
         SingleLang("Heroz Scanlation", "https://herozscans.com", "en", overrideVersionCode = 1),
         SingleLang("Himera Fansub", "https://himera-fansub.com", "tr"),
-        SingleLang("Hiperdex", "https://hiperdex2.com", "en", isNsfw = true, overrideVersionCode = 3),
+        SingleLang("Hiperdex", "https://hiperdex.com", "en", isNsfw = true, overrideVersionCode = 4),
         SingleLang("Hscans", "https://hscans.com", "en", overrideVersionCode = 1),
         SingleLang("Hunter Fansub", "https://hunterfansub.com", "es", overrideVersionCode = 1),
         SingleLang("Hz Manga", "https://www.hzmangas.com", "es"),
