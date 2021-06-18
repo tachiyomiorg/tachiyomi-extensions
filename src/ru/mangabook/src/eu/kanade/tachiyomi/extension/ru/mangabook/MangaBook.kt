@@ -114,8 +114,8 @@ class MangaBook : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("article.full .fmid").first()
         val manga = SManga.create()
-        manga.title =
-            document.select(".fheader h1").text().split(" / ").sorted().first()
+        val titlestr = document.select(".fheader h1").text().split(" / ").sorted()
+        manga.title = titlestr.first()
         manga.thumbnail_url = infoElement.select("img.img-responsive").first().attr("src")
         manga.author = infoElement.select(".vis:contains(Автор) > a").text()
         manga.artist = infoElement.select(".vis:contains(Художник) > a").text()
@@ -150,7 +150,7 @@ class MangaBook : ParsedHttpSource() {
             ratingValue > 0.5 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
-        manga.description = ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + infoElement.select(".fdesc.slice-this").text()
+        manga.description = titlestr.last() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + infoElement.select(".fdesc.slice-this").text()
         return manga
     }
 
