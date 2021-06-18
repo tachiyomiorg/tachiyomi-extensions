@@ -13,4 +13,6 @@ class KumaScans : WPMangaStream("Kuma Scans (Kuma Translation)", "https://kumasc
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override val hasProjectPage = true
 }

@@ -173,12 +173,12 @@ class MangaDexFilters {
         Filter.Select<String>("Excluded tags mode", arrayOf("And", "Or"), 1)
 
     val sortableList = listOf(
-        Pair("Default (Asc/Desc doesn't matter)", ""),
+        Pair("Number of follows", ""),
         Pair("Created at", "createdAt"),
         Pair("Updated at", "updatedAt"),
     )
 
-    class SortFilter(sortables: Array<String>) : Filter.Sort("Sort", sortables, Selection(0, false))
+    class SortFilter(sortables: Array<String>) : Filter.Sort("Sort", sortables, Selection(1, false))
 
     internal fun addFiltersToUrl(url: HttpUrl.Builder, filters: FilterList): String {
         url.apply {

@@ -1,15 +1,19 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.util.Log
-import com.google.gson.Gson
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.ImageReportDto
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.POST
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.internal.closeQuietly
+import uy.kohesive.injekt.injectLazy
 
 /**
  * Rate limit requests ignore covers though
@@ -33,7 +37,8 @@ class MdAtHomeReportInterceptor(
     private val headers: Headers
 ) : Interceptor {
 
-    private val gson: Gson by lazy { Gson() }
+    private val json: Json by injectLazy()
+
     private val mdAtHomeUrlRegex =
         Regex("""^https://[\w\d]+\.[\w\d]+\.mangadex(\b-test\b)?\.network.*${'$'}""")
 
@@ -43,22 +48,24 @@ class MdAtHomeReportInterceptor(
         return chain.proceed(chain.request()).let { response ->
             val url = originalRequest.url.toString()
             if (url.contains(mdAtHomeUrlRegex)) {
-                val cachedImage = response.header("X-Cache", "") == "HIT"
-                val jsonString = gson.toJson(
-                    mapOf(
-                        "url" to url,
-                        "success" to response.isSuccessful,
-                        "bytes" to response.peekBody(Long.MAX_VALUE).bytes().size,
-                        "duration" to response.receivedResponseAtMillis - response.sentRequestAtMillis,
-                        "cached" to cachedImage,
-                    )
+                val byteSize = response.peekBody(Long.MAX_VALUE).bytes().size
+                val duration = response.receivedResponseAtMillis - response.sentRequestAtMillis
+                val cache = response.header("X-Cache", "") == "HIT"
+                val result = ImageReportDto(
+                    url,
+                    response.isSuccessful,
+                    byteSize,
+                    cache,
+                    duration
                 )
+
+                val jsonString = json.encodeToString(result)
 
                 val postResult = client.newCall(
                     POST(
                         MDConstants.atHomePostUrl,
                         headers,
-                        RequestBody.create(null, jsonString)
+                        jsonString.toRequestBody("application/json".toMediaType())
                     )
                 )
                 try {

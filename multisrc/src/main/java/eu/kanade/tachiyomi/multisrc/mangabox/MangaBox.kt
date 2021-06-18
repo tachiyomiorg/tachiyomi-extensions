@@ -225,7 +225,7 @@ abstract class MangaBox(
             }?.timeInMillis
         } else {
             try {
-                if (host.contains("manganelo", ignoreCase = true)) {
+                if (host.contains("manganato", ignoreCase = true)) {
                     // Nelo's date format
                     SimpleDateFormat("MMM dd,yy", Locale.ENGLISH).parse(date)
                 } else {

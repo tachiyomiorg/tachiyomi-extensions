@@ -11,20 +11,31 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 
 open class Cubari(override val lang: String) : HttpSource() {
 
     final override val name = "Cubari"
+
     final override val baseUrl = "https://cubari.moe"
+
     final override val supportsLatest = true
+
+    private val json: Json by injectLazy()
 
     override fun headersBuilder() = Headers.Builder().apply {
         add(
@@ -50,7 +61,8 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        return parseMangaList(JSONArray(response.body!!.string()), SortType.UNPINNED)
+        val result = json.parseToJsonElement(response.body!!.string()).jsonArray
+        return parseMangaList(result, SortType.UNPINNED)
     }
 
     override fun popularMangaRequest(page: Int): Request {
@@ -67,7 +79,8 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        return parseMangaList(JSONArray(response.body!!.string()), SortType.PINNED)
+        val result = json.parseToJsonElement(response.body!!.string()).jsonArray
+        return parseMangaList(result, SortType.PINNED)
     }
 
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
@@ -86,7 +99,8 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     private fun mangaDetailsParse(response: Response, manga: SManga): SManga {
-        return parseMangaFromApi(JSONObject(response.body!!.string()), manga)
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+        return parseManga(result, manga)
     }
 
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
@@ -139,7 +153,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                 GET("$baseUrl${chapter.url}", headers)
             }
             else -> {
-                var url = chapter.url.split("/")
+                val url = chapter.url.split("/")
                 val source = url[2]
                 val slug = url[3]
 
@@ -150,55 +164,49 @@ open class Cubari(override val lang: String) : HttpSource() {
 
     private fun directPageListParse(response: Response): List<Page> {
         val res = response.body!!.string()
-        val pages = JSONArray(res)
-        val pageArray = ArrayList<Page>()
+        val pages = json.parseToJsonElement(res).jsonArray
 
-        for (i in 0 until pages.length()) {
-            val page = if (pages.optJSONObject(i) != null) {
-                pages.getJSONObject(i).getString("src")
+        return pages.mapIndexed { i, jsonEl ->
+            val page = if (jsonEl is JsonObject) {
+                jsonEl.jsonObject["src"]!!.jsonPrimitive.content
             } else {
-                pages[i]
+                jsonEl.jsonPrimitive.content
             }
-            pageArray.add(Page(i + 1, "", page.toString()))
+
+            Page(i, "", page)
         }
-        return pageArray
     }
 
     private fun seriesJsonPageListParse(response: Response, chapter: SChapter): List<Page> {
-        val res = response.body!!.string()
-        val json = JSONObject(res)
-        val groups = json.getJSONObject("groups")
-        val groupIter = groups.keys()
-        val groupMap = HashMap<String, String>()
+        val jsonObj = json.parseToJsonElement(response.body!!.string()).jsonObject
+        val groups = jsonObj["groups"]!!.jsonObject
+        val groupMap = groups.entries
+            .map { Pair(it.value.jsonPrimitive.content, it.key) }
+            .toMap()
 
-        while (groupIter.hasNext()) {
-            val groupKey = groupIter.next()
-            groupMap[groups.getString(groupKey)] = groupKey
-        }
+        val chapters = jsonObj["chapters"]!!.jsonObject
 
-        val chapters = json.getJSONObject("chapters")
-
-        val pages = if (chapters.has(chapter.chapter_number.toString())) {
-            chapters
-                .getJSONObject(chapter.chapter_number.toString())
-                .getJSONObject("groups")
-                .getJSONArray(groupMap[chapter.scanlator])
+        val pages = if (chapters[chapter.chapter_number.toString()] != null) {
+            chapters[chapter.chapter_number.toString()]!!
+                .jsonObject["groups"]!!
+                .jsonObject[groupMap[chapter.scanlator]]!!
+                .jsonArray
         } else {
-            chapters
-                .getJSONObject(chapter.chapter_number.toInt().toString())
-                .getJSONObject("groups")
-                .getJSONArray(groupMap[chapter.scanlator])
+            chapters[chapter.chapter_number.toInt().toString()]!!
+                .jsonObject["groups"]!!
+                .jsonObject[groupMap[chapter.scanlator]]!!
+                .jsonArray
         }
-        val pageArray = ArrayList<Page>()
-        for (i in 0 until pages.length()) {
-            val page = if (pages.optJSONObject(i) != null) {
-                pages.getJSONObject(i).getString("src")
+
+        return pages.mapIndexed { i, jsonEl ->
+            val page = if (jsonEl is JsonObject) {
+                jsonEl.jsonObject["src"]!!.jsonPrimitive.content
             } else {
-                pages[i]
+                jsonEl.jsonPrimitive.content
             }
-            pageArray.add(Page(i + 1, "", page.toString()))
+
+            Page(i, "", page)
         }
-        return pageArray
     }
 
     // Stub
@@ -241,125 +249,106 @@ open class Cubari(override val lang: String) : HttpSource() {
     }
 
     private fun searchMangaParse(response: Response, query: String): MangasPage {
-        return parseSearchList(JSONObject(response.body!!.string()), query)
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+        return parseSearchList(result, query)
     }
 
     // ------------- Helpers and whatnot ---------------
 
     private fun parseChapterList(payload: String, manga: SManga): List<SChapter> {
-        val json = JSONObject(payload)
-        val groups = json.getJSONObject("groups")
-        val chapters = json.getJSONObject("chapters")
-        val seriesSlug = json.getString("slug")
+        val jsonObj = json.parseToJsonElement(payload).jsonObject
+        val groups = jsonObj["groups"]!!.jsonObject
+        val chapters = jsonObj["chapters"]!!.jsonObject
+        val seriesSlug = jsonObj["slug"]!!.jsonPrimitive.content
 
-
-        val chapterList = ArrayList<SChapter>()
-
-        val iter = chapters.keys()
-        
         val seriesPrefs = Injekt.get<Application>().getSharedPreferences("source_${id}_updateTime:$seriesSlug", 0)
         val seriesPrefsEditor = seriesPrefs.edit()
 
-        while (iter.hasNext()) {
-            val chapterNum = iter.next()
-            val chapterObj = chapters.getJSONObject(chapterNum)
-            val chapterGroups = chapterObj.getJSONObject("groups")
-            val groupsIter = chapterGroups.keys()
+        val chapterList = chapters.entries.flatMap { chapterEntry ->
+            val chapterNum = chapterEntry.key
+            val chapterObj = chapterEntry.value.jsonObject
+            val chapterGroups = chapterObj["groups"]!!.jsonObject
+            val volume = chapterObj["volume"]!!.jsonPrimitive.content
 
-            while (groupsIter.hasNext()) {
-                val groupNum = groupsIter.next()
-                val chapter = SChapter.create()
+            chapterGroups.entries.map { groupEntry ->
+                val groupNum = groupEntry.key
 
-                chapter.scanlator = groups.getString(groupNum)
-                
-                //Api for gist (and some others maybe) doesn't give a "release_date" so we will use the Manga update time. 
-                //So when new chapter comes the manga will go on top if sortinf is set to "Last Updated"
-                //Code by ivaniskandar (Implemented on CatManga extension.)
-                
-                if (chapterObj.has("release_date")) {
-                    chapter.date_upload =
-                        chapterObj.getJSONObject("release_date").getLong(groupNum) * 1000
-                } else {
-                    val currentTimeMillis = System.currentTimeMillis()
-                    if (!seriesPrefs.contains(chapterNum)) {
-                        seriesPrefsEditor.putLong(chapterNum, currentTimeMillis)
+                SChapter.create().apply {
+                    scanlator = groups[groupNum]!!.jsonPrimitive.content
+                    chapter_number = chapterNum.toFloatOrNull() ?: -1f
+
+                    date_upload = if (chapterObj["release_date"] != null) {
+                        chapterObj["release_date"]!!.jsonObject[groupNum]!!.jsonPrimitive.long * 1000
+                    } else {
+                        val currentTimeMillis = System.currentTimeMillis()
+
+                        if (!seriesPrefs.contains(chapterNum)) {
+                            seriesPrefsEditor.putLong(chapterNum, currentTimeMillis)
+                        }
+
+                        seriesPrefs.getLong(chapterNum, currentTimeMillis)
                     }
-                    chapter.date_upload = seriesPrefs.getLong(chapterNum, currentTimeMillis)
-                }
-                chapter.name = if (chapterObj.getString("volume") != "Uncategorized") {
-                    
-                    "Vol. " + chapterObj.getString("volume") + " Ch. " + chapterNum + " - " + chapterObj.getString("title")
-                    //Output "Vol. 1 Ch. 1 - Chapter Name"
-                    
-                } else {
-                
-                    "Ch. " + chapterNum + " - " + chapterObj.getString("title")
-                    //Output "Ch. 1 - Chapter Name"
-                    
-                }
-                chapter.chapter_number = chapterNum.toFloat()
-                chapter.url =
-                    if (chapterGroups.optJSONArray(groupNum) != null) {
+
+                    name = if (volume.isNotEmpty() && volume != "Uncategorized") {
+                        // Output "Vol. 1 Ch. 1 - Chapter Name"
+                        "Vol. " + chapterObj["volume"]!!.jsonPrimitive.content + " Ch. " +
+                            chapterNum + " - " + chapterObj["title"]!!.jsonPrimitive.content
+                    } else {
+                        // Output "Ch. 1 - Chapter Name"
+                        "Ch. " + chapterNum + " - " + chapterObj["title"]!!.jsonPrimitive.content
+                    }
+
+                    url = if (chapterGroups[groupNum] is JsonArray) {
                         "${manga.url}/$chapterNum/$groupNum"
                     } else {
-                        chapterGroups.getString(groupNum)
+                        chapterGroups[groupNum]!!.jsonPrimitive.content
                     }
-                chapterList.add(chapter)
+                }
             }
         }
 
         seriesPrefsEditor.apply()
-        return chapterList.reversed()
+
+        return chapterList.sortedByDescending { it.chapter_number }
     }
 
-    private fun parseMangaList(payload: JSONArray, sortType: SortType): MangasPage {
-        val mangas = ArrayList<SManga>()
-
-        for (i in 0 until payload.length()) {
-            val json = payload.getJSONObject(i)
-            val pinned = json.getBoolean("pinned")
+    private fun parseMangaList(payload: JsonArray, sortType: SortType): MangasPage {
+        val mangaList = payload.mapNotNull { jsonEl ->
+            val jsonObj = jsonEl.jsonObject
+            val pinned = jsonObj["pinned"]!!.jsonPrimitive.boolean
 
             if (sortType == SortType.PINNED && pinned) {
-                mangas.add(parseMangaFromRemoteStorage(json))
+                parseManga(jsonObj)
             } else if (sortType == SortType.UNPINNED && !pinned) {
-                mangas.add(parseMangaFromRemoteStorage(json))
+                parseManga(jsonObj)
+            } else {
+                null
             }
         }
 
-        return MangasPage(mangas, false)
+        return MangasPage(mangaList, false)
     }
 
-    private fun parseSearchList(payload: JSONObject, query: String): MangasPage {
-        val mangas = ArrayList<SManga>()
-        val tempManga = SManga.create()
-        tempManga.url = "/read/$query"
-        mangas.add(parseMangaFromApi(payload, tempManga))
-        return MangasPage(mangas, false)
+    private fun parseSearchList(payload: JsonObject, query: String): MangasPage {
+        val tempManga = SManga.create().apply {
+            url = "/read/$query"
+        }
+
+        val mangaList = listOf(parseManga(payload, tempManga))
+
+        return MangasPage(mangaList, false)
     }
 
-    private fun parseMangaFromRemoteStorage(json: JSONObject): SManga {
-        val manga = SManga.create()
-        manga.title = json.getString("title")
-        manga.artist = json.optString("artist", ARTIST_FALLBACK)
-        manga.author = json.optString("author", AUTHOR_FALLBACK)
-        manga.description = json.optString("description", DESCRIPTION_FALLBACK)
-        manga.url = json.getString("url")
-        manga.thumbnail_url = json.getString("coverUrl")
-
-        return manga
-    }
-
-    private fun parseMangaFromApi(json: JSONObject, mangaReference: SManga): SManga {
-        val manga = SManga.create()
-        manga.title = json.getString("title")
-        manga.artist = json.optString("artist", ARTIST_FALLBACK)
-        manga.author = json.optString("author", AUTHOR_FALLBACK)
-        manga.description = json.optString("description", DESCRIPTION_FALLBACK)
-        manga.url = mangaReference.url
-        manga.thumbnail_url = json.optString("cover", "")
-
-        return manga
-    }
+    private fun parseManga(jsonObj: JsonObject, mangaReference: SManga? = null): SManga =
+        SManga.create().apply {
+            title = jsonObj["title"]!!.jsonPrimitive.content
+            artist = jsonObj["artist"]?.jsonPrimitive?.content ?: ARTIST_FALLBACK
+            author = jsonObj["author"]?.jsonPrimitive?.content ?: AUTHOR_FALLBACK
+            description = jsonObj["description"]?.jsonPrimitive?.content ?: DESCRIPTION_FALLBACK
+            url = mangaReference?.url ?: jsonObj["url"]!!.jsonPrimitive.content
+            thumbnail_url = jsonObj["coverUrl"]?.jsonPrimitive?.content
+                ?: jsonObj["cover"]?.jsonPrimitive?.content ?: ""
+        }
 
     // ----------------- Things we aren't supporting -----------------
 

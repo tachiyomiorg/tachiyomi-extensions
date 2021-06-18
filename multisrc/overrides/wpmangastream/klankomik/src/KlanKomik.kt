@@ -13,4 +13,6 @@ class KlanKomik : WPMangaStream("KlanKomik", "https://klankomik.com", "id") {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override val hasProjectPage = true
 }

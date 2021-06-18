@@ -13,4 +13,6 @@ class ReadKomik : WPMangaStream("Readkomik", "https://readkomik.com", "en") {
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
+    override val hasProjectPage = true
 }

@@ -4,10 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Base64
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -19,6 +15,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
@@ -26,6 +27,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -43,6 +45,8 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
     override val client = network.cloudflareClient
 
     private var csrfToken = ""
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int) = GET(
         "$baseUrl/directorio?genero=false" +
@@ -154,20 +158,22 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
             return MangasPage(mangas, hasNextPage)
         } else {
-            val body = response.body!!.string()
-            if (body == "[]") throw Exception("Término de búsqueda demasiado corto")
-            val json = JsonParser().parse(body)["mangas"].asJsonArray
+            val jsonResult = json.parseToJsonElement(response.body!!.string()).jsonArray
 
-            val mangas = json.map { jsonElement -> searchMangaFromJson(jsonElement) }
-            val hasNextPage = false
-            return MangasPage(mangas, hasNextPage)
+            if (jsonResult.isEmpty()) {
+                throw Exception("Término de búsqueda demasiado corto")
+            }
+
+            val mangaList = jsonResult.map { jsonEl -> searchMangaFromJson(jsonEl.jsonObject) }
+
+            return MangasPage(mangaList, hasNextPage = false)
         }
     }
 
-    private fun searchMangaFromJson(jsonElement: JsonElement): SManga = SManga.create().apply {
-        title = jsonElement["nombre"].string
-        setUrlWithoutDomain(jsonElement["url"].string)
-        thumbnail_url = jsonElement["img"].string.replace("/thumb", "/cover")
+    private fun searchMangaFromJson(jsonObj: JsonObject): SManga = SManga.create().apply {
+        title = jsonObj["nombre"]!!.jsonPrimitive.content
+        thumbnail_url = jsonObj["img"]!!.jsonPrimitive.content.replace("/thumb", "/cover")
+        setUrlWithoutDomain(jsonObj["url"]!!.jsonPrimitive.content)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {

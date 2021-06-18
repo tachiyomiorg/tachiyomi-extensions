@@ -32,7 +32,7 @@ abstract class Guya(
 
     override val supportsLatest = false
 
-    private val scanlatorCacheUrl = "$baseUrl/api/get_all_groups"
+    private val scanlatorCacheUrl = "$baseUrl/api/get_all_groups/"
 
     override fun headersBuilder() = Headers.Builder().apply {
         add(

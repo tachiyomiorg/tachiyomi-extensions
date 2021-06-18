@@ -1,13 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.mangatube
 
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.nullArray
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -18,6 +10,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -27,6 +25,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -57,6 +56,8 @@ class MangaTube : HttpSource() {
         .add("X-Requested-With", "XMLHttpRequest")
 
     private val apiHeaders: Headers by lazy { apiHeadersBuilder().build() }
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET(baseUrl, headers)
@@ -91,20 +92,20 @@ class MangaTube : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<MangaTubeLatestDto>(response.body!!.string())
 
-        val latestMangas = result["releases"].array
+        val latestMangas = result.releases
             .map(::latestUpdatesFromObject)
 
-        val hasNextPage = result["page"].string.toInt() < result["total_page"].int
+        val hasNextPage = result.page.toInt() < result.totalPage
 
         return MangasPage(latestMangas, hasNextPage)
     }
 
-    private fun latestUpdatesFromObject(obj: JsonElement) = SManga.create().apply {
-        title = obj["name"].string
-        thumbnail_url = obj["image"].string
-        url = obj["link"].string
+    private fun latestUpdatesFromObject(release: MangaTubeReleaseDto) = SManga.create().apply {
+        title = release.name
+        thumbnail_url = release.image
+        url = release.link
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -117,18 +118,17 @@ class MangaTube : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<Map<String, MangaTubeTitleDto>>(response.body!!.string())
 
-        val searchResults = result.entrySet()
-            .map { searchMangaFromObject(it.value) }
+        val searchResults = result.values.map(::searchMangaFromObject)
 
         return MangasPage(searchResults, hasNextPage = false)
     }
 
-    private fun searchMangaFromObject(obj: JsonElement) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = obj["img"].string
-        setUrlWithoutDomain(obj["url"].string)
+    private fun searchMangaFromObject(manga: MangaTubeTitleDto) = SManga.create().apply {
+        title = manga.title
+        thumbnail_url = manga.image
+        setUrlWithoutDomain(manga.url)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -154,6 +154,7 @@ class MangaTube : HttpSource() {
 
         val url = "$baseUrl/jsons/series/chapters_list.json".toHttpUrlOrNull()!!.newBuilder()
             .addQueryParameter("page", page.toString())
+            .addQueryParameter("order", "desc")
             .addQueryParameter("id_s", mangaId)
             .toString()
 
@@ -163,24 +164,26 @@ class MangaTube : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val mangaUrl = response.request.header("Referer")!!.substringAfter(baseUrl)
 
-        var result = response.asJson().obj
+        var result = json.decodeFromString<MangaTubePaginatedChaptersDto>(response.body!!.string())
 
-        if (result["chapters"].nullArray == null || result["chapters"].array.size() == 0) {
+        if (result.chapters.isNullOrEmpty()) {
             return emptyList()
         }
 
-        val chapters = result["chapters"].array
+        val chapters = result.chapters!!
             .map(::chapterFromObject)
             .toMutableList()
 
-        var page = result["pagina"].int + 1
-        val lastPage = result["total_pags"].int
+        var page = result.page + 1
+        val lastPage = result.totalPages
 
         while (++page <= lastPage) {
             val nextPageRequest = chapterListPaginatedRequest(mangaUrl, page)
-            result = client.newCall(nextPageRequest).execute().asJson().obj
+            result = client.newCall(nextPageRequest).execute().let {
+                json.decodeFromString(it.body!!.string())
+            }
 
-            chapters += result["chapters"].array
+            chapters += result.chapters!!
                 .map(::chapterFromObject)
                 .toMutableList()
         }
@@ -188,12 +191,12 @@ class MangaTube : HttpSource() {
         return chapters
     }
 
-    private fun chapterFromObject(obj: JsonElement): SChapter = SChapter.create().apply {
-        name = "Cap. " + (if (obj["number"].string == "false") "0" else obj["number"].string) +
-            (if (obj["chapter_name"].asJsonPrimitive.isString) " - " + obj["chapter_name"].string else "")
-        chapter_number = obj["number"].string.toFloatOrNull() ?: -1f
-        date_upload = obj["date_created"].string.substringBefore("T").toDate()
-        setUrlWithoutDomain(obj["link"].string)
+    private fun chapterFromObject(chapter: MangaTubeChapterDto): SChapter = SChapter.create().apply {
+        name = "Cap. " + (if (chapter.number.booleanOrNull != null) "0" else chapter.number.content) +
+            (if (chapter.name.isString) " - " + chapter.name.content else "")
+        chapter_number = chapter.number.floatOrNull ?: -1f
+        date_upload = chapter.dateCreated.substringBefore("T").toDate()
+        setUrlWithoutDomain(chapter.link)
     }
 
     private fun pageListApiRequest(chapterUrl: String, serieId: String, token: String): Request {
@@ -220,11 +223,13 @@ class MangaTube : HttpSource() {
         val token = TOKEN_REGEX.find(apiParams)!!.groupValues[1]
 
         val apiRequest = pageListApiRequest(chapterUrl, serieId, token)
-        val apiResponse = client.newCall(apiRequest).execute().asJson().obj
+        val apiResponse = client.newCall(apiRequest).execute().let {
+            json.decodeFromString<MangaTubeReaderDto>(it.body!!.string())
+        }
 
-        return apiResponse["images"].array
-            .filter { it["url"].string.startsWith("http") }
-            .mapIndexed { i, obj -> Page(i, chapterUrl, obj["url"].string) }
+        return apiResponse.images
+            .filter { it.url.startsWith("http") }
+            .mapIndexed { i, page -> Page(i, chapterUrl, page.url) }
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> = Observable.just(page.imageUrl!!)
@@ -248,10 +253,11 @@ class MangaTube : HttpSource() {
             val apiParams = document.select("script:containsData(pAPI)").first()!!.data()
                 .substringAfter("pAPI = ")
                 .substringBeforeLast(";")
-                .let { JsonParser.parseString(it) }
+                .let { json.parseToJsonElement(it) }
+                .jsonObject
 
             val newUrl = chain.request().url.newBuilder()
-                .addQueryParameter("nonce", apiParams["nonce"].string)
+                .addQueryParameter("nonce", apiParams["nonce"]!!.jsonPrimitive.content)
                 .build()
 
             val newRequest = chain.request().newBuilder()
@@ -271,8 +277,6 @@ class MangaTube : HttpSource() {
             0L
         }
     }
-
-    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
 
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"

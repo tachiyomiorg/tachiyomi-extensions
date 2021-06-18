@@ -1,7 +1,5 @@
 package eu.kanade.tachiyomi.multisrc.foolslide
 
-import com.github.salomonbrys.kotson.get
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -10,11 +8,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -32,6 +35,8 @@ abstract class FoolSlide(
     protected open val dedupeLatestUpdates = true
 
     override val supportsLatest = true
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaSelector() = "div.group"
 
@@ -166,7 +171,7 @@ abstract class FoolSlide(
     }
 
     open fun parseChapterDate(date: String): Long? {
-        val lcDate = date.toLowerCase()
+        val lcDate = date.toLowerCase(Locale.ROOT)
         if (lcDate.endsWith(" ago"))
             parseRelativeDate(lcDate)?.let { return it }
 
@@ -272,18 +277,17 @@ abstract class FoolSlide(
 
     override fun pageListParse(document: Document): List<Page> {
         val doc = document.toString()
-        val jsonstr = doc.substringAfter("var pages = ").substringBefore(";")
-        val json = JsonParser().parse(jsonstr).asJsonArray
-        val pages = mutableListOf<Page>()
-        json.forEach {
+        val jsonStr = doc.substringAfter("var pages = ").substringBefore(";")
+        val pages = json.parseToJsonElement(jsonStr).jsonArray
+
+        return pages.mapIndexed { i, jsonEl ->
             // Create dummy element to resolve relative URL
             val absUrl = document.createElement("a")
-                .attr("href", it["url"].asString)
+                .attr("href", jsonEl.jsonObject["url"]!!.jsonPrimitive.content)
                 .absUrl("href")
 
-            pages.add(Page(pages.size, "", absUrl))
+            Page(i, "", absUrl)
         }
-        return pages
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")

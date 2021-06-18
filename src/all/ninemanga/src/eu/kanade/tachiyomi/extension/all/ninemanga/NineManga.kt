@@ -17,7 +17,11 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-open class NineManga(override val name: String, override val baseUrl: String, override val lang: String) : ParsedHttpSource() {
+open class NineManga(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String
+) : ParsedHttpSource() {
 
     override val supportsLatest: Boolean = true
 

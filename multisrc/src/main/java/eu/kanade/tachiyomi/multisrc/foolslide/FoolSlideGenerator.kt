@@ -10,7 +10,7 @@ class FoolSlideGenerator : ThemeSourceGenerator {
 
     override val themeClass = "FoolSlide"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         SingleLang("The Cat Scans", "https://reader2.thecatscans.com/", "en"),
@@ -29,16 +29,14 @@ class FoolSlideGenerator : ThemeSourceGenerator {
         SingleLang("Iskultrip Scans", "https://maryfaye.net", "en"),
         SingleLang("Anata no Motokare", "https://motokare.xyz", "en", className = "AnataNoMotokare"),
         SingleLang("Yuri-ism", "https://www.yuri-ism.net", "en", className = "YuriIsm"),
-        SingleLang("Ajia no Scantrad", "https://www.ajianoscantrad.fr", "fr", className = "AjiaNoScantrad"),
-        SingleLang("Storm in Heaven", "https://www.storm-in-heaven.net", "it", className = "StormInHeaven"),
         SingleLang("LupiTeam", "https://lupiteam.net", "it"),
         SingleLang("Zandy no Fansub", "https://zandynofansub.aishiteru.org", "en"),
         SingleLang("Kirishima Fansub", "https://www.kirishimafansub.net", "es"),
         SingleLang("Baixar Hentai", "https://leitura.baixarhentai.net", "pt-BR", isNsfw = true, overrideVersionCode = 2),
         MultiLang("HNI-Scantrad", "https://hni-scantrad.com", listOf("fr", "en"), className = "HNIScantradFactory", pkgName = "hniscantrad", overrideVersionCode = 1),
+        SingleLang("QuegnaReader", "http://pignaquegna.altervista.org", "it"),
         SingleLang("The Phoenix Scans", "https://www.phoenixscans.com", "it", className = "PhoenixScans"),
         SingleLang("GTO The Great Site", "https://www.gtothegreatsite.net", "it", className = "GTO"),
-        SingleLang("Fall World Reader", "https://faworeader.altervista.org", "it", className = "FallenWorldOrder"),
         SingleLang("NIFTeam", "http://read-nifteam.info", "it"),
         SingleLang("TuttoAnimeManga", "https://tuttoanimemanga.net", "it"),
         SingleLang("Tortuga Ceviri", "http://tortuga-ceviri.com", "tr"),

@@ -4,6 +4,8 @@ import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.source.model.Filter
+import eu.kanade.tachiyomi.source.model.SManga
+import org.jsoup.nodes.Element
 
 @Nsfw
 class VCPVMPFactory : SourceFactory {
@@ -13,7 +15,24 @@ class VCPVMPFactory : SourceFactory {
     )
 }
 
-class VCP : VCPVMP("VCP", "https://vercomicsporno.com")
+class VCP : VCPVMP("VCP", "https://vercomicsporno.com") {
+
+    override fun popularMangaSelector() = "div.blog-list-items header ~ div.entry"
+
+    override val pageListSelector = "div.wp-content img"
+
+    override fun popularMangaNextPageSelector() = "span.current + a"
+
+    override fun popularMangaFromElement(element: Element) = SManga.create().apply {
+        element.select("a.popimg").first().let {
+            setUrlWithoutDomain(it.attr("href"))
+            it.select("figure img").first().let { img ->
+                title = img.attr("alt")
+                thumbnail_url = img.attr("abs:src")
+            }
+        }
+    }
+}
 
 class VMP : VCPVMP("VMP", "https://vermangasporno.com") {
     override val pageListSelector = "div.comicimg img[src^=$baseUrl]"

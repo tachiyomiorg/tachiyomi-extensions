@@ -30,7 +30,7 @@ abstract class SimplyHentai(
 ) : ParsedHttpSource() {
     override val name = "Simply Hentai"
 
-    override val baseUrl = "https://www.simply-hentai.com"
+    override val baseUrl = "https://old.simply-hentai.com"
 
     override val supportsLatest = true
 

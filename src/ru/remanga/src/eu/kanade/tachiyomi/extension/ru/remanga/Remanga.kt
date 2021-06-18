@@ -17,10 +17,6 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.text.InputType
 import android.widget.Toast
-import com.github.salomonbrys.kotson.fromJson
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonSyntaxException
 import eu.kanade.tachiyomi.lib.dataimage.DataImageInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -34,6 +30,13 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.put
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
@@ -42,17 +45,16 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.Jsoup
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.absoluteValue
 import kotlin.random.Random
-
 class Remanga : ConfigurableSource, HttpSource() {
     override val name = "Remanga"
 
@@ -100,15 +102,16 @@ class Remanga : ConfigurableSource, HttpSource() {
     private var branches = mutableMapOf<String, List<BranchesDto>>()
 
     private fun login(chain: Interceptor.Chain, username: String, password: String): String {
-        val jsonObject = JSONObject()
-        jsonObject.put("user", username)
-        jsonObject.put("password", password)
+        val jsonObject = buildJsonObject {
+            put("user", username)
+            put("password", password)
+        }
         val body = jsonObject.toString().toRequestBody(MEDIA_TYPE)
         val response = chain.proceed(POST("$baseUrl/api/users/login/", headers, body))
         if (response.code >= 400) {
             throw Exception("Failed to login")
         }
-        val user = gson.fromJson<SeriesWrapperDto<UserDto>>(response.body?.charStream()!!)
+        val user = json.decodeFromString<SeriesWrapperDto<UserDto>>(response.body!!.string())
         return user.content.access_token
     }
 
@@ -121,7 +124,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage = searchMangaParse(response)
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val page = gson.fromJson<PageWrapperDto<LibraryDto>>(response.body?.charStream()!!)
+        val page = json.decodeFromString<PageWrapperDto<LibraryDto>>(response.body!!.string())
         val mangas = page.content.map {
             it.toSManga()
         }
@@ -159,7 +162,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             when (filter) {
                 is OrderBy -> {
                     val ord = arrayOf("id", "chapter_date", "rating", "votes", "views", "count_chapters", "random")[filter.state!!.index]
-                    url.addQueryParameter("ordering", if (filter.state!!.ascending) "$ord" else "-$ord")
+                    url.addQueryParameter("ordering", if (filter.state!!.ascending) ord else "-$ord")
                 }
                 is CategoryList -> filter.state.forEach { category ->
                     if (category.state != Filter.TriState.STATE_IGNORE) {
@@ -195,6 +198,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         return when (status) {
             0 -> SManga.COMPLETED
             1 -> SManga.ONGOING
+            5 -> SManga.LICENSED
             else -> SManga.UNKNOWN
         }
     }
@@ -234,7 +238,11 @@ class Remanga : ConfigurableSource, HttpSource() {
             title = en_name
             url = "/api/titles/$dir/"
             thumbnail_url = "$baseUrl/${img.high}"
-            this.description = rus_name + "\n" + ratingStar + " " + ratingValue + " (голосов: " + count_rating + ")" + "\nАльтернативные названия:\n" + another_name + "\n\n" + Jsoup.parse(o.description).text()
+            var altName = ""
+            if (another_name.isNotEmpty()) {
+                altName = "Альтернативные названия:\n" + another_name + "\n\n"
+            }
+            this.description = rus_name + "\n" + ratingStar + " " + ratingValue + " (голосов: " + count_rating + ")\n" + altName + Jsoup.parse(o.description).text()
             genre = (genres + parseType(type)).joinToString { it.name } + ", " + parseAge(age_limit)
             status = parseStatus(o.status.id)
         }
@@ -268,7 +276,7 @@ class Remanga : ConfigurableSource, HttpSource() {
         return GET(baseUrl.replace("api.", "") + "/manga/" + manga.url.substringAfter("/api/titles/", "/"), headers)
     }
     override fun mangaDetailsParse(response: Response): SManga {
-        val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(response.body?.charStream()!!)
+        val series = json.decodeFromString<SeriesWrapperDto<MangaDetDto>>(response.body!!.string())
         branches[series.content.en_name] = series.content.branches
         return series.content.toSManga()
     }
@@ -276,10 +284,11 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun mangaBranches(manga: SManga): List<BranchesDto> {
         val responseString = client.newCall(GET("$baseUrl/${manga.url}")).execute().body?.string() ?: return emptyList()
         // manga requiring login return "content" as a JsonArray instead of the JsonObject we expect
-        return if (gson.fromJson<JsonObject>(responseString)["content"].isJsonObject) {
-            val series = gson.fromJson<SeriesWrapperDto<MangaDetDto>>(responseString)
-            branches[series.content.en_name] = series.content.branches
-            series.content.branches
+        val content = json.decodeFromString<JsonObject>(responseString)["content"]
+        return if (content is JsonObject) {
+            val series = json.decodeFromJsonElement<MangaDetDto>(content)
+            branches[series.en_name] = series.branches
+            series.branches
         } else {
             emptyList()
         }
@@ -320,8 +329,8 @@ class Remanga : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapters = gson.fromJson<PageWrapperDto<BookDto>>(response.body?.charStream()!!)
-        return chapters.content.filter { !it.is_paid or it.is_bought }.map { chapter ->
+        val chapters = json.decodeFromString<SeriesWrapperDto<List<BookDto>>>(response.body!!.string())
+        return chapters.content.filter { !it.is_paid or (it.is_bought == true) }.map { chapter ->
             SChapter.create().apply {
                 chapter_number = chapter.chapter.split(".").take(2).joinToString(".").toFloat()
                 name = chapterName(chapter)
@@ -338,15 +347,15 @@ class Remanga : ConfigurableSource, HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val body = response.body?.string()!!
         return try {
-            val page = gson.fromJson<SeriesWrapperDto<PageDto>>(body)
+            val page = json.decodeFromString<SeriesWrapperDto<PageDto>>(body)
             page.content.pages.filter { it.height > 1 }.map {
                 Page(it.page, "", it.link)
             }
-        } catch (e: JsonSyntaxException) {
-            val page = gson.fromJson<SeriesWrapperDto<PaidPageDto>>(body)
+        } catch (e: SerializationException) {
+            val page = json.decodeFromString<SeriesWrapperDto<PaidPageDto>>(body)
             val result = mutableListOf<Page>()
             page.content.pages.forEach {
-                it.filter { page -> page.height > 1 }.forEach { page ->
+                it.filter { page -> page.height > 10 }.forEach { page ->
                     result.add(Page(result.size, "", page.link))
                 }
             }
@@ -591,7 +600,7 @@ class Remanga : ConfigurableSource, HttpSource() {
             dialogTitle = title
 
             if (isPassword) {
-                if (!value.isNullOrBlank()) { summary = "*****" }
+                if (value.isNotBlank()) { summary = "*****" }
                 setOnBindEditTextListener {
                     it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
@@ -612,7 +621,7 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun getPrefUsername(): String = preferences.getString(USERNAME_TITLE, USERNAME_DEFAULT)!!
     private fun getPrefPassword(): String = preferences.getString(PASSWORD_TITLE, PASSWORD_DEFAULT)!!
 
-    private val gson by lazy { Gson() }
+    private val json: Json by injectLazy()
     private val username by lazy { getPrefUsername() }
     private val password by lazy { getPrefPassword() }
 

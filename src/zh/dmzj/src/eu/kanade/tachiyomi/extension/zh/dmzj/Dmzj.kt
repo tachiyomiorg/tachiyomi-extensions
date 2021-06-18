@@ -3,8 +3,11 @@ package eu.kanade.tachiyomi.extension.zh.dmzj
 import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Base64
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
+import eu.kanade.tachiyomi.extension.zh.dmzj.protobuf.ComicDetailResponse
+import eu.kanade.tachiyomi.extension.zh.dmzj.utils.RSA
 import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -17,7 +20,10 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,8 +33,8 @@ import org.json.JSONObject
 import rx.Observable
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.net.URLDecoder
 import java.net.URLEncoder
-import java.util.ArrayList
 
 /**
  * Dmzj source
@@ -38,11 +44,15 @@ class Dmzj : ConfigurableSource, HttpSource() {
     override val lang = "zh"
     override val supportsLatest = true
     override val name = "动漫之家"
-    override val baseUrl = "https://m.dmzj1.com"
-    private val v3apiUrl = "https://v3api.dmzj1.com"
+    override val baseUrl = "https://m.dmzj.com"
+    private val v3apiUrl = "https://v3api.dmzj.com"
+    private val v3ChapterApiUrl = "https://nnv3api.dmzj.com"
+    // v3api now shutdown the functionality to fetch manga detail and chapter list, so move these logic to v4api
+    private val v4apiUrl = "https://nnv4api.dmzj.com" // https://v4api.dmzj.com
     private val apiUrl = "https://api.dmzj.com"
-    private val oldPageListApiUrl = "https://m.dmzj.com/chapinfo"
-    private val imageCDNUrl = "https://images.dmzj1.com"
+    private val oldPageListApiUrl = "https://api.m.dmzj.com"
+    private val webviewPageListApiUrl = "https://m.dmzj.com/chapinfo"
+    private val imageCDNUrl = "https://images.dmzj.com"
 
     private fun cleanUrl(url: String) = if (url.startsWith("//"))
         "https:$url"
@@ -54,6 +64,10 @@ class Dmzj : ConfigurableSource, HttpSource() {
 
     private val v3apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
         v3apiUrl.toHttpUrlOrNull()!!,
+        preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
+    )
+    private val v4apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
+        v4apiUrl.toHttpUrlOrNull()!!,
         preferences.getString(API_RATELIMIT_PREF, "5")!!.toInt()
     )
     private val apiRateLimitInterceptor = SpecificHostRateLimitInterceptor(
@@ -68,11 +82,12 @@ class Dmzj : ConfigurableSource, HttpSource() {
     override val client: OkHttpClient = network.client.newBuilder()
         .addNetworkInterceptor(apiRateLimitInterceptor)
         .addNetworkInterceptor(v3apiRateLimitInterceptor)
+        .addNetworkInterceptor(v4apiRateLimitInterceptor)
         .addNetworkInterceptor(imageCDNRateLimitInterceptor)
         .build()
 
     override fun headersBuilder() = Headers.Builder().apply {
-        set("Referer", "https://www.dmzj1.com/")
+        set("Referer", "https://www.dmzj.com/")
         set(
             "User-Agent",
             "Mozilla/5.0 (Linux; Android 10) " +
@@ -126,6 +141,18 @@ class Dmzj : ConfigurableSource, HttpSource() {
         return MangasPage(ret, arr.length() != 0)
     }
 
+    private fun customUrlBuilder(baseUrl: String): HttpUrl.Builder {
+        val rightNow = System.currentTimeMillis() / 1000
+        return baseUrl.toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("channel", "android")
+            .addQueryParameter("version", "3.0.0")
+            .addQueryParameter("timestamp", rightNow.toInt().toString())
+    }
+
+    private fun decryptProtobufData(rawData: String): ByteArray {
+        return RSA.decrypt(Base64.decode(rawData, Base64.DEFAULT), privateKey)
+    }
+
     override fun popularMangaRequest(page: Int) = GET("$v3apiUrl/classify/0/0/${page - 1}.json")
 
     override fun popularMangaParse(response: Response) = searchMangaParse(response)
@@ -138,18 +165,24 @@ class Dmzj : ConfigurableSource, HttpSource() {
         val comicNumberID = if (checkComicIdIsNumericalRegex.matches(id)) {
             id
         } else {
+            // Chinese Pinyin ID
             val document = client.newCall(GET("$baseUrl/info/$id.html", headers)).execute().asJsoup()
-            extractComicIdFromWebpageRegex.find(document.select("#Subscribe").attr("onclick"))!!.groups[1]!!.value // onclick="addSubscribe('{comicNumberID}')"
+            extractComicIdFromWebpageRegex.find(
+                document.select("#Subscribe").attr("onclick")
+            )!!.groups[1]!!.value // onclick="addSubscribe('{comicNumberID}')"
         }
 
         val sManga = try {
-            val r = client.newCall(GET("$v3apiUrl/comic/comic_$comicNumberID.json", headers)).execute()
+            val r = client.newCall(GET("$v4apiUrl/comic/detail/$comicNumberID.json", headers)).execute()
             mangaDetailsParse(r)
         } catch (_: Exception) {
             val r = client.newCall(GET("$apiUrl/dynamic/comicinfo/$comicNumberID.json", headers)).execute()
             mangaDetailsParse(r)
         }
-        sManga.url = "$baseUrl/info/$comicNumberID.html"
+        // Change url format to as same as mangaFromJSON, which used by popularMangaParse and latestUpdatesParse.
+        // manga.url being used as key to identity a manga in tachiyomi, so if url format don't match popularMangaParse and latestUpdatesParse,
+        // tachiyomi will mark them as unsubscribe in popularManga and latestUpdates page.
+        sManga.url = "/comic/comic_$comicNumberID.json?version=2.7.019"
 
         return MangasPage(listOf(sManga), false)
     }
@@ -170,7 +203,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query != "") {
-            val uri = Uri.parse("http://s.acg.dmzj1.com/comicsum/search.php").buildUpon()
+            val uri = Uri.parse("http://s.acg.dmzj.com/comicsum/search.php").buildUpon()
             uri.appendQueryParameter("s", query)
             return GET(uri.toString())
         } else {
@@ -204,7 +237,11 @@ class Dmzj : ConfigurableSource, HttpSource() {
         val cid = extractComicIdFromMangaUrlRegex.find(manga.url)!!.groups[1]!!.value
         return try {
             // Not using client.newCall().asObservableSuccess() to ensure we can catch exception here.
-            val response = client.newCall(GET("$v3apiUrl/comic/comic_$cid.json", headers)).execute()
+            val response = client.newCall(
+                GET(
+                    customUrlBuilder("$v4apiUrl/comic/detail/$cid").build().toString(), headers
+                )
+            ).execute()
             val sManga = mangaDetailsParse(response).apply { initialized = true }
             Observable.just(sManga)
         } catch (e: Exception) {
@@ -223,32 +260,23 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response) = SManga.create().apply {
-        val obj = JSONObject(response.body!!.string())
+        val responseBody = response.body!!.string()
+        if (response.request.url.toString().startsWith(v4apiUrl)) {
+            val pb = ProtoBuf.decodeFromByteArray<ComicDetailResponse>(decryptProtobufData(responseBody))
+            val pbData = pb.Data
+            title = pbData.Title
+            thumbnail_url = pbData.Cover
+            author = pbData.Authors.joinToString(separator = ", ") { it.TagName }
+            genre = pbData.TypesTypes.joinToString(separator = ", ") { it.TagName }
 
-        if (response.request.url.toString().startsWith(v3apiUrl)) {
-            title = obj.getString("title")
-            thumbnail_url = obj.getString("cover")
-            var arr = obj.getJSONArray("authors")
-            val tmparr = ArrayList<String>(arr.length())
-            for (i in 0 until arr.length()) {
-                tmparr.add(arr.getJSONObject(i).getString("tag_name"))
-            }
-            author = tmparr.joinToString(", ")
-
-            arr = obj.getJSONArray("types")
-            tmparr.clear()
-            for (i in 0 until arr.length()) {
-                tmparr.add(arr.getJSONObject(i).getString("tag_name"))
-            }
-            genre = tmparr.joinToString(", ")
-            status = when (obj.getJSONArray("status").getJSONObject(0).getInt("tag_id")) {
-                2310 -> SManga.COMPLETED
-                2309 -> SManga.ONGOING
+            status = when (pbData.Status[0].TagName) {
+                "已完结" -> SManga.COMPLETED
+                "连载中" -> SManga.ONGOING
                 else -> SManga.UNKNOWN
             }
-
-            description = obj.getString("description")
+            description = pbData.Description
         } else {
+            val obj = JSONObject(responseBody)
             val data = obj.getJSONObject("data").getJSONObject("info")
             title = data.getString("title")
             thumbnail_url = data.getString("cover")
@@ -269,13 +297,17 @@ class Dmzj : ConfigurableSource, HttpSource() {
         val cid = extractComicIdFromMangaUrlRegex.find(manga.url)!!.groups[1]!!.value
         return if (manga.status != SManga.LICENSED) {
             try {
-                val response = client.newCall(GET("$v3apiUrl/comic/comic_$cid.json", headers)).execute()
-                val sChapter = chapterListParse(response)
-                Observable.just(sChapter)
+                val response =
+                    client.newCall(
+                        GET(
+                            customUrlBuilder("$v4apiUrl/comic/detail/$cid").build().toString(),
+                            headers
+                        )
+                    ).execute()
+                Observable.just(chapterListParse(response))
             } catch (e: Exception) {
                 val response = client.newCall(GET("$apiUrl/dynamic/comicinfo/$cid.json", headers)).execute()
-                val sChapter = chapterListParse(response)
-                Observable.just(sChapter)
+                Observable.just(chapterListParse(response))
             } catch (e: Exception) {
                 Observable.error(e)
             }
@@ -285,29 +317,31 @@ class Dmzj : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val obj = JSONObject(response.body!!.string())
         val ret = ArrayList<SChapter>()
-
-        if (response.request.url.toString().startsWith(v3apiUrl)) {
-            val cid = obj.getString("id")
-            val chaptersList = obj.getJSONArray("chapters")
-            for (i in 0 until chaptersList.length()) {
-                val chapterObj = chaptersList.getJSONObject(i)
-                val chapterData = chapterObj.getJSONArray("data")
-                val prefix = chapterObj.getString("title")
-                for (j in 0 until chapterData.length()) {
-                    val chapter = chapterData.getJSONObject(j)
+        val responseBody = response.body!!.string()
+        if (response.request.url.toString().startsWith(v4apiUrl)) {
+            val pb = ProtoBuf.decodeFromByteArray<ComicDetailResponse>(decryptProtobufData(responseBody))
+            val mangaPBData = pb.Data
+            // v4api can contain multiple series of chapters.
+            if (mangaPBData.Chapters.isEmpty()) {
+                throw Exception("empty chapter list")
+            }
+            mangaPBData.Chapters.forEach { chapterList ->
+                for (i in chapterList.Data.indices) {
+                    val chapter = chapterList.Data[i]
                     ret.add(
                         SChapter.create().apply {
-                            name = "$prefix: ${chapter.getString("chapter_title")}"
-                            date_upload = chapter.getString("updatetime").toLong() * 1000 // milliseconds
-                            url = "https://api.m.dmzj1.com/comic/chapter/$cid/${chapter.getString("chapter_id")}.html"
+                            name = "${chapterList.Title}: ${chapter.ChapterTitle}"
+                            date_upload = chapter.Updatetime * 1000
+                            url = "${mangaPBData.Id}/${chapter.ChapterId}"
                         }
                     )
                 }
             }
         } else {
-            // Fallback to old api
+            // get chapter info from old api
+            // Old api may only contain one series of chapters
+            val obj = JSONObject(responseBody)
             val chaptersList = obj.getJSONObject("data").getJSONArray("list")
             for (i in 0 until chaptersList.length()) {
                 val chapter = chaptersList.getJSONObject(i)
@@ -315,7 +349,7 @@ class Dmzj : ConfigurableSource, HttpSource() {
                     SChapter.create().apply {
                         name = chapter.getString("chapter_name")
                         date_upload = chapter.getString("updatetime").toLong() * 1000
-                        url = "$oldPageListApiUrl/${chapter.getString("comic_id")}/${chapter.getString("id")}.html"
+                        url = "${chapter.getString("comic_id")}/${chapter.getString("id")}"
                     }
                 )
             }
@@ -323,40 +357,59 @@ class Dmzj : ConfigurableSource, HttpSource() {
         return ret
     }
 
-    override fun pageListRequest(chapter: SChapter) = GET(chapter.url, headers) // Bypass base url
+    override fun pageListRequest(chapter: SChapter) = throw UnsupportedOperationException("Not used.")
+
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> {
+        return try {
+            // webpage api
+            val response = client.newCall(GET("$webviewPageListApiUrl/${chapter.url}.html", headers)).execute()
+            Observable.just(pageListParse(response))
+        } catch (e: Exception) {
+            // api.m.dmzj.com
+            val response = client.newCall(GET("$oldPageListApiUrl/comic/chapter/${chapter.url}.html", headers)).execute()
+            Observable.just(pageListParse(response))
+        } catch (e: Exception) {
+            // v3api
+            val response = client.newCall(
+                GET(
+                    customUrlBuilder("$v3ChapterApiUrl/chapter/${chapter.url}.json").build().toString(),
+                    headers
+                )
+            ).execute()
+            Observable.just(pageListParse(response))
+        } catch (e: Exception) {
+            Observable.error(e)
+        }
+    }
 
     override fun pageListParse(response: Response): List<Page> {
-        val arr = if (response.request.url.toString().startsWith(oldPageListApiUrl)) {
-            JSONObject(response.body!!.string()).getJSONArray("page_url")
-        } else {
-            // some chapters are hidden and won't return a JSONObject from api.m.dmzj, have to get them through v3api (but images won't be as HQ)
+        val requestUrl = response.request.url.toString()
+        val responseBody = response.body!!.string()
+        val arr = if (
+            requestUrl.startsWith(webviewPageListApiUrl) ||
+            requestUrl.startsWith(v3ChapterApiUrl)
+        ) {
+            // webpage api or v3api
+            JSONObject(responseBody).getJSONArray("page_url")
+        } else if (requestUrl.startsWith(oldPageListApiUrl)) {
             try {
-                val obj = JSONObject(response.body!!.string())
-                obj.getJSONObject("chapter").getJSONArray("page_url") // api.m.dmzj1.com already return HD image url
-            } catch (_: Exception) {
-                // example url: http://v3api.dmzj.com/chapter/44253/101852.json
-                val url = response.request.url.toString()
-                    .replace("api.m", "v3api")
-                    .replace("comic/", "")
-                    .replace(".html", ".json")
-                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body!!.string()) }
-                obj.getJSONArray("page_url_hd") // page_url in v3api.dmzj1.com will return compressed image, page_url_hd will return HD image url as api.m.dmzj1.com does.
-            } catch (_: Exception) {
-                // Fallback to old api
-                // example url: https://m.dmzj.com/chapinfo/44253/101852.html
-                val url = response.request.url.toString()
-                    .replaceFirst("api.", "")
-                    .replaceFirst(".dmzj1.", ".dmzj.")
-                    .replaceFirst("comic/chapter", "chapinfo")
-                val obj = client.newCall(GET(url, headers)).execute().let { JSONObject(it.body!!.string()) }
-                obj.getJSONArray("page_url")
+                val obj = JSONObject(responseBody)
+                obj.getJSONObject("chapter").getJSONArray("page_url")
+            } catch (e: org.json.JSONException) {
+                // JSON data from api.m.dmzj.com may be incomplete, extract page_url list using regex
+                val extractPageList = extractPageListRegex.find(responseBody)!!.value
+                JSONObject("{$extractPageList}").getJSONArray("page_url")
             }
+        } else {
+            throw Exception("can't parse response")
         }
         val ret = ArrayList<Page>(arr.length())
         for (i in 0 until arr.length()) {
-            ret.add(
-                Page(i, "", arr.getString(i).replace("http:", "https:").replace("dmzj.com", "dmzj1.com"))
-            )
+            // Seems image urls from webpage api and api.m.dmzj.com may be URL encoded multiple times
+            val url = URLDecoder.decode(URLDecoder.decode(arr.getString(i), "UTF-8"), "UTF-8")
+                .replace("http:", "https:")
+                .replace("dmzj1.com", "dmzj.com")
+            ret.add(Page(i, "", url))
         }
         return ret
     }
@@ -535,8 +588,12 @@ class Dmzj : ConfigurableSource, HttpSource() {
         private val extractComicIdFromWebpageRegex = Regex("""addSubscribe\((\d+)\)""")
         private val checkComicIdIsNumericalRegex = Regex("""^\d+$""")
         private val extractComicIdFromMangaUrlRegex = Regex("""(\d+)\.(json|html)""") // Get comic ID from manga.url
+        private val extractPageListRegex = Regex("""\"page_url\".+?\]""")
 
         private val ENTRIES_ARRAY = (1..10).map { i -> i.toString() }.toTypedArray()
         const val PREFIX_ID_SEARCH = "id:"
+
+        private const val privateKey =
+            "MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAK8nNR1lTnIfIes6oRWJNj3mB6OssDGx0uGMpgpbVCpf6+VwnuI2stmhZNoQcM417Iz7WqlPzbUmu9R4dEKmLGEEqOhOdVaeh9Xk2IPPjqIu5TbkLZRxkY3dJM1htbz57d/roesJLkZXqssfG5EJauNc+RcABTfLb4IiFjSMlTsnAgMBAAECgYEAiz/pi2hKOJKlvcTL4jpHJGjn8+lL3wZX+LeAHkXDoTjHa47g0knYYQteCbv+YwMeAGupBWiLy5RyyhXFoGNKbbnvftMYK56hH+iqxjtDLnjSDKWnhcB7089sNKaEM9Ilil6uxWMrMMBH9v2PLdYsqMBHqPutKu/SigeGPeiB7VECQQDizVlNv67go99QAIv2n/ga4e0wLizVuaNBXE88AdOnaZ0LOTeniVEqvPtgUk63zbjl0P/pzQzyjitwe6HoCAIpAkEAxbOtnCm1uKEp5HsNaXEJTwE7WQf7PrLD4+BpGtNKkgja6f6F4ld4QZ2TQ6qvsCizSGJrjOpNdjVGJ7bgYMcczwJBALvJWPLmDi7ToFfGTB0EsNHZVKE66kZ/8Stx+ezueke4S556XplqOflQBjbnj2PigwBN/0afT+QZUOBOjWzoDJkCQClzo+oDQMvGVs9GEajS/32mJ3hiWQZrWvEzgzYRqSf3XVcEe7PaXSd8z3y3lACeeACsShqQoc8wGlaHXIJOHTcCQQCZw5127ZGs8ZDTSrogrH73Kw/HvX55wGAeirKYcv28eauveCG7iyFR0PFB/P/EDZnyb+ifvyEFlucPUI0+Y87F"
     }
 }

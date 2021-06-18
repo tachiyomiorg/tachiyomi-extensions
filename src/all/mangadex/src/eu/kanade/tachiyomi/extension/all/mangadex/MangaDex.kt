@@ -5,12 +5,11 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.preference.PreferenceScreen
 import androidx.preference.SwitchPreferenceCompat
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.AggregateDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterListDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaListDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -20,6 +19,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -35,7 +36,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     ConfigurableSource,
     HttpSource() {
     override val name = "MangaDex"
-    override val baseUrl = "https://www.mangadex.org"
+    override val baseUrl = "https://mangadex.org"
 
     // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
     override val supportsLatest = false
@@ -46,15 +47,15 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
     private val helper = MangaDexHelper()
 
-    override fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
-    }
+    override fun headersBuilder() = Headers.Builder()
+        .add("Referer", "$baseUrl/")
+        .add("User-Agent", "Tachiyomi " + System.getProperty("http.agent"))
 
-    override val client =
-        network.client.newBuilder().addNetworkInterceptor(mdRateLimitInterceptor).addInterceptor(
-            coverInterceptor
-        ).addInterceptor(MdAtHomeReportInterceptor(network.client, headersBuilder().build()))
-            .build()
+    override val client = network.client.newBuilder()
+        .addNetworkInterceptor(mdRateLimitInterceptor)
+        .addInterceptor(coverInterceptor)
+        .addInterceptor(MdAtHomeReportInterceptor(network.client, headersBuilder().build()))
+        .build()
 
     // POPULAR Manga Section
 
@@ -63,6 +64,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
             addQueryParameter("order[updatedAt]", "desc")
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
             addQueryParameter("offset", helper.getMangaListOffset(page))
+            addQueryParameter("includes[]", MDConstants.coverArt)
             if (preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), false)) {
                 addQueryParameter("contentRating[]", "safe")
             }
@@ -103,13 +105,14 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         if (response.code == 204) {
             return MangasPage(emptyList(), false)
         }
+        val mangaListDto = helper.json.decodeFromString<MangaListDto>(response.body!!.string())
+        val hasMoreResults = mangaListDto.limit + mangaListDto.offset < mangaListDto.total
 
-        val mangaListResponse = JsonParser.parseString(response.body!!.string()).obj
-        val hasMoreResults =
-            (mangaListResponse["limit"].int + mangaListResponse["offset"].int) < mangaListResponse["total"].int
-
-        val mangaList = mangaListResponse["results"].array.map {
-            helper.createBasicManga(it, client)
+        val mangaList = mangaListDto.results.map { mangaDto ->
+            val fileName = mangaDto.relationships.firstOrNull { relationshipDto ->
+                relationshipDto.type.equals(MDConstants.coverArt, true)
+            }?.attributes?.fileName
+            helper.createBasicManga(mangaDto, fileName)
         }
 
         return MangasPage(mangaList, hasMoreResults)
@@ -126,6 +129,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         if (query.startsWith(MDConstants.prefixIdSearch)) {
             val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
                 .addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
+                .addQueryParameter("includes[]", MDConstants.coverArt)
             return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
         }
 
@@ -134,6 +138,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         tempUrl.apply {
             addQueryParameter("limit", MDConstants.mangaLimit.toString())
             addQueryParameter("offset", (helper.getMangaListOffset(page)))
+            addQueryParameter("includes[]", MDConstants.coverArt)
             val actualQuery = query.replace(MDConstants.whitespaceRegex, " ")
             if (actualQuery.isNotBlank()) {
                 addQueryParameter("title", actualQuery)
@@ -159,22 +164,49 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
-        return GET("${baseUrl}${manga.url}", headers)
+        // remove once redirect for /manga is fixed
+        return GET("${baseUrl}${manga.url.replace("manga", "title")}", headers)
     }
 
     /**
      * get manga details url throws exception if the url is the old format so people migrate
      */
-    fun apiMangaDetailsRequest(manga: SManga): Request {
+    private fun apiMangaDetailsRequest(manga: SManga): Request {
         if (!helper.containsUuid(manga.url.trim())) {
             throw Exception("Migrate this manga from MangaDex to MangaDex to update it")
         }
-        return GET("${MDConstants.apiUrl}${manga.url}", headers, CacheControl.FORCE_NETWORK)
+        val url = (MDConstants.apiUrl + manga.url).toHttpUrl().newBuilder().apply {
+            addQueryParameter("includes[]", MDConstants.coverArt)
+            addQueryParameter("includes[]", MDConstants.author)
+            addQueryParameter("includes[]", MDConstants.artist)
+        }.build().toString()
+        return GET(url, headers, CacheControl.FORCE_NETWORK)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val manga = JsonParser.parseString(response.body!!.string()).obj
-        return helper.createManga(manga, client)
+        val manga = helper.json.decodeFromString<MangaDto>(response.body!!.string())
+        val shortLang = lang.substringBefore("-")
+        return helper.createManga(manga, fetchSimpleChapterList(manga, shortLang), shortLang)
+    }
+
+    /**
+     * get a quick-n-dirty list of the chapters to be used in determining the manga status.
+     * uses the 'aggregate' endpoint
+     * @see MangaDexHelper.getPublicationStatus
+     * @see MangaDexHelper.doubleCheckChapters
+     * @see AggregateDto
+     */
+    private fun fetchSimpleChapterList(manga: MangaDto, langCode: String): List<String> {
+        val url = "${MDConstants.apiMangaUrl}/${manga.data.id}/aggregate?translatedLanguage[]=$langCode"
+        val response = client.newCall(GET(url, headers)).execute()
+        val chapters: AggregateDto
+        try {
+            chapters = helper.json.decodeFromString(response.body!!.string())
+        } catch (e: SerializationException) {
+            return emptyList()
+        }
+        if (chapters.volumes.isNullOrEmpty()) return emptyList()
+        return chapters.volumes.values.flatMap { it.chapters.values }.map { it.chapter }
     }
 
     // Chapter list section
@@ -207,36 +239,33 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
             return emptyList()
         }
         try {
-            val chapterListResponse = JsonParser.parseString(response.body!!.string()).obj
+            val chapterListResponse = helper.json.decodeFromString<ChapterListDto>(response.body!!.string())
 
-            val chapterListResults =
-                chapterListResponse["results"].array.map { it.obj }.toMutableList()
+            val chapterListResults = chapterListResponse.results.toMutableList()
 
             val mangaId =
                 response.request.url.toString().substringBefore("/feed")
                     .substringAfter("${MDConstants.apiMangaUrl}/")
 
-            val limit = chapterListResponse["limit"].int
+            val limit = chapterListResponse.limit
 
-            var offset = chapterListResponse["offset"].int
+            var offset = chapterListResponse.offset
 
-            var hasMoreResults = (limit + offset) < chapterListResponse["total"].int
+            var hasMoreResults = (limit + offset) < chapterListResponse.total
 
             // max results that can be returned is 500 so need to make more api calls if limit+offset > total chapters
             while (hasMoreResults) {
                 offset += limit
                 val newResponse =
                     client.newCall(actualChapterListRequest(mangaId, offset)).execute()
-                val newChapterListJson = JsonParser.parseString(newResponse.body!!.string()).obj
-                chapterListResults.addAll(newChapterListJson["results"].array.map { it.obj })
-                hasMoreResults = (limit + offset) < newChapterListJson["total"].int
+                val newChapterList = helper.json.decodeFromString<ChapterListDto>(newResponse.body!!.string())
+                chapterListResults.addAll(newChapterList.results)
+                hasMoreResults = (limit + offset) < newChapterList.total
             }
-
-            val groupMap = helper.createGroupMap(chapterListResults.toList(), client)
 
             val now = Date().time
 
-            return chapterListResults.map { helper.createChapter(it, groupMap) }
+            return chapterListResults.map { helper.createChapter(it) }
                 .filter { it.date_upload <= now && "MangaPlus" != it.scanlator }
         } catch (e: Exception) {
             Log.e("MangaDex", "error parsing chapter list", e)
@@ -258,14 +287,14 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         if (response.code == 204) {
             return emptyList()
         }
-        val chapterJson = JsonParser.parseString(response.body!!.string()).obj["data"]
+        val chapterDto = helper.json.decodeFromString<ChapterDto>(response.body!!.string()).data
         val usingStandardHTTPS =
             preferences.getBoolean(MDConstants.getStandardHttpsPreferenceKey(dexLang), false)
 
         val atHomeRequestUrl = if (usingStandardHTTPS) {
-            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}?forcePort443=true"
+            "${MDConstants.apiUrl}/at-home/server/${chapterDto.id}?forcePort443=true"
         } else {
-            "${MDConstants.apiUrl}/at-home/server/${chapterJson["id"].string}"
+            "${MDConstants.apiUrl}/at-home/server/${chapterDto.id}"
         }
 
         val host =
@@ -276,11 +305,12 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         // have to add the time, and url to the page because pages timeout within 30mins now
         val now = Date().time
-        val hash = chapterJson["attributes"]["hash"].string
+
+        val hash = chapterDto.attributes.hash
         val pageSuffix = if (usingDataSaver) {
-            chapterJson["attributes"]["dataSaver"].array.map { "/data-saver/$hash/${it.string}" }
+            chapterDto.attributes.dataSaver.map { "/data-saver/$hash/$it" }
         } else {
-            chapterJson["attributes"]["data"].array.map { "/data/$hash/${it.string}" }
+            chapterDto.attributes.data.map { "/data/$hash/$it" }
         }
 
         return pageSuffix.mapIndexed { index, imgUrl ->

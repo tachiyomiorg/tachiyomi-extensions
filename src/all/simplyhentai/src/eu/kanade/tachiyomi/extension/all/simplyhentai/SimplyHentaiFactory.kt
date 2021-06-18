@@ -27,4 +27,8 @@ class SimplyHentaiES : SimplyHentai("es", "spanish", "8")
 class SimplyHentaiRU : SimplyHentai("ru", "russian", "7")
 class SimplyHentaiFR : SimplyHentai("fr", "french", "3")
 class SimplyHentaiDE : SimplyHentai("de", "german", "4")
-class SimplyHentaiPT : SimplyHentai("pt", "portuguese", "6")
+class SimplyHentaiPT : SimplyHentai("pt-BR", "portuguese", "6") {
+    // The site uses a Portugal flag for the language,
+    // but the contents are in Brazilian Portuguese.
+    override val id: Long = 7265793330155215502
+}

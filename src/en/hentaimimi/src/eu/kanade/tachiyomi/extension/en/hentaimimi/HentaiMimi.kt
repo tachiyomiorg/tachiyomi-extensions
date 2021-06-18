@@ -9,12 +9,16 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.TimeUnit
 
 /*
@@ -29,6 +33,8 @@ class HentaiMimi : ParsedHttpSource() {
     override val lang = "en"
     override val name = "HentaiMimi"
     override val supportsLatest = true
+
+    private val json: Json by injectLazy()
 
     override val client: OkHttpClient = network.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
@@ -150,16 +156,16 @@ class HentaiMimi : ParsedHttpSource() {
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun pageListParse(document: Document): List<Page> {
+        val pagesJsSource = document.select("body main script").html()
+        val pagesJsArray = pagesJsSource.substring(pagesJsSource.indexOf("["))
+
         val pages = mutableListOf<Page>()
-        document.select("body main script").html().substringAfter("[").substringBefore("]").split("\",\"").forEachIndexed { index, it ->
-            val url = "$baseUrl/${it.replace("\\", "").replace("\"", "")}"
+
+        // note: a simple JS array is also a valid JSON array - just unmarshal it
+        json.parseToJsonElement(pagesJsArray).jsonArray.mapIndexed { index, jsonElement ->
+            val url = "$baseUrl/${jsonElement.jsonPrimitive.content.replace("#", "%23")}"
             pages.add(Page(index, url, url))
         }
-
-        /*document.select("div#lightgallery > a").forEachIndexed() { index, it ->
-            val url = it.select("img").attr("abs:src")
-            pages.add(Page(index, url, url))
-        }*/
         return pages
     }
 

@@ -8,59 +8,73 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 class NaniScans : HttpSource() {
-    override val baseUrl = "https://naniscans.com"
-    override val lang = "en"
+
     override val name = "NANI? Scans"
+
+    override val baseUrl = "https://naniscans.com"
+
+    override val lang = "en"
+
     override val supportsLatest = true
+
     override val versionId = 2
 
     private val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
+    private val json: Json by injectLazy()
+
     override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val titlesJson = JSONArray(response.body!!.string())
-        val mangaMap = mutableMapOf<Long, SManga>()
+        val titlesJson = json.parseToJsonElement(response.body!!.string()).jsonArray
 
-        for (i in 0 until titlesJson.length()) {
-            val manga = titlesJson.getJSONObject(i)
+        val mangaList = titlesJson
+            .mapNotNull {
+                val manga = it.jsonObject
 
-            if (manga.getString("type") != "Comic")
-                continue
+                if (manga["type"]!!.jsonPrimitive.content != "Comic") {
+                    return@mapNotNull null
+                }
 
-            var date = manga.getString("updatedAt")
+                val date = manga["updatedAt"]!!.jsonPrimitive.content.let { datePrimitive ->
+                    if (datePrimitive == "null") "2018-04-10T17:38:56" else datePrimitive
+                }
 
-            if (date == "null")
-                date = "2018-04-10T17:38:56"
+                Pair(dateParser.parse(date)!!.time, getBareSManga(manga))
+            }
+            .sortedByDescending { it.first }
+            .map { it.second }
 
-            mangaMap[dateParser.parse(date)!!.time] = getBareSManga(manga)
-        }
-
-        return MangasPage(mangaMap.toSortedMap().values.toList().asReversed(), false)
+        return MangasPage(mangaList, false)
     }
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/api/titles")
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val titlesJson = JSONArray(response.body!!.string())
-        val mangaList = mutableListOf<SManga>()
+        val titlesJson = json.parseToJsonElement(response.body!!.string()).jsonArray
 
-        for (i in 0 until titlesJson.length()) {
-            val manga = titlesJson.getJSONObject(i)
+        val mangaList = titlesJson.mapNotNull {
+            val manga = it.jsonObject
 
-            if (manga.getString("type") != "Comic")
-                continue
-
-            mangaList.add(getBareSManga(manga))
+            if (manga["type"]!!.jsonPrimitive.content == "Comic") {
+                getBareSManga(manga)
+            } else {
+                null
+            }
         }
 
         return MangasPage(mangaList, false)
@@ -77,65 +91,54 @@ class NaniScans : HttpSource() {
     override fun mangaDetailsRequest(manga: SManga) = GET("$baseUrl/titles/${manga.url}")
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val titleJson = JSONObject(response.body!!.string())
+        val titleJson = json.parseToJsonElement(response.body!!.string()).jsonObject
 
-        if (titleJson.getString("type") != "Comic")
+        if (titleJson["type"]!!.jsonPrimitive.content != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
 
         return SManga.create().apply {
-            title = titleJson.getString("name")
-            artist = titleJson.getString("artist")
-            author = titleJson.getString("author")
-            description = titleJson.getString("synopsis")
-            status = getStatus(titleJson.getString("status"))
-            thumbnail_url = "$baseUrl${titleJson.getString("coverUrl")}"
-            genre = titleJson.getJSONArray("tags").join(", ").replace("\"", "")
-            url = titleJson.getString("id")
+            title = titleJson["name"]!!.jsonPrimitive.content
+            artist = titleJson["artist"]!!.jsonPrimitive.content
+            author = titleJson["author"]!!.jsonPrimitive.content
+            description = titleJson["synopsis"]!!.jsonPrimitive.content
+            status = getStatus(titleJson["status"]!!.jsonPrimitive.content)
+            thumbnail_url = "$baseUrl${titleJson["coverUrl"]!!.jsonPrimitive.content}"
+            genre = titleJson["tags"]!!.jsonArray.joinToString { it.jsonPrimitive.content }
+            url = titleJson["id"]!!.jsonPrimitive.content
         }
     }
 
     override fun chapterListRequest(manga: SManga) = GET("$baseUrl/api/titles/${manga.url}")
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val titleJson = JSONObject(response.body!!.string())
+        val titleJson = json.parseToJsonElement(response.body!!.string()).jsonObject
 
-        if (titleJson.getString("type") != "Comic")
+        if (titleJson["type"]!!.jsonPrimitive.content != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
 
-        val chaptersJson = titleJson.getJSONArray("chapters")
-        val chaptersList = mutableListOf<SChapter>()
+        val chaptersJson = titleJson["chapters"]!!.jsonArray
 
-        for (i in 0 until chaptersJson.length()) {
-            val chapter = chaptersJson.getJSONObject(i)
+        return titleJson["chapters"]!!.jsonArray.map {
+            val chapter = it.jsonObject
 
-            chaptersList.add(
-                SChapter.create().apply {
-                    chapter_number = chapter.get("number").toString().toFloat()
-                    name = getChapterTitle(chapter)
-                    date_upload = dateParser.parse(chapter.getString("releaseDate"))!!.time
-                    url = "${titleJson.getString("id")}_${chapter.getString("id")}"
-                }
-            )
+            SChapter.create().apply {
+                chapter_number = chapter["number"]!!.jsonPrimitive.content.toFloatOrNull() ?: -1f
+                name = getChapterTitle(chapter)
+                date_upload = dateParser.parse(chapter["releaseDate"]!!.jsonPrimitive.content)!!.time
+                url = "${titleJson["id"]!!.jsonPrimitive.content} ${chapter["id"]!!.jsonPrimitive.content}"
+            }
         }
-
-        return chaptersList
     }
 
     override fun pageListRequest(chapter: SChapter): Request = GET("$baseUrl/api/chapters/${chapter.url.substring(37, 73)}")
 
     override fun pageListParse(response: Response): List<Page> {
-        val jsonObject = JSONObject(response.body!!.string())
+        val jsonObject = json.parseToJsonElement(response.body!!.string()).jsonObject
 
-        val pagesJson = jsonObject.getJSONArray("pages")
-        val pagesList = mutableListOf<Page>()
-
-        for (i in 0 until pagesJson.length()) {
-            val item = pagesJson.getJSONObject(i)
-
-            pagesList.add(Page(item.getInt("number"), "", "$baseUrl${item.getString("pageUrl")}"))
+        return jsonObject["pages"]!!.jsonArray.map {
+            val item = it.jsonObject
+            Page(item["number"]!!.jsonPrimitive.int, "", "$baseUrl${item["pageUrl"]!!.jsonPrimitive.content}")
         }
-
-        return pagesList
     }
 
     override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not Used.")
@@ -146,23 +149,23 @@ class NaniScans : HttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    private fun getChapterTitle(chapter: JSONObject): String {
+    private fun getChapterTitle(chapter: JsonObject): String {
         val chapterName = mutableListOf<String>()
 
-        if (chapter.getString("volume") != "null") {
-            chapterName.add("Vol." + chapter.getString("volume"))
+        if (chapter["volume"]!!.jsonPrimitive.content != "null") {
+            chapterName.add("Vol." + chapter["volume"]!!.jsonPrimitive.content)
         }
 
-        if (chapter.getString("number") != "null") {
-            chapterName.add("Ch." + chapter.getString("number"))
+        if (chapter["number"]!!.jsonPrimitive.content != "null") {
+            chapterName.add("Ch." + chapter["number"]!!.jsonPrimitive.content)
         }
 
-        if (chapter.getString("name") != "null") {
+        if (chapter["name"]!!.jsonPrimitive.content != "null") {
             if (chapterName.isNotEmpty()) {
                 chapterName.add("-")
             }
 
-            chapterName.add(chapter.getString("name"))
+            chapterName.add(chapter["name"]!!.jsonPrimitive.content)
         }
 
         if (chapterName.isEmpty()) {
@@ -172,9 +175,9 @@ class NaniScans : HttpSource() {
         return chapterName.joinToString(" ")
     }
 
-    private fun getBareSManga(manga: JSONObject): SManga = SManga.create().apply {
-        title = manga.getString("name")
-        thumbnail_url = "$baseUrl${manga.getString("coverUrl")}"
-        url = manga.getString("id")
+    private fun getBareSManga(manga: JsonObject): SManga = SManga.create().apply {
+        title = manga["name"]!!.jsonPrimitive.content
+        thumbnail_url = "$baseUrl${manga["coverUrl"]!!.jsonPrimitive.content}"
+        url = manga["id"]!!.jsonPrimitive.content
     }
 }

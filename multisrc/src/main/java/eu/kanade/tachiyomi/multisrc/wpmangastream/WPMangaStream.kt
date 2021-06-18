@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.multisrc.wpmangastream
 
-//import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor // added to override
 import android.app.Application
 import android.content.SharedPreferences
 import eu.kanade.tachiyomi.network.GET
@@ -12,17 +11,20 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -67,16 +69,15 @@ abstract class WPMangaStream(
 
     private fun getShowThumbnail(): Int = preferences.getInt(SHOW_THUMBNAIL_PREF, 0)
 
-    //private val rateLimitInterceptor = RateLimitInterceptor(4)
-
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-        //.addNetworkInterceptor(rateLimitInterceptor)
         .build()
 
     protected fun Element.imgAttr(): String = if (this.hasAttr("data-src")) this.attr("abs:data-src") else this.attr("abs:src")
     protected fun Elements.imgAttr(): String = this.first().imgAttr()
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/manga/?page=$page&order=popular", headers)
@@ -87,7 +88,7 @@ abstract class WPMangaStream(
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/manga/".toHttpUrlOrNull()!!.newBuilder()
+        var url = "$baseUrl/manga/".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
         url.addQueryParameter("page", page.toString())
         filters.forEach { filter ->
@@ -117,10 +118,18 @@ abstract class WPMangaStream(
                         .filter { it.state != Filter.TriState.STATE_IGNORE }
                         .forEach { url.addQueryParameter("genre[]", it.id) }
                 }
+                // if site has project page, default value "hasProjectPage" = false
+                is ProjectFilter -> {
+                    if (filter.toUriPart() == "project-filter-on") {
+                        url = "$baseUrl$projectPageString/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                    }
+                }
             }
         }
         return GET(url.build().toString(), headers)
     }
+
+    open val projectPageString = "/project"
 
     override fun popularMangaSelector() = "div.bs"
     override fun latestUpdatesSelector() = popularMangaSelector()
@@ -167,7 +176,7 @@ abstract class WPMangaStream(
 
                 // add alternative name to manga description
                 document.select(altNameSelector).firstOrNull()?.ownText()?.let {
-                    if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                    if (it.isEmpty().not() && it != "N/A" && it != "-") {
                         description += when {
                             description!!.isEmpty() -> altName + it
                             else -> "\n\n$altName" + it
@@ -182,7 +191,7 @@ abstract class WPMangaStream(
     open val altNameSelector = ".alternative, .wd-full:contains(Alt) span, .alter, .seriestualt"
     open val altName = "Alternative Name" + ": "
 
-    protected fun parseStatus(element: String?): Int = when {
+    protected open fun parseStatus(element: String?): Int = when {
         element == null -> SManga.UNKNOWN
         listOf("ongoing", "publishing").any { it.contains(element, ignoreCase = true) } -> SManga.ONGOING
         listOf("completed").any { it.contains(element, ignoreCase = true) } -> SManga.COMPLETED
@@ -265,24 +274,26 @@ abstract class WPMangaStream(
     open val pageSelector = "div#readerarea img"
 
     override fun pageListParse(document: Document): List<Page> {
-        var pages = mutableListOf<Page>()
-        document.select(pageSelector)
+        val htmlPages = document.select(pageSelector)
             .filterNot { it.attr("src").isNullOrEmpty() }
-            .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
-
-        // Some wpmangastream sites now load pages via javascript
-        if (pages.isNotEmpty()) { return pages }
+            .mapIndexed { i, img -> Page(i, "", img.attr("abs:src")) }
+            .toMutableList()
 
         val docString = document.toString()
         val imageListRegex = Regex("\\\"images.*?:.*?(\\[.*?\\])")
+        val imageListJson = imageListRegex.find(docString)!!.destructured.toList()[0]
 
-        val imageList = JSONArray(imageListRegex.find(docString)!!.destructured.toList()[0])
+        val imageList = json.parseToJsonElement(imageListJson).jsonArray
 
-        for (i in 0 until imageList.length()) {
-            pages.add(Page(i, "", imageList.getString(i)))
+        val scriptPages = imageList.mapIndexed { i, jsonEl ->
+            Page(i, "", jsonEl.jsonPrimitive.content)
         }
 
-        return pages
+        if (htmlPages.size < scriptPages.size) {
+            htmlPages += scriptPages
+        }
+
+        return htmlPages.distinctBy { it.imageUrl }
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
@@ -290,13 +301,14 @@ abstract class WPMangaStream(
     override fun imageRequest(page: Page): Request {
         val headers = Headers.Builder()
         headers.apply {
+            add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
             add("Referer", baseUrl)
             add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.100 Mobile Safari/537.36")
         }
 
         if (page.imageUrl!!.contains(".wp.com")) {
             headers.apply {
-                add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+                set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
             }
         }
 
@@ -348,20 +360,43 @@ abstract class WPMangaStream(
         )
     )
 
+    protected class ProjectFilter : UriPartFilter(
+        "Filter Project",
+        arrayOf(
+            Pair("Show all manga", ""),
+            Pair("Show only project manga", "project-filter-on")
+        )
+    )
+
     protected class Genre(name: String, val id: String = name) : Filter.TriState(name)
     protected class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
 
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
-        Filter.Header("Genre exclusion not available for all sources"),
-        Filter.Separator(),
-        AuthorFilter(),
-        YearFilter(),
-        StatusFilter(),
-        TypeFilter(),
-        SortByFilter(),
-        GenreListFilter(getGenreList())
-    )
+    open val hasProjectPage = false
+
+    override fun getFilterList(): FilterList {
+        val filters = mutableListOf<Filter<*>>(
+            Filter.Header("NOTE: Ignored if using text search!"),
+            Filter.Header("Genre exclusion not available for all sources"),
+            Filter.Separator(),
+            AuthorFilter(),
+            YearFilter(),
+            StatusFilter(),
+            TypeFilter(),
+            SortByFilter(),
+            GenreListFilter(getGenreList()),
+        )
+        if (hasProjectPage) {
+            filters.addAll(
+                mutableListOf<Filter<*>>(
+                    Filter.Separator(),
+                    Filter.Header("NOTE: cant be used with other filter!"),
+                    Filter.Header("$name Project List page"),
+                    ProjectFilter(),
+                )
+            )
+        }
+        return FilterList(filters)
+    }
 
     protected open fun getGenreList(): List<Genre> = listOf(
         Genre("4 Koma", "4-koma"),

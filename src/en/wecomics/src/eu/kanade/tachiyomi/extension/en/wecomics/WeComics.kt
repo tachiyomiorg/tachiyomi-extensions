@@ -163,10 +163,10 @@ class WeComics : HttpSource() {
         // Error code 401 when not logged in and data is empty when logged in,
         // assuming this is populated after a purchase
         val jsonObject = gson.fromJson<JsonObject>(response.body!!.string())
-        if (jsonObject["error_code"].asInt != 2 &&
-            jsonObject["data"]["chapter"]["data"].asString != ""
+        if (jsonObject["error_code"].asInt == 401 ||
+            jsonObject["data"]["chapter"]["data"].asString == ""
         )
-            throw Exception("Chapter is currently not available.")
+            throw Exception("Chapter is currently not available.\nLog in through WebView if purchased.")
 
         val data = jsonObject["data"]["chapter"]["data"].asString
         val key = data.substring(0, 8)

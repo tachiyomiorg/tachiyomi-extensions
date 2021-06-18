@@ -210,7 +210,12 @@ class LibManga : ConfigurableSource, HttpSource() {
             else -> SManga.UNKNOWN
         }
         manga.genre = genres.plusElement(category).plusElement(rawAgeStop).joinToString { it.trim() }
-        manga.description = document.select(".media-name__main").text() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")" + "\nАльтернативные названия:\n" + document.select(".media-info-list__item_alt-names .media-info-list__value div").map { it.text() }.joinToString(" / ") + "\n\n" + document.select(".media-description__text").text()
+        val altSelector = document.select(".media-info-list__item_alt-names .media-info-list__value div")
+        var altName = ""
+        if (altSelector.isNotEmpty()) {
+            altName = "Альтернативные названия:\n" + altSelector.map { it.text() }.joinToString(" / ") + "\n\n"
+        }
+        manga.description = document.select(".media-name__main").text() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + altName + document.select(".media-description__text").text()
         return manga
     }
 
@@ -398,7 +403,7 @@ class LibManga : ConfigurableSource, HttpSource() {
 
     private fun checkImage(url: String): Boolean {
         val response = client.newCall(Request.Builder().url(url).head().headers(headers).build()).execute()
-        return response.isSuccessful && (response.header("Content-Length")?.toInt()!! > 320)
+        return response.isSuccessful && (response.header("content-length", "0")?.toInt()!! > 320)
     }
 
     override fun fetchImageUrl(page: Page): Observable<String> {

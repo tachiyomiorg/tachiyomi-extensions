@@ -1,13 +1,16 @@
 package eu.kanade.tachiyomi.extension.id.manhuaid
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -34,7 +37,7 @@ class ManhuaID : ParsedHttpSource() {
     override fun popularMangaFromElement(element: Element) = SManga.create().apply {
         setUrlWithoutDomain(element.attr("href"))
         title = element.select("img").attr("alt")
-        thumbnail_url = element.select("img").attr("src")
+        thumbnail_url = element.select("img").attr("abs:src")
     }
 
     override fun popularMangaNextPageSelector() = "[rel=nofollow]"
@@ -51,11 +54,23 @@ class ManhuaID : ParsedHttpSource() {
     // search
     override fun searchMangaSelector() = popularMangaSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = GET("$baseUrl/search?q=$query", headers)
-
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        var url = "$baseUrl/search?".toHttpUrlOrNull()!!.newBuilder()
+        url.addQueryParameter("q", query)
+        filters.forEach { filter ->
+            when (filter) {
+                is ProjectFilter -> {
+                    if (filter.toUriPart() == "project-filter-on") {
+                        url = "$baseUrl/project?page_project=$page".toHttpUrlOrNull()!!.newBuilder()
+                    }
+                }
+            }
+        }
+        return GET(url.toString(), headers)
+    }
     override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
 
-    override fun searchMangaNextPageSelector(): String? = null
+    override fun searchMangaNextPageSelector() = "li:last-child:not(.active) [rel=nofollow]"
 
     // manga details
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
@@ -114,4 +129,23 @@ class ManhuaID : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
+
+    override fun getFilterList() = FilterList(
+        Filter.Header("NOTE: cant be used with search or other filter!"),
+        Filter.Header("$name Project List page"),
+        ProjectFilter(),
+    )
+
+    private class ProjectFilter : UriPartFilter(
+        "Filter Project",
+        arrayOf(
+            Pair("Show all manga", ""),
+            Pair("Show only project manga", "project-filter-on")
+        )
+    )
+
+    private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+        Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+        fun toUriPart() = vals[state].second
+    }
 }

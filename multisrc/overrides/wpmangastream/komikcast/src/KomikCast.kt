@@ -29,9 +29,18 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36 Edg/90.0.818.62")
-        .add("Referer", "https://www.google.com")
+        .add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+        .add("Accept-language", "en-US,en;q=0.9")
+        .add("Referer", baseUrl)
 
+    override fun imageRequest(page: Page): Request {
+        val newHeaders = headersBuilder()
+            .set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+            .set("Referer", baseUrl)
+            .build()
+
+        return GET(page.imageUrl!!, newHeaders)
+    }
     override fun popularMangaSelector() = "div.list-update_item"
 
     override fun popularMangaRequest(page: Int): Request {
@@ -54,7 +63,7 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
             }
             url.toString()
         } else {
-            val url = "$baseUrl/daftar-komik/page/$page".toHttpUrlOrNull()!!.newBuilder()
+            var url = "$baseUrl/daftar-komik/page/$page".toHttpUrlOrNull()!!.newBuilder()
             var orderBy: String
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
@@ -75,6 +84,11 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
                     is SortByFilter -> {
                         orderBy = filter.toUriPart()
                         url.addQueryParameter("order", orderBy)
+                    }
+                    is ProjectFilter -> {
+                        if (filter.toUriPart() == "project-filter-on") {
+                            url = "$baseUrl/project-list/page/$page".toHttpUrlOrNull()!!.newBuilder()
+                        }
                     }
                 }
             }
@@ -112,7 +126,7 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
 
                 // add alternative name to manga description
                 document.select(altNameSelector).firstOrNull()?.ownText()?.let {
-                    if (it.isEmpty().not() && it !="N/A" && it != "-") {
+                    if (it.isEmpty().not() && it != "N/A" && it != "-") {
                         description += when {
                             description!!.isEmpty() -> altName + it
                             else -> "\n\n$altName" + it
@@ -149,6 +163,9 @@ class KomikCast : WPMangaStream("Komik Cast", "https://komikcast.com", "id") {
         Filter.Separator(),
         StatusFilter(),
         Filter.Separator(),
-        GenreListFilter(getGenreList())
+        GenreListFilter(getGenreList()),
+        Filter.Header("NOTE: cant be used with other filter!"),
+        Filter.Header("$name Project List page"),
+        ProjectFilter()
     )
 }

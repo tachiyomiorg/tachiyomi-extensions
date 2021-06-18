@@ -29,26 +29,21 @@ class HitomiNozomi(
     private val tagIndexVersion: Long,
     private val galleriesIndexVersion: Long
 ) {
-    fun getGalleryIdsForQuery(query: String): Single<List<Int>> {
-        val replacedQuery = query.replace('_', ' ')
-
-        if (':' in replacedQuery) {
-            val sides = replacedQuery.split(':')
+    fun getGalleryIdsForQuery(query: String, language: String, popular: Boolean): Single<List<Int>> {
+        if (':' in query) {
+            val sides = query.split(':')
             val namespace = sides[0]
             var tag = sides[1]
 
             var area: String? = namespace
-            var language = "all"
             if (namespace == "female" || namespace == "male") {
                 area = "tag"
-                tag = replacedQuery
+                tag = query
             } else if (namespace == "language") {
-                area = null
-                language = tag
-                tag = "index"
+                return getGalleryIdsFromNozomi(null, "index", tag, popular)
             }
 
-            return getGalleryIdsFromNozomi(area, tag, language)
+            return getGalleryIdsFromNozomi(area, tag, language, popular)
         }
 
         val key = hashTerm(query)
@@ -202,10 +197,15 @@ class HitomiNozomi(
             }.toSingle()
     }
 
-    fun getGalleryIdsFromNozomi(area: String?, tag: String, language: String): Single<List<Int>> {
-        var nozomiAddress = "$LTN_BASE_URL/$COMPRESSED_NOZOMI_PREFIX/$tag-$language$NOZOMI_EXTENSION"
+    fun getGalleryIdsFromNozomi(area: String?, tag: String, language: String, popular: Boolean): Single<List<Int>> {
+        val replacedTag = tag.replace('_', ' ')
+        var nozomiAddress = "$LTN_BASE_URL/$COMPRESSED_NOZOMI_PREFIX/$replacedTag-$language$NOZOMI_EXTENSION"
         if (area != null) {
-            nozomiAddress = "$LTN_BASE_URL/$COMPRESSED_NOZOMI_PREFIX/$area/$tag-$language$NOZOMI_EXTENSION"
+            nozomiAddress = if (popular) {
+                "$LTN_BASE_URL/$COMPRESSED_NOZOMI_PREFIX/$area/popular/$replacedTag-$language$NOZOMI_EXTENSION"
+            } else {
+                "$LTN_BASE_URL/$COMPRESSED_NOZOMI_PREFIX/$area/$replacedTag-$language$NOZOMI_EXTENSION"
+            }
         }
 
         return client.newCall(

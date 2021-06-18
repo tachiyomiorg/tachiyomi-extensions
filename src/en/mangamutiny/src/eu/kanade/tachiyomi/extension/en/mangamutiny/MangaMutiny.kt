@@ -1,9 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.mangamutiny
 
 import android.net.Uri
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -13,28 +10,12 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
-
-fun JsonObject.getNullable(key: String): JsonElement? {
-    val value: JsonElement = this.get(key) ?: return null
-
-    if (value.isJsonNull) {
-        return null
-    }
-
-    return value
-}
-
-fun Float.toStringWithoutDotZero(): String = when (this % 1) {
-    0F -> this.toInt().toString()
-    else -> this.toString()
-}
+import uy.kohesive.injekt.injectLazy
 
 class MangaMutiny : HttpSource() {
 
@@ -45,7 +26,7 @@ class MangaMutiny : HttpSource() {
 
     override val lang = "en"
 
-    private val parser = JsonParser()
+    private val json: Json by injectLazy()
 
     private val baseUrlAPI = "https://api.mangamutiny.org"
 
@@ -78,63 +59,14 @@ class MangaMutiny : HttpSource() {
         mangaDetailsRequestCommon(manga, false)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapterList = mutableListOf<SChapter>()
         val responseBody = response.body
 
-        if (responseBody != null) {
-            val jsonChapters = JsonParser().parse(responseBody.charStream()).asJsonObject
-                .get("chapters").asJsonArray
-            for (singleChapterJsonElement in jsonChapters) {
-                val singleChapterJsonObject = singleChapterJsonElement.asJsonObject
-
-                chapterList.add(
-                    SChapter.create().apply {
-                        name = chapterTitleBuilder(singleChapterJsonObject)
-                        url = singleChapterJsonObject.get("slug").asString
-                        date_upload = parseDate(singleChapterJsonObject.get("releasedAt").asString)
-
-                        chapterNumberBuilder(singleChapterJsonObject)?.let { chapterNumber ->
-                            chapter_number = chapterNumber
-                        }
-                    }
-                )
+        return responseBody?.use {
+            json.decodeFromString(ListChapterDS, it.string()).also {
+                responseBody.close()
             }
-
-            responseBody.close()
-        }
-
-        return chapterList
+        } ?: listOf()
     }
-
-    private fun chapterNumberBuilder(rootNode: JsonObject): Float? =
-        rootNode.getNullable("chapter")?.asFloat
-
-    private fun chapterTitleBuilder(rootNode: JsonObject): String {
-        val volume = rootNode.getNullable("volume")?.asInt
-
-        val chapter = rootNode.getNullable("chapter")?.asFloat?.toStringWithoutDotZero()
-
-        val textTitle = rootNode.getNullable("title")?.asString
-
-        val chapterTitle = StringBuilder()
-        if (volume != null) chapterTitle.append("Vol. $volume")
-        if (chapter != null) {
-            if (volume != null) chapterTitle.append(" ")
-            chapterTitle.append("Chapter $chapter")
-        }
-        if (textTitle != null && textTitle != "") {
-            if (volume != null || chapter != null) chapterTitle.append(": ")
-            chapterTitle.append(textTitle)
-        }
-
-        return chapterTitle.toString()
-    }
-
-    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
-        .apply { timeZone = TimeZone.getTimeZone("UTC") }
-
-    private fun parseDate(dateAsString: String): Long =
-        dateFormatter.parse(dateAsString)?.time ?: 0
 
     // latest
     override fun latestUpdatesRequest(page: Int): Request =
@@ -162,32 +94,15 @@ class MangaMutiny : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val manga = SManga.create()
         val responseBody = response.body
 
         if (responseBody != null) {
-            val rootNode = parser.parse(responseBody.charStream()).asJsonObject
-            manga.apply {
-                status = when (rootNode.get("status").asString) {
-                    "ongoing" -> SManga.ONGOING
-                    "completed" -> SManga.COMPLETED
-                    else -> SManga.UNKNOWN
-                }
-                description = rootNode.getNullable("summary")?.asString
-                thumbnail_url = rootNode.getNullable("thumbnail")?.asString
-                title = rootNode.get("title").asString
-                url = rootNode.get("slug").asString
-                artist = rootNode.getNullable("artists")?.asString
-                author = rootNode.get("authors").asString
-
-                genre = rootNode.get("tags").asJsonArray
-                    .joinToString { singleGenre -> singleGenre.asString }
+            return responseBody.use {
+                json.decodeFromString(SMangaDS, it.string())
             }
-
-            responseBody.close()
+        } else {
+            throw IllegalStateException("Response code ${response.code}")
         }
-
-        return manga
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -199,31 +114,11 @@ class MangaMutiny : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val pageList = ArrayList<Page>()
-
         val responseBody = response.body
 
-        if (responseBody != null) {
-            val rootNode = parser.parse(responseBody.charStream()).asJsonObject
-
-            // Build chapter url for every image of this chapter
-            val storageLocation = rootNode.get("storage").asString
-            val manga = rootNode.get("manga").asString
-            val chapterId = rootNode.get("id").asString
-
-            val chapterUrl = "$storageLocation/$manga/$chapterId/"
-
-            // Process every image of this chapter
-            val images = rootNode.get("images").asJsonArray
-
-            for (i in 0 until images.size()) {
-                pageList.add(Page(i, "", chapterUrl + images[i].asString))
-            }
-
-            responseBody.close()
-        }
-
-        return pageList
+        return responseBody?.use {
+            json.decodeFromString(ListPageDS, it.string())
+        } ?: listOf()
     }
 
     // Search
@@ -234,46 +129,20 @@ class MangaMutiny : HttpSource() {
 
     // commonly used functions
     private fun mangaParse(response: Response): MangasPage {
-        val mangasPage = ArrayList<SManga>()
         val responseBody = response.body
 
-        var totalObjects = 0
+        return if (responseBody != null) {
+            val deserializationResult = json.decodeFromString(PageInfoDS, responseBody.string())
+            val totalObjects = deserializationResult.second
+            val skipped = response.request.url.queryParameter("skip")?.toInt() ?: 0
+            val moreElementsToSkip = skipped + fetchAmount < totalObjects
+            val pageSizeEqualsFetchAmount = deserializationResult.first.size == fetchAmount
+            val hasMorePages = pageSizeEqualsFetchAmount && moreElementsToSkip
 
-        if (responseBody != null) {
-            val rootNode = parser.parse(responseBody.charStream())
-
-            if (rootNode.isJsonObject) {
-                val rootObject = rootNode.asJsonObject
-                val itemsArray = rootObject.get("items").asJsonArray
-
-                for (singleItem in itemsArray) {
-                    val mangaObject = singleItem.asJsonObject
-                    mangasPage.add(
-                        SManga.create().apply {
-                            this.title = mangaObject.get("title").asString
-                            this.thumbnail_url = mangaObject.getNullable("thumbnail")?.asString
-                            this.url = mangaObject.get("slug").asString
-                        }
-                    )
-                }
-
-                // total number of manga the server found in its database
-                // and is returning paginated page by page:
-                totalObjects = rootObject.getNullable("total")?.asInt ?: 0
-            }
-
-            responseBody.close()
+            MangasPage(deserializationResult.first, hasMorePages)
+        } else {
+            MangasPage(listOf(), false)
         }
-
-        val skipped = response.request.url.queryParameter("skip")?.toInt() ?: 0
-
-        val moreElementsToSkip = skipped + fetchAmount < totalObjects
-
-        val pageSizeEqualsFetchAmount = mangasPage.size == fetchAmount
-
-        val hasMorePages = pageSizeEqualsFetchAmount && moreElementsToSkip
-
-        return MangasPage(mangasPage, hasMorePages)
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {

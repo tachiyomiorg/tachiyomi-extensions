@@ -34,16 +34,22 @@ import java.util.Calendar
 abstract class Luscious(
     override val name: String,
     override val baseUrl: String,
-    override val lang: String ) : ConfigurableSource, HttpSource() {
+    final override val lang: String
+) : ConfigurableSource, HttpSource() {
 
-    //Based on Luscios single source extension form https://github.com/tachiyomiorg/tachiyomi-extensions/commit/aacf56d0c0ddb173372aac69d798ae998f178377
-    //with modifiaction to make it support multisrc
+    // Based on Luscious single source extension form https://github.com/tachiyomiorg/tachiyomi-extensions/commit/aacf56d0c0ddb173372aac69d798ae998f178377
+    // with modification to make it support multisrc
 
     override val supportsLatest: Boolean = true
+
     private val apiBaseUrl: String = "$baseUrl/graphql/nobatch/"
+
     private val gson = Gson()
+
     override val client: OkHttpClient = network.cloudflareClient
+
     private val lusLang: String = toLusLang(lang)
+
     private fun toLusLang (lang: String): String {
         return when (lang) {
             "all" -> FILTER_VALUE_IGNORE
@@ -55,7 +61,7 @@ abstract class Luscious(
             "fr" -> "6"
             "zh" -> "8"
             "ko" -> "9"
-            "pt" -> "100"
+            "pt-BR" -> "100"
             "th" -> "101"
             else -> "99"
         }
@@ -652,7 +658,7 @@ abstract class Luscious(
         CheckboxFilterOption("Chinese", toLusLang("zh"), false),
         CheckboxFilterOption("Korean", toLusLang("ko"), false),
         CheckboxFilterOption("Others", toLusLang("other"), false),
-        CheckboxFilterOption("Portugese", toLusLang("pt"), false),
+        CheckboxFilterOption("Portuguese", toLusLang("pt-BR"), false),
         CheckboxFilterOption("Thai", toLusLang("th"), false)
     ).filterNot { it.value == lusLang }
 

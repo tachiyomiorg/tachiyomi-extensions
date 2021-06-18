@@ -1,40 +1,53 @@
 package eu.kanade.tachiyomi.extension.zh.qimiaomh
 
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
 class Qimiaomh : ParsedHttpSource() {
+
     override val name: String = "奇妙漫画"
+
     override val lang: String = "zh"
+
     override val baseUrl: String = "https://www.qimiaomh.com"
+
     override val supportsLatest: Boolean = true
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
         .retryOnConnectionFailure(true)
         .followRedirects(true)
-        .build()!!
+        .build()
+
+    private val json: Json by injectLazy()
 
     // Popular
     override fun popularMangaRequest(page: Int): Request {
         return GET("$baseUrl/list-1------hits--$page.html", headers)
     }
+
     override fun popularMangaNextPageSelector(): String? = "a:contains(下一页)"
+
     override fun popularMangaSelector(): String = "div.classification"
+
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
         url = element.select("a").first().attr("href")
         thumbnail_url = element.select("img.lazyload").attr("abs:data-src")
@@ -45,8 +58,11 @@ class Qimiaomh : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int): Request {
         return GET("$baseUrl/list-1------updatetime--$page.html", headers)
     }
+
     override fun latestUpdatesNextPageSelector(): String? = popularMangaNextPageSelector()
+
     override fun latestUpdatesSelector(): String = popularMangaSelector()
+
     override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     // Search
@@ -54,8 +70,11 @@ class Qimiaomh : ParsedHttpSource() {
         throw Exception("不管用 (T_T)")
         // Todo Filters
     }
+
     override fun searchMangaNextPageSelector(): String? = popularMangaNextPageSelector()
+
     override fun searchMangaSelector(): String = popularMangaSelector()
+
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     // Details
@@ -78,31 +97,31 @@ class Qimiaomh : ParsedHttpSource() {
     // Chapters
 
     override fun chapterListSelector(): String = "div.comic-content-list ul.comic-content-c"
+
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         url = element.select("a").first().attr("href")
         name = element.select("li.tit").text().trim()
     }
+
     private fun parseDate(date: String): Long {
         return SimpleDateFormat("dd/MM/yyyy", Locale.US).parse(date)?.time ?: 0L
     }
 
     // Pages
 
-    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+    override fun pageListParse(document: Document): List<Page> {
         val script = document.select("script:containsData(var did =)").html()
         val did = script.substringAfter("var did = ").substringBefore(";")
         val sid = script.substringAfter("var sid = ").substringBefore(";")
+
         val url = "$baseUrl/Action/Play/AjaxLoadImgUrl?did=$did&sid=$sid&tmp=${Random().nextFloat()}"
-        val body = client.newCall(GET(url, headers)).execute().body!!.string()
-        val json = JsonParser().parse(body).asJsonObject
-        val images = json["listImg"].asJsonArray
-        images.forEachIndexed { index, jsonElement ->
-            add(Page(index, "", jsonElement.string))
+        val response = client.newCall(GET(url, headers)).execute()
+        val result = json.parseToJsonElement(response.body!!.string()).jsonObject
+
+        return result["listImg"]!!.jsonArray.mapIndexed { i, jsonEl ->
+            Page(i, "", jsonEl.jsonPrimitive.content)
         }
     }
-    override fun imageUrlParse(document: Document): String {
-        throw Exception("Not Used")
-    }
 
-    // Not Used
+    override fun imageUrlParse(document: Document): String = ""
 }

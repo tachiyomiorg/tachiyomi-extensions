@@ -1,4 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.mangapark
+
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -42,7 +43,7 @@ class MangaParkUrlActivity : Activity() {
     private fun fromGuya(pathSegments: MutableList<String>): String? {
         return if (pathSegments.size >= 2) {
             val id = pathSegments[1]
-            "ID:$id"
+            "id:$id"
         } else {
             null
         }

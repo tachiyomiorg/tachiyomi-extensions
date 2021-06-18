@@ -19,6 +19,9 @@ class MangaToonFactory : SourceFactory {
     class ID : MangaToon("id", "id")
     class VI : MangaToon("vi", "vi")
     class ES : MangaToon("es", "es")
-    class PT : MangaToon("pt", "pt")
+    class PT : MangaToon("pt-BR", "pt") {
+        // Hardcode the id because the language wasn't specific.
+        override val id: Long = 2064722193112934135
+    }
     class TH : MangaToon("th", "th")
 }

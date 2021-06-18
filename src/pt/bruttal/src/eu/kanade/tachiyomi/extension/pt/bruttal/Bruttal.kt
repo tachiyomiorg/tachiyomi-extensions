@@ -1,12 +1,5 @@
 package eu.kanade.tachiyomi.extension.pt.bruttal
 
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -16,11 +9,14 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.TimeUnit
 
 class Bruttal : HttpSource() {
@@ -41,6 +37,8 @@ class Bruttal : HttpSource() {
         .add("Referer", "$baseUrl/bruttal/")
         .add("User-Agent", USER_AGENT)
 
+    private val json: Json by injectLazy()
+
     override fun popularMangaRequest(page: Int): Request {
         val newHeaders = headersBuilder()
             .add("Accept", "application/json, text/plain, */*")
@@ -50,19 +48,17 @@ class Bruttal : HttpSource() {
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val json = response.asJson().obj
+        val homeDto = json.decodeFromString<BruttalHomeDto>(response.body!!.string())
 
-        val titles = json["list"].array.map { jsonEl ->
-            popularMangaFromObject(jsonEl.obj)
-        }
+        val titles = homeDto.list.map(::popularMangaFromObject)
 
         return MangasPage(titles, false)
     }
 
-    private fun popularMangaFromObject(obj: JsonObject): SManga = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = "$baseUrl/bruttal/" + obj["image_mobile"].string.removePrefix("./")
-        url = "/bruttal" + obj["url"].string
+    private fun popularMangaFromObject(comicbook: BruttalComicBookDto): SManga = SManga.create().apply {
+        title = comicbook.title
+        thumbnail_url = "$baseUrl/bruttal/" + comicbook.imageMobile.removePrefix("./")
+        url = "/bruttal" + comicbook.url
     }
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
@@ -96,20 +92,20 @@ class Bruttal : HttpSource() {
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val json = response.asJson().array
+        val comicBooks = json.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
 
-        val titleUrl = response.request.header("Referer")!!.substringAfter("/bruttal")
-        val titleObj = json.first { it.obj["url"].string == titleUrl }.obj
-        val soonText = titleObj["soon_text"].string
+        val comicBookUrl = response.request.header("Referer")!!
+            .substringAfter("/bruttal")
+        val currentComicBook = comicBooks.first { it.url == comicBookUrl }
 
         return SManga.create().apply {
-            title = titleObj["title"].string
-            thumbnail_url = "$baseUrl/bruttal/" + titleObj["image_mobile"].string.removePrefix("./")
-            description = titleObj["synopsis"].string +
-                (if (soonText.isEmpty()) "" else "\n\n$soonText")
-            artist = titleObj["illustrator"].string
-            author = titleObj["author"].string
-            genre = titleObj["keywords"].string.replace("; ", ", ")
+            title = currentComicBook.title
+            thumbnail_url = "$baseUrl/bruttal/" + currentComicBook.imageMobile.removePrefix("./")
+            description = currentComicBook.synopsis +
+                (if (currentComicBook.soonText.isEmpty()) "" else "\n\n${currentComicBook.soonText}")
+            artist = currentComicBook.illustrator
+            author = currentComicBook.author
+            genre = currentComicBook.keywords.replace("; ", ", ")
             status = SManga.ONGOING
         }
     }
@@ -118,21 +114,24 @@ class Bruttal : HttpSource() {
     override fun chapterListRequest(manga: SManga): Request = mangaDetailsApiRequest(manga)
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val json = response.asJson().array
+        val comicBooks = json.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
 
-        val titleUrl = response.request.header("Referer")!!.substringAfter("/bruttal")
-        val title = json.first { it.obj["url"].string == titleUrl }.obj
+        val comicBookUrl = response.request.header("Referer")!!
+            .substringAfter("/bruttal")
+        val currentComicBook = comicBooks.first { it.url == comicBookUrl }
 
-        return title["seasons"].array
-            .flatMap { it.obj["chapters"].array }
-            .map { jsonEl -> chapterFromObject(jsonEl.obj) }
+        return currentComicBook.seasons
+            .flatMap { it.chapters }
+            .map(::chapterFromObject)
             .reversed()
     }
 
-    private fun chapterFromObject(obj: JsonObject): SChapter = SChapter.create().apply {
-        name = obj["title"].string
-        chapter_number = obj["share_title"].string.removePrefix("Capítulo ").toFloatOrNull() ?: -1f
-        url = "/bruttal" + obj["url"].string
+    private fun chapterFromObject(chapter: BruttalChapterDto): SChapter = SChapter.create().apply {
+        name = chapter.title
+        chapter_number = chapter.shareTitle
+            .removePrefix("Capítulo ")
+            .toFloatOrNull() ?: -1f
+        url = "/bruttal" + chapter.url
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
@@ -145,22 +144,28 @@ class Bruttal : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val json = response.asJson().array
+        val comicBooks = json.decodeFromString<List<BruttalComicBookDto>>(response.body!!.string())
 
         val chapterUrl = response.request.header("Referer")!!
-        val titleSlug = chapterUrl.substringAfter("bruttal/").substringBefore("/")
-        val season = chapterUrl.substringAfter("temporada-").substringBefore("/").toInt()
-        val chapter = chapterUrl.substringAfter("capitulo-")
+        val comicBookSlug = chapterUrl
+            .substringAfter("bruttal/")
+            .substringBefore("/")
+        val seasonNumber = chapterUrl
+            .substringAfter("temporada-")
+            .substringBefore("/")
+        val chapterNumber = chapterUrl.substringAfter("capitulo-")
 
-        val titleObj = json.first { it.obj["url"].string == "/$titleSlug" }.obj
-        val seasonObj = titleObj["seasons"].array[season - 1].obj
-        val chapterObj = seasonObj["chapters"].array.first {
-            it.obj["alias"].string.substringAfter("-") == chapter
+        val currentComicBook = comicBooks.first { it.url == "/$comicBookSlug" }
+        val currentSeason = currentComicBook.seasons.first {
+            it.alias.substringAfter("-") == seasonNumber
+        }
+        val currentChapter = currentSeason.chapters.first {
+            it.alias.substringAfter("-") == chapterNumber
         }
 
-        return chapterObj["images"].array
-            .mapIndexed { i, jsonEl ->
-                val imageUrl = "$baseUrl/bruttal/" + jsonEl.obj["image"].string.removePrefix("./")
+        return currentChapter.images
+            .mapIndexed { i, bruttalImage ->
+                val imageUrl = "$baseUrl/bruttal/" + bruttalImage.image.removePrefix("./")
                 Page(i, chapterUrl, imageUrl)
             }
     }
@@ -184,10 +189,8 @@ class Bruttal : HttpSource() {
 
     override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used")
 
-    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
-
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
     }
 }

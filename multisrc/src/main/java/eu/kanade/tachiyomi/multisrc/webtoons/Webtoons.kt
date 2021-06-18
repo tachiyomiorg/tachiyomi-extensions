@@ -11,6 +11,9 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Headers
@@ -19,10 +22,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -75,6 +78,8 @@ open class Webtoons(
                 }
             }
         }
+
+    private val json: Json by injectLazy()
 
     override fun popularMangaSelector() = "not using"
 
@@ -148,7 +153,7 @@ open class Webtoons(
             val isThisLang = "$url".startsWith("$baseUrl/$langCode")
             if (! (couldBeWebtoonOrEpisode && isThisLang))
                 emptyResult
-            else{
+            else {
                 val potentialUrl = "${webtoonPath(url)}?title_no=$title_no"
                 fetchMangaDetails(SManga.create().apply { this.url = potentialUrl }).map {
                     it.url = potentialUrl
@@ -157,7 +162,6 @@ open class Webtoons(
             }
         } ?: emptyResult
     }
-
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/$langCode/search?keyword=$query".toHttpUrlOrNull()?.newBuilder()!!
@@ -186,19 +190,19 @@ open class Webtoons(
         val infoElement = document.select("#_asideDetail")
 
         val manga = SManga.create()
-        manga.title = document.selectFirst("h1.subj").text()
+        manga.title = document.selectFirst("h1.subj, h3.subj").text()
         manga.author = detailElement.select(".author:nth-of-type(1)").first()?.ownText()
         manga.artist = detailElement.select(".author:nth-of-type(2)").first()?.ownText() ?: manga.author
         manga.genre = detailElement.select(".genre").joinToString(", ") { it.text() }
         manga.description = infoElement.select("p.summary").text()
-        manga.status = infoElement.select("p.day_info").text().orEmpty().let { parseStatus(it) }
+        manga.status = infoElement.select("p.day_info").firstOrNull()?.text().orEmpty().toStatus()
         manga.thumbnail_url = parseDetailsThumbnail(document)
         return manga
     }
 
-    private fun parseStatus(status: String) = when {
-        status.contains("UP") -> SManga.ONGOING
-        status.contains("COMPLETED") -> SManga.COMPLETED
+    private fun String.toStatus(): Int = when {
+        contains("UP") -> SManga.ONGOING
+        contains("COMPLETED") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -263,14 +267,16 @@ open class Webtoons(
 
         val docUrl = docUrlRegex.find(docString)!!.destructured.toList()[0]
         val motiontoonPath = motiontoonPathRegex.find(docString)!!.destructured.toList()[0]
+        val motiontoonResponse = client.newCall(GET(docUrl, headers)).execute()
 
-        val motiontoonJson = JSONObject(client.newCall(GET(docUrl, headers)).execute().body!!.string()).getJSONObject("assets").getJSONObject("image")
+        val motiontoonJson = json.parseToJsonElement(motiontoonResponse.body!!.string()).jsonObject
+        val motiontoonImages = motiontoonJson["assets"]!!.jsonObject["image"]!!.jsonObject
 
-        val keys = motiontoonJson.keys().asSequence().toList().filter { it.contains("layer") }
-
-        return keys.mapIndexed { i, key ->
-            Page(i, "", motiontoonPath + motiontoonJson.getString(key))
-        }
+        return motiontoonImages.entries
+            .filter { it.key.contains("layer") }
+            .mapIndexed { i, entry ->
+                Page(i, "", motiontoonPath + entry.value.jsonPrimitive.content)
+            }
     }
 
     companion object {

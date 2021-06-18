@@ -25,12 +25,12 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import rx.Observable
-import java.util.Date
+import java.util.Calendar
 
 @Nsfw
 class NineHentai : HttpSource() {
 
-    override val baseUrl = "https://www1.9hentai.ru"
+    override val baseUrl = "https://9hentai.to"
 
     override val name = "NineHentai"
 
@@ -97,16 +97,49 @@ class NineHentai : HttpSource() {
         }
         return mutableList
     }
+    
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val document = response.asJsoup()
+        val time = document.select("div#info div time").text()
+        return listOf(
+            SChapter.create().apply {
+                name = "Chapter"
+                date_upload = parseChapterDate(time)
+                setUrlWithoutDomain(response.request.url.encodedPath)
+            }
+        )
+    }
+    
+    private fun parseChapterDate(date: String): Long {
+        val value = date.split(' ')[0].toInt()
+        val timeStr = date.split(' ')[1].removeSuffix("s")
 
-    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
-        val chapter = SChapter.create()
-        val chapterId = manga.url.substringAfter("/g/").toInt()
-        chapter.url = "/g/$chapterId"
-        chapter.name = "chapter"
-        // api doesnt return date so setting to current date for now
-        chapter.date_upload = Date().time
-
-        return Observable.just(listOf(chapter))
+        return when (timeStr) {
+            "sec" -> Calendar.getInstance().apply {
+                add(Calendar.SECOND, value * -1)
+            }.timeInMillis
+            "min" -> Calendar.getInstance().apply {
+                add(Calendar.MINUTE, value * -1)
+            }.timeInMillis
+            "hour" -> Calendar.getInstance().apply {
+                add(Calendar.HOUR_OF_DAY, value * -1)
+            }.timeInMillis
+            "day" -> Calendar.getInstance().apply {
+                add(Calendar.DATE, value * -1)
+            }.timeInMillis
+            "week" -> Calendar.getInstance().apply {
+                add(Calendar.DATE, value * 7 * -1)
+            }.timeInMillis
+            "month" -> Calendar.getInstance().apply {
+                add(Calendar.MONTH, value * -1)
+            }.timeInMillis
+            "year" -> Calendar.getInstance().apply {
+                add(Calendar.YEAR, value * -1)
+            }.timeInMillis
+            else -> {
+                return 0
+            }
+        }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -203,15 +236,11 @@ class NineHentai : HttpSource() {
 
     override fun imageUrlParse(response: Response): String = throw Exception("Not Used")
 
-    override fun chapterListRequest(manga: SManga): Request = throw Exception("Not Used")
-
     override fun popularMangaParse(response: Response): MangasPage = throw Exception("Not Used")
 
     override fun latestUpdatesParse(response: Response): MangasPage = throw Exception("Not Used")
 
     override fun searchMangaParse(response: Response): MangasPage = throw Exception("Not Used")
-
-    override fun chapterListParse(response: Response): List<SChapter> = throw Exception("Not Used")
 
     companion object {
         private val MEDIA_TYPE = "application/json; charset=utf-8".toMediaTypeOrNull()

@@ -3,7 +3,7 @@
 | ![CI](https://github.com/tachiyomiorg/tachiyomi-extensions/workflows/CI/badge.svg?event=push) | [![Discord](https://img.shields.io/discord/349436576037732353.svg?label=discord&labelColor=7289da&color=2c2f33&style=flat)](https://discord.gg/tachiyomi) |
 
 # ![app icon](./.github/readme-images/app-icon.png)Tachiyomi Extensions
-Tachiyomi is a free and open source manga reader for Android 5.0 and above.
+Tachiyomi is a free and open source manga reader for Android 6.0 and above.
 
 This repository contains the available extension catalogues for the [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) app.
 

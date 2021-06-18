@@ -13,6 +13,7 @@ import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
@@ -51,10 +52,10 @@ class MangaYabu : ParsedHttpSource() {
     override fun popularMangaSelector(): String = "#main div.row:contains(Populares) div.carousel div.card > a"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        val thumb = element.select("img").first()!!
+        val tooltip = element.select("div.card-image.mango-hover").first()!!
 
-        title = thumb.attr("alt").withoutFlags()
-        thumbnail_url = thumb.attr("src")
+        title = Jsoup.parse(tooltip.attr("data-tooltip")).select("span b").first()!!.text()
+        thumbnail_url = element.select("img").first()!!.attr("src")
         setUrlWithoutDomain(element.attr("href"))
     }
 
@@ -67,14 +68,12 @@ class MangaYabu : ParsedHttpSource() {
 
     override fun latestUpdatesRequest(page: Int): Request = GET(baseUrl, headers)
 
-    override fun latestUpdatesSelector() = "#main div.row:contains(Lançamentos) div.card div.card-image > a"
+    override fun latestUpdatesSelector() = "#main div.row:contains(Lançamentos) div.card"
 
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
-        val thumb = element.select("img").first()!!
-
-        title = thumb.attr("alt").substringBefore(" –").withoutFlags()
-        thumbnail_url = thumb.attr("src")
-        url = mapChapterToMangaUrl(element.attr("href"))
+        title = element.select("div.card-content h4").first()!!.text().withoutFlags()
+        thumbnail_url = element.select("div.card-image img").first()!!.attr("src")
+        url = mapChapterToMangaUrl(element.select("div.card-image > a").first()!!.attr("href"))
     }
 
     override fun latestUpdatesNextPageSelector(): String? = null
@@ -127,7 +126,7 @@ class MangaYabu : ParsedHttpSource() {
     override fun chapterListSelector() = "div.manga-info:contains(Capítulos) div.manga-chapters div.single-chapter"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        name = element.select("a").first()!!.text()
+        name = element.select("a").first()!!.text().substringAfter("–").trim()
         date_upload = element.select("small")!!.text().toDate()
         setUrlWithoutDomain(element.select("a").first()!!.attr("href"))
     }
@@ -185,7 +184,7 @@ class MangaYabu : ParsedHttpSource() {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36"
 
         private val FLAG_REGEX = "\\((Pt[-/]br|Scan)\\)".toRegex(RegexOption.IGNORE_CASE)
 
