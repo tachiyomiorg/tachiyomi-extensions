@@ -44,7 +44,7 @@ data class MangaDetDto(
     val another_name: String,
     val dir: String,
     val description: String,
-    val issue_year: Int,
+    val issue_year: Int?,
     val img: ImgDto,
     val type: GenresDto,
     val genres: List<GenresDto>,
