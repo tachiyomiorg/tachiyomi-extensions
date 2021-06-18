@@ -48,7 +48,7 @@ class Desu : HttpSource() {
     private fun SManga.mangaFromJSON(obj: JSONObject, chapter: Boolean) {
         val id = obj.getInt("id")
         url = "/$id"
-        title = obj.getString("name")
+        title = obj.getString("name").split(" / ").first()
         thumbnail_url = obj.getJSONObject("image").getString("original")
         val ratingValue = obj.getString("score").toFloat()
         val ratingStar = when {
@@ -181,11 +181,12 @@ class Desu : HttpSource() {
             ret.add(
                 SChapter.create().apply {
                     val ch = obj2.getString("ch")
+                    val fullnumstr = obj2.getString("vol") + ". " + "Глава " + ch
                     val title = if (obj2.getString("title") == "null") "" else obj2.getString("title")
                     name = if (title.isEmpty()) {
-                        "Глава $ch"
+                        fullnumstr
                     } else {
-                        "$ch - $title"
+                        "$fullnumstr: $title"
                     }
                     val id = obj2.getString("id")
                     url = "/$cid/chapter/$id"
