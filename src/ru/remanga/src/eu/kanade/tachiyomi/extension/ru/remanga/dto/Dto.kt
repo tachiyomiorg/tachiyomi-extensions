@@ -62,14 +62,12 @@ data class PropsDto(
 
 @Serializable
 data class PageWrapperDto<T>(
-    val msg: String,
     val content: List<T>,
     val props: PropsDto
 )
 
 @Serializable
 data class SeriesWrapperDto<T>(
-    val msg: String,
     val content: T
 )
 
@@ -95,8 +93,7 @@ data class PagesDto(
     val id: Int,
     val height: Int,
     val link: String,
-    val page: Int,
-    val count_comments: Int
+    val page: Int
 )
 
 @Serializable
