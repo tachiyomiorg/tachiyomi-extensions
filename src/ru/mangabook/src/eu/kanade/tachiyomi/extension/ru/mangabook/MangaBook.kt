@@ -93,7 +93,7 @@ class MangaBook : ParsedHttpSource() {
         return SManga.create().apply {
             element.select(".flist.row a").first().let {
                 setUrlWithoutDomain(it.attr("href"))
-                title = it.select("h4").text().split(" / ").sorted().first()
+                title = it.select("h4 strong").text().split(" / ").sorted().first()
             }
             thumbnail_url = element.select(".sposter img.img-responsive").attr("src")
         }
