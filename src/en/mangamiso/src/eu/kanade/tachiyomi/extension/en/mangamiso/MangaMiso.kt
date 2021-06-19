@@ -115,7 +115,7 @@ class MangaMiso : HttpSource() {
             val mangaList = json.decodeFromString<MisoBrowseManga>(response.body!!.string())
             val page = response.request.url.queryParameter("page")!!.toInt()
             val totalViewedManga = page * MANGA_PER_PAGE
-            MangasPage(mangaList.foundList.map(::toSManga), mangaList.totalResults > totalViewedManga)
+            MangasPage(mangaList.foundList.map(::toSManga), mangaList.total > totalViewedManga)
         }
     }
 
