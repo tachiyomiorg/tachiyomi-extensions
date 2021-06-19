@@ -1,26 +1,20 @@
 package eu.kanade.tachiyomi.extension.es.inmanga
 
-import com.github.salomonbrys.kotson.fromJson
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
-import com.google.gson.Gson
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -41,19 +35,25 @@ class InManga : ParsedHttpSource() {
         .add("X-Requested-With", "XMLHttpRequest")
         .build()
 
-    private val gson = Gson()
+    private val json: Json by injectLazy()
 
-    // Popular
+    private val imageCDN = "https://pack-yak.intomanga.com/"
 
-    override fun popularMangaRequest(page: Int): Request {
-        val skip = (page - 1) * 10
-        val body =
-            "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=1&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=".toRequestBody(
-                null
-            )
+    /**
+     * Returns RequestBody to retrieve latest or populars Manga.
+     *
+     * @param page Current page number.
+     * @param isPopular If is true filter sortby = 1 else sortby = 3
+     * sortby = 1: Populars
+     * sortby = 3: Latest
+     */
+    private fun requestBodyBuilder(page: Int, isPopular: Boolean): RequestBody = "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=${(page - 1) * 10}&filter%5Btake%5D=10&filter%5Bsortby%5D=${if (isPopular) "1" else "3"}&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=".toRequestBody(null)
 
-        return POST("$baseUrl/manga/getMangasConsultResult", postHeaders, body)
-    }
+    override fun popularMangaRequest(page: Int) = POST(
+        url = "$baseUrl/manga/getMangasConsultResult",
+        headers = postHeaders,
+        body = requestBodyBuilder(page, true)
+    )
 
     override fun popularMangaSelector() = searchMangaSelector()
 
@@ -61,26 +61,17 @@ class InManga : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "body"
 
-    // Latest
-
-    // Search filtered by "Recién actualizado"
-    override fun latestUpdatesRequest(page: Int): Request {
-        val skip = (page - 1) * 10
-        val body =
-            "filter%5Bgeneres%5D%5B%5D=-1&filter%5BqueryString%5D=&filter%5Bskip%5D=$skip&filter%5Btake%5D=10&filter%5Bsortby%5D=3&filter%5BbroadcastStatus%5D=0&filter%5BonlyFavorites%5D=false&d=".toRequestBody(
-                null
-            )
-
-        return POST("$baseUrl/manga/getMangasConsultResult", postHeaders, body)
-    }
+    override fun latestUpdatesRequest(page: Int) = POST(
+        url = "$baseUrl/manga/getMangasConsultResult",
+        headers = postHeaders,
+        body = requestBodyBuilder(page, false)
+    )
 
     override fun latestUpdatesSelector() = searchMangaSelector()
 
-    override fun latestUpdatesFromElement(element: Element) = searchMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element) = searchMangaFromElement(element = element)
 
-    override fun latestUpdatesNextPageSelector() = "body"
-
-    // Search
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val skip = (page - 1) * 10
@@ -95,7 +86,6 @@ class InManga : ParsedHttpSource() {
     override fun searchMangaParse(response: Response): MangasPage {
         val mangas = mutableListOf<SManga>()
         val document = response.asJsoup()
-
         document.select(searchMangaSelector()).map { mangas.add(searchMangaFromElement(it)) }
 
         return MangasPage(mangas, document.select(searchMangaSelector()).count() == 10)
@@ -103,33 +93,23 @@ class InManga : ParsedHttpSource() {
 
     override fun searchMangaSelector() = "body > a"
 
-    override fun searchMangaFromElement(element: Element): SManga {
-        val manga = SManga.create()
-
-        manga.setUrlWithoutDomain(element.attr("href"))
-        manga.title = element.select("h4.m0").text()
-        manga.thumbnail_url = element.select("img").attr("abs:data-src")
-
-        return manga
+    override fun searchMangaFromElement(element: Element) = SManga.create().apply {
+        setUrlWithoutDomain(element.attr("href"))
+        title = element.select("h4.m0").text()
+        thumbnail_url = element.select("img").attr("abs:data-src")
     }
 
     override fun searchMangaNextPageSelector(): String? = null
 
-    // Manga summary page
-
-    override fun mangaDetailsParse(document: Document): SManga {
-        val manga = SManga.create()
-
+    override fun mangaDetailsParse(document: Document) = SManga.create().apply {
         document.select("div.col-md-3 div.panel.widget").let { info ->
-            manga.thumbnail_url = info.select("img").attr("abs:src")
-            manga.status = parseStatus(info.select(" a.list-group-item:contains(estado) span").text())
+            thumbnail_url = info.select("img").attr("abs:src")
+            status = parseStatus(info.select(" a.list-group-item:contains(estado) span").text())
         }
         document.select("div.col-md-9").let { info ->
-            manga.title = info.select("h1").text()
-            manga.description = info.select("div.panel-body").text()
+            title = info.select("h1").text()
+            description = info.select("div.panel-body").text()
         }
-
-        return manga
     }
 
     private fun parseStatus(status: String?) = when {
@@ -139,64 +119,56 @@ class InManga : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    // Chapters
-
-    override fun chapterListRequest(manga: SManga): Request {
-        return GET("$baseUrl/chapter/getall?mangaIdentification=${manga.url.substringAfterLast("/")}", headers)
-    }
+    override fun chapterListRequest(manga: SManga) = GET(
+        url = "$baseUrl/chapter/getall?mangaIdentification=${manga.url.substringAfterLast("/")}",
+        headers = headers
+    )
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val chapters = mutableListOf<SChapter>()
-        val data = response.body!!.string().substringAfter("{\"data\":\"").substringBeforeLast("\"}")
-            .replace("\\", "")
+        // The server returns a JSON with data property that contains a string with the JSON,
+        // so is necessary to decode twice.
+        val data = json.decodeFromString<InMangaResultDto>(response.body!!.string())
+        if (data.data.isNullOrEmpty())
+            return emptyList()
 
-        gson.fromJson<JsonObject>(data)["result"].asJsonArray.forEach { chapters.add(chapterFromJson(it)) }
+        val result = json.decodeFromString<InMangaResultObjectDto<InMangaChapterDto>>(data.data)
+        if (!result.success)
+            return emptyList()
 
-        return chapters.sortedBy { it.chapter_number.toInt() }.reversed()
+        return result.result
+            .map { chap -> chapterFromObject(chap) }
+            .sortedBy { it.chapter_number.toInt() }.reversed()
     }
 
     override fun chapterListSelector() = "not using"
 
-    private fun chapterFromJson(json: JsonElement): SChapter {
-        val chapter = SChapter.create()
-
-        chapter.url = "/chapter/chapterIndexControls?identification=${json["Identification"].string}"
-        json["FriendlyChapterNumberUrl"].string.replace("-", ".").let { num ->
-            chapter.name = "Chapter $num"
-            chapter.chapter_number = num.toFloat()
-        }
-        chapter.date_upload = parseChapterDate(json["RegistrationDate"].string) ?: 0
-
-        return chapter
+    private fun chapterFromObject(chapter: InMangaChapterDto) = SChapter.create().apply {
+        url = "/chapter/chapterIndexControls?identification=${chapter.identification}"
+        name = "Chapter ${chapter.friendlyChapterNumber}"
+        chapter_number = chapter.number!!.toFloat()
+        date_upload = parseChapterDate(chapter.registrationDate)
     }
 
     override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
 
-    companion object {
-        val dateFormat by lazy {
-            SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        }
+    private fun parseChapterDate(string: String): Long {
+        return DATE_FORMATTER.parse(string)?.time ?: 0L
     }
 
-    private fun parseChapterDate(string: String): Long? {
-        return dateFormat.parse(string)?.time ?: 0L
-    }
-
-    // Pages
-
-    override fun pageListParse(document: Document): List<Page> {
-        val pages = mutableListOf<Page>()
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         val ch = document.select("[id=\"FriendlyChapterNumberUrl\"]").attr("value")
         val title = document.select("[id=\"FriendlyMangaName\"]").attr("value")
 
         document.select("img.ImageContainer").forEachIndexed { i, img ->
-            pages.add(Page(i, "", "$baseUrl/images/manga/$title/chapter/$ch/page/${i + 1}/${img.attr("id")}"))
+            add(Page(i, "", "$imageCDN/images/manga/$title/chapter/$ch/page/${i + 1}/${img.attr("id")}"))
         }
-
-        return pages
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     override fun getFilterList() = FilterList()
+
+    companion object {
+        val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
+    }
 }
