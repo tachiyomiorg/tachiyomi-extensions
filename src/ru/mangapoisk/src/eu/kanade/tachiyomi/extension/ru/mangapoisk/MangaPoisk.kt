@@ -118,7 +118,9 @@ class MangaPoisk : ParsedHttpSource() {
         manga.title = if (entitle.isNullOrEmpty()) { infoElement.select(".post-name").text() } else entitle.text().replaceRange(0, 2, "")
         manga.genre = infoElement.select(".post-info > span:eq(10) > a").joinToString { it.text() }
         manga.description = infoElement.select(".post-info > div .manga-description.entry").text()
-        manga.status = parseStatus(infoElement.select(".post-info > span:eq(7)").text())
+        manga.status = if (document.select(".order-2 h3").text() == "Главы удалены по требованию правообладателя.") {
+            SManga.LICENSED
+        } else parseStatus(infoElement.select(".post-info > span:eq(7)").text())
         manga.thumbnail_url = infoElement.select("img.img-fluid").first().attr("src")
         return manga
     }
