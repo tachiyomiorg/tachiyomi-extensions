@@ -4,6 +4,17 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class TsukiAuthRequestDto(
+    val username: String,
+    val password: String
+)
+
+@Serializable
+data class TsukiAuthResultDto(
+    val token: String? = null
+)
+
+@Serializable
 data class TsukiPaginatedDto(
     val data: List<TsukiMangaDto> = emptyList(),
     val lastPage: Int,

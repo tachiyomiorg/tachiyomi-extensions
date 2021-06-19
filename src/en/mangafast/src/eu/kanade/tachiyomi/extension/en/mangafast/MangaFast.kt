@@ -104,7 +104,7 @@ class MangaFast : ParsedHttpSource() {
 
     companion object {
         val dateFormat by lazy {
-            SimpleDateFormat("MM/dd/YYYY", Locale.US)
+            SimpleDateFormat("MM/dd/yyyy", Locale.US)
         }
     }
 

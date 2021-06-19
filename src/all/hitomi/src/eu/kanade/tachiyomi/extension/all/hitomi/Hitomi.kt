@@ -156,10 +156,7 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return if (query.startsWith(PREFIX_ID_SEARCH)) {
-            val id = NOZOMI_ID_SIMP_PATTERN.find(
-                NOZOMI_ID_PATTERN
-                    .find(query.removePrefix(PREFIX_ID_SEARCH))!!.value
-            )!!.value.toInt()
+            val id = NOZOMI_ID_PATTERN.find(query.removePrefix(PREFIX_ID_SEARCH))!!.value.toInt()
             nozomiIdsToMangas(listOf(id)).map { mangas ->
                 MangasPage(mangas, false)
             }.toObservable()
@@ -370,12 +367,17 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
     // function subdomain_from_url()
     // Change g's if statment from !isNaN(g)
     private fun firstSubdomainFromGalleryId(pathSegment: String): Char {
+        val source = getScrambler()
         var numberOfFrontends = 3
         var g = pathSegment.toInt(16)
-        if (g < 0x80) numberOfFrontends = 2
-        if (g < 0x59) g = 1
-
+        if (g < source[0]) numberOfFrontends = 2
+        if (g < source[1]) g = 1
         return (97 + g.rem(numberOfFrontends)).toChar()
+    }
+
+    private fun getScrambler(): List<Int> {
+        val response = client.newCall(GET("$LTN_BASE_URL/common.js")).execute()
+        return HEXADECIMAL.findAll(response.body!!.string()).map { Integer.decode(it.value) }.toList()
     }
 
     override fun imageRequest(page: Page): Request {
@@ -395,8 +397,8 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
         private const val PAGE_SIZE = 25
 
         const val PREFIX_ID_SEARCH = "id:"
-        val NOZOMI_ID_PATTERN = "[0-9]*.html".toRegex()
-        val NOZOMI_ID_SIMP_PATTERN = "[0-9]*".toRegex()
+        val NOZOMI_ID_PATTERN = "[0-9]*(?=.html)".toRegex()
+        val HEXADECIMAL = "0[xX][0-9a-fA-F]+".toRegex()
 
         // Common English words and Japanese particles
         private val COMMON_WORDS = listOf(

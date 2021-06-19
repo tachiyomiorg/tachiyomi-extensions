@@ -36,12 +36,12 @@ class MangaBook : ParsedHttpSource() {
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/filterList?page=$page&ftype[]=0&status[]=0&sortBy=views", headers)
     override fun popularMangaNextPageSelector() = "a.page-link[rel=next]"
-    override fun popularMangaSelector() = "article.short .short-in"
+    override fun popularMangaSelector() = "article.short:not(.shnews) .short-in"
     override fun popularMangaFromElement(element: Element): SManga {
         return SManga.create().apply {
             element.select(".sh-desc a").first().let {
                 setUrlWithoutDomain(it.attr("href"))
-                title = it.select("div.sh-title").text().split(" / ").last()
+                title = it.select("div.sh-title").text().split(" / ").sorted().first()
             }
             thumbnail_url = element.select(".short-poster.img-box > img").attr("src")
         }
@@ -93,7 +93,7 @@ class MangaBook : ParsedHttpSource() {
         return SManga.create().apply {
             element.select(".flist.row a").first().let {
                 setUrlWithoutDomain(it.attr("href"))
-                title = it.select("h4").text().split(" / ").last()
+                title = it.select("h4 strong").text().split(" / ").sorted().first()
             }
             thumbnail_url = element.select(".sposter img.img-responsive").attr("src")
         }
@@ -114,7 +114,8 @@ class MangaBook : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("article.full .fmid").first()
         val manga = SManga.create()
-        manga.title = document.select(".fheader h1").text().split(" / ").last()
+        val titlestr = document.select(".fheader h1").text().split(" / ").sorted()
+        manga.title = titlestr.first()
         manga.thumbnail_url = infoElement.select("img.img-responsive").first().attr("src")
         manga.author = infoElement.select(".vis:contains(Автор) > a").text()
         manga.artist = infoElement.select(".vis:contains(Художник) > a").text()
@@ -134,7 +135,22 @@ class MangaBook : ParsedHttpSource() {
             else -> "Манхва"
         }
         manga.genre = infoElement.select(".vis:contains(Категории) > a").map { it.text() }.plusElement(category).joinToString { it.trim() }
-        manga.description = infoElement.select(".fdesc.slice-this").text()
+        val ratingValue = infoElement.select(".rating").text().substringAfter("Рейтинг ").substringBefore("/").toFloat() * 2
+        val ratingVotes = infoElement.select(".rating").text().substringAfter("голосов: ").substringBefore(" ")
+        val ratingStar = when {
+            ratingValue > 9.5 -> "★★★★★"
+            ratingValue > 8.5 -> "★★★★✬"
+            ratingValue > 7.5 -> "★★★★☆"
+            ratingValue > 6.5 -> "★★★✬☆"
+            ratingValue > 5.5 -> "★★★☆☆"
+            ratingValue > 4.5 -> "★★✬☆☆"
+            ratingValue > 3.5 -> "★★☆☆☆"
+            ratingValue > 2.5 -> "★✬☆☆☆"
+            ratingValue > 1.5 -> "★☆☆☆☆"
+            ratingValue > 0.5 -> "✬☆☆☆☆"
+            else -> "☆☆☆☆☆"
+        }
+        manga.description = titlestr.last() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + infoElement.select(".fdesc.slice-this").text()
         return manga
     }
 

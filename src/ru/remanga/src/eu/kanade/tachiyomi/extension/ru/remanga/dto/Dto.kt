@@ -25,8 +25,6 @@ data class LibraryDto(
     val en_name: String,
     val rus_name: String,
     val dir: String,
-//    val issue_year: Int,
-    val genres: List<GenresDto> = emptyList(),
     val img: ImgDto
 )
 
@@ -44,7 +42,7 @@ data class MangaDetDto(
     val another_name: String,
     val dir: String,
     val description: String,
-    val issue_year: Int,
+    val issue_year: Int?,
     val img: ImgDto,
     val type: GenresDto,
     val genres: List<GenresDto>,
@@ -64,17 +62,13 @@ data class PropsDto(
 
 @Serializable
 data class PageWrapperDto<T>(
-    val msg: String,
     val content: List<T>,
-    val props: PropsDto,
-//    val last: Boolean
+    val props: PropsDto
 )
 
 @Serializable
 data class SeriesWrapperDto<T>(
-    val msg: String,
-    val content: T,
-//    val props: PropsDto
+    val content: T
 )
 
 @Serializable
@@ -99,8 +93,7 @@ data class PagesDto(
     val id: Int,
     val height: Int,
     val link: String,
-    val page: Int,
-    val count_comments: Int
+    val page: Int
 )
 
 @Serializable
