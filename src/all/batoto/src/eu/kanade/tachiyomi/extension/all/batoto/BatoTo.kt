@@ -298,8 +298,14 @@ open class BatoTo(
         val script = document.select("script").html()
 
         if (script.contains("var images =")) {
-            val imgJson = json.parseToJsonElement(script.substringAfter("var images = ").substringBefore(";")).jsonObject
-            imgJson.keys.forEachIndexed { i, s -> pages.add(Page(i, imageUrl = imgJson[s]!!.jsonPrimitive.content)) }
+            /*
+             * During kotlinx.serialization migration, the pre-existing code seemed to not work
+             * Could not find a case where code would run in practice, so it was commented out.
+             */
+            throw RuntimeException("Unexpected Branch: Please File A Bug Report describing this issue")
+            // val imgJson = json.parseToJsonElement(script.substringAfter("var images = ").substringBefore(";")).jsonObject
+            // imgJson.keys.forEachIndexed { i, s -> pages.add(Page(i, imageUrl = imgJson[s]!!.jsonPrimitive.content)) }
+
         } else if (script.contains("const server =")) { // bato.to
             val duktape = Duktape.create()
             val encryptedServer = script.substringAfter("const server = ").substringBefore(";")
