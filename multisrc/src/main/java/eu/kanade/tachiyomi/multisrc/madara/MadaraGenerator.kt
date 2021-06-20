@@ -109,7 +109,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Lily Manga", "https://lilymanga.com", "en"),
         SingleLang("Little Monster Scan", "https://littlemonsterscan.com.br", "pt-BR", overrideVersionCode = 2),
         SingleLang("LovableSubs", "https://lovablesubs.com", "tr"),
-        SingleLang("MG Komik", "https://mgkomik.my.id", "id", overrideVersionCode = 1),
+        SingleLang("MG Komik", "https://mgkomik.com", "id", overrideVersionCode = 2),
         SingleLang("MMScans", "https://mm-scans.com/", "en", overrideVersionCode = 1),
         SingleLang("Manga Action", "https://manga-action.com", "ar", overrideVersionCode = 1),
         SingleLang("Manga Bin", "https://mangabin.com/", "en", overrideVersionCode = 1),
