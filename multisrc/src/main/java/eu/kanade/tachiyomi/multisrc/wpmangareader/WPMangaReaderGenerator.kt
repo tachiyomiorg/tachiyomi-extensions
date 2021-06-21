@@ -31,7 +31,8 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
         SingleLang("Seafoam Scans", "https://seafoamscans.com", "en"),
         SingleLang("GS Nation", "https://gs-nation.fr", "fr", overrideVersionCode = 1),
         SingleLang("YugenMangas", "https://yugenmangas.com", "es"),
-        SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true)
+        SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true),
+        SingleLang("Patatescans", "https://patatescans.com", "fr", isNsfw=true),
     )
 
     companion object {
