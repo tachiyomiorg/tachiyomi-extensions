@@ -32,7 +32,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
         SingleLang("GS Nation", "https://gs-nation.fr", "fr", overrideVersionCode = 1),
         SingleLang("YugenMangas", "https://yugenmangas.com", "es"),
         SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true),
-        SingleLang("Patatescans", "https://patatescans.com", "fr", isNsfw=true),
+        SingleLang("Patatescans", "https://patatescans.com", "fr", isNsfw = true),
         SingleLang("Fusion Scanlation", "https://fusionscanlation.com", "es", isNsfw = true),
     )
 
