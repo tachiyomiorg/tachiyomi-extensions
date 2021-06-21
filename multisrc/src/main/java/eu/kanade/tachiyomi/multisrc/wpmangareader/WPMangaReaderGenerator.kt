@@ -33,6 +33,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
         SingleLang("YugenMangas", "https://yugenmangas.com", "es"),
         SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true),
         SingleLang("Patatescans", "https://patatescans.com", "fr", isNsfw=true),
+        SingleLang("Fusion Scanlation", "https://fusionscanlation.com", "es", isNsfw = true),
     )
 
     companion object {
