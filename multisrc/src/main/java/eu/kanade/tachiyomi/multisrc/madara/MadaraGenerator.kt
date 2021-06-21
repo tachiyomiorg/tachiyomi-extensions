@@ -128,6 +128,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Manga Read", "https://mangaread.co", "en", overrideVersionCode = 1),
         SingleLang("Manga Rock Team", "https://mangarockteam.com", "en", overrideVersionCode = 1),
         SingleLang("Manga Rocky", "https://mangarocky.com", "en", overrideVersionCode = 1),
+        SingleLang("Manga Sky", "https://mangasky.net", "en"),
         SingleLang("Manga SY", "https://www.mangasy.com", "en", overrideVersionCode = 1),
         SingleLang("Manga Starz", "https://mangastarz.com", "ar"),
         SingleLang("Manga Too", "https://mangatoo.com/", "en", overrideVersionCode = 1),
