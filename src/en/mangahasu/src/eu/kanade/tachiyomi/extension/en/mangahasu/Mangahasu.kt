@@ -1,11 +1,6 @@
 package eu.kanade.tachiyomi.extension.en.mangahasu
 
 import android.util.Base64
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -13,12 +8,18 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -34,9 +35,10 @@ class Mangahasu : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    override fun headersBuilder(): Headers.Builder {
-        return super.headersBuilder().add("Referer", baseUrl)
-    }
+    private val json: Json by injectLazy()
+
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
+        .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/directory.html?page=$page", headers)
@@ -143,34 +145,40 @@ class Mangahasu : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> {
-
         // Grab All Pages from site
         // Some images are place holders on new chapters.
 
-        val pages = mutableListOf<Page>().apply {
-            document.select("div.img img").forEach {
-                val pageNumber = it.attr("class").substringAfter("page").toInt()
-                add(Page(pageNumber, "", it.attr("src")))
+        val pageList = document.select("div.img img")
+            .mapIndexed { i, el ->
+                val pageNumber = el.attr("class").substringAfter("page").toInt()
+                Page(pageNumber, "", el.attr("src"))
             }
-        }
+            .toMutableList()
 
         // Some images are not yet loaded onto Mangahasu's image server.
         // Decode temporary URLs and replace placeholder images.
 
-        val lstDUrls =
-            document.select("script:containsData(lstDUrls)").html().substringAfter("lstDUrls")
-                .substringAfter("\"").substringBefore("\"")
-        if (lstDUrls != "W10=") { // Base64 = [] or empty file
-            val decoded = String(Base64.decode(lstDUrls, Base64.DEFAULT))
-            val json = JsonParser().parse(decoded).array
-            json.forEach {
-                val pageNumber = it["page"].int
-                pages.removeAll { page -> page.index == pageNumber }
-                pages.add(Page(pageNumber, "", it["url"].string))
+        val lstDUrls = document.select("script:containsData(lstDUrls)")
+            .html()
+            .substringAfter("lstDUrls")
+            .substringAfter("\"")
+            .substringBefore("\"")
+
+        // Base64 = [] or empty file
+        if (lstDUrls != "W10=") {
+            val jsonRaw = String(Base64.decode(lstDUrls, Base64.DEFAULT))
+            val jsonArr = json.parseToJsonElement(jsonRaw).jsonArray
+
+            jsonArr.forEach { jsonEl ->
+                val jsonObj = jsonEl.jsonObject
+                val pageNumber = jsonObj["page"]!!.jsonPrimitive.int
+
+                pageList.removeAll { page -> page.index == pageNumber }
+                pageList.add(Page(pageNumber, "", jsonObj["url"]!!.jsonPrimitive.content))
             }
         }
-        pages.sortBy { page -> page.index }
-        return pages
+
+        return pageList.sortedBy { page -> page.index }
     }
 
     override fun imageUrlParse(document: Document) = ""

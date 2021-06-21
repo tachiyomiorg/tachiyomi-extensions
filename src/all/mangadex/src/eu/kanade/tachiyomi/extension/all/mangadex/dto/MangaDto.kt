@@ -21,13 +21,20 @@ data class MangaDto(
 data class RelationshipDto(
     val id: String,
     val type: String,
+    val attributes: IncludesAttributesDto? = null,
+)
+
+@Serializable
+data class IncludesAttributesDto(
+    val name: String? = null,
+    val fileName: String? = null,
 )
 
 @Serializable
 data class MangaDataDto(
     val id: String,
     val type: String,
-    val attributes: MangaAttributesDto
+    val attributes: MangaAttributesDto,
 )
 
 @Serializable
@@ -48,47 +55,5 @@ data class MangaAttributesDto(
 
 @Serializable
 data class TagDto(
-    val id: String
-)
-
-@Serializable
-data class AuthorListDto(
-    val results: List<AuthorDto>,
-)
-
-@Serializable
-data class AuthorDto(
-    val result: String,
-    val data: AuthorDataDto,
-)
-
-@Serializable
-data class AuthorDataDto(
     val id: String,
-    val attributes: AuthorAttributesDto,
-)
-
-@Serializable
-data class AuthorAttributesDto(
-    val name: String,
-)
-
-@Serializable
-data class CoverListDto(
-    val results: List<CoverDto>,
-)
-@Serializable
-data class CoverDto(
-    val data: CoverDataDto,
-    val relationships: List<RelationshipDto>
-)
-
-@Serializable
-data class CoverDataDto(
-    val attributes: CoverAttributesDto,
-)
-
-@Serializable
-data class CoverAttributesDto(
-    val fileName: String,
 )

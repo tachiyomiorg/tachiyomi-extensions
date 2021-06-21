@@ -1,28 +1,35 @@
 package eu.kanade.tachiyomi.extension.en.homeheroscans
 
-import com.github.salomonbrys.kotson.forEach
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 open class HomeHeroScans : HttpSource() {
-    override val lang = "en"
+
     final override val name = "Home Hero Scans"
+
+    override val lang = "en"
+
     final override val baseUrl = "https://hhs.vercel.app"
+
     final override val supportsLatest = false
+
+    private val json: Json by injectLazy()
 
     //    { seriesId |---> chapter |---> numPages }
     private val chapterNumberCache: MutableMap<String, MutableMap<String, Int>> = mutableMapOf()
@@ -42,38 +49,39 @@ open class HomeHeroScans : HttpSource() {
     }
 
     val memoizedFetchPopularManga = memoizeObservable { page: Int -> super.fetchPopularManga(page) }
-    // reduce number of times we call their api, user can force a call to api by relaunching the app
-    override fun fetchPopularManga(page: Int) = memoizedFetchPopularManga(page)
-    override fun popularMangaRequest(page: Int) = GET("$baseUrl/series.json", headers)
-    override fun popularMangaParse(response: Response): MangasPage {
-        val res = JsonParser.parseString(response.body?.string()).asJsonObject
-        val manga = mutableListOf<SManga>()
-        res.forEach { s, jsonElement ->
-            val data = jsonElement.asJsonObject
-            fun get(k: String) = data[k]?.asString
 
-            manga.add(
-                SManga.create().apply {
-                    artist = get("artist")
-                    author = get("author")
-                    description = get("description")
-                    genre = get("genre")
-                    title = get("title")!!
-                    thumbnail_url = "$baseUrl${get("cover")}"
-                    url = "/series?series=$s"
-                    status = SManga.ONGOING // isn't reported
-                }
-            )
+    // Reduce number of times we call their api, user can force a call to api by relaunching the app
+    override fun fetchPopularManga(page: Int) = memoizedFetchPopularManga(page)
+
+    override fun popularMangaRequest(page: Int) = GET("$baseUrl/series.json", headers)
+
+    override fun popularMangaParse(response: Response): MangasPage {
+        val jsonResult = json.parseToJsonElement(response.body!!.string()).jsonObject
+
+        val mangaList = jsonResult.entries.map { entry ->
+            val jsonObj = entry.value.jsonObject
+
+            SManga.create().apply {
+                artist = jsonObj["artist"]!!.jsonPrimitive.content
+                author = jsonObj["author"]!!.jsonPrimitive.content
+                description = jsonObj["description"]!!.jsonPrimitive.content
+                genre = jsonObj["genre"]!!.jsonPrimitive.content
+                title = jsonObj["title"]!!.jsonPrimitive.content
+                thumbnail_url = baseUrl + jsonObj["cover"]!!.jsonPrimitive.content
+                url = "/series?series=" + entry.key
+                status = SManga.ONGOING
+            }
         }
-        return MangasPage(manga, false)
+
+        return MangasPage(mangaList, hasNextPage = false)
     }
 
-    // latest
+    // Latest
     override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException("Not used")
+
     override fun latestUpdatesParse(response: Response) = throw UnsupportedOperationException("Not used")
 
-    // search
-
+    // Search
     private fun getMangaId(s: String): String? {
         return s.toHttpUrlOrNull()?.let { url ->
             // allow for trailing slash
@@ -89,34 +97,43 @@ open class HomeHeroScans : HttpSource() {
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         if (!query.startsWith(URL_SEARCH_PREFIX))
-        // site doesn't have a search, so just return the popular page
+        // Site doesn't have a search, so just return the popular page
             return fetchPopularManga(page)
         return getMangaId(query.substringAfter(URL_SEARCH_PREFIX))?.let { id ->
             fetchBySeriesId(id).map { MangasPage(it, false) }
         } ?: Observable.just(MangasPage(emptyList(), false))
     }
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw UnsupportedOperationException("Not used")
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList) =
+        throw UnsupportedOperationException("Not used")
+
     override fun searchMangaParse(response: Response) = throw UnsupportedOperationException("Not used")
 
-    // chapter list (is paginated),
+    // Chapter list (is paginated)
     override fun chapterListParse(response: Response): List<SChapter> {
-        return JsonParser.parseString(response.body?.string()!!).asJsonObject["data"].asJsonArray.map {
-            val chapterData = it.asJsonObject["data"].asJsonObject
-            fun get(k: String) = chapterData[k].asString
-            if (chapterNumberCache[get("series")] == null)
-                chapterNumberCache[get("series")] = mutableMapOf()
-            chapterNumberCache[get("series")]!![get("chapter")] = get("numPages").toInt()
-            SChapter.create().apply {
-                url = "/chapter?series=${get("series")}&ch=${get("chapter")}"
+        val jsonResult = json.parseToJsonElement(response.body!!.string()).jsonObject
 
-                name = "Ch. ${get("chapter")} ${get("title")}"
+        return jsonResult["data"]!!.jsonArray
+            .map { jsonEl ->
+                val jsonObj = jsonEl.jsonObject
+                val chapterData = jsonObj["data"]!!.jsonObject
+                val series = chapterData["series"]!!.jsonPrimitive.content
+                val chapter = chapterData["chapter"]!!.jsonPrimitive.content
 
-                date_upload = SimpleDateFormat("MM/dd/yyyy").parse(get("date")).time
+                if (chapterNumberCache[series] == null) {
+                    chapterNumberCache[series] = mutableMapOf()
+                }
 
-                chapter_number = get("chapter").toFloat()
+                chapterNumberCache[series]!![chapter] = chapterData["numPages"]!!.jsonPrimitive.content.toInt()
+
+                SChapter.create().apply {
+                    name = "Ch. $chapter ${chapterData["title"]!!.jsonPrimitive.content}"
+                    chapter_number = chapter.toFloatOrNull() ?: -1f
+                    date_upload = DATE_FORMATTER.parse(chapterData["date"]!!.jsonPrimitive.content)?.time ?: 0L
+                    url = "/chapter?series=$series&ch=$chapter"
+                }
             }
-        }.sortedByDescending { it.chapter_number }
+            .sortedByDescending { it.chapter_number }
     }
 
     override fun chapterListRequest(manga: SManga): Request {
@@ -134,7 +151,8 @@ open class HomeHeroScans : HttpSource() {
         } ?: Observable.just(manga)
 
     override fun mangaDetailsParse(response: Response) = throw UnsupportedOperationException("Not used")
-    // default implementation of mangaDetailsRequest has to exist for webview to work
+
+    // Default implementation of mangaDetailsRequest has to exist for webview to work
     // override fun mangaDetailsRequest(manga: SManga) = throw UnsupportedOperationException("Not used")
 
     // Pages
@@ -146,25 +164,29 @@ open class HomeHeroScans : HttpSource() {
         return if (chapterPages() != null) {
             Observable.just(chapterPages()!!)
         } else {
-            // has side effect of setting numPages in cache
+            // Has side effect of setting numPages in cache
             fetchChapterList(
-                // super hacky, url is wrong but has query parameter we need
+                // Super hacky, url is wrong but has query parameter we need
                 SManga.create().apply { this.url = chapter.url }
             ).map {
                 chapterPages()
             }
         }.map { numpages ->
             (0 until numpages).toList().map {
-                Page(it, "", "https://raw.githubusercontent.com/kbhuynh/mhh-chapters/master/$series/$chapternum/$it.png")
+                Page(it, "", "$baseUrl/api/image?key=$series/$chapternum/webp/$it.webp")
             }
         }
     }
 
     override fun pageListParse(response: Response) = throw UnsupportedOperationException("Not used")
+
     override fun pageListRequest(chapter: SChapter) = throw UnsupportedOperationException("Not Used")
-    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException("Not used")
+
+    override fun imageUrlParse(response: Response): String = ""
 
     companion object {
+        private val DATE_FORMATTER = SimpleDateFormat("MM/dd/yyyy", Locale.ENGLISH)
+
         const val URL_SEARCH_PREFIX = "url:"
     }
 }

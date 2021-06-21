@@ -193,11 +193,9 @@ class OnePieceEx : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         return document.select("script:containsData(paginasLista)").first()!!
             .data()
-            .substringAfter("paginasLista = \"")
-            .substringBefore("\";")
-            .replace("\\\"", "\"")
-            .replace("\\\\\\/", "/")
-            .replace("//", "/")
+            .substringAfter("paginasLista = ")
+            .substringBefore(";")
+            .let { json.parseToJsonElement(it).jsonPrimitive.content }
             .let { json.parseToJsonElement(it).jsonObject.entries }
             .mapIndexed { i, entry ->
                 Page(i, document.location(), "$baseUrl/${entry.value.jsonPrimitive.content}")

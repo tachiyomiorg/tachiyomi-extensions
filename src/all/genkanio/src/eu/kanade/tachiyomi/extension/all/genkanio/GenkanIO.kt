@@ -1,32 +1,38 @@
 package eu.kanade.tachiyomi.extension.all.genkanio
 
 import android.util.Log
-import com.github.salomonbrys.kotson.keys
-import com.github.salomonbrys.kotson.put
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Headers
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.util.Calendar
 
 open class GenkanIO : ParsedHttpSource() {
@@ -35,36 +41,140 @@ open class GenkanIO : ParsedHttpSource() {
     final override val baseUrl = "https://genkan.io"
     final override val supportsLatest = false
 
-    data class LiveWireRPC(val csrf: String, val state: JsonObject)
-    private var livewire: LiveWireRPC? = null
+    private val json: Json by injectLazy()
 
-    /**
-     * Given a string encoded with html entities and escape sequences, makes an attempt to decode
-     * and returns decoded string
-     *
-     * Warning: This is not all all exhaustive, and probably misses edge cases
-     *
-     * @Returns decoded string
+    /** An interceptor which encapsulates the logic needed to interoperate with Genkan.io's
+     *  livewire server, which uses a form a Remote Procedure call
      */
-    private fun htmlDecode(html: String): String {
-        return html.replace(Regex("&([A-Za-z]+);")) { match ->
-            mapOf(
-                "raquo" to "»",
-                "laquo" to "«",
-                "amp" to "&",
-                "lt" to "<",
-                "gt" to ">",
-                "quot" to "\""
-            )[match.groups[1]!!.value] ?: match.groups[0]!!.value
-        }.replace(Regex("\\\\(.)")) { match ->
-            mapOf(
-                "t" to "\t",
-                "n" to "\n",
-                "r" to "\r",
-                "b" to "\b"
-            )[match.groups[1]!!.value] ?: match.groups[1]!!.value
+    private val livewireInterceptor = object : Interceptor {
+        private lateinit var fingerprint: JsonElement
+        lateinit var serverMemo: JsonObject
+        private lateinit var csrf: String
+        var initialized = false
+        val serverUrl = "$baseUrl/livewire/message/manga.list-all-manga"
+
+        /**
+         * Given a string encoded with html entities and escape sequences, makes an attempt to decode
+         * and returns decoded string
+         *
+         * Warning: This is not all all exhaustive, and probably misses edge cases
+         *
+         * @Returns decoded string
+         */
+        private fun htmlDecode(html: String): String {
+            return html.replace(Regex("&([A-Za-z]+);")) { match ->
+                mapOf(
+                    "raquo" to "»",
+                    "laquo" to "«",
+                    "amp" to "&",
+                    "lt" to "<",
+                    "gt" to ">",
+                    "quot" to "\""
+                )[match.groups[1]!!.value] ?: match.groups[0]!!.value
+            }.replace(Regex("\\\\(.)")) { match ->
+                mapOf(
+                    "t" to "\t",
+                    "n" to "\n",
+                    "r" to "\r",
+                    "b" to "\b"
+                )[match.groups[1]!!.value] ?: match.groups[1]!!.value
+            }
+        }
+
+        /**
+         * Recursively merges j2 onto j1 in place
+         * If j1 and j2 both contain keys whose values aren't both jsonObjects, j2's value overwrites j1's
+         *
+         */
+        private fun mergeLeft(j1: JsonObject, j2: JsonObject): JsonObject = buildJsonObject {
+            j1.keys.forEach { put(it, j1[it]!!) }
+            j2.keys.forEach { k ->
+                when {
+                    j1[k] !is JsonObject -> put(k, j2[k]!!)
+                    j1[k] is JsonObject && j2[k] is JsonObject -> put(k, mergeLeft(j1[k]!!.jsonObject, j2[k]!!.jsonObject))
+                }
+            }
+        }
+
+        /**
+         * Initializes lateinit member vars
+         */
+        private fun initLivewire(chain: Interceptor.Chain) {
+            val response = chain.proceed(GET("$baseUrl/manga", headers))
+            val soup = response.asJsoup()
+            response.body?.close()
+            val csrfToken = soup.selectFirst("meta[name=csrf-token]")?.attr("content")
+
+            val initialProps = soup.selectFirst("div[wire:initial-data]")?.attr("wire:initial-data")?.let {
+                json.parseToJsonElement(htmlDecode(it))
+            }
+
+            if (csrfToken != null && initialProps is JsonObject) {
+                csrf = csrfToken
+                serverMemo = initialProps["serverMemo"]!!.jsonObject
+                fingerprint = initialProps["fingerprint"]!!
+                initialized = true
+            } else {
+                Log.e("GenkanIo", soup.selectFirst("div[wire:initial-data]")?.toString() ?: "null")
+            }
+        }
+
+        /**
+         * Builds a request for livewire, augmenting the request with required body fields and headers
+         *
+         * @param req: Request - A request with a json encoded body, which represent the updates sent to server
+         *
+         */
+        private fun livewireRequest(req: Request): Request {
+            val payload = buildJsonObject {
+                put("fingerprint", fingerprint)
+                put("serverMemo", serverMemo)
+                put("updates", json.parseToJsonElement(Buffer().apply { req.body!!.writeTo(this) }.readUtf8()))
+            }.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+            return req.newBuilder()
+                .method(req.method, payload)
+                .addHeader("x-csrf-token", csrf)
+                .addHeader("x-livewire", "true")
+                .build()
+        }
+
+        /**
+         * Transforms  json response from livewire server into a response which returns html
+         *
+         * @param response: Response - The response of sending a message to genkan's livewire server
+         *
+         * @return HTML Response - The html embedded within the provided response
+         */
+        private fun livewireResponse(response: Response): Response {
+            if (!response.isSuccessful) return response
+            val body = response.body!!.string()
+            val responseJson = json.parseToJsonElement(body).jsonObject
+
+            // response contains state that we need to preserve
+            serverMemo = mergeLeft(serverMemo, responseJson["serverMemo"]!!.jsonObject)
+
+            // this seems to be an error  state, so reset everything
+            if (responseJson["effects"]?.jsonObject?.get("html") is JsonNull) {
+                initialized = false
+            }
+
+            // Build html response
+            return response.newBuilder()
+                .body(htmlDecode("${responseJson["effects"]?.jsonObject?.get("html")}").toResponseBody("Content-Type: text/html; charset=UTF-8".toMediaTypeOrNull()))
+                .build()
+        }
+
+        override fun intercept(chain: Interceptor.Chain): Response {
+            if (chain.request().url.toString() != serverUrl)
+                return chain.proceed(chain.request())
+
+            if (!initialized) initLivewire(chain)
+            return livewireResponse(chain.proceed(livewireRequest(chain.request())))
         }
     }
+
+    override val client = super.client.newBuilder().addInterceptor(livewireInterceptor).build()
 
     // popular manga
 
@@ -83,119 +193,33 @@ open class GenkanIO : ParsedHttpSource() {
 
     // search
 
-    /**
-     * initializes `livewire` local variable using data from https://genkan.io/manga
-     */
-    private fun initLiveWire(response: Response) {
-        val soup = response.asJsoup()
-        val csrf = soup.selectFirst("meta[name=csrf-token]")?.attr("content")
-
-        val initialProps = soup.selectFirst("div[wire:initial-data]")?.attr("wire:initial-data")?.let {
-            JsonParser.parseString(htmlDecode(it))
-        }
-
-        if (csrf != null && initialProps?.asJsonObject != null) {
-            livewire = LiveWireRPC(csrf, initialProps.asJsonObject)
-        } else {
-            Log.e("GenkanIo", soup.selectFirst("div[wire:initial-data]")?.toString() ?: "null")
-        }
-    }
-
-    /**
-     * Prepares  a request which'll send a message to livewire server
-     *
-     * @param url: String - Message endpoint
-     * @param updates: JsonElement - JsonElement which describes the actions taken by server
-     *
-     * @return Request
-     */
-    private fun livewireRequest(url: String, updates: JsonElement): Request {
-        // assert(livewire != null)
-        val payload = JsonObject()
-        payload.put("fingerprint" to livewire!!.state.get("fingerprint"))
-        payload.put("serverMemo" to livewire!!.state.get("serverMemo"))
-        payload.put("updates" to updates)
-
-        // not sure why this isn't getting added automatically
-        val cookie = client.cookieJar.loadForRequest(url.toHttpUrlOrNull()!!).joinToString("; ") { "${it.name}=${it.value}" }
-        return POST(
-            url,
-            Headers.headersOf("x-csrf-token", livewire!!.csrf, "x-livewire", "true", "cookie", cookie, "cache-control", "no-cache, private"),
-            payload.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        )
-    }
-
-    /**
-     * Transforms  json response from livewire server into a response which returns html
-     * Also updates `livewire` variable with state returned by livewire server
-     *
-     * @param response: Response - The response of sending a message to genkan's livewire server
-     *
-     * @return HTML Response - The html embedded within the provided response
-     */
-    private fun livewireResponse(response: Response): Response {
-        val body = response.body?.string()
-        val responseJson = JsonParser.parseString(body).asJsonObject
-
-        // response contains state that we need to preserve
-        mergeLeft(livewire!!.state.get("serverMemo").asJsonObject, responseJson.get("serverMemo").asJsonObject)
-
-        // this seems to be an error  state, so reset everything
-        if (responseJson.get("effects")?.asJsonObject?.get("html")?.isJsonNull == true) {
-            livewire = null
-        }
-
-        // Build html response
-        return response.newBuilder()
-            .body(htmlDecode("${responseJson.get("effects")?.asJsonObject?.get("html")}").toResponseBody("Content-Type: text/html; charset=UTF-8".toMediaTypeOrNull()))
-            .build()
-    }
-
-    /**
-     * Recursively merges j2 onto j1 in place
-     * If j1 and j2 both contain keys whose values aren't both jsonObjects, j2's value overwrites j1's
-     *
-     */
-    private fun mergeLeft(j1: JsonObject, j2: JsonObject) {
-        j2.keys().forEach { k ->
-            if (j1.get(k)?.isJsonObject != true)
-                j1.put(k to j2.get(k))
-            else if (j1.get(k).isJsonObject && j2.get(k).isJsonObject)
-                mergeLeft(j1.get(k).asJsonObject, j2.get(k).asJsonObject)
-        }
-    }
-
-    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        fun searchRequest() = client.newCall(searchMangaRequest(page, query, filters)).asObservableSuccess().map(::livewireResponse)
-        return if (livewire == null) {
-            client.newCall(GET("$baseUrl/manga", headers))
-                .asObservableSuccess()
-                .doOnNext(::initLiveWire)
-                .concatWith(Observable.defer(::searchRequest))
-                .reduce { _, x -> x }
-        } else {
-            searchRequest()
-        }.map(::searchMangaParse)
-    }
-
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        //        assert(livewire != null)
-        val updates = JsonArray()
-        val data = livewire!!.state.get("serverMemo")?.asJsonObject?.get("data")?.asJsonObject!!
-        if (data["readyToLoad"]?.asBoolean == false) {
-            updates.add(JsonParser.parseString("""{"type":"callMethod","payload":{"method":"loadManga","params":[]}}"""))
-        }
-        val isNewQuery = query != data["search"]?.asString
-        if (isNewQuery) {
-            updates.add(JsonParser.parseString("""{"type": "syncInput", "payload": {"name": "search", "value": "$query"}}"""))
+        val data = if (livewireInterceptor.initialized) livewireInterceptor.serverMemo["data"]!!.jsonObject else buildJsonObject {
+            put("readyToLoad", JsonPrimitive(false))
+            put("page", JsonPrimitive(1))
+            put("search", JsonPrimitive(""))
         }
 
-        val currPage = if (isNewQuery) 1 else data["page"]?.asInt
+        val updates = buildJsonArray {
+            if (data["readyToLoad"]?.jsonPrimitive?.boolean == false) {
+                add(json.parseToJsonElement("""{"type":"callMethod","payload":{"method":"loadManga","params":[]}}"""))
+            }
+            val isNewQuery = query != data["search"]?.jsonPrimitive?.content
+            if (isNewQuery) {
+                add(json.parseToJsonElement("""{"type": "syncInput", "payload": {"name": "search", "value": "$query"}}"""))
+            }
 
-        for (i in (currPage!! + 1)..page)
-            updates.add(JsonParser.parseString("""{"type":"callMethod","payload":{"method":"nextPage","params":[]}}"""))
+            val currPage = if (isNewQuery) 1 else data["page"]!!.jsonPrimitive.int
 
-        return livewireRequest("$baseUrl/livewire/message/manga.list-all-manga", updates)
+            for (i in (currPage + 1)..page)
+                add(json.parseToJsonElement("""{"type":"callMethod","payload":{"method":"nextPage","params":[]}}"""))
+        }
+
+        return POST(
+            livewireInterceptor.serverUrl,
+            headers,
+            updates.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        )
     }
 
     override fun searchMangaFromElement(element: Element): SManga {
@@ -220,15 +244,15 @@ open class GenkanIO : ParsedHttpSource() {
         return if (manga.status != SManga.LICENSED) {
             // Returns an observable which emits the list of chapters found on a page,
             // for every page starting from specified page
-            fun getAllPagesFrom(page: Int): Observable<List<SChapter>> =
+            fun getAllPagesFrom(page: Int, pred: Observable<List<SChapter>> = Observable.just(emptyList())): Observable<List<SChapter>> =
                 client.newCall(chapterListRequest(manga, page))
                     .asObservableSuccess()
                     .concatMap { response ->
                         val cp = chapterPageParse(response)
                         if (cp.hasnext)
-                            Observable.just(cp.chapters).concatWith(getAllPagesFrom(page + 1))
+                            getAllPagesFrom(page + 1, pred = pred.concatWith(Observable.just(cp.chapters))) // tail call to avoid blowing the stack
                         else
-                            Observable.just(cp.chapters)
+                            pred.concatWith(Observable.just(cp.chapters))
                     }
             getAllPagesFrom(1).reduce(List<SChapter>::plus)
         } else {

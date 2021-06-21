@@ -4,8 +4,10 @@ import eu.kanade.tachiyomi.multisrc.mangabox.MangaBox
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Response
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-class Mangakakalots : MangaBox("Mangakakalots (unoriginal)", "https://mangakakalots.com", "en") {
+class Mangakakalots : MangaBox("Mangakakalots (unoriginal)", "https://mangakakalots.com", "en", SimpleDateFormat("MMM dd,yy", Locale.ENGLISH)) {
     override fun searchMangaSelector(): String = "${super.searchMangaSelector()}, div.list-truyen-item-wrap"
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()

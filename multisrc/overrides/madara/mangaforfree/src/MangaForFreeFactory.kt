@@ -29,12 +29,9 @@ abstract class MangaForFree(
     override val baseUrl: String,
     override val lang: String
 ) : Madara(name, baseUrl, lang) {
-    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .addNetworkInterceptor(rateLimitInterceptor)
+    override val client: OkHttpClient = super.client.newBuilder()
+        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
 
     override fun getGenreList() = listOf(

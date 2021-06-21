@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.extension.ru.mangapoisk
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -44,15 +43,15 @@ class MangaPoisk : ParsedHttpSource() {
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = if (query.isNotBlank()) {
-            "$baseUrl/search?q=$query"
+            "$baseUrl/search?q=$query&page=$page"
         } else {
-            val url = "$baseUrl/manga".toHttpUrlOrNull()!!.newBuilder()
+            val url = "$baseUrl/manga?page=$page".toHttpUrlOrNull()!!.newBuilder()
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is OrderBy -> {
                         val ord = arrayOf("-year", "popular", "name", "-published_at", "-last_chapter_at")[filter.state!!.index]
                         val ordRev = arrayOf("year", "-popular", "-name", "published_at", "last_chapter_at")[filter.state!!.index]
-                        url.addQueryParameter("sortBy", if (filter.state!!.ascending) "$ordRev" else "$ord")
+                        url.addQueryParameter("sortBy", if (filter.state!!.ascending) ordRev else ord)
                     }
                     is StatusList -> filter.state.forEach { status ->
                         if (status.state) {
@@ -106,7 +105,7 @@ class MangaPoisk : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    override fun popularMangaNextPageSelector() = "a.page-link"
+    override fun popularMangaNextPageSelector() = "a.page-link[rel=next]"
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
@@ -115,10 +114,13 @@ class MangaPoisk : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select("article div.card-body").first()
         val manga = SManga.create()
-        manga.title = document.select(".post-name").text()
+        val entitle = infoElement.select(".post-name-en")
+        manga.title = if (entitle.isNullOrEmpty()) { infoElement.select(".post-name").text() } else entitle.text().replaceRange(0, 2, "")
         manga.genre = infoElement.select(".post-info > span:eq(10) > a").joinToString { it.text() }
         manga.description = infoElement.select(".post-info > div .manga-description.entry").text()
-        manga.status = parseStatus(infoElement.select(".post-info > span:eq(7)").text())
+        manga.status = if (document.select(".order-2 h3").text() == "Главы удалены по требованию правообладателя.") {
+            SManga.LICENSED
+        } else parseStatus(infoElement.select(".post-info > span:eq(7)").text())
         manga.thumbnail_url = infoElement.select("img.img-fluid").first().attr("src")
         return manga
     }

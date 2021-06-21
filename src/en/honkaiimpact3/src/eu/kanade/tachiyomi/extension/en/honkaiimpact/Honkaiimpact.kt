@@ -1,34 +1,39 @@
 package eu.kanade.tachiyomi.extension.en.honkaiimpact
 
-import com.github.salomonbrys.kotson.float
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.float
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+// Info - Based of BH3
+// This is the english version of the site
 class Honkaiimpact : ParsedHttpSource() {
 
-    // Info - Based of BH3
-    // This is the english version of the site
     override val name = "Honkai Impact 3rd"
+
     override val baseUrl = "https://manga.honkaiimpact3.com"
+
     override val lang = "en"
+
     override val supportsLatest = false
+
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(1, TimeUnit.MINUTES)
         .readTimeout(1, TimeUnit.MINUTES)
@@ -36,25 +41,33 @@ class Honkaiimpact : ParsedHttpSource() {
         .followRedirects(true)
         .build()
 
+    private val json: Json by injectLazy()
+
     // Popular
     override fun popularMangaSelector() = "a[href*=book]"
 
     override fun popularMangaNextPageSelector(): String? = null
+
     override fun popularMangaRequest(page: Int) = GET("$baseUrl/book", headers)
+
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
 
     // Latest
     override fun latestUpdatesSelector() = throw Exception("Not Used")
 
     override fun latestUpdatesNextPageSelector(): String? = null
+
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not Used")
+
     override fun latestUpdatesFromElement(element: Element) = mangaFromElement(element)
 
     // Search
     override fun searchMangaSelector() = throw Exception("Not Used")
 
     override fun searchMangaNextPageSelector(): String? = null
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList) = throw Exception("No search")
+
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
 
     private fun mangaFromElement(element: Element): SManga {
@@ -78,22 +91,20 @@ class Honkaiimpact : ParsedHttpSource() {
     override fun chapterListSelector() = throw Exception("Not Used")
 
     override fun chapterFromElement(element: Element) = throw Exception("Not Used")
+
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url + "/get_chapter", headers)
+
     override fun chapterListParse(response: Response): List<SChapter> {
-        val jsondata = response.body!!.string()
-        val json = JsonParser().parse(jsondata).asJsonArray
-        val chapters = mutableListOf<SChapter>()
-        json.forEach {
-            chapters.add(createChapter(it))
-        }
-        return chapters
+        val jsonResult = json.parseToJsonElement(response.body!!.string()).jsonArray
+
+        return jsonResult.map { jsonEl -> createChapter(jsonEl.jsonObject) }
     }
 
-    private fun createChapter(json: JsonElement) = SChapter.create().apply {
-        name = json["title"].string
-        url = "/book/${json["bookid"].int}/${json["chapterid"].int}"
-        date_upload = parseDate(json["timestamp"].string)
-        chapter_number = json["chapterid"].float
+    private fun createChapter(jsonObj: JsonObject) = SChapter.create().apply {
+        name = jsonObj["title"]!!.jsonPrimitive.content
+        url = "/book/${jsonObj["bookid"]!!.jsonPrimitive.int}/${jsonObj["chapterid"]!!.jsonPrimitive.int}"
+        date_upload = parseDate(jsonObj["timestamp"]!!.jsonPrimitive.content)
+        chapter_number = jsonObj["chapterid"]!!.jsonPrimitive.float
     }
 
     private fun parseDate(date: String): Long {
@@ -101,13 +112,12 @@ class Honkaiimpact : ParsedHttpSource() {
     }
 
     // Manga Pages
-    override fun pageListParse(response: Response): List<Page> = mutableListOf<Page>().apply {
-        val body = response.asJsoup()
-        body.select("img.lazy.comic_img")?.forEach {
-            add(Page(size, "", it.attr("data-original")))
+
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select("img.lazy.comic_img").mapIndexed { i, el ->
+            Page(i, "", el.attr("data-original"))
         }
     }
 
-    override fun pageListParse(document: Document) = throw Exception("Not Used")
-    override fun imageUrlParse(document: Document) = throw Exception("Not Used")
+    override fun imageUrlParse(document: Document) = ""
 }

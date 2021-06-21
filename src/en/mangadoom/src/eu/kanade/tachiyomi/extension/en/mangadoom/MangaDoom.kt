@@ -187,7 +187,7 @@ class MangaDoom : HttpSource() {
             SChapter.create().apply {
                 this.name = it.select("span.val").first().ownText()
                 this.url = it.select("a").first().attr("href")
-                this.chapter_number = this.url.split("/").last().toFloat()
+                this.chapter_number = this.url.split("/").last().replace(Regex("[^0-9.]"), "").toFloat()
 
                 val calculatedDate = it.select("span.date").first().ownText()?.let {
                     parseDate(it)

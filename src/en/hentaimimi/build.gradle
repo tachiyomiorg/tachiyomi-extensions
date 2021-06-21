@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'HentaiMimi'
     pkgNameSuffix = 'en.hentaimimi'
     extClass = '.HentaiMimi'
-    extVersionCode = 3
+    extVersionCode = 5
     libVersion = '1.2'
     containsNsfw = true
 }

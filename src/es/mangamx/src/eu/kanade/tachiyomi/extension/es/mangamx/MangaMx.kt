@@ -4,10 +4,6 @@ import android.app.Application
 import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Base64
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -19,6 +15,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
@@ -26,6 +24,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -44,10 +43,11 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
     private var csrfToken = ""
 
+    private val json: Json by injectLazy()
+
     override fun popularMangaRequest(page: Int) = GET(
-        "$baseUrl/directorio?genero=false" +
-            "&estado=false&filtro=visitas&tipo=false&adulto=${if (hideNSFWContent()) "0" else "false"}&orden=desc&p=$page",
-        headers
+        url = "$baseUrl/directorio?genero=false&estado=false&filtro=visitas&tipo=false&adulto=${if (hideNSFWContent()) "0" else "false"}&orden=desc&p=$page",
+        headers = headers
     )
 
     override fun popularMangaNextPageSelector() = ".page-item a[rel=next]"
@@ -95,16 +95,13 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
                 .add("buscar", query)
                 .add("_token", csrfToken)
                 .build()
-            val searchHeaders = headers.newBuilder().add("X-Requested-With", "XMLHttpRequest")
+            val searchHeaders = headers.newBuilder()
+                .add("X-Requested-With", "XMLHttpRequest")
                 .add("Referer", baseUrl).build()
-            return POST("$baseUrl/buscar", searchHeaders, formBody)
+            return POST(url = "$baseUrl/buscar", headers = searchHeaders, body = formBody)
         } else {
             val uri = Uri.parse("$baseUrl/directorio").buildUpon()
-
-            uri.appendQueryParameter(
-                "adulto",
-                if (hideNSFWContent()) { "0" } else { "1" }
-            )
+            uri.appendQueryParameter("adulto", if (hideNSFWContent()) { "0" } else { "1" })
 
             for (filter in filters) {
                 when (filter) {
@@ -142,6 +139,7 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         if (!response.isSuccessful) throw Exception("Búsqueda fallida ${response.code}")
+
         if ("directorio" in response.request.url.toString()) {
             val document = response.asJsoup()
             val mangas = document.select(searchMangaSelector()).map { element ->
@@ -154,20 +152,20 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
             return MangasPage(mangas, hasNextPage)
         } else {
-            val body = response.body!!.string()
-            if (body == "[]") throw Exception("Término de búsqueda demasiado corto")
-            val json = JsonParser().parse(body)["mangas"].asJsonArray
+            val result = json.decodeFromString<ResponseDto>(response.body!!.string())
+            if (result.mangaList.isEmpty()) throw Exception("Término de búsqueda demasiado corto")
 
-            val mangas = json.map { jsonElement -> searchMangaFromJson(jsonElement) }
-            val hasNextPage = false
-            return MangasPage(mangas, hasNextPage)
+            val mangaList = result.mangaList
+                .map(::searchMangaFromObject)
+
+            return MangasPage(mangaList, hasNextPage = false)
         }
     }
 
-    private fun searchMangaFromJson(jsonElement: JsonElement): SManga = SManga.create().apply {
-        title = jsonElement["nombre"].string
-        setUrlWithoutDomain(jsonElement["url"].string)
-        thumbnail_url = jsonElement["img"].string.replace("/thumb", "/cover")
+    private fun searchMangaFromObject(manga: MangaDto): SManga = SManga.create().apply {
+        title = manga.name
+        thumbnail_url = manga.img.replace("/thumb", "/cover")
+        setUrlWithoutDomain(manga.url)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {

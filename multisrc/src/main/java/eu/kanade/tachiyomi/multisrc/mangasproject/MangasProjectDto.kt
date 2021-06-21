@@ -5,6 +5,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 @Serializable
+data class MangasProjectErrorDto(
+    val code: Int? = null,
+    val message: String? = null
+)
+
+@Serializable
 data class MangasProjectMostReadDto(
     @SerialName("most_read") val mostRead: List<MangasProjectSerieDto> = emptyList()
 )

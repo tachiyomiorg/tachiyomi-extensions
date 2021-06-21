@@ -89,14 +89,20 @@ class ScantradUnion : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("#webtoon a img")
-            .mapIndexed { index: Int, imgElem: Element ->
+            .map { imgElem: Element ->
                 // In webtoon mode, images have an src attribute only.
                 // In manga mode, images have a data-src attribute that contains the src
                 val imgElemDataSrc = imgElem.attr("data-src")
                 val imgElemSrc = imgElem.attr("src")
 
-                val imgUrl = if (imgElemDataSrc.isNullOrBlank()) imgElemSrc else imgElemDataSrc
-
+                if (imgElemDataSrc.isNullOrBlank()) imgElemSrc else imgElemDataSrc
+            }
+            // Since June 2021, webtoon html has both elements sometimes (data-src and src)
+            // So there are duplicates when fetching pages
+            // https://github.com/tachiyomiorg/tachiyomi-extensions/issues/7694
+            // The distinct() prevent this problem when it happens
+            .distinct()
+            .mapIndexed { index: Int, imgUrl: String ->
                 Page(index, "", imgUrl)
             }
     }
