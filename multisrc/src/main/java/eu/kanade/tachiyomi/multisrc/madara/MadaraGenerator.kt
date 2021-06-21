@@ -289,6 +289,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("مانجا ليك", "https://mangalek.com", "ar", className = "Mangalek"),
         SingleLang("مانجا لينك", "https://mangalink.io", "ar", className = "MangaLinkio", overrideVersionCode = 1),
         SingleLang("موقع لترجمة المانجا", "https://golden-manga.com", "ar", className = "GoldenManga"),
+        SingleLang("Ancient Empire Scan", "https://ancientempirescan.website", "es")
     )
 
     companion object {
