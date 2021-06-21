@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 @Nsfw
 class MHentais : MHentais(
-    "MHentais (Mark Scans)",
+    "MHentais",
     "https://mhentais.com",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
