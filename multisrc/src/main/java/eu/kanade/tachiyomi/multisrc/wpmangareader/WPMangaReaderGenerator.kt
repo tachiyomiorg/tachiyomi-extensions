@@ -17,7 +17,7 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
         SingleLang("MangaKita", "https://mangakita.net", "id", overrideVersionCode = 1),
         SingleLang("Martial Manga", "https://martialmanga.com/", "es"),
         SingleLang("Ngomik", "https://ngomik.net", "id", overrideVersionCode = 1),
-        SingleLang("Sekaikomik", "https://www.sekaikomik.xyz", "id", isNsfw = true, overrideVersionCode = 5),
+        SingleLang("Sekaikomik", "https://www.sekaikomik.xyz", "id", isNsfw = true, overrideVersionCode = 6),
         SingleLang("Davey Scans", "https://daveyscans.com/", "id"),
         SingleLang("Mangasusu", "https://mangasusu.co.in", "id", isNsfw = true),
         SingleLang("TurkToon", "https://turktoon.com", "tr"),
@@ -31,9 +31,9 @@ class WPMangaReaderGenerator : ThemeSourceGenerator {
         SingleLang("Seafoam Scans", "https://seafoamscans.com", "en"),
         SingleLang("GS Nation", "https://gs-nation.fr", "fr", overrideVersionCode = 1),
         SingleLang("YugenMangas", "https://yugenmangas.com", "es"),
-        SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true),
-        SingleLang("Patatescans", "https://patatescans.com", "fr", isNsfw = true),
-        SingleLang("Fusion Scanlation", "https://fusionscanlation.com", "es", isNsfw = true),
+        SingleLang("DragonTranslation", "https://dragontranslation.com", "es", isNsfw = true, overrideVersionCode = 1),
+        SingleLang("Patatescans", "https://patatescans.com", "fr", isNsfw = true, overrideVersionCode = 1),
+        SingleLang("Fusion Scanlation", "https://fusionscanlation.com", "es"),
     )
 
     companion object {
