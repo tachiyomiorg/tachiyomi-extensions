@@ -86,7 +86,7 @@ class MangaOwl : ParsedHttpSource() {
             author = infoElement.select("p.fexi_header_para a.author_link").text()
             artist = author
             status = parseStatus(infoElement.select("p.fexi_header_para:contains(status)").first().ownText())
-            genre = infoElement.select("a.label").mapNotNull{ it.text() }.joinToString(", ")
+            genre = infoElement.select(".single_detail:not(owls-tag) a.label").mapNotNull{ it.text() }.joinToString(", ")
             description = infoElement.select(".description").first().ownText()
             thumbnail_url = infoElement.select("img").first()?.let { img ->
                 if (img.hasAttr("data-src")) img.attr("abs:data-src") else img.attr("abs:src")
