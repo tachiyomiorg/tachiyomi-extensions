@@ -23,7 +23,7 @@ class YagamiProject : ParsedHttpSource() {
     override val name = "YagamiProject"
     override val baseUrl = "https://read.yagami.me"
     override val lang = "ru"
-    override val supportsLatest = false
+    override val supportsLatest = true
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("User-Agent", userAgent)
@@ -45,10 +45,10 @@ class YagamiProject : ParsedHttpSource() {
     }
 
     // Latest
-    override fun latestUpdatesRequest(page: Int) = throw Exception("latestUpdatesRequest Not used")
-    override fun latestUpdatesNextPageSelector() = throw Exception("latestUpdatesNextPageSelector Not used")
-    override fun latestUpdatesSelector() = throw Exception("latestUpdatesSelector Not used")
-    override fun latestUpdatesFromElement(element: Element): SManga = throw Exception("latestUpdatesFromElement Not used")
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/latest/$page", headers)
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesSelector() = popularMangaSelector()
+    override fun latestUpdatesFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -110,61 +110,34 @@ class YagamiProject : ParsedHttpSource() {
 
     // Details
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("article.full .fmid").first()
+        val infoElement = document.select(".large.comic .info").first()
         val manga = SManga.create()
-        val titlestr = document.select(".fheader h1").text().split(" / ").sorted()
+        val titlestr = document.select("title").text().substringBefore(" :: Yagami").split(" :: ").sorted()
         manga.title = titlestr.first()
-        manga.thumbnail_url = infoElement.select("img.img-responsive").first().attr("src")
-        manga.author = infoElement.select(".vis:contains(Автор) > a").text()
-        manga.artist = infoElement.select(".vis:contains(Художник) > a").text()
-        manga.status = if (document.select(".fheader h2").text() == "Чтение заблокировано") {
-            SManga.LICENSED
-        } else
-            when (infoElement.select(".vis:contains(Статус) span.label").text()) {
-                "Сейчас издаётся" -> SManga.ONGOING
-                "Изданное" -> SManga.COMPLETED
-                else -> SManga.UNKNOWN
-            }
-
-        val rawCategory = infoElement.select(".vis:contains(Жанр (вид)) span.label").text()
-        val category = when {
-            rawCategory == "Веб-Манхва" -> "Манхва"
-            rawCategory.isNotBlank() -> rawCategory
-            else -> "Манхва"
+        manga.thumbnail_url = document.select(".cover img").first().attr("src")
+        manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ")
+        manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
+            "онгоинг" -> SManga.ONGOING
+            "завершён" -> SManga.COMPLETED
+            else -> SManga.UNKNOWN
         }
-        manga.genre = infoElement.select(".vis:contains(Категории) > a").map { it.text() }.plusElement(category).joinToString { it.trim() }
-        val ratingValue = infoElement.select(".rating").text().substringAfter("Рейтинг ").substringBefore("/").toFloat() * 2
-        val ratingVotes = infoElement.select(".rating").text().substringAfter("голосов: ").substringBefore(" ")
-        val ratingStar = when {
-            ratingValue > 9.5 -> "★★★★★"
-            ratingValue > 8.5 -> "★★★★✬"
-            ratingValue > 7.5 -> "★★★★☆"
-            ratingValue > 6.5 -> "★★★✬☆"
-            ratingValue > 5.5 -> "★★★☆☆"
-            ratingValue > 4.5 -> "★★✬☆☆"
-            ratingValue > 3.5 -> "★★☆☆☆"
-            ratingValue > 2.5 -> "★✬☆☆☆"
-            ratingValue > 1.5 -> "★☆☆☆☆"
-            ratingValue > 0.5 -> "✬☆☆☆☆"
-            else -> "☆☆☆☆☆"
-        }
-        val altSelector = document.select(".vis:contains(Другие названия) span")
-        var altName = ""
-        if (altSelector.isNotEmpty()) {
-            altName = "Альтернативные названия:\n" + altSelector.last().text() + "\n\n"
-        }
-        manga.description = titlestr.last() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + altName + infoElement.select(".fdesc.slice-this").text()
+        manga.genre = infoElement.select("li:contains(Жанры)").text().substringAfter("Жанры: ")
+        manga.description = titlestr.last() + "\n" + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
         return manga
     }
 
     // Chapters
-    override fun chapterListSelector(): String = ".chapters li:not(.volume )"
+    override fun chapterListSelector(): String = ".list .element"
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        val link = element.select("h5 a")
-        name = element.attr("class").substringAfter("volume-") + ". " + link.text()
-        chapter_number = name.substringAfter("Глава №").substringBefore(":").toFloat()
-        setUrlWithoutDomain(link.attr("href") + "/1")
-        date_upload = parseDate(element.select(".date-chapter-title-rtl").text().trim())
+        val chapter = element.select(".title a")
+        val chapterScan_Date = element.select(".meta_r")
+        name = chapter.attr("title")
+        chapter_number = name.substringAfter("Глава ").substringBefore(":").toFloat()
+        setUrlWithoutDomain(chapter.attr("href"))
+        date_upload = parseDate(chapterScan_Date.text().substringAfter(", "))
+        scanlator = if (chapterScan_Date.select("a").isNotEmpty()) {
+            chapterScan_Date.select("a").map { it.text() }.joinToString(" / ")
+        } else null
     }
     private fun parseDate(date: String): Long {
         return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
