@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 @Nsfw
 class XXXNeoxScans : XXXNeoxScans(
-    "XXX Neox Scans",
+    "XXXNeox Scans",
     "https://xxx.neoxscans.net",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
