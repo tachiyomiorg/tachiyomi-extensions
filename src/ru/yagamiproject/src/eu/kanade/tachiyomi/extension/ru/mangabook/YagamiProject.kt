@@ -131,8 +131,16 @@ class YagamiProject : ParsedHttpSource() {
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         val chapter = element.select(".title a")
         val chapterScan_Date = element.select(".meta_r")
-        name = chapter.attr("title")
-        chapter_number = name.substringAfter("Глава ").substringBefore(":").toFloat()
+        name = when {
+            chapter.attr("title").isNullOrBlank() -> chapter.text()
+            else -> chapter.attr("title")
+        }
+
+        chapter_number = when {
+            name.contains("Глава") -> name.substringAfter("Глава ").substringBefore(":").toFloat()
+            name.contains("Акт") -> name.substringAfter("Акт №").substringBefore(":").toFloat()
+            else -> 0F
+        }
         setUrlWithoutDomain(chapter.attr("href"))
         date_upload = parseDate(chapterScan_Date.text().substringAfter(", "))
         scanlator = if (chapterScan_Date.select("a").isNotEmpty()) {
@@ -143,13 +151,13 @@ class YagamiProject : ParsedHttpSource() {
         return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
     }
     // Pages
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select(".reader-images img.img-responsive:not(.scan-page)").mapIndexed { i, img ->
-            Page(i, "", img.attr("data-src").trim())
+    override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
+        document.select(".dropdown li a").forEach {
+            add(Page(it.text().substringAfter("Стр. ").toInt(), it.attr("href")))
         }
     }
-
-    override fun imageUrlParse(document: Document) = throw Exception("imageUrlParse Not Used")
+    override fun imageUrlParse(response: Response): String = response.asJsoup().select("#page img").attr("src")
+    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
 
     // Filters
     private class CheckFilter(name: String, val id: String) : Filter.CheckBox(name)
