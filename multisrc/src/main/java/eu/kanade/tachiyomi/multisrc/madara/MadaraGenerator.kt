@@ -148,7 +148,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("MangaDods", "https://www.mangadods.com", "en", overrideVersionCode = 2),
         SingleLang("MangaEffect", "https://mangaeffect.com", "en", overrideVersionCode = 1),
         SingleLang("MangaGreat", "https://mangagreat.com", "en", overrideVersionCode = 1),
-        SingleLang("MangaKitsune", "https://mangakitsune.com", "en", isNsfw = true, overrideVersionCode = 2),
+        SingleLang("MangaKitsune", "https://mangakitsune.com", "en", isNsfw = true, overrideVersionCode = 3),
         SingleLang("MangaKomi", "https://mangakomi.com", "en", overrideVersionCode = 3),
         SingleLang("MangaLionz", "https://mangalionz.com", "ar"),
         SingleLang("MangaPL", "https://mangapl.com", "en", isNsfw = true, overrideVersionCode = 1),
