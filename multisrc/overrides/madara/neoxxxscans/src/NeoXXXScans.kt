@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.pt.mhentais
+package eu.kanade.tachiyomi.extension.pt.neoxxxscans
 
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
@@ -9,9 +9,9 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Nsfw
-class MHentais : Madara(
-    "MHentais",
-    "https://mhentais.com",
+class NeoXXXScans : Madara(
+    "NeoXXX Scans",
+    "https://xxx.neoxscans.net",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 ) {
