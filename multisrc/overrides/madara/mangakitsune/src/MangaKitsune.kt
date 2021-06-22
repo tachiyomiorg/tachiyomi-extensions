@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 @Nsfw
 class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en", dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)) {
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 
     override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
