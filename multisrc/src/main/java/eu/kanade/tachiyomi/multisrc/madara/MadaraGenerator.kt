@@ -208,7 +208,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Ninjavi", "https://ninjavi.com", "ar", overrideVersionCode = 1),
         SingleLang("Nitro Scans", "https://nitroscans.com", "en"),
         SingleLang("NovelMic", "https://novelmic.com", "en", overrideVersionCode = 1),
-        SingleLang("Oh No Manga", "https://ohnomanga.com", "en", isNsfw = true)
+        SingleLang("Oh No Manga", "https://ohnomanga.com", "en", isNsfw = true),
         SingleLang("Off Scan", "https://offscan.top", "pt-BR", overrideVersionCode = 2),
         SingleLang("OnManga", "https://onmanga.com", "en", overrideVersionCode = 1),
         SingleLang("Origami Orpheans", "https://origami-orpheans.com.br", "pt-BR", overrideVersionCode = 2),
