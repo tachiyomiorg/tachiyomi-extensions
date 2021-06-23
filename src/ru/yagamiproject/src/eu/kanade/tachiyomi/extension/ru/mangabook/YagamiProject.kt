@@ -80,25 +80,9 @@ class YagamiProject : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
     override fun searchMangaSelector(): String = popularMangaSelector()
-    override fun searchMangaFromElement(element: Element): SManga {
-        return SManga.create().apply {
-            element.select(".flist.row a").first().let {
-                setUrlWithoutDomain(it.attr("href"))
-                title = it.select("h4 strong").text().split(" / ").sorted().first()
-            }
-            thumbnail_url = element.select(".sposter img.img-responsive").attr("src")
-        }
-    }
-
+    override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
     override fun searchMangaParse(response: Response): MangasPage {
-        if (!response.request.url.toString().contains("dosearch")) {
-            return popularMangaParse(response)
-        }
-        val document = response.asJsoup()
-        val mangas = document.select(".manga-list li:not(.vis )").map { element ->
-            searchMangaFromElement(element)
-        }
-        return MangasPage(mangas, false)
+        return popularMangaParse(response)
     }
 
     // Details
@@ -106,7 +90,7 @@ class YagamiProject : ParsedHttpSource() {
         val infoElement = document.select(".large.comic .info").first()
         val manga = SManga.create()
         val titlestr = document.select("title").text().substringBefore(" :: Yagami").split(" :: ").sorted()
-        manga.title = titlestr.first()
+        manga.title = titlestr.first().replace(":: ", "")
         manga.thumbnail_url = document.select(".cover img").first().attr("src")
         manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ")
         manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
@@ -116,7 +100,7 @@ class YagamiProject : ParsedHttpSource() {
             else -> SManga.UNKNOWN
         }
         manga.genre = infoElement.select("li:contains(Жанры)").text().substringAfter("Жанры: ")
-        manga.description = titlestr.last() + "\n" + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
+        manga.description = titlestr.last().replace(":: ", "") + "\n" + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
         return manga
     }
 
