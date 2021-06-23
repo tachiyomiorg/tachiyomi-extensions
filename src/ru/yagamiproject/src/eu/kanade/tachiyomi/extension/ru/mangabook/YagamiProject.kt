@@ -165,6 +165,7 @@ class YagamiProject : ParsedHttpSource() {
     // Filters
 
     override fun getFilterList() = FilterList(
+        Filter.Header("ПРИМЕЧАНИЕ: Фильтры исключают другдруга!"),
         CategoryList(categoriesName),
         FormatList(formasName)
     )
