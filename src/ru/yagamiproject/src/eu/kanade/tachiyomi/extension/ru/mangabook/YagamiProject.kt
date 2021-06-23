@@ -112,6 +112,7 @@ class YagamiProject : ParsedHttpSource() {
         manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ")
         manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
             "онгоинг" -> SManga.ONGOING
+            "активный" -> SManga.ONGOING
             "завершён" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
