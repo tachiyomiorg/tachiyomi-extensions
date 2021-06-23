@@ -40,7 +40,7 @@ class YagamiProject : ParsedHttpSource() {
                 setUrlWithoutDomain(it.attr("href"))
                 title = it.attr("title").split(" / ").sorted().first()
             }
-            thumbnail_url = element.select(".cover_mini > img").attr("src")
+            thumbnail_url = element.select(".cover_mini > img").attr("src").replace("thumb_", "")
         }
     }
 
@@ -93,6 +93,7 @@ class YagamiProject : ParsedHttpSource() {
         manga.title = titlestr.first().replace(":: ", "")
         manga.thumbnail_url = document.select(".cover img").first().attr("src")
         manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ").split(" / ").sorted().first()
+        manga.artist = infoElement.select("li:contains(Художник)").text().substringAfter("Художник(и): ").split(" / ").sorted().first()
         manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
             "онгоинг" -> SManga.ONGOING
             "активный" -> SManga.ONGOING
