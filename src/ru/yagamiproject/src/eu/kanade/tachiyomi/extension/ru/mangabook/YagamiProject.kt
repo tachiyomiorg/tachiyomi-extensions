@@ -92,7 +92,7 @@ class YagamiProject : ParsedHttpSource() {
         val titlestr = document.select("title").text().substringBefore(" :: Yagami").split(" :: ").sorted()
         manga.title = titlestr.first().replace(":: ", "")
         manga.thumbnail_url = document.select(".cover img").first().attr("src")
-        manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ")
+        manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ").split(" / ").sorted().first()
         manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
             "онгоинг" -> SManga.ONGOING
             "активный" -> SManga.ONGOING
