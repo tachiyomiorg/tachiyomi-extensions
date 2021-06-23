@@ -100,7 +100,12 @@ class YagamiProject : ParsedHttpSource() {
             else -> SManga.UNKNOWN
         }
         manga.genre = infoElement.select("li:contains(Жанры)").text().substringAfter("Жанры: ")
-        manga.description = titlestr.last().replace(":: ", "") + "\n" + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
+        val altSelector = infoElement.select("li:contains(Название)")
+        var altName = ""
+        if (altSelector.isNotEmpty()) {
+            altName = "Альтернативные названия:\n" + altSelector.toString().replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
+        }
+        manga.description = titlestr.last().replace(":: ", "") + "\n" + altName + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
         return manga
     }
 
