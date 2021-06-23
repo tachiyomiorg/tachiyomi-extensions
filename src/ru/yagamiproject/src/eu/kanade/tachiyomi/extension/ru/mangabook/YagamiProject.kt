@@ -152,8 +152,17 @@ class YagamiProject : ParsedHttpSource() {
     }
     // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select(".dropdown li a").forEach {
-            add(Page(it.text().substringAfter("Стр. ").toInt(), it.attr("href")))
+        val webtoonsel = document.select(".dropdown li a")
+        val defaultsel = document.select(".web_pictures img.web_img")
+
+        if (webtoonsel.isNullOrEmpty()) {
+            defaultsel.mapIndexed { i, img ->
+                add(Page(i, "", img.attr("src")))
+            }
+        } else {
+            webtoonsel.forEach {
+                add(Page(it.text().substringAfter("Стр. ").toInt(), it.attr("href")))
+            }
         }
     }
     override fun imageUrlParse(response: Response): String = response.asJsoup().select("#page img").attr("src")
