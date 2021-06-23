@@ -55,7 +55,6 @@ class YagamiProject : ParsedHttpSource() {
         val url = if (query.isNotBlank()) {
             "$baseUrl/reader/search/?s=$query&p=$page"
         } else {
-            val url = "$baseUrl/filterList?page=$page&ftype[]=0&status[]=0".toHttpUrlOrNull()!!.newBuilder()
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is CategoryList -> {
@@ -74,7 +73,7 @@ class YagamiProject : ParsedHttpSource() {
                     }
                 }
             }
-            return GET(url.toString(), headers)
+            throw Exception("Filters Not")
         }
         return GET(url, headers)
     }
@@ -161,7 +160,7 @@ class YagamiProject : ParsedHttpSource() {
         }
     }
     override fun imageUrlParse(response: Response): String = response.asJsoup().select("#page img").attr("src")
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not used")
+    override fun imageUrlParse(document: Document): String = throw Exception("imageUrlParse(document: Document) Not Used")
 
     // Filters
 
