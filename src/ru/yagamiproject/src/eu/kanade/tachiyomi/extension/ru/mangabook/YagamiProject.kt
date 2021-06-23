@@ -176,12 +176,11 @@ class YagamiProject : ParsedHttpSource() {
     }.toTypedArray()
 
     private fun getFormatList() = listOf(
-        FormUnit("Вся", "not"),
+        FormUnit("Все", "not"),
         FormUnit("Манга", "manga"),
         FormUnit("Манхва", "manhva"),
         FormUnit("Веб Манхва", "webtoon"),
-        FormUnit("Маньхуа", "manhua"),
-        FormUnit("Артбуки", "artbooks")
+        FormUnit("Маньхуа", "manhua")
     )
 
     private class CategoryList(categories: Array<String>) : Filter.Select<String>("Категории", categories)
