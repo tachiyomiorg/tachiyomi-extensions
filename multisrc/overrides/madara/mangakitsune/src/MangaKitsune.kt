@@ -3,9 +3,11 @@ package eu.kanade.tachiyomi.extension.en.mangakitsune
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.multisrc.madara.Madara
+import eu.kanade.tachiyomi.source.model.SChapter
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
 @Nsfw
