@@ -3,9 +3,11 @@ package eu.kanade.tachiyomi.extension.en.mangakitsune
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.multisrc.madara.Madara
+import eu.kanade.tachiyomi.source.model.SChapter
 import java.text.SimpleDateFormat
 import java.util.Locale
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
 @Nsfw
@@ -14,6 +16,11 @@ class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en", da
     override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
+
+
+
+        
+    override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
 
     override val pageListParseSelector = ".reading-content div.text-left :has(>img)"
     
