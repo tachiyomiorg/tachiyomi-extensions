@@ -25,14 +25,30 @@ body:
         - label: I will fill the forms below with sufficient information.
           required: true
 
-  - type: textarea
+  - type: input
     id: name
     attributes:
-      label: Source website
-      value: |
-        - Name: ?
-        - Link: ?
-        - Language(s): ?
+      label: Source Name
+      placeholder: |
+        Example: Not Real Scans
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Source Link
+      placeholder: |
+        Example: https://notrealscans.org
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      placeholder: |
+        Example: English
     validations:
       required: true
 
