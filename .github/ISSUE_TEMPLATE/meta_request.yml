@@ -3,16 +3,11 @@ description: Suggest improvements to the project
 labels: [meta]
 body:
 
-  - type: markdown
-    attributes:
-      value: |
-        To suggest a feature for Tachiyomi Extension, include a short but informative title above, and fill out the form below.
-
   - type: checkboxes
     id: acknowledgements
     attributes:
       label: Acknowledgements
-      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      description: Your issue will be closed if you haven't done these steps.
       options:
         - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
           required: true
@@ -24,7 +19,7 @@ body:
           required: true
         - label: I have updated all installed extensions.
           required: true
-        - label: I will fill the forms below with sufficient information.
+        - label: I will fill out all of the requested information in this form.
           required: true
 
   - type: textarea

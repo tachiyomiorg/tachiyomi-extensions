@@ -4,16 +4,11 @@ title: "Source Name: short description"
 labels: [bug]
 body:
 
-  - type: markdown
-    attributes:
-      value: |
-        To report a Tachiyomi Extension issue/bug, include a short but informative title above, and fill out the form below.
-
   - type: checkboxes
     id: acknowledgements
     attributes:
       label: Acknowledgements
-      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      description: Your issue will be closed if you haven't done these steps.
       options:
         - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
           required: true
@@ -27,7 +22,7 @@ body:
           required: true
         - label: If this is an issue with the app itself, I should be opening an issue in the [app repository](https://github.com/tachiyomiorg/tachiyomi/issues/new/choose).
           required: true
-        - label: I will fill the forms below with sufficient information.
+        - label: I will fill out all of the requested information in this form.
           required: true
 
   - type: input
