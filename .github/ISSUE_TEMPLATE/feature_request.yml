@@ -30,7 +30,7 @@ body:
     id: feature-description
     attributes:
       label: Describe your suggested feature
-      description: How is the expected behaviour of the proposed feature?
+      description: How can an existing extension be improved?
       placeholder: |
         Example:
           "It should work like this..."
