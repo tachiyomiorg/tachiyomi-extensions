@@ -20,7 +20,7 @@ body:
           required: true
         - label: I have checked that the extension does not already exist on the [website extensions list](https://tachiyomi.org/extensions/) or the app.
           required: true
-        - label: I have checked that the extension does not already exist By searching the [GitHub repository](https://github.com/tachiyomiorg/tachiyomi-extensions/) for the extension and verify it does not appear in the code base.
+        - label: I have checked that the extension does not already exist by searching the [GitHub repository](https://github.com/tachiyomiorg/tachiyomi-extensions/) and verified it does not appear in the code base.
           required: true
         - label: I will fill the forms below with sufficient information.
           required: true
