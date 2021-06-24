@@ -13,7 +13,7 @@ body:
     id: acknowledgements
     attributes:
       label: Acknowledgements
-      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      description: Your issue will be closed if you haven't done these steps.
       options:
         - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
           required: true
