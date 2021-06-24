@@ -23,7 +23,7 @@ body:
           required: true
         - label: I have updated the app to version **[0.11.1](https://github.com/tachiyomiorg/tachiyomi/releases/latest)**.
           required: true
-        - label: I will fill the forms below with sufficient information.
+        - label: I will fill out all of the requested information in this form.
           required: true
 
   - type: textarea
