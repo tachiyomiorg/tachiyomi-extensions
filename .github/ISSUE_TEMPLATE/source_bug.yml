@@ -56,7 +56,7 @@ body:
 
         You can find your Extension version in **Browse → Extension**.
       placeholder: |
-        Example: "Manga Plus 1.2.20"
+        Example: "MangaDex 1.2.111"
     validations:
       required: true
 
