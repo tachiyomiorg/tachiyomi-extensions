@@ -1,6 +1,6 @@
 name: ⭐ Feature request
 description: Suggest a feature to improve a source
-title: "Source name: Short description"
+title: "Source Name: short description"
 labels: [enhancement]
 body:
 
@@ -31,7 +31,7 @@ body:
           "It should work like this..."
     validations:
       required: true
- 
+
    - type: textarea
     id: other-details
     attributes:
