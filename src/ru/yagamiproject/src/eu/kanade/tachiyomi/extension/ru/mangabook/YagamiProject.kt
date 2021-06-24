@@ -8,7 +8,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
@@ -104,7 +103,7 @@ class YagamiProject : ParsedHttpSource() {
         val altSelector = infoElement.select("li:contains(Название)")
         var altName = ""
         if (altSelector.isNotEmpty()) {
-            altName = "Альтернативные названия:\n" + altSelector.toString().replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
+            altName = "Альтернативные названия:\n" + altSelector.toString().replace("<li><b>Название</b>: ", "").replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
         }
         manga.description = titlestr.last().replace(":: ", "") + "\n" + altName + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
         return manga
@@ -149,8 +148,16 @@ class YagamiProject : ParsedHttpSource() {
             }
         }
     }
-    override fun imageUrlParse(response: Response): String = response.asJsoup().select("#page img").attr("src")
-    override fun imageUrlParse(document: Document): String = throw Exception("imageUrlParse(document: Document) Not Used")
+    override fun imageUrlParse(document: Document): String {
+        var imageUrlStr = ""
+        val defaultimg = document.select("#page img").attr("src")
+        if (defaultimg == "string(1) ") {
+            imageUrlStr = document.select("#get_download").first().attr("href")
+        } else {
+            imageUrlStr = defaultimg
+        }
+        return imageUrlStr
+    }
 
     // Filters
 
@@ -171,7 +178,9 @@ class YagamiProject : ParsedHttpSource() {
         FormUnit("Манга", "manga"),
         FormUnit("Манхва", "manhva"),
         FormUnit("Веб Манхва", "webtoon"),
-        FormUnit("Маньхуа", "manhua")
+        FormUnit("Маньхуа", "manhua"),
+        FormUnit("Артбуки", "artbooks")
+
     )
 
     private class CategoryList(categories: Array<String>) : Filter.Select<String>("Категории", categories)
