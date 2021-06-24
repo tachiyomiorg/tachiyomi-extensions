@@ -4,11 +4,6 @@ title: "<Source Name>: <short description>"
 labels: [enhancement]
 body:
 
-  - type: markdown
-    attributes:
-      value: |
-        To suggest a feature for Tachiyomi Extension, include a short but informative title above, and fill out the form below.
-
   - type: checkboxes
     id: acknowledgements
     attributes:

@@ -35,8 +35,6 @@ body:
     attributes:
       label: Tachiyomi version
       description: |
-        What version of Tachiyomi are you using?
-
         You can find your Tachiyomi version in **More → About**.
       placeholder: |
         Example: "0.11.1"
@@ -48,8 +46,6 @@ body:
     attributes:
       label: Android version
       description: |
-        What version of Android are you using?
-
         You can find this somewhere in your Android settings.
       placeholder: |
         Example: "Android 11"
@@ -83,10 +79,9 @@ body:
       required: true
 
   - type: textarea
-    id: expected-behaviour
+    id: expected-behavior
     attributes:
-      label: Expected behaviour
-      description: Explain what you should expect to happen.
+      label: Expected behavior
       placeholder: |
         Example:
         This should happen.
@@ -94,10 +89,9 @@ body:
       required: true
 
   - type: textarea
-    id: actual-behaviour
+    id: actual-behavior
     attributes:
-      label: Actual behaviour
-      description: Explain what actually happens.
+      label: Actual behavior
       placeholder: |
         Example: 
         This happened instead.
