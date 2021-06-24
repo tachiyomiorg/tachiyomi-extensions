@@ -13,6 +13,6 @@ class MangaLazy : Madara("MangaLazy", "https://mangalazy.com", "en") {
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
         
-    override val pageListParseSelector = ".reading-content div.text-left div.imgs.loaded-inner :has(>img)"
+    override val pageListParseSelector = "div.text-left .loaded-inner"
 	
 }
