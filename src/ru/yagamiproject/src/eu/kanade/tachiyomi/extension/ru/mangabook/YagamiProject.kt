@@ -149,14 +149,12 @@ class YagamiProject : ParsedHttpSource() {
         }
     }
     override fun imageUrlParse(document: Document): String {
-        var imageUrlStr = ""
         val defaultimg = document.select("#page img").attr("src")
-        if (defaultimg == "string(1) ") {
-            imageUrlStr = document.select("#get_download").first().attr("href")
+        return if (defaultimg.contains("string(1)")) {
+            document.select("#get_download").first().attr("href")
         } else {
-            imageUrlStr = defaultimg
+            defaultimg
         }
-        return imageUrlStr
     }
 
     // Filters
