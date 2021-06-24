@@ -23,7 +23,7 @@ body:
   - type: input
     id: name
     attributes:
-      label: Source Name
+      label: Source name
       placeholder: |
         Example: Not Real Scans
     validations:
