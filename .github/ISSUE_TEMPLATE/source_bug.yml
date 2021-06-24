@@ -79,7 +79,7 @@ body:
       label: Expected behavior
       placeholder: |
         Example:
-        This should happen.
+          "This should happen..."
     validations:
       required: true
 
