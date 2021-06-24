@@ -13,6 +13,14 @@ class MangaLazy : Madara("MangaLazy", "https://mangalazy.com", "en") {
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
         
-    override val pageListParseSelector = "div.text-left .loaded-inner"
+    override fun pageListParse(document: Document): List<Page> {
+        return document.select(pageListParseSelector).mapIndexed { index, element ->
+            Page(
+                index,
+                "",
+                element.select("img.d-block.mx-auto").attr("src")
+            )
+        }
+    }
 	
 }
