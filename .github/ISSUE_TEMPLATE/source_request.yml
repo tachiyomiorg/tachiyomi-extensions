@@ -1,0 +1,62 @@
+name: 🌐 Source Request
+description: Suggest a new source for Tachiyomi
+labels: [Source Request]
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        To request a Tachiyomi Extension, fill title above with source name, and fill out the form below.
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      options:
+        - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
+          required: true
+        - label: I have written a title with source name.
+          required: true
+        - label: I have checked that the extension does not already exist in the list of existing extensions in the application.
+          required: true
+        - label: I have checked that the extension does not already exist in the [multi-source spreadsheet](https://tachiyomi.org/extensions/).
+          required: true
+        - label: I have checked that the extension does not already exist By searching the [GitHub repository](https://github.com/tachiyomiorg/tachiyomi-extensions/) for the extension and verify it does not appear in the code base.
+          required: true
+        - label: I will fill the forms below with sufficient information.
+          required: true
+
+  - type: input
+    id: name
+    attributes:
+      label: Source name
+      placeholder: |
+        Example: "Not Real Scans"
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Source link
+      placeholder: |
+        Example: "https://notrealscans.org"
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      placeholder: |
+        Example: "English"
+    validations:
+      required: true
+
+  - type: textarea
+    id: other-details
+    attributes:
+      label: Other details
+      placeholder: |
+        Additional details and attachments.

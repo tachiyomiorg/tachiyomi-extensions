@@ -1,4 +1,4 @@
-name: 🐞 Bug report
+name: 🐞 Issue/Bug report
 description: Report a source issue/bug in Tachiyomi
 title: "<Source Name>: <short description>"
 labels: [bug]
@@ -15,6 +15,8 @@ body:
       label: Acknowledgements
       description: Read this carefully, we will close and ignore your issue if you skimmed through this.
       options:
+        - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
+          required: true
         - label: I have written a short but informative title.
           required: true
         - label: I have updated the app to version **[0.11.1](https://github.com/tachiyomiorg/tachiyomi/releases/tag/v0.11.1)**.
@@ -23,11 +25,9 @@ body:
           required: true
         - label: I have read the [troubleshooting guide](https://tachiyomi.org/help/guides/troubleshooting-problems/).
           required: true
-        - label: If this is an issue with the app itself, I should be opening an issue in the [app repository](https://github.com/tachiyomiorg/tachiyomi).
+        - label: If this is an issue with the app itself, I should be opening an issue in the [app repository](https://github.com/tachiyomiorg/tachiyomi/issues/new/choose).
           required: true
         - label: I will fill the forms below with sufficient information.
-          required: true
-        - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
           required: true
 
   - type: input
@@ -60,7 +60,10 @@ body:
     id: source
     attributes:
       label: Source information
-      description: List your source and extension version.
+      description: |
+        List your source and extension version.
+
+        You can find your Extension version in **Browse → Extension**.
       placeholder: |
         Example: "Manga Plus 1.2.20"
     validations:
