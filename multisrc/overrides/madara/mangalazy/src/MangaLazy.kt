@@ -5,6 +5,8 @@ import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 @Nsfw
 class MangaLazy : Madara("MangaLazy", "https://mangalazy.com", "en") {
