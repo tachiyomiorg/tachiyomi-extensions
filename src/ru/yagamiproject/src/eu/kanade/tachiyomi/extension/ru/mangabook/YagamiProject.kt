@@ -121,7 +121,7 @@ class YagamiProject : ParsedHttpSource() {
 
         chapter_number = when {
             name.contains("Глава") -> name.substringAfter("Глава ").substringBefore(":").toFloat()
-            name.contains("Акт") -> name.substringAfter("Акт №").substringBefore(":").toFloat()
+            name.contains("Акт") -> name.substringAfter("Акт").substringBefore(":").replace("№", "").toFloat()
             else -> 0F
         }
         setUrlWithoutDomain(chapter.attr("href"))
@@ -131,7 +131,11 @@ class YagamiProject : ParsedHttpSource() {
         } else null
     }
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
+        return when (date) {
+            "Сегодня" -> System.currentTimeMillis()
+            "Вчера" -> System.currentTimeMillis() - 24 * 60 * 60 * 1000
+            else -> SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
+        }
     }
     // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
