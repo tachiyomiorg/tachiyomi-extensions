@@ -31,9 +31,9 @@ body:
     id: name
     attributes:
       label: Source website
-      value: "- Name: ?
-              - Link: ?
-              - Language(s): ?"
+      value: "- Name: ?"|
+             "- Link: ?"|
+             "- Language(s): ?"
     validations:
       required: true
 
