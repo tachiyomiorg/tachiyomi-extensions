@@ -89,7 +89,7 @@ body:
       label: Actual behavior
       placeholder: |
         Example: 
-        This happened instead.
+          "This happened instead..."
     validations:
       required: true
 
