@@ -18,9 +18,7 @@ body:
           required: true
         - label: I have written a title with source name.
           required: true
-        - label: I have checked that the extension does not already exist in the list of existing extensions in the application.
-          required: true
-        - label: I have checked that the extension does not already exist in the [website extension list](https://tachiyomi.org/extensions/).
+        - label: I have checked that the extension does not already exist on the [website extensions list](https://tachiyomi.org/extensions/) or the app.
           required: true
         - label: I have checked that the extension does not already exist By searching the [GitHub repository](https://github.com/tachiyomiorg/tachiyomi-extensions/) for the extension and verify it does not appear in the code base.
           required: true
