@@ -1,6 +1,6 @@
 name: 🧠 Meta feature request
 description: Suggest improvements to the project
-labels: [meta]
+labels: [Meta request]
 body:
 
   - type: checkboxes

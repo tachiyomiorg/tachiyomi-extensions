@@ -1,7 +1,7 @@
 name: 🐞 Issue/Bug report
 description: Report a source issue/bug in Tachiyomi
 title: "Source name: Short description"
-labels: [bug]
+labels: [Bug]
 body:
 
   - type: checkboxes

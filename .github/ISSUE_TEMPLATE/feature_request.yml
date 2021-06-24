@@ -1,7 +1,7 @@
 name: ⭐ Feature request
 description: Suggest a feature to improve a source
 title: "Source name: Short description"
-labels: [enhancement]
+labels: [Feature request]
 body:
 
   - type: checkboxes
