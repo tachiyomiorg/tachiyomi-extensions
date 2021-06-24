@@ -22,5 +22,4 @@ class MangaLazy : Madara("MangaLazy", "https://mangalazy.com", "en") {
             )
         }
     }
-	
 }
