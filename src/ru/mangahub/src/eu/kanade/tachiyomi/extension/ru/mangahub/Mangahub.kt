@@ -83,7 +83,7 @@ open class Mangahub : ParsedHttpSource() {
         manga.genre = document.select("div.tag").text().replace(" ", ", ")
         manga.description = document.select("div.markdown-style").text()
         manga.status = parseStatus(document.select("div.sticky-top span.status-label").toString())
-        manga.thumbnail_url = document.select("img.cover-detail-img").attr("src")
+        manga.thumbnail_url = document.select("img.cover-detail").attr("src")
         return manga
     }
 
