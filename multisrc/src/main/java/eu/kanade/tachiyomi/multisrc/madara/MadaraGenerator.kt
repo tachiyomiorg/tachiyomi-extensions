@@ -292,7 +292,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Wonderland", "https://landwebtoons.site", "pt-BR", overrideVersionCode = 2),
         SingleLang("WoopRead", "https://woopread.com", "en", overrideVersionCode = 1),
         SingleLang("WuxiaWorld", "https://wuxiaworld.site", "en", overrideVersionCode = 1),
-        SingleLang("XuN Scans", "https://reader.xunscans.xyz", "en", overrideVersionCode = 1),
+        SingleLang("XuN Scans", "https://xunscans.xyz", "en", overrideVersionCode = 2),
         SingleLang("Yaoi Fan Clube", "https://yaoifanclube.com.br", "pt-BR", isNsfw = true, overrideVersionCode = 1),
         SingleLang("Yaoi.mobi", "https://yaoi.mobi", "en", isNsfw = true, className = "YaoiManga", pkgName = "yaoimanga", overrideVersionCode = 3),
         SingleLang("Yaoi Toshokan", "https://yaoitoshokan.net", "pt-BR", isNsfw = true, overrideVersionCode = 2),
