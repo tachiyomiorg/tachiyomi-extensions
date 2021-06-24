@@ -1,7 +1,6 @@
-name: ⭐ Feature request
-description: Suggest a feature to improve a source
-title: "<Source Name>: <short description>"
-labels: [enhancement]
+name: 🧠 Meta feature request
+description: Suggest improvements to the project
+labels: [meta]
 body:
 
   - type: markdown
@@ -23,13 +22,15 @@ body:
           required: true
         - label: I have updated the app to version **[0.11.1](https://github.com/tachiyomiorg/tachiyomi/releases/latest)**.
           required: true
+        - label: I have updated all installed extensions.
+          required: true
         - label: I will fill the forms below with sufficient information.
           required: true
 
   - type: textarea
     id: feature-description
     attributes:
-      label: Describe your suggested feature
+      label: Describe why this should be added
       description: How is the expected behaviour of the proposed feature?
       placeholder: |
         Example:
