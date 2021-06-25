@@ -445,7 +445,8 @@ class Remanga : ConfigurableSource, HttpSource() {
         CheckFilter("Продолжается", "1"),
         CheckFilter("Заморожен", "2"),
         CheckFilter("Нет переводчика", "3"),
-        CheckFilter("Анонс", "4")
+        CheckFilter("Анонс", "4"),
+        CheckFilter("Лицензировано", "5")
     )
 
     private fun getCategoryList() = listOf(
