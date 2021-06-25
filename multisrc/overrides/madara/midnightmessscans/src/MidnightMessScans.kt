@@ -11,7 +11,7 @@ class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.or
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
 
-            document.select("div.summary_content").let {
+            document.select("div.post-content").let {
                manga.description = it.select("div.manga-excerpt").text()
             }
             
