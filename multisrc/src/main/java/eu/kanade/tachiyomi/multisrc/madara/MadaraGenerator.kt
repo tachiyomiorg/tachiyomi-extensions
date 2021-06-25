@@ -67,6 +67,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("Dream Manga", "https://en.ruyamanga.com", "en", overrideVersionCode = 2),
         SingleLang("Drope Scan", "https://dropescan.com", "pt-BR", overrideVersionCode = 2),
         SingleLang("Esomanga", "http://esomanga.com", "tr"),
+        SingleLang("Exo Scans", "https://exoscans.club", "en"),
         SingleLang("FDM Scan", "https://fdmscan.com", "pt-BR", overrideVersionCode = 2),
         SingleLang("Free Manga", "https://freemanga.me", "en", isNsfw = true, overrideVersionCode = 2),
         SingleLang("FreeWebtoonCoins", "https://freewebtooncoins.com", "en", overrideVersionCode = 1),
