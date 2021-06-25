@@ -16,4 +16,5 @@ class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.or
             }
             
         return manga
+    }
 } // Details
