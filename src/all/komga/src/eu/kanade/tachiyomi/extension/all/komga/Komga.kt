@@ -7,7 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
-import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.komga.dto.AuthorDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
@@ -359,7 +359,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
-            .add("User-Agent", "Tachiyomi Komga v${BuildConfig.VERSION_NAME}")
+            .add("User-Agent", "TachiyomiKomga/${BuildConfig.VERSION_NAME}")
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
