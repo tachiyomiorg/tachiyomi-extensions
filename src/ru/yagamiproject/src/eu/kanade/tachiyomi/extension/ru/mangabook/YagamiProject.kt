@@ -8,7 +8,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
@@ -40,7 +39,7 @@ class YagamiProject : ParsedHttpSource() {
                 setUrlWithoutDomain(it.attr("href"))
                 title = it.attr("title").split(" / ").sorted().first()
             }
-            thumbnail_url = element.select(".cover_mini > img").attr("src")
+            thumbnail_url = element.select(".cover_mini > img").attr("src").replace("thumb_", "")
         }
     }
 
@@ -93,6 +92,7 @@ class YagamiProject : ParsedHttpSource() {
         manga.title = titlestr.first().replace(":: ", "")
         manga.thumbnail_url = document.select(".cover img").first().attr("src")
         manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ").split(" / ").sorted().first()
+        manga.artist = infoElement.select("li:contains(Художник)").text().substringAfter("Художник(и): ").split(" / ").sorted().first()
         manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
             "онгоинг" -> SManga.ONGOING
             "активный" -> SManga.ONGOING
@@ -103,7 +103,7 @@ class YagamiProject : ParsedHttpSource() {
         val altSelector = infoElement.select("li:contains(Название)")
         var altName = ""
         if (altSelector.isNotEmpty()) {
-            altName = "Альтернативные названия:\n" + altSelector.toString().replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
+            altName = "Альтернативные названия:\n" + altSelector.toString().replace("<li><b>Название</b>: ", "").replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
         }
         manga.description = titlestr.last().replace(":: ", "") + "\n" + altName + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
         return manga
@@ -121,7 +121,7 @@ class YagamiProject : ParsedHttpSource() {
 
         chapter_number = when {
             name.contains("Глава") -> name.substringAfter("Глава ").substringBefore(":").toFloat()
-            name.contains("Акт") -> name.substringAfter("Акт №").substringBefore(":").toFloat()
+            name.contains("Акт") -> name.substringAfter("Акт").substringBefore(":").replace("№", "").toFloat()
             else -> 0F
         }
         setUrlWithoutDomain(chapter.attr("href"))
@@ -131,7 +131,11 @@ class YagamiProject : ParsedHttpSource() {
         } else null
     }
     private fun parseDate(date: String): Long {
-        return SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
+        return when (date) {
+            "Сегодня" -> System.currentTimeMillis()
+            "Вчера" -> System.currentTimeMillis() - 24 * 60 * 60 * 1000
+            else -> SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(date)?.time ?: 0
+        }
     }
     // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
@@ -148,8 +152,14 @@ class YagamiProject : ParsedHttpSource() {
             }
         }
     }
-    override fun imageUrlParse(response: Response): String = response.asJsoup().select("#page img").attr("src")
-    override fun imageUrlParse(document: Document): String = throw Exception("imageUrlParse(document: Document) Not Used")
+    override fun imageUrlParse(document: Document): String {
+        val defaultimg = document.select("#page img").attr("src")
+        return if (defaultimg.contains("string(1)")) {
+            document.select("#get_download").first().attr("href")
+        } else {
+            defaultimg
+        }
+    }
 
     // Filters
 
@@ -170,7 +180,9 @@ class YagamiProject : ParsedHttpSource() {
         FormUnit("Манга", "manga"),
         FormUnit("Манхва", "manhva"),
         FormUnit("Веб Манхва", "webtoon"),
-        FormUnit("Маньхуа", "manhua")
+        FormUnit("Маньхуа", "manhua"),
+        FormUnit("Артбуки", "artbooks")
+
     )
 
     private class CategoryList(categories: Array<String>) : Filter.Select<String>("Категории", categories)

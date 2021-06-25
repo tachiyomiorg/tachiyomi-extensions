@@ -198,6 +198,8 @@ class Remanga : ConfigurableSource, HttpSource() {
         return when (status) {
             0 -> SManga.COMPLETED
             1 -> SManga.ONGOING
+            2 -> SManga.ONGOING
+            3 -> SManga.ONGOING
             5 -> SManga.LICENSED
             else -> SManga.UNKNOWN
         }
@@ -441,7 +443,10 @@ class Remanga : ConfigurableSource, HttpSource() {
     private fun getStatusList() = listOf(
         CheckFilter("Закончен", "0"),
         CheckFilter("Продолжается", "1"),
-        CheckFilter("Заморожен", "2")
+        CheckFilter("Заморожен", "2"),
+        CheckFilter("Нет переводчика", "3"),
+        CheckFilter("Анонс", "4"),
+        CheckFilter("Лицензировано", "5")
     )
 
     private fun getCategoryList() = listOf(
