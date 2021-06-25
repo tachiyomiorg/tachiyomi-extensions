@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import org.jsoup.nodes.Document
 
 @Nsfw
-class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.org", "en"){
+class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.org", "en") {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
