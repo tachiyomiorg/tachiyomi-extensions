@@ -7,14 +7,14 @@ import org.jsoup.nodes.Document
 
 @Nsfw
 class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.org", "en") {
-    
+   
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-
-            document.select("div.post-content").let {
-               manga.description = it.select("div.manga-excerpt").text()
-            }
-            
-        return manga
+        
+        document.select("div.post-content").let {
+           manga.description = it.select("div.manga-excerpt").text()
+        }
+        
+        return manga     
     }
-}// Details
+}
