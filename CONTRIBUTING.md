@@ -313,7 +313,7 @@ There are three steps in running and testing a theme source:
     - **Method 3:** Directly run `<themepkg>.<ThemeName>Generator.main` by pressing the play button in front of the method shown inside Android Studio to generate sources from the said theme.
 2. Sync gradle to import the new generated sources inside `generated-src`
     - **Method 1:** Android Studio might prompt to sync the gradle. Click on `Sync Now`.
-    - **Method 1:** Manually re-sync by opening `File` -> `Sync Project with Gradle Files` or by pressing `Alt+f` then `g`.
+    - **Method 2:** Manually re-sync by opening `File` -> `Sync Project with Gradle Files` or by pressing `Alt+f` then `g`.
 3. Build and test the generated Extention like normal `src` sources.
     - It's recommended to make changes here to skip going through step 1 and 2 multiple times, and when you are done, copying the changes back to `multisrc`. 
 
