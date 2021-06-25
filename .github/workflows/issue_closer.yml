@@ -17,18 +17,8 @@ jobs:
             [
               {
                 "type": "title",
-                "regex": ".*<(Source Name|short description)>*",
+                "regex": ".*(Source name|Short description).*",
                 "message": "You did not fill out the description in the title"
-              },
-              {
-                "type": "body",
-                "regex": ".*DELETE THIS SECTION IF YOU HAVE READ AND ACKNOWLEDGED IT.*",
-                "message": "The acknowledgment section was not removed"
-              },
-              {
-                "type": "body",
-                "regex": ".*\\* (Tachiyomi version|Android version|Device|Name|Link|Extension version): \\?.*",
-                "message": "The requested information was not filled out"
               },
               {
                 "type": "both",
