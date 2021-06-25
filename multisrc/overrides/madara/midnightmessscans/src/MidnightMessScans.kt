@@ -20,7 +20,7 @@ class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.or
             select("div.artist-content").first()?.let {
                 if (it.text().notUpdating()) manga.artist = it.text()
             }
-            select("div.description-summary div.summary__content").let {
+            select("div.summary_content div.post-content").let {
                 manga.description = it.select("div.manga-excerpt").text()
             }
             select("div.summary_image img").first()?.let {
