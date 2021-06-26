@@ -52,9 +52,7 @@ body:
     attributes:
       label: Source information
       description: |
-        List your source and extension version.
-
-        You can find your Extension version in **Browse → Extension**.
+        You can find the extension name and version in **Browse → Extensions**.
       placeholder: |
         Example: "MangaDex 1.2.111"
     validations:
