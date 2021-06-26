@@ -16,7 +16,7 @@ import kotlin.system.exitProcess
  * Main goal was to make it easier to open manga in Tachiyomi in spite of the DDoS blocking
  * the usual search screen from working.
  */
-class MangadexUrlActivity : Activity() {
+class BilibiliComicsUrlActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
