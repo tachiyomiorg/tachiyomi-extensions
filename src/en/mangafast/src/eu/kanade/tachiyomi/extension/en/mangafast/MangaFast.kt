@@ -86,7 +86,7 @@ class MangaFast : ParsedHttpSource() {
     }
 
     // chapter list
-    override fun chapterListSelector() = ".chapter-link:not([title=\"Spoiler Manga\"])"
+    override fun chapterListSelector() = "a.chapter-link:not(:has(.spoiler))"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.attr("href"))
