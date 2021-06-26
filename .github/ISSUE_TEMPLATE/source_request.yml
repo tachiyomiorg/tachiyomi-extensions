@@ -25,7 +25,7 @@ body:
     attributes:
       label: Source name
       placeholder: |
-        Example: Not Real Scans
+        Example: "Not Real Scans"
     validations:
       required: true
 
@@ -34,7 +34,7 @@ body:
     attributes:
       label: Source link
       placeholder: |
-        Example: https://notrealscans.org
+        Example: "https://notrealscans.org"
     validations:
       required: true
 
@@ -43,7 +43,7 @@ body:
     attributes:
       label: Language
       placeholder: |
-        Example: English
+        Example: "English"
     validations:
       required: true
 
