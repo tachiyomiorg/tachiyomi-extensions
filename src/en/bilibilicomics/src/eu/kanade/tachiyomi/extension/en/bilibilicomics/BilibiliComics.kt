@@ -28,6 +28,7 @@ import rx.Observable
 import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -40,7 +41,7 @@ class BilibiliComics : HttpSource() {
 
     override val lang = "en"
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
@@ -88,6 +89,43 @@ class BilibiliComics : HttpSource() {
     }
 
     private fun popularMangaFromObject(comic: BilibiliComicDto): SManga = SManga.create().apply {
+        title = comic.title
+        thumbnail_url = comic.verticalCover
+        url = "/detail/mc${comic.comicId}"
+    }
+
+    override fun latestUpdatesRequest(page: Int): Request {
+        val requestPayload = buildJsonObject {
+            put("day", day)
+        }
+        val requestBody = requestPayload.toString().toRequestBody(JSON_MEDIA_TYPE)
+
+        val newHeaders = headersBuilder()
+            .add("Content-Length", requestBody.contentLength().toString())
+            .add("Content-Type", requestBody.contentType().toString())
+            .build()
+
+        return POST(
+            "$baseUrl/$BASE_API_ENDPOINT/GetSchedule?device=pc&platform=web",
+            headers = newHeaders,
+            body = requestBody
+        )
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val result = json.decodeFromString<BilibiliResultDto<BilibiliScheduleDto>>(response.body!!.string())
+
+        if (result.code != 0) {
+            return MangasPage(emptyList(), hasNextPage = false)
+        }
+
+        val comicList = result.data!!.list
+            .map(::latestMangaFromObject)
+
+        return MangasPage(comicList, hasNextPage = false)
+    }
+
+    private fun latestMangaFromObject(comic: BilibiliComicDto): SManga = SManga.create().apply {
         title = comic.title
         thumbnail_url = comic.verticalCover
         url = "/detail/mc${comic.comicId}"
@@ -260,10 +298,6 @@ class BilibiliComics : HttpSource() {
         return "${page.url}?token=${page.token}"
     }
 
-    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException("Not used")
-
-    override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used")
-
     private fun String.toDate(): Long {
         return try {
             DATE_FORMATTER.parse(this)?.time ?: 0L
@@ -271,6 +305,20 @@ class BilibiliComics : HttpSource() {
             0L
         }
     }
+
+    private val day: Int
+        get() {
+            return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
+                Calendar.SUNDAY -> 0
+                Calendar.MONDAY -> 1
+                Calendar.TUESDAY -> 2
+                Calendar.WEDNESDAY -> 3
+                Calendar.THURSDAY -> 4
+                Calendar.FRIDAY -> 5
+                Calendar.SATURDAY -> 6
+                else -> 0
+            }
+        }
 
     companion object {
         private const val BASE_API_ENDPOINT = "twirp/comic.v1.Comic"
