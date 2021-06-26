@@ -131,6 +131,25 @@ class BilibiliComics : HttpSource() {
         url = "/detail/mc${comic.comicId}"
     }
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return when {
+            query.startsWith(prefixIdSearch) -> {
+                val id = query.removePrefix(prefixIdSearch)
+                client.newCall(mangaDetailsApiRequestById(id)).asObservableSuccess()
+                    .map { response ->
+                        mangaDetailsParse(response).let { MangasPage(listOf(it), false) }
+                    }
+            }
+
+            else -> {
+                client.newCall(searchMangaRequest(page, query, filters)).asObservableSuccess()
+                    .map { response ->
+                        searchMangaParse(response)
+                    }
+            }
+        }
+    }
+
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val jsonPayload = buildJsonObject {
             put("area_id", -1)
@@ -199,6 +218,25 @@ class BilibiliComics : HttpSource() {
             .add("Content-Length", requestBody.contentLength().toString())
             .add("Content-Type", requestBody.contentType().toString())
             .set("Referer", baseUrl + manga.url)
+            .build()
+
+        return POST(
+            "$baseUrl/$BASE_API_ENDPOINT/ComicDetail?device=pc&platform=web",
+            headers = newHeaders,
+            body = requestBody
+        )
+    }
+
+    private fun mangaDetailsApiRequestById(id: String): Request {
+        val comicId = id.toInt()
+
+        val jsonPayload = buildJsonObject { put("comic_id", comicId) }
+        val requestBody = jsonPayload.toString().toRequestBody(JSON_MEDIA_TYPE)
+
+        val newHeaders = headersBuilder()
+            .add("Content-Length", requestBody.contentLength().toString())
+            .add("Content-Type", requestBody.contentType().toString())
+            .set("Referer", "$baseUrl/detail/mc$id")
             .build()
 
         return POST(
@@ -328,6 +366,8 @@ class BilibiliComics : HttpSource() {
         private val JSON_MEDIA_TYPE = "application/json;charset=UTF-8".toMediaType()
 
         private const val FEATURED_ID = 3
+   
+        const val prefixIdSearch = "id:"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }
