@@ -6,7 +6,7 @@ ext {
     extName = 'Bilibili Comics'
     pkgNameSuffix = 'en.bilibilicomics'
     extClass = '.BilibiliComics'
-    extVersionCode = 4
+    extVersionCode = 5
     libVersion = '1.2'
     containsNsfw = true
 }
