@@ -353,8 +353,7 @@ class BilibiliComics : HttpSource() {
                 Calendar.WEDNESDAY -> 3
                 Calendar.THURSDAY -> 4
                 Calendar.FRIDAY -> 5
-                Calendar.SATURDAY -> 6
-                else -> 0
+                else -> 6
             }
         }
 
