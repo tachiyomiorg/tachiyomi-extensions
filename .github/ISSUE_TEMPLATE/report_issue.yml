@@ -1,5 +1,5 @@
-name: 🐞 Issue/Bug report
-description: Report a source issue/bug in Tachiyomi
+name: 🐞 Issue report
+description: Report a source issue in Tachiyomi
 title: "Source name: Short description"
 labels: [Bug]
 body:
@@ -62,12 +62,12 @@ body:
     id: reproduce-steps
     attributes:
       label: Steps to reproduce
-      description: Provide an example of how to trigger the bug.
+      description: Provide an example of the issue.
       placeholder: |
         Example:
           1. First step
           2. Second step
-          3. Bug occurs
+          3. Issue here
     validations:
       required: true
 
