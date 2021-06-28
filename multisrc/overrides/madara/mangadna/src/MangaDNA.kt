@@ -35,6 +35,8 @@ import kotlin.random.Random
 @Nsfw
 class MangaDNA : Madara("MangaDNA", "https://mangadna.com", "en", dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)) {
 
+    override fun chapterListSelector() = "li.a-h"
+    
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
         with(document) {
