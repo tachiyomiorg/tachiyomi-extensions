@@ -247,7 +247,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("SISI GELAP", "https://sisigelap.club/", "id", overrideVersionCode = 1),
         SingleLang("SamuraiScan", "https://samuraiscan.com", "es"),
         SingleLang("Sani-Go", "https://sani-go.net", "ar", className = "SaniGo", overrideVersionCode = 1),
-        SingleLang("Setsu Scans", "https://setsuscans.com", "en"),
+        SingleLang("Setsu Scans", "https://setsuscans.com", "en", overrideVersionCode = 1),
         SingleLang("Shield Manga", "https://shieldmanga.club", "en", overrideVersionCode = 2),
         SingleLang("Shooting Star Scans", "https://shootingstarscans.xyz", "en", overrideVersionCode = 1),
         SingleLang("ShoujoHearts", "https://shoujohearts.com", "en", overrideVersionCode = 2),
