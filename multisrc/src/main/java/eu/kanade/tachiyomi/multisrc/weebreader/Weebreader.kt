@@ -65,7 +65,9 @@ abstract class Weebreader(
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
 
         genre = document.select("div.gnr a, .mgen a, .seriestugenre a").joinToString { it.text() }
-        status = SManga.UNKNOWN
+        status = SManga.UNKNOWN // Is technically present on the manga listing page
+        artist = document.selectFirst("p:contains(Artist)")?.text()?.substringAfter("Artist:")?.trim()
+        author = document.selectFirst("p:contains(Author)")?.text()?.substringAfter("Author:")?.trim()
         title = document.selectFirst(".content > h1.ui.header").text()
         thumbnail_url = "$baseUrl${document.select("img[alt=Cover]").attr("src")}"
         description = document.select(".content .description > p").joinToString("\n") { it.text() }
