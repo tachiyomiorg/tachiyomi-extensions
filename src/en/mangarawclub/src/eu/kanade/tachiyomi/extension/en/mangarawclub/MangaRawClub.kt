@@ -93,7 +93,7 @@ class MangaRawClub : ParsedHttpSource() {
         manga.description = document.getElementsByClass("description").first().text()
         manga.description = document.select("div.summary > div.content").first().text()
         val coverElement = document.getElementsByClass("cover")
-        manga.thumbnail_url = baseUrl + coverElement.select("img").attr("data-src")
+        manga.thumbnail_url = coverElement.select("img").attr("data-src")
 
         return manga
     }
