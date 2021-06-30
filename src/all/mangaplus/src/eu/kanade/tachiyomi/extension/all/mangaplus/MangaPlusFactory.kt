@@ -18,4 +18,3 @@ class MangaPlusIndonesian : MangaPlus("id", "eng", Language.INDONESIAN)
 class MangaPlusPortuguese : MangaPlus("pt-BR", "eng", Language.PORTUGUESE_BR)
 class MangaPlusSpanish : MangaPlus("es", "esp", Language.SPANISH)
 class MangaPlusThai : MangaPlus("th", "eng", Language.THAI)
-

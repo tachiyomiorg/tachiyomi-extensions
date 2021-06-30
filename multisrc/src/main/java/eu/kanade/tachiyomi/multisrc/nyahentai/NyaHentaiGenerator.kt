@@ -9,7 +9,7 @@ class NyaHentaiGenerator : ThemeSourceGenerator {
 
     override val themeClass = "NyaHentai"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         MultiLang("NyaHentai", "https://nyahentai.com", listOf("en","ja", "zh", "all"), isNsfw = true, className = "NyaHentaiFactory", overrideVersionCode = 3),

@@ -8,13 +8,17 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.injectLazy
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -32,6 +36,7 @@ class ReadM : ParsedHttpSource() {
         .followRedirects(true)
         .build()
 
+    private val json: Json by injectLazy()
     // Popular
 
     override fun popularMangaRequest(page: Int): Request = GET("$baseUrl/popular-manga/$page", headers)
@@ -76,20 +81,14 @@ class ReadM : ParsedHttpSource() {
     override fun searchMangaSelector(): String = throw Exception("Not used")
     override fun searchMangaFromElement(element: Element): SManga = throw Exception("Not used")
 
-    override fun searchMangaParse(response: Response): MangasPage {
-        val json = JSONObject(response.body!!.string()).getJSONArray("manga")
-
-        val manga = (0 until json.length()).asSequence().toList().map { it ->
-            SManga.create().apply {
-                val jsonObject = json.getJSONObject(it)
-                title = jsonObject.getString("title")
-                url = jsonObject.getString("url")
-                thumbnail_url = jsonObject.getString("image")
-            }
+    override fun searchMangaParse(response: Response) = json.parseToJsonElement(response.body!!.string()).jsonObject["manga"]?.jsonArray?.map {
+        val obj = it.jsonObject
+        SManga.create().apply {
+            title = obj["title"]!!.jsonPrimitive.content
+            url = obj["url"]!!.jsonPrimitive.content
+            thumbnail_url = "$baseUrl${obj["image"]!!.jsonPrimitive.content}"
         }
-
-        return MangasPage(manga, false)
-    }
+    }.let { MangasPage(it ?: emptyList(), false) }
 
     // Details
 

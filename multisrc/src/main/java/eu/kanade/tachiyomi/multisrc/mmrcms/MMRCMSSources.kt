@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.multisrc.mmrcms
 
 import java.util.Locale
 
-
 class MMRCMSSources {
     companion object {
         sealed class SourceData {
@@ -37,14 +36,13 @@ class MMRCMSSources {
         val sourceList: List<SourceData.Single> = listOf(
             SourceData.Single("مانجا اون لاين", "https://onma.me", "ar", className = "onma"),
             SourceData.Single("Read Comics Online", "https://readcomicsonline.ru", "en"),
-            SourceData.Single("Fallen Angels", "https://manga.fascans.com", "en"),
+            SourceData.Single("Fallen Angels", "https://manga.fascans.com", "en", overrideVersionCode = 2),
             SourceData.Single("Zahard", "https://zahard.top", "en", overrideVersionCode = 1),
             SourceData.Single("Manhwas Men", "https://manhwas.men", "en", isNsfw = true, overrideVersionCode = 1),
             SourceData.Single("Scan FR", "https://www.scan-fr.cc", "fr"),
             SourceData.Single("Scan VF", "https://www.scan-vf.net", "fr"),
             SourceData.Single("Scan OP", "https://scan-op.cc", "fr"),
             SourceData.Single("Komikid", "https://www.komikid.com", "id"),
-            SourceData.Single("Nikushima", "http://azbivo.webd.pro", "pl"),
             SourceData.Single("MangaHanta", "http://mangahanta.com", "tr", overrideVersionCode = 1),
             SourceData.Single("Fallen Angels Scans", "https://truyen.fascans.com", "vi"),
             SourceData.Single("LeoManga", "https://leomanga.me", "es", overrideVersionCode = 1),
@@ -75,8 +73,6 @@ class MMRCMSSources {
     }
 }
 
-
-
 //SingleLang("Mangás Yuri", "https://mangasyuri.net", "pt-BR", className = "MangasYuri"), override val id: Long = 6456162511058446409
 //SingleLang("FR Scan", "https://www.frscan.me", "fr"),
 // Reference from old Factory Source
@@ -88,6 +84,7 @@ class MMRCMSSources {
 // SourceData("tr", "Epikmanga", "https://www.epikmanga.com"),
 // SourceData("en", "Hatigarm Scans", "https://hatigarmscans.net"),
 // Went offline
+// SourceData.Single("Nikushima", "http://azbivo.webd.pro", "pl"),
 // SourceData("ru", "Japit Comics", "https://j-comics.ru"),
 // SourceData("es", "Universo Yuri", "https://universoyuri.com"),
 // SourceData("pl", "Dracaena", "https://dracaena.webd.pl/czytnik"),

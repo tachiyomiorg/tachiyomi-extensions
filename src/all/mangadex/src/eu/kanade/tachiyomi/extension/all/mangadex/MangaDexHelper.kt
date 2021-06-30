@@ -1,17 +1,16 @@
 package eu.kanade.tachiyomi.extension.all.mangadex
 
 import android.util.Log
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.AtHomeDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaAttributesDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaDto
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.CacheControl
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -24,6 +23,14 @@ class MangaDexHelper() {
 
     val mdFilters = MangaDexFilters()
 
+    val json = Json {
+        isLenient = true
+        ignoreUnknownKeys = true
+        allowSpecialFloatingPointValues = true
+        useArrayPolymorphism = true
+        prettyPrint = true
+    }
+
     /**
      * Gets the UUID from the url
      */
@@ -33,7 +40,7 @@ class MangaDexHelper() {
      * get chapters for manga (aka manga/$id/feed endpoint)
      */
     fun getChapterEndpoint(mangaId: String, offset: Int, langCode: String) =
-        "${MDConstants.apiMangaUrl}/$mangaId/feed?limit=500&offset=$offset&translatedLanguage[]=$langCode&order[volume]=desc&order[chapter]=desc"
+        "${MDConstants.apiMangaUrl}/$mangaId/feed?includes[]=${MDConstants.scanlator}&limit=500&offset=$offset&translatedLanguage[]=$langCode&order[volume]=desc&order[chapter]=desc"
 
     /**
      * Check if the manga url is a valid uuid
@@ -63,16 +70,28 @@ class MangaDexHelper() {
         return Parser.unescapeEntities(intermediate, false)
     }
 
-    /**Maps dex status to tachi status
-     * abandoned and completed statuses's need addition checks with chapter info if we are to be accurate
+    /**
+     * Maps dex status to tachi status
      */
-    fun getPublicationStatus(dexStatus: String?): Int {
-        return when (dexStatus) {
+    fun getPublicationStatus(attr: MangaAttributesDto, chapters: List<String>): Int {
+        return when (attr.status) {
             null -> SManga.UNKNOWN
             "ongoing" -> SManga.ONGOING
+            "completed", "cancelled" -> doubleCheckChapters(attr, chapters)
             "hiatus" -> SManga.ONGOING
             else -> SManga.UNKNOWN
         }
+    }
+
+    /**
+     * if the manga is 'completed' or 'cancelled' then it'll have a lastChapter in the manga obj.
+     * if the simple list of chapters contains that lastChapter, then we can consider it completed.
+     */
+    private fun doubleCheckChapters(attr: MangaAttributesDto, chapters: List<String>): Int {
+        return if (chapters.contains(attr.lastChapter))
+            SManga.COMPLETED
+        else
+            SManga.UNKNOWN
     }
 
     fun parseDate(dateAsString: String): Long =
@@ -84,6 +103,7 @@ class MangaDexHelper() {
     // Check the token map to see if the md@home host is still valid
     fun getValidImageUrlForPage(page: Page, headers: Headers, client: OkHttpClient): Request {
         val data = page.url.split(",")
+
         val mdAtHomeServerUrl =
             when (Date().time - data[2].toLong() > MDConstants.mdAtHomeTokenLifespan) {
                 false -> data[0]
@@ -95,7 +115,6 @@ class MangaDexHelper() {
                                 ?: 0
                             ) > MDConstants.mdAtHomeTokenLifespan
                         ) {
-                            tokenTracker[tokenRequestUrl] = Date().time
                             CacheControl.FORCE_NETWORK
                         } else {
                             CacheControl.FORCE_CACHE
@@ -113,44 +132,40 @@ class MangaDexHelper() {
         tokenRequestUrl: String,
         client: OkHttpClient,
         headers: Headers,
-        cacheControl: CacheControl
+        cacheControl: CacheControl,
     ): String {
+        if (cacheControl == CacheControl.FORCE_NETWORK) {
+            tokenTracker[tokenRequestUrl] = Date().time
+        }
         val response =
             client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
-        return JsonParser.parseString(response.body!!.string()).obj["baseUrl"].string
+        return json.decodeFromString<AtHomeDto>(response.body!!.string()).baseUrl
     }
 
     /**
      * create an SManga from json element only basic elements
      */
-    fun createBasicManga(mangaJson: JsonElement, client: OkHttpClient): SManga {
-        val data = mangaJson["data"].obj
-        val dexId = data["id"].string
-        val attr = data["attributes"].obj
-
-        val coverId = mangaJson["relationships"].array.filter { relationship ->
-            relationship["type"].string.equals("cover_art", true)
-        }.map { relationship -> relationship["id"].string }.firstOrNull()
-
+    fun createBasicManga(mangaDto: MangaDto, coverFileName: String?): SManga {
         return SManga.create().apply {
-            url = "/manga/$dexId"
-            title = cleanString(attr["title"]["en"].string)
-            thumbnail_url = createCoverUrl(dexId, coverId, client)
+            url = "/manga/${mangaDto.data.id}"
+            title = cleanString(mangaDto.data.attributes.title["en"] ?: "")
+            coverFileName?.let {
+                thumbnail_url = "${MDConstants.cdnUrl}/covers/${mangaDto.data.id}/$coverFileName"
+            }
         }
     }
 
     /**
      * Create an SManga from json element with all details
      */
-    fun createManga(mangaJson: JsonElement, client: OkHttpClient): SManga {
+    fun createManga(mangaDto: MangaDto, chapters: List<String>, lang: String): SManga {
         try {
-            val data = mangaJson["data"].obj
-            val dexId = data["id"].string
-            val attr = data["attributes"].obj
+            val data = mangaDto.data
+            val attr = data.attributes
 
             // things that will go with the genre tags but aren't actually genre
 
-            val tempContentRating = attr["contentRating"].nullString
+            val tempContentRating = attr.contentRating
             val contentRating =
                 if (tempContentRating == null || tempContentRating.equals("safe", true)) {
                     null
@@ -159,58 +174,43 @@ class MangaDexHelper() {
                 }
 
             val nonGenres = listOf(
-                (attr["publicationDemographic"]?.nullString ?: "").capitalize(Locale.US),
+                (attr.publicationDemographic ?: "").capitalize(Locale.US),
                 contentRating,
-                Locale(attr["originalLanguage"].nullString ?: "").displayLanguage
+                Locale(attr.originalLanguage ?: "").displayLanguage
             )
 
-            // get authors ignore if they error, artists are labelled as authors currently
-            val authorIds = mangaJson["relationships"].array.filter { relationship ->
-                relationship["type"].string.equals("author", true)
-            }.map { relationship -> relationship["id"].string }
-                .distinct()
-            val artistIds = mangaJson["relationships"].array.filter { relationship ->
-                relationship["type"].string.equals("artist", true)
-            }.map { relationship -> relationship["id"].string }
-                .distinct()
+            val authors = mangaDto.relationships.filter { relationshipDto ->
+                relationshipDto.type.equals(MDConstants.author, true)
+            }.mapNotNull { it.attributes!!.name }.distinct()
 
-            val authorMap = runCatching {
-                val ids = listOf(authorIds, artistIds).flatten().distinct()
-                    .joinToString("&ids[]=", "?ids[]=")
-                val response = client.newCall(GET("${MDConstants.apiUrl}/author$ids")).execute()
-                val json = JsonParser.parseString(response.body!!.string())
-                json.obj["results"].array.map { result ->
-                    result["data"]["id"].string to
-                        cleanString(result["data"]["attributes"]["name"].string)
-                }.toMap()
-            }.getOrNull() ?: emptyMap()
+            val artists = mangaDto.relationships.filter { relationshipDto ->
+                relationshipDto.type.equals(MDConstants.artist, true)
+            }.mapNotNull { it.attributes!!.name }.distinct()
 
-            val coverId = mangaJson["relationships"].array.filter { relationship ->
-                relationship["type"].string.equals("cover_art", true)
-            }.map { relationship -> relationship["id"].string }.firstOrNull()
+            val coverFileName = mangaDto.relationships.firstOrNull { relationshipDto ->
+                relationshipDto.type.equals(MDConstants.coverArt, true)
+            }?.attributes?.fileName
 
             // get tag list
             val tags = mdFilters.getTags()
 
             // map ids to tag names
             val genreList = (
-                attr["tags"].array
-                    .map { it["id"].string }
+                attr.tags
+                    .map { it.id }
                     .map { dexId ->
                         tags.firstOrNull { it.id == dexId }
-                    }.map { it?.name } +
+                    }
+                    .map { it?.name } +
                     nonGenres
                 )
                 .filter { it.isNullOrBlank().not() }
 
-            return SManga.create().apply {
-                url = "/manga/$dexId"
-                title = cleanString(attr["title"]["en"].string)
-                description = cleanString(attr["description"]["en"].string)
-                author = authorIds.mapNotNull { authorMap[it] }.joinToString(", ")
-                artist = artistIds.mapNotNull { authorMap[it] }.joinToString(", ")
-                status = getPublicationStatus(attr["publicationDemographic"].nullString)
-                thumbnail_url = createCoverUrl(dexId, coverId, client)
+            return createBasicManga(mangaDto, coverFileName).apply {
+                description = cleanString(attr.description[lang] ?: attr.description["en"] ?: "")
+                author = authors.joinToString(", ")
+                artist = artists.joinToString(", ")
+                status = getPublicationStatus(attr, chapters)
                 genre = genreList.joinToString(", ")
             }
         } catch (e: Exception) {
@@ -220,64 +220,37 @@ class MangaDexHelper() {
     }
 
     /**
-     * This makes an api call per a unique group id found in the chapters hopefully Dex will eventually support
-     * batch ids
-     */
-    fun createGroupMap(
-        chapterListResults: List<JsonElement>,
-        client: OkHttpClient
-    ): Map<String, String> {
-        val groupIds =
-            chapterListResults.map { it["relationships"].array }
-                .flatten()
-                .filter { it["type"].string == "scanlation_group" }
-                .map { it["id"].string }.distinct()
-
-        // ignore errors if request fails, there is no batch group search yet..
-        return runCatching {
-            groupIds.chunked(100).map { chunkIds ->
-                val ids = chunkIds.joinToString("&ids[]=", "?ids[]=")
-                val groupResponse =
-                    client.newCall(GET("${MDConstants.apiUrl}/group$ids")).execute()
-                // map results to pair id and name
-                JsonParser.parseString(groupResponse.body!!.string())
-                    .obj["results"].array.map { result ->
-                    val id = result["data"]["id"].string
-                    val name = result["data"]["attributes"]["name"].string
-                    Pair(id, cleanString(name))
-                }
-            }.flatten().toMap()
-        }.getOrNull() ?: emptyMap()
-    }
-
-    /**
      * create the SChapter from json
      */
-    fun createChapter(chapterJsonResponse: JsonElement, groupMap: Map<String, String>): SChapter {
+    fun createChapter(chapterDto: ChapterDto): SChapter {
         try {
-            val data = chapterJsonResponse["data"].obj
-            val scanlatorGroupIds =
-                chapterJsonResponse["relationships"].array.filter { it["type"].string == "scanlation_group" }
-                    .map { groupMap[it["id"].string] }
-                    .joinToString(" & ")
-            val attr = data["attributes"]
+            val data = chapterDto.data
+            val attr = data.attributes
+
+            val groups = chapterDto.relationships.filter { relationshipDto ->
+                relationshipDto.type.equals(
+                    MDConstants.scanlator,
+                    true
+                )
+            }.mapNotNull { it.attributes!!.name }
+                .joinToString(" & ")
 
             val chapterName = mutableListOf<String>()
             // Build chapter name
 
-            attr["volume"].nullString?.let {
+            attr.volume?.let {
                 if (it.isNotEmpty()) {
                     chapterName.add("Vol.$it")
                 }
             }
 
-            attr["chapter"].nullString?.let {
+            attr.chapter?.let {
                 if (it.isNotEmpty()) {
                     chapterName.add("Ch.$it")
                 }
             }
 
-            attr["title"].nullString?.let {
+            attr.title?.let {
                 if (it.isNotEmpty()) {
                     if (chapterName.isNotEmpty()) {
                         chapterName.add("-")
@@ -293,30 +266,14 @@ class MangaDexHelper() {
             // In future calculate [END] if non mvp api doesnt provide it
 
             return SChapter.create().apply {
-                url = "/chapter/${data["id"].string}"
+                url = "/chapter/${data.id}"
                 name = cleanString(chapterName.joinToString(" "))
-                date_upload = parseDate(attr["publishAt"].string)
-                scanlator = scanlatorGroupIds
+                date_upload = parseDate(attr.publishAt)
+                scanlator = groups
             }
         } catch (e: Exception) {
             Log.e("MangaDex", "error parsing chapter", e)
             throw(e)
         }
-    }
-
-    fun createCoverUrl(dexId: String, coverId: String?, client: OkHttpClient): String {
-        var coverUrl = MDConstants.coverApi.replace("{uuid}", dexId)
-        /*     try {
-                 if (coverId != null) {
-                     val response =
-                         client.newCall(GET("${MDConstants.apiMangaUrl}/$dexId/cover?ids[]=$coverId"))
-                             .execute()
-                     val coverJson = JsonParser.parseString(response.body!!.string()).obj
-                     val firstRelationship =
-                         coverJson.obj["results"].array.firstOrNull()!!.obj["data"]
-                             .obj["attributes"].obj["fileName"]?.nullString?.let { fileName ->
-                             coverUrl = "${MDConstants.cdnUrl}/covers/$dexId/$fileName"
-                     */
-        return coverUrl
     }
 }

@@ -1,18 +1,16 @@
 package eu.kanade.tachiyomi.extension.pt.tsukimangas
 
-import com.github.salomonbrys.kotson.array
-import com.github.salomonbrys.kotson.get
-import com.github.salomonbrys.kotson.int
-import com.github.salomonbrys.kotson.nullString
-import com.github.salomonbrys.kotson.obj
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import android.app.Application
+import android.content.SharedPreferences
+import android.text.InputType
+import androidx.preference.EditTextPreference
+import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.annotations.Nsfw
-import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
+import eu.kanade.tachiyomi.lib.ratelimit.SpecificHostRateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -20,19 +18,30 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
+import java.io.IOException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 @Nsfw
-class TsukiMangas : HttpSource() {
+class TsukiMangas : HttpSource(), ConfigurableSource {
 
     override val name = "Tsuki Mangás"
 
@@ -43,8 +52,25 @@ class TsukiMangas : HttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
+        .addInterceptor(SpecificHostRateLimitInterceptor(baseUrl.toHttpUrl(), 1))
+        .addInterceptor(SpecificHostRateLimitInterceptor(CDN_1_URL, 1, period = 2))
+        .addInterceptor(SpecificHostRateLimitInterceptor(CDN_2_URL, 1, period = 2))
+        .addInterceptor(::tsukiAuthIntercept)
         .build()
+
+    private val json: Json by injectLazy()
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+
+    private val usernameOrEmail: String
+        get() = preferences.getString(USERNAME_OR_EMAIL_PREF_KEY, "")!!
+
+    private val password: String
+        get() = preferences.getString(PASSWORD_PREF_KEY, "")!!
+
+    private var apiToken: String? = null
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Accept", ACCEPT)
@@ -53,23 +79,25 @@ class TsukiMangas : HttpSource() {
         .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int): Request {
-        return GET("$baseUrl/api/v2/mangas?page=$page&title=&filter=0", headers)
+        return GET("$baseUrl/api/v2/mangas?page=$page&title=&adult_content=false&filter=0", headers)
     }
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
 
-        val popularMangas = result["data"].array
-            .map { popularMangaItemParse(it.obj) }
+        val popularMangas = result.data.map(::popularMangaItemParse)
 
-        val hasNextPage = result["page"].int < result["lastPage"].int
+        val hasNextPage = result.page < result.lastPage
+
         return MangasPage(popularMangas, hasNextPage)
     }
 
-    private fun popularMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = baseUrl + "/imgs/" + obj["poster"].string.substringBefore("?")
-        url = "/obra/${obj["id"].int}/${obj["url"].string}"
+    private fun popularMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        val poster = manga.poster?.substringBefore("?")
+
+        title = manga.title
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
+        url = "/obra/${manga.id}/${manga.url}"
     }
 
     override fun latestUpdatesRequest(page: Int): Request {
@@ -77,22 +105,28 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
 
-        val latestMangas = result["data"].array
-            .map { latestMangaItemParse(it.obj) }
+        val latestMangas = result.data.map(::latestMangaItemParse)
 
-        val hasNextPage = result["page"].int < result["lastPage"].int
+        val hasNextPage = result.page < result.lastPage
+
         return MangasPage(latestMangas, hasNextPage)
     }
 
-    private fun latestMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = baseUrl + "/imgs/" + obj["poster"].string.substringBefore("?")
-        url = "/obra/${obj["id"].int}/${obj["url"].string}"
+    private fun latestMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        val poster = manga.poster?.substringBefore("?")
+
+        title = manga.title
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
+        url = "/obra/${manga.id}/${manga.url}"
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (query.startsWith(PREFIX_ID_SEARCH) && query.matches(ID_SEARCH_PATTERN)) {
+            return mangaDetailsApiRequest(query.removePrefix(PREFIX_ID_SEARCH))
+        }
+
         val newHeaders = headersBuilder()
             .set("Referer", "$baseUrl/lista-completa")
             .build()
@@ -100,12 +134,22 @@ class TsukiMangas : HttpSource() {
         val url = "$baseUrl/api/v2/mangas?page=$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("title", query)
 
-        // Genre filter must be the first.
+        // Some filters have to follow an order in the URL.
         filters.filterIsInstance<GenreFilter>().firstOrNull()?.state
             ?.filter { it.state }
             ?.forEach { url.addQueryParameter("genres[]", it.name) }
 
-        // Sort by filter must also be the first.
+        filters.filterIsInstance<AdultFilter>().firstOrNull()
+            ?.let {
+                if (it.state == Filter.TriState.STATE_INCLUDE) {
+                    url.addQueryParameter("adult_content", "1")
+                } else if (it.state == Filter.TriState.STATE_EXCLUDE) {
+                    url.addQueryParameter("adult_content", "false")
+                }
+
+                return@let null
+            }
+
         filters.filterIsInstance<SortByFilter>().firstOrNull()
             ?.let { filter ->
                 if (filter.state!!.index == 0) {
@@ -134,14 +178,6 @@ class TsukiMangas : HttpSource() {
                         url.addQueryParameter("status", (filter.state - 1).toString())
                     }
                 }
-
-                is AdultFilter -> {
-                    if (filter.state == Filter.TriState.STATE_INCLUDE) {
-                        url.addQueryParameter("adult_content", "1")
-                    } else if (filter.state == Filter.TriState.STATE_EXCLUDE) {
-                        url.addQueryParameter("adult_content", "false")
-                    }
-                }
             }
         }
 
@@ -149,39 +185,42 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val result = response.asJson().obj
+        if (response.request.url.toString().contains("/mangas/")) {
+            val manga = mangaDetailsParse(response)
 
-        val searchResults = result["data"].array
-            .map { searchMangaItemParse(it.obj) }
+            return MangasPage(listOf(manga), hasNextPage = false)
+        }
 
-        val hasNextPage = result["page"].int < result["lastPage"].int
+        val result = json.decodeFromString<TsukiPaginatedDto>(response.body!!.string())
+
+        val searchResults = result.data.map(::searchMangaItemParse)
+
+        val hasNextPage = result.page < result.lastPage
 
         return MangasPage(searchResults, hasNextPage)
     }
 
-    private fun searchMangaItemParse(obj: JsonObject) = SManga.create().apply {
-        title = obj["title"].string
-        thumbnail_url = baseUrl + "/imgs/" + obj["poster"].string.substringBefore("?")
-        url = "/obra/${obj["id"].int}/${obj["url"].string}"
+    private fun searchMangaItemParse(manga: TsukiMangaDto) = SManga.create().apply {
+        val poster = manga.poster?.substringBefore("?")
+
+        title = manga.title
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
+        url = "/obra/${manga.id}/${manga.url}"
     }
 
     // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return client.newCall(mangaDetailsApiRequest(manga))
+        return client.newCall(mangaDetailsApiRequest(manga.url))
             .asObservableSuccess()
             .map { response ->
                 mangaDetailsParse(response).apply { initialized = true }
             }
     }
 
-    private fun mangaDetailsApiRequest(manga: SManga): Request {
-        val newHeaders = headersBuilder()
-            .set("Referer", baseUrl + manga.url)
-            .build()
+    private fun mangaDetailsApiRequest(mangaUrl: String): Request {
+        val mangaId = mangaUrl.substringAfter("obra/").substringBefore("/")
 
-        val mangaId = manga.url.substringAfter("obra/").substringBefore("/")
-
-        return GET("$baseUrl/api/v2/mangas/$mangaId", newHeaders)
+        return GET("$baseUrl/api/v2/mangas/$mangaId", headers)
     }
 
     override fun mangaDetailsRequest(manga: SManga): Request {
@@ -192,18 +231,18 @@ class TsukiMangas : HttpSource() {
         return GET(baseUrl + manga.url, newHeaders)
     }
 
-    override fun mangaDetailsParse(response: Response): SManga {
-        val result = response.asJson().obj
+    override fun mangaDetailsParse(response: Response): SManga = SManga.create().apply {
+        val mangaDto = json.decodeFromString<TsukiMangaDto>(response.body!!.string())
+        val poster = mangaDto.poster?.substringBefore("?")
 
-        return SManga.create().apply {
-            title = result["title"].string
-            thumbnail_url = baseUrl + "/imgs/" + result["poster"].string.substringBefore("?")
-            description = result["synopsis"].nullString.orEmpty()
-            status = result["status"].nullString.orEmpty().toStatus()
-            author = result["author"].nullString.orEmpty()
-            artist = result["artist"].nullString.orEmpty()
-            genre = result["genres"].array.joinToString { it.obj["genre"].string }
-        }
+        title = mangaDto.title
+        thumbnail_url = baseUrl + (if (poster.isNullOrEmpty()) EMPTY_COVER else "/imgs/$poster")
+        description = mangaDto.synopsis.orEmpty()
+        status = mangaDto.status.orEmpty().toStatus()
+        author = mangaDto.author.orEmpty()
+        artist = mangaDto.artist.orEmpty()
+        genre = mangaDto.genres.joinToString { it.genre }
+        url = "/obra/${mangaDto.id}/${mangaDto.url}"
     }
 
     override fun chapterListRequest(manga: SManga): Request {
@@ -219,25 +258,26 @@ class TsukiMangas : HttpSource() {
     override fun chapterListParse(response: Response): List<SChapter> {
         val mangaUrl = response.request.header("Referer")!!.substringAfter(baseUrl)
 
-        return response.asJson().array
-            .flatMap { chapterListItemParse(it.obj, mangaUrl) }
+        return json
+            .decodeFromString<List<TsukiChapterDto>>(response.body!!.string())
+            .flatMap { chapterListItemParse(it, mangaUrl) }
             .reversed()
     }
 
-    private fun chapterListItemParse(obj: JsonObject, mangaUrl: String): List<SChapter> {
+    private fun chapterListItemParse(chapter: TsukiChapterDto, mangaUrl: String): List<SChapter> {
         val mangaId = mangaUrl.substringAfter("obra/").substringBefore("/")
         val mangaSlug = mangaUrl.substringAfterLast("/")
 
-        return obj["versions"].array.map { version ->
+        return chapter.versions.map { version ->
             SChapter.create().apply {
-                name = "Cap. " + obj["number"].string +
-                    (if (!obj["title"].nullString.isNullOrEmpty()) " - " + obj["title"].string else "")
-                chapter_number = obj["number"].string.toFloatOrNull() ?: -1f
-                scanlator = version.obj["scans"].array
-                    .sortedBy { it.obj["scan"].obj["name"].string }
-                    .joinToString { it.obj["scan"].obj["name"].string }
-                date_upload = version.obj["created_at"].string.substringBefore(" ").toDate()
-                url = "/leitor/$mangaId/${version.obj["id"].int}/$mangaSlug/${obj["number"].string}"
+                name = "Cap. " + chapter.number +
+                    (if (!chapter.title.isNullOrEmpty()) " - " + chapter.title else "")
+                chapter_number = chapter.number.toFloatOrNull() ?: -1f
+                scanlator = version.scans
+                    .sortedBy { it.scan.name }
+                    .joinToString { it.scan.name }
+                date_upload = version.createdAt.substringBefore(" ").toDate()
+                url = "/leitor/$mangaId/${version.id}/$mangaSlug/${chapter.number}"
             }
         }
     }
@@ -258,12 +298,11 @@ class TsukiMangas : HttpSource() {
     }
 
     override fun pageListParse(response: Response): List<Page> {
-        val result = response.asJson().obj
+        val result = json.decodeFromString<TsukiReaderDto>(response.body!!.string())
 
-        return result["pages"].array.mapIndexed { i, page ->
-            val server = page["server"].string
-            val cdnUrl = "https://cdn$server.tsukimangas.com"
-            Page(i, "$baseUrl/", cdnUrl + page.obj["url"].string)
+        return result.pages.mapIndexed { i, page ->
+            val cdnUrl = "https://cdn${page.server}.tsukimangas.com"
+            Page(i, "$baseUrl/", cdnUrl + page.url)
         }
     }
 
@@ -281,6 +320,98 @@ class TsukiMangas : HttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val usernameOrEmailPref = EditTextPreference(screen.context).apply {
+            key = USERNAME_OR_EMAIL_PREF_KEY
+            title = USERNAME_OR_EMAIL_PREF_TITLE
+            setDefaultValue("")
+            summary = USERNAME_OR_EMAIL_PREF_SUMMARY
+            dialogTitle = USERNAME_OR_EMAIL_PREF_TITLE
+
+            setOnPreferenceChangeListener { _, newValue ->
+                apiToken = null
+
+                preferences.edit()
+                    .putString(USERNAME_OR_EMAIL_PREF_KEY, newValue as String)
+                    .commit()
+            }
+        }
+
+        val passwordPref = EditTextPreference(screen.context).apply {
+            key = PASSWORD_PREF_KEY
+            title = PASSWORD_PREF_TITLE
+            setDefaultValue("")
+            summary = PASSWORD_PREF_SUMMARY
+            dialogTitle = PASSWORD_PREF_TITLE
+
+            setOnBindEditTextListener {
+                it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
+
+            setOnPreferenceChangeListener { _, newValue ->
+                apiToken = null
+
+                preferences.edit()
+                    .putString(PASSWORD_PREF_KEY, newValue as String)
+                    .commit()
+            }
+        }
+
+        screen.addPreference(usernameOrEmailPref)
+        screen.addPreference(passwordPref)
+    }
+
+    private fun tsukiAuthIntercept(chain: Interceptor.Chain): Response {
+        if (apiToken.isNullOrEmpty()) {
+            if (usernameOrEmail.isEmpty() || password.isEmpty()) {
+                throw IOException(ERROR_CREDENTIALS_MISSING)
+            }
+
+            val loginRequest = loginRequest(usernameOrEmail, password)
+            val loginResponse = chain.proceed(loginRequest)
+
+            // API returns 422 when the credentials are invalid.
+            if (loginResponse.code == 422) {
+                loginResponse.close()
+                throw IOException(ERROR_CANNOT_LOGIN)
+            }
+
+            try {
+                val loginResponseBody = loginResponse.body?.string().orEmpty()
+                val authResult = json.decodeFromString<TsukiAuthResultDto>(loginResponseBody)
+
+                apiToken = authResult.token
+
+                loginResponse.close()
+            } catch (e: SerializationException) {
+                loginResponse.close()
+                throw IOException(ERROR_LOGIN_FAILED)
+            }
+        }
+
+        val authorizedRequest = chain.request().newBuilder()
+            .addHeader("Authorization", "Bearer $apiToken")
+            .build()
+
+        val response = chain.proceed(authorizedRequest)
+
+        // API returns 403 when User-Agent permission is disabled
+        // and returns 401 when the token is invalid.
+        if (response.code == 403 || response.code == 401) {
+            response.close()
+            throw IOException(if (response.code == 403) UA_DISABLED_MESSAGE else ERROR_INVALID_TOKEN)
+        }
+
+        return response
+    }
+
+    private fun loginRequest(usernameOrEmail: String, password: String): Request {
+        val authInfo = TsukiAuthRequestDto(usernameOrEmail, password)
+        val payload = json.encodeToString(authInfo).toRequestBody(JSON_MEDIA_TYPE)
+
+        return POST("$baseUrl/api/v2/login", headers, payload)
+    }
+
     private class Genre(name: String) : Filter.CheckBox(name)
 
     private class DemographyFilter(demographies: List<String>) : Filter.Select<String>("Demografia", demographies.toTypedArray())
@@ -289,7 +420,7 @@ class TsukiMangas : HttpSource() {
 
     private class StatusFilter(statusList: List<String>) : Filter.Select<String>("Status", statusList.toTypedArray())
 
-    private class AdultFilter : Filter.TriState("Conteúdo adulto")
+    private class AdultFilter : Filter.TriState("Conteúdo adulto", STATE_EXCLUDE)
 
     private class SortByFilter : Filter.Sort("Ordenar por", arrayOf("Visualizações", "Nota"), Selection(0, false))
 
@@ -426,15 +557,43 @@ class TsukiMangas : HttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    private fun Response.asJson(): JsonElement = JsonParser.parseString(body!!.string())
-
     companion object {
         private const val ACCEPT = "application/json, text/plain, */*"
         private const val ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,gl;q=0.5"
         // By request of site owner. Detailed at Issue #4912 (in Portuguese).
-        private val USER_AGENT = "Tachiyomi " + System.getProperty("http.agent")
+        private val USER_AGENT = "Tachiyomi " + System.getProperty("http.agent")!!
+
+        private val CDN_1_URL = "https://cdn1.tsukimangas.com".toHttpUrl()
+        private val CDN_2_URL = "https://cdn2.tsukimangas.com".toHttpUrl()
+
+        private const val UA_DISABLED_MESSAGE = "Permissão de acesso da extensão desativada. " +
+            "Aguarde a reativação pelo site para continuar utilizando."
+
+        private const val EMPTY_COVER = "/ext/errorcapa.jpg"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
+
+        const val PREFIX_ID_SEARCH = "id:"
+        private val ID_SEARCH_PATTERN = "^id:(\\d+)$".toRegex()
+
+        private val JSON_MEDIA_TYPE = "application/json;charset=UTF-8".toMediaType()
+
+        private const val USERNAME_OR_EMAIL_PREF_KEY = "username_or_email"
+        private const val USERNAME_OR_EMAIL_PREF_TITLE = "Usuário ou E-mail"
+        private const val USERNAME_OR_EMAIL_PREF_SUMMARY = "Defina aqui o seu usuário ou e-mail para o login."
+
+        private const val PASSWORD_PREF_KEY = "password"
+        private const val PASSWORD_PREF_TITLE = "Senha"
+        private const val PASSWORD_PREF_SUMMARY = "Defina aqui a sua senha para o login."
+
+        private const val ERROR_CANNOT_LOGIN = "Não foi possível realizar o login. " +
+            "Revise suas informações nas configurações da extensão."
+        private const val ERROR_CREDENTIALS_MISSING = "Acesso restrito a usuários cadastrados " +
+            "no site. Defina suas credenciais de acesso nas configurações da extensão."
+        private const val ERROR_LOGIN_FAILED = "Não foi possível realizar o login devido " +
+            "a um erro inesperado. Tente novamente mais tarde."
+        private const val ERROR_INVALID_TOKEN = "Token inválido. " +
+            "Revise suas credenciais nas configurações da extensão."
     }
 }

@@ -106,7 +106,7 @@ class Mangaclub : ParsedHttpSource() {
     // Pages
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
         document.select(".manga-lines-page a").forEach {
-            add(Page(it.attr("data-p").toInt(), "", it.attr("abs:data-i")))
+            add(Page(it.attr("data-p").toInt(), "", baseUrl.replace("//", "//img.") + "/" + it.attr("data-i")))
         }
     }
 

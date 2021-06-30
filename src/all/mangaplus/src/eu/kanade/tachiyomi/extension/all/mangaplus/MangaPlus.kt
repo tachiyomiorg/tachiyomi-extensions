@@ -172,10 +172,21 @@ abstract class MangaPlus(
 
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         return super.fetchSearchManga(page, query, filters)
-            .map { MangasPage(it.mangas.filter { m -> m.title.contains(query, true) }, it.hasNextPage) }
+            .map {
+                if (it.mangas.size == 1) {
+                    return@map it
+                }
+
+                val filteredResult = it.mangas.filter { m -> m.title.contains(query, true) }
+                MangasPage(filteredResult, it.hasNextPage)
+            }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        if (query.startsWith(PREFIX_ID_SEARCH) && query.matches(ID_SEARCH_PATTERN)) {
+            return titleDetailsRequest(query.removePrefix(PREFIX_ID_SEARCH))
+        }
+
         val newHeaders = headersBuilder()
             .set("Referer", "$baseUrl/manga_list/all")
             .build()
@@ -189,6 +200,25 @@ abstract class MangaPlus(
         if (result.success == null)
             throw Exception(result.error!!.langPopup.body)
 
+        if (result.success.titleDetailView != null) {
+            val mangaPlusTitle = result.success.titleDetailView.title.let {
+                val correctLanguage = titlesToFix[it.titleId]
+                if (correctLanguage != null) it.copy(language = correctLanguage) else it
+            }
+
+            if (mangaPlusTitle.language == langCode) {
+                val manga = SManga.create().apply {
+                    title = mangaPlusTitle.name
+                    thumbnail_url = mangaPlusTitle.portraitImageUrl
+                    url = "#/titles/${mangaPlusTitle.titleId}"
+                }
+
+                return MangasPage(listOf(manga), hasNextPage = false)
+            }
+
+            return MangasPage(emptyList(), hasNextPage = false)
+        }
+
         titleList = result.success.allTitlesView!!.titles
             .fixWrongLanguages()
             .filter { it.language == langCode }
@@ -201,11 +231,11 @@ abstract class MangaPlus(
             }
         }
 
-        return MangasPage(mangas, false)
+        return MangasPage(mangas, hasNextPage = false)
     }
 
-    private fun titleDetailsRequest(manga: SManga): Request {
-        val titleId = manga.url.substringAfterLast("/")
+    private fun titleDetailsRequest(mangaUrl: String): Request {
+        val titleId = mangaUrl.substringAfterLast("/")
 
         val newHeaders = headersBuilder()
             .set("Referer", "$baseUrl/titles/$titleId")
@@ -216,7 +246,7 @@ abstract class MangaPlus(
 
     // Workaround to allow "Open in browser" use the real URL.
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
-        return client.newCall(titleDetailsRequest(manga))
+        return client.newCall(titleDetailsRequest(manga.url))
             .asObservableSuccess()
             .map { response ->
                 mangaDetailsParse(response).apply { initialized = true }
@@ -247,7 +277,7 @@ abstract class MangaPlus(
         }
     }
 
-    override fun chapterListRequest(manga: SManga): Request = titleDetailsRequest(manga)
+    override fun chapterListRequest(manga: SManga): Request = titleDetailsRequest(manga.url)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val result = response.asProto()
@@ -474,5 +504,8 @@ abstract class MangaPlus(
         private val COMPLETE_REGEX = "completado|complete".toRegex()
 
         private const val TITLE_THUMBNAIL_PATH = "title_thumbnail_portrait_list"
+
+        const val PREFIX_ID_SEARCH = "id:"
+        private val ID_SEARCH_PATTERN = "^id:(\\d+)$".toRegex()
     }
 }

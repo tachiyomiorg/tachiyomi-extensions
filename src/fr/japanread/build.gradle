@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
 
 ext {
     extName = 'Japanread'
     pkgNameSuffix = 'fr.japanread'
     extClass = '.Japanread'
-    extVersionCode = 7
+    extVersionCode = 8
     libVersion = '1.2'
     containsNsfw = true
 }

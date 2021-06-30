@@ -86,7 +86,7 @@ class MangaFast : ParsedHttpSource() {
     }
 
     // chapter list
-    override fun chapterListSelector() = ".chapter-link:not([title=\"Spoiler Manga\"])"
+    override fun chapterListSelector() = "a.chapter-link:not(:has(i:contains(Spoiler & Release Date)))"
 
     override fun chapterFromElement(element: Element) = SChapter.create().apply {
         setUrlWithoutDomain(element.attr("href"))
@@ -104,7 +104,7 @@ class MangaFast : ParsedHttpSource() {
 
     companion object {
         val dateFormat by lazy {
-            SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            SimpleDateFormat("MM/dd/yyyy", Locale.US)
         }
     }
 

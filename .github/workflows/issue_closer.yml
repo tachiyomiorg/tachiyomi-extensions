@@ -16,19 +16,19 @@ jobs:
           rules: |
             [
               {
-                "type": "title",
-                "regex": ".*<(Source Name|short description)>*",
-                "message": "You did not fill out the description in the title"
-              },
-              {
                 "type": "body",
                 "regex": ".*DELETE THIS SECTION IF YOU HAVE READ AND ACKNOWLEDGED IT.*",
-                "message": "The acknowledgment section was not removed"
+                "message": "The acknowledgment section was not removed."
               },
               {
                 "type": "body",
-                "regex": ".*\\* (Tachiyomi version|Android version|Device|Name|Link|Extension version): \\?.*",
-                "message": "The requested information was not filled out"
+                "regex": ".*\\* (Tachiyomi version|Android version|Device): \\?.*",
+                "message": "Requested information in the template was not filled out."
+              },
+              {
+                "type": "title",
+                "regex": ".*(Source name|Short description).*",
+                "message": "You did not fill out the description in the title"
               },
               {
                 "type": "both",
@@ -38,7 +38,7 @@ jobs:
               },
               {
                 "type": "both",
-                "regex": ".*(teamx|tqneplus|manga\\s*disk|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb).*",
+                "regex": ".*(teamx|tqneplus|manga\\s*disk|komiktap|gourmet\\s*scans|manga\\s*crimson|mangawow|voidscans|hikari\\s*scans|mangagegecesi|piedpiperfb|knightnoscanlations|ahstudios).*",
                 "ignoreCase": true,
                 "message": "{match} will not be added back as the Scanlator team has requested it to be removed. Read #3475 for more information"
               }

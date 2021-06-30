@@ -7,22 +7,43 @@ import eu.kanade.tachiyomi.source.SourceFactory
 @Nsfw
 class EHFactory : SourceFactory {
     override fun createSources(): List<Source> = listOf(
-        EHentai("ja", "japanese"),
-        EHentai("en", "english"),
-        EHentai("zh", "chinese"),
-        EHentai("nl", "dutch"),
-        EHentai("fr", "french"),
-        EHentai("de", "german"),
-        EHentai("hu", "hungarian"),
-        EHentai("it", "italian"),
-        EHentai("ko", "korean"),
-        EHentai("pl", "polish"),
-        EHentai("pt", "portuguese"),
-        EHentai("ru", "russian"),
-        EHentai("es", "spanish"),
-        EHentai("th", "thai"),
-        EHentai("vi", "vietnamese"),
-        EHentai("none", "n/a"),
-        EHentai("other", "other")
+        EHentaiJa(),
+        EHentaiEn(),
+        EHentaiZh(),
+        EHentaiNl(),
+        EHentaiFr(),
+        EHentaiDe(),
+        EHentaiHu(),
+        EHentaiIt(),
+        EHentaiKo(),
+        EHentaiPl(),
+        EHentaiPtBr(),
+        EHentaiRu(),
+        EHentaiEs(),
+        EHentaiTh(),
+        EHentaiVi(),
+        EHentaiNone(),
+        EHentaiOther()
     )
 }
+
+class EHentaiJa : EHentai("ja", "japanese")
+class EHentaiEn : EHentai("en", "english")
+class EHentaiZh : EHentai("zh", "chinese")
+class EHentaiNl : EHentai("nl", "dutch")
+class EHentaiFr : EHentai("fr", "french")
+class EHentaiDe : EHentai("de", "german")
+class EHentaiHu : EHentai("hu", "hungarian")
+class EHentaiIt : EHentai("it", "italian")
+class EHentaiKo : EHentai("ko", "korean")
+class EHentaiPl : EHentai("pl", "polish")
+class EHentaiPtBr : EHentai("pt-BR", "portuguese") {
+    // Hardcode the id because the language wasn't specific.
+    override val id: Long = 7151438547982231541
+}
+class EHentaiRu : EHentai("ru", "russian")
+class EHentaiEs : EHentai("es", "spanish")
+class EHentaiTh : EHentai("th", "thai")
+class EHentaiVi : EHentai("vi", "vietnamese")
+class EHentaiNone : EHentai("none", "n/a")
+class EHentaiOther : EHentai("other", "other")

@@ -1,8 +1,6 @@
 package eu.kanade.tachiyomi.extension.fr.japanread
 
 import android.net.Uri
-import com.github.salomonbrys.kotson.string
-import com.google.gson.JsonParser
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
@@ -12,11 +10,16 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import rx.Observable
+import uy.kohesive.injekt.injectLazy
 import java.util.Calendar
 
 class Japanread : ParsedHttpSource() {
@@ -28,6 +31,8 @@ class Japanread : ParsedHttpSource() {
     override val lang = "fr"
 
     override val supportsLatest = true
+
+    private val json: Json by injectLazy()
 
     // Generic (used by popular/latest/search)
     private fun mangaListFromElement(element: Element): SManga {
@@ -224,20 +229,19 @@ class Japanread : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val chapterId = document.select("meta[data-chapter-id]").attr("data-chapter-id")
 
-        val apiResponse = client.newCall(GET("$baseUrl/api/?id=$chapterId&type=chapter", apiHeaders())).execute()
+        val apiRequest = GET("$baseUrl/api/?id=$chapterId&type=chapter", apiHeaders())
+        val apiResponse = client.newCall(apiRequest).execute()
 
-        val jsonData = apiResponse.body!!.string()
-        val json = JsonParser.parseString(jsonData).asJsonObject
+        val jsonResult = json.parseToJsonElement(apiResponse.body!!.string()).jsonObject
 
-        val baseImagesUrl = json["baseImagesUrl"].string
+        val baseImagesUrl = jsonResult["baseImagesUrl"]!!.jsonPrimitive.content
 
-        return json["page_array"].asJsonArray.mapIndexed { idx, it ->
-            val imgUrl = "$baseUrl$baseImagesUrl/${it.asString}"
-            Page(idx, baseUrl, imgUrl)
+        return jsonResult["page_array"]!!.jsonArray.mapIndexed { i, jsonEl ->
+            Page(i, baseUrl, "$baseUrl$baseImagesUrl/${jsonEl.jsonPrimitive.content}")
         }
     }
 
-    override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
+    override fun imageUrlParse(document: Document) = ""
 
     override fun imageRequest(page: Page): Request {
         return GET(page.imageUrl!!, headers)

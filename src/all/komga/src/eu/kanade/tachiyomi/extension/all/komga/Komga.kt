@@ -7,7 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import com.github.salomonbrys.kotson.fromJson
 import com.google.gson.Gson
-import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.extension.BuildConfig
 import eu.kanade.tachiyomi.extension.all.komga.dto.AuthorDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.BookDto
 import eu.kanade.tachiyomi.extension.all.komga.dto.CollectionDto
@@ -69,10 +69,20 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
         filters.forEach { filter ->
             when (filter) {
-                is UnreadOnly -> {
+                is UnreadFilter -> {
                     if (filter.state) {
                         url.addQueryParameter("read_status", "UNREAD")
                         url.addQueryParameter("read_status", "IN_PROGRESS")
+                    }
+                }
+                is InProgressFilter -> {
+                    if (filter.state) {
+                        url.addQueryParameter("read_status", "IN_PROGRESS")
+                    }
+                }
+                is ReadFilter -> {
+                    if (filter.state) {
+                        url.addQueryParameter("read_status", "READ")
                     }
                 }
                 is LibraryGroup -> {
@@ -286,7 +296,9 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     private class SeriesSort : Filter.Sort("Sort", arrayOf("Alphabetically", "Date added", "Date updated"), Selection(0, true))
     private class StatusFilter(name: String) : Filter.CheckBox(name, false)
     private class StatusGroup(filters: List<StatusFilter>) : Filter.Group<StatusFilter>("Status", filters)
-    private class UnreadOnly : Filter.CheckBox("Unread only", false)
+    private class UnreadFilter : Filter.CheckBox("Unread", false)
+    private class InProgressFilter : Filter.CheckBox("In Progress", false)
+    private class ReadFilter : Filter.CheckBox("Read", false)
     private class GenreFilter(genre: String) : Filter.CheckBox(genre, false)
     private class GenreGroup(genres: List<GenreFilter>) : Filter.Group<GenreFilter>("Genres", genres)
     private class TagFilter(tag: String) : Filter.CheckBox(tag, false)
@@ -306,17 +318,19 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun getFilterList(): FilterList {
         val filters = try {
             mutableListOf<Filter<*>>(
-                UnreadOnly(),
+                UnreadFilter(),
+                InProgressFilter(),
+                ReadFilter(),
                 TypeSelect(),
                 CollectionSelect(listOf(CollectionFilterEntry("None")) + collections.map { CollectionFilterEntry(it.name, it.id) }),
-                LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase() }),
+                LibraryGroup(libraries.map { LibraryFilter(it.id, it.name) }.sortedBy { it.name.toLowerCase(Locale.ROOT) }),
                 StatusGroup(listOf("Ongoing", "Ended", "Abandoned", "Hiatus").map { StatusFilter(it) }),
                 GenreGroup(genres.map { GenreFilter(it) }),
                 TagGroup(tags.map { TagFilter(it) }),
                 PublisherGroup(publishers.map { PublisherFilter(it) })
-            ).also {
-                it.addAll(authors.map { (role, authors) -> AuthorGroup(role, authors.map { AuthorFilter(it) }) })
-                it.add(SeriesSort())
+            ).also { list ->
+                list.addAll(authors.map { (role, authors) -> AuthorGroup(role, authors.map { AuthorFilter(it) }) })
+                list.add(SeriesSort())
             }
         } catch (e: Exception) {
             Log.e(LOG_TAG, "error while creating filter list", e)
@@ -345,7 +359,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
 
     override fun headersBuilder(): Headers.Builder =
         Headers.Builder()
-            .add("User-Agent", "Tachiyomi Komga v${BuildConfig.VERSION_NAME}")
+            .add("User-Agent", "TachiyomiKomga/${BuildConfig.VERSION_NAME}")
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)

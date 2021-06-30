@@ -1,16 +1,20 @@
 #!/bin/bash
 set -e
+shopt -s globstar nullglob extglob
 
 TOOLS="$(ls -d ${ANDROID_HOME}/build-tools/* | tail -1)"
 
-shopt -s globstar nullglob extglob
+# Get APKs from previous jobs' artifacts
+cp -R ~/apk-artifacts/ $PWD
 APKS=( **/*".apk" )
 
 # Fail if too little extensions seem to have been built
 if [ "${#APKS[@]}" -le "1" ]; then
     echo "Insufficient amount of APKs found. Please check the project configuration."
-    exit 1;
-fi;
+    exit 1
+else
+    echo "Signing ${#APKS[@]} APKs"
+fi
 
 # Take base64 encoded key input and put it into a file
 STORE_PATH=$PWD/signingkey.jks
@@ -24,16 +28,18 @@ export KEY_PASSWORD=$4
 DEST=$PWD/apk
 rm -rf $DEST && mkdir -p $DEST
 
-MAX_PARALLEL=4
+MAX_PARALLEL=5
 
 # Sign all of the APKs
 for APK in ${APKS[@]}; do
     (
+        echo "Signing $APK"
         BASENAME=$(basename $APK)
         APKNAME="${BASENAME%%+(-release*)}.apk"
         APKDEST="$DEST/$APKNAME"
 
-        ${TOOLS}/zipalign -c -v -p 4 $APK
+        # AGP already zipaligns APKs
+        # ${TOOLS}/zipalign -c -v -p 4 $APK
 
         cp $APK $APKDEST
         ${TOOLS}/apksigner sign --ks $STORE_PATH --ks-key-alias $STORE_ALIAS --ks-pass env:KEY_STORE_PASSWORD --key-pass env:KEY_PASSWORD $APKDEST

@@ -40,7 +40,7 @@ import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 
 @Nsfw
-class HentaiHand(
+abstract class HentaiHand(
     override val lang: String,
     private val hhLangId: Int? = null,
     extraName: String = ""

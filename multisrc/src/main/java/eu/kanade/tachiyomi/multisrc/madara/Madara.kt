@@ -117,7 +117,24 @@ abstract class Madara(
         return MangasPage(mangas, mp.hasNextPage)
     }
 
+    override fun popularMangaParse(response: Response): MangasPage {
+        if (genresList == null)
+            genresList = parseGenres(client.newCall(searchMangaRequest(1,"genre", getFilterList())).execute().asJsoup())
+        return super.popularMangaParse(response)
+    }
+
+    // Search Manga
+
+    open val mangaSubString = "manga"
+
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        if (query.startsWith(URL_SEARCH_PREFIX)){
+            val mangaUrl = "$baseUrl/$mangaSubString/${query.substringAfter(URL_SEARCH_PREFIX)}"
+            return client.newCall(GET("$baseUrl/$mangaSubString/${query.substringAfter(URL_SEARCH_PREFIX)}", headers))
+                .asObservable().map { response ->
+                    MangasPage(listOf(mangaDetailsParse(response.asJsoup()).apply { url = "/$mangaSubString/${query.substringAfter(URL_SEARCH_PREFIX)}/" }), false)
+                }
+        }
         return client.newCall(searchMangaRequest(page, query, filters))
             .asObservable().doOnNext { response ->
                 if (!response.isSuccessful) {
@@ -133,7 +150,17 @@ abstract class Madara(
             }
     }
 
-    // Search Manga
+    override fun searchMangaParse(response: Response): MangasPage {
+        if (genresList == null)
+            genresList = parseGenres(response.asJsoup(response.peekBody(Long.MAX_VALUE).string()))
+        return super.searchMangaParse(response)
+    }
+
+    private fun parseGenres(document: Document): List<Genre>? {
+        return document.selectFirst("div.checkbox-group")?.select("div.checkbox")?.map { li ->
+            Genre(li.selectFirst("label").text(), li.selectFirst("input[type=checkbox]").`val`())
+        }
+    }
 
     protected open fun searchPage(page: Int): String = "page/$page/"
 
@@ -188,12 +215,12 @@ abstract class Madara(
         return GET(url.toString(), headers)
     }
 
-    private class AuthorFilter : Filter.Text("Author")
-    private class ArtistFilter : Filter.Text("Artist")
-    private class YearFilter : Filter.Text("Year of Released")
-    private class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
+    protected class AuthorFilter : Filter.Text("Author")
+    protected class ArtistFilter : Filter.Text("Artist")
+    protected class YearFilter : Filter.Text("Year of Released")
+    protected class StatusFilter(status: List<Tag>) : Filter.Group<Tag>("Status", status)
 
-    private class OrderByFilter : UriPartFilter(
+    protected class OrderByFilter : UriPartFilter(
         "Order By",
         arrayOf(
             Pair("<select>", ""),
@@ -206,7 +233,7 @@ abstract class Madara(
         )
     )
 
-    private class GenreConditionFilter : UriPartFilter(
+    protected class GenreConditionFilter : UriPartFilter(
         "Genre condition",
         arrayOf(
             Pair("or", ""),
@@ -214,7 +241,7 @@ abstract class Madara(
         )
     )
 
-    private class AdultContentFilter : UriPartFilter(
+    protected class AdultContentFilter : UriPartFilter(
         "Adult Content",
         arrayOf(
             Pair("All", ""),
@@ -223,70 +250,17 @@ abstract class Madara(
         )
     )
 
-    private class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
+    protected class GenreList(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     class Genre(name: String, val id: String = name) : Filter.CheckBox(name)
 
-    open fun getGenreList() = listOf(
-        Genre("Adventure", "Adventure"),
-        Genre("Action", "action"),
-        Genre("Adventure", "adventure"),
-        Genre("Cars", "cars"),
-        Genre("4-Koma", "4-koma"),
-        Genre("Comedy", "comedy"),
-        Genre("Completed", "completed"),
-        Genre("Cooking", "cooking"),
-        Genre("Dementia", "dementia"),
-        Genre("Demons", "demons"),
-        Genre("Doujinshi", "doujinshi"),
-        Genre("Drama", "drama"),
-        Genre("Ecchi", "ecchi"),
-        Genre("Fantasy", "fantasy"),
-        Genre("Game", "game"),
-        Genre("Gender Bender", "gender-bender"),
-        Genre("Harem", "harem"),
-        Genre("Historical", "historical"),
-        Genre("Horror", "horror"),
-        Genre("Isekai", "isekai"),
-        Genre("Josei", "josei"),
-        Genre("Kids", "kids"),
-        Genre("Magic", "magic"),
-        Genre("Manga", "manga"),
-        Genre("Manhua", "manhua"),
-        Genre("Manhwa", "manhwa"),
-        Genre("Martial Arts", "martial-arts"),
-        Genre("Mature", "mature"),
-        Genre("Mecha", "mecha"),
-        Genre("Military", "military"),
-        Genre("Music", "music"),
-        Genre("Mystery", "mystery"),
-        Genre("Old Comic", "old-comic"),
-        Genre("One Shot", "one-shot"),
-        Genre("Oneshot", "oneshot"),
-        Genre("Parodi", "parodi"),
-        Genre("Parody", "parody"),
-        Genre("Police", "police"),
-        Genre("Psychological", "psychological"),
-        Genre("Romance", "romance"),
-        Genre("Samurai", "samurai"),
-        Genre("School", "school"),
-        Genre("School Life", "school-life"),
-        Genre("Sci-Fi", "sci-fi"),
-        Genre("Seinen", "seinen"),
-        Genre("Shoujo", "shoujo"),
-        Genre("Shoujo Ai", "shoujo-ai"),
-        Genre("Shounen", "shounen"),
-        Genre("Shounen ai", "shounen-ai"),
-        Genre("Slice of Life", "slice-of-life"),
-        Genre("Sports", "sports"),
-        Genre("Super Power", "super-power"),
-        Genre("Supernatural", "supernatural"),
-        Genre("Thriller", "thriller"),
-        Genre("Tragedy", "tragedy"),
-        Genre("Vampire", "vampire"),
-        Genre("Webtoons", "webtoons"),
-        Genre("Yaoi", "yaoi"),
-        Genre("Yuri", "yuri")
-    )
+    private var genresList: List<Genre>? = null
+
+    protected open fun getGenreList(): List<Genre> {
+        // Filters are fetched immediately once an extension loads
+        // We're only able to get filters after a loading the manga directory, and resetting
+        // the filters is the only thing that seems to reinflate the view
+        return genresList ?: listOf(Genre("Press reset to attempt to fetch genres", ""))
+    }
 
     override fun getFilterList() = FilterList(
         AuthorFilter(),
@@ -301,7 +275,7 @@ abstract class Madara(
         GenreList(getGenreList())
     )
 
-    private fun getStatusList() = listOf(
+    protected fun getStatusList() = listOf(
         Tag("end", "Completed"),
         Tag("on-going", "Ongoing"),
         Tag("canceled", "Canceled"),
@@ -339,7 +313,6 @@ abstract class Madara(
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-
         with(document) {
             select("div.post-title h3").first()?.let {
                 manga.title = it.ownText()
@@ -410,7 +383,7 @@ abstract class Madara(
     open val altName = "Alternative Name" + ": "
     open val updatingRegex = "Updating|Atualizando".toRegex(RegexOption.IGNORE_CASE)
 
-    private fun String.notUpdating(): Boolean {
+    public fun String.notUpdating(): Boolean {
         return this.contains(updatingRegex).not()
     }
 
@@ -461,8 +434,10 @@ abstract class Madara(
                 chapter.name = urlElement.text()
             }
             // Dates can be part of a "new" graphic or plain text
+            // Added "title" alternative
             chapter.date_upload = select("img").firstOrNull()?.attr("alt")?.let { parseRelativeDate(it) }
-                ?: parseChapterDate(select("span.chapter-release-date i").firstOrNull()?.text())
+                ?: select("span a").firstOrNull()?.attr("title")?.let { parseRelativeDate(it) }
+                    ?: parseChapterDate(select("span.chapter-release-date i").firstOrNull()?.text())
         }
 
 
@@ -536,6 +511,8 @@ abstract class Madara(
             WordSet("jam", "saat", "heure", "hora", "hour").anyWordIn(date) -> cal.apply { add(Calendar.HOUR, -number) }.timeInMillis
             WordSet("menit", "dakika", "min", "minute", "minuto").anyWordIn(date) -> cal.apply { add(Calendar.MINUTE, -number) }.timeInMillis
             WordSet("detik", "segundo", "second").anyWordIn(date) -> cal.apply { add(Calendar.SECOND, -number) }.timeInMillis
+            WordSet("month").anyWordIn(date) -> cal.apply { add(Calendar.MONTH, -number) }.timeInMillis
+            WordSet("year").anyWordIn(date) -> cal.apply { add(Calendar.YEAR, -number) }.timeInMillis
             else -> 0
         }
     }
@@ -566,6 +543,10 @@ abstract class Madara(
     }
 
     override fun imageUrlParse(document: Document) = throw UnsupportedOperationException("Not used")
+
+    companion object {
+        const val URL_SEARCH_PREFIX = "SLUG:"
+    }
 }
 
 class WordSet(private vararg val words: String) { fun anyWordIn(dateString: String): Boolean = words.any { dateString.contains(it, ignoreCase = true) } }

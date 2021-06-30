@@ -6,9 +6,9 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-BR") {
@@ -17,7 +17,7 @@ class MangaLivre : MangasProject("Mangá Livre", "https://mangalivre.net", "pt-B
     override val id: Long = 4762777556012432014
 
     override val client: OkHttpClient = super.client.newBuilder()
-        .addInterceptor(RateLimitInterceptor(5, 1, TimeUnit.SECONDS))
+        .addInterceptor(RateLimitInterceptor(2, 1, TimeUnit.SECONDS))
         .build()
 
     override fun popularMangaRequest(page: Int): Request {

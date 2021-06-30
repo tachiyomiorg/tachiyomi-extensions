@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.multisrc.nyahentai
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -14,15 +15,19 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 
-abstract class NyaHentai (
+abstract class NyaHentai(
     override val name: String,
     override val baseUrl: String,
     override val lang: String
-    ) : ParsedHttpSource() {
+) : ParsedHttpSource() {
     companion object {
-        const val TAG = "NyaHentai"
+        private const val NOT_FOUND_MESSAGE = "If you used a filter, check if the keyword actually exists."
+        private const val Filter_SEARCH_MESSAGE = "NOTE: Ignored if using text search!"
+        const val PREFIX_ID_SEARCH = "id:"
     }
+
     val nyaLang = when (lang) {
         "en" -> "english"
         "zh" -> "chinese"
@@ -30,7 +35,7 @@ abstract class NyaHentai (
         else -> ""
     }
 
-    val languageUrl = when (nyaLang){
+    val languageUrl = when (nyaLang) {
         "" -> baseUrl
         else -> "$baseUrl/language/$nyaLang"
     }
@@ -149,10 +154,13 @@ abstract class NyaHentai (
         throw UnsupportedOperationException("Not used")
 
     override fun popularMangaRequest(page: Int): Request =
-        GET(when (nyaLang){
-            "" -> "$languageUrl/page/$page"
-            else -> "$languageUrl/popular/page/$page"
-        }, headers)
+        GET(
+            when (nyaLang) {
+                "" -> "$languageUrl/page/$page"
+                else -> "$languageUrl/popular/page/$page"
+            },
+            headers
+        )
 
     override fun popularMangaFromElement(element: Element) = latestUpdatesFromElement(element)
 
@@ -160,43 +168,55 @@ abstract class NyaHentai (
 
     override fun popularMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    private lateinit var tagUrl: String
-
-    // TODO: Additional filter options, specifically the type[] parameter
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        // todo: remove "english" from the search query in the future
-        var url = "$baseUrl/search/q_$query $nyaLang/page/$page"
-
-        if (query.isBlank()) {
-            filters.forEach { filter ->
-                when (filter) {
-                    is Tag -> {
-                        url = if (page == 1) {
-                            "$baseUrl/tag/${filter.state}/$nyaLang" // "Contents" tag
-                        } else {
-                            "$tagUrl/page/$page"
-                        }
-                    }
+        if (query.isNotBlank()) {
+            // Normal search
+            return GET("$baseUrl/search/q_$query $nyaLang/page/$page", headers)
+        } else {
+            val type = filters.filterIsInstance<TypeFilter>()
+                .joinToString("") {
+                    (it as UriPartFilter).toUriPart()
                 }
+            val keyword = filters.filterIsInstance<Text>().toString()
+                .replace("[", "").replace("]", "")
+            var sort = nyaLang
+            if (nyaLang == "") {
+                sort = filters.filterIsInstance<SortFilter>()
+                    .joinToString("") {
+                        (it as UriPartFilter).toUriPart()
+                    }
             }
+            val url = "$baseUrl/$type/$keyword/$sort/page/$page"
+            return GET(url, headers)
         }
+    }
 
-        return GET(url, headers)
+    // For NyaHentaiUrlActivity
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/g/$id", headers)
+
+    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
+        val sManga = mangaDetailsParse(response)
+        sManga.url = "/g/$id/"
+        return MangasPage(listOf(sManga), false)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return if (query.startsWith(PREFIX_ID_SEARCH)) {
+            val id = query.removePrefix(PREFIX_ID_SEARCH)
+            client.newCall(searchMangaByIdRequest(id))
+                .asObservableSuccess()
+                .map { response -> searchMangaByIdParse(response, id) }
+        } else {
+            super.fetchSearchManga(page, query, filters)
+        }
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        return if (response.request.url.toString().contains("tag?")) {
-            response.asJsoup().select("table.table tbody tr a:first-of-type").attr("abs:href").let {
-                if (it.isNotEmpty()) {
-                    tagUrl = it
-                    super.searchMangaParse(client.newCall(GET(tagUrl, headers)).execute())
-                } else {
-                    MangasPage(emptyList(), false)
-                }
-            }
-        } else {
-            super.searchMangaParse(response)
+        if (!response.isSuccessful) {
+            response.close()
+            throw Exception(NOT_FOUND_MESSAGE)
         }
+        return super.searchMangaParse(response)
     }
 
     override fun searchMangaSelector() = latestUpdatesSelector()
@@ -205,11 +225,55 @@ abstract class NyaHentai (
 
     override fun searchMangaNextPageSelector() = latestUpdatesNextPageSelector()
 
-    override fun getFilterList() = FilterList(
-        Filter.Header("NOTE: Ignored if using text search!"),
-        Filter.Separator(),
-        Tag("Tag")
+    override fun getFilterList(): FilterList {
+        if (nyaLang == "") {
+            return FilterList(
+                Filter.Header(Filter_SEARCH_MESSAGE),
+                Filter.Separator(),
+                SortFilter(),
+                TypeFilter(),
+                Text("Keyword")
+            )
+        } else {
+            return FilterList(
+                Filter.Header(Filter_SEARCH_MESSAGE),
+                Filter.Separator(),
+                TypeFilter(),
+                Text("Keyword")
+            )
+        }
+    }
+
+    private open class UriPartFilter(
+        displayName: String,
+        val pair: Array<Pair<String, String>>,
+        defaultState: Int = 0
+    ) : Filter.Select<String>(displayName, pair.map { it.first }.toTypedArray(), defaultState) {
+        open fun toUriPart() = pair[state].second
+    }
+
+    private class TypeFilter : UriPartFilter(
+        "Type",
+        arrayOf(
+            Pair("Tag", "tag"),
+            Pair("Parody", "parody"),
+            Pair("Character", "character"),
+            Pair("Artist", "artist"),
+            Pair("Group", "group")
+        )
     )
 
-    private class Tag(name: String) : Filter.Text(name)
+    private class SortFilter : UriPartFilter(
+        "Sort by",
+        arrayOf(
+            Pair("Time", ""),
+            Pair("Popular", "popular"),
+        )
+    )
+
+    private class Text(name: String) : Filter.Text(name) {
+        override fun toString(): String {
+            return state
+        }
+    }
 }
