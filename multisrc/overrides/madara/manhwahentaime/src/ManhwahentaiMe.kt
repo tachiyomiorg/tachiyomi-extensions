@@ -5,13 +5,13 @@ import eu.kanade.tachiyomi.multisrc.madara.Madara
 
 @Nsfw
 class ManhwahentaiMe : Madara("Manhwahentai.me", "https://manhwahentai.me", "en") {
-        
+
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
         Genre("Adult", "adult"),
         Genre("Adventure", "adventure"),
         Genre("Comedy", "comedy"),
-        Genre("Complete", "complete"),,
+        Genre("Complete", "complete"),
         Genre("Cooking", "cooking"),
         Genre("Doujinshi", "doujinshi"),
         Genre("Drama", "drama"),
