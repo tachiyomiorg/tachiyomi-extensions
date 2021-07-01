@@ -5,7 +5,7 @@ import eu.kanade.tachiyomi.multisrc.madara.Madara
 
 @Nsfw
 class ManyToon : Madara("ManyToon", "https://manytoon.com", "en") {
-    
+
     override fun getGenreList() = listOf(
         Genre("Action", "action"),
         Genre("Adult", "adult"),
@@ -13,7 +13,7 @@ class ManyToon : Madara("ManyToon", "https://manytoon.com", "en") {
         Genre("BL", "bl"),
         Genre("Boys love", "boys-love"),
         Genre("Comedy", "comedy"),
-        Genre("Complete", "complete"),,
+        Genre("Complete", "complete"),
         Genre("Cooking", "cooking"),
         Genre("Doujinshi", "doujinshi"),
         Genre("Drama", "drama"),
