@@ -11,7 +11,7 @@ class ManyToonMe : Madara("ManyToon.me", "https://manytoon.me", "en") {
         Genre("Adult", "adult"),
         Genre("Adventure", "adventure"),
         Genre("Comedy", "comedy"),
-        Genre("Complete", "complete"),,
+        Genre("Complete", "complete"),
         Genre("Cooking", "cooking"),
         Genre("Doujinshi", "doujinshi"),
         Genre("Drama", "drama"),
