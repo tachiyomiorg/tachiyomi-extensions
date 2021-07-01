@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.weebreader
+package eu.kanade.tachiyomi.multisrc.weebreader
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.util.Log
 import kotlin.system.exitProcess
 
-class NaniScansUrlActivity : Activity() {
+class WeebreaderUrlActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val pathSegments = intent?.data?.pathSegments
@@ -23,10 +23,10 @@ class NaniScansUrlActivity : Activity() {
             try {
                 startActivity(mainIntent)
             } catch (e: ActivityNotFoundException) {
-                Log.e("NaniScansUrlActivity", e.toString())
+                Log.e("WeebreaderUrlActivity", e.toString())
             }
         } else {
-            Log.e("NaniScansUrlActivity", "could not parse uri from intent $intent")
+            Log.e("WeebreaderUrlActivity", "could not parse uri from intent $intent")
         }
 
         finish()

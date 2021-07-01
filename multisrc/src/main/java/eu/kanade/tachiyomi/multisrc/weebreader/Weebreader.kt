@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.naniscans
+package eu.kanade.tachiyomi.multisrc.weebreader
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -21,17 +21,13 @@ import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class NaniScans : HttpSource() {
-
-    override val name = "NANI? Scans"
-
-    override val baseUrl = "https://naniscans.com"
-
-    override val lang = "en"
+abstract class Weebreader(
+    override val name: String,
+    override val baseUrl: String,
+    override val lang: String,
+): HttpSource() {
 
     override val supportsLatest = true
-
-    override val versionId = 2
 
     private val dateParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
@@ -115,8 +111,6 @@ class NaniScans : HttpSource() {
 
         if (titleJson["type"]!!.jsonPrimitive.content != "Comic")
             throw UnsupportedOperationException("Tachiyomi only supports Comics.")
-
-        val chaptersJson = titleJson["chapters"]!!.jsonArray
 
         return titleJson["chapters"]!!.jsonArray.map {
             val chapter = it.jsonObject
