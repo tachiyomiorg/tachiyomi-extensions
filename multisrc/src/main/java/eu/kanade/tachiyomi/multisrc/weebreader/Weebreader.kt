@@ -94,8 +94,8 @@ abstract class Weebreader(
 
         return SManga.create().apply {
             title = titleJson["name"]!!.jsonPrimitive.content
-            artist = titleJson["artist"]!!.jsonPrimitive.content
-            author = titleJson["author"]!!.jsonPrimitive.content
+            artist = titleJson["artist"]!!.jsonPrimitive.content.trim()
+            author = titleJson["author"]!!.jsonPrimitive.content.trim()
             description = titleJson["synopsis"]!!.jsonPrimitive.content
             status = getStatus(titleJson["status"]!!.jsonPrimitive.content)
             thumbnail_url = "$baseUrl${titleJson["coverUrl"]!!.jsonPrimitive.content}"
