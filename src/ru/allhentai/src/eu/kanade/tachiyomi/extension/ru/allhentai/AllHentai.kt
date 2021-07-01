@@ -45,10 +45,10 @@ class AllHentai : ParsedHttpSource() {
     override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -89,14 +89,14 @@ class AllHentai : ParsedHttpSource() {
                 is OrderBy -> {
                     if (filter.state > 0) {
                         val ord = arrayOf("not", "year", "rate", "popularity", "votes", "created", "updated")[filter.state]
-                        val ordUrl = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
+                        val ordUrl = "$baseUrl/list?sortType=$ord&offset=${70 * (page - 1)}".toHttpUrlOrNull()!!.newBuilder()
                         return GET(ordUrl.toString(), headers)
                     }
                 }
                 is Tags -> {
                     if (filter.state > 0) {
                         val tagName = getTagsList()[filter.state].name
-                        val tagUrl = "$baseUrl/list/tag/$tagName".toHttpUrlOrNull()!!.newBuilder()
+                        val tagUrl = "$baseUrl/list/tag/$tagName?offset=${70 * (page - 1)}".toHttpUrlOrNull()!!.newBuilder()
                         return GET(tagUrl.toString(), headers)
                     }
                 }
@@ -114,7 +114,7 @@ class AllHentai : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
     // max 200 results
-    override fun searchMangaNextPageSelector(): Nothing? = null
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
         val infoElement = document.select(".expandable").first()
