@@ -95,4 +95,16 @@ class MidnightMessScans : Madara("Midnight Mess Scans", "https://midnightmess.or
 
         return manga
     }
+    
+    override fun getGenreList() = listOf(
+        Genre("Bilibili", "bilibili"),
+        Genre("Complete", "complete"),
+        Genre("Manga", "manga"),
+        Genre("Manhwa", "manhwa"),
+        Genre("Manhua", "manhua"),
+        Genre("Shounen ai", "shounen-ai"),
+        Genre("Thiccass", "thiccass"),
+        Genre("Usahime", "usahime"),
+        Genre("Yaoi", "yaoi"),
+    )
 }
