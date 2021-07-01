@@ -42,7 +42,7 @@ class AllHentai : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "div.tile"
 
-    override fun latestUpdatesSelector() = "div.tile"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
@@ -65,7 +65,7 @@ class AllHentai : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "a.nextLink"
 
-    override fun latestUpdatesNextPageSelector() = "a.nextLink"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
@@ -117,7 +117,7 @@ class AllHentai : ParsedHttpSource() {
     override fun searchMangaNextPageSelector(): Nothing? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.leftContent").first()
+        val infoElement = document.select(".expandable").first()
         val rawCategory = infoElement.select("span.elem_category").text()
         val category = if (rawCategory.isNotEmpty()) {
             rawCategory.toLowerCase()
@@ -130,7 +130,7 @@ class AllHentai : ParsedHttpSource() {
         if (authorElement == null) {
             authorElement = infoElement.select("span.elem_screenwriter").first()?.text()
         }
-        manga.title = infoElement.select("h1.names .name").text()
+        manga.title = document.select("h1.names .name").text()
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).joinToString { it.trim() }
@@ -142,7 +142,7 @@ class AllHentai : ParsedHttpSource() {
 
     private fun parseStatus(element: String): Int = when {
         element.contains("Запрещена публикация произведения по копирайту") -> SManga.LICENSED
-        element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
+        element.contains("<b>Сингл</b>") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
         element.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }
