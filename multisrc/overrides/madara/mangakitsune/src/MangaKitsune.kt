@@ -16,8 +16,12 @@ class MangaKitsune : Madara("MangaKitsune", "https://mangakitsune.com", "en", da
     override val client: OkHttpClient = super.client.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
+
+
+
         
     override fun chapterListParse(response: Response): List<SChapter> = super.chapterListParse(response).reversed()
+
     override val pageListParseSelector = ".reading-content div.text-left :has(>img)"
     
     override fun getGenreList() = listOf(

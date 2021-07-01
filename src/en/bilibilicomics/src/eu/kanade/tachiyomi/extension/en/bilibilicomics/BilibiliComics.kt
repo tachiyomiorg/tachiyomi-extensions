@@ -28,6 +28,7 @@ import rx.Observable
 import uy.kohesive.injekt.injectLazy
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -40,7 +41,7 @@ class BilibiliComics : HttpSource() {
 
     override val lang = "en"
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
@@ -91,6 +92,62 @@ class BilibiliComics : HttpSource() {
         title = comic.title
         thumbnail_url = comic.verticalCover
         url = "/detail/mc${comic.comicId}"
+    }
+
+    override fun latestUpdatesRequest(page: Int): Request {
+        val requestPayload = buildJsonObject {
+            put("day", day)
+        }
+        val requestBody = requestPayload.toString().toRequestBody(JSON_MEDIA_TYPE)
+
+        val newHeaders = headersBuilder()
+            .add("Content-Length", requestBody.contentLength().toString())
+            .add("Content-Type", requestBody.contentType().toString())
+            .build()
+
+        return POST(
+            "$baseUrl/$BASE_API_ENDPOINT/GetSchedule?device=pc&platform=web",
+            headers = newHeaders,
+            body = requestBody
+        )
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val result = json.decodeFromString<BilibiliResultDto<BilibiliScheduleDto>>(response.body!!.string())
+
+        if (result.code != 0) {
+            return MangasPage(emptyList(), hasNextPage = false)
+        }
+
+        val comicList = result.data!!.list
+            .map(::latestMangaFromObject)
+
+        return MangasPage(comicList, hasNextPage = false)
+    }
+
+    private fun latestMangaFromObject(comic: BilibiliComicDto): SManga = SManga.create().apply {
+        title = comic.title
+        thumbnail_url = comic.verticalCover
+        url = "/detail/mc${comic.comicId}"
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return when {
+            query.startsWith(prefixIdSearch) -> {
+                val id = query.removePrefix(prefixIdSearch)
+                client.newCall(mangaDetailsApiRequestById(id)).asObservableSuccess()
+                    .map { response ->
+                        mangaDetailsParse(response).let { MangasPage(listOf(it), false) }
+                    }
+            }
+
+            else -> {
+                client.newCall(searchMangaRequest(page, query, filters)).asObservableSuccess()
+                    .map { response ->
+                        searchMangaParse(response)
+                    }
+            }
+        }
     }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -161,6 +218,25 @@ class BilibiliComics : HttpSource() {
             .add("Content-Length", requestBody.contentLength().toString())
             .add("Content-Type", requestBody.contentType().toString())
             .set("Referer", baseUrl + manga.url)
+            .build()
+
+        return POST(
+            "$baseUrl/$BASE_API_ENDPOINT/ComicDetail?device=pc&platform=web",
+            headers = newHeaders,
+            body = requestBody
+        )
+    }
+
+    private fun mangaDetailsApiRequestById(id: String): Request {
+        val comicId = id.toInt()
+
+        val jsonPayload = buildJsonObject { put("comic_id", comicId) }
+        val requestBody = jsonPayload.toString().toRequestBody(JSON_MEDIA_TYPE)
+
+        val newHeaders = headersBuilder()
+            .add("Content-Length", requestBody.contentLength().toString())
+            .add("Content-Type", requestBody.contentType().toString())
+            .set("Referer", "$baseUrl/detail/mc$id")
             .build()
 
         return POST(
@@ -260,10 +336,6 @@ class BilibiliComics : HttpSource() {
         return "${page.url}?token=${page.token}"
     }
 
-    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException("Not used")
-
-    override fun latestUpdatesParse(response: Response): MangasPage = throw UnsupportedOperationException("Not used")
-
     private fun String.toDate(): Long {
         return try {
             DATE_FORMATTER.parse(this)?.time ?: 0L
@@ -271,6 +343,19 @@ class BilibiliComics : HttpSource() {
             0L
         }
     }
+
+    private val day: Int
+        get() {
+            return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
+                Calendar.SUNDAY -> 0
+                Calendar.MONDAY -> 1
+                Calendar.TUESDAY -> 2
+                Calendar.WEDNESDAY -> 3
+                Calendar.THURSDAY -> 4
+                Calendar.FRIDAY -> 5
+                else -> 6
+            }
+        }
 
     companion object {
         private const val BASE_API_ENDPOINT = "twirp/comic.v1.Comic"
@@ -280,6 +365,8 @@ class BilibiliComics : HttpSource() {
         private val JSON_MEDIA_TYPE = "application/json;charset=UTF-8".toMediaType()
 
         private const val FEATURED_ID = 3
+   
+        const val prefixIdSearch = "id:"
 
         private val DATE_FORMATTER by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
     }

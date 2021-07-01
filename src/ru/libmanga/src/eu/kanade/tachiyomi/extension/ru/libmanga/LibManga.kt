@@ -88,7 +88,7 @@ class LibManga : ConfigurableSource, HttpSource() {
         val manga = SManga.create()
         element.select("div.cover").first().let { img ->
             manga.thumbnail_url = baseUrl + img.attr("data-src").substringAfter(baseUrl)
-                .replace("cover_thumb", "cover_250x350")
+                .replace("_thumb", "_250x350")
         }
 
         element.select("a").first().let { link ->
@@ -161,13 +161,6 @@ class LibManga : ConfigurableSource, HttpSource() {
 
         val manga = SManga.create()
 
-        if (document.html().contains("Манга удалена по просьбе правообладателей") ||
-            document.html().contains("Данный тайтл лицензирован на территории РФ.")
-        ) {
-            manga.status = SManga.LICENSED
-            return manga
-        }
-
         val body = document.select("div.media-info-list").first()
         val rawCategory = body.select("div.media-info-list__title:contains(Тип) + div").text()
         val category = when {
@@ -200,15 +193,20 @@ class LibManga : ConfigurableSource, HttpSource() {
         manga.thumbnail_url = baseUrl + document.select(".media-sidebar__cover > img").attr("src").substringAfter(baseOrig)
         manga.author = body.select("div.media-info-list__title:contains(Автор) + div").text()
         manga.artist = body.select("div.media-info-list__title:contains(Художник) + div").text()
-        manga.status = when (
-            body.select("div.media-info-list__title:contains(Статус перевода) + div")
-                .text()
-                .toLowerCase(Locale.ROOT)
+        manga.status = if (document.html().contains("Манга удалена по просьбе правообладателей") ||
+            document.html().contains("Данный тайтл лицензирован на территории РФ.")
         ) {
-            "продолжается" -> SManga.ONGOING
-            "завершен" -> SManga.COMPLETED
-            else -> SManga.UNKNOWN
-        }
+            SManga.LICENSED
+        } else
+            when (
+                body.select("div.media-info-list__title:contains(Статус перевода) + div")
+                    .text()
+                    .toLowerCase(Locale.ROOT)
+            ) {
+                "продолжается" -> SManga.ONGOING
+                "завершен" -> SManga.COMPLETED
+                else -> SManga.UNKNOWN
+            }
         manga.genre = genres.plusElement(category).plusElement(rawAgeStop).joinToString { it.trim() }
         val altSelector = document.select(".media-info-list__item_alt-names .media-info-list__value div")
         var altName = ""
@@ -220,8 +218,13 @@ class LibManga : ConfigurableSource, HttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val dataStr = response
-            .asJsoup()
+        val document = response.asJsoup()
+        if (document.html().contains("Манга удалена по просьбе правообладателей") ||
+            document.html().contains("Данный тайтл лицензирован на территории РФ.")
+        ) {
+            return emptyList()
+        }
+        val dataStr = document
             .toString()
             .substringAfter("window.__DATA__ = ")
             .substringBefore("window._SITE_COLOR_")

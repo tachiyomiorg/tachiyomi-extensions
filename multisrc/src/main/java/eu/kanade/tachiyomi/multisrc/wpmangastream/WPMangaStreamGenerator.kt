@@ -39,7 +39,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
             SingleLang("xCaliBR Scans", "https://xcalibrscans.com", "en", overrideVersionCode = 2),
             SingleLang("NoxSubs", "https://noxsubs.com", "tr"),
-            SingleLang("World Romance Translation", "https://wrt.my.id/", "id", overrideVersionCode = 2),
+            SingleLang("World Romance Translation", "https://wrt.my.id", "id", overrideVersionCode = 3),
             SingleLang("The Apollo Team", "https://theapollo.team", "en"),
             SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true, overrideVersionCode = 2),
             SingleLang("Lemon Juice Scan", "https://lemonjuicescan.com", "pt-BR", isNsfw = true),

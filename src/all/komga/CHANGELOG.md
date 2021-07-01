@@ -1,3 +1,11 @@
+## 1.2.28
+
+Minimum Komga version required: `0.97.0`
+
+### Fix
+
+* incorrect User Agent
+
 ## 1.2.27
 
 Minimum Komga version required: `0.97.0`

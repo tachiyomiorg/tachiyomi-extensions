@@ -62,5 +62,5 @@ data class ComicDetailChapterInfoResponse(
     @ProtoNumber(2) val ChapterTitle: String,
     @ProtoNumber(3) val Updatetime: Long,
     @ProtoNumber(4) val Filesize: Int,
-    @ProtoNumber(5) val ChapterOrder: Int,
+    @ProtoNumber(5) val ChapterOrder: Int = 0,
 )
