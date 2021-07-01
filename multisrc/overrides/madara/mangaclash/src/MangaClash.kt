@@ -33,7 +33,7 @@ class MangaClash : Madara(
         Genre("Ecchi", "ecchi"),
         Genre("English", "english"),
         Genre("Fanstasy", "fantasy"),
-        Genre("Food", "food"),\
+        Genre("Food", "food"),
         Genre("Full color", "full-color"),
         Genre("Game", "game"),
         Genre("Gender bender", "gender-bender"),
