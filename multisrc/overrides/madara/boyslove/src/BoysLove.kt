@@ -14,7 +14,7 @@ class BoysLove : Madara("BoysLove", "https://boyslove.me", "en") {
         Genre("Cartoon", "cartoon"),
         Genre("Comedy", "comedy"),
         Genre("Comic", "comic"),
-		Genre("Complete", "complete"),
+        Genre("Complete", "complete"),
         Genre("Cooking", "cooking"),
         Genre("Doujinshi", "doujinshi"),
         Genre("Drama", "drama"),
