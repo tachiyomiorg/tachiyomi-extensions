@@ -21,7 +21,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("1st Kiss", "https://1stkissmanga.com", "en", className = "FirstKissManga", overrideVersionCode = 3),
         SingleLang("1stKissManga.Club", "https://1stkissmanga.club", "en", className = "FirstKissMangaClub"),
         SingleLang("247Manga", "https://247manga.com", "en", className = "Manga247"),
-        SingleLang("24hManga", "https://24hmanga.com", "en", isNsfw = true),
+        SingleLang("24hManga", "https://24hmanga.com", "en", isNsfw = true, className = "TwentyFourhManga"),
         SingleLang("24hRomance", "https://24hromance.com", "en", className = "Romance24h"),
         SingleLang("365Manga", "https://365manga.com", "en", className = "ThreeSixtyFiveManga", overrideVersionCode = 1),
         SingleLang("AYATOON", "https://ayatoon.com", "tr", overrideVersionCode = 1),
