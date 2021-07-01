@@ -43,7 +43,8 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("The Apollo Team", "https://theapollo.team", "en"),
             SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true, overrideVersionCode = 2),
             SingleLang("Lemon Juice Scan", "https://lemonjuicescan.com", "pt-BR", isNsfw = true),
-            SingleLang("Phoenix Fansub", "https://phoenixfansub.com", "es")
+            SingleLang("Phoenix Fansub", "https://phoenixfansub.com", "es"),
+            SingleLang("Geass Scanlator", "https://geassscan.xyz", "pt-BR")
     )
 
     companion object {

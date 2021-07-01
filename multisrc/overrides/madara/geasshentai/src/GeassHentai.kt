@@ -1,5 +1,6 @@
-package eu.kanade.tachiyomi.extension.pt.geassscan
+package eu.kanade.tachiyomi.extension.pt.geasshentai
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.madara.Madara
 import okhttp3.OkHttpClient
@@ -7,11 +8,12 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-class GeassScan : Madara(
-    "Geass Scan",
-    "https://geassscan.xyz",
+@Nsfw
+class GeassHentai : Madara(
+    "Geass Hentai",
+    "https://geasshentai.xyz",
     "pt-BR",
-    SimpleDateFormat("MMMMM dd, yyyy", Locale("pt", "BR"))
+    SimpleDateFormat("dd 'de' MMMMM 'de' yyyy", Locale.ENGLISH)
 ) {
 
     override val client: OkHttpClient = super.client.newBuilder()
