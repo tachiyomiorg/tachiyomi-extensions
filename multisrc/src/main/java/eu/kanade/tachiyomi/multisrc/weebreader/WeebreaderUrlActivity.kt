@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.en.naniscans
+package eu.kanade.tachiyomi.extension.en.weebreader
 
 import android.app.Activity
 import android.content.ActivityNotFoundException

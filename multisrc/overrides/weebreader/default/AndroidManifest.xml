@@ -4,7 +4,7 @@
 
     <application>
         <activity
-            android:name=".en.naniscans.NaniScansUrlActivity"
+            android:name=".en.naniscans.WeebreaderUrlActivity"
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
@@ -12,15 +12,10 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data
-                    android:host="naniscans.com"
+                    android:host="${SOURCEHOST}"
                     android:pathPattern="/titles/..*"
-                    android:scheme="https" />
-                <data
-                    android:host="www.naniscans.com"
-                    android:pathPattern="/titles/..*"
-                    android:scheme="https" />
+                    android:scheme="${SOURCESCHEME}" />
             </intent-filter>
         </activity>
     </application>
