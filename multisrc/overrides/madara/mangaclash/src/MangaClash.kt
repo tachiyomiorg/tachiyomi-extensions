@@ -8,7 +8,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 class MangaClash : Madara(
-    "Manga Clash",
+    "MangaClash",
     "https://mangaclash.com",
     "en",
     dateFormat = SimpleDateFormat("MM/dd/yy", Locale.US)
