@@ -113,7 +113,7 @@ class AllHentai : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    // max 200 results
+    // max 200 results (exception OrderBy,Tags)
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
