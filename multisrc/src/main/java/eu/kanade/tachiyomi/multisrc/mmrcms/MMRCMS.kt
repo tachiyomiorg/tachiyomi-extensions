@@ -371,7 +371,7 @@ abstract class MMRCMS(
         val chapter = SChapter.create()
 
         try {
-            val titleWrapper = if (name == "Mangas.pw") element.select("i a").first() else element.select("[class^=chapter-title-rtl]").first()
+            val titleWrapper = if (name == "Mangas.pw") element.select("i a").last() else element.select("[class^=chapter-title-rtl]").first()
             // Some websites add characters after "..-rtl" thus the need of checking classes that starts with that
             val url = titleWrapper.getElementsByTag("a")
                 .first { it.attr("href").contains(urlRegex) }
