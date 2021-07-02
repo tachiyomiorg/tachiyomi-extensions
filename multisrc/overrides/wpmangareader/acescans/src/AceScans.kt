@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.extension.en.acescans
 
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.multisrc.wpmangareader.WPMangaReader
-import okhttp3.Headers
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
