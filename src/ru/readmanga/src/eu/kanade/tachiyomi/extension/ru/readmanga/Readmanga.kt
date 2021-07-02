@@ -43,13 +43,13 @@ class Readmanga : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "div.tile"
 
-    override fun latestUpdatesSelector() = "div.tile"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -66,7 +66,7 @@ class Readmanga : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "a.nextLink"
 
-    override fun latestUpdatesNextPageSelector() = "a.nextLink"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
@@ -100,7 +100,7 @@ class Readmanga : ParsedHttpSource() {
                 is OrderBy -> {
                     if (filter.state > 0) {
                         val ord = arrayOf("not", "year", "rate", "popularity", "votes", "created", "updated")[filter.state]
-                        val ordUrl = "$baseUrl/list?sortType=$ord".toHttpUrlOrNull()!!.newBuilder()
+                        val ordUrl = "$baseUrl/list?sortType=$ord&offset=${70 * (page - 1)}".toHttpUrlOrNull()!!.newBuilder()
                         return GET(ordUrl.toString(), headers)
                     }
                 }
@@ -116,11 +116,11 @@ class Readmanga : ParsedHttpSource() {
 
     override fun searchMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
 
-    // max 200 results
-    override fun searchMangaNextPageSelector(): Nothing? = null
+    // max 200 results (exception OrderBy)
+    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.leftContent").first()
+        val infoElement = document.select(".expandable").first()
         val rawCategory = infoElement.select("span.elem_category").text()
         val category = if (rawCategory.isNotEmpty()) {
             rawCategory.toLowerCase()
@@ -155,7 +155,7 @@ class Readmanga : ParsedHttpSource() {
         if (authorElement == null) {
             authorElement = infoElement.select("span.elem_screenwriter").first()?.text()
         }
-        manga.title = infoElement.select("h1.names .name").text()
+        manga.title = document.select("h1.names .name").text()
         manga.author = authorElement
         manga.artist = infoElement.select("span.elem_illustrator").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().split(",").plusElement(category).plusElement(rawAgeStop).joinToString { it.trim() }
@@ -170,8 +170,8 @@ class Readmanga : ParsedHttpSource() {
     }
 
     private fun parseStatus(element: String): Int = when {
-        element.contains("Запрещена публикация произведения по копирайту") -> SManga.LICENSED
-        element.contains("<h1 class=\"names\"> Сингл") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
+        element.contains("Запрещена публикация произведения по копирайту") || element.contains("ЗАПРЕЩЕНА К ПУБЛИКАЦИИ НА ТЕРРИТОРИИ РФ!") -> SManga.LICENSED
+        element.contains("<b>Сингл</b>") || element.contains("<b>Перевод:</b> завершен") -> SManga.COMPLETED
         element.contains("<b>Перевод:</b> продолжается") -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }
