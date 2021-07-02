@@ -95,7 +95,7 @@ class AllHentai : ParsedHttpSource() {
                 }
                 is Tags -> {
                     if (filter.state > 0) {
-                        val tagName = getTagsList()[filter.state].name
+                        val tagName = getTagsList()[filter.state].url
                         val tagUrl = "$baseUrl/list/tag/$tagName?offset=${70 * (page - 1)}".toHttpUrlOrNull()!!.newBuilder()
                         return GET(tagUrl.toString(), headers)
                     }
