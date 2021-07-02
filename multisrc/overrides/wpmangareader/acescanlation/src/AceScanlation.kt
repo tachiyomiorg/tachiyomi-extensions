@@ -13,4 +13,5 @@ class AceScanlation : WPMangaReader("Ace Scanlation", "https://acescans.xyz", "e
         .readTimeout(30, TimeUnit.SECONDS)
         .addNetworkInterceptor(rateLimitInterceptor)
         .build()
+
 }
