@@ -275,7 +275,7 @@ abstract class WPMangaStream(
 
     override fun pageListParse(document: Document): List<Page> {
         val htmlPages = document.select(pageSelector)
-            .filterNot { it.attr("src").isNullOrEmpty() }
+            .filterNot { it.attr("abs:src").isNullOrEmpty() }
             .mapIndexed { i, img -> Page(i, "", img.attr("abs:src")) }
             .toMutableList()
 
