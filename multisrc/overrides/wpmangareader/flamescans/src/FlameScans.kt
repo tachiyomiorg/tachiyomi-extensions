@@ -6,7 +6,7 @@ import okhttp3.Headers
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-class FlameScans : WPMangaReader("Flame Scans", "https://flamescans.org", "en", "/series/") {
+class FlameScans : WPMangaReader("Flame Scans", "https://flamescans.org", "en", "/series") {
     private val rateLimitInterceptor = RateLimitInterceptor(1)
     private val userAgent = "Tachiyomi Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
