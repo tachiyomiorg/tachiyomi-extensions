@@ -272,6 +272,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("TheFluffyHangoutGroup", "https://www.fluffyhangout.club", "en", overrideVersionCode = 2),
         SingleLang("Three Queens Scanlator", "https://tqscan.com.br", "pt-BR", overrideVersionCode = 2),
         SingleLang("Time Naight", "https://timenaight.com", "tr"),
+        SingleLang("Todaymic", "https://todaymic.com", "en"),
         SingleLang("ToonGod", "https://www.toongod.com", "en", overrideVersionCode = 1),
         SingleLang("Toonily", "https://toonily.com", "en", isNsfw = true, overrideVersionCode = 2),
         SingleLang("Toonily.net", "https://toonily.net", "en", isNsfw = true, className = "ToonilyNet", overrideVersionCode = 1),
