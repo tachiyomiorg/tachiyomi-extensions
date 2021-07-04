@@ -32,7 +32,7 @@ class MMRCMSSources {
                 override val overrideVersionCode: Int = 0,
             ) : SourceData()
         }
-        val version: Int = 5
+        val version: Int = 4
         val sourceList: List<SourceData.Single> = listOf(
             SourceData.Single("مانجا اون لاين", "https://onma.me", "ar", className = "onma"),
             SourceData.Single("Read Comics Online", "https://readcomicsonline.ru", "en"),
@@ -48,7 +48,7 @@ class MMRCMSSources {
             SourceData.Single("LeoManga", "https://leomanga.me", "es", overrideVersionCode = 1),
             SourceData.Single("submanga", "https://submanga.io", "es"),
             SourceData.Single("Mangadoor", "https://mangadoor.com", "es"),
-            SourceData.Single("Mangas.pw", "https://mangas.in", "es", className = "MangasPw"),
+            SourceData.Single("Mangas.pw", "https://mangas.in", "es", className = "MangasPw", overrideVersionCode = 1),
             SourceData.Single("Utsukushii", "https://manga.utsukushii-bg.com", "bg"),
             SourceData.Single("Phoenix-Scans", "https://phoenix-scans.pl", "pl", className = "PhoenixScans"),
             SourceData.Single("Puzzmos", "https://puzzmos.com", "tr"),
