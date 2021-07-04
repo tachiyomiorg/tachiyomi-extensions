@@ -32,7 +32,7 @@ class MMRCMSSources {
                 override val overrideVersionCode: Int = 0,
             ) : SourceData()
         }
-        val version: Int = 4
+        val version: Int = 5
         val sourceList: List<SourceData.Single> = listOf(
             SourceData.Single("مانجا اون لاين", "https://onma.me", "ar", className = "onma"),
             SourceData.Single("Read Comics Online", "https://readcomicsonline.ru", "en"),
