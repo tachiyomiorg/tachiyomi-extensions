@@ -35,7 +35,7 @@ class ComicExtra : ParsedHttpSource() {
 
     private val datePattern = Pattern.compile("(\\d+) days? ago")
 
-    override fun popularMangaSelector() = "div.cartoon-box"
+    override fun popularMangaSelector() = "div.cartoon-box:has(> div.mb-right)"
 
     override fun latestUpdatesSelector() = "div.hl-box"
 
