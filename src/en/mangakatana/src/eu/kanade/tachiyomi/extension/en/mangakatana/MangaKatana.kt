@@ -1,6 +1,11 @@
 package eu.kanade.tachiyomi.extension.en.mangakatana
 
+import android.app.Application
+import android.content.SharedPreferences
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -10,14 +15,17 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class MangaKatana : ParsedHttpSource() {
+class MangaKatana : ConfigurableSource, ParsedHttpSource() {
     override val name = "MangaKatana"
 
     override val baseUrl = "https://mangakatana.com"
@@ -25,6 +33,11 @@ class MangaKatana : ParsedHttpSource() {
     override val lang = "en"
 
     override val supportsLatest = true
+
+    private val preferences: SharedPreferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+    }
+    private val serverPreference = "SERVER_PREFERENCE"
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder().addNetworkInterceptor { chain ->
         val originalResponse = chain.proceed(chain.request())
@@ -83,8 +96,9 @@ class MangaKatana : ParsedHttpSource() {
     }
 
     override fun mangaDetailsParse(document: Document) = SManga.create().apply {
-        author = document.select(".author").text()
-        description = document.select(".summary > p").text()
+        author = document.select(".author").eachText().joinToString()
+        description = document.select(".summary > p").text() +
+            (document.select(".alt_name").text().takeIf { it.isNotBlank() }?.let { "\n\nAlt name(s): $it" } ?: "")
         status = parseStatus(document.select(".value.status").text())
         genre = document.select(".genres > a").joinToString { it.text() }
         thumbnail_url = parseThumbnail(document)
@@ -115,6 +129,11 @@ class MangaKatana : ParsedHttpSource() {
     private val imageArrayRegex = Regex("""var ytaw=\[([^\[]*)]""")
     private val imageUrlRegex = Regex("""'([^']*)'""")
 
+    override fun pageListRequest(chapter: SChapter): Request {
+        val serverSuffix = preferences.getString(serverPreference, "")?.takeIf { it.isNotBlank() }?.let { "?sv=$it" } ?: ""
+        return GET(baseUrl + chapter.url + serverSuffix, headers)
+    }
+
     override fun pageListParse(document: Document): List<Page> {
         val imageArray = document.select("script:containsData(var ytaw)").firstOrNull()?.data()
             ?.let { imageArrayRegex.find(it)?.groupValues?.get(1) }
@@ -125,4 +144,22 @@ class MangaKatana : ParsedHttpSource() {
     }
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException("Not Used")
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        val serverPref = ListPreference(screen.context).apply {
+            key = "server_preference"
+            title = "Server preference"
+            entries = arrayOf("Server 1", "Server 2", "Server 3")
+            entryValues = arrayOf("", "mk", "3")
+            setDefaultValue("")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue.toString()
+                preferences.edit().putString(serverPreference, selected).commit()
+            }
+        }
+
+        screen.addPreference(serverPref)
+    }
 }
