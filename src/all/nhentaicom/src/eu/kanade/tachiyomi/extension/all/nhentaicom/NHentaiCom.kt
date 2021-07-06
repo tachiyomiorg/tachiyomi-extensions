@@ -25,9 +25,9 @@ import uy.kohesive.injekt.injectLazy
 class NHentaiCom(override val lang: String) : HttpSource() {
 
     override val name = when (lang) {
-        "other" -> "nHentai.com (Text Cleaned)"
-        "all" -> "nHentai.com (Unfiltered)"
-        else -> "nHentai.com"
+        "other" -> "nHentai.com (unoriginal)(Text Cleaned)"
+        "all" -> "nHentai.com (unoriginal)(Unfiltered)"
+        else -> "nHentai.com (unoriginal)"
     }
 
     override val id = when (lang) {
