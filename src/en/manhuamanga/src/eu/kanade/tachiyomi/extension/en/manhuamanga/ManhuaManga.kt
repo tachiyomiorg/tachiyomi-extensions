@@ -109,7 +109,7 @@ class ManhuaManga : ParsedHttpSource() {
     }
 
     override fun pageListParse(document: Document): List<Page> = mutableListOf<Page>().apply {
-        document.select(".chapter_beta_content p img").forEachIndexed { index, element ->
+        document.select("p img").forEachIndexed { index, element ->
             add(Page(index, "", element.attr("src")))
         }
     }
