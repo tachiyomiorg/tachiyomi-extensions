@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'nHentai.com'
+    extName = 'nHentai.com (unoriginal)'
     pkgNameSuffix = 'all.nhentaicom'
     extClass = '.NHentaiComFactory'
     extVersionCode = 2
