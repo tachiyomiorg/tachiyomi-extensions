@@ -16,13 +16,5 @@ class MangaLazy : Madara("MangaLazy", "https://mangalazy.com", "en") {
         .addInterceptor(RateLimitInterceptor(1, 1, TimeUnit.SECONDS))
         .build()
         
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select(pageListParseSelector).mapIndexed { index, element ->
-            Page(
-                index,
-                "",
-                element.select("img.d-block.mx-auto").attr("src")
-            )
-        }
-    }
+    override val pageListParseSelector = ".reading-content div.z_content:nth-child(2) > img:nth-child(n)"
 }
