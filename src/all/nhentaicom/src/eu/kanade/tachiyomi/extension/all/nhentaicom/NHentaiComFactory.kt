@@ -10,5 +10,5 @@ class NHentaiComFactory : SourceFactory {
 }
 
 private val languages = listOf(
-    "all", "en", "zh", "ja", "other", "eo", "ceb", "cz", "ar", "sk", "mn", "uk", "la", "tl", "es", "it", "ko", "th", "pl", "fr", "pt", "de", "fi", "ru", "sv", "hu", "id", "vi", "da", "ro", "et", "nl", "ca", "tr", "el", "nn", "sq", "bg", "jv", "sr"
+    "all", "en", "zh", "ja", "other", "eo", "ceb", "cz", "ar", "sk"
 )
