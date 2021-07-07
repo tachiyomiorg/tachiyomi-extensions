@@ -152,9 +152,9 @@ class NHentaiCom(override val lang: String) : HttpSource() {
             description = jsonObject["description"]!!.jsonPrimitive.content
             status = SManga.COMPLETED
             thumbnail_url = jsonObject["image_url"]!!.jsonPrimitive.content
-            genre = try { jsonObject["tags"]!!.jsonArray.joinToString { it.jsonObject["name"]!!.jsonPrimitive.content } } catch (_: Exception) { null }
-            artist = try { jsonObject["artists"]!!.jsonArray.joinToString { it.jsonObject["name"]!!.jsonPrimitive.content } } catch (_: Exception) { null }
-            author = try { jsonObject["authors"]!!.jsonArray.joinToString { it.jsonObject["name"]!!.jsonPrimitive.content } } catch (_: Exception) { null }
+            genre = runCatching{ jsonObject["tags"]!!.jsonArray.joinToString { it.jsonObject["name"]!!.jsonPrimitive.content }}.getOrNull()
+            artist = runCatching{ jsonObject["artists"]!!.jsonArray.joinToString { it.jsonObject["name"]!!.jsonPrimitive.content }}.getOrNull()
+            author = runCatching{ jsonObject["authors"]!!.jsonArray.joinToString { it.jsonObject["name"]!!.jsonPrimitive.content }}.getOrNull()
         }
     }
 
