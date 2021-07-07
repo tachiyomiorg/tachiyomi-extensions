@@ -37,7 +37,8 @@ class YagamiProject : ParsedHttpSource() {
         return SManga.create().apply {
             element.select(".title a").first().let {
                 setUrlWithoutDomain(it.attr("href"))
-                title = it.attr("title").split(" / ").sorted().first()
+                val baseTitle = it.attr("title")
+                title = if (baseTitle.isNullOrEmpty()) { it.text() } else baseTitle.split(" / ").sorted().first()
             }
             thumbnail_url = element.select(".cover_mini > img").attr("src").replace("thumb_", "")
         }
