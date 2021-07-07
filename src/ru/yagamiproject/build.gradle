@@ -5,7 +5,7 @@ ext {
     extName = 'YagamiProject'
     pkgNameSuffix = 'ru.yagamiproject'
     extClass = '.YagamiProject'
-    extVersionCode = 3
+    extVersionCode = 4
     libVersion = '1.2'
 }
 

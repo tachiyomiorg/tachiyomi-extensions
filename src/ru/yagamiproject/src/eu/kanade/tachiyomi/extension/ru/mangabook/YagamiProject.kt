@@ -91,21 +91,21 @@ class YagamiProject : ParsedHttpSource() {
         val titlestr = document.select("title").text().substringBefore(" :: Yagami").split(" :: ").sorted()
         manga.title = titlestr.first().replace(":: ", "")
         manga.thumbnail_url = document.select(".cover img").first().attr("src")
-        manga.author = infoElement.select("li:contains(Автор)").text().substringAfter("Автор(ы): ").split(" / ").sorted().first()
-        manga.artist = infoElement.select("li:contains(Художник)").text().substringAfter("Художник(и): ").split(" / ").sorted().first()
-        manga.status = when (infoElement.select("li:contains(Статус перевода) span").text()) {
+        manga.author = infoElement.select("li:contains(Автор(ы):)")?.first()?.text()?.substringAfter("Автор(ы): ")?.split(" / ")?.sorted()?.first()
+        manga.artist = infoElement.select("li:contains(Художник(и):)")?.first()?.text()?.substringAfter("Художник(и): ")?.split(" / ")?.sorted()?.first()
+        manga.status = when (infoElement.select("li:contains(Статус перевода:) span")?.first()?.text()) {
             "онгоинг" -> SManga.ONGOING
             "активный" -> SManga.ONGOING
             "завершён" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        manga.genre = infoElement.select("li:contains(Жанры)").text().substringAfter("Жанры: ")
-        val altSelector = infoElement.select("li:contains(Название)")
+        manga.genre = infoElement.select("li:contains(Жанры:)")?.first()?.text()?.substringAfter("Жанры: ")
+        val altSelector = infoElement.select("li:contains(Название:)")
         var altName = ""
         if (altSelector.isNotEmpty()) {
-            altName = "Альтернативные названия:\n" + altSelector.toString().replace("<li><b>Название</b>: ", "").replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
+            altName = "Альтернативные названия:\n" + altSelector.first().toString().replace("<li><b>Название</b>: ", "").replace("<br>", " / ").substringAfter(" / ").substringBefore("</li>") + "\n\n"
         }
-        manga.description = titlestr.last().replace(":: ", "") + "\n" + altName + infoElement.select("li:contains(Описание)").text().substringAfter("Описание: ")
+        manga.description = titlestr.last().replace(":: ", "") + "\n" + altName + infoElement.select("li:contains(Описание:)")?.first()?.text()?.substringAfter("Описание: ")
         return manga
     }
 
