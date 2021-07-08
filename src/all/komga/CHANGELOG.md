@@ -1,3 +1,11 @@
+## 1.2.29
+
+Minimum Komga version required: `0.97.0`
+
+### Features
+
+* filter deleted series and books
+
 ## 1.2.28
 
 Minimum Komga version required: `0.97.0`
