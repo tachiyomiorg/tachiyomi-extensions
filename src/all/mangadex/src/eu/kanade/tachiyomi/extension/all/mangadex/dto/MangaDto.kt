@@ -3,6 +3,8 @@ package eu.kanade.tachiyomi.extension.all.mangadex.dto
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class MangaListDto(
@@ -59,6 +61,6 @@ data class TagDto(
 
 fun JsonElement.asMdMap(): Map<String, String> {
     return runCatching {
-        (this as JsonObject).map { it.key to it.value.toString() }.toMap()
+        (this as JsonObject).map { it.key to (it.value.jsonPrimitive.contentOrNull ?: "") }.toMap()
     }.getOrElse { emptyMap() }
 }
