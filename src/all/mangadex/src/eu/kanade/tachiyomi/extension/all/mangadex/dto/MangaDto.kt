@@ -41,7 +41,7 @@ data class MangaDataDto(
 data class MangaAttributesDto(
     val title: Map<String, String>,
     val altTitles: List<Map<String, String>>,
-    val description: Map<String, String>,
+    val description: Map<String, String> = mapOf<String, String>(),
     val links: Map<String, String>?,
     val originalLanguage: String,
     val lastVolume: String?,
