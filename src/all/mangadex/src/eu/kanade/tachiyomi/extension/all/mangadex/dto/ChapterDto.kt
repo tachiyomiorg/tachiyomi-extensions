@@ -29,7 +29,6 @@ data class ChapterAttributesDto(
     val title: String?,
     val volume: String?,
     val chapter: String?,
-    val translatedLanguage: String,
     val publishAt: String,
     val data: List<String>,
     val dataSaver: List<String>,

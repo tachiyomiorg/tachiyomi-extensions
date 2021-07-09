@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.extension.all.mangadex.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class MangaListDto(
@@ -39,17 +41,14 @@ data class MangaDataDto(
 
 @Serializable
 data class MangaAttributesDto(
-    val title: Map<String, String>,
-    val altTitles: List<Map<String, String>>,
-    val description: Map<String, String>,
-    val links: Map<String, String>?,
+    val title: JsonElement,
+    val description: JsonElement,
     val originalLanguage: String,
     val lastVolume: String?,
     val lastChapter: String?,
     val contentRating: String?,
     val publicationDemographic: String?,
     val status: String?,
-    val year: Int?,
     val tags: List<TagDto>,
 )
 
@@ -57,3 +56,9 @@ data class MangaAttributesDto(
 data class TagDto(
     val id: String,
 )
+
+fun JsonElement.asMdMap(): Map<String, String> {
+    return runCatching {
+        (this as JsonObject).map { it.key to it.value.toString() }.toMap()
+    }.getOrElse { emptyMap() }
+}
