@@ -175,7 +175,7 @@ class MangaDexFilters {
 
     val sortableList = listOf(
         Pair("Number of follows", ""),
-        Pair("Created at", "createdAt"),
+        Pair("Manga created at", "createdAt"),
         Pair("Manga info updated at", "updatedAt"),
     )
 
