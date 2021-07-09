@@ -29,6 +29,7 @@ class MangaDexHelper() {
         allowSpecialFloatingPointValues = true
         useArrayPolymorphism = true
         prettyPrint = true
+        coerceInputValues = true
     }
 
     /**
