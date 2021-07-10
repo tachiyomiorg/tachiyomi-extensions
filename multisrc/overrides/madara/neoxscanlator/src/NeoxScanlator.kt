@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit
 
 class NeoxScanlator : Madara(
     "Neox Scanlator",
-    "https://neoxscans.net",
+    "https://neoxscans.com",
     "pt-BR",
-    SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+    SimpleDateFormat("MMMMM dd, yyyy", Locale("pt", "BR"))
 ) {
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
@@ -30,6 +30,10 @@ class NeoxScanlator : Madara(
         .readTimeout(1, TimeUnit.MINUTES)
         .addInterceptor(RateLimitInterceptor(1, 2, TimeUnit.SECONDS))
         .build()
+
+    override val altNameSelector = ".post-content_item:contains(Alternativo) .summary-content"
+
+    override val altName = "Nome alternativo: "
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Accept", ACCEPT)
@@ -62,10 +66,6 @@ class NeoxScanlator : Madara(
                 mangaDetailsParse(response).apply { initialized = true }
             }
     }
-
-    override val altNameSelector = ".post-content_item:contains(Alternativo) .summary-content"
-
-    override val altName = "Nome alternativo: "
 
     override fun imageRequest(page: Page): Request {
         val newHeaders = headersBuilder()
