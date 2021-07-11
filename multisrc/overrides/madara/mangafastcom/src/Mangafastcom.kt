@@ -8,7 +8,7 @@ class Mangafastcom : Madara(
     "Manga-fast.com",
     "https://manga-fast.com",
     "en",
-    dateFormat = SimpleDateFormat("dd MMM yyyy ", Locale.US)
+    dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
 ) {
 
 }
