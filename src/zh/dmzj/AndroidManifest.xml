@@ -26,15 +26,15 @@
                     android:pathPattern="/..*"
                     android:scheme="https" />
                 <data
-                    android:host="m.dmzj1.com"
+                    android:host="m.muwai.com"
                     android:pathPattern="/info/..*"
                     android:scheme="https" />
                 <data
-                    android:host="www.dmzj1.com"
+                    android:host="www.muwai.com"
                     android:pathPattern="/info/..*"
                     android:scheme="https" />
                 <data
-                    android:host="manhua.dmzj1.com"
+                    android:host="manhua.muwai.com"
                     android:pathPattern="/..*"
                     android:scheme="https" />
             </intent-filter>

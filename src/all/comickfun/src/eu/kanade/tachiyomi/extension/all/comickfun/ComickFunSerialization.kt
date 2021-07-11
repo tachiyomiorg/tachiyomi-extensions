@@ -46,25 +46,23 @@ inline fun <reified T : Any> deepSelectDeserializer(vararg keys: String, tDeseri
             buildClassSerialDescriptor("$x\$${it.serialName}") { element(x, it) }
         }
     }.asReversed()
-    var a: ((Int) -> KSerializer<T>)? = null
-    val b = { depth: Int ->
-        object : KSerializer<T> {
-            override val descriptor = descriptors[depth]
 
-            override fun deserialize(decoder: Decoder): T {
-                return if (depth == keys.size) decoder.decodeSerializableValue(tDeserializer)
-                else decoder.decodeStructureByKnownName(descriptor) { names ->
-                    names.filter { (name, _) -> name == keys[depth] }
-                        .map { (_, index) -> decodeSerializableElement(descriptor, index, a!!(depth + 1)) }
-                        .single()
-                }
+    return object : KSerializer<T> {
+        private var depth = 0
+        private fun <S> asChild(fn: (KSerializer<T>) -> S) = fn(this.apply { depth += 1 }).also { depth -= 1 }
+        override val descriptor get() = descriptors[depth]
+
+        override fun deserialize(decoder: Decoder): T {
+            return if (depth == keys.size) decoder.decodeSerializableValue(tDeserializer)
+            else decoder.decodeStructureByKnownName(descriptor) { names ->
+                names.filter { (name, _) -> name == keys[depth] }
+                    .map { (_, index) -> asChild { decodeSerializableElement(descriptors[depth - 1]/* find something more elegant */, index, it) } }
+                    .single()
             }
-
-            override fun serialize(encoder: Encoder, value: T) = throw UnsupportedOperationException("Not supported")
         }
+
+        override fun serialize(encoder: Encoder, value: T) = throw UnsupportedOperationException("Not supported")
     }
-    a = b // this is the hackiest of hacky hacks to get around not being able to define recursive inline functions
-    return a(0)
 }
 
 /**
@@ -157,8 +155,8 @@ class SChapterDeserializer : KSerializer<SChapter> {
                         "title" -> title = decodeNullableSerializableElement(descriptor, index, serializer())
                         "vol" -> vol = decodeNullableSerializableElement(descriptor, index, serializer())
                         "chap" -> {
-                            chap = decodeStringElement(descriptor, index)
-                            chapter_number = chap!!.toFloat()
+                            chap = decodeNullableSerializableElement(descriptor, index, serializer())
+                            chapter_number = chap?.toFloat() ?: -1f
                         }
                         "hid" -> hid = decodeStringElement(descriptor, index)
                         "iso639_1" -> iso639_1 = decodeStringElement(descriptor, index)

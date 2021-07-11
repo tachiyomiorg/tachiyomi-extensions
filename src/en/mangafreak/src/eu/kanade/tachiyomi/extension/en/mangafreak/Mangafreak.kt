@@ -59,7 +59,7 @@ class Mangafreak : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga = SManga.create().apply {
         thumbnail_url = element.select("img").attr("abs:src").replace("mini", "manga").substringBeforeLast("/") + ".jpg"
         element.select("a").apply {
-            title = text()
+            title = first().text()
             url = attr("href")
         }
     }
@@ -101,13 +101,13 @@ class Mangafreak : ParsedHttpSource() {
     override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         thumbnail_url = document.select("div.manga_series_image img").attr("abs:src")
         title = document.select("div.manga_series_data h5").text()
-        status = when (document.select("div.manga_series_data > div:eq(3)").text()) {
+        status = when (document.select("div.manga_series_data > div:eq(2)").text()) {
             "ON-GOING" -> SManga.ONGOING
             "COMPLETED" -> SManga.COMPLETED
             else -> SManga.UNKNOWN
         }
-        author = document.select("div.manga_series_data > div:eq(4)").text()
-        artist = document.select("div.manga_series_data > div:eq(5)").text()
+        author = document.select("div.manga_series_data > div:eq(3)").text()
+        artist = document.select("div.manga_series_data > div:eq(4)").text()
         genre = document.select("div.series_sub_genre_list a").joinToString { it.text() }
         description = document.select("div.manga_series_description p").text()
     }

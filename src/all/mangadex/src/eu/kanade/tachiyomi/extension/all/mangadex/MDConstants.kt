@@ -10,14 +10,18 @@ object MDConstants {
         Regex("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")
 
     const val mangaLimit = 20
+    const val latestChapterLimit = 100
+
+    const val manga = "manga"
     const val coverArt = "cover_art"
     const val scanlator = "scanlation_group"
     const val author = "author"
     const val artist = "artist"
-    const val cdnUrl = "https://uploads.mangadex.org"
 
+    const val cdnUrl = "https://uploads.mangadex.org"
     const val apiUrl = "https://api.mangadex.org"
     const val apiMangaUrl = "$apiUrl/manga"
+    const val apiChapterUrl = "$apiUrl/chapter"
     const val atHomePostUrl = "https://api.mangadex.network/report"
     val whitespaceRegex = "\\s".toRegex()
 

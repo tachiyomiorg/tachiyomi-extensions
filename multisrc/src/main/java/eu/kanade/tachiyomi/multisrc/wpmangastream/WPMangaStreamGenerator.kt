@@ -9,7 +9,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
 
     override val themeClass = "WPMangaStream"
 
-    override val baseVersionCode: Int = 6
+    override val baseVersionCode: Int = 7
 
     override val sources = listOf(
             SingleLang("Asura Scans", "https://www.asurascans.com", "en", overrideVersionCode = 1),
@@ -22,7 +22,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Sekte Komik", "https://sektekomik.com", "id", overrideVersionCode = 3),
             SingleLang("Komik Station", "https://komikstation.com", "id", overrideVersionCode = 2),
             SingleLang("Non-Stop Scans", "https://www.nonstopscans.com", "en", className = "NonStopScans"),
-            SingleLang("KomikIndo.co", "https://komikindo.co", "id", className = "KomikindoCo", overrideVersionCode = 1),
+            SingleLang("KomikIndo.co", "https://komikindo.co", "id", className = "KomikindoCo", overrideVersionCode = 2),
             SingleLang("Readkomik", "https://readkomik.com", "en", className = "ReadKomik", overrideVersionCode = 1),
             SingleLang("MangaIndonesia", "https://mangaindonesia.net", "id"),
             SingleLang("Liebe Schnee Hiver", "https://www.liebeschneehiver.com", "tr"),
@@ -34,16 +34,18 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("MangaSwat", "https://mangaswat.com", "ar"),
             SingleLang("Manga Raw.org", "https://mangaraw.org", "ja", className = "MangaRawOrg", overrideVersionCode = 1),
             SingleLang("Manga Pro Z", "https://mangaproz.com", "ar"),
+            SingleLang("Mihentai", "https://mihentai.com", "en", isNsfw = true),
             SingleLang("Silence Scan", "https://silencescan.net", "pt-BR", overrideVersionCode = 2),
             SingleLang("Kuma Scans (Kuma Translation)", "https://kumascans.com", "en", className = "KumaScans", overrideVersionCode = 1),
             SingleLang("Tempest Manga", "https://manga.tempestfansub.com", "tr"),
             SingleLang("xCaliBR Scans", "https://xcalibrscans.com", "en", overrideVersionCode = 2),
             SingleLang("NoxSubs", "https://noxsubs.com", "tr"),
-            SingleLang("World Romance Translation", "https://wrt.my.id/", "id", overrideVersionCode = 2),
+            SingleLang("World Romance Translation", "https://wrt.my.id", "id", overrideVersionCode = 3),
             SingleLang("The Apollo Team", "https://theapollo.team", "en"),
-            SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true),
+            SingleLang("Sekte Doujin", "https://sektedoujin.xyz", "id", isNsfw = true, overrideVersionCode = 2),
             SingleLang("Lemon Juice Scan", "https://lemonjuicescan.com", "pt-BR", isNsfw = true),
-            SingleLang("Phoenix Fansub", "https://phoenixfansub.com", "es")
+            SingleLang("Phoenix Fansub", "https://phoenixfansub.com", "es"),
+            SingleLang("Geass Scanlator", "https://geassscan.xyz", "pt-BR")
     )
 
     companion object {

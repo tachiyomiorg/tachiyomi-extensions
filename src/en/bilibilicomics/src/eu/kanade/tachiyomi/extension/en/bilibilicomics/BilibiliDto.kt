@@ -16,6 +16,11 @@ data class BilibiliFeaturedDto(
 )
 
 @Serializable
+data class BilibiliScheduleDto(
+    val list: List<BilibiliComicDto> = emptyList()
+)
+
+@Serializable
 data class BilibiliSearchDto(
     val list: List<BilibiliComicDto> = emptyList()
 )

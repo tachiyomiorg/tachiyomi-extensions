@@ -117,9 +117,9 @@ class TaoSect : ParsedHttpSource() {
         title = header.select("h1.titulo-projeto")!!.text()
         author = header.select("table.tabela-projeto tr:eq(1) td:eq(1)")!!.text()
         artist = header.select("table.tabela-projeto tr:eq(0) td:eq(1)")!!.text()
-        genre = header.select("table.tabela-projeto tr:eq(10) a").joinToString { it.text() }
-        status = header.select("table.tabela-projeto tr:eq(4) td:eq(1)")!!.text().toStatus()
-        description = header.select("table.tabela-projeto tr:eq(9) p")!!.text()
+        genre = header.select("table.tabela-projeto tr:eq(11) a").joinToString { it.text() }
+        status = header.select("table.tabela-projeto tr:eq(5) td:eq(1)")!!.text().toStatus()
+        description = header.select("table.tabela-projeto tr:eq(10) p")!!.text()
         thumbnail_url = header.select("div.imagens-projeto img[alt]").first()!!.attr("data-src")
     }
 
@@ -127,12 +127,12 @@ class TaoSect : ParsedHttpSource() {
         return super.chapterListParse(response).reversed()
     }
 
-    override fun chapterListSelector() = "table.tabela-volumes tr:not(:first-child)"
+    override fun chapterListSelector() = "table.tabela-volumes tr"
 
     override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
         name = element.select("td[align='left'] a")!!.text()
         scanlator = this@TaoSect.name
-        date_upload = DATE_FORMATTER.tryParseTime(element.select("td[align='right']")!!.text())
+        date_upload = element.select("td[align='right']")!!.text().toDate()
         setUrlWithoutDomain(element.select("td[align='left'] a")!!.attr("href"))
     }
 
@@ -200,17 +200,17 @@ class TaoSect : ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException("Not used")
 
-    private fun SimpleDateFormat.tryParseTime(date: String): Long {
+    private fun String.toDate(): Long {
         return try {
-            parse(date)!!.time
+            DATE_FORMATTER.parse(this)?.time ?: 0L
         } catch (e: ParseException) {
             0L
         }
     }
 
-    private fun String.toStatus() = when {
-        contains("Ativo") -> SManga.ONGOING
-        contains("Finalizado") || contains("Oneshots") -> SManga.COMPLETED
+    private fun String.toStatus() = when (this) {
+        "Ativos" -> SManga.ONGOING
+        "Finalizados", "Oneshots" -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -265,7 +265,9 @@ class TaoSect : ParsedHttpSource() {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 
-        private val DATE_FORMATTER by lazy { SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH) }
+        private val DATE_FORMATTER by lazy {
+            SimpleDateFormat("(dd/MM/yyyy)", Locale.ENGLISH)
+        }
 
         private val SORT_LIST = listOf(
             Triple("a_z", "z_a", "Nome"),

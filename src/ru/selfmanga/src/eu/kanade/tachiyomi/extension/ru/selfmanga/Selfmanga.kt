@@ -30,13 +30,13 @@ class Selfmanga : ParsedHttpSource() {
 
     override fun popularMangaSelector() = "div.tile"
 
-    override fun latestUpdatesSelector() = "div.tile"
+    override fun latestUpdatesSelector() = popularMangaSelector()
 
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=rate&offset=${70 * (page - 1)}", headers)
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}&max=70", headers)
+        GET("$baseUrl/list?sortType=updated&offset=${70 * (page - 1)}", headers)
 
     override fun popularMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
@@ -53,7 +53,7 @@ class Selfmanga : ParsedHttpSource() {
 
     override fun popularMangaNextPageSelector() = "a.nextLink"
 
-    override fun latestUpdatesNextPageSelector() = "a.nextLink"
+    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/search/advanced".toHttpUrlOrNull()!!.newBuilder()
@@ -85,10 +85,10 @@ class Selfmanga : ParsedHttpSource() {
     override fun searchMangaNextPageSelector(): Nothing? = null
 
     override fun mangaDetailsParse(document: Document): SManga {
-        val infoElement = document.select("div.leftContent").first()
+        val infoElement = document.select(".expandable").first()
 
         val manga = SManga.create()
-        manga.title = infoElement.select("h1.names .name").text()
+        manga.title = document.select("h1.names .name").text()
         manga.author = infoElement.select("span.elem_author").first()?.text()
         manga.genre = infoElement.select("span.elem_genre").text().replace(" ,", ",")
         manga.description = infoElement.select("div.manga-description").text()
@@ -98,8 +98,8 @@ class Selfmanga : ParsedHttpSource() {
     }
 
     private fun parseStatus(element: String): Int = when {
-        element.contains("<h3>Запрещена публикация произведения по копирайту</h3>") -> SManga.LICENSED
-        element.contains("<h1 class=\"names\"> Сингл") || element.contains("выпуск завершен") -> SManga.COMPLETED
+        element.contains("Запрещена публикация произведения по копирайту") || element.contains("ЗАПРЕЩЕНА К ПУБЛИКАЦИИ НА ТЕРРИТОРИИ РФ!") -> SManga.LICENSED
+        element.contains("<b>Сингл</b>") || element.contains("выпуск завершен") -> SManga.COMPLETED
         element.contains("выпуск продолжается") -> SManga.ONGOING
         else -> SManga.UNKNOWN
     }

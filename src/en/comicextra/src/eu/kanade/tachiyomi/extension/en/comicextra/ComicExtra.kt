@@ -13,13 +13,10 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.ArrayList
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.regex.Pattern
 
 class ComicExtra : ParsedHttpSource() {
 
@@ -33,9 +30,7 @@ class ComicExtra : ParsedHttpSource() {
 
     override val client: OkHttpClient = network.cloudflareClient
 
-    private val datePattern = Pattern.compile("(\\d+) days? ago")
-
-    override fun popularMangaSelector() = "div.cartoon-box"
+    override fun popularMangaSelector() = "div.cartoon-box:has(> div.mb-right)"
 
     override fun latestUpdatesSelector() = "div.hl-box"
 
@@ -139,27 +134,14 @@ class ComicExtra : ParsedHttpSource() {
         val dateEl = element.select("td:nth-of-type(2)")
 
         val chapter = SChapter.create()
-        chapter.setUrlWithoutDomain(urlEl.attr("href"))
+        chapter.setUrlWithoutDomain(urlEl.attr("href").replace(" ", "%20"))
         chapter.name = urlEl.text()
         chapter.date_upload = dateEl.text()?.let { dateParse(it) } ?: 0
         return chapter
     }
 
     private fun dateParse(dateAsString: String): Long {
-        val date: Date? = try {
-            SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).parse(dateAsString.replace(Regex("(st|nd|rd|th)"), ""))
-        } catch (e: ParseException) {
-            val m = datePattern.matcher(dateAsString)
-
-            if (dateAsString != "Today" && m.matches()) {
-                val amount = m.group(1)!!.toInt()
-                Calendar.getInstance().apply {
-                    add(Calendar.DATE, -amount)
-                }.time
-            } else if (dateAsString == "Today") {
-                Calendar.getInstance().time
-            } else return 0
-        }
+        val date: Date? = SimpleDateFormat("MM/dd/yy", Locale.ENGLISH).parse(dateAsString)
 
         return date?.time ?: 0L
     }

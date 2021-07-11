@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.extension.all.mangadex.dto.AtHomeDto
 import eu.kanade.tachiyomi.extension.all.mangadex.dto.ChapterDto
 import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaAttributesDto
 import eu.kanade.tachiyomi.extension.all.mangadex.dto.MangaDto
+import eu.kanade.tachiyomi.extension.all.mangadex.dto.asMdMap
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -51,6 +52,11 @@ class MangaDexHelper() {
      * Get the manga offset pages are 1 based, so subtract 1
      */
     fun getMangaListOffset(page: Int): String = (MDConstants.mangaLimit * (page - 1)).toString()
+
+    /**
+     * Get the latest chapter offset pages are 1 based, so subtract 1
+     */
+    fun getLatestChapterOffset(page: Int): String = (MDConstants.latestChapterLimit * (page - 1)).toString()
 
     /**
      * Remove bbcode tags as well as parses any html characters in description or
@@ -148,7 +154,7 @@ class MangaDexHelper() {
     fun createBasicManga(mangaDto: MangaDto, coverFileName: String?): SManga {
         return SManga.create().apply {
             url = "/manga/${mangaDto.data.id}"
-            title = cleanString(mangaDto.data.attributes.title["en"] ?: "")
+            title = cleanString(mangaDto.data.attributes.title.asMdMap()["en"] ?: "")
             coverFileName?.let {
                 thumbnail_url = "${MDConstants.cdnUrl}/covers/${mangaDto.data.id}/$coverFileName"
             }
@@ -206,8 +212,9 @@ class MangaDexHelper() {
                 )
                 .filter { it.isNullOrBlank().not() }
 
+            val desc = attr.description.asMdMap()
             return createBasicManga(mangaDto, coverFileName).apply {
-                description = cleanString(attr.description[lang] ?: attr.description["en"] ?: "")
+                description = cleanString(desc[lang] ?: desc["en"] ?: "")
                 author = authors.joinToString(", ")
                 artist = artists.joinToString(", ")
                 status = getPublicationStatus(attr, chapters)

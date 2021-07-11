@@ -222,7 +222,7 @@ abstract class Guya(
         throw Exception("Unused.")
     }
 
-    private fun searchMangaParseWithSlug(response: Response, slug: String): MangasPage {
+    protected open fun searchMangaParseWithSlug(response: Response, slug: String): MangasPage {
         val results = JSONObject(response.body!!.string())
         val mangaIter = results.keys()
         val truncatedJSON = JSONObject()
@@ -239,7 +239,7 @@ abstract class Guya(
         return parseManga(truncatedJSON)
     }
 
-    private fun searchMangaParse(response: Response, query: String): MangasPage {
+    protected open fun searchMangaParse(response: Response, query: String): MangasPage {
         val res = response.body!!.string()
         val json = JSONObject(res)
         val truncatedJSON = JSONObject()
@@ -348,7 +348,7 @@ abstract class Guya(
         return proxySeriesRequest(query)
     }
 
-    private fun proxySearchMangaParse(response: Response, query: String): MangasPage {
+    protected open fun proxySearchMangaParse(response: Response, query: String): MangasPage {
         return MangasPage(
             arrayListOf(parseMangaFromJson(JSONObject(response.body!!.string()), query)),
             false

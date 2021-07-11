@@ -35,7 +35,7 @@ class wnacg : ParsedHttpSource() {
     override fun latestUpdatesRequest(page: Int) = throw Exception("Not used")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        return GET("$baseUrl/albums-index-page-$page-sname-$query.html", headers)
+        return GET("$baseUrl/search/index.php?q=$query&p=$page", headers)
     }
 
     override fun mangaDetailsRequest(manga: SManga) = GET(baseUrl + manga.url, headers)
@@ -55,7 +55,7 @@ class wnacg : ParsedHttpSource() {
     private fun mangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.setUrlWithoutDomain(element.select("a").first().attr("href"))
-        manga.title = element.select("a").attr("title").trim()
+        manga.title = element.select("a").attr("title").trim().replace(Regex("<[^<>]*>"), "")
         manga.thumbnail_url = "https://" + element.select("img").attr("src").replace("//", "")
         // maybe the local cache cause the old source (url) can not be update. but the image can be update on detailpage.
         // ps. new machine can be load img normal.

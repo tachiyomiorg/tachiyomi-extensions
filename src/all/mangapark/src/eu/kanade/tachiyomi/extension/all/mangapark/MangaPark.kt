@@ -130,10 +130,22 @@ open class MangaPark(
 
                 client.newCall(GET(url.build().toString(), headers)).asObservableSuccess()
                     .map { response ->
-                        searchMangaParse(response)
+                        genreSearchMangaParse(response)
                     }
             }
         }
+    }
+
+    private fun genreSearchMangaParse(response: Response): MangasPage {
+        val document = response.asJsoup()
+
+        val mangas = document.select("div#subject-list div.col").map { element ->
+            searchMangaFromElement(element)
+        }
+
+        val hasNextPage = document.select(latestUpdatesNextPageSelector()).first() != null
+
+        return MangasPage(mangas, hasNextPage)
     }
 
     private fun mangaFromID(response: Response, id: String): MangasPage {
@@ -166,18 +178,18 @@ open class MangaPark(
                 .joinToString("\n\n") { it.text() }
             author = infoElement.select("div.attr-item:contains(author) a")
                 .joinToString { it.text().trim() }
-            status = parseStatus(statusStr)
+            status = statusStr.parseStatus()
             thumbnail_url = infoElement.select("div.detail-set div.attr-cover img").attr("abs:src")
             genre = infoElement.select("div.attr-item:contains(genres) span span")
                 .joinToString { it.text().trim() }
         }
     }
 
-    private fun parseStatus(status: String?) = when {
-        status == null -> SManga.UNKNOWN
-        status.contains("Ongoing") -> SManga.ONGOING
-        status.contains("Hiatus") -> SManga.ONGOING
-        status.contains("Completed") -> SManga.COMPLETED
+    private fun String?.parseStatus() = when {
+        this == null -> SManga.UNKNOWN
+        this.contains("Ongoing") -> SManga.ONGOING
+        this.contains("Hiatus") -> SManga.ONGOING
+        this.contains("Completed") -> SManga.COMPLETED
         else -> SManga.UNKNOWN
     }
 
@@ -224,16 +236,15 @@ open class MangaPark(
         return SChapter.create().apply {
             name = urlElement.text()
             chapter_number = urlElement.attr("href").substringAfterLast("/").toFloat()
-            if (time != "") { date_upload = parseChapterDate(time) }
+            if (time != "") { date_upload = time.parseChapterDate() }
             setUrlWithoutDomain(urlElement.attr("href"))
         }
     }
 
-    private fun parseChapterDate(date: String): Long {
-        val value = date.split(' ')[0].toInt()
-        val timeStr = date.split(' ')[1].removeSuffix("s")
+    private fun String.parseChapterDate(): Long {
+        val value = this.split(' ')[0].toInt()
 
-        return when (timeStr) {
+        return when (this.split(' ')[1].removeSuffix("s")) {
             "sec" -> Calendar.getInstance().apply {
                 add(Calendar.SECOND, value * -1)
             }.timeInMillis

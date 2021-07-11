@@ -38,8 +38,7 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     override val name = "MangaDex"
     override val baseUrl = "https://mangadex.org"
 
-    // after mvp comes out make current popular becomes latest (mvp doesnt have a browse page)
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -119,18 +118,57 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
     }
 
     // LATEST section  API can't sort by date yet so not implemented
-    override fun latestUpdatesParse(response: Response): MangasPage = throw Exception("Not used")
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val chapterListDto = helper.json.decodeFromString<ChapterListDto>(response.body!!.string())
+        val hasMoreResults = chapterListDto.limit + chapterListDto.offset < chapterListDto.total
 
-    override fun latestUpdatesRequest(page: Int): Request = throw Exception("Not used")
+        val mangaIds = chapterListDto.results.map { it.relationships }.flatten()
+            .filter { it.type == MDConstants.manga }.map { it.id }.distinct()
+
+        val mangaUrl = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder().apply {
+            addQueryParameter("includes[]", MDConstants.coverArt)
+            mangaIds.forEach { id ->
+                addQueryParameter("ids[]", id)
+            }
+        }.build().toString()
+
+        val mangaResponse = client.newCall(GET(mangaUrl, headers, CacheControl.FORCE_NETWORK)).execute()
+        val mangaListDto = helper.json.decodeFromString<MangaListDto>(mangaResponse.body!!.string())
+
+        val mangaList = mangaListDto.results.map { mangaDto ->
+            val fileName = mangaDto.relationships.firstOrNull { relationshipDto ->
+                relationshipDto.type.equals(MDConstants.coverArt, true)
+            }?.attributes?.fileName
+            helper.createBasicManga(mangaDto, fileName)
+        }
+
+        return MangasPage(mangaList, hasMoreResults)
+    }
+    override fun latestUpdatesRequest(page: Int): Request {
+        val url = MDConstants.apiChapterUrl.toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("offset", helper.getLatestChapterOffset(page))
+            .addQueryParameter("limit", MDConstants.latestChapterLimit.toString())
+            .addQueryParameter("translatedLanguage[]", dexLang)
+            .addQueryParameter("order[publishAt]", "desc")
+            .build().toString()
+        return GET(url, headers, CacheControl.FORCE_NETWORK)
+    }
 
     // SEARCH section
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         if (query.startsWith(MDConstants.prefixIdSearch)) {
-            val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder()
-                .addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
-                .addQueryParameter("includes[]", MDConstants.coverArt)
-            return GET(url.toString(), headers, CacheControl.FORCE_NETWORK)
+            val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder().apply {
+                addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
+                addQueryParameter("includes[]", MDConstants.coverArt)
+
+                addQueryParameter("contentRating[]", "safe")
+                addQueryParameter("contentRating[]", "suggestive")
+                addQueryParameter("contentRating[]", "erotica")
+                addQueryParameter("contentRating[]", "pornographic")
+            }.build().toString()
+
+            return GET(url, headers, CacheControl.FORCE_NETWORK)
         }
 
         val tempUrl = MDConstants.apiMangaUrl.toHttpUrl().newBuilder()

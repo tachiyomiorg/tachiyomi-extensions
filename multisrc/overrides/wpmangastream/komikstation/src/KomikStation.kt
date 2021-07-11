@@ -28,7 +28,7 @@ class KomikStation : WPMangaStream("Komik Station", "https://komikstation.com", 
     override fun pageListParse(document: Document): List<Page> {
         val pages = mutableListOf<Page>()
         document.select(pageSelector)
-            .filterNot { it.attr("src").isNullOrEmpty() }
+            .filterNot { it.attr("abs:src").isNullOrEmpty() }
             .mapIndexed { i, img -> pages.add(Page(i, "", img.attr("abs:src"))) }
 
         // Some sites like mangakita now load pages via javascript

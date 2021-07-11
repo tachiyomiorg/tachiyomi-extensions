@@ -87,7 +87,7 @@ class Mangadog : HttpSource() {
         return MangasPage(mangaList, hasNextPage = false)
     }
 
-    private fun searchMangaFromJson(jsonObj: JsonObject): SManga = SManga.create().apply{
+    private fun searchMangaFromJson(jsonObj: JsonObject): SManga = SManga.create().apply {
         title = jsonObj["value"]!!.jsonPrimitive.content.trim()
 
         val dataValue = jsonObj["data"]!!.jsonPrimitive.content.replace("\\/", "/")
@@ -122,7 +122,7 @@ class Mangadog : HttpSource() {
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date)?.time ?: 0L
     }
 
-    override fun mangaDetailsParse(response: Response): SManga = SManga.create().apply{
+    override fun mangaDetailsParse(response: Response): SManga = SManga.create().apply {
         val document = response.asJsoup()
 
         thumbnail_url = document.select("img.detail-post-img").attr("abs:src")

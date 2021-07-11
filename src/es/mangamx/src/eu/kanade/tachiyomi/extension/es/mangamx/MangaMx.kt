@@ -15,11 +15,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
@@ -49,9 +46,8 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
     private val json: Json by injectLazy()
 
     override fun popularMangaRequest(page: Int) = GET(
-        "$baseUrl/directorio?genero=false" +
-            "&estado=false&filtro=visitas&tipo=false&adulto=${if (hideNSFWContent()) "0" else "false"}&orden=desc&p=$page",
-        headers
+        url = "$baseUrl/directorio?genero=false&estado=false&filtro=visitas&tipo=false&adulto=${if (hideNSFWContent()) "0" else "false"}&orden=desc&p=$page",
+        headers = headers
     )
 
     override fun popularMangaNextPageSelector() = ".page-item a[rel=next]"
@@ -99,16 +95,13 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
                 .add("buscar", query)
                 .add("_token", csrfToken)
                 .build()
-            val searchHeaders = headers.newBuilder().add("X-Requested-With", "XMLHttpRequest")
+            val searchHeaders = headers.newBuilder()
+                .add("X-Requested-With", "XMLHttpRequest")
                 .add("Referer", baseUrl).build()
-            return POST("$baseUrl/buscar", searchHeaders, formBody)
+            return POST(url = "$baseUrl/buscar", headers = searchHeaders, body = formBody)
         } else {
             val uri = Uri.parse("$baseUrl/directorio").buildUpon()
-
-            uri.appendQueryParameter(
-                "adulto",
-                if (hideNSFWContent()) { "0" } else { "1" }
-            )
+            uri.appendQueryParameter("adulto", if (hideNSFWContent()) { "0" } else { "1" })
 
             for (filter in filters) {
                 when (filter) {
@@ -146,6 +139,7 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
     override fun searchMangaParse(response: Response): MangasPage {
         if (!response.isSuccessful) throw Exception("Búsqueda fallida ${response.code}")
+
         if ("directorio" in response.request.url.toString()) {
             val document = response.asJsoup()
             val mangas = document.select(searchMangaSelector()).map { element ->
@@ -158,22 +152,20 @@ open class MangaMx : ConfigurableSource, ParsedHttpSource() {
 
             return MangasPage(mangas, hasNextPage)
         } else {
-            val jsonResult = json.parseToJsonElement(response.body!!.string()).jsonArray
+            val result = json.decodeFromString<ResponseDto>(response.body!!.string())
+            if (result.mangaList.isEmpty()) throw Exception("Término de búsqueda demasiado corto")
 
-            if (jsonResult.isEmpty()) {
-                throw Exception("Término de búsqueda demasiado corto")
-            }
-
-            val mangaList = jsonResult.map { jsonEl -> searchMangaFromJson(jsonEl.jsonObject) }
+            val mangaList = result.mangaList
+                .map(::searchMangaFromObject)
 
             return MangasPage(mangaList, hasNextPage = false)
         }
     }
 
-    private fun searchMangaFromJson(jsonObj: JsonObject): SManga = SManga.create().apply {
-        title = jsonObj["nombre"]!!.jsonPrimitive.content
-        thumbnail_url = jsonObj["img"]!!.jsonPrimitive.content.replace("/thumb", "/cover")
-        setUrlWithoutDomain(jsonObj["url"]!!.jsonPrimitive.content)
+    private fun searchMangaFromObject(manga: MangaDto): SManga = SManga.create().apply {
+        title = manga.name
+        thumbnail_url = manga.img.replace("/thumb", "/cover")
+        setUrlWithoutDomain(manga.url)
     }
 
     override fun mangaDetailsParse(document: Document): SManga {

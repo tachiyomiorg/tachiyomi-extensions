@@ -55,14 +55,14 @@ class MangaBook : ParsedHttpSource() {
     // Search
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = if (query.isNotBlank()) {
-            "$baseUrl/dosearch?&query=$query"
+            "$baseUrl/dosearch?query=$query&page=$page"
         } else {
             val url = "$baseUrl/filterList?page=$page&ftype[]=0&status[]=0".toHttpUrlOrNull()!!.newBuilder()
             (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
                 when (filter) {
                     is OrderBy -> {
                         val ord = arrayOf("views", "rate", "name", "created_at")[filter.state]
-                        url.addQueryParameter("sortBy", "$ord")
+                        url.addQueryParameter("sortBy", ord)
                     }
                     is CategoryList -> {
                         if (filter.state > 0) {
@@ -150,7 +150,12 @@ class MangaBook : ParsedHttpSource() {
             ratingValue > 0.5 -> "✬☆☆☆☆"
             else -> "☆☆☆☆☆"
         }
-        manga.description = titlestr.last() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + infoElement.select(".fdesc.slice-this").text()
+        val altSelector = document.select(".vis:contains(Другие названия) span")
+        var altName = ""
+        if (altSelector.isNotEmpty()) {
+            altName = "Альтернативные названия:\n" + altSelector.last().text() + "\n\n"
+        }
+        manga.description = titlestr.last() + "\n" + ratingStar + " " + ratingValue + " (голосов: " + ratingVotes + ")\n" + altName + infoElement.select(".fdesc.slice-this").text()
         return manga
     }
 

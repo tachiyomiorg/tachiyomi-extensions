@@ -30,7 +30,7 @@ class MangaPill : ParsedHttpSource() {
     }
 
     override fun popularMangaSelector() = ".grid.justify-between.gap-3.grid-cols-2 > div"
-    override fun latestUpdatesSelector() = ".w-full.flex.rounded.border.border-sm.border-color-border-primary.mb-2"
+    override fun latestUpdatesSelector() = ".flex.bg-color-bg-secondary.p-2.rounded"
     override fun searchMangaSelector() = popularMangaSelector()
 
     override fun popularMangaFromElement(element: Element): SManga {
@@ -46,7 +46,7 @@ class MangaPill : ParsedHttpSource() {
         manga.thumbnail_url = element.select("img").attr("data-src")
         var url = element.select("a").first().attr("href")
         manga.setUrlWithoutDomain(url.substringBeforeLast("/").replace("chapters", "manga").substringBeforeLast("-") + "/" + url.substringAfterLast("/").substringBefore("-chapter"))
-        manga.title = element.select(".mb-2 a").text().substringBefore("Chapter").trim()
+        manga.title = element.select(".inilne.block").text().trim()
         return manga
     }
 
@@ -58,7 +58,7 @@ class MangaPill : ParsedHttpSource() {
 
     override fun mangaDetailsParse(document: Document): SManga {
         val manga = SManga.create()
-        manga.author = document.select(".flex.flex-col > div:nth-child(1) > .text-color-text-secondary").text()
+        manga.author = ""
         manga.artist = ""
         val genres = mutableListOf<String>()
         document.select("a[href*=genre]").forEach { element ->
@@ -66,8 +66,8 @@ class MangaPill : ParsedHttpSource() {
             genres.add(genre)
         }
         manga.genre = genres.joinToString(", ")
-        manga.status = parseStatus(document.select("h5:contains(Status) + div").text())
-        manga.description = document.select(".flex.flex-col > div p").first().text()
+        manga.status = parseStatus(document.select("label:contains(Status) + div").text())
+        manga.description = document.select("p.text-sm.text-color-text-secondary").text()
         manga.thumbnail_url = document.select(".object-cover").first().attr("data-src")
 
         return manga
@@ -80,10 +80,10 @@ class MangaPill : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
-    override fun chapterListSelector() = "option[value]"
+    override fun chapterListSelector() = "a.border.border-color-border-primary.p-1"
 
     override fun chapterFromElement(element: Element): SChapter {
-        val urlElement = element.attr("value")
+        val urlElement = element.attr("href")
         val chapter = SChapter.create()
         chapter.setUrlWithoutDomain(urlElement)
         chapter.name = element.text()

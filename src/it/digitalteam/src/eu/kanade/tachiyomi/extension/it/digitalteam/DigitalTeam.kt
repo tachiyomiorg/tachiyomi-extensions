@@ -16,7 +16,6 @@ import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.injectLazy
@@ -73,7 +72,7 @@ class DigitalTeam : ParsedHttpSource() {
 
     override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply{
+    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
         val infoElement = document.select("#manga_left")
 
         author = infoElement.select(".info_name:contains(Autore)").next()?.text()

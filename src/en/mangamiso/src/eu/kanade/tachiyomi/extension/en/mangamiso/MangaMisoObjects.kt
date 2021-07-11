@@ -18,7 +18,7 @@ data class MisoLatestUpdatesPage(
 @Serializable
 data class MisoBrowseManga(
     val foundList: List<MisoManga> = emptyList(),
-    val totalResults: Int = 0
+    val total: Int = 0
 )
 
 @Serializable

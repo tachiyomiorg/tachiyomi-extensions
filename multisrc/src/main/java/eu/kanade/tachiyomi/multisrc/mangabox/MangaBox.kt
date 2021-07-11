@@ -143,7 +143,7 @@ abstract class MangaBox(
         return SManga.create().apply {
             document.select(mangaDetailsMainSelector).firstOrNull()?.let { infoElement ->
                 title = infoElement.select("h1, h2").first().text()
-                author = infoElement.select("li:contains(author) a, td:containsOwn(author) + td").text()
+                author = infoElement.select("li:contains(author) a, td:containsOwn(author) + td a").eachText().joinToString()
                 status = parseStatus(infoElement.select("li:contains(status), td:containsOwn(status) + td").text())
                 genre = infoElement.select("div.manga-info-top li:contains(genres)").firstOrNull()
                     ?.select("a")?.joinToString { it.text() } // kakalot

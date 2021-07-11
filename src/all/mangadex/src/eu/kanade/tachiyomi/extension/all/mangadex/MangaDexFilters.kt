@@ -9,34 +9,10 @@ import java.util.Locale
 class MangaDexFilters {
 
     internal fun getMDFilterList(preferences: SharedPreferences, dexLang: String): FilterList {
-        val contentRatings = listOf(
-            ContentRating("Safe").apply {
-                state =
-                    preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), true)
-            },
-            ContentRating("Suggestive").apply {
-                state = preferences.getBoolean(
-                    MDConstants.getContentRatingSuggestivePrefKey(dexLang),
-                    true
-                )
-            },
-            ContentRating("Erotica").apply {
-                state = preferences.getBoolean(
-                    MDConstants.getContentRatingEroticaPrefKey(dexLang),
-                    false
-                )
-            },
-            ContentRating("Pornographic").apply {
-                state = preferences.getBoolean(
-                    MDConstants.getContentRatingPornographicPrefKey(dexLang),
-                    false
-                )
-            },
-        )
 
         return FilterList(
             OriginalLanguageList(getOriginalLanguage()),
-            ContentRatingList(contentRatings),
+            ContentRatingList(getContentRating(preferences, dexLang)),
             DemographicList(getDemographics()),
             StatusList(getStatus()),
             SortFilter(sortableList.map { it.first }.toTypedArray()),
@@ -45,6 +21,31 @@ class MangaDexFilters {
             TagExclusionMode(),
         )
     }
+
+    private fun getContentRating(preferences: SharedPreferences, dexLang: String) = listOf(
+        ContentRating("Safe").apply {
+            state =
+                preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), true)
+        },
+        ContentRating("Suggestive").apply {
+            state = preferences.getBoolean(
+                MDConstants.getContentRatingSuggestivePrefKey(dexLang),
+                true
+            )
+        },
+        ContentRating("Erotica").apply {
+            state = preferences.getBoolean(
+                MDConstants.getContentRatingEroticaPrefKey(dexLang),
+                false
+            )
+        },
+        ContentRating("Pornographic").apply {
+            state = preferences.getBoolean(
+                MDConstants.getContentRatingPornographicPrefKey(dexLang),
+                false
+            )
+        },
+    )
 
     private class Demographic(name: String) : Filter.CheckBox(name)
     private class DemographicList(demographics: List<Demographic>) :
@@ -174,8 +175,8 @@ class MangaDexFilters {
 
     val sortableList = listOf(
         Pair("Number of follows", ""),
-        Pair("Created at", "createdAt"),
-        Pair("Updated at", "updatedAt"),
+        Pair("Manga created at", "createdAt"),
+        Pair("Manga info updated at", "updatedAt"),
     )
 
     class SortFilter(sortables: Array<String>) : Filter.Sort("Sort", sortables, Selection(1, false))

@@ -16,16 +16,111 @@ jobs:
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v1
 
-  build:
-    name: Build extension repo
-    needs: check_wrapper
-    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
-    runs-on: ubuntu-latest
-    steps:
       - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+
+  build_multisrc:
+    name: Build multisrc modules
+    needs: check_wrapper
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lang: [all, en, ar, ca, de, es, fr, id, it, ja, ko, pt, ru, th, tr, vi, zh, bg, hi, pl]
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Copy CI gradle.properties
+        run: |
+          mkdir -p ~/.gradle
+          cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
+
+      - name: Generate sources from the multi-source library
+        uses: eskatos/gradle-command-action@v1
+        env:
+          CI_MULTISRC: "true"
+        with:
+          arguments: :multisrc:generateExtensions
+          wrapper-cache-enabled: true
+          dependencies-cache-enabled: true
+          configuration-cache-enabled: true
+
+      - name: Build "${{ matrix.lang }}" extensions
+        uses: eskatos/gradle-command-action@v1
+        env:
+          CI_MULTISRC: "true"
+          CI_MATRIX_LANG: ${{ matrix.lang }}
+        with:
+          arguments: assembleRelease
+          wrapper-cache-enabled: true
+          dependencies-cache-enabled: true
+          configuration-cache-enabled: true
+
+      - name: Upload "${{ matrix.lang }}" APKs
+        uses: actions/upload-artifact@v2
+        with:
+          name: "multisrc-${{ matrix.lang }}-apks"
+          path: "**/*.apk"
+          retention-days: 1
+
+  build_individual:
+    name: Build individual modules
+    needs: check_wrapper
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lang: [all, en, ar, ca, de, es, fr, id, it, ja, ko, pt, ru, th, tr, vi, zh, bg, hi, pl]
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Copy CI gradle.properties
+        run: |
+          mkdir -p ~/.gradle
+          cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
+
+      - name: Build "${{ matrix.lang }}" extensions
+        uses: eskatos/gradle-command-action@v1
+        env:
+          CI_MULTISRC: "false"
+          CI_MATRIX_LANG: ${{ matrix.lang }}
+        with:
+          arguments: assembleRelease
+          wrapper-cache-enabled: true
+          dependencies-cache-enabled: true
+          configuration-cache-enabled: true
+
+      - name: Upload "${{ matrix.lang }}" APKs
+        uses: actions/upload-artifact@v2
+        with:
+          name: "individual-${{ matrix.lang }}-apks"
+          path: "**/*.apk"
+          retention-days: 1
+
+  publish_repo:
+    name: Publish repo
+    needs:
+      - build_multisrc
+      - build_individual
+    if: "github.repository == 'tachiyomiorg/tachiyomi-extensions'"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ~/apk-artifacts
 
       - name: Checkout master branch
         uses: actions/checkout@v2
@@ -33,43 +128,7 @@ jobs:
           ref: master
           path: master
 
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-
-      - name: Copy CI gradle.properties
-        run: |
-          cd master
-          mkdir -p ~/.gradle
-          cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
-
-      - name: Generate sources from the multi-source library
-        uses: eskatos/gradle-command-action@v1
-        env:
-          CI_PUSH: "true"
-        with:
-          build-root-directory: master
-          wrapper-directory: master
-          arguments: :multisrc:generateExtensions
-          wrapper-cache-enabled: true
-          dependencies-cache-enabled: true
-          configuration-cache-enabled: true
-
-      - name: Build extensions
-        uses: eskatos/gradle-command-action@v1
-        env:
-          CI_PUSH: "true"
-        with:
-          build-root-directory: master
-          wrapper-directory: master
-          arguments: assembleRelease
-          wrapper-cache-enabled: true
-          dependencies-cache-enabled: true
-          configuration-cache-enabled: true
-
       - name: Sign APKs
-        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
         run: |
           cd master
           ./.github/scripts/sign-apks.sh \
@@ -79,20 +138,17 @@ jobs:
             ${{ secrets.KEY_PASSWORD }}
 
       - name: Create repo artifacts
-        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
         run: |
           cd master
           ./.github/scripts/create-repo.sh
 
       - name: Checkout repo branch
-        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
         uses: actions/checkout@v2
         with:
           ref: repo
           path: repo
 
       - name: Deploy repo
-        if: github.repository == 'tachiyomiorg/tachiyomi-extensions'
         run: |
           cd repo
           ../master/.github/scripts/commit-repo.sh

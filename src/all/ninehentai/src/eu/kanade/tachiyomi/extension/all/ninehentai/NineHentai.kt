@@ -97,7 +97,7 @@ class NineHentai : HttpSource() {
         }
         return mutableList
     }
-    
+
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
         val time = document.select("div#info div time").text()
@@ -109,7 +109,7 @@ class NineHentai : HttpSource() {
             }
         )
     }
-    
+
     private fun parseChapterDate(date: String): Long {
         val value = date.split(' ')[0].toInt()
         val timeStr = date.split(' ')[1].removeSuffix("s")
