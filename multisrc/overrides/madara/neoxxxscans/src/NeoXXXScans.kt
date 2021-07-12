@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 @Nsfw
 class NeoXXXScans : Madara(
     "NeoXXX Scans",
-    "https://xxx.neoxscans.net",
+    "https://xxx.neoxscans.com",
     "pt-BR",
     SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
 ) {
