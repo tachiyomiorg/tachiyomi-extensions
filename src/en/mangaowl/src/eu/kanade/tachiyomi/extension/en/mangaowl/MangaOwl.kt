@@ -42,6 +42,9 @@ class MangaOwl : ParsedHttpSource() {
 
     private val json: Json by injectLazy()
 
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
+        .add("Referer", baseUrl)
+
     override fun popularMangaRequest(page: Int): Request =
         GET("$baseUrl/popular/$page", headers
 
