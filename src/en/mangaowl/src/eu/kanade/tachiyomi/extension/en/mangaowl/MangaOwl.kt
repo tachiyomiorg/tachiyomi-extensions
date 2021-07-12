@@ -169,7 +169,7 @@ class MangaOwl : ParsedHttpSource() {
     }
     
     private class SearchFilter : UriPartFilter(
-        "Search in",
+        "Search",
         arrayOf(
             Pair("All", "123"),
             Pair("Manga title", "1"),
@@ -179,7 +179,7 @@ class MangaOwl : ParsedHttpSource() {
     )
 
     private class SortFilter : UriPartFilter(
-        "Sort by",
+        "Sort",
         arrayOf(
             Pair("Matched", "4"),
             Pair("Viewed", "0"),
