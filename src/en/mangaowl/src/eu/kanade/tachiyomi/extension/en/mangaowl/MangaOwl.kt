@@ -77,7 +77,7 @@ class MangaOwl : ParsedHttpSource() {
                 is SearchFilter -> url.addQueryParameter("search_field", filter.toUriPart())
                 is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
                 is StatusFilter -> url.addQueryParameter("completed", filter.toUriPart())
-                is GenreFilter -> url.addQueryParameter("genres", filter.state())
+                is GenreFilter -> url.addQueryParameter("genres", filter.state)
             }
         }
         return GET(url.toString(), headers)
