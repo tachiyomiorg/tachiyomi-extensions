@@ -74,7 +74,7 @@ class MangaOwl : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/search/$page".toHttpUrlOrNull()?.newBuilder()!!
+        val url = "$baseUrl/search/$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("search", query)
 
         (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
