@@ -70,7 +70,7 @@ class MangaOwl : ParsedHttpSource() {
     // Search
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/search/$page".toHttpUrlOrNull()?.newBuilder()!!
+        val url = "$baseUrl/search/$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("search", query)
 
         filters.forEach { filter ->
