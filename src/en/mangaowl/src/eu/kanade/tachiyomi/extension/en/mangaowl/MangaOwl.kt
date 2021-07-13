@@ -46,7 +46,7 @@ class MangaOwl : ParsedHttpSource() {
         .add("Referer", baseUrl)
 
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/popular/$page", headers
+        GET("$baseUrl/popular/$page", headers)
 
     override fun popularMangaSelector() = "div.col-md-2"
 
