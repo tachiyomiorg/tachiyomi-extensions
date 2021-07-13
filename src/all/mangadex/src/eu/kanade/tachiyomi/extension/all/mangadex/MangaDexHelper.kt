@@ -19,6 +19,7 @@ import okhttp3.Request
 import org.jsoup.parser.Parser
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MangaDexHelper() {
 
