@@ -365,19 +365,13 @@ open class Hitomi(override val lang: String, private val nozomiLang: String) : H
 
     // https://ltn.hitomi.la/common.js
     // function subdomain_from_url()
-    // Change g's if statment from !isNaN(g)
+    // Change g's if statement from !isNaN(g)
     private fun firstSubdomainFromGalleryId(pathSegment: String): Char {
-        val source = getScrambler()
-        var numberOfFrontends = 3
+        var o = 0
         var g = pathSegment.toInt(16)
-        if (g < source[0]) numberOfFrontends = 2
-        if (g < source[1]) g = 1
-        return (97 + g.rem(numberOfFrontends)).toChar()
-    }
-
-    private fun getScrambler(): List<Int> {
-        val response = client.newCall(GET("$LTN_BASE_URL/common.js")).execute()
-        return HEXADECIMAL.findAll(response.body!!.string()).map { Integer.decode(it.value) }.toList()
+        if (g < 0x80) o = 1
+        if (g < 0x40) o = 2
+        return (97 + o).toChar()
     }
 
     override fun imageRequest(page: Page): Request {
