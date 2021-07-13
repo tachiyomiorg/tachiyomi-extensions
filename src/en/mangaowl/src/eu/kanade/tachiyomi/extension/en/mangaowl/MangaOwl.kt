@@ -78,7 +78,7 @@ class MangaOwl : ParsedHttpSource() {
         url.addQueryParameter("search", query)
 
         filters.forEach { filter ->
-            when (filter.toString()) {
+            when (filter!!) {
                 is SearchFilter -> url.addQueryParameter("search_field", filter.toUriPart())
                 is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
                 is StatusFilter -> url.addQueryParameter("completed", filter.toUriPart())
@@ -200,6 +200,7 @@ class MangaOwl : ParsedHttpSource() {
     private class Genre(name: String, val id: String) : Filter.TriState(name)
     private class GenreFilter(genres: List<Genre>) : Filter.Group<Genre>("Genres", genres)
     private fun getGenreList() = listOf(
+        Genre("All", ""),
         Genre("4-koma", "89"),
         Genre("Action", "1"),
         Genre("Adaptation", "72"),
