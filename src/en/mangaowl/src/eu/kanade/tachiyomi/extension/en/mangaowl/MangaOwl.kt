@@ -298,7 +298,7 @@ class MangaOwl : ParsedHttpSource() {
         Genre("User created", "102"),
         Genre("Vampires", "103"),
         Genre("Vanilla", "125"),
-        Genre("Video games", "75")
+        Genre("Video games", "75"),
         Genre("Villainess", "119"),
         Genre("Virtual reality", "110"),
         Genre("Web comic", "77"),
