@@ -12,7 +12,6 @@ class GenkanOriginalGenerator : ThemeSourceGenerator {
     override val baseVersionCode: Int = 1
 
     override val sources = listOf(
-        SingleLang("Reaper Scans", "https://reaperscans.com", "en"),
         SingleLang("Hatigarm Scans", "https://hatigarmscanz.net", "en", overrideVersionCode = 1),
         SingleLang("Method Scans", "https://methodscans.com", "en", overrideVersionCode = 1)
     )
