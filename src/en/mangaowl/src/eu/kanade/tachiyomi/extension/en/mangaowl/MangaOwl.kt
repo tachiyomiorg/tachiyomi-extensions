@@ -77,7 +77,7 @@ class MangaOwl : ParsedHttpSource() {
         val url = "$baseUrl/search/$page".toHttpUrlOrNull()!!.newBuilder()
         url.addQueryParameter("search", query)
 
-        (if (filters.isEmpty()) getFilterList() else filters).forEach { filter ->
+        filters.forEach { filter ->
             when (filter) {
                 is SearchFilter -> url.addQueryParameter("search_field", filter.toUriPart())
                 is SortFilter -> url.addQueryParameter("sort", filter.toUriPart())
