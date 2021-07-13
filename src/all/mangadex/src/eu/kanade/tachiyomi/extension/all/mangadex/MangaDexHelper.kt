@@ -106,6 +106,12 @@ class MangaDexHelper() {
     // chapter url where we get the token, last request time
     private val tokenTracker = hashMapOf<String, Long>()
 
+    companion object {
+        val USE_CACHE = CacheControl.Builder()
+            .maxStale(Integer.MAX_VALUE, TimeUnit.SECONDS)
+            .build()
+    }
+
     // Check the token map to see if the md@home host is still valid
     fun getValidImageUrlForPage(page: Page, headers: Headers, client: OkHttpClient): Request {
         val data = page.url.split(",")
@@ -123,7 +129,7 @@ class MangaDexHelper() {
                         ) {
                             CacheControl.FORCE_NETWORK
                         } else {
-                            CacheControl.FORCE_CACHE
+                            USE_CACHE
                         }
                     getMdAtHomeUrl(tokenRequestUrl, client, headers, cacheControl)
                 }
@@ -145,6 +151,14 @@ class MangaDexHelper() {
         }
         val response =
             client.newCall(GET(tokenRequestUrl, headers, cacheControl)).execute()
+
+        // This check is for the error that causes pages to fail to load.
+        // It should never be entered, but in case it is, we retry the request.
+        if (response.code == 504) {
+            Log.wtf("MangaDex", "Failed to read cache for \"$tokenRequestUrl\"")
+            return getMdAtHomeUrl(tokenRequestUrl, client, headers, CacheControl.FORCE_NETWORK)
+        }
+
         return json.decodeFromString<AtHomeDto>(response.body!!.string()).baseUrl
     }
 
