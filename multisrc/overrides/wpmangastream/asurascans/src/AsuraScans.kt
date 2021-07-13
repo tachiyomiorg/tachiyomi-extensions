@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.Page
 
 
 class AsuraScans : WPMangaStream("AsuraScans", "https://www.asurascans.com", "en") {
-    private val rateLimitInterceptor = RateLimitInterceptor(2)
+    private val rateLimitInterceptor = RateLimitInterceptor(1)
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
         .connectTimeout(10, TimeUnit.SECONDS)
