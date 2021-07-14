@@ -26,6 +26,7 @@ class WPMangaStreamGenerator : ThemeSourceGenerator {
             SingleLang("Readkomik", "https://readkomik.com", "en", className = "ReadKomik", overrideVersionCode = 1),
             SingleLang("MangaIndonesia", "https://mangaindonesia.net", "id"),
             SingleLang("Liebe Schnee Hiver", "https://www.liebeschneehiver.com", "tr"),
+            SingleLang("GoGoManga", "https://gogomanga.org", "en"),
             SingleLang("GURU Komik", "https://gurukomik.com", "id"),
             SingleLang("Shea Manga", "https://sheamanga.my.id", "id", overrideVersionCode = 1),
             SingleLang("Komik AV", "https://komikav.com", "id", overrideVersionCode = 1),
