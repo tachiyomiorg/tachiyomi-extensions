@@ -290,6 +290,7 @@ class MadaraGenerator : ThemeSourceGenerator {
         SingleLang("StageComics", "https://stagecomics.com", "pt-BR", overrideVersionCode = 2),
         SingleLang("Sugar Babies", "https://sugarbscan.com", "en", overrideVersionCode = 1),
         SingleLang("Sweet Time Scan", "https://sweetscan.net", "pt-BR", overrideVersionCode = 1),
+        SingleLang("TeenManhua", "https://teenmanhua.com", "en"),
         SingleLang("TheFluffyHangoutGroup", "https://www.fluffyhangout.club", "en", overrideVersionCode = 2),
         SingleLang("Three Queens Scanlator", "https://tqscan.com.br", "pt-BR", overrideVersionCode = 2),
         SingleLang("Time Naight", "https://timenaight.com", "tr"),
