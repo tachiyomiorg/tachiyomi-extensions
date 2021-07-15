@@ -47,9 +47,9 @@ class KomikIndoID : ParsedHttpSource() {
     override fun searchMangaFromElement(element: Element): SManga {
         val manga = SManga.create()
         manga.thumbnail_url = element.select("div.limit img").attr("src")
+        manga.title = element.select("div.tt h4").text()
         element.select("div.animposx > a").first().let {
             manga.setUrlWithoutDomain(it.attr("href"))
-            manga.title = it.attr("title")
         }
         return manga
     }
