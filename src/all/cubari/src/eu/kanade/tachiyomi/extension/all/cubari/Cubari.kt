@@ -18,7 +18,6 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.long
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
@@ -277,8 +276,10 @@ open class Cubari(override val lang: String) : HttpSource() {
                     scanlator = groups[groupNum]!!.jsonPrimitive.content
                     chapter_number = chapterNum.toFloatOrNull() ?: -1f
 
-                    date_upload = if (chapterObj["release_date"] != null) {
-                        chapterObj["release_date"]!!.jsonObject[groupNum]!!.jsonPrimitive.long * 1000
+                    if (chapterObj["release_date"]!!.jsonObject[groupNum] != null) {
+                        val temp = chapterObj["release_date"]!!.jsonObject[groupNum].toString()
+                        val tempafter = temp.replace(".0", "")
+                        date_upload = tempafter.toLong() * 1000
                     } else {
                         val currentTimeMillis = System.currentTimeMillis()
 
@@ -286,7 +287,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                             seriesPrefsEditor.putLong(chapterNum, currentTimeMillis)
                         }
 
-                        seriesPrefs.getLong(chapterNum, currentTimeMillis)
+                        date_upload = seriesPrefs.getLong(chapterNum, currentTimeMillis)
                     }
 
                     name = if (volume.isNotEmpty() && volume != "Uncategorized") {
@@ -358,11 +359,9 @@ open class Cubari(override val lang: String) : HttpSource() {
 
     companion object {
         const val PROXY_PREFIX = "cubari:"
-
         const val AUTHOR_FALLBACK = "Unknown"
         const val ARTIST_FALLBACK = "Unknown"
         const val DESCRIPTION_FALLBACK = "No description."
-
         const val SEARCH_FALLBACK_MSG = "Unable to parse. Is your query in the format of $PROXY_PREFIX<source>/<slug>?"
 
         enum class SortType {
