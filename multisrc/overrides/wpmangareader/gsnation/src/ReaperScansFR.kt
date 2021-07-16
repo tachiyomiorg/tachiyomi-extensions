@@ -8,7 +8,7 @@ import org.jsoup.nodes.Document
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class ReaperScansFR : WPMangaReader("ReaperScans.fr", "https://reaperscans.fr", "fr", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.FRANCE)) {
+class ReaperScansFR : WPMangaReader("ReaperScans.fr (GS)", "https://reaperscans.fr", "fr", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.FRANCE)) {
 
     // Formerly "GS Nation"
     override val id: Long = 8953394032396297337
