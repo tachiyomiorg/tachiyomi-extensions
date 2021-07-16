@@ -6,4 +6,4 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Nsfw
-class MangaHZ : Madara("MangaHZ", "https://mangahz.com", "en", "/manga", dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.US))
+class MangaHZ : Madara("MangaHZ", "https://mangahz.com", "en", dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.US), "/manga")
