@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -277,9 +278,8 @@ open class Cubari(override val lang: String) : HttpSource() {
                     chapter_number = chapterNum.toFloatOrNull() ?: -1f
 
                     if (chapterObj["release_date"]!!.jsonObject[groupNum] != null) {
-                        val temp = chapterObj["release_date"]!!.jsonObject[groupNum].toString()
-                        val tempafter = temp.replace(".0", "")
-                        date_upload = tempafter.toLong() * 1000
+                        val temp = chapterObj["release_date"]!!.jsonObject[groupNum]!!.jsonPrimitive.double
+                        date_upload = temp.toLong() * 1000
                     } else {
                         val currentTimeMillis = System.currentTimeMillis()
 
