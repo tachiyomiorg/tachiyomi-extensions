@@ -127,6 +127,21 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
 
         val mangaUrl = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder().apply {
             addQueryParameter("includes[]", MDConstants.coverArt)
+            addQueryParameter("limit", mangaIds.size.toString())
+
+            if (preferences.getBoolean(MDConstants.getContentRatingSafePrefKey(dexLang), true)) {
+                addQueryParameter("contentRating[]", "safe")
+            }
+            if (preferences.getBoolean(MDConstants.getContentRatingSuggestivePrefKey(dexLang), true)) {
+                addQueryParameter("contentRating[]", "suggestive")
+            }
+            if (preferences.getBoolean(MDConstants.getContentRatingEroticaPrefKey(dexLang), false)) {
+                addQueryParameter("contentRating[]", "erotica")
+            }
+            if (preferences.getBoolean(MDConstants.getContentRatingPornographicPrefKey(dexLang), false)) {
+                addQueryParameter("contentRating[]", "pornographic")
+            }
+
             mangaIds.forEach { id ->
                 addQueryParameter("ids[]", id)
             }
@@ -135,7 +150,9 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
         val mangaResponse = client.newCall(GET(mangaUrl, headers, CacheControl.FORCE_NETWORK)).execute()
         val mangaListDto = helper.json.decodeFromString<MangaListDto>(mangaResponse.body!!.string())
 
-        val mangaList = mangaListDto.results.map { mangaDto ->
+        val mangaDtoMap = mangaListDto.results.associateBy({ it.data.id }, { it })
+
+        val mangaList = mangaIds.mapNotNull { mangaDtoMap[it] }.map { mangaDto ->
             val fileName = mangaDto.relationships.firstOrNull { relationshipDto ->
                 relationshipDto.type.equals(MDConstants.coverArt, true)
             }?.attributes?.fileName
@@ -161,7 +178,6 @@ abstract class MangaDex(override val lang: String, val dexLang: String) :
             val url = MDConstants.apiMangaUrl.toHttpUrlOrNull()!!.newBuilder().apply {
                 addQueryParameter("ids[]", query.removePrefix(MDConstants.prefixIdSearch))
                 addQueryParameter("includes[]", MDConstants.coverArt)
-
                 addQueryParameter("contentRating[]", "safe")
                 addQueryParameter("contentRating[]", "suggestive")
                 addQueryParameter("contentRating[]", "erotica")
