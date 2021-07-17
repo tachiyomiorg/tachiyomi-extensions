@@ -1,17 +1,21 @@
 package eu.kanade.tachiyomi.extension.en.mangajar
 
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
+import rx.Single
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -100,6 +104,33 @@ class MangaJar : ParsedHttpSource() {
         else -> SManga.UNKNOWN
     }
 
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
+        return findChapters(chapterListRequest(manga)).toObservable()
+    }
+
+    private fun findChapters(request: Request): Single<List<SChapter>> {
+        return client.newCall(request).asObservableSuccess().toSingle().flatMap { response ->
+            val document = response.asJsoup()
+            val thisPage = document.select(chapterListSelector()).map { chapter ->
+                SChapter.create().apply {
+                    val link = chapter.select("a")
+                    url = link.attr("href")
+                    name = link.text()
+                    chapter_number = 0f
+                }
+            }
+            val nextPageLink = document.select("a.page-link[rel=\"next\"]").firstOrNull()
+            if (nextPageLink == null) {
+                Single.just(thisPage)
+            } else {
+                findChapters(GET("$baseUrl${nextPageLink.attr("href")}")).map { remainingChapters ->
+                    thisPage + remainingChapters
+                }
+            }
+        }
+    }
+
+    /** For the first page. Pagination is done in [findChapters] */
     override fun chapterListRequest(manga: SManga) = GET(baseUrl + manga.url + "/chaptersList")
 
     override fun chapterListSelector() = "li.list-group-item.chapter-item"

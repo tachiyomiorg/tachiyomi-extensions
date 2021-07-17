@@ -43,13 +43,13 @@ import java.util.Locale
 
 open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/api/v1/series?page=${page - 1}", headers)
+        GET("$baseUrl/api/v1/series?page=${page - 1}&deleted=false", headers)
 
     override fun popularMangaParse(response: Response): MangasPage =
         processSeriesPage(response)
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/api/v1/series/latest?page=${page - 1}", headers)
+        GET("$baseUrl/api/v1/series/latest?page=${page - 1}&deleted=false", headers)
 
     override fun latestUpdatesParse(response: Response): MangasPage =
         processSeriesPage(response)
@@ -65,7 +65,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
             else -> "series"
         }
 
-        val url = "$baseUrl/api/v1/$type?search=$query&page=${page - 1}".toHttpUrlOrNull()!!.newBuilder()
+        val url = "$baseUrl/api/v1/$type?search=$query&page=${page - 1}&deleted=false".toHttpUrlOrNull()!!.newBuilder()
 
         filters.forEach { filter ->
             when (filter) {
@@ -185,7 +185,7 @@ open class Komga(suffix: String = "") : ConfigurableSource, HttpSource() {
         }
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET("${manga.url}/books?unpaged=true&media_status=READY", headers)
+        GET("${manga.url}/books?unpaged=true&media_status=READY&deleted=false", headers)
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val page = gson.fromJson<PageWrapperDto<BookDto>>(response.body?.charStream()!!).content

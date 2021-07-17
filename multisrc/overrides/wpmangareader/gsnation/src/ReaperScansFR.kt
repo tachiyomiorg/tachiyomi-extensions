@@ -8,7 +8,10 @@ import org.jsoup.nodes.Document
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class GSNation : WPMangaReader("GS Nation", "http://gs-nation.fr", "fr", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.FRANCE)) {
+class ReaperScansFR : WPMangaReader("ReaperScans.fr (GS)", "https://reaperscans.fr", "fr", dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.FRANCE)) {
+
+    // Formerly "GS Nation"
+    override val id: Long = 8953394032396297337
 
     // remove the novels from the response
     override fun searchMangaParse(response: Response): MangasPage {
