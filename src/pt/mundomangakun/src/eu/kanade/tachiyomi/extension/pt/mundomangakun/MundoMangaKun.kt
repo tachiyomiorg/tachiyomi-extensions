@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.pt.mundomangakun
 
+import eu.kanade.tachiyomi.annotations.Nsfw
 import eu.kanade.tachiyomi.lib.ratelimit.RateLimitInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
@@ -22,6 +23,7 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.TimeUnit
 
+@Nsfw
 class MundoMangaKun : ParsedHttpSource() {
 
     override val name = "Mundo Mangá-Kun"
@@ -137,9 +139,9 @@ class MundoMangaKun : ParsedHttpSource() {
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("script:containsData(var paginas)").first().data()
-            .substringAfter("var paginas=")
-            .substringBefore(";var")
-            .let { json.parseToJsonElement(it) }
+            .substringAfter("var paginas = ")
+            .substringBefore("];")
+            .let { json.parseToJsonElement("$it]") }
             .jsonArray
             .mapIndexed { i, page -> Page(i, document.location(), page.jsonPrimitive.content) }
     }
