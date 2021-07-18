@@ -255,6 +255,8 @@ open class Cubari(override val lang: String) : HttpSource() {
 
     // ------------- Helpers and whatnot ---------------
 
+    private val volumeNotSpecifiedTerms = setOf("Uncategorized", "null")
+
     private fun parseChapterList(payload: String, manga: SManga): List<SChapter> {
         val jsonObj = json.parseToJsonElement(payload).jsonObject
         val groups = jsonObj["groups"]!!.jsonObject
@@ -268,18 +270,21 @@ open class Cubari(override val lang: String) : HttpSource() {
             val chapterNum = chapterEntry.key
             val chapterObj = chapterEntry.value.jsonObject
             val chapterGroups = chapterObj["groups"]!!.jsonObject
-            val volume = chapterObj["volume"]!!.jsonPrimitive.content
+            val volume = chapterObj["volume"]!!.jsonPrimitive.content.let {
+                if (volumeNotSpecifiedTerms.contains(it)) null else it
+            }
+            val title = chapterObj["title"]!!.jsonPrimitive.content
 
             chapterGroups.entries.map { groupEntry ->
                 val groupNum = groupEntry.key
+                val releaseDate = chapterObj["release_date"]?.jsonObject?.get(groupNum)
 
                 SChapter.create().apply {
                     scanlator = groups[groupNum]!!.jsonPrimitive.content
                     chapter_number = chapterNum.toFloatOrNull() ?: -1f
 
-                    if (chapterObj["release_date"]?.jsonObject?.get(groupNum) != null) {
-                        val temp = chapterObj["release_date"]!!.jsonObject[groupNum]!!.jsonPrimitive.double
-                        date_upload = temp.toLong() * 1000
+                    if (releaseDate != null) {
+                        date_upload = releaseDate.jsonPrimitive.double.toLong() * 1000
                     } else {
                         val currentTimeMillis = System.currentTimeMillis()
 
@@ -290,13 +295,12 @@ open class Cubari(override val lang: String) : HttpSource() {
                         date_upload = seriesPrefs.getLong(chapterNum, currentTimeMillis)
                     }
 
-                    name = if (volume.isNotEmpty() && volume != "Uncategorized") {
+                    name = if (volume != null) {
                         // Output "Vol. 1 Ch. 1 - Chapter Name"
-                        "Vol. " + chapterObj["volume"]!!.jsonPrimitive.content + " Ch. " +
-                            chapterNum + " - " + chapterObj["title"]!!.jsonPrimitive.content
+                        "Vol. $volume Ch. $chapterNum - $title"
                     } else {
                         // Output "Ch. 1 - Chapter Name"
-                        "Ch. " + chapterNum + " - " + chapterObj["title"]!!.jsonPrimitive.content
+                        "Ch. $chapterNum - $title"
                     }
 
                     url = if (chapterGroups[groupNum] is JsonArray) {
