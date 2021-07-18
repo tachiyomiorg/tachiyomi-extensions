@@ -2,11 +2,11 @@ package eu.kanade.tachiyomi.extension.ru.remanga
 
 import BookDto
 import BranchesDto
-import ChunksPageDto
 import GenresDto
 import LibraryDto
 import MangaDetDto
 import PageDto
+import ChunksPageDto
 import PageWrapperDto
 import SeriesWrapperDto
 import UserDto
