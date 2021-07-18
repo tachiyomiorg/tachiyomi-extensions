@@ -277,7 +277,7 @@ open class Cubari(override val lang: String) : HttpSource() {
                     scanlator = groups[groupNum]!!.jsonPrimitive.content
                     chapter_number = chapterNum.toFloatOrNull() ?: -1f
 
-                    if (chapterObj["release_date"]!!.jsonObject[groupNum] != null) {
+                    if (chapterObj["release_date"]?.jsonObject?.get(groupNum) != null) {
                         val temp = chapterObj["release_date"]!!.jsonObject[groupNum]!!.jsonPrimitive.double
                         date_upload = temp.toLong() * 1000
                     } else {
