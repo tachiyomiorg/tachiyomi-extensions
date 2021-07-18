@@ -102,19 +102,11 @@ data class PageDto(
 )
 
 @Serializable
+data class ChunksPageDto(
+    val pages: List<List<PagesDto>>
+)
+
+@Serializable
 data class UserDto(
     val access_token: String
-)
-
-@Serializable
-data class PaidPagesDto(
-    val id: Long,
-    val link: String,
-    val height: Int,
-    val page: Int
-)
-
-@Serializable
-data class PaidPageDto(
-    val pages: List<List<PaidPagesDto>>
 )
